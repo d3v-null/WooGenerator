@@ -5,6 +5,22 @@ import pprint
 DEBUG = True
 DEBUG_PARSER = True
 
+class ImportItem(OrderedDict):
+    """docstring for ImportItem"""
+    def __init__(self, arg=None):
+        super(ImportItem, self).__init__(arg)
+
+    def getRowcount(self):
+        try:
+            count = self['rowcount']
+            if count: return count
+        except:
+            pass
+        return None
+
+    def getIndex(self):
+        return self.getRowcount()
+
 class CSVParse_Base(object):
     """docstring for CSVParse_Base"""
 
@@ -18,6 +34,10 @@ class CSVParse_Base(object):
         self.defaults = self.combineOrderedDicts( defaults, extra_defaults )
         self.pp = pprint.PrettyPrinter(indent=2, depth=2)
         self.indexSingularity = True
+        try:
+            assert self.itemContainer 
+        except :
+            self.itemContainer = ImportItem
 
         # if DEBUG_PARSER:
         #     print "Initializing: "
@@ -48,15 +68,14 @@ class CSVParse_Base(object):
         return b
 
     def getRowcount(self, itemData):
-        try:
-            count = itemData['rowcount']
-            if count: return count
-        except:
-            pass
-        return None
+        #TODO: deprecate this
+        return itemData.getRowcount()
+
 
     def getIndex(self, itemData):
-        return self.getRowcount(itemData)
+        #TODO: deprecate this
+        return itemData.getIndex()
+        # return self.getRowcount(itemData)
 
     def resolveConflict(self, newItem, oldItem, index, registerName = ''):
         self.registerError("Item [index: %s] already exists in register %s"%(index, registerName))
@@ -135,7 +154,7 @@ class CSVParse_Base(object):
             return None
 
     def newData(self, **kwargs):
-        newData = OrderedDict(self.defaults.items())
+        newData = self.itemContainer(self.defaults.items())
         for key, val in kwargs.items():
             newData[key] = val
         return newData

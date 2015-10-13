@@ -1,4 +1,4 @@
-from csvparse_tree import CSVParse_Tree
+from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo
 from collections import OrderedDict
 import functools
 from itertools import chain
@@ -47,6 +47,15 @@ def shorten(reg, subs, str_in):
     #     print " | str_o: ",str_out
     return str_out
 
+class ImportGenItem(ImportTreeItem):
+    """docstring for ImportGenItem"""
+    def __init__(self, arg):
+        super(ImportGenItem, self).__init__(arg)
+
+class ImportGenTaxo(ImportTreeTaxo):
+    """docstring for ImportGenTaxo"""
+    def __init__(self, arg):
+        super(ImportGenTaxo, self).__init__(arg)     
 
 class CSVParse_Gen(CSVParse_Tree):
     """docstring for CSVParse_Gen"""
@@ -81,6 +90,14 @@ class CSVParse_Gen(CSVParse_Tree):
 
         cols = self.combineLists( cols, extra_cols )
         defaults = self.combineOrderedDicts( defaults, extra_defaults )
+        try:
+            assert( self.itemContainer )
+        except :
+            self.itemContainer = ImportGenItem
+        try:
+            assert( self.taxoContainer )
+        except :
+            self.taxoContainer = ImportGenTaxo
         super(CSVParse_Gen, self).__init__( cols, defaults, taxoDepth, itemDepth, metaWidth)
         self.schema     = schema
         self.taxoSubs   = self.combineOrderedDicts( taxoSubs, extra_taxoSubs )
@@ -103,7 +120,8 @@ class CSVParse_Gen(CSVParse_Tree):
             index = itemData.get('codesum')
             assert index is not None, "index cannot be None"
             return index
-        except:
+        except Exception as e:
+            print e
             return super(CSVParse_Gen, self).getIndex(itemData)
 
     def getIndex(self, itemData):

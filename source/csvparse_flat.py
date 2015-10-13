@@ -1,4 +1,4 @@
-from csvparse_abstract import CSVParse_Base
+from csvparse_abstract import CSVParse_Base, ImportItem
 from collections import OrderedDict
 from coldata import ColData_User
 import os
@@ -15,6 +15,14 @@ class CSVParse_Flat(CSVParse_Base):
 
     def sanitizeCell(self, cell):
         return cell
+
+class ImportSpecial(ImportItem):
+    """docstring for ImportSpecial"""
+    def __init__(self, arg):
+        super(ImportSpecial, self).__init__(arg)
+
+    def getID(self):
+        return self.get('ID')
 
 class CSVParse_Special(CSVParse_Flat):
     """docstring for CSVParse_Special"""
@@ -34,10 +42,15 @@ class CSVParse_Special(CSVParse_Flat):
             "XWPS"
         ]
         cols = self.combineLists(cols, extra_cols)
+        try:
+            assert self.itemContainer 
+        except :
+            self.itemContainer = ImportSpecial
+
         super(CSVParse_Special, self).__init__(cols, defaults)
 
     def getID(self, itemData):
-        return itemData.get('ID')
+        return itemData.getID()
 
     def registerItem(self, itemData):
         ID = self.getID(itemData)
@@ -52,7 +65,25 @@ class CSVParse_Special(CSVParse_Flat):
             self.getID,
             singular = True,
             registerName = 'items'
-        )              
+        )          
+
+class ImportUser(ImportItem):
+    """docstring for ImportUser"""
+    def __init__(self, arg):
+        super(ImportUser, self).__init__(arg)
+
+    def getEmail(self):
+        return self.get('E-mail')
+
+    def getMYOBID(self):
+        return self.get('MYOB Card ID')
+
+    def getUsername(self):
+        return self.get('username')
+
+    def getRole(self):
+        return self.get('Role')
+                            
 
 class CSVParse_User(CSVParse_Flat):
     """docstring for CSVParse_User"""
@@ -69,6 +100,10 @@ class CSVParse_User(CSVParse_Flat):
         ])
         cols = self.combineLists( cols, extra_cols )
         defaults = self.combineOrderedDicts( defaults, extra_defaults )
+        try:
+            assert self.itemContainer 
+        except :
+            self.itemContainer = ImportUser
         super(CSVParse_User, self).__init__(cols, defaults)
 
     def clearTransients(self):
@@ -76,16 +111,16 @@ class CSVParse_User(CSVParse_Flat):
         self.roles = OrderedDict()
 
     def getEmail(self, itemData):
-        return itemData.get('E-mail')
+        return itemData.getEmail()
 
     def getMYOBID(self, itemData):
-        return itemData.get('MYOB Card ID')
+        return itemData.getMYOBID()
 
     def getUsername(self, itemData):
-        return itemData.get('username')
+        return itemData.getUsername()
 
     def getRole(self, itemData):
-        return itemData.get('Role')
+        return itemData.getRole()
 
     def registerItem(self, itemData):
         email = self.getEmail(itemData)

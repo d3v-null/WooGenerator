@@ -1,17 +1,55 @@
-from csvparse_abstract import CSVParse_Base
+from csvparse_abstract import CSVParse_Base, ImportItem
 from collections import OrderedDict
 
 DEBUG_TREE = False
+
+class ImportTreeBase(ImportItem):
+    """docstring for ImportTreeItem"""
+    def __init__(self, arg):
+        super(ImportTreeBase, self).__init__(arg)
+
+    def getDepth(self):
+        return self.get('thisDepth')
+
+    def setDepth(self, depth):
+        assert(isinstance(depth, int))
+        self['thisDepth'] = depth
+
+class ImportTreeItem(ImportTreeBase):
+    """docstring for ImportTreeItem"""
+    def __init__(self, arg):
+        super(ImportTreeItem, self).__init__(arg)
+
+    def getSum(self):
+        return self.get('itemsum')
+
+class ImportTreeTaxo(ImportTreeBase):
+    """docstring for ImportTreeTaxo"""
+    def __init__(self, arg):
+        super(ImportTreeTaxo, self).__init__(arg)
+        
+    def getSum(self):
+        return self.get('taxosum')
+
 
 class CSVParse_Tree(CSVParse_Base):
 
     """docstring for CSVParse_Tree"""
     def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth):
+        try:
+            assert( self.itemContainer )
+        except :
+            self.itemContainer = ImportTreeItem
+        try:
+            assert( self.taxoContainer )
+        except :
+            self.taxoContainer = ImportTreeTaxo
         super(CSVParse_Tree, self).__init__(cols, defaults)
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         self.maxDepth  = taxoDepth + itemDepth
         self.metaWidth = metaWidth
+
         if DEBUG_TREE:
             print "TREE initializing: "
             print "-> taxoDepth: ", self.taxoDepth
@@ -24,19 +62,17 @@ class CSVParse_Tree(CSVParse_Base):
         super(CSVParse_Tree, self).clearTransients()
         self.taxos = OrderedDict()
         self.stack = []
-        self.rootData = OrderedDict()
+        # self.rootData = OrderedDict()
 
     # def resolveConflict(self, newItem, oldItem):
     #     return self.combineOrderedDicts(oldItem, newItem)
 
     def getSum(self, itemData):
-        if self.isTaxo(itemData):
-            return itemData['taxosum']
-        elif self.isItem(itemData):
-            return itemData['itemsum']
+        #TODO: deprecate this
+        itemData.getSum()
 
     def assignParent(self, parentData = None, itemData = None):
-        if not parentData: parentData = self.rootData
+        if not parentData: parentData = self.newData()
         assert itemData
         if not parentData.get('children'):
             parentData['children'] = OrderedDict()
@@ -99,18 +135,20 @@ class CSVParse_Tree(CSVParse_Base):
     def sanitizeCell(self, cell):
         return cell
 
-    def processMeta(self, itemData):
+    def processMeta(self, itemData): #overridden later
         pass
 
     # def newData(self):
-    #     data = meta(CSVParse_Tree, self).newData()
+    #     data = super(CSVParse_Tree, self).newData()
     #     return data
 
     def isTaxo(self, itemData):
-        return itemData['thisDepth'] < self.taxoDepth and itemData['thisDepth'] >= 0
+        depth = itemData.getDepth()
+        return depth < self.taxoDepth and depth >= 0
 
     def isItem(self, itemData):
-        return itemData['thisDepth'] >= self.taxoDepth and itemData['thisDepth'] < self.maxDepth        
+        depth = itemData.getDepth()
+        return depth >= self.taxoDepth and depth < self.maxDepth        
 
     def processTaxo(self, itemData):
         self.registerTaxo(itemData) 
@@ -120,6 +158,7 @@ class CSVParse_Tree(CSVParse_Base):
         self.processMeta(itemData)
         super(CSVParse_Tree, self).initializeData(itemData)
         if self.isTaxo(itemData):
+            itemData = self.taxoContainer(itemData) #cast the itemData to a taxo
             self.processTaxo(itemData) 
         parentData = self.getParent(itemData, stack)
         self.assignParent(parentData, itemData)
@@ -129,11 +168,12 @@ class CSVParse_Tree(CSVParse_Base):
             print "TREE started analysing row: ", self.getRowcount(itemData)
 
         #refresh depth and stack
-        itemData['thisDepth'] = self.depth(row)
-        assert itemData['thisDepth'] >= 0, "stack should not be broken"
+        thisDepth = self.depth(row)
+        assert thisDepth >= 0, "stack should not be broken"
+        itemData.setDepth(thisDepth) 
 
-        del self.stack[itemData['thisDepth']:]
-        for depth in range(len(self.stack), itemData['thisDepth']):
+        del self.stack[thisDepth:]
+        for depth in range(len(self.stack), thisDepth):
             layer = self.newData( 
                 thisDepth = depth,
                 rowcount = itemData['rowcount'],
@@ -142,11 +182,11 @@ class CSVParse_Tree(CSVParse_Base):
             self.stack.append(layer)
             self.initializeData(layer, self.stack)
 
-        assert len(self.stack) == itemData['thisDepth'] , "stack should have been properly regreshed"
+        assert len(self.stack) == thisDepth , "stack should have been properly refreshed"
         self.stack.append(itemData)
 
         #fill metadata
-        itemData['meta'] = self.getMeta(row, itemData['thisDepth'])
+        itemData['meta'] = self.getMeta(row, thisDepth)
         #fill the rest
         self.fillData(itemData, row)
 

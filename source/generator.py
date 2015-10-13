@@ -11,7 +11,7 @@ from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special
 from coldata import ColData_Woo, ColData_MYO #, ColData_User
-
+import xml.etree.ElementTree as ET
 
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -34,6 +34,7 @@ flvPath = os.path.join(outFolder , "flattened-variations.csv")
 catPath = os.path.join(outFolder , "categories.csv")
 myoPath = os.path.join(outFolder , "myob.csv")
 bunPath = os.path.join(outFolder , "bundles.csv")
+xmlPath = os.path.join(outFolder , "items.xml")
 
 imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened"
 refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened"
@@ -137,9 +138,10 @@ productParser.analyseFile(genPath)
 products = productParser.getProducts()
 	
 if schema in woo_schemas:
+	allitems 		= productParser.getItems()
 	attributes 	= productParser.attributes
-	categories 	= productParser.categories.values()
-	variations 	= productParser.variations.values()
+	categories 	= productParser.getCategories()
+	variations 	= productParser.getVariations()
 	images 		= productParser.images
 
 import_errors = productParser.errors
@@ -151,7 +153,7 @@ import_errors = productParser.errors
 def joinOrderedDicts(a, b):
 	return OrderedDict(a.items() + b.items())
 
-def exportItems(filePath, colNames, items):
+def exportItemsCSV(filePath, colNames, items):
 	assert filePath, "needs a filepath"
 	assert colNames, "needs colNames"
 	assert items, "meeds items"
@@ -165,6 +167,11 @@ def exportItems(filePath, colNames, items):
 		dictwriter.writerows(items)
 	print "WROTE FILE: ", filePath
 
+# def exportItemsXML(filePath, items):
+# 	root = ET.Element('products')
+# 	for item in items:
+
+
 def onCurrentSpecial(product):
 	return currentSpecial in product.get('spsum')
 
@@ -174,17 +181,23 @@ productCols = colData.getProductCols()
 
 if schema in myo_schemas:
 	#products
-	exportItems(
+	exportItemsCSV(
 		myoPath,
 		colData.getColNames(productCols),
 		products
 	)
 elif schema in woo_schemas:
+	#export items XML
+	# exportItemsXML(
+	# 	xmlPath,
+	# 	allitems	
+	# )
+
 	#products
 	attributeCols = colData.getAttributeCols(attributes)
 	# print 'attributeCols:', attributeCols
 
-	exportItems(
+	exportItemsCSV(
 		flaPath,
 		colData.getColNames(
 			joinOrderedDicts( productCols, attributeCols)
@@ -198,7 +211,7 @@ elif schema in woo_schemas:
 	attributeMetaCols = colData.getAttributeMetaCols(attributes)
 	# print 'attributeMetaCols:', attributeMetaCols
 
-	exportItems(
+	exportItemsCSV(
 		flvPath,
 		colData.getColNames(
 			joinOrderedDicts( variationCols, attributeMetaCols)
@@ -209,7 +222,7 @@ elif schema in woo_schemas:
 	#categories
 	categoryCols = colData.getCategoryCols()
 
-	exportItems(
+	exportItemsCSV(
 		catPath,
 		colData.getColNames(categoryCols),
 		categories
@@ -224,7 +237,7 @@ elif schema in woo_schemas:
 		)
 		if specialProducts:
 			flsPath = os.path.join(outFolder , "flattened-"+currentSpecial+".csv")
-			exportItems(
+			exportItemsCSV(
 					flsPath,
 					colData.getColNames(
 						joinOrderedDicts( productCols, attributeCols)
@@ -237,7 +250,7 @@ elif schema in woo_schemas:
 		)
 		if specialVariations:
 			flvsPath = os.path.join(outFolder , "flattened-variations-"+currentSpecial+".csv")
-			exportItems(
+			exportItemsCSV(
 				flvsPath,
 				colData.getColNames(
 					joinOrderedDicts( variationCols, attributeMetaCols)
