@@ -4,7 +4,6 @@ import re
 import time
 import datetime
 import json
-import csv
 
 def findAllImages(imgString):
     assert type(imgString) == str, "param must be a string not %s"% type(imgString)

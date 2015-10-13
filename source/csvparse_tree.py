@@ -41,11 +41,11 @@ class CSVParse_Tree(CSVParse_Base):
             assert( self.taxoContainer )
         except :
             self.taxoContainer = ImportTreeTaxo
-        super(CSVParse_Tree, self).__init__(cols, defaults)
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         self.maxDepth  = taxoDepth + itemDepth
         self.metaWidth = metaWidth
+        super(CSVParse_Tree, self).__init__(cols, defaults)
 
         if DEBUG_TREE:
             print "TREE initializing: "
@@ -59,17 +59,19 @@ class CSVParse_Tree(CSVParse_Base):
         super(CSVParse_Tree, self).clearTransients()
         self.taxos = OrderedDict()
         self.stack = []
-        # self.rootData = OrderedDict()
+        self.rootData = self.newData()
 
     # def resolveConflict(self, newItem, oldItem):
     #     return self.combineOrderedDicts(oldItem, newItem)
 
     def getSum(self, itemData):
-        #TODO: deprecate this
-        itemData.getSum()
+        if self.isTaxo(itemData):
+            return itemData['taxosum']
+        elif self.isItem(itemData):
+            return itemData['itemsum']
 
     def assignParent(self, parentData = None, itemData = None):
-        if not parentData: parentData = self.newData()
+        if not parentData: parentData = self.rootData
         assert itemData
         if not parentData.get('children'):
             parentData['children'] = OrderedDict()
@@ -135,9 +137,12 @@ class CSVParse_Tree(CSVParse_Base):
     def processMeta(self, itemData): #overridden later
         pass
 
-    # def newData(self):
-    #     data = super(CSVParse_Tree, self).newData()
-    #     return data
+    def newData(self, **kwargs):
+        data = super(CSVParse_Tree, self).newData(**kwargs)
+        if self.isTaxo(data):
+            return self.taxoContainer(data)
+        else: 
+            return data
 
     def isTaxo(self, itemData):
         depth = itemData.getDepth()
@@ -155,7 +160,6 @@ class CSVParse_Tree(CSVParse_Base):
         self.processMeta(itemData)
         super(CSVParse_Tree, self).initializeData(itemData)
         if self.isTaxo(itemData):
-            itemData = self.taxoContainer(itemData) #cast the itemData to a taxo
             self.processTaxo(itemData) 
         parentData = self.getParent(itemData, stack)
         self.assignParent(parentData, itemData)

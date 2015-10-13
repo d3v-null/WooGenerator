@@ -11,15 +11,22 @@ class ImportItem(OrderedDict):
         super(ImportItem, self).__init__(arg)
 
     def getRowcount(self):
+        # print "getting rowcount of ", type(self)
         try:
             count = self['rowcount']
-            if count: return count
+            if count: 
+                # print "returning count: ", count 
+                return count
         except:
             pass
+        # print "returning none"
         return None
 
     def getIndex(self):
         return self.getRowcount()
+
+    def __str__(self):
+        return (str) ( type(self) ) + (str)( self.getIndex() )
 
 class CSVParse_Base(object):
     """docstring for CSVParse_Base"""
