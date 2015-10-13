@@ -167,9 +167,31 @@ def exportItemsCSV(filePath, colNames, items):
 		dictwriter.writerows(items)
 	print "WROTE FILE: ", filePath
 
-# def exportItemsXML(filePath, items):
-# 	root = ET.Element('products')
-# 	for item in items:
+def exportProductsXML(filePath, products, \
+		productCols, variationCols, attributeCols, attributeMetaCols, pricingCols, shippingCols):
+	print "exporting products"
+	for k in productCols.keys():
+		if k in pricingCols.keys() + shippingCols.keys():
+			del productCols[k] 
+	root = ET.Element('products')
+	tree = ET.ElementTree(root)
+	for product in products:
+		productElement = ET.SubElement(root, 'product')
+		for index, data in productCols.iteritems():
+			tag = data.get('tag')
+			# tag = label if label else index
+			tag = tag if tag else index
+			value = product.get(index)
+			if value:
+				# value = unicode(value, 'utf-8')
+				print "value of", tag, "is", value
+				value = str(value).decode('utf8', 'ignore')
+				productFieldElement = ET.SubElement(productElement, tag)
+				productFieldElement.text = value
+			else:
+				print "tag has no value"
+	print ET.dump(root)
+	tree.write(filePath)
 
 
 def onCurrentSpecial(product):
@@ -187,11 +209,6 @@ if schema in myo_schemas:
 		products
 	)
 elif schema in woo_schemas:
-	#export items XML
-	# exportItemsXML(
-	# 	xmlPath,
-	# 	allitems	
-	# )
 
 	#products
 	attributeCols = colData.getAttributeCols(attributes)
@@ -260,6 +277,20 @@ elif schema in woo_schemas:
 	except:
 		pass
 
+	pricingCols = colData.getPricingCols()
+	shippingCols = colData.getShippingCols()
+
+	#export items XML
+	exportProductsXML(
+		xmlPath,
+		products,
+		productCols,
+		variationCols,
+		attributeCols, 
+		attributeMetaCols, 
+		pricingCols,
+		shippingCols
+	)
 
 
 #########################################

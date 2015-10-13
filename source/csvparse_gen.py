@@ -51,10 +51,13 @@ def shorten(reg, subs, str_in):
 class ImportGenMixin(ImportItem):
     """docstring for ImportGenMixin"""
     def getCodesum(self):
-        try: 
-            index = self.get('codesum')
-            assert index is not None
-            return index
+        index = self.get('codesum')
+        assert index is not None
+        return index
+
+    def getIndex(self):
+        try:
+            return self.getCodesum()
         except:
             return super(ImportGenMixin, self).getIndex()
 
@@ -130,9 +133,9 @@ class CSVParse_Gen(CSVParse_Tree):
         #todo: deprecate this
         return itemData.getCodesum() 
 
-    def getIndex(self, itemData):
-        return itemData.getCodesum() 
-        # return self.getCodesum(itemData)
+    # def getIndex(self, itemData):
+    #     return itemData.getCodesum() 
+    #     # return self.getCodesum(itemData)
 
     def registerProduct(self, itemData):
         self.registerAnything(

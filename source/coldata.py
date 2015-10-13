@@ -51,19 +51,19 @@ class ColData_MYO(ColData_Base):
             'label': 'Selling Price',
             'import': True,
             'product': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RNR',{
             'label': 'Price Level B, Qty Break 1',
             'import': True,
             'product': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DNR',{
             'label': 'Price Level C, Qty Break 1',
             'import': True,
             'product': True,
-            'price': True,
+            'pricing': True,
         }),
         ('CVC', {
             'label': 'Custom Field 1',
@@ -120,11 +120,13 @@ class ColData_Woo(ColData_Base):
         }),
         ('codesum',{
             'label':'SKU',
+            'tag':'SKU',
             'product': True,
             'variation': True,
             'category': True,
         }),
         ('itemsum', {
+            'tag':'Title',
             'label':'post_title',
             'product':True, 
         }),
@@ -168,6 +170,7 @@ class ColData_Woo(ColData_Base):
             'import': True,
             'product': True,
             'variation': True,
+            'shipping': True,
         }),
         ('E',{
             'import': True,
@@ -189,8 +192,10 @@ class ColData_Woo(ColData_Base):
             'default':''
         }),
         ('spsum', {
+            'tag': 'active_specials',
             'product':True,
             'variation':True,
+            'pricing':True,
         }),
         ('dprclist', {
             'label': 'meta:dynamic_category_rulesets',
@@ -212,216 +217,223 @@ class ColData_Woo(ColData_Base):
             'product': True,
             # 'category': True
         }),
-        ('price', {
+        ('pricing', {
             'label':'regular_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('sale_price', {
             'label':'sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('sale_price_dates_to', {
             'label':'sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RNR', {
             'label': 'meta:lc_rn_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RNT', {
             'label': 'meta:lc_rn_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RPR', {
             'label': 'meta:lc_rp_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('RPT', {
             'label': 'meta:lc_rp_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WNR', {
             'label': 'meta:lc_wn_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WNT', {
             'label': 'meta:lc_wn_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WPR', {
             'label': 'meta:lc_wp_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('WPT', {
             'label': 'meta:lc_wp_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DNR', {
             'label': 'meta:lc_dn_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DNT', {
             'label': 'meta:lc_dn_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DPR', {
             'label': 'meta:lc_dp_regular_price',
             'import': True,
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('DPT', {
             'label': 'meta:lc_dp_sale_price_dates_to',
             'product': True,
             'variation': True,
-            'price': True,
+            'pricing': True,
         }),
         ('CVC', {
             'label': 'meta:commissionable_value',
             'import': True,
             'product': True,
             'variation': True,
+            'pricing': True,
             'default': 0
         }),
         ('weight', {
             'import': True,
             'product': True,
             'variation': True,
+            'shipping': True,
         }),
         ('length', {
             'import': True,
             'product': True,
             'variation': True,
+            'Shipping':True
         }),
         ('width', {
             'import': True,
             'product': True,
             'variation': True,
+            'shipping': True,
         }),
         ('height', {
             'import': True,
             'product': True,
             'variation': True,
+            'shipping': True,
         }),
         ('stock', {
             'import': True,
             'product': True,
             'variation': True,
+            'inventory':True
         }),
         ('stock_status', {
             'import': True,
             'product': True,
             'variation': True,
+            'inventory':True
         }),
         ('Images',{
             'import': True,
@@ -456,6 +468,12 @@ class ColData_Woo(ColData_Base):
 
     def getCategoryCols(self):
         return self.getExportCols('category')
+
+    def getPricingCols(self):
+        return self.getExportCols('pricing')
+
+    def getShippingCols(self):
+        return self.getExportCols('shipping')
 
     def getAttributeCols(self, attributes):
         attributeCols = OrderedDict()

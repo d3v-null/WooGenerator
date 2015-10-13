@@ -254,13 +254,13 @@ class CSVParse_Woo(CSVParse_Gen):
         itemData['splist'] = splist
 
     def isProduct(self, itemData):
-        return itemData.get('prod_type', '') in ['simple', 'variable', 'composite', 'grouped', 'bundle']
+        return itemData.get('prod_type') in ['simple', 'variable', 'composite', 'grouped', 'bundle']
 
     def isVariable(self, itemData):
-        return itemData.get('prod_type', '') in ['variable']
+        return itemData.get('prod_type') in ['variable']
 
     def isVariation(self, itemData):
-        return itemData.get('prod_type', '') in ['variable-instance']
+        return itemData.get('prod_type') in ['variable-instance']
 
     def processItemtype(self, itemData):
         if self.isItem(itemData) and itemData['itemtype'] in self.prod_types.keys():
