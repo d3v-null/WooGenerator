@@ -1,5 +1,5 @@
 import csv
-import re
+# import re
 from collections import OrderedDict
 import os
 import shutil
@@ -10,7 +10,7 @@ from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special
-from coldata import ColData_Woo, ColData_MYO, ColData_User
+from coldata import ColData_Woo, ColData_MYO #, ColData_User
 
 
 
@@ -35,8 +35,8 @@ catPath = os.path.join(outFolder , "categories.csv")
 myoPath = os.path.join(outFolder , "myob.csv")
 bunPath = os.path.join(outFolder , "bundles.csv")
 
-imgFolder = "../../../flattened/"
-refFolder = "../../../reflattened/"
+imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened"
+refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened"
 logFolder = "../logs/"
 
 thumbsize = 1920, 1200
@@ -63,7 +63,7 @@ schema = "TT"
 # schema = "VT"
 # schema = "TS"
 
-# currentSpecial = ""
+currentSpecial = None
 # currentSpecial = "SP2015-09-18"
 
 #########################################
