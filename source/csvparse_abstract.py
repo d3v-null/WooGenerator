@@ -110,7 +110,7 @@ class CSVParse_Base(object):
         # print "registered", thing
 
     def registerError(self, error, itemData = None):
-        index = self.getIndex(itemData)
+        index = self.getIndex(itemData) if itemData else ""
         error_string = str(error)
         if DEBUG: print "%15s ! %s" % (index, error_string)
         self.registerAnything(

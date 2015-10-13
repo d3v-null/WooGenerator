@@ -2,12 +2,9 @@ from csvparse_abstract import CSVParse_Base, ImportItem
 from collections import OrderedDict
 
 DEBUG_TREE = False
+# DEBUG_TREE = True
 
-class ImportTreeBase(ImportItem):
-    """docstring for ImportTreeItem"""
-    def __init__(self, arg):
-        super(ImportTreeBase, self).__init__(arg)
-
+class ImportTreeMixin:
     def getDepth(self):
         return self.get('thisDepth')
 
@@ -15,7 +12,7 @@ class ImportTreeBase(ImportItem):
         assert(isinstance(depth, int))
         self['thisDepth'] = depth
 
-class ImportTreeItem(ImportTreeBase):
+class ImportTreeItem(ImportItem, ImportTreeMixin):
     """docstring for ImportTreeItem"""
     def __init__(self, arg):
         super(ImportTreeItem, self).__init__(arg)
@@ -23,7 +20,7 @@ class ImportTreeItem(ImportTreeBase):
     def getSum(self):
         return self.get('itemsum')
 
-class ImportTreeTaxo(ImportTreeBase):
+class ImportTreeTaxo(ImportItem, ImportTreeMixin):
     """docstring for ImportTreeTaxo"""
     def __init__(self, arg):
         super(ImportTreeTaxo, self).__init__(arg)

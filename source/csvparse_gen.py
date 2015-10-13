@@ -1,3 +1,4 @@
+from csvparse_abstract import ImportItem
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo
 from collections import OrderedDict
 import functools
@@ -47,12 +48,22 @@ def shorten(reg, subs, str_in):
     #     print " | str_o: ",str_out
     return str_out
 
-class ImportGenItem(ImportTreeItem):
+class ImportGenMixin(ImportItem):
+    """docstring for ImportGenMixin"""
+    def getCodesum(self):
+        try: 
+            index = self.get('codesum')
+            assert index is not None
+            return index
+        except:
+            return super(ImportGenMixin, self).getIndex()
+
+class ImportGenItem(ImportTreeItem, ImportGenMixin):
     """docstring for ImportGenItem"""
     def __init__(self, arg):
         super(ImportGenItem, self).__init__(arg)
 
-class ImportGenTaxo(ImportTreeTaxo):
+class ImportGenTaxo(ImportTreeTaxo, ImportGenMixin):
     """docstring for ImportGenTaxo"""
     def __init__(self, arg):
         super(ImportGenTaxo, self).__init__(arg)     
@@ -116,16 +127,12 @@ class CSVParse_Gen(CSVParse_Tree):
         self.products   = OrderedDict()
 
     def getCodesum(self, itemData):
-        try:
-            index = itemData.get('codesum')
-            assert index is not None, "index cannot be None"
-            return index
-        except Exception as e:
-            print e
-            return super(CSVParse_Gen, self).getIndex(itemData)
+        #todo: deprecate this
+        return itemData.getCodesum() 
 
     def getIndex(self, itemData):
-        return self.getCodesum(itemData)
+        return itemData.getCodesum() 
+        # return self.getCodesum(itemData)
 
     def registerProduct(self, itemData):
         self.registerAnything(
