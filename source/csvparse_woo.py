@@ -1,4 +1,4 @@
-from csvparse_gen import CSVParse_Gen
+from csvparse_gen import CSVParse_Gen, importGenProduct, ImportGenTaxo
 from collections import OrderedDict
 import re
 import time
@@ -25,18 +25,152 @@ def datetotimestamp(datestring):
     assert type(datestring) == str, "param must be a string not %s"% type(datestring)
     return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))
 
-DEBUG_WOO = False
+DEBUG_WOO = True
+
+class ImportWooMixin:
+    """docstring for ImportWooMixin"""
+    def registerImage(self, image):
+        self.registerAnything(
+            image,
+            self['imglist'],
+            # indexer = self.getSum,
+            indexer = self.getObjectRowcount,
+            singular = True,
+            resolver = self.passiveResolver,
+            registerName = 'product categories'
+        )
+
+    def getImages(self):
+        return self['imglist']
+
+class ImportWooProduct(importGenProduct):
+    """docstring for ImportWooProduct"""
+    def __init__(self, *args):
+        super(ImportWooProduct, self).__init__(*args)
+        self['catlist'] = OrderedDict()
+        self['attributes'] = OrderedDict()
+
+    def isFirstOrder(): return False;
+    def isVariable(): return False;
+    def isVariation(): return False;
+
+    def registerCategory(self, catData):
+        self.registerAnything(
+            catData,
+            self['catlist'],
+            # indexer = self.getSum,
+            indexer = self.getObjectRowcount,
+            singular = True,
+            resolver = self.passiveResolver,
+            registerName = 'product categories'
+        )
+
+    def joinCategory(self, catData):
+        self.registerCategory(catData)
+        catData.registerMember(self)
+
+    def getCategories(self):
+        return self.get('catlist', OrderedDict())
+
+    def registerAttribute(self, attr, val):
+        pass
+        #todo: this
+
+    def getAttributes(self):
+        return self.get('attributes', OrderedDict())
+
+class ImportWooSimpleProduct(ImportWooProduct):
+    """docstring for ImportWooSimpleProduct"""
+    def __init__(self, *args):
+        super(ImportWooSimpleProduct, self).__init__(*args)
+        self['prod_type'] = 'simple'
+
+    def isFirstOrder(): return True; 
+
+class ImportWooVariableProduct(ImportWooProduct):
+    """docstring for ImportWooVariableProduct"""
+    def __init__(self, *args):
+        super(ImportWooVariableProduct, self).__init__(*args)
+        self['prod_type'] = 'variable'
+        self['variations'] = OrderedDict()
+
+    def getVariations(self):
+        return self.get('variations', OrderedDict())
+
+    def registerVariation(self):
+        pass
+        #todo: this
+
+    def isFirstOrder(): return True; 
+    def isVariable(): return True; 
+
+class ImportWooVariation(ImportWooProduct):
+    """docstring for ImportWooVariation"""
+    def __init__(self, *args):
+        super(ImportWooVariation, self).__init__(*args)
+        self['prod_type'] = 'product-variation'
+
+    def getStackParentProduct(self):
+        pass
+        #todo: this
+
+    def registerVariable(self):
+        pass
+        #todo: this
+
+    def isVariation(): return True;        
+
+class ImportWooCompositeProduct(ImportWooProduct):
+    """docstring for ImportWooVariableProduct"""
+    def __init__(self, *args):
+        super(ImportWooSimpleProduct, self).__init__(*args)
+        self['prod_type'] = 'composite'
+
+    def isFirstOrder(): return True; 
+
+class ImportWooGroupedProduct(ImportWooProduct):
+    """docstring for ImportWooGroupedProduct"""
+    def __init__(self, *args):
+        super(ImportWooGroupedProduct, self).__init__(*args)
+        self['prod_type'] = 'grouped'
+
+    def isFirstOrder(): return True; 
+
+class ImportWooBundledProduct(ImportWooProduct):
+    """docstring for ImportWooBundledProduct"""
+    def __init__(self, *args):
+        super(ImportWooBundledProduct, self).__init__(*args)
+        self['prod_type'] = 'bundle'
+
+    def isFirstOrder(): return True; 
+
+class ImportWooCategory(ImportGenTaxo):
+    """docstring for ImportWooCategory"""
+    def __init__(self, *args):
+        super(ImportWooCategory, self).__init__(*args) 
+        self['products'] = OrderedDict()
+
+    def registerMember(self, itemData):
+        self.registerAnything(
+            itemData,
+            self['memberlist'],
+            # indexer = self.getSum,
+            indexer = self.getObjectRowcount,
+            singular = True,
+            resolver = self.passiveResolver,
+            registerName = 'product categories'
+        )
 
 class CSVParse_Woo(CSVParse_Gen):
     """docstring for CSVParse_Woo"""
 
-    prod_types = {
-        'S': 'simple',
-        'V': 'variable',
-        'I': 'variable-instance',
-        'C': 'composite',
-        'G': 'grouped',
-        'B': 'bundle',
+    product_types = {
+        'S': ImportWooSimpleProduct,
+        'V': ImportWooVariableProduct,
+        'I': ImportWooVariation,
+        'C': ImportWooCompositeProduct,
+        'G': ImportWooGroupedProduct,
+        'B': ImportWooBundledProduct,
     }
 
     def __init__(self, cols, defaults, schema="", importName="", \
@@ -84,6 +218,8 @@ class CSVParse_Woo(CSVParse_Gen):
         self.dprcRules = dprcRules
         self.dprpRules = dprpRules
         self.specials = specials
+        self.productContainer = ImportWooProduct
+        self.categoryContainer = ImportWooCategory
         if DEBUG_WOO:
             print "WOO initializing: "
             print "-> taxoDepth: ", self.taxoDepth
@@ -106,6 +242,7 @@ class CSVParse_Woo(CSVParse_Gen):
             singular = False,
             registerName = 'images'
         )
+        itemData.registerImage(image)
             # assert( isinstance(image,str) )
             # assert( image is not "" )
             # if image not in self.images.keys():
@@ -120,21 +257,12 @@ class CSVParse_Woo(CSVParse_Gen):
             catData, 
             self.categories, 
             # indexer = self.getSum,
-            indexer = self.getRowcount,
+            indexer = self.getObjectRowcount,
             resolver = self.passiveResolver,
             singular = True,
             registerName = 'categories'
         )
-        if not itemData.get('catlist'): itemData['catlist'] = OrderedDict()
-        self.registerAnything(
-            catData,
-            itemData['catlist'],
-            # indexer = self.getSum,
-            indexer = self.getRowcount,
-            singular = True,
-            resolver = self.passiveResolver,
-            registerName = 'product categories'
-        )
+        itemData.joinCategory(catData)
 
     def registerAttribute(self, itemData, attr, val, var=False):
         # if DEBUG_WOO: print 'registering attribute: ',attr, ': ', val 
@@ -167,11 +295,34 @@ class CSVParse_Woo(CSVParse_Gen):
             if val not in self.attributes[attr]:
                 self.attributes[attr].append(val)
 
-    def registerVariation(self, itemData):
-        self.registerAnything( itemData, self.variations, registerName = 'variations' )
+    def registerVariation(self, parentData, itemData):
+        self.registerAnything( 
+            itemData, 
+            self.variations, 
+            registerName = 'variations' 
+        )
+        if not parentData.get('variations'): parentData['variations'] = OrderedDict()
+        self.registerAnything(
+            itemData,
+            parentData['variations'],
+            indexer = self.getCodesum,
+            singular = True,
+            registerName = "product variations"
+        )
+
+
 
     def processImages(self, itemData):
         # if DEBUG_WOO: print "called processImages"
+
+        imglist = filter(None, findAllImages(itemData.get('Images','')))
+        for image in imglist:
+            self.registerImage(image, itemData)
+
+            
+
+
+
 
         itemData['imglist'] = filter(None, findAllImages(itemData.get('Images','')))
         # if DEBUG_WOO: print " | imglist: ", str(itemData['imglist'])
@@ -180,8 +331,8 @@ class CSVParse_Woo(CSVParse_Gen):
             self.registerImage(image, itemData)
             
         #share images with nearest parent
-        if self.taxoDepth > 1 and itemData['thisDepth'] > self.taxoDepth :
-            parentData = self.stack[-2]
+        if self.taxoDepth > 1 and itemData.getDepth() > self.taxoDepth :
+            parentData = self.stack.getTopParent()
             if not itemData['imglist'] and parentData['imglist']:
                 itemData['imglist'] = parentData['imglist']
             elif itemData['imglist'] and not parentData['imglist']:
@@ -196,24 +347,24 @@ class CSVParse_Woo(CSVParse_Gen):
             if self.isItem(itemData):
                 # print "pricessing extra item categories"
                 extraStack = self.stack[:self.taxoDepth-1]
-                extraStack = self.stack[:self.taxoDepth-1]
-                extraLayer = self.newData(
-                    thisDepth = len(extraStack),
-                    rowcount = itemData['rowcount'],
-                    meta  = [
+                extraLayer = self.fakeLayer(
+                    itemData['rowcount'], 
+                    len(extraStack)
+                    [
                         itemData['name'] + ' Items',
                         itemData['code']
                     ]
                 )
+
                 extraStack.append(extraLayer)
                 self.initializeData(extraLayer, extraStack)
 
-                extraCodes = self.retrieveStack('code', extraStack)
+                extraCodes = extraStack.retrieveKey('code')
                 extraCodesum = self.joinCodes(extraCodes)
 
                 # print "looking for ", extraCodesum
-
-                parentData = self.getParent(extraLayer, extraStack)
+                extraStack.getTopParent()
+                parentData = extraStack.getTopParent()
                 if parentData.get('children'):
                     for child in parentData.get('children').values():
                         if child['codesum'] == extraCodesum:
@@ -253,29 +404,26 @@ class CSVParse_Woo(CSVParse_Gen):
             splist = []
         itemData['splist'] = splist
 
-    def isProduct(self, itemData):
-        return itemData.get('prod_type') in ['simple', 'variable', 'composite', 'grouped', 'bundle']
-
-    def isVariable(self, itemData):
-        return itemData.get('prod_type') in ['variable']
-
-    def isVariation(self, itemData):
-        return itemData.get('prod_type') in ['variable-instance']
-
     def processItemtype(self, itemData):
+        if DEBUG_WOO:
+            print "WOO.processItemtype before isItem: ", itemData.getSum()
         if self.isItem(itemData) and itemData['itemtype'] in self.prod_types.keys():
             itemData['prod_type'] = self.prod_types[itemData['itemtype']]
-
-            if self.isProduct(itemData):
+            if DEBUG_WOO:
+                print "WOO.processItemtype before isProduct: ", itemData.getSum()
+            if itemData.isProduct():
                 for layer in self.stack:
                     self.processCategories(layer)
-                cats = itemData.get('catlist', {}).values()
+                cats = itemData.getCategories().values()
+
+                if DEBUG_WOO:
+                    print "WOO.processItemtype before cats: ", itemData.getSum()
 
                 palist = filter(None, map(
                     lambda cat: cat.get('PA'),
                     cats
                 ))
-                # for attrs in map(self.decodeAttributes, filter(None, self.retrieveStack('PA'))):
+                # for attrs in map(self.decodeAttributes, filter(None, self.stack.retrieveKey('PA'))):
                 for attrs in map(self.decodeAttributes, palist):
                     self.processProductAttributes(itemData, attrs)
 
@@ -285,18 +433,13 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerProduct(itemData)
 
             elif self.isVariation(itemData):
-                parentData = self.stack[-2]
+                parentData = self.stack.getTopParent()
                 assert(self.isProduct(parentData)), 'parent of variable instance should be a product'
                 itemData['parent'] = parentData
                 itemData['parent_SKU'] = parentData['codesum']
                 # self.processSpecials(itemData)
                 self.processVariableAttributes( parentData, itemData, self.decodeAttributes(itemData['VA']))
-                self.registerVariation(itemData)
-
-            itemData['price'] = itemData.get('RNR')
-            itemData['sale_price'] = itemData.get('RNS')
-            # itemData['sale_price_dates_from'] = itemData.get('RNF')
-            # itemData['sale_price_dates_to'] = itemData.get('RNT')
+                self.registerVariation(parentData, itemData)
 
     def joinItems(self, names):
         return ' \xe2\x80\x94 '.join ( filter( None, names ) )
@@ -309,10 +452,9 @@ class CSVParse_Woo(CSVParse_Gen):
             return self.joinItems(fullnames)
 
     def analyseRow(self, row, itemData):
-        itemData = super(CSVParse_Woo, self).analyseRow(row, itemData)
+        super(CSVParse_Woo, self).analyseRow(row, itemData)
         self.processImages(itemData)
         self.processSpecials(itemData)
-        return itemData
 
     def addDynRules(self, itemData, dynType, ruleIDs):
         rules = {
@@ -336,46 +478,45 @@ class CSVParse_Woo(CSVParse_Gen):
             else:
                 self.registerError('rule should exist: %s'%ruleID, itemData)
 
-
-
     def postProcessDyns(self, itemData):
+        print "postProcessDyns", itemData.getCodesum(), itemData.getSum()
         #postProcess DPRCs
         # if self.isProduct(itemData):
-            categories = filter(
-                None,
-                itemData.get('catlist', {}).values()
-            )
-            for cat in categories + [itemData]:
-                # print "%16s is a member of %s" % (itemData['codesum'], cat['taxosum'])
-                dprcString = cat.get('DYNCAT')
-                if dprcString:
-                    # print " -> DPRC", dprcString
-                    dprclist = dprcString.split('|')
-                    self.addDynRules(itemData, 'dprc', dprclist)
-                dprpString = cat.get('DYNPROD')
-                if dprpString:
-                    # print " -> DPRP", dprpString
-                    dprplist = dprpString.split('|')
-                    self.addDynRules(itemData, 'dprp', dprplist)
+        categories = filter(
+            None,
+            itemData.get('catlist', {}).values()
+        )
+        for cat in categories + [itemData]:
+            # print "%16s is a member of %s" % (itemData['codesum'], cat['taxosum'])
+            dprcString = cat.get('DYNCAT')
+            if dprcString:
+                # print " -> DPRC", dprcString
+                dprclist = dprcString.split('|')
+                self.addDynRules(itemData, 'dprc', dprclist)
+            dprpString = cat.get('DYNPROD')
+            if dprpString:
+                # print " -> DPRP", dprpString
+                dprplist = dprpString.split('|')
+                self.addDynRules(itemData, 'dprp', dprplist)
 
-            itemData['dprcsum'] = '<br/>'.join(
-                filter( 
-                    None,
-                    map(
-                        lambda x: x.toHTML(),
-                        itemData.get( 'dprclist','')
-                    )
+        itemData['dprcsum'] = '<br/>'.join(
+            filter( 
+                None,
+                map(
+                    lambda x: x.toHTML(),
+                    itemData.get( 'dprclist','')
                 )
             )
-            itemData['dprpsum'] = '<br/>'.join(
-                filter( 
-                    None,
-                    map(
-                        lambda x: x.toHTML(),
-                        itemData.get('dprplist','')
-                    )
+        )
+        itemData['dprpsum'] = '<br/>'.join(
+            filter( 
+                None,
+                map(
+                    lambda x: x.toHTML(),
+                    itemData.get('dprplist','')
                 )
             )
+        )
         # else:
         #     pass
             #todo maybe add stuff for categories
@@ -546,30 +687,36 @@ class CSVParse_Woo(CSVParse_Gen):
                     print "special does not exist"
                     self.registerError(Exception("special does not exist %s" % special, itemData)) 
 
+            print "setting", itemData.getCodesum(), "price to", itemData.get('RNR')
+            itemData['price'] = itemData.get('RNR')
+            itemData['sale_price'] = itemData.get('RNS')
+            itemData['sale_price_dates_from'] = itemData.get('RNF')
+            itemData['sale_price_dates_to'] = itemData.get('RNT')
+
 
     def analyseFile(self, fileName):
-        value = super(CSVParse_Woo, self).analyseFile(fileName)  
+        objects = super(CSVParse_Woo, self).analyseFile(fileName)  
         #post processing
-        for itemData in self.getItems() + self.getTaxos():
-            print 'POST analysing product', itemData.get('codesum')
+        for itemData in self.taxos.values() + self.items.values():
+            print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
             self.postProcessDyns(itemData)
             self.postProcessCategories(itemData)
             self.postProcessImages(itemData)
             self.postProcessAttributes(itemData)
             self.postProcessSpecials(itemData)
 
-        return value
+        return objects
 
     def getCategories(self):
-        return self.categories.values()
+        return self.categories
         # return self.flatten(self.categories.values())
 
     def getAttributes(self):
-        return self.attributes.values()
+        return self.attributes
         # return self.flatten(self.attributes.values())
 
     def getVariations(self):
-        return self.variations.values()
+        return self.variations
 
 
 class CSVParse_TT(CSVParse_Woo):

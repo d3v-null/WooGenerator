@@ -1,4 +1,4 @@
-from csvparse_abstract import CSVParse_Base, ImportItem
+from csvparse_abstract import CSVParse_Base, ImportObject
 from collections import OrderedDict
 from coldata import ColData_User
 import os
@@ -8,6 +8,9 @@ import re
 usrs_per_file = 1000
 email_regex = "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
 
+class ImportFlat(ImportObject):
+    pass
+
 class CSVParse_Flat(CSVParse_Base):
     """docstring for CSVParse_Flat"""
     def __init__(self, cols, defaults):
@@ -16,13 +19,14 @@ class CSVParse_Flat(CSVParse_Base):
     def sanitizeCell(self, cell):
         return cell
 
-class ImportSpecial(ImportItem):
+class ImportSpecial(ImportFlat):
     """docstring for ImportSpecial"""
-    def __init__(self, arg):
-        super(ImportSpecial, self).__init__(arg)
+    def __init__(self,  data, rowcount, row, ID):
+        super(ImportSpecial, self).__init__(data, rowcount, row)
+        self['ID'] = ID
 
     def getID(self):
-        return self.get('ID')
+        return self['ID']
 
 class CSVParse_Special(CSVParse_Flat):
     """docstring for CSVParse_Special"""
@@ -42,35 +46,30 @@ class CSVParse_Special(CSVParse_Flat):
             "XWPS"
         ]
         cols = self.combineLists(cols, extra_cols)
-        try:
-            assert self.itemContainer 
-        except :
-            self.itemContainer = ImportSpecial
 
         super(CSVParse_Special, self).__init__(cols, defaults)
+        self.itemContainer = ImportSpecial
+        self.itemIndexer = self.getID
 
     def getID(self, itemData):
         return itemData.getID()
 
+    def newObject(self, rowcount, row):
+        retrieved = self.retrieveColFromRow('ID', row)
+        assert retrieved, "must be able to retrieve ID for special"
+        ID = self.sanitizeCell(retrieved)
+        return self.itemContainer( self.defaults.items(), rowcount, row, ID )
+
     def registerItem(self, itemData):
-        ID = self.getID(itemData)
-
-        if not ID:
-            self.registerError(Exception("no rule ID"), itemData )
+        if not self.itemIndexer(itemData):
+            self.registerError(Exception("invalid index"), itemData )
             return
+        super(CSVParse_Flat, self).registerItem(itemData)         
 
-        self.registerAnything(
-            itemData,
-            self.items,
-            self.getID,
-            singular = True,
-            registerName = 'items'
-        )          
-
-class ImportUser(ImportItem):
+class ImportUser(ImportObject):
     """docstring for ImportUser"""
-    def __init__(self, arg):
-        super(ImportUser, self).__init__(arg)
+    def __init__(self, *args):
+        super(ImportUser, self).__init__(*args)
 
     def getEmail(self):
         return self.get('E-mail')
@@ -105,6 +104,7 @@ class CSVParse_User(CSVParse_Flat):
         except :
             self.itemContainer = ImportUser
         super(CSVParse_User, self).__init__(cols, defaults)
+        self.itemIndexer = self.getUsername
 
     def clearTransients(self):
         super(CSVParse_User, self).clearTransients()
@@ -125,16 +125,10 @@ class CSVParse_User(CSVParse_Flat):
     def registerItem(self, itemData):
         email = self.getEmail(itemData)
         if not email or not re.match(email_regex, email):
-            self.registerError( Exception("invalid email address: %s"%email), itemData)
-            return
+            raise Exception("invalid email address: %s"%email)
+        super(CSVParse_User, self).registerItem(itemData)
 
-        self.registerAnything(
-            itemData, 
-            self.items, 
-            self.getUsername,
-            singular = True,
-            registerName = 'items'
-        )
+    def processRoles(self, itemData):
         role = self.getRole(itemData)
         if not self.roles.get(role): self.roles[role] = OrderedDict()
         self.registerAnything(
@@ -148,6 +142,7 @@ class CSVParse_User(CSVParse_Flat):
     def processItem(self, itemData):
         itemData['username'] = self.getMYOBID(itemData)
         super(CSVParse_Flat, self).processItem(itemData)
+        self.processRoles(itemData) 
 
     # def analyzeRow(self, row, itemData):
     #     itemData = super(CSVParse_Flat, self).analyseRow(row, itemData)

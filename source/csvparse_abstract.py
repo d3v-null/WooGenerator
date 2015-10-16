@@ -5,94 +5,24 @@ import pprint
 DEBUG = True
 DEBUG_PARSER = True
 
-class ImportItem(OrderedDict):
-    """docstring for ImportItem"""
-    def __init__(self, arg=None):
-        super(ImportItem, self).__init__(arg)
+class Registrar:
+    def __init__(self):
+        self.objectIndexer = id
+        self.conflictResolver = self.passiveResolver
 
-    def getRowcount(self):
-        # print "getting rowcount of ", type(self)
-        try:
-            count = self['rowcount']
-            if count: 
-                # print "returning count: ", count 
-                return count
-        except:
-            pass
-        # print "returning none"
-        return None
+    def resolveConflict(self, new, old, index, registerName = ''):
+        self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
 
-    def getIndex(self):
-        return self.getRowcount()
+    def getObjectRowcount(self, objectData):
+        return objectData.getRowcount()
 
-    def __str__(self):
-        return (str) ( type(self) ) + (str)( self.getIndex() )
-
-class CSVParse_Base(object):
-    """docstring for CSVParse_Base"""
-
-    def __init__(self, cols, defaults ):
-        super(CSVParse_Base, self).__init__()
-        
-        extra_cols = []
-        extra_defaults = OrderedDict()
-
-        self.cols = self.combineLists( cols, extra_cols )
-        self.defaults = self.combineOrderedDicts( defaults, extra_defaults )
-        self.pp = pprint.PrettyPrinter(indent=2, depth=2)
-        self.indexSingularity = True
-        try:
-            assert self.itemContainer 
-        except :
-            self.itemContainer = ImportItem
-
-        # if DEBUG_PARSER:
-        #     print "Initializing: "
-        #     self.pp.pprint({
-        #         "cols":self.cols,
-        #         "defs":self.defaults
-        #     })
-
-        self.clearTransients()
-
-    def clearTransients(self):
-        self.errors = OrderedDict()
-        self.items = OrderedDict()
-        self.indices = OrderedDict()
-
-    def combineLists(self, a, b):
-        if not a and not b: return []
-        if not a: return b
-        if not b: return a
-        return list(set(a) | set(b))
-
-    def combineOrderedDicts(self, a, b):
-        if not a and not b: return OrderedDict()
-        if not a: return b
-        if not b: return a
-        for key, value in a.items():
-            b[key] = value
-        return b
-
-    def getRowcount(self, itemData):
-        #TODO: deprecate this
-        return itemData.getRowcount()
-
-
-    def getIndex(self, itemData):
-        #TODO: deprecate this
-        return itemData.getIndex()
-        # return self.getRowcount(itemData)
-
-    def resolveConflict(self, newItem, oldItem, index, registerName = ''):
-        self.registerError("Item [index: %s] already exists in register %s"%(index, registerName))
-
-    def passiveResolver(self, newItem, oldItem, index, registerAnything):
+    def passiveResolver(self, new, old, index, registerAnything):
         pass
 
     def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
-        if not resolver: resolver = self.resolveConflict
-        if not indexer: indexer = self.getIndex
+        if resolver is None: resolver = self.conflictResolver
+        if indexer is None: indexer = self.Indexer
+        index = None
         try:
             if callable(indexer):
                 index = indexer(thing)
@@ -116,8 +46,8 @@ class CSVParse_Base(object):
                 register[index].append(thing)
         # print "registered", thing
 
-    def registerError(self, error, itemData = None):
-        index = self.getIndex(itemData) if itemData else ""
+    def registerError(self, error, data = None):
+        index = self.getIndex(data) if data else ""
         error_string = str(error)
         if DEBUG: print "%15s ! %s" % (index, error_string)
         self.registerAnything(
@@ -128,14 +58,71 @@ class CSVParse_Base(object):
             registerName = 'errors'
         )
 
+class ImportObject(OrderedDict, Registrar):
+    """docstring for ImportObject"""
+    def __init__(self, data, rowcount, row):
+        super(ImportObject, self).__init__(data)
+        Registrar.__init__(self)
+        self['rowcount'] = rowcount
+        self.row = row
+        self.initialized = False
 
-    def registerItem(self, itemData):
+    def getRowcount(self):
+        return self['rowcount']
+
+    def getRow(self):
+        return self.row
+
+    def getIndex(self):
+        return self.getRowcount()
+
+    def __str__(self):
+        return (str) ( type(self) ) + (str)( self.getIndex() )     
+
+class listUtils:
+    def combineLists(a, b):
+        if not a:
+            return b if b else []
+        if not b: return a
+        return list(set(a) | set(b))
+
+    def combineOrderedDicts(a, b):
+        if not a:
+            return b if b else OrderedDict()
+        if not b: return a
+        for key, value in a.items():
+            b[key] = value
+        return b
+
+class CSVParse_Base(object, Registrar):
+    """docstring for CSVParse_Base"""
+
+    def __init__(self, cols, defaults ):
+        super(CSVParse_Base, self).__init__()
+        Registrar.__init__(self)
+
+        extra_cols = []
+        extra_defaults = OrderedDict()
+
+        self.cols = listUtils.combineLists( cols, extra_cols )
+        self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        self.pp = pprint.PrettyPrinter(indent=2, depth=2)
+        self.indexSingularity = True
+        self.objectIndexer = self.getObjectRowcount
+        self.objectContainer = ImportObject
+
+    def clearTransients(self):
+        self.errors = OrderedDict()
+        self.indices = OrderedDict()
+        self.objects = OrderedDict()
+
+    def registerObject(self, objectData):
         self.registerAnything(
-            itemData, 
-            self.items, 
-            self.getRowcount,
+            objectData, 
+            self.objects, 
+            self.objectIndexer,
             singular = True,
-            registerName = 'items'
+            registerName = 'objects'
         )
 
     def analyseHeader(self, row):
@@ -160,61 +147,55 @@ class CSVParse_Base(object):
             self.registerError('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+str(e))
             return None
 
-    def newData(self, **kwargs):
-        newData = self.itemContainer(self.defaults.items())
-        for key, val in kwargs.items():
-            newData[key] = val
-        return newData
-
-    def getRowData(self, row, cols):
-        if not cols: cols = self.cols
+    def sanitizeCell(self, cell):
+        return cell   
+             
+    def getRowData(self, row):
         rowData = OrderedDict()
-        for col in cols:
+        for col in self.cols:
             retrieved = self.retrieveColFromRow(col, row)
             if retrieved is not None and retrieved is not '': 
                 rowData[col] = self.sanitizeCell(retrieved)
+        return rowData
 
-    def processItem(self, itemData):
-        self.registerItem(itemData)
+    def newObject(self, rowcount, row):
+        defaultData = self.defaults.items()
+        rowData = self.getRowData(row)
+        allData = listUtils.combineOrderedDicts(rowData, defaultData)
+        return self.objectContainer(allData, rowcount, row)
 
-    def isItem(self, itemData):
-        return True
+    def initializeObject(self, objectData):
+        pass
 
-    def fillData(self, itemData, row):
-        for col in self.cols:
-            # print "retrieving %s from row" % col
-            retrieved = self.retrieveColFromRow(col, row)
-            # print " -> retrieved %s" % str(retrieved)
-            # if retrieved is not None and retrieved is not '': 
-            if retrieved: 
-                itemData[col] = self.sanitizeCell(retrieved)
+    # def processObject(self, objectData):
 
-    def initializeData(self, itemData):
-        if self.isItem(itemData):
-            self.processItem(itemData)        
-
-    def analyseRow(self, row, itemData): #overridden by child classes
-        if DEBUG_PARSER: 
-            print "BASE is analysing row: "
-            self.pp.pprint(itemData.items())
-        self.fillData(itemData, row)
-        self.initializeData(itemData)
-        return itemData
+    def analyseObject(self, objectData):
+        self.initializeObject(objectData)
+        objectData.initialized = True;
+        # self.processObject(objectData)
+        self.registerObject(objectData)
 
     def analyseFile(self, fileName):
         # if DEBUG_PARSER: print "Analysing file: ", self.filePath
+        self.clearTransients()
+
         with open(fileName) as filePointer:
             csvreader = csv.reader(filePointer, strict=True)
-
+            objects = []
             for rowcount, row in enumerate(csvreader):
                 if not self.indices :
                     self.analyseHeader(row)
                     continue
-                itemData = self.newData( rowcount = rowcount)
                 try:
-                    itemData = self.analyseRow(row, itemData)
+                    objectData = self.newObject( rowcount, row )
+                except Exception as e:
+                    self.registerError(str(e))
+                try:
+                    self.analyseObject(objectData) 
                 except AssertionError as e:
-                    self.registerError(str(e), itemData)
+                    self.registerError(str(e), objectData)
+            return objects
+        return None
 
-    def getItems(self):
-        return self.items.values()
+    def getObjects(self):
+        return self.objects

@@ -1,5 +1,5 @@
 import os
-from csvparse_tree import CSVParse_Tree
+from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo
 import bleach
 import re
 from collections import OrderedDict
@@ -8,26 +8,34 @@ from collections import OrderedDict
 def sanitizeClass(string):
     return re.sub('[^a-z]', '', string.lower())
 
-class DynRule(object):
+class ImportDynRuleLine(ImportTreeItem):
+    """docstring for ImportDynRuleLine"""
+    # def __init__(self, *args):
+    #     super(ImportDynRuleLine, self).__init__(*args)    
 
-    """docstring for DynRule"""
-    def __init__(self, ruleData={}):
-        super(DynRule, self).__init__()
-        self.ruleData = ruleData
-        self.ruleLines = []
+class ImportDynRule(ImportTreeTaxo):
 
-    def addRuleData(self, ruleData):
-        self.ruleData = ruleData
+    """docstring for ImportDynRule"""
+    def __init__(self, *args):
+        super(ImportDynRule, self).__init__(*args)
+        # self.ruleData = ruleData
+        self['ruleLines'] = []
+
+    def getID(self):
+        return self.get('ID')
+
+    # def addRuleData(self, ruleData):
+    #     self.ruleData = ruleData
 
     def addLineData(self, ruleLineData):
         if ruleLineData:
-            self.ruleLines.append(ruleLineData)
+            self['children'].append(ruleLineData)
 
     def getRuleLines(self):
-        return self.ruleLines
+        return self['children']
 
     def getColNames(self, ruleMode='BULK'):
-        ruleMode = self.ruleData.get('Rule Mode', 'BULK')
+        ruleMode = self.get('Rule Mode', 'BULK')
         if ruleMode == 'BULK' or not ruleMode:
             return OrderedDict([
                 ('Min ( Buy )', 'From'), 
@@ -44,16 +52,16 @@ class DynRule(object):
             ])       
 
     def __repr__(self):
-        rep = "<DynRule | " 
+        rep = "<ImportDynRule | " 
         rep += ', '.join( 
             map(
-                lambda x: str( (x, self.ruleData.get(x,'')) ),
+                lambda x: str( (x, self.get(x,'')) ),
                 ['Qty. Base', 'Rule Mode', 'Roles']
             )
         ) 
-        if self.ruleLines:
+        if self.getRuleLines():
             rep += ' | '
-            rep += ', '.join([line.get('Meaning', '') for line in self.ruleLines])
+            rep += ', '.join([line.get('Meaning', '') for line in self.getRuleLines()])
         rep += ' >'
         return rep
 
@@ -68,7 +76,7 @@ class DynRule(object):
             html +=   bleach.clean(name)
             html += '</th>'
         html +=   '</tr></thead>'
-        for ruleLineData in self.ruleLines:
+        for ruleLineData in self.getRuleLines():
             lineType = ruleLineData.get('Discount Type','')
             html += '<tr>'
             for col in colNames.keys():
@@ -98,29 +106,30 @@ class CSVParse_Dyn(CSVParse_Tree):
 
         cols = self.combineLists(cols, extra_cols)
         defaults = self.combineOrderedDicts(extra_defaults, defaults)
-
         super(CSVParse_Dyn, self).__init__( cols, defaults, \
                                 taxoDepth=1, itemDepth=1, metaWidth=0)
+        self.itemContainer = ImportDynRuleLine
+        self.taxoContainer = ImportDynRule
 
-    def clearTransients(self):
-        super(CSVParse_Dyn, self).clearTransients()
-        self.rules = {}
+    # def clearTransients(self):
+    #     super(CSVParse_Dyn, self).clearTransients()
+    #     self.rules = {}
 
-    def getRuleData(self, itemData):
-        ruleID = itemData['ID']
-        assert ruleID, 'ruleID must exist to register rule'
-        if not ruleID in self.rules.keys():
-            self.rules[ruleID] = DynRule()
-        return self.rules[ruleID]        
+    # def getRuleData(self, itemData):
+    #     ruleID = itemData['ID']
+    #     assert ruleID, 'ruleID must exist to register rule'
+    #     if not ruleID in self.rules.keys():
+    #         self.rules[ruleID] = ImportDynRule(itemData)
+    #     return self.rules[ruleID]        
 
-    def registerRuleLine(self, parentData, itemData):
-        ruleData = self.getRuleData(parentData)
-        ruleData.addLineData(itemData)
+    # def registerRuleLine(self, parentData, itemData):
+    #     ruleData = self.getRuleData(parentData)
+    #     ruleData.addLineData(itemData)
 
-    def registerRule(self, itemData):
-        ruleData = self.getRuleData(itemData)
-        ruleData.addRuleData(itemData)  
-        print "registering rule ", itemData  
+    # def registerRule(self, itemData):
+    #     ruleData = self.getRuleData(itemData)
+    #     ruleData.addRuleData(itemData)  
+    #     print "registering rule ", itemData  
 
     def depth(self, row):
         for i,cell in enumerate(row):
@@ -131,15 +140,15 @@ class CSVParse_Dyn(CSVParse_Tree):
                     return 1
         return -1
 
-    def processItem(self, itemData):
-        super(CSVParse_Dyn, self).processItem(itemData)
-        assert len(self.stack) > 1, "Item must have a parent since taxoDepth = 1"
-        parentData = self.stack[-2]
-        self.registerRuleLine(parentData, itemData)
+    # def processItem(self, itemData):
+    #     super(CSVParse_Dyn, self).processItem(itemData)
+        # assert len(self.stack) > 1, "Item must have a parent since taxoDepth = 1"
+        # parentData = self.stack[-2]
+        # self.registerRuleLine(parentData, itemData)
 
-    def processTaxo(self, itemData):
-        super(CSVParse_Dyn, self).processTaxo(itemData)
-        self.registerRule(itemData)
+    # def processTaxo(self, itemData):
+    #     super(CSVParse_Dyn, self).processTaxo(itemData)
+    #     self.registerRule(itemData)
 
     # def analyseRow(self, row, itemData):
     #     itemData = super(CSVParse_Dyn, self).analyseRow(row, itemData)

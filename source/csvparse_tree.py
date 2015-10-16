@@ -1,51 +1,131 @@
-from csvparse_abstract import CSVParse_Base, ImportItem
+from csvparse_abstract import CSVParse_Base, ImportObject
 from collections import OrderedDict
 
 DEBUG_TREE = False
-# DEBUG_TREE = True
+DEBUG_TREE = True
 
-class ImportTreeMixin:
-    def getDepth(self):
-        return self.get('thisDepth')
+class ImportTreeBase(ImportObject):
+    def __init__(self, data, rowcount, row, depth, meta=None, parent=None):
+        super(ImportTreeBase, self).__init__(data, rowcount, row)
+        self.setDepth(depth)
+        self.meta = meta
+        self.parent = parent
+        self.children = OrderedDict()
+        self.parentIndexer = self.getObjectRowcount
+        self.childIndexer = self.getObjectRowcount
+        self.processMeta()
+
+    def getParent(self):
+        return self.parent
+
+    def getAncestors(self):
+        "gets all ancestors not including self or root"
+        this = self.getParent()
+        ancestors = []
+        while this and not this.isRoot():
+            ancestors.append(this)
+        return ancestors
+
+    def getAncestorKey(self, key):
+        ancestors = self.getAncestors()
+        return [ancestor[key] for ancestor in ancestors]
+
+    def registerChild(self, childData):
+        assert childData, "childData must be valid"
+        self.registerAnything(
+            childData, 
+            self.getChildren(),
+            indexer = self.childIndexer,
+            singular = True,
+            # resolver = self.passiveResolver,
+            registerName = 'parent'
+        )
+
+    def getChildren(self):
+        return self.children
 
     def setDepth(self, depth):
         assert(isinstance(depth, int))
-        self['thisDepth'] = depth
+        self.depth = depth
 
-class ImportTreeItem(ImportItem, ImportTreeMixin):
+    def getDepth(self):
+        return self.depth
+
+    def getMeta(self):
+        return self.meta
+
+    def processMeta(self, stack):
+        pass
+
+    def isItem(self): return False
+    def isTaxo(self): return False
+    def isRoot(self): return False
+
+class ImportTreeRoot(ImportTreeBase):
+    def __init__(self):
+        data = OrderedDict()
+        rowcount = -1
+        row = []
+        depth = -1
+        meta = None
+        parent = None
+        super(ImportTreeRoot, self).__init__(data, rowcount, row, depth, meta, parent)
+
+    def isRoot(self): return True
+
+class ImportTreeItem(ImportTreeBase):
     """docstring for ImportTreeItem"""
-    def __init__(self, arg):
-        super(ImportTreeItem, self).__init__(arg)
+    def __init__(self, *args):
+        super(ImportTreeItem, self).__init__(*args)
 
-    def getSum(self):
-        return self.get('itemsum')
+    def isItem(self): return True
 
-class ImportTreeTaxo(ImportItem, ImportTreeMixin):
+class ImportTreeTaxo(ImportTreeBase):
     """docstring for ImportTreeTaxo"""
-    def __init__(self, arg):
-        super(ImportTreeTaxo, self).__init__(arg)
-        
-    def getSum(self):
-        return self.get('taxosum')
+    def __init__(self, *args):
+        super(ImportTreeTaxo, self).__init__(*args)
 
+    def isTaxo(self): return True
+
+class ImportStack(list):
+    def topHasParent(self):
+        return len(self) > 1
+
+    def getTopParent(self):
+        if self.topHasParent():
+            return self[-2]
+        else:
+            return None
+
+    def isEmpty(self):
+        return len(self) is not 0
+
+    def getTop(self):
+        return None if self.isEmpty() else self[-1]
+
+    def retrieveKey(self, key):
+        vals = []
+        for layer in self:
+            try:
+                vals.append(layer[key])
+            except (IndexError, KeyError):
+                vals.append('')
+        return vals  
 
 class CSVParse_Tree(CSVParse_Base):
 
     """docstring for CSVParse_Tree"""
     def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth):
-        try:
-            assert( self.itemContainer )
-        except :
-            self.itemContainer = ImportTreeItem
-        try:
-            assert( self.taxoContainer )
-        except :
-            self.taxoContainer = ImportTreeTaxo
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         self.maxDepth  = taxoDepth + itemDepth
         self.metaWidth = metaWidth
         super(CSVParse_Tree, self).__init__(cols, defaults)
+        self.itemContainer = ImportTreeItem
+        self.itemIndexer = self.getObjectRowcount
+        self.taxoContainer = ImportTreeTaxo
+        self.taxoIndexer = self.getObjectRowcount
+        self.rootContainer = ImportTreeRoot
 
         if DEBUG_TREE:
             print "TREE initializing: "
@@ -57,59 +137,46 @@ class CSVParse_Tree(CSVParse_Base):
         
     def clearTransients(self):
         super(CSVParse_Tree, self).clearTransients()
+        self.items = OrderedDict()
         self.taxos = OrderedDict()
-        self.stack = []
-        self.rootData = self.newData()
-
-    # def resolveConflict(self, newItem, oldItem):
-    #     return self.combineOrderedDicts(oldItem, newItem)
-
-    def getSum(self, itemData):
-        if self.isTaxo(itemData):
-            return itemData['taxosum']
-        elif self.isItem(itemData):
-            return itemData['itemsum']
+        self.stack = ImportStack()
+        self.rootData = self.rootContainer()
 
     def assignParent(self, parentData = None, itemData = None):
         if not parentData: parentData = self.rootData
-        assert itemData
-        if not parentData.get('children'):
-            parentData['children'] = OrderedDict()
-
-        self.registerAnything(
-            itemData, 
-            parentData['children'],
-            indexer = self.getRowcount,
-            singular = True,
-            # resolver = self.passiveResolver,
-            registerName = 'parent'
-        )
-
-        if not itemData.get('parents'):
-            itemData['parents'] = {}
-
-        self.registerAnything(
-            parentData,
-            itemData['parents'],
-            indexer = self.getRowcount,
-            singular  = True,
-            registerName = 'child'
-        )
+        parentData.registerChild(itemData)
+        itemData.registerParent(parentData)
     
-    def registerTaxo(self, itemData):
+    def registerItem(self, itemData):
         self.registerAnything(
             itemData, 
+            self.items, 
+            self.itemIndexer,
+            singular = True,
+            registerName = 'items'
+        )    
+
+    def registerTaxo(self, taxoData):
+        self.registerAnything(
+            taxoData, 
             self.taxos, 
-            indexer = self.getRowcount,
+            indexer = self.taxoIndexer,
             singular = True,
             # resolver = self.passiveResolver,
             registerName = 'taxos',
         )
 
-    def depth(self, row): #overridden by child classes
-        pass
+    def registerObject(self, objectData):
+        super(CSVParse_Tree, self).registerObject(objectData)
+        if objectData.isItem():
+            self.registerItem(objectData)
+        if objectData.isTaxo():
+            self.registerTaxo(objectData)
 
-    def getMeta(self, row, thisDepth):
+    def depth(self, row): #overridden by child classes
+        return 0
+
+    def extractMeta(self, row, thisDepth):
         # return [row[thisDepth+i*self.maxDepth]for i in range(self.metaWidth)]
         meta = [''] * self.metaWidth
         if row:
@@ -120,86 +187,67 @@ class CSVParse_Tree(CSVParse_Base):
                     self.registerError("could not get meta["+str(i)+"] | "+str(e))
         return meta
 
-    def hasParent(self, itemData, stack=None):
-        if not stack: stack = self.stack
-        return len(stack) > 1
+    def isTaxoDepth(self, depth):
+        return depth < self.taxoDepth and depth >= 0
 
-    def getParent(self, itemData, stack=None):
-        if not stack: stack = self.stack
-        if self.hasParent(itemData, stack):
-            return stack[-2]
+    def isItemDepth(self, depth):
+        return depth >= self.taxoDepth and depth < self.maxDepth    
+
+    def newObject(self, rowcount, row, depth=None, stack=None):
+        if depth is None: depth = self.depth( row )
+        if stack is None: stack = self.stack
+        objectData = super(CSVParse_Tree, self).newObject(rowcount, row)
+        meta = self.extractMeta(row, depth)
+        parent = self.stack.getTop()
+        if parent is None: parent = self.rootData
+        if self.isTaxoDepth(depth):
+            container = self.taxoContainer
         else:
-            return None
-
-    def sanitizeCell(self, cell):
-        return cell
+            assert self.isItemDepth(depth), "sanity check"
+            container = self.itemContainer
+        return container(objectData, rowcount, row, depth, meta, parent)
 
     def processMeta(self, itemData): #overridden later
         pass
 
-    def newData(self, **kwargs):
-        data = super(CSVParse_Tree, self).newData(**kwargs)
-        if self.isTaxo(data):
-            return self.taxoContainer(data)
-        else: 
-            return data
+    def initializeObject(self, objectData):
+        self.processMeta(objectData)
+        super(CSVParse_Tree, self).initializeObject(objectData)
+        parentData = self.getStackParent()
+        self.assignParent(parentData, objectData)
 
-    def isTaxo(self, itemData):
-        depth = itemData.getDepth()
-        return depth < self.taxoDepth and depth >= 0
+    # def processObject(self, objectData):
+    #     pass
 
-    def isItem(self, itemData):
-        depth = itemData.getDepth()
-        return depth >= self.taxoDepth and depth < self.maxDepth        
-
-    def processTaxo(self, itemData):
-        self.registerTaxo(itemData) 
-
-    def initializeData(self, itemData, stack=None):
-        if not stack: stack = self.stack
-        self.processMeta(itemData)
-        super(CSVParse_Tree, self).initializeData(itemData)
-        if self.isTaxo(itemData):
-            self.processTaxo(itemData) 
-        parentData = self.getParent(itemData, stack)
-        self.assignParent(parentData, itemData)
-
-    def analyseRow(self, row, itemData):
-        if DEBUG_TREE: 
-            print "TREE started analysing row: ", self.getRowcount(itemData)
-
-        #refresh depth and stack
-        thisDepth = self.depth(row)
+    def refreshStack(self, objectData):
+        thisDepth = objectData.getDepth()
         assert thisDepth >= 0, "stack should not be broken"
-        itemData.setDepth(thisDepth) 
 
         del self.stack[thisDepth:]
         for depth in range(len(self.stack), thisDepth):
-            layer = self.newData( 
-                thisDepth = depth,
-                rowcount = itemData['rowcount'],
-                meta =  self.getMeta(None, depth),
-            )
+            layer = self.newObject(objectData.getRowcount(), objectData.getRow(), depth)
             self.stack.append(layer)
-            self.initializeData(layer, self.stack)
+            self.initializeObject(layer)
 
         assert len(self.stack) == thisDepth , "stack should have been properly refreshed"
-        self.stack.append(itemData)
+        self.stack.append(objectData)
 
-        #fill metadata
-        itemData['meta'] = self.getMeta(row, thisDepth)
-        #fill the rest
-        self.fillData(itemData, row)
+    def analyseObject(self, objectData):
+        self.refreshStack(objectData)
+        super(CSVParse_Tree, self).analyseObject(objectData)
 
-        self.initializeData(itemData)
+    def verifyItem(self, itemData):
+        index = self.itemIndexer(itemData)
+        itemID = id(itemData)
+        lookupData = self.items[index]
+        lookupID = id(lookupData)
+        assert itemID == lookupID, "item has deviated from its place in items"
 
-        if DEBUG_TREE: 
-            print "TREE finished analysing row: ", self.getSum(itemData)
+    # def analyseFile(self, fileName):
+    #     super(CSVParse_Tree, self).analyseFile(fileName)
 
-        return itemData
-
-    def analyseFile(self, fileName):
-        super(CSVParse_Tree, self).analyseFile(fileName)
+    def getItems(self):
+        return self.items
 
     def getTaxos(self):
-        return self.taxos.values()
+        return self.taxos

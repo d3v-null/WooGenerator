@@ -84,10 +84,10 @@ elif schema in woo_schemas:
 
 	dynParser = CSVParse_Dyn()
 	dynParser.analyseFile(dprcPath)
-	dprcRules = dynParser.rules
+	dprcRules = dynParser.taxos
 	dynParser.clearTransients()
 	dynParser.analyseFile(dprpPath)
-	dprpRules = dynParser.rules
+	dprpRules = dynParser.taxos
 	specialParser = CSVParse_Special()
 	specialParser.analyseFile(specPath)
 	specials = specialParser.items
@@ -131,17 +131,16 @@ elif schema in woo_schemas:
 		)
 	# usrParser = CSVParse_Usr()
 
-productParser.analyseFile(genPath)
+objects = productParser.analyseFile(genPath)
 
 # if schema in woo_schemas:
 
 products = productParser.getProducts()
 	
 if schema in woo_schemas:
-	allitems 		= productParser.getItems()
 	attributes 	= productParser.attributes
-	categories 	= productParser.getCategories()
-	variations 	= productParser.getVariations()
+	categories 	= productParser.categories
+	variations 	= productParser.variations
 	images 		= productParser.images
 
 import_errors = productParser.errors
@@ -175,8 +174,8 @@ def exportProductsXML(filePath, products, \
 			del productCols[k] 
 	root = ET.Element('products')
 	tree = ET.ElementTree(root)
-	for product in products:
-		productElement = ET.SubElement(root, 'product')
+	for sku, product in products.items():
+		productElement = ET.SubElement(root, 'product', {'id':sku})
 		for index, data in productCols.iteritems():
 			tag = data.get('tag')
 			# tag = label if label else index
@@ -184,13 +183,20 @@ def exportProductsXML(filePath, products, \
 			value = product.get(index)
 			if value:
 				# value = unicode(value, 'utf-8')
-				print "value of", tag, "is", value
+				# print "value of", tag, "is", value
 				value = str(value).decode('utf8', 'ignore')
 				productFieldElement = ET.SubElement(productElement, tag)
 				productFieldElement.text = value
 			else:
-				print "tag has no value"
-	print ET.dump(root)
+				pass
+				# print "tag",tag,"has no value"
+
+		variations = product.getVariations()
+		if variations:
+			variationsElement = ET.SubElement(productElement, 'variations')		
+			for vsku, variation in variations.items():
+				ET.SubElement(variationsElement, 'variation', {'id':vsku})
+	# print ET.dump(root)
 	tree.write(filePath)
 
 
@@ -206,7 +212,7 @@ if schema in myo_schemas:
 	exportItemsCSV(
 		myoPath,
 		colData.getColNames(productCols),
-		products
+		products.values()
 	)
 elif schema in woo_schemas:
 
@@ -219,7 +225,7 @@ elif schema in woo_schemas:
 		colData.getColNames(
 			joinOrderedDicts( productCols, attributeCols)
 		),
-		products
+		products.values()
 	)
 
 	#variations
@@ -233,7 +239,7 @@ elif schema in woo_schemas:
 		colData.getColNames(
 			joinOrderedDicts( variationCols, attributeMetaCols)
 		),
-		variations
+		variations.values()
 	)
 
 	#categories
@@ -242,15 +248,15 @@ elif schema in woo_schemas:
 	exportItemsCSV(
 		catPath,
 		colData.getColNames(categoryCols),
-		categories
+		categories.values()
 	)
 
 	#specials
 	try:
-		assert( currentSpecial, "currentSpecial should be set")
+		assert currentSpecial, "currentSpecial should be set"
 		specialProducts = filter(
 			onCurrentSpecial,
-			products
+			products.values()
 		)
 		if specialProducts:
 			flsPath = os.path.join(outFolder , "flattened-"+currentSpecial+".csv")
@@ -263,7 +269,7 @@ elif schema in woo_schemas:
 				)
 		specialVariations = filter(
 			onCurrentSpecial,
-			variations
+			variations.values()
 		)
 		if specialVariations:
 			flvsPath = os.path.join(outFolder , "flattened-variations-"+currentSpecial+".csv")

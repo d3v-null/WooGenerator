@@ -1,4 +1,4 @@
-from csvparse_gen import CSVParse_Gen
+from csvparse_gen import CSVParse_Gen, ImportGenProduct
 from collections import OrderedDict
 from coldata import ColData_MYO
 import time
@@ -11,6 +11,10 @@ class CSVParse_MYO(CSVParse_Gen):
 
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
+
+        product_types = {
+            'Y': ImportGenProduct
+        }
 
         extra_cols = [ 'WNRC', 'RNRC', 'HTML Description' ]
 
