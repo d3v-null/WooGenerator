@@ -14,6 +14,7 @@ class ImportTreeBase(ImportObject):
         self.parentIndexer = self.getObjectRowcount
         self.childIndexer = self.getObjectRowcount
         self.processMeta()
+        self.verifyMeta()
 
     def getParent(self):
         return self.parent
@@ -54,8 +55,8 @@ class ImportTreeBase(ImportObject):
     def getMeta(self):
         return self.meta
 
-    def processMeta(self, stack):
-        pass
+    def processMeta(self, stack): pass
+    def verifyMeta(self): pass
 
     def isItem(self): return False
     def isTaxo(self): return False
@@ -80,12 +81,20 @@ class ImportTreeItem(ImportTreeBase):
 
     def isItem(self): return True
 
+    def getItemAncestors(self):
+        ancestors = self.getAncestors
+        return filter( lambda x: x.isItem(), ancestors)    
+
 class ImportTreeTaxo(ImportTreeBase):
     """docstring for ImportTreeTaxo"""
     def __init__(self, *args):
         super(ImportTreeTaxo, self).__init__(*args)
 
     def isTaxo(self): return True
+
+    def getTaxoAncestors(self):
+        ancestors = self.getAncestors
+        return filter( lambda x: x.isTaxo(), ancestors)  
 
 class ImportStack(list):
     def topHasParent(self):

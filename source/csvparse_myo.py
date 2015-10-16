@@ -222,14 +222,14 @@ class CSVParse_MYO(CSVParse_Gen):
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
         if DEBUG_MYO: print "csvparse initialized with cols:",str(extra_cols)
 
-    def joinDescs(self, descs, fullnames):
-        return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
+    # def joinDescs(self, descs, fullnames):
+    #     return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
 
-    def processItemtype(self, itemData):
-        if itemData['itemtype'] == 'Y':
-            itemData['item_name'] = itemData['itemsum'][:32]
-            # itemData['description'] = itemData['descsum'][:]
-            self.registerProduct(itemData)        
+    # def processItemtype(self, itemData):
+    #     if itemData['itemtype'] == 'Y':
+    #         itemData['item_name'] = itemData['itemsum'][:32]
+    #         # itemData['description'] = itemData['descsum'][:]
+    #         self.registerProduct(itemData)        
 
 if __name__ == '__main__':
     print "Testing MYO script..."

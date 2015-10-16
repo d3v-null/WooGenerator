@@ -29,26 +29,54 @@ DEBUG_WOO = True
 
 class ImportWooMixin:
     """docstring for ImportWooMixin"""
+    attributes = OrderedDict()
+    imglistKey = 'imglist'
+    # attributesKey = 'attributes'
+
     def registerImage(self, image):
-        self.registerAnything(
-            image,
-            self['imglist'],
-            # indexer = self.getSum,
-            indexer = self.getObjectRowcount,
-            singular = True,
-            resolver = self.passiveResolver,
-            registerName = 'product categories'
-        )
+        assert type(image) == str
+        thisImages = self.getImages()
+        if image not in thisImages:
+            thisImages.append(image)
+            parent = self.getParent()
+            parentImages = parent.getImages()
+            if not parentImages:
+                parent.registerImage(image)
 
     def getImages(self):
-        return self['imglist']
+        return self.get(self.imglistKey, [])
+
+    def registerAttribute(self, attr, val):
+        var = self.isItem() and self.isVariation()
+        attrs = self.getAttributes()
+        if attr not in attrs:
+            attrs[attr] = {
+                'values':[val],
+                'visible':1,
+                'variation':0
+            }
+            if var:
+                attrs[attr]['default'] = val
+        elif val not in attrs[attr]['values'] :
+            attrs[attr]['values'].append(val)
+        if var:
+            if not attrs[attr]['default']:
+                attrs[attr]['default'] = val
+            attrs[attr]['variation'] = 1
+
+    def getAttributes(self):
+        try:
+            return self.attributes
+        except:
+            return OrderedDict()
 
 class ImportWooProduct(importGenProduct):
     """docstring for ImportWooProduct"""
+
     def __init__(self, *args):
         super(ImportWooProduct, self).__init__(*args)
-        self['catlist'] = OrderedDict()
-        self['attributes'] = OrderedDict()
+        self[self.catlistKey] = OrderedDict()
+        self[self.attributesKey] = OrderedDict()
 
     def isFirstOrder(): return False;
     def isVariable(): return False;
@@ -57,9 +85,9 @@ class ImportWooProduct(importGenProduct):
     def registerCategory(self, catData):
         self.registerAnything(
             catData,
-            self['catlist'],
+            self.categories,
             # indexer = self.getSum,
-            indexer = self.getObjectRowcount,
+            indexer = catData.getRowcount,
             singular = True,
             resolver = self.passiveResolver,
             registerName = 'product categories'
@@ -70,14 +98,13 @@ class ImportWooProduct(importGenProduct):
         catData.registerMember(self)
 
     def getCategories(self):
-        return self.get('catlist', OrderedDict())
-
-    def registerAttribute(self, attr, val):
-        pass
-        #todo: this
+        return self.categories
 
     def getAttributes(self):
         return self.get('attributes', OrderedDict())
+
+    def getNameDelimeter(self):
+        return ' \xe2\x80\x94 '
 
 class ImportWooSimpleProduct(ImportWooProduct):
     """docstring for ImportWooSimpleProduct"""
@@ -89,17 +116,23 @@ class ImportWooSimpleProduct(ImportWooProduct):
 
 class ImportWooVariableProduct(ImportWooProduct):
     """docstring for ImportWooVariableProduct"""
+
     def __init__(self, *args):
         super(ImportWooVariableProduct, self).__init__(*args)
         self['prod_type'] = 'variable'
-        self['variations'] = OrderedDict()
+        self[self.variationsKey] = OrderedDict()
+
+    def registerVariation(self, varData):
+        self.registerAnything(
+            varData,
+            self.variations,
+            indexer = varData.getCodesum,
+            singular = True,
+            registerName = "product variations"
+        )
 
     def getVariations(self):
-        return self.get('variations', OrderedDict())
-
-    def registerVariation(self):
-        pass
-        #todo: this
+        return self.variations
 
     def isFirstOrder(): return True; 
     def isVariable(): return True; 
@@ -108,15 +141,18 @@ class ImportWooVariation(ImportWooProduct):
     """docstring for ImportWooVariation"""
     def __init__(self, *args):
         super(ImportWooVariation, self).__init__(*args)
-        self['prod_type'] = 'product-variation'
+        self['prod_type'] = 'variable-instance'
 
-    def getStackParentProduct(self):
-        pass
-        #todo: this
+    def registerParentProduct(self, parentData):
+        self.parentProduct = parentData
+        self['parent_SKU'] = parentData.getCodesum()
 
-    def registerVariable(self):
-        pass
-        #todo: this
+    def joinVariable(self, parentData):
+        self.registerProduct(parentData)
+        parentData.registerVariation(self)
+
+    def getParentProduct(self):
+        return self.parentProduct
 
     def isVariation(): return True;        
 
@@ -146,25 +182,31 @@ class ImportWooBundledProduct(ImportWooProduct):
 
 class ImportWooCategory(ImportGenTaxo):
     """docstring for ImportWooCategory"""
+    productsKey = 'products'
+
     def __init__(self, *args):
         super(ImportWooCategory, self).__init__(*args) 
-        self['products'] = OrderedDict()
+        self[self.productsKey] = OrderedDict()
+        self[self.attributesKey] = OrderedDict()
 
     def registerMember(self, itemData):
         self.registerAnything(
             itemData,
-            self['memberlist'],
+            self.members,
             # indexer = self.getSum,
-            indexer = self.getObjectRowcount,
+            indexer = itemData.getRowcount,
             singular = True,
             resolver = self.passiveResolver,
             registerName = 'product categories'
         )
 
+    def getMembers(self, itemData):
+        return self.members
+
 class CSVParse_Woo(CSVParse_Gen):
     """docstring for CSVParse_Woo"""
 
-    product_types = {
+    prod_containers = {
         'S': ImportWooSimpleProduct,
         'V': ImportWooVariableProduct,
         'I': ImportWooVariation,
@@ -172,6 +214,15 @@ class CSVParse_Woo(CSVParse_Gen):
         'G': ImportWooGroupedProduct,
         'B': ImportWooBundledProduct,
     }
+
+    # prod_types = {
+    #     'S': 'simple',
+    #     'V': 'variable',
+    #     'I': 'variable-instance',
+    #     'C': 'composite',
+    #     'G': 'grouped',
+    #     'B': 'bundle',
+    # }
 
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
@@ -234,25 +285,20 @@ class CSVParse_Woo(CSVParse_Gen):
         self.variations = OrderedDict()
         self.images     = OrderedDict()        
 
-    def registerImage(self, image, itemData):
+    def registerImage(self, image, objectData):
+        assert isinstance(image,str) 
+        assert image is not "" 
         self.registerAnything(
-            itemData,
+            objectData,
             self.images,
             image,
             singular = False,
             registerName = 'images'
         )
-        itemData.registerImage(image)
-            # assert( isinstance(image,str) )
-            # assert( image is not "" )
-            # if image not in self.images.keys():
-            #     self.images[image] = []
-            # self.images[image].append(itemData)
-
-    # def registerProduct(self, sku, itemData):
-    #     super(CSVParse_Woo, self).registerProduct(sku, itemData)
+        objectData.registerImage(image)
 
     def registerCategory(self, catData, itemData):
+
         self.registerAnything(
             catData, 
             self.categories, 
@@ -264,7 +310,7 @@ class CSVParse_Woo(CSVParse_Gen):
         )
         itemData.joinCategory(catData)
 
-    def registerAttribute(self, itemData, attr, val, var=False):
+    def registerAttribute(self, objectData, attr, val):
         # if DEBUG_WOO: print 'registering attribute: ',attr, ': ', val 
         try:
             attr = str(attr)
@@ -272,109 +318,92 @@ class CSVParse_Woo(CSVParse_Gen):
             assert attr is not '', 'Attribute must not be empty'
         except AssertionError as e:
             self.registerError(e)
+            # raise e
         else:
-            if 'attributes' not in itemData.keys():
-                itemData['attributes'] = {}
-            if attr not in itemData['attributes']:
-                itemData['attributes'][attr] = {
-                    'values':[val],
-                    'visible':1,
-                    'variation':0
-                }
-                if var:
-                    itemData['attributes'][attr]['default'] = val
-            elif val not in itemData['attributes'][attr]['values'] :
-                itemData['attributes'][attr]['values'].append(val)
-            if var:
-                if not itemData['attributes'][attr]['default']:
-                    itemData['attributes'][attr]['default'] = val
-                itemData['attributes'][attr]['variation'] = 1
+            objectData.registerAttribute(attr, val)
 
             if attr not in self.attributes.keys():
                 self.attributes[attr] = [] 
             if val not in self.attributes[attr]:
                 self.attributes[attr].append(val)
 
-    def registerVariation(self, parentData, itemData):
+    def registerVariation(self, parentData, varData):
+        assert parentData.isVariable()
+        assert varData.isVariation()
         self.registerAnything( 
-            itemData, 
+            varData, 
             self.variations, 
             registerName = 'variations' 
         )
-        if not parentData.get('variations'): parentData['variations'] = OrderedDict()
-        self.registerAnything(
-            itemData,
-            parentData['variations'],
-            indexer = self.getCodesum,
-            singular = True,
-            registerName = "product variations"
-        )
+        # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
+        varData.joinVariable(parentData)
 
-
-
-    def processImages(self, itemData):
+    def processImages(self, objectData):
         # if DEBUG_WOO: print "called processImages"
 
-        imglist = filter(None, findAllImages(itemData.get('Images','')))
+        imglist = filter(None, findAllImages(objectData.get('Images','')))
         for image in imglist:
-            self.registerImage(image, itemData)
+            self.registerImage(image, objectData)
+            objectData.registerImage(image)
 
+        # todo: share images with nearest parent
+
+        # for image in objectData['imglist']:
+        #     self.registerImage(image, objectData)
             
+        # if self.taxoDepth > 1 and objectData.getDepth() > self.taxoDepth :
+        #     parentData = self.stack.getTopParent()
+        #     if not objectData['imglist'] and parentData['imglist']:
+        #         objectData['imglist'] = parentData['imglist']
+        #     elif objectData['imglist'] and not parentData['imglist']:
+        #         parentData['imglist'] = objectData['imglist'][:]
 
+    def processCategories(self, objectData):
+        if objectData.isItem():
+            for ancestor in objectData.getTaxoAncestors():
+                self.registerCategory(ancestor, objectData)
 
+        #todo: this "extra item" crap
 
+        # if objectData.get('E'):
+        #     if objectData.isItem():
+        #         extraStack = self.stack.getLeftSlice(self.taxoDepth-1)
+        #         extraLayer = self.newObject(objectData.getRowcount(), objectData.getRow(), objectData.getDepth() + 1, extraStack)
+        #         # extraStack.append(extraLayer)
+        #         extraCodesum = extraLayer.getSum()
 
-        itemData['imglist'] = filter(None, findAllImages(itemData.get('Images','')))
-        # if DEBUG_WOO: print " | imglist: ", str(itemData['imglist'])
+        # if objectData.get('E'):
+        #     if self.isItem(objectData):
+        #         # print "pricessing extra item categories"
+        #         extraStack = self.stack[:self.taxoDepth-1]
+        #         extraLayer = self.fakeLayer(
+        #             objectData['rowcount'], 
+        #             len(extraStack)
+        #             [
+        #                 objectData['name'] + ' Items',
+        #                 objectData['code']
+        #             ]
+        #         )
 
-        for image in itemData['imglist']:
-            self.registerImage(image, itemData)
-            
-        #share images with nearest parent
-        if self.taxoDepth > 1 and itemData.getDepth() > self.taxoDepth :
-            parentData = self.stack.getTopParent()
-            if not itemData['imglist'] and parentData['imglist']:
-                itemData['imglist'] = parentData['imglist']
-            elif itemData['imglist'] and not parentData['imglist']:
-                parentData['imglist'] = itemData['imglist'][:]
+        #         extraStack.append(extraLayer)
+        #         self.initializeData(extraLayer, extraStack)
 
+        #         extraCodes = extraStack.retrieveKey('code')
+        #         extraCodesum = self.joinCodes(extraCodes)
 
-    def processCategories(self, itemData):
-        for layer in self.stack[:self.taxoDepth]:
-            self.registerCategory(layer, itemData)
+        #         # print "looking for ", extraCodesum
+        #         # extraStack.getTopParent()
+        #         parentData = extraStack.getTopParent()
+        #         if parentData.get('children'):
+        #             for child in parentData.get('children').values():
+        #                 if child['codesum'] == extraCodesum:
+        #                     # print "found child ", extraCodesum
+        #                     extraLayer = child
+        #                     break
 
-        if itemData.get('E'):
-            if self.isItem(itemData):
-                # print "pricessing extra item categories"
-                extraStack = self.stack[:self.taxoDepth-1]
-                extraLayer = self.fakeLayer(
-                    itemData['rowcount'], 
-                    len(extraStack)
-                    [
-                        itemData['name'] + ' Items',
-                        itemData['code']
-                    ]
-                )
-
-                extraStack.append(extraLayer)
-                self.initializeData(extraLayer, extraStack)
-
-                extraCodes = extraStack.retrieveKey('code')
-                extraCodesum = self.joinCodes(extraCodes)
-
-                # print "looking for ", extraCodesum
-                extraStack.getTopParent()
-                parentData = extraStack.getTopParent()
-                if parentData.get('children'):
-                    for child in parentData.get('children').values():
-                        if child['codesum'] == extraCodesum:
-                            # print "found child ", extraCodesum
-                            extraLayer = child
-                            break
-
-                self.registerCategory(extraLayer, itemData)
-            else:
-                pass
+        #         self.registerCategory(extraLayer, objectData)
+        #     else:
+        #         pass
 
 
     def decodeAttributes(self, string):
@@ -441,20 +470,10 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.processVariableAttributes( parentData, itemData, self.decodeAttributes(itemData['VA']))
                 self.registerVariation(parentData, itemData)
 
-    def joinItems(self, names):
-        return ' \xe2\x80\x94 '.join ( filter( None, names ) )
-
-    def joinDescs(self, descs, fullnames):
-        descs = filter(None, descs)
-        if(descs):
-            return descs[-1]
-        else:
-            return self.joinItems(fullnames)
-
-    def analyseRow(self, row, itemData):
-        super(CSVParse_Woo, self).analyseRow(row, itemData)
-        self.processImages(itemData)
-        self.processSpecials(itemData)
+    def processObject(self, row, objectData):
+        super(CSVParse_Woo, self).processObject(row, objectData)
+        self.processImages(objectData)
+        self.processSpecials(objectData)
 
     def addDynRules(self, itemData, dynType, ruleIDs):
         rules = {

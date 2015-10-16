@@ -94,6 +94,13 @@ class listUtils:
             b[key] = value
         return b
 
+    def filterUniqueTrue(a):
+        b = []
+        for i in a:
+            if i and i not in b:
+                b.append(i)
+        return b
+
 class CSVParse_Base(object, Registrar):
     """docstring for CSVParse_Base"""
 
@@ -167,13 +174,14 @@ class CSVParse_Base(object, Registrar):
     def initializeObject(self, objectData):
         pass
 
-    # def processObject(self, objectData):
+    def processObject(self, objectData):
+        pass
 
-    def analyseObject(self, objectData):
-        self.initializeObject(objectData)
-        objectData.initialized = True;
+    # def analyseObject(self, objectData):
+        # self.initializeObject(objectData)
+        # objectData.initialized = True;
         # self.processObject(objectData)
-        self.registerObject(objectData)
+        # self.registerObject(objectData)
 
     def analyseFile(self, fileName):
         # if DEBUG_PARSER: print "Analysing file: ", self.filePath
@@ -190,10 +198,17 @@ class CSVParse_Base(object, Registrar):
                     objectData = self.newObject( rowcount, row )
                 except Exception as e:
                     self.registerError(str(e))
-                try:
-                    self.analyseObject(objectData) 
-                except AssertionError as e:
-                    self.registerError(str(e), objectData)
+                else:
+                    try:
+                        self.analyseObject(objectData) 
+                    except Exception as e:
+                        self.registerError(str(e), objectData)
+                    else:
+                        try:
+                            self.registerObject(objectData)
+                        except Exception as e:
+                            self.registerError(str(e), objectData)
+                            
             return objects
         return None
 

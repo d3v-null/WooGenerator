@@ -1,4 +1,4 @@
-from csvparse_abstract import ImportObject
+from csvparse_abstract import listUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeBase
 from collections import OrderedDict
 import functools
@@ -60,31 +60,52 @@ class sanitationUtils:
 
 class ImportGenMixin(ImportTreeBase):
     """docstring for ImportGenMixin"""
-    fullnameKey = 'fullname'
     codeKey = 'code'
+    nameKey = 'name'
+    fullnameKey = 'fullname'
     descriptionKey = 'HTML description'
     codesumKey = 'codesum'
+    descsumKey = 'descsum'
+    isset = OrderedDict()
 
     def isProduct(self):
         return False
 
-    def getFullname(self):
-        assert self.FullnameSet
-        return self[self.fullnameKey]
+    def verifyMeta(self):
+        assert all(map(
+            lambda x: self.isset.get(x),
+            [
+                self.codeKey,
+                self.nameKey,
+                self.fullnameKey,
+                self.sumKey,
+                self.descriptionKey,
+                self.codesumKey,
+                self.descsumKey
+            ]
+        ))
 
-    def setFullname(self, value):
+    def assertGet(self, key):
+        assert self.isset.get(key)
+        return self[key]
+
+    def assertSet(self, key, value):
         assert type(value) == str
-        self[self.fullnameKey] = value
-        self.FullnameSet = True
+        self[key] = value
+        self.isset[key] = True
 
-    def getCode(self):
-        assert self.CodeSet
-        return self[self.codeKey]
-
-    def setCode(self, value):
-        assert type(value) == str 
-        self[self.codeKey] = value
-        self.codeSet = True
+    def getCode(self):              return self.assertGet(self.codeKey)
+    def setCode(self, value):       return self.assertSet(self.codeKey, value)
+    def getName(self):              return self.assertGet(self.nameKey)
+    def setName(self, value):       return self.assertSet(self.nameKey, value) 
+    def getFullname(self):          return self.assertGet(self.fullnameKey)
+    def setFullname(self, value):   return self.assertSet(self.fullnameKey, value) 
+    def getSum(self):               return self.assertGet(self.sumKey)
+    def setSum(self, value):        return self.assertSet(self.sumKey, value)  
+    def getCodesum(self):           return self.assertGet(self.descsumKey)
+    def setCodesum(self, value):    return self.assertSet(self.descsumKey, value) 
+    def getDescsum(self):           return self.assertGet(self.descsumKey)
+    def setDescsum(self, value):    return self.assertSet(self.descsumKey, value) 
 
     def getDescription(self):
         return self[self.descriptionKey]
@@ -92,13 +113,6 @@ class ImportGenMixin(ImportTreeBase):
     def setDescription(self, value):
         assert type(value) == str
         self[self.descriptionKey] = value
-
-    def getCodesum(self):
-        return self[self.codesumKey]
-
-    def setCodesum(self, value):
-        assert type(value) == str
-        self[self.codesumKey] = value
 
     def getCodeDelimeter(self):
         return ''
@@ -123,6 +137,17 @@ class ImportGenMixin(ImportTreeBase):
             if parentFullname: return parentFullname
         return ""
 
+    def getNameDelimeter(self):
+        return ' '
+
+    def joinNames(self):
+        names = listUtils.filterUniqueTrue(map(lambda x: x.getName(), self.getItemAncestors()))
+        nameDelimeter = self.getNameDelimeter()
+        return nameDelimeter.join ( names )         
+
+    def changeName(self, name):
+        return sanitationUtils.shorten(self.regex, self.subs, name)
+
     def processMeta(self):
         meta = self.getMeta()
         try:
@@ -134,40 +159,24 @@ class ImportGenMixin(ImportTreeBase):
         except:
             pass
 
-        self['codesum'] = self.joinCodes()
-        self
-        # ancestors = self.getAncestors()
-        fullnames = self.getAncestorKey('fullname') + self['fullname']
-        descs     = self.getAncestorKey('HTML description') + self['HTML description']
-
-
-        # super(CSVParse_Gen, self).processMeta(objectData)
-        # meta = objectData.getMeta()
-        # if not meta: meta = [None]*self.metaWidth
-        # objectData['fullname'] = meta[0]
-        # objectData['code'] = meta[1]
-        # codes = self.stack.retrieveKey('code')
-        # objectData['codesum'] = self.joinCodes(codes)
-        # fullnames, descs = \
-        #     [self.stack.retrieveKey(key) for key in ['fullname', 'HTML Description']]
-        # objectData['descsum'] = self.joinDescs(descs, fullnames)
-        # if objectData.isItem():
-        #     self.processItemMeta()        
+        self.setCodesum(self.joinCodes())
+        self.setDescsum(self.joinDescs())   
+        self.setName(self.changeName(self.getFullname()))
+        self.setSum(self.joinNames())  
 
 class ImportGenItem(ImportTreeItem, ImportGenMixin):
     """docstring for ImportGenItem"""
-    def __init__(self, *args):
-        super(ImportGenItem, self).__init__(*args)
+    def __init__(self, data, rowcount, row, depth, meta=None, parent=None, regex=None, subs=None):
+        self.subs = subs
+        self.regex = regex
+        super(ImportGenItem, self).__init__(self, data, rowcount, row, depth, meta, parent)
 
     def getCodeDelimeter(self):
         parent = self.getParent()
-        if if not parent.isRoot() and parent.isTaxo():
+        if not parent.isRoot() and parent.isTaxo():
             return '-'
         else:
             return super(ImportGenItem, self).getCodeDelimeter(parent)
-
-    def getSum(self):
-        return self.get('itemsum')  
 
 class importGenProduct(ImportGenItem):
     def isProduct(self):
@@ -175,11 +184,16 @@ class importGenProduct(ImportGenItem):
 
 class ImportGenTaxo(ImportTreeTaxo, ImportGenMixin):
     """docstring for ImportGenTaxo"""
-    def __init__(self, *args):
-        super(ImportGenTaxo, self).__init__(*args)     
+    sumKey = 'taxosum'
 
-    def getSum(self):
-        return self.get('taxosum')        
+    def __init__(self, data, rowcount, row, depth, meta=None, parent=None, regex=None, subs=None):
+        self.subs = subs
+        self.regex = regex
+        super(ImportGenTaxo, self).__init__(self, data, rowcount, row, depth, meta, parent)    
+
+    def joinNames(self):
+        names = listUtils.filterUniqueTrue(map(lambda x: x.getName(), self.getAncestors()))
+        return ' > '.join(names)
 
 class CSVParse_Gen(CSVParse_Tree):
     """docstring for CSVParse_Gen"""
@@ -192,7 +206,7 @@ class CSVParse_Gen(CSVParse_Tree):
             ('code', ''),
             ('name', ''),
             ('fullname', ''),   
-            ('HTML description', ''),
+            ('description', ''),
             ('imglist', [])
         ])
         extra_taxoSubs = OrderedDict([
@@ -219,8 +233,8 @@ class CSVParse_Gen(CSVParse_Tree):
         self.itemContainer = ImportGenItem
         self.productContainer = importGenProduct
         self.schema     = schema
-        self.taxoSubs   = self.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        self.itemSubs   = self.combineOrderedDicts( itemSubs, extra_itemSubs )   
+        self.taxoSubs   = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )   
         self.taxoRegex  = sanitationUtils.compileRegex(self.taxoSubs)
         self.itemRegex  = sanitationUtils.compileRegex(self.itemSubs)
         if DEBUG_GEN:
@@ -229,6 +243,7 @@ class CSVParse_Gen(CSVParse_Tree):
             print "-> itemDepth: ", self.itemDepth
             print "-> maxDepth: ", self.maxDepth
             print "-> metaWidth: ", self.metaWidth
+
 
     def clearTransients(self):
         super(CSVParse_Gen, self).clearTransients()
@@ -243,11 +258,14 @@ class CSVParse_Gen(CSVParse_Tree):
             self.products,
             self.getGenCodesum,
             singular = True,
+            resolver = self.resolveConflict,
             registerName = 'products'
         )
 
-    def changeTaxo(self, taxo):
-        return sanitationUtils.shorten(self.taxoRegex, self.taxoSubs, taxo)
+    def registerObject(self, objectData):
+        super(CSVParse_Gen, self).registerObject(objectData)
+        if objectData.isProduct():
+            self.registerProduct(objectData)
 
     def changeItem(self, item):
         return sanitationUtils.shorten(self.itemRegex, self.itemSubs, item)
@@ -267,97 +285,25 @@ class CSVParse_Gen(CSVParse_Tree):
     def sanitizeCell(self, cell):
         return sanitationUtils.sanitizeCell(cell)  
 
-
-
-
-
-
-
-    def processItemMeta(self, itemData):
-        itemData['name'] = self.changeItem(itemData['fullname'])        
-        names = self.stack.retrieveKey('name')[self.taxoDepth:]
-        itemData['itemsum'] = self.joinItems(names)
-
-        super(CSVParse_Gen, self).processItem(itemData)
-
-    def processMeta(self, objectData):
-        super(CSVParse_Gen, self).processMeta(objectData)
-        meta = objectData.getMeta()
-        if not meta: meta = [None]*self.metaWidth
-        objectData['fullname'] = meta[0]
-        objectData['code'] = meta[1]
-        codes = self.stack.retrieveKey('code')
-        objectData['codesum'] = self.joinCodes(codes)
-        fullnames, descs = \
-            [self.stack.retrieveKey(key) for key in ['fullname', 'HTML Description']]
-        objectData['descsum'] = self.joinDescs(descs, fullnames)
-        if objectData.isItem():
-            self.processItemMeta()
-
-    def processTaxo(self, itemData):
-        super(CSVParse_Gen, self).processTaxo(itemData)
-        itemData['name'] = self.changeTaxo(itemData['fullname'])
-        names = []
-        for name in self.stack.retrieveKey('name'):
-            if name not in names:
-                names.append(name)
-        itemData['taxosum'] = self.joinTaxos(names)
-        print "taxosum of ", itemData.getCodesum(), "is", itemData['taxosum']
-
-    def joinCodes(self, codes):
-        return '-'.join(filter (None, [
-            ''.join(codes[:self.taxoDepth]),
-            ''.join(codes[self.taxoDepth:])
-        ]))
-
-    def joinTaxos(self, names):
-        return ' > '.join( filter( None, names[:self.taxoDepth]) )
-
-    def joinItems(self, names):
-        print "names: ", names
-        return ' '.join ( filter( None, names ) )
-
-    def joinDescs(self, descs, fullnames):
-        pass
-
-    def processItemType(self, itemData):
-        pass
-
-    def analyseRow(self, row, itemData):
-        super(CSVParse_Gen, self).analyseRow(row, itemData)
-        if DEBUG_GEN: 
-            print "GEN is analysing row: ", itemData.getSum()
-
-        fullnames, descs = \
-            [self.stack.retrieveKey(key) for key in ['fullname', 'HTML Description']]
-        itemData['descsum'] = self.joinDescs(descs, fullnames)
-
-        itemData['itemtype'] = itemData.get(self.schema,'')
-
-        if itemData['itemtype']:
-            self.processItemtype(itemData) 
-
-        if DEBUG_GEN: 
-            print "GEN finished analysing row: ", itemData.getSum()
-
-
-    def initializeObject(self, objectData):
-        super(CSVParse_Gen, self).initializeObject(objectData)
-
     def newObject(self, rowcount, row):
         objectData = super(CSVParse_Tree, self).newObject(rowcount, row)
+        if objectData.isTaxo():
+            regex = self.taxoRegex
+            subs = self.taxoSubs
+            container = self.taxoContainer
+        else:
+            assert objectData.isItem()
+            regex = self.itemRegex
+            subs = self.itemSubs
+            container = self.itemContainer
         depth = objectData.getDepth()
         meta = objectData.getMeta()
         itemtype = objectData.get(self.schema,'')
         objectData['itemtype'] = itemtype
-        if itemtype in self.product_types.keys():
-            container = self.product_types[itemtype]
-            return container(objectData, rowcount, row, depth, meta) 
-        else:
-            return objectData
+        if itemtype in self.prod_containers.keys():
+            container = self.prod_containers[itemtype]
+        return container(objectData, rowcount, row, depth, meta, regex, subs) 
 
-    # def analyseObject(self, objectData):
-    #     super(CSVParse_Gen, self).analyseObject(objectData)
 
     def getProducts(self):
         return self.products
