@@ -1,4 +1,4 @@
-from csvparse_abstract import CSVParse_Base, ImportObject
+from csvparse_abstract import CSVParse_Base, ImportObject, listUtils
 from collections import OrderedDict
 from coldata import ColData_User
 import os
@@ -13,11 +13,8 @@ class ImportFlat(ImportObject):
 
 class CSVParse_Flat(CSVParse_Base):
     """docstring for CSVParse_Flat"""
-    def __init__(self, cols, defaults):
-        super(CSVParse_Flat, self).__init__(cols, defaults)
-
-    def sanitizeCell(self, cell):
-        return cell
+    # def __init__(self, cols, defaults):
+    #     super(CSVParse_Flat, self).__init__(cols, defaults)
 
 class ImportSpecial(ImportFlat):
     """docstring for ImportSpecial"""
@@ -45,7 +42,7 @@ class CSVParse_Special(CSVParse_Flat):
             "XWNS",
             "XWPS"
         ]
-        cols = self.combineLists(cols, extra_cols)
+        cols = listUtils.combineLists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
         self.itemContainer = ImportSpecial
@@ -97,8 +94,8 @@ class CSVParse_User(CSVParse_Flat):
             # ('post_status', 'publish'),
             # ('last_import', importName),
         ])
-        cols = self.combineLists( cols, extra_cols )
-        defaults = self.combineOrderedDicts( defaults, extra_defaults )
+        cols = listUtils.combineLists( cols, extra_cols )
+        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         try:
             assert self.itemContainer 
         except :
@@ -164,7 +161,7 @@ def exportItems(filePath, colNames, items):
 
 if __name__ == '__main__':
     inFolder = "../input/"
-    actPath = os.path.join(inFolder, 'export.csv')
+    actPath = os.path.join(inFolder, 'partial act records.csv')
     outFolder = "../output/"
     usrPath = os.path.join(outFolder, 'users.csv')
 
@@ -185,11 +182,10 @@ if __name__ == '__main__':
     exportItems(
         usrPath,
         usrData.getColNames(usrCols),
-        usrParser.items.values()
+        usrParser.objects.values()
     )
 
     for role, usrs in usrParser.roles.items():
-
         for i, u in enumerate(range(0, len(usrs), usrs_per_file)):
             rolPath = os.path.join(outFolder, 'users_%s_%d.csv'%(role,i))
 

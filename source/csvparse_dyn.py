@@ -1,4 +1,5 @@
 import os
+from csvparse_abstract import listUtils, debugUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo
 import bleach
 import re
@@ -27,12 +28,12 @@ class ImportDynRule(ImportTreeTaxo):
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
 
-    def addLineData(self, ruleLineData):
-        if ruleLineData:
-            self['children'].append(ruleLineData)
+    # def addLineData(self, ruleLineData):
+    #     if ruleLineData:
+    #         self['children'].append(ruleLineData)
 
     def getRuleLines(self):
-        return self['children']
+        return self.getChildren().values()
 
     def getColNames(self, ruleMode='BULK'):
         ruleMode = self.get('Rule Mode', 'BULK')
@@ -76,7 +77,9 @@ class ImportDynRule(ImportTreeTaxo):
             html +=   bleach.clean(name)
             html += '</th>'
         html +=   '</tr></thead>'
-        for ruleLineData in self.getRuleLines():
+        ruleLines = self.getRuleLines()
+        self.registerMessage("ruleLines: {}" % (ruleLines))
+        for ruleLineData in ruleLines:
             lineType = ruleLineData.get('Discount Type','')
             html += '<tr>'
             for col in colNames.keys():
@@ -104,8 +107,8 @@ class CSVParse_Dyn(CSVParse_Tree):
             'Rule Mode': 'BULK'
         }
 
-        cols = self.combineLists(cols, extra_cols)
-        defaults = self.combineOrderedDicts(extra_defaults, defaults)
+        cols = listUtils.combineLists(cols, extra_cols)
+        defaults = listUtils.combineOrderedDicts(extra_defaults, defaults)
         super(CSVParse_Dyn, self).__init__( cols, defaults, \
                                 taxoDepth=1, itemDepth=1, metaWidth=0)
         self.itemContainer = ImportDynRuleLine
@@ -161,6 +164,6 @@ if __name__ == '__main__':
 
     dynParser = CSVParse_Dyn()
     dynParser.analyseFile(dprcPath)
-    dynParser.pp.pprint(dynParser.rules)
-    for html in ([rule.toHTML() for rule in dynParser.rules.values()]):
+
+    for html in ([rule.toHTML() for rule in dynParser.taxos.values()]):
         print html

@@ -6,6 +6,7 @@ import shutil
 from PIL import Image
 import time
 from metagator import MetaGator
+from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
@@ -64,6 +65,8 @@ schema = "TT"
 # schema = "VT"
 # schema = "TS"
 
+DEBUG = True
+
 currentSpecial = None
 # currentSpecial = "SP2015-09-18"
 
@@ -82,15 +85,20 @@ if schema in myo_schemas:
 	)
 elif schema in woo_schemas:
 
+	if DEBUG: print "analysing dprcPath"
 	dynParser = CSVParse_Dyn()
 	dynParser.analyseFile(dprcPath)
 	dprcRules = dynParser.taxos
+
+	if DEBUG: print "analysing dprpPath"
 	dynParser.clearTransients()
 	dynParser.analyseFile(dprpPath)
 	dprpRules = dynParser.taxos
+
+	if DEBUG: print "analysing specPath"
 	specialParser = CSVParse_Special()
 	specialParser.analyseFile(specPath)
-	specials = specialParser.items
+	specials = specialParser.objects
 
 	print specials
 
@@ -131,6 +139,7 @@ elif schema in woo_schemas:
 		)
 	# usrParser = CSVParse_Usr()
 
+if DEBUG: print "analysing products"
 objects = productParser.analyseFile(genPath)
 
 # if schema in woo_schemas:
@@ -144,6 +153,9 @@ if schema in woo_schemas:
 	images 		= productParser.images
 
 import_errors = productParser.errors
+
+for source, error in import_errors.items():
+	Registrar.printAnything(source, error, '!')
 
 #########################################
 # Export Info to Spreadsheets

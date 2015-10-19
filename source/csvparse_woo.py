@@ -1,4 +1,5 @@
-from csvparse_gen import CSVParse_Gen, importGenProduct, ImportGenTaxo
+from csvparse_abstract import listUtils
+from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo
 from collections import OrderedDict
 import re
 import time
@@ -30,8 +31,12 @@ DEBUG_WOO = True
 class ImportWooMixin:
     """docstring for ImportWooMixin"""
     attributes = OrderedDict()
-    imglistKey = 'imglist'
+    specials = []
+    images = []
     # attributesKey = 'attributes'
+
+    def __init__(self, *args):
+        self.attributes = OrderedDict()
 
     def registerImage(self, image):
         assert type(image) == str
@@ -44,10 +49,11 @@ class ImportWooMixin:
                 parent.registerImage(image)
 
     def getImages(self):
-        return self.get(self.imglistKey, [])
+        return self.images
 
-    def registerAttribute(self, attr, val):
-        var = self.isItem() and self.isVariation()
+    def registerAttribute(self, attr, val, var=False):
+        if var:
+            assert self.isItem() and self.isVariation()
         attrs = self.getAttributes()
         if attr not in attrs:
             attrs[attr] = {
@@ -70,13 +76,25 @@ class ImportWooMixin:
         except:
             return OrderedDict()
 
-class ImportWooProduct(importGenProduct):
+    def registerSpecial(self, special):
+        if special not in self.specials:
+            self.specials.append(special)
+
+    def getSpecials(self):
+        return self.specials
+
+class ImportWooItem(ImportGenItem, ImportWooMixin):
+    """docstring for ImportWooItem"""
+    pass
+
+class ImportWooProduct(ImportGenProduct, ImportWooMixin):
     """docstring for ImportWooProduct"""
 
     def __init__(self, *args):
         super(ImportWooProduct, self).__init__(*args)
-        self[self.catlistKey] = OrderedDict()
-        self[self.attributesKey] = OrderedDict()
+        ImportWooMixin.__init__(self, *args)
+        self.categories = OrderedDict()
+        self['prod_type'] = self.product_type
 
     def isFirstOrder(): return False;
     def isVariable(): return False;
@@ -87,7 +105,7 @@ class ImportWooProduct(importGenProduct):
             catData,
             self.categories,
             # indexer = self.getSum,
-            indexer = catData.getRowcount,
+            indexer = catData.getRowcount(),
             singular = True,
             resolver = self.passiveResolver,
             registerName = 'product categories'
@@ -108,19 +126,17 @@ class ImportWooProduct(importGenProduct):
 
 class ImportWooSimpleProduct(ImportWooProduct):
     """docstring for ImportWooSimpleProduct"""
-    def __init__(self, *args):
-        super(ImportWooSimpleProduct, self).__init__(*args)
-        self['prod_type'] = 'simple'
+    product_type = 'simple'
 
     def isFirstOrder(): return True; 
 
 class ImportWooVariableProduct(ImportWooProduct):
     """docstring for ImportWooVariableProduct"""
+    product_type = 'variable'
 
     def __init__(self, *args):
         super(ImportWooVariableProduct, self).__init__(*args)
-        self['prod_type'] = 'variable'
-        self[self.variationsKey] = OrderedDict()
+        self.variations = OrderedDict()
 
     def registerVariation(self, varData):
         self.registerAnything(
@@ -139,9 +155,7 @@ class ImportWooVariableProduct(ImportWooProduct):
 
 class ImportWooVariation(ImportWooProduct):
     """docstring for ImportWooVariation"""
-    def __init__(self, *args):
-        super(ImportWooVariation, self).__init__(*args)
-        self['prod_type'] = 'variable-instance'
+    product_type = 'variable-instance'
 
     def registerParentProduct(self, parentData):
         self.parentProduct = parentData
@@ -158,43 +172,37 @@ class ImportWooVariation(ImportWooProduct):
 
 class ImportWooCompositeProduct(ImportWooProduct):
     """docstring for ImportWooVariableProduct"""
-    def __init__(self, *args):
-        super(ImportWooSimpleProduct, self).__init__(*args)
-        self['prod_type'] = 'composite'
+    product_type = 'composite'
 
     def isFirstOrder(): return True; 
 
 class ImportWooGroupedProduct(ImportWooProduct):
     """docstring for ImportWooGroupedProduct"""
-    def __init__(self, *args):
-        super(ImportWooGroupedProduct, self).__init__(*args)
-        self['prod_type'] = 'grouped'
+    product_type = 'grouped'
 
     def isFirstOrder(): return True; 
 
 class ImportWooBundledProduct(ImportWooProduct):
     """docstring for ImportWooBundledProduct"""
-    def __init__(self, *args):
-        super(ImportWooBundledProduct, self).__init__(*args)
-        self['prod_type'] = 'bundle'
+    product_type = 'bundle'
 
     def isFirstOrder(): return True; 
 
-class ImportWooCategory(ImportGenTaxo):
+class ImportWooCategory(ImportGenTaxo, ImportWooMixin):
     """docstring for ImportWooCategory"""
     productsKey = 'products'
 
     def __init__(self, *args):
         super(ImportWooCategory, self).__init__(*args) 
-        self[self.productsKey] = OrderedDict()
-        self[self.attributesKey] = OrderedDict()
+        ImportWooMixin.__init__(self, *args)
+        self.members = OrderedDict()
 
     def registerMember(self, itemData):
         self.registerAnything(
             itemData,
             self.members,
             # indexer = self.getSum,
-            indexer = itemData.getRowcount,
+            indexer = itemData.getRowcount(),
             singular = True,
             resolver = self.passiveResolver,
             registerName = 'product categories'
@@ -259,18 +267,19 @@ class CSVParse_Woo(CSVParse_Gen):
         extra_itemSubs = OrderedDict()
 
         if not importName: importName = time.strftime("%Y-%m-%d %H:%M:%S")
-        cols = self.combineLists( cols, extra_cols )
-        defaults = self.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = self.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = self.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        cols = listUtils.combineLists( cols, extra_cols )
+        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
         if not schema: schema = "TT"
         super(CSVParse_Woo, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
         self.dprcRules = dprcRules
         self.dprpRules = dprpRules
         self.specials = specials
-        self.productContainer = ImportWooProduct
-        self.categoryContainer = ImportWooCategory
+        self.itemContainer      = ImportWooItem
+        self.productContainer   = ImportWooProduct
+        self.taxoContainer      = ImportWooCategory
         if DEBUG_WOO:
             print "WOO initializing: "
             print "-> taxoDepth: ", self.taxoDepth
@@ -310,18 +319,16 @@ class CSVParse_Woo(CSVParse_Gen):
         )
         itemData.joinCategory(catData)
 
-    def registerAttribute(self, objectData, attr, val):
-        # if DEBUG_WOO: print 'registering attribute: ',attr, ': ', val 
+    def registerAttribute(self, objectData, attr, val, var=False):
         try:
             attr = str(attr)
-            assert isinstance(attr, str), 'Attribute must be a string not '+str(type(attr))
+            assert isinstance(attr, str), 'Attribute must be a string not {}'.format(type(attr).__name__)
             assert attr is not '', 'Attribute must not be empty'
         except AssertionError as e:
-            self.registerError(e)
+            self.registerError("could not register attribute: {}".format(e))
             # raise e
         else:
-            objectData.registerAttribute(attr, val)
-
+            objectData.registerAttribute(attr, val, var)
             if attr not in self.attributes.keys():
                 self.attributes[attr] = [] 
             if val not in self.attributes[attr]:
@@ -337,6 +344,22 @@ class CSVParse_Woo(CSVParse_Gen):
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
         varData.joinVariable(parentData)
+
+    def registerSpecial(self, objectData, special):
+        try:
+            special = str(special)
+            assert isinstance(special, str), 'Special must be a string not {}'.format(type(special).__name__)
+            assert special is not '', 'Attribute must not be empty'
+        except AssertionError as e:
+            self.registerError("could not register special: {}".format(e))
+        self.registerAnything(
+            objectData,
+            self.specials,
+            indexer = special,
+            singular = False,
+            registerName = 'specials'
+        )
+        objectData.registerSpecial(special)
 
     def processImages(self, objectData):
         # if DEBUG_WOO: print "called processImages"
@@ -359,7 +382,7 @@ class CSVParse_Woo(CSVParse_Gen):
         #         parentData['imglist'] = objectData['imglist'][:]
 
     def processCategories(self, objectData):
-        if objectData.isItem():
+        if objectData.isItem() and objectData.isProduct():
             for ancestor in objectData.getTaxoAncestors():
                 self.registerCategory(ancestor, objectData)
 
@@ -424,56 +447,76 @@ class CSVParse_Woo(CSVParse_Gen):
             self.registerAttribute(parentData, attr, val, True)   
             self.registerAttribute(itemData, attr, val, True)     
 
-    def processSpecials(self, itemData):
-        schedule = itemData.get('SCHEDULE')
+    def processAttributes(self, objectData):
+        if objectData.isItem() and objectData.isProduct():
+            cats = objectData.getCategories().values()
+
+            palist = filter(None, map(
+                lambda cat: cat.get('PA'),
+                cats
+            ))
+
+    def processSpecials(self, objectData):
+        schedule = objectData.get('SCHEDULE')
         if schedule:
-            print "special for ", self.getIndex(itemData)
+            print "specials for %s: %s" % (objectData, schedule)
             splist = filter(None, findAllTokens(schedule))
-        else:
-            splist = []
-        itemData['splist'] = splist
+            for special in splist:
+                self.registerSpecial(objectData, special)
 
-    def processItemtype(self, itemData):
-        if DEBUG_WOO:
-            print "WOO.processItemtype before isItem: ", itemData.getSum()
-        if self.isItem(itemData) and itemData['itemtype'] in self.prod_types.keys():
-            itemData['prod_type'] = self.prod_types[itemData['itemtype']]
-            if DEBUG_WOO:
-                print "WOO.processItemtype before isProduct: ", itemData.getSum()
-            if itemData.isProduct():
-                for layer in self.stack:
-                    self.processCategories(layer)
-                cats = itemData.getCategories().values()
+    # def processItemtype(self, itemData):
+    #     if self.isItem(itemData) and itemData['itemtype'] in self.prod_types.keys():
+    #         itemData['prod_type'] = self.prod_types[itemData['itemtype']]
+    #         if DEBUG_WOO:
+    #             print "WOO.processItemtype before isProduct: ", itemData.getSum()
+    #         if itemData.isProduct():
+    #             for layer in self.stack:
+    #                 self.processCategories(layer)
+    #             cats = itemData.getCategories().values()
 
-                if DEBUG_WOO:
-                    print "WOO.processItemtype before cats: ", itemData.getSum()
+    #             if DEBUG_WOO:
+    #                 print "WOO.processItemtype before cats: ", itemData.getSum()
 
-                palist = filter(None, map(
-                    lambda cat: cat.get('PA'),
-                    cats
-                ))
-                # for attrs in map(self.decodeAttributes, filter(None, self.stack.retrieveKey('PA'))):
-                for attrs in map(self.decodeAttributes, palist):
-                    self.processProductAttributes(itemData, attrs)
+    #             palist = filter(None, map(
+    #                 lambda cat: cat.get('PA'),
+    #                 cats
+    #             ))
+    #             # for attrs in map(self.decodeAttributes, filter(None, self.stack.retrieveKey('PA'))):
+    #             for attrs in map(self.decodeAttributes, palist):
+    #                 self.processProductAttributes(itemData, attrs)
 
-                # if not self.isVariable(itemData):
-                    # self.processSpecials(itemData)
+    #             # if not self.isVariable(itemData):
+    #                 # self.processSpecials(itemData)
 
-                self.registerProduct(itemData)
+    #             self.registerProduct(itemData)
 
-            elif self.isVariation(itemData):
-                parentData = self.stack.getTopParent()
-                assert(self.isProduct(parentData)), 'parent of variable instance should be a product'
-                itemData['parent'] = parentData
-                itemData['parent_SKU'] = parentData['codesum']
-                # self.processSpecials(itemData)
-                self.processVariableAttributes( parentData, itemData, self.decodeAttributes(itemData['VA']))
-                self.registerVariation(parentData, itemData)
+    #         elif self.isVariation(itemData):
+    #             parentData = self.stack.getTopParent()
+    #             assert(self.isProduct(parentData)), 'parent of variable instance should be a product'
+    #             itemData['parent'] = parentData
+    #             itemData['parent_SKU'] = parentData['codesum']
+    #             # self.processSpecials(itemData)
+    #             self.processVariableAttributes( parentData, itemData, self.decodeAttributes(itemData['VA']))
+    #             self.registerVariation(parentData, itemData)
 
-    def processObject(self, row, objectData):
-        super(CSVParse_Woo, self).processObject(row, objectData)
+
+
+            # if objectData.isVariation():
+
+
+    def processObject(self, objectData):
+        super(CSVParse_Woo, self).processObject(objectData)
+        self.processCategories(objectData)
+        if isinstance(objectData, ImportGenProduct):
+            self.registerMessage("categories: {}".format(objectData.getCategories().keys()))
+        self.processAttributes(objectData)
+        if isinstance(objectData, ImportWooMixin):
+            self.registerMessage("attributes: {}".format(objectData.getAttributes()))
         self.processImages(objectData)
+        if isinstance(objectData, ImportWooMixin):
+            self.registerMessage("images: {}".format(objectData.getImages()))
         self.processSpecials(objectData)
+
 
     def addDynRules(self, itemData, dynType, ruleIDs):
         rules = {
@@ -497,45 +540,44 @@ class CSVParse_Woo(CSVParse_Gen):
             else:
                 self.registerError('rule should exist: %s'%ruleID, itemData)
 
-    def postProcessDyns(self, itemData):
-        print "postProcessDyns", itemData.getCodesum(), itemData.getSum()
-        #postProcess DPRCs
-        # if self.isProduct(itemData):
-        categories = filter(
-            None,
-            itemData.get('catlist', {}).values()
-        )
-        for cat in categories + [itemData]:
-            # print "%16s is a member of %s" % (itemData['codesum'], cat['taxosum'])
-            dprcString = cat.get('DYNCAT')
-            if dprcString:
-                # print " -> DPRC", dprcString
-                dprclist = dprcString.split('|')
-                self.addDynRules(itemData, 'dprc', dprclist)
-            dprpString = cat.get('DYNPROD')
-            if dprpString:
-                # print " -> DPRP", dprpString
-                dprplist = dprpString.split('|')
-                self.addDynRules(itemData, 'dprp', dprplist)
+    def postProcessDyns(self, objectData):
+        print "postProcessDyns"
+        if objectData.isItem() and objectData.isProduct():
+            categories = filter(
+                None,
+                objectData.getCategories.values()
+            )
+            for cat in categories + [objectData]:
+                # print "%16s is a member of %s" % (objectData['codesum'], cat['taxosum'])
+                dprcString = cat.get('DYNCAT')
+                if dprcString:
+                    # print " -> DPRC", dprcString
+                    dprclist = dprcString.split('|')
+                    self.addDynRules(objectData, 'dprc', dprclist)
+                dprpString = cat.get('DYNPROD')
+                if dprpString:
+                    # print " -> DPRP", dprpString
+                    dprplist = dprpString.split('|')
+                    self.addDynRules(objectData, 'dprp', dprplist)
 
-        itemData['dprcsum'] = '<br/>'.join(
-            filter( 
-                None,
-                map(
-                    lambda x: x.toHTML(),
-                    itemData.get( 'dprclist','')
+            objectData['dprcsum'] = '<br/>'.join(
+                filter( 
+                    None,
+                    map(
+                        lambda x: x.toHTML(),
+                        objectData.get( 'dprclist','')
+                    )
                 )
             )
-        )
-        itemData['dprpsum'] = '<br/>'.join(
-            filter( 
-                None,
-                map(
-                    lambda x: x.toHTML(),
-                    itemData.get('dprplist','')
+            objectData['dprpsum'] = '<br/>'.join(
+                filter( 
+                    None,
+                    map(
+                        lambda x: x.toHTML(),
+                        objectData.get('dprplist','')
+                    )
                 )
             )
-        )
         # else:
         #     pass
             #todo maybe add stuff for categories
@@ -716,13 +758,16 @@ class CSVParse_Woo(CSVParse_Gen):
     def analyseFile(self, fileName):
         objects = super(CSVParse_Woo, self).analyseFile(fileName)  
         #post processing
-        for itemData in self.taxos.values() + self.items.values():
-            print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
-            self.postProcessDyns(itemData)
-            self.postProcessCategories(itemData)
-            self.postProcessImages(itemData)
-            self.postProcessAttributes(itemData)
-            self.postProcessSpecials(itemData)
+        # for itemData in self.taxos.values() + self.items.values():
+            # print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
+        
+        for index, objectData in self.getObjects().items():
+            print 'POST analysing product %s' % objectData.getIdentifier()
+            # self.postProcessDyns(objectData)
+            # self.postProcessCategories(objectData)
+            # self.postProcessImages(objectData)
+            # self.postProcessAttributes(objectData)
+            # self.postProcessSpecials(objectData)
 
         return objects
 
@@ -773,10 +818,10 @@ class CSVParse_TT(CSVParse_Woo):
         ])
         extra_itemSubs = OrderedDict()
 
-        cols = self.combineLists( cols, extra_cols )
-        defaults = self.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = self.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = self.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        cols = listUtils.combineLists( cols, extra_cols )
+        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
         super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials) 
@@ -822,10 +867,10 @@ class CSVParse_VT(CSVParse_Woo):
         ])
         extra_itemSubs = OrderedDict()
 
-        cols = self.combineLists( cols, extra_cols )
-        defaults = self.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = self.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = self.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        cols = listUtils.combineLists( cols, extra_cols )
+        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
         super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials) 

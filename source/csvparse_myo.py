@@ -12,7 +12,7 @@ class CSVParse_MYO(CSVParse_Gen):
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
 
-        product_types = {
+        prod_containers = {
             'Y': ImportGenProduct
         }
 

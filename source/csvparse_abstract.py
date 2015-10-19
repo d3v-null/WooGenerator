@@ -1,4 +1,4 @@
-import csv
+import csv, inspect
 from collections import OrderedDict
 import pprint
 
@@ -6,6 +6,9 @@ DEBUG = True
 DEBUG_PARSER = True
 
 class Registrar:
+    messages = OrderedDict()
+    errors = OrderedDict()
+
     def __init__(self):
         self.objectIndexer = id
         self.conflictResolver = self.passiveResolver
@@ -18,6 +21,10 @@ class Registrar:
 
     def passiveResolver(self, new, old, index, registerAnything):
         pass
+
+    @classmethod
+    def printAnything(self, index, thing, delimeter):
+        print "%15s %s %s" % (index, delimeter, thing)
 
     def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
         if resolver is None: resolver = self.conflictResolver
@@ -47,15 +54,33 @@ class Registrar:
         # print "registered", thing
 
     def registerError(self, error, data = None):
-        index = self.getIndex(data) if data else ""
+        if data:
+            try:
+                index = data.getIndex()
+            except:
+                index = data
+        else:
+            index = ""
         error_string = str(error)
-        if DEBUG: print "%15s ! %s" % (index, error_string)
+        if DEBUG: Registrar.printAnything(index, error, '!')
         self.registerAnything(
             error_string, 
             self.errors, 
             index, 
             singular = False,
             registerName = 'errors'
+        )
+
+    def registerMessage(self, message, source=None):
+        if source is None:
+            source = debugUtils.getCallerProcedure()
+        if DEBUG: Registrar.printAnything(source, message, ' ')
+        self.registerAnything(
+            message,
+            self.messages,
+            source,
+            singular = False,
+            registerName = 'messages'
         )
 
 class ImportObject(OrderedDict, Registrar):
@@ -76,30 +101,52 @@ class ImportObject(OrderedDict, Registrar):
     def getIndex(self):
         return self.getRowcount()
 
+    def getTypeName(self):
+        return type(self).__name__ 
+
+    def getIdentifierDelimeter(self):
+        return ""
+
+    def getIdentifier(self):
+        return "%15s %s <%s>" % ( self.getIndex(), self.getIdentifierDelimeter(), self.getTypeName() )
+
     def __str__(self):
-        return (str) ( type(self) ) + (str)( self.getIndex() )     
+        return "%s <%s>" % (self.getIndex(), self.getTypeName())
 
 class listUtils:
+    @staticmethod
     def combineLists(a, b):
         if not a:
             return b if b else []
         if not b: return a
         return list(set(a) | set(b))
 
+    @staticmethod
     def combineOrderedDicts(a, b):
         if not a:
             return b if b else OrderedDict()
         if not b: return a
+        c = OrderedDict(b.items())
         for key, value in a.items():
-            b[key] = value
-        return b
+            c[key] = value
+        return c
 
+    @staticmethod
     def filterUniqueTrue(a):
         b = []
         for i in a:
             if i and i not in b:
                 b.append(i)
         return b
+
+class debugUtils:
+    @staticmethod
+    def getProcedure():
+        return inspect.stack()[1][3]
+
+    @staticmethod
+    def getCallerProcedure():
+        return inspect.stack()[2][3]
 
 class CSVParse_Base(object, Registrar):
     """docstring for CSVParse_Base"""
@@ -117,9 +164,9 @@ class CSVParse_Base(object, Registrar):
         self.indexSingularity = True
         self.objectIndexer = self.getObjectRowcount
         self.objectContainer = ImportObject
+        self.clearTransients()
 
     def clearTransients(self):
-        self.errors = OrderedDict()
         self.indices = OrderedDict()
         self.objects = OrderedDict()
 
@@ -166,9 +213,13 @@ class CSVParse_Base(object, Registrar):
         return rowData
 
     def newObject(self, rowcount, row):
-        defaultData = self.defaults.items()
+        self.registerMessage( '{} | {}'.format(rowcount, row) )
+        defaultData = OrderedDict(self.defaults.items())
+        self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
+        self.registerMessage( "rowData: {}".format(rowData) )
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
+        self.registerMessage( "allData: {}".format(allData) )
         return self.objectContainer(allData, rowcount, row)
 
     def initializeObject(self, objectData):
@@ -177,15 +228,15 @@ class CSVParse_Base(object, Registrar):
     def processObject(self, objectData):
         pass
 
-    # def analyseObject(self, objectData):
+    # def processObject(self, objectData):
         # self.initializeObject(objectData)
         # objectData.initialized = True;
         # self.processObject(objectData)
         # self.registerObject(objectData)
 
     def analyseFile(self, fileName):
-        # if DEBUG_PARSER: print "Analysing file: ", self.filePath
-        self.clearTransients()
+        self.registerMessage("Analysing file: {}".format(fileName))
+        # self.clearTransients()
 
         with open(fileName) as filePointer:
             csvreader = csv.reader(filePointer, strict=True)
@@ -196,18 +247,21 @@ class CSVParse_Base(object, Registrar):
                     continue
                 try:
                     objectData = self.newObject( rowcount, row )
-                except Exception as e:
-                    self.registerError(str(e))
+                except AssertionError as e:
+                    self.registerError("could not create new object: {}".format(e), "analyseFile")
+                    continue
                 else:
-                    try:
-                        self.analyseObject(objectData) 
-                    except Exception as e:
-                        self.registerError(str(e), objectData)
-                    else:
-                        try:
-                            self.registerObject(objectData)
-                        except Exception as e:
-                            self.registerError(str(e), objectData)
+                    self.registerMessage("created object: %s" % objectData.getIdentifier() )
+                try:
+                    self.processObject(objectData) 
+                except AssertionError as e:
+                    self.registerError("could not process new object: {}".format(e), objectData)
+                    continue
+                try:
+                    self.registerObject(objectData)
+                except AssertionError as e:
+                    self.registerError("could not register new object: {}".format(e), objectData)
+                    continue
                             
             return objects
         return None
