@@ -19,8 +19,11 @@ class Registrar:
     def getObjectRowcount(self, objectData):
         return objectData.getRowcount()
 
-    def passiveResolver(self, new, old, index, registerAnything):
+    def passiveResolver(*args):
         pass
+
+    def exceptionResolver(self, new, old, index, registerName = ''):
+        raise Exception("could not register %s in %s. Duplicate key" % (str(new), registerName) )
 
     @classmethod
     def printAnything(self, index, thing, delimeter):

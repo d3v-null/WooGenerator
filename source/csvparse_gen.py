@@ -75,7 +75,6 @@ class ImportGenMixin(ImportTreeBase):
     descriptionKey = 'HTML description'
     codesumKey = 'codesum'
     descsumKey = 'descsum'
-    isset = OrderedDict()
 
     def __init__(self, data, rowcount, row, depth, meta=None, parent=None, regex=None, subs=None):
         self.subs = subs
@@ -118,7 +117,6 @@ class ImportGenMixin(ImportTreeBase):
     def assertSet(self, key, value):
         assert type(value) == str, "{} must be set with string not {}".format(key, type(value))
         self[key] = value
-        self.isset[key] = True
 
     def getCode(self):              return self.assertGet(self.codeKey)
     def setCode(self, value):       return self.assertSet(self.codeKey, value)
@@ -297,11 +295,12 @@ class CSVParse_Gen(CSVParse_Tree):
         super(CSVParse_Gen, self).clearTransients()
         self.products   = OrderedDict() 
 
-    def registerProduct(self, itemData):
+    def registerProduct(self, prodData):
+        assert prodData.isProduct()
         self.registerAnything(
-            itemData, 
+            prodData, 
             self.products,
-            itemData.getCodesum(),
+            prodData.getCodesum(),
             singular = True,
             resolver = self.resolveConflict,
             registerName = 'products'
@@ -331,6 +330,7 @@ class CSVParse_Gen(CSVParse_Tree):
         return sanitationUtils.sanitizeCell(cell)  
 
     def newObject(self, rowcount, row, depth=None, stack=None):
+        #todo: make this work a bit better
         objectData = super(CSVParse_Gen, self).newObject(rowcount, row, depth, stack)
         if objectData.isTaxo():
             regex = self.taxoRegex

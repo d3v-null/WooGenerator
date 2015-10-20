@@ -30,30 +30,32 @@ DEBUG_WOO = True
 
 class ImportWooMixin:
     """docstring for ImportWooMixin"""
-    attributes = OrderedDict()
-    specials = []
-    images = []
-    # attributesKey = 'attributes'
 
     def __init__(self, *args):
         self.attributes = OrderedDict()
+        self.images = []
+        self.specials = []
+
+    def isFirstOrder(self): return False;
+    def isVariable(self): return False;
+    def isVariation(self): return False;
 
     def registerImage(self, image):
         assert type(image) == str
         thisImages = self.getImages()
         if image not in thisImages:
             thisImages.append(image)
-            parent = self.getParent()
-            parentImages = parent.getImages()
-            if not parentImages:
-                parent.registerImage(image)
+            # parent = self.getParent()
+            # parentImages = parent.getImages()
+            # if not parentImages:
+            #     parent.registerImage(image)
 
     def getImages(self):
         return self.images
 
     def registerAttribute(self, attr, val, var=False):
         if var:
-            assert self.isItem() and self.isVariation()
+            assert self.isVariation() or self.isVariable()
         attrs = self.getAttributes()
         if attr not in attrs:
             attrs[attr] = {
@@ -83,9 +85,14 @@ class ImportWooMixin:
     def getSpecials(self):
         return self.specials
 
+    def getInheritanceAncestors(self):
+        return self.getAncestors()
+
 class ImportWooItem(ImportGenItem, ImportWooMixin):
     """docstring for ImportWooItem"""
-    pass
+    def __init__(self, *args):
+        super(ImportWooItem, self).__init__(*args)
+        ImportWooMixin.__init__(self, *args)
 
 class ImportWooProduct(ImportGenProduct, ImportWooMixin):
     """docstring for ImportWooProduct"""
@@ -96,10 +103,6 @@ class ImportWooProduct(ImportGenProduct, ImportWooMixin):
         self.categories = OrderedDict()
         self['prod_type'] = self.product_type
 
-    def isFirstOrder(): return False;
-    def isVariable(): return False;
-    def isVariation(): return False;
-
     def registerCategory(self, catData):
         self.registerAnything(
             catData,
@@ -107,7 +110,7 @@ class ImportWooProduct(ImportGenProduct, ImportWooMixin):
             # indexer = self.getSum,
             indexer = catData.getRowcount(),
             singular = True,
-            resolver = self.passiveResolver,
+            resolver = self.exceptionResolver,
             registerName = 'product categories'
         )
 
@@ -123,6 +126,9 @@ class ImportWooProduct(ImportGenProduct, ImportWooMixin):
 
     def getNameDelimeter(self):
         return ' \xe2\x80\x94 '
+
+    def getInheritanceAncestors(self):
+        return listUtils.filterUniqueTrue( super(ImportWooProduct, self).getInheritanceAncestors() + self.getCategories().values() )
 
 class ImportWooSimpleProduct(ImportWooProduct):
     """docstring for ImportWooSimpleProduct"""
@@ -142,7 +148,7 @@ class ImportWooVariableProduct(ImportWooProduct):
         self.registerAnything(
             varData,
             self.variations,
-            indexer = varData.getCodesum,
+            indexer = varData.getCodesum(),
             singular = True,
             registerName = "product variations"
         )
@@ -150,8 +156,8 @@ class ImportWooVariableProduct(ImportWooProduct):
     def getVariations(self):
         return self.variations
 
-    def isFirstOrder(): return True; 
-    def isVariable(): return True; 
+    def isFirstOrder(self): return True; 
+    def isVariable(self): return True; 
 
 class ImportWooVariation(ImportWooProduct):
     """docstring for ImportWooVariation"""
@@ -162,31 +168,31 @@ class ImportWooVariation(ImportWooProduct):
         self['parent_SKU'] = parentData.getCodesum()
 
     def joinVariable(self, parentData):
-        self.registerProduct(parentData)
+        self.registerParentProduct(parentData)
         parentData.registerVariation(self)
 
     def getParentProduct(self):
         return self.parentProduct
 
-    def isVariation(): return True;        
+    def isVariation(self): return True;        
 
 class ImportWooCompositeProduct(ImportWooProduct):
     """docstring for ImportWooVariableProduct"""
     product_type = 'composite'
 
-    def isFirstOrder(): return True; 
+    def isFirstOrder(self): return True; 
 
 class ImportWooGroupedProduct(ImportWooProduct):
     """docstring for ImportWooGroupedProduct"""
     product_type = 'grouped'
 
-    def isFirstOrder(): return True; 
+    def isFirstOrder(self): return True; 
 
 class ImportWooBundledProduct(ImportWooProduct):
     """docstring for ImportWooBundledProduct"""
     product_type = 'bundle'
 
-    def isFirstOrder(): return True; 
+    def isFirstOrder(self): return True; 
 
 class ImportWooCategory(ImportGenTaxo, ImportWooMixin):
     """docstring for ImportWooCategory"""
@@ -340,6 +346,7 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerAnything( 
             varData, 
             self.variations, 
+            indexer = varData.getIndex(),
             registerName = 'variations' 
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
@@ -367,7 +374,7 @@ class CSVParse_Woo(CSVParse_Gen):
         imglist = filter(None, findAllImages(objectData.get('Images','')))
         for image in imglist:
             self.registerImage(image, objectData)
-            objectData.registerImage(image)
+            # objectData.registerImage(image)
 
         # todo: share images with nearest parent
 
@@ -382,7 +389,7 @@ class CSVParse_Woo(CSVParse_Gen):
         #         parentData['imglist'] = objectData['imglist'][:]
 
     def processCategories(self, objectData):
-        if objectData.isItem() and objectData.isProduct():
+        if objectData.isProduct():
             for ancestor in objectData.getTaxoAncestors():
                 self.registerCategory(ancestor, objectData)
 
@@ -429,6 +436,12 @@ class CSVParse_Woo(CSVParse_Gen):
         #         pass
 
 
+    def processVariation(self, varData):
+        assert varData.isVariation()
+        parentData = varData.getParent()
+        assert parentData and parentData.isVariable()
+        self.registerVariation(parentData, varData)
+
     def decodeAttributes(self, string):
         try:
             attrs = json.loads(string)
@@ -438,23 +451,29 @@ class CSVParse_Woo(CSVParse_Gen):
             attrs = {}
         return attrs
 
-    def processProductAttributes(self, itemData, attrs):
-        for attr, val in attrs.items():
-            self.registerAttribute(itemData, attr, val)
-
-    def processVariableAttributes(self, parentData, itemData, attrs):
-        for attr, val in attrs.items():
-            self.registerAttribute(parentData, attr, val, True)   
-            self.registerAttribute(itemData, attr, val, True)     
-
     def processAttributes(self, objectData):
-        if objectData.isItem() and objectData.isProduct():
-            cats = objectData.getCategories().values()
+        ancestors = objectData.getInheritanceAncestors()
+        ancestors += [objectData]
 
-            palist = filter(None, map(
-                lambda cat: cat.get('PA'),
-                cats
-            ))
+        palist = filter(None, map(
+            lambda ancestor: ancestor.get('PA'),
+            ancestors
+        ))
+
+        self.registerMessage("palist: %s" % palist)
+
+        for attrs in palist:
+            for attr, val in self.decodeAttributes(attrs).items():
+                self.registerAttribute(objectData, attr, val)
+
+        if objectData.isVariation():
+            parentData = objectData.getParent()
+            assert parentData and parentData.isVariable()
+            vattrs = self.decodeAttributes(objectData.get('VA'))
+            assert vattrs
+            for attr, val in vattrs.items():
+                self.registerAttribute(parentData, attr, val, True)   
+                self.registerAttribute(objectData, attr, val, True)   
 
     def processSpecials(self, objectData):
         schedule = objectData.get('SCHEDULE')
@@ -506,16 +525,20 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def processObject(self, objectData):
         super(CSVParse_Woo, self).processObject(objectData)
+        assert isinstance(objectData, ImportWooMixin)
         self.processCategories(objectData)
-        if isinstance(objectData, ImportGenProduct):
-            self.registerMessage("categories: {}".format(objectData.getCategories().keys()))
+        if objectData.isProduct():
+            catSKUs = map(lambda x: x.getCodesum(), objectData.getCategories().values())
+            self.registerMessage("categories: {}".format(catSKUs))
+        if objectData.isVariation():
+            self.processVariation(objectData)
+            self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
         self.processAttributes(objectData)
-        if isinstance(objectData, ImportWooMixin):
-            self.registerMessage("attributes: {}".format(objectData.getAttributes()))
+        self.registerMessage("attributes: {}".format(objectData.getAttributes()))
         self.processImages(objectData)
-        if isinstance(objectData, ImportWooMixin):
-            self.registerMessage("images: {}".format(objectData.getImages()))
+        self.registerMessage("images: {}".format(objectData.getImages()))
         self.processSpecials(objectData)
+        self.registerMessage("specials: {}".format(objectData.getSpecials()))
 
 
     def addDynRules(self, itemData, dynType, ruleIDs):
@@ -542,7 +565,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def postProcessDyns(self, objectData):
         print "postProcessDyns"
-        if objectData.isItem() and objectData.isProduct():
+        if objectData.isProduct():
             categories = filter(
                 None,
                 objectData.getCategories.values()
@@ -762,7 +785,7 @@ class CSVParse_Woo(CSVParse_Gen):
             # print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
         
         for index, objectData in self.getObjects().items():
-            print 'POST analysing product %s' % objectData.getIdentifier()
+            print 'POST %s' % objectData.getIdentifier()
             # self.postProcessDyns(objectData)
             # self.postProcessCategories(objectData)
             # self.postProcessImages(objectData)

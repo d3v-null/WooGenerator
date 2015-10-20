@@ -151,7 +151,7 @@ class ImportStack(list):
         return ImportStack(self[:index])
 
     def __repr__(self):
-        out = "STACK:\n"
+        out = "\n"
         for objectData in self:
             try:
                 out += objectData.getIdentifier() + "\n"
