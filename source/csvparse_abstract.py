@@ -26,8 +26,12 @@ class Registrar:
         raise Exception("could not register %s in %s. Duplicate key" % (str(new), registerName) )
 
     @classmethod
+    def stringAnything(self, index, thing, delimeter):
+        return "%31s %s %s" % (index, delimeter, thing)
+
+    @classmethod
     def printAnything(self, index, thing, delimeter):
-        print "%15s %s %s" % (index, delimeter, thing)
+        print Registrar.stringAnything(index, thing, delimeter)
 
     def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
         if resolver is None: resolver = self.conflictResolver
@@ -111,7 +115,7 @@ class ImportObject(OrderedDict, Registrar):
         return ""
 
     def getIdentifier(self):
-        return "%15s %s <%s>" % ( self.getIndex(), self.getIdentifierDelimeter(), self.getTypeName() )
+        return Registrar.stringAnything( self.getIndex(), "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
 
     def __str__(self):
         return "%s <%s>" % (self.getIndex(), self.getTypeName())

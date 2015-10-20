@@ -124,6 +124,9 @@ class ImportWooProduct(ImportGenProduct, ImportWooMixin):
     def getAttributes(self):
         return self.get('attributes', OrderedDict())
 
+    def getVariations(self):
+        return None
+
     def getNameDelimeter(self):
         return ' \xe2\x80\x94 '
 
@@ -359,13 +362,13 @@ class CSVParse_Woo(CSVParse_Gen):
             assert special is not '', 'Attribute must not be empty'
         except AssertionError as e:
             self.registerError("could not register special: {}".format(e))
-        self.registerAnything(
-            objectData,
-            self.specials,
-            indexer = special,
-            singular = False,
-            registerName = 'specials'
-        )
+        # self.registerAnything(
+        #     objectData,
+        #     self.specials,
+        #     indexer = special,
+        #     singular = False,
+        #     registerName = 'specials'
+        # )
         objectData.registerSpecial(special)
 
     def processImages(self, objectData):
@@ -483,46 +486,6 @@ class CSVParse_Woo(CSVParse_Gen):
             for special in splist:
                 self.registerSpecial(objectData, special)
 
-    # def processItemtype(self, itemData):
-    #     if self.isItem(itemData) and itemData['itemtype'] in self.prod_types.keys():
-    #         itemData['prod_type'] = self.prod_types[itemData['itemtype']]
-    #         if DEBUG_WOO:
-    #             print "WOO.processItemtype before isProduct: ", itemData.getSum()
-    #         if itemData.isProduct():
-    #             for layer in self.stack:
-    #                 self.processCategories(layer)
-    #             cats = itemData.getCategories().values()
-
-    #             if DEBUG_WOO:
-    #                 print "WOO.processItemtype before cats: ", itemData.getSum()
-
-    #             palist = filter(None, map(
-    #                 lambda cat: cat.get('PA'),
-    #                 cats
-    #             ))
-    #             # for attrs in map(self.decodeAttributes, filter(None, self.stack.retrieveKey('PA'))):
-    #             for attrs in map(self.decodeAttributes, palist):
-    #                 self.processProductAttributes(itemData, attrs)
-
-    #             # if not self.isVariable(itemData):
-    #                 # self.processSpecials(itemData)
-
-    #             self.registerProduct(itemData)
-
-    #         elif self.isVariation(itemData):
-    #             parentData = self.stack.getTopParent()
-    #             assert(self.isProduct(parentData)), 'parent of variable instance should be a product'
-    #             itemData['parent'] = parentData
-    #             itemData['parent_SKU'] = parentData['codesum']
-    #             # self.processSpecials(itemData)
-    #             self.processVariableAttributes( parentData, itemData, self.decodeAttributes(itemData['VA']))
-    #             self.registerVariation(parentData, itemData)
-
-
-
-            # if objectData.isVariation():
-
-
     def processObject(self, objectData):
         super(CSVParse_Woo, self).processObject(objectData)
         assert isinstance(objectData, ImportWooMixin)
@@ -564,20 +527,17 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerError('rule should exist: %s'%ruleID, itemData)
 
     def postProcessDyns(self, objectData):
-        print "postProcessDyns"
+        self.registerMessage(objectData.getIndex())
         if objectData.isProduct():
-            categories = filter(
-                None,
-                objectData.getCategories.values()
-            )
-            for cat in categories + [objectData]:
-                # print "%16s is a member of %s" % (objectData['codesum'], cat['taxosum'])
-                dprcString = cat.get('DYNCAT')
+            ancestors = objectData.getInheritanceAncestors() + [objectData]
+            for ancestor in ancestors:
+                # print "%16s is a member of %s" % (objectData['codesum'], ancestor['taxosum'])
+                dprcString = ancestor.get('DYNCAT')
                 if dprcString:
                     # print " -> DPRC", dprcString
                     dprclist = dprcString.split('|')
                     self.addDynRules(objectData, 'dprc', dprclist)
-                dprpString = cat.get('DYNPROD')
+                dprpString = ancestor.get('DYNPROD')
                 if dprpString:
                     # print " -> DPRP", dprpString
                     dprplist = dprpString.split('|')
@@ -601,41 +561,38 @@ class CSVParse_Woo(CSVParse_Gen):
                     )
                 )
             )
-        # else:
-        #     pass
-            #todo maybe add stuff for categories
 
-    def postProcessCategories(self, itemData):
-        if self.isProduct(itemData):
-            categories = filter(
-                None,
-                itemData.get('catlist', {}).values()
-            )
+    def postProcessCategories(self, objectData):
+        self.registerMessage(objectData.getIndex())
+        if objectData.isProduct():
+            categories = objectData.getCategories().values()
 
-            itemData['catsum'] = '|'.join(filter(
+            objectData['catsum'] = '|'.join(filter(
                 None,
                 map(
-                    lambda x: x.get('taxosum', ''),
+                    lambda x: x.getSum(),
                     categories
                 )
             ))
 
-    def postProcessImages(self, itemData):
-        itemData['imgsum'] = '|'.join(filter(
+    def postProcessImages(self, objectData):
+        self.registerMessage(objectData.getIndex())
+        objectData['imgsum'] = '|'.join(filter(
             None, 
-            itemData.get('imglist', [])
+            objectData.getImages()
         ))
 
-        if self.isProduct(itemData) :
+        if objectData.isProduct() :
             try:
-                assert itemData['imgsum'], "All Products should have images"
+                assert objectData['imgsum'], "All Products should have images"
             except Exception as e:
-                self.registerError(e, itemData)
+                self.registerError(e, objectData)
 
-    def postProcessAttributes(self, itemData):
-        # print 'analysing attributes', itemData.get('codesum')
+    def postProcessAttributes(self, objectData):
+        self.registerMessage(objectData.getIndex())
+        # print 'analysing attributes', objectData.get('codesum')
 
-        for attr, data in itemData.get('attributes',{}).items():
+        for attr, data in objectData.getAttributes().items():
             if not data: continue
             values = '|'.join(map(str,data.get('values',[])))
             visible = data.get('visible', 1)
@@ -643,91 +600,58 @@ class CSVParse_Woo(CSVParse_Gen):
             position = data.get('position',0)
             default = data.get('default', '')
 
-            # self.pp.pprint({
-            #     'attr':attr,
-            #     'values':values,
-            #     'visible':visible,
-            #     'variation':variation,
-            #     'default':default
-            # })
+            self.registerMessage({
+                'attr':attr,
+                'values':values,
+                'visible':visible,
+                'variation':variation,
+                'default':default
+            })
 
-            if self.isProduct(itemData):
-                itemData['attribute:'+attr] = values
-                itemData['attribute_data:'+attr] = '|'.join(map(str,[
+            if objectData.isProduct():
+                objectData['attribute:'+attr] = values
+                objectData['attribute_data:'+attr] = '|'.join(map(str,[
                     position,
                     visible,
                     variation
                 ]))
-                itemData['attribute_default:'+attr] = default
+                objectData['attribute_default:'+attr] = default
 
-            if self.isVariation(itemData):
+            if objectData.isVariation():
                 try:
                     assert variation == 1, "variations should have 'variation' set" 
                 except Exception as e:
-                    self.registerError(e, itemData)
+                    self.registerError(e, objectData)
 
-                itemData['meta:attribute_'+attr] = values
+                objectData['meta:attribute_'+attr] = values
 
-    def postProcessSpecials(self, itemData):
-        # print 'analysing specials', itemData.get('codesum')
+    def postProcessSpecials(self, objectData):
+        self.registerMessage(objectData.getIndex())
 
-        if self.isProduct(itemData) or self.isVariation(itemData):
-            if self.isProduct(itemData): 
-                print '-> is a product'
-            if self.isVariation(itemData):
-                print '-> is a variation'
+        if objectData.isProduct():
 
-            splist = itemData.get('splist', [])
-            if not splist: 
-                splist = []
+            ancestors = objectData.getInheritanceAncestors() + [objectData]
+            for ancestor in ancestors:
+                for special in ancestor.getSpecials():
+                    objectData.registerSpecial(special)
 
-            cats = itemData.get('catlist', {}).values()
+            specials = objectData.getSpecials()
+            objectData['spsum'] = '|'.join(specials)
 
-            for cat in cats:
-                csplist = cat.get('splist', [])
-                if csplist:
-                    print "cat splist: ", csplist
-                    splist.extend(cat.get('splist', []))
-
-            if itemData.get('parents') and itemData['parents'].values():
-                print "has parents"
-                for parent in itemData['parents'].values():
-                    psplist = parent.get('splist', [])
-                    if psplist:
-                        print "parent splist: ", psplist
-                        splist.extend(psplist)
-
-            print '-> splist', splist
-
-            # if self.isVariation(itemData):
-            #     parent = itemData.get('parent', None)
-            #     if parent:
-            #         psplist = parent.get('splist', [])
-            #         if psplist:
-            #             # print "parent splist: ", psplist
-            #             splist.extend(psplist)
-
-
-
-            itemData['splist'] = splist
-            itemData['spsum'] = '|'.join(splist)
-
-            for special in splist:
-                print "--> analysing special", special
+            for special in specials:
                 # print "--> all specials: ", self.specials.keys()
                 if special in self.specials.keys():
-                    print "special exists!", special
+                    self.registerMessage( "special %s exists!" % special )
 
                     specialparams = self.specials[special]
 
                     specialfrom = datetotimestamp( specialparams["FROM"])
                     specialto = datetotimestamp(specialparams["TO"])
                     if( specialto < time.time() ):
-                        print "special is over"
+                        self.registerMessage( "special %s is over" % special )
                         continue
 
-                    print "--> specialfrom", specialparams["FROM"], " | ", specialfrom
-                    print "--> specialto", specialparams["TO"], " | ", specialto
+                    self.registerMessage( "special %s is from %s to %s" % (special, specialfrom, specialto) )
 
                     for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                         discount = specialparams.get(tier)
@@ -739,7 +663,7 @@ class CSVParse_Woo(CSVParse_Gen):
                             # print "percentages are", percentages
                             if percentages:
                                 coefficient = float(percentages[0]) / 100
-                                regular_price_string = itemData.get(tier[:-1]+"R")
+                                regular_price_string = objectData.get(tier[:-1]+"R")
                                 # print "regular_price_string", regular_price_string
                                 if regular_price_string:
                                     regular_price = float(regular_price_string)
@@ -752,7 +676,7 @@ class CSVParse_Woo(CSVParse_Gen):
                                         special_price = dollar
 
                             if special_price:
-                                print "special price is", special_price
+                                self.registerMessage( "special %s price is %s " % (special, special_price) )
                                 tier_key = tier
                                 tier_from_key = tier[:-1]+"F"
                                 tier_to_key = tier[:-1]+"T"
@@ -761,21 +685,19 @@ class CSVParse_Woo(CSVParse_Gen):
                                     tier_from_key: specialfrom,
                                     tier_to_key: specialto
                                 }.items():
-                                    print "setting itemData["+key+"] to "+str(value)
-                                    itemData[key] = value
-                                # itemData[tier_key] = special_price
-                                # itemData[tier_from_key] = specialfrom
-                                # itemData[tier_to_key] = specialto
+                                    self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
+                                    objectData[key] = value
+                                # objectData[tier_key] = special_price
+                                # objectData[tier_from_key] = specialfrom
+                                # objectData[tier_to_key] = specialto
 
                 else:
-                    print "special does not exist"
-                    self.registerError(Exception("special does not exist %s" % special, itemData)) 
+                    self.registerError("special %s does not exist " % special, objectData) 
 
-            print "setting", itemData.getCodesum(), "price to", itemData.get('RNR')
-            itemData['price'] = itemData.get('RNR')
-            itemData['sale_price'] = itemData.get('RNS')
-            itemData['sale_price_dates_from'] = itemData.get('RNF')
-            itemData['sale_price_dates_to'] = itemData.get('RNT')
+            objectData['price'] = objectData.get('RNR')
+            objectData['sale_price'] = objectData.get('RNS')
+            objectData['sale_price_dates_from'] = objectData.get('RNF')
+            objectData['sale_price_dates_to'] = objectData.get('RNT')
 
 
     def analyseFile(self, fileName):
@@ -785,12 +707,12 @@ class CSVParse_Woo(CSVParse_Gen):
             # print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
         
         for index, objectData in self.getObjects().items():
-            print 'POST %s' % objectData.getIdentifier()
-            # self.postProcessDyns(objectData)
-            # self.postProcessCategories(objectData)
-            # self.postProcessImages(objectData)
-            # self.postProcessAttributes(objectData)
-            # self.postProcessSpecials(objectData)
+            print '%s POST' % objectData.getIdentifier()
+            self.postProcessDyns(objectData)
+            self.postProcessCategories(objectData)
+            self.postProcessImages(objectData)
+            self.postProcessAttributes(objectData)
+            self.postProcessSpecials(objectData)
 
         return objects
 
