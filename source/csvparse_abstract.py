@@ -255,10 +255,10 @@ class CSVParse_Base(object, Registrar):
                 try:
                     objectData = self.newObject( rowcount, row )
                 except AssertionError as e:
-                    self.registerError("could not create new object: {}".format(e), "analyseFile")
+                    self.registerError("could not create new object: {}".format(e), rowcount)
                     continue
                 else:
-                    self.registerMessage("created object: %s" % objectData.getIdentifier() )
+                    self.registerMessage("%s CREATED" % objectData.getIdentifier() )
                 try:
                     self.processObject(objectData) 
                 except AssertionError as e:

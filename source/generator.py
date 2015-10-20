@@ -148,6 +148,7 @@ products = productParser.getProducts()
 	
 if schema in woo_schemas:
 	attributes 	= productParser.attributes
+	vattributes = productParser.vattributes
 	categories 	= productParser.categories
 	variations 	= productParser.variations
 	images 		= productParser.images
@@ -229,7 +230,7 @@ if schema in myo_schemas:
 elif schema in woo_schemas:
 
 	#products
-	attributeCols = colData.getAttributeCols(attributes)
+	attributeCols = colData.getAttributeCols(attributes, vattributes)
 	# print 'attributeCols:', attributeCols
 
 	exportItemsCSV(
@@ -312,7 +313,7 @@ elif schema in woo_schemas:
 
 
 #########################################
-# Attempt import`
+# Attempt import
 #########################################
 
 

@@ -25,6 +25,9 @@ class ImportSpecial(ImportFlat):
     def getID(self):
         return self['ID']
 
+    def getIndex(self):
+        return self.getID()
+
 class CSVParse_Special(CSVParse_Flat):
     """docstring for CSVParse_Special"""
 

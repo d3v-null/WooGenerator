@@ -205,8 +205,8 @@ class ImportGenMixin(ImportTreeBase):
         self.setName(name)
 
         nameSum = self.joinNames()
-        self.setSum(nameSum)  
         self.registerMessage("nameSum: {}".format(nameSum) )
+        self.setSum(nameSum)  
 
 class ImportGenItem(ImportTreeItem, ImportGenMixin):
     """docstring for ImportGenItem"""

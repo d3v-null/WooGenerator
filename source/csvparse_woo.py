@@ -131,7 +131,9 @@ class ImportWooProduct(ImportGenProduct, ImportWooMixin):
         return ' \xe2\x80\x94 '
 
     def getInheritanceAncestors(self):
-        return listUtils.filterUniqueTrue( super(ImportWooProduct, self).getInheritanceAncestors() + self.getCategories().values() )
+        return listUtils.filterUniqueTrue( 
+            super(ImportWooProduct, self).getInheritanceAncestors() + self.getCategories().values() 
+        )
 
 class ImportWooSimpleProduct(ImportWooProduct):
     """docstring for ImportWooSimpleProduct"""
@@ -232,15 +234,6 @@ class CSVParse_Woo(CSVParse_Gen):
         'B': ImportWooBundledProduct,
     }
 
-    # prod_types = {
-    #     'S': 'simple',
-    #     'V': 'variable',
-    #     'I': 'variable-instance',
-    #     'C': 'composite',
-    #     'G': 'grouped',
-    #     'B': 'bundle',
-    # }
-
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
                 dprcRules={}, dprpRules={}, specials={}):
@@ -300,6 +293,7 @@ class CSVParse_Woo(CSVParse_Gen):
         super(CSVParse_Woo, self).clearTransients()
         self.categories = OrderedDict()
         self.attributes = OrderedDict()
+        self.vattributes= OrderedDict()
         self.variations = OrderedDict()
         self.images     = OrderedDict()        
 
@@ -309,19 +303,18 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerAnything(
             objectData,
             self.images,
-            image,
+            indexer = image,
             singular = False,
             registerName = 'images'
         )
         objectData.registerImage(image)
 
     def registerCategory(self, catData, itemData):
-
         self.registerAnything(
             catData, 
             self.categories, 
             # indexer = self.getSum,
-            indexer = self.getObjectRowcount,
+            indexer = catData.getIndex(),
             resolver = self.passiveResolver,
             singular = True,
             registerName = 'categories'
@@ -333,15 +326,27 @@ class CSVParse_Woo(CSVParse_Gen):
             attr = str(attr)
             assert isinstance(attr, str), 'Attribute must be a string not {}'.format(type(attr).__name__)
             assert attr is not '', 'Attribute must not be empty'
+            assert attr[0] is not ' ', 'Attribute must not start with whitespace or '
         except AssertionError as e:
             self.registerError("could not register attribute: {}".format(e))
             # raise e
         else:
             objectData.registerAttribute(attr, val, var)
-            if attr not in self.attributes.keys():
-                self.attributes[attr] = [] 
-            if val not in self.attributes[attr]:
-                self.attributes[attr].append(val)
+            self.registerAnything(
+                val,
+                self.attributes,
+                indexer = attr,
+                singular = False,
+                registerName = 'Attributes'
+            )
+            if var:
+                self.registerAnything(
+                    val,
+                    self.vattributes,
+                    indexer = attr,
+                    singular = False,
+                    registerName = 'Variable Attributes'
+                )
 
     def registerVariation(self, parentData, varData):
         assert parentData.isVariable()
@@ -381,62 +386,12 @@ class CSVParse_Woo(CSVParse_Gen):
 
         # todo: share images with nearest parent
 
-        # for image in objectData['imglist']:
-        #     self.registerImage(image, objectData)
-            
-        # if self.taxoDepth > 1 and objectData.getDepth() > self.taxoDepth :
-        #     parentData = self.stack.getTopParent()
-        #     if not objectData['imglist'] and parentData['imglist']:
-        #         objectData['imglist'] = parentData['imglist']
-        #     elif objectData['imglist'] and not parentData['imglist']:
-        #         parentData['imglist'] = objectData['imglist'][:]
-
     def processCategories(self, objectData):
         if objectData.isProduct():
             for ancestor in objectData.getTaxoAncestors():
                 self.registerCategory(ancestor, objectData)
 
         #todo: this "extra item" crap
-
-        # if objectData.get('E'):
-        #     if objectData.isItem():
-        #         extraStack = self.stack.getLeftSlice(self.taxoDepth-1)
-        #         extraLayer = self.newObject(objectData.getRowcount(), objectData.getRow(), objectData.getDepth() + 1, extraStack)
-        #         # extraStack.append(extraLayer)
-        #         extraCodesum = extraLayer.getSum()
-
-        # if objectData.get('E'):
-        #     if self.isItem(objectData):
-        #         # print "pricessing extra item categories"
-        #         extraStack = self.stack[:self.taxoDepth-1]
-        #         extraLayer = self.fakeLayer(
-        #             objectData['rowcount'], 
-        #             len(extraStack)
-        #             [
-        #                 objectData['name'] + ' Items',
-        #                 objectData['code']
-        #             ]
-        #         )
-
-        #         extraStack.append(extraLayer)
-        #         self.initializeData(extraLayer, extraStack)
-
-        #         extraCodes = extraStack.retrieveKey('code')
-        #         extraCodesum = self.joinCodes(extraCodes)
-
-        #         # print "looking for ", extraCodesum
-        #         # extraStack.getTopParent()
-        #         parentData = extraStack.getTopParent()
-        #         if parentData.get('children'):
-        #             for child in parentData.get('children').values():
-        #                 if child['codesum'] == extraCodesum:
-        #                     # print "found child ", extraCodesum
-        #                     extraLayer = child
-        #                     break
-
-        #         self.registerCategory(extraLayer, objectData)
-        #     else:
-        #         pass
 
 
     def processVariation(self, varData):
@@ -446,28 +401,29 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerVariation(parentData, varData)
 
     def decodeAttributes(self, string):
-        try:
-            attrs = json.loads(string)
-            assert isinstance(string, str)
-        except (ValueError, AssertionError) as e:
-            self.registerError(e)
-            attrs = {}
+        assert isinstance(string, str)
+        attrs = json.loads(string)
         return attrs
 
     def processAttributes(self, objectData):
-        ancestors = objectData.getInheritanceAncestors()
-        ancestors += [objectData]
+        ancestors = \
+            objectData.getInheritanceAncestors() + \
+            [objectData]
 
-        palist = filter(None, map(
+        palist = listUtils.filterUniqueTrue( map(
             lambda ancestor: ancestor.get('PA'),
             ancestors
-        ))
+        )) 
 
         self.registerMessage("palist: %s" % palist)
 
         for attrs in palist:
-            for attr, val in self.decodeAttributes(attrs).items():
-                self.registerAttribute(objectData, attr, val)
+            try:
+                decoded = self.decodeAttributes(attrs)
+                for attr, val in decoded.items():
+                    self.registerAttribute(objectData, attr, val)
+            except Exception as e:
+                self.registerError("could not decode attributes: %s | %s" % (attrs, e), objectData )
 
         if objectData.isVariation():
             parentData = objectData.getParent()
@@ -552,6 +508,8 @@ class CSVParse_Woo(CSVParse_Gen):
                     )
                 )
             )
+            self.registerMessage("dprcsum of %s is %s"%(objectData.getIndex(), objectData.get('dprcsum')))
+
             objectData['dprpsum'] = '<br/>'.join(
                 filter( 
                     None,
@@ -561,19 +519,20 @@ class CSVParse_Woo(CSVParse_Gen):
                     )
                 )
             )
+            self.registerMessage("dprpsum of %s is %s"%(objectData.getIndex(), objectData.get('dprpsum')))
+
 
     def postProcessCategories(self, objectData):
         self.registerMessage(objectData.getIndex())
         if objectData.isProduct():
             categories = objectData.getCategories().values()
-
-            objectData['catsum'] = '|'.join(filter(
-                None,
+            objectData['catsum'] = '|'.join(listUtils.filterUniqueTrue(
                 map(
                     lambda x: x.getSum(),
                     categories
                 )
             ))
+            self.registerMessage("catsum of %s is %s"%(objectData.getIndex(), objectData.get('catsum')))
 
     def postProcessImages(self, objectData):
         self.registerMessage(objectData.getIndex())
@@ -582,11 +541,13 @@ class CSVParse_Woo(CSVParse_Gen):
             objectData.getImages()
         ))
 
-        if objectData.isProduct() :
-            try:
-                assert objectData['imgsum'], "All Products should have images"
-            except Exception as e:
-                self.registerError(e, objectData)
+        # if objectData.isProduct() :
+            # try:
+            #     assert objectData['imgsum'], "All Products should have images"
+            # except AssertionError as e:
+            #     self.registerError(e, objectData)
+
+        self.registerMessage("imgsum of %s is %s"%(objectData.getIndex(), objectData.get('imgsum')))
 
     def postProcessAttributes(self, objectData):
         self.registerMessage(objectData.getIndex())
@@ -637,6 +598,8 @@ class CSVParse_Woo(CSVParse_Gen):
 
             specials = objectData.getSpecials()
             objectData['spsum'] = '|'.join(specials)
+            self.registerMessage("spsum of %s is %s"%(objectData.getIndex(), objectData.get('spsum')))
+
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()

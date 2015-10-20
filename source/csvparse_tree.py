@@ -15,11 +15,8 @@ class ImportTreeBase(ImportObject):
         self.children = OrderedDict()
         self.parentIndexer = self.getObjectRowcount
         self.childIndexer = self.getObjectRowcount
-        try:
-            self.verifyMeta()
-        except:
-            self.processMeta()
-            self.verifyMeta()
+        self.processMeta()
+        self.verifyMeta()
 
     @classmethod
     def fromImportObject(cls, objectData, depth, meta, parent):
@@ -43,7 +40,7 @@ class ImportTreeBase(ImportObject):
         this = self.getParent()
         ancestors = []
         while this and not this.isRoot():
-            ancestors.append(this)
+            ancestors = [this] + ancestors
             this = this.getParent()
         return ancestors
 

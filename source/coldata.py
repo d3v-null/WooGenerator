@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from csvparse_abstract import listUtils
 
 class ColData_Base(object):
     """docstring for ColData_Base"""
@@ -475,18 +476,28 @@ class ColData_Woo(ColData_Base):
     def getShippingCols(self):
         return self.getExportCols('shipping')
 
-    def getAttributeCols(self, attributes):
+    def getAttributeCols(self, attributes, vattributes):
         attributeCols = OrderedDict()
-        for attr in attributes.keys():
-            attributeCols['attribute:'+attr] = {}
-            attributeCols['attribute_default:'+attr] = {}
-            attributeCols['attribute_data:'+attr] = {}
+        all_attrs = listUtils.combineLists(attributes.keys(), vattributes.keys())
+        for attr in all_attrs:
+            attributeCols['attribute:'+attr] = {
+                'product':True,
+            }
+            if attr in vattributes.keys():
+                attributeCols['attribute_default:'+attr] = {
+                    'product':True,
+                }
+                attributeCols['attribute_data:'+attr] = {
+                    'product':True,
+                }
         return attributeCols
 
     def getAttributeMetaCols(self, attributes):
         atttributeMetaCols = OrderedDict()
         for attr in attributes.keys():
-            atttributeMetaCols['meta:attribute_'+attr] = {}
+            atttributeMetaCols['meta:attribute_'+attr] = {
+                'variable': True
+            }
         return atttributeMetaCols
 
 class ColData_User(ColData_Base):
