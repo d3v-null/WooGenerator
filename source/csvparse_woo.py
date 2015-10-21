@@ -1,5 +1,5 @@
 from csvparse_abstract import listUtils
-from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo
+from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
 import re
 import time
@@ -28,10 +28,11 @@ def datetotimestamp(datestring):
 
 DEBUG_WOO = True
 
-class ImportWooMixin:
-    """docstring for ImportWooMixin"""
+class ImportWooObject(ImportGenObject):
+    """docstring for ImportWooObject"""
 
     def __init__(self, *args, **kwargs):
+        super(ImportWooObject, self).__init__(*args, **kwargs)
         self.attributes = OrderedDict()
         self.images = []
         self.specials = []
@@ -88,11 +89,11 @@ class ImportWooMixin:
     def getInheritanceAncestors(self):
         return self.getAncestors()
 
-class ImportWooItem(ImportGenItem, ImportWooMixin):
+class ImportWooItem(ImportWooObject, ImportGenItem):
     """docstring for ImportWooItem"""
     def __init__(self, *args, **kwargs):
         super(ImportWooItem, self).__init__(*args, **kwargs)
-        ImportWooMixin.__init__(self, *args, **kwargs)
+        ImportWooObject.__init__(self, *args, **kwargs)
 
 class ImportWooProduct(ImportWooItem, ImportGenProduct):
     """docstring for ImportWooProduct"""
@@ -198,12 +199,12 @@ class ImportWooBundledProduct(ImportWooProduct):
 
     def isFirstOrder(self): return True; 
 
-class ImportWooCategory(ImportGenTaxo, ImportWooMixin):
+class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     """docstring for ImportWooCategory"""
     productsKey = 'products'
 
     def __init__(self, *args, **kwargs):
-        ImportWooMixin.__init__(self, *args, **kwargs)
+        ImportWooObject.__init__(self, *args, **kwargs)
         super(ImportWooCategory, self).__init__(*args, **kwargs) 
         self.members = OrderedDict()
 
@@ -444,7 +445,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def processObject(self, objectData):
         super(CSVParse_Woo, self).processObject(objectData)
-        assert isinstance(objectData, ImportWooMixin)
+        assert isinstance(objectData, ImportWooObject)
         self.processCategories(objectData)
         if objectData.isProduct():
             catSKUs = map(lambda x: x.getCodesum(), objectData.getCategories().values())

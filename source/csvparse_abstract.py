@@ -110,7 +110,6 @@ class ImportObject(OrderedDict, Registrar):
         Registrar.__init__(self)
         self['rowcount'] = rowcount
         self.row = row
-        self.initialized = False
 
     def getRowcount(self):
         return self['rowcount']
@@ -250,7 +249,10 @@ class CSVParse_Base(object, Registrar):
         self.registerMessage("container: {}".format(container.__name__))                
         kwargs = self.getKwargs(allData, container, **kwargs)
         self.registerMessage("kwargs: {}".format(kwargs))                
-        return container(allData, rowcount, row, **kwargs)
+        objectData = container(allData, rowcount, row, **kwargs)
+        mro = type(objectData).__mro__
+        self.registerMessage("mro: {}".format(mro))
+        return objectData
 
     def initializeObject(self, objectData):
         pass

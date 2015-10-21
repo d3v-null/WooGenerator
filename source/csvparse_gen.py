@@ -67,8 +67,8 @@ class sanitationUtils:
         #     print " | str_o: ",str_out
         return str_out
 
-class ImportGenMixin:
-    """docstring for ImportGenMixin"""
+class ImportGenObject(ImportTreeObject):
+    """docstring for ImportGenObject"""
     codeKey = 'code'
     nameKey = 'name'
     fullnameKey = 'fullname'
@@ -76,9 +76,12 @@ class ImportGenMixin:
     codesumKey = 'codesum'
     descsumKey = 'descsum'
 
-    def __init__(self, data, rowcount, row, depth, meta=None, parent=None, regex=None, subs=None):
+    def __init__(self, *args, **kwargs):
+        subs = kwargs['subs']
+        regex = kwargs['regex']
         self.subs = subs
         self.regex = regex
+        super(ImportGenObject, self).__init__(*args, **kwargs)
 
     @classmethod
     def fromImportTreeObject(cls, objectData, regex, subs):
@@ -178,6 +181,7 @@ class ImportGenMixin:
         return sanitationUtils.shorten(self.regex, self.subs, name)
 
     def processMeta(self):
+
         meta = self.getMeta()
         try:
             self.setFullname( meta[0] )
@@ -207,12 +211,12 @@ class ImportGenMixin:
         self.registerMessage("nameSum: {}".format(nameSum) )
         self.setSum(nameSum)  
 
-class ImportGenItem(ImportTreeItem, ImportGenMixin):
+class ImportGenItem(ImportGenObject, ImportTreeItem):
     """docstring for ImportGenItem"""
     sumKey = 'itemsum'
 
     def __init__(self, *args, **kwargs):
-        ImportGenMixin.__init__(self, *args, **kwargs)
+        ImportGenObject.__init__(self, *args, **kwargs)
         super(ImportGenItem, self).__init__(*args, **kwargs)
 
     def getCodeDelimeter(self):
@@ -226,12 +230,12 @@ class ImportGenProduct(ImportGenItem):
     def isProduct(self):
         return True   
 
-class ImportGenTaxo(ImportTreeTaxo, ImportGenMixin):
+class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
     """docstring for ImportGenTaxo"""
     sumKey = 'taxosum'
 
     def __init__(self, *args, **kwargs):
-        ImportGenMixin.__init__(self, *args, **kwargs) 
+        ImportGenObject.__init__(self, *args, **kwargs) 
         super(ImportGenTaxo, self).__init__(*args, **kwargs)
 
     def joinNames(self):
@@ -342,7 +346,7 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def getKwargs(self, allData, container, **kwargs):
         kwargs = super(CSVParse_Gen, self).getKwargs(allData, container, **kwargs)
-        assert issubclass(container, ImportGenMixin)
+        assert issubclass(container, ImportGenObject)
         if issubclass(container, self.taxoContainer):
             regex = self.taxoRegex
             subs = self.taxoSubs
