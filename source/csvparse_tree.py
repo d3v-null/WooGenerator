@@ -4,9 +4,9 @@ from collections import OrderedDict
 DEBUG_TREE = False
 DEBUG_TREE = True
 
-class ImportTreeBase(ImportObject):
-    def __init__(self, data, rowcount, row, depth, meta=None, parent=None):
-        super(ImportTreeBase, self).__init__(data, rowcount, row)
+class ImportTreeObject(ImportObject):
+    def __init__(self, data, rowcount, row, depth=-1, meta=None, parent=None, **kwargs):
+        super(ImportTreeObject, self).__init__(data, rowcount, row)
         self.setDepth(depth)
         self.meta = meta
         self.parent = parent
@@ -76,25 +76,26 @@ class ImportTreeBase(ImportObject):
     def getMeta(self):
         return self.meta
 
-    def processMeta(self): pass
-    def verifyMeta(self): pass
+class ImportTreeRoot(ImportTreeObject):
+    """docstring for ImportTreeRoot"""
 
-class ImportTreeRoot(ImportTreeBase):
+    isRoot = True
+
     def __init__(self):
         data = OrderedDict()
         rowcount = -1
         row = []
-        depth = -1
-        meta = None
-        parent = None
-        super(ImportTreeRoot, self).__init__(data, rowcount, row, depth, meta, parent)
+        super(ImportTreeRoot, self).__init__(data, rowcount, row)
+
+    def processMeta(self): pass
+    def verifyMeta(self): pass
 
     def getIdentifier(self):
         return " * "
 
-    def isRoot(self): return True
+    def isRoot(self): return self.isRoot
 
-class ImportTreeItem(ImportTreeBase):
+class ImportTreeItem(ImportTreeObject):
     """docstring for ImportTreeItem"""
     # def __init__(self, *args):
     #     super(ImportTreeItem, self).__init__(*args)
@@ -108,7 +109,7 @@ class ImportTreeItem(ImportTreeBase):
         ancestors = self.getAncestors()
         return filter( lambda x: x.isItem(), ancestors)    
 
-class ImportTreeTaxo(ImportTreeBase):
+class ImportTreeTaxo(ImportTreeObject):
     """docstring for ImportTreeTaxo"""
     # def __init__(self, *args):
     #     super(ImportTreeTaxo, self).__init__(*args)
@@ -148,6 +149,13 @@ class ImportStack(list):
         return ImportStack(self[:index])
 
     def __repr__(self):
+        return ''.join([
+            '[',
+            ','.join([str(x.getIndex()) for x in self]),
+            ']'
+        ])
+
+    def display(self):
         out = "\n"
         for objectData in self:
             try:
@@ -157,6 +165,10 @@ class ImportStack(list):
         return out
 
 class CSVParse_Tree(CSVParse_Base):
+    objectContainer = ImportTreeObject
+    rootContainer   = ImportTreeRoot
+    itemContainer   = ImportTreeItem
+    taxoContainer   = ImportTreeTaxo
 
     """docstring for CSVParse_Tree"""
     def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth):
@@ -164,11 +176,8 @@ class CSVParse_Tree(CSVParse_Base):
         self.itemDepth = itemDepth
         self.maxDepth  = taxoDepth + itemDepth
         self.metaWidth = metaWidth
-        self.itemContainer = ImportTreeItem
         self.itemIndexer = self.getObjectRowcount
-        self.taxoContainer = ImportTreeTaxo
         self.taxoIndexer = self.getObjectRowcount
-        self.rootContainer = ImportTreeRoot
         super(CSVParse_Tree, self).__init__(cols, defaults)
 
         if DEBUG_TREE:
@@ -237,52 +246,74 @@ class CSVParse_Tree(CSVParse_Base):
     def isItemDepth(self, depth):
         return depth >= self.taxoDepth and depth < self.maxDepth    
 
-    def newObject(self, rowcount, row, depth=None, stack=None):
-        if depth is None: depth = self.depth( row )
-        self.registerMessage("depth: {}".format(depth))
-        objectData = super(CSVParse_Tree, self).newObject(rowcount, row)
-        if stack is None: 
-            self.refreshStack(objectData, depth)
-            stack = self.stack
-        self.registerMessage("stack: {}".format(stack))
-        meta = self.extractMeta(row, depth)
-        self.registerMessage("meta: {}".format(meta))
-        parent = self.stack.getTop()
-        if parent is None: parent = self.rootData
-        self.registerMessage("parent: {}".format(parent))
+    def getContainer(self, allData, **kwargs):
+        depth = kwargs['depth']
+        assert depth is not None, "depth should be available to CSVParse_Tree.getContainer"
         if self.isTaxoDepth(depth):
             container = self.taxoContainer
         else:
-            assert self.isItemDepth(depth), "sanity check"
+            assert self.isItemDepth(depth), "sanity check: depth is either taxo or item"
             container = self.itemContainer
-        self.registerMessage("container: {}".format(container.__name__))                
-        return container.fromImportObject(objectData, depth, meta, parent)
+        return container
 
-    # def processMeta(self, itemData): #overridden later
-    #     pass
+    def getKwargs(self, allData, container, **kwargs):
+        kwargs = super(CSVParse_Tree, self).getKwargs(allData, container, **kwargs)
+        assert issubclass(container, ImportTreeObject)
+        del kwargs['stack']
+        for key in ['meta', 'parent']:
+            assert kwargs[key] is not None
+        return kwargs
 
-    # def initializeObject(self, objectData):
-        # self.processMeta(objectData)
-        # super(CSVParse_Tree, self).initializeObject(objectData)
-        # parentData = self.getStackParent()
-        # self.assignParent(parentData, objectData)
+    def newObject(self, rowcount, row, **kwargs):
+        try:
+            depth = kwargs['depth']
+            assert depth is not None
+        except:
+            depth = self.depth( row )
+            kwargs['depth'] = depth
+        assert isinstance(depth, int)
+        self.registerMessage("depth: %d"%(depth))
+        try:
+            stack = kwargs['stack']
+            assert stack is not None
+        except:
+            self.refreshStack(rowcount, row, depth)
+            stack = self.stack
+            kwargs['stack'] = stack
+        assert isinstance(stack, ImportStack)
+        self.registerMessage("stack: {}".format(stack))
 
-    # def processObject(self, objectData):
-    #     pass
+        parent = stack.getTop()
+        if parent is None: parent = self.rootData
+        self.registerMessage("parent: {}".format(parent))
+        kwargs['parent'] = parent
 
-    def refreshStack(self, objectData, thisDepth = None):
-        if thisDepth is None:
-            thisDepth = objectData.getDepth()
-        assert thisDepth >= 0, "stack should not be broken"
+        meta = self.extractMeta(row, depth)
+        self.registerMessage("meta: {}".format(meta))
+        kwargs['meta'] = meta
+        
+        return super(CSVParse_Tree, self).newObject(rowcount, row, **kwargs)
+
+    def refreshStack(self, rowcount, row, thisDepth):
+        try:
+            assert thisDepth >= 0, "stack should not be broken"
+        except AssertionError as e:
+            raise UserWarning(str(e))
         del self.stack[thisDepth:]
         for depth in range(len(self.stack), thisDepth):
-            layer = self.newObject(objectData.getRowcount(), objectData.getRow(), depth)
+            layer = self.newObject(rowcount, row, depth=depth)
             self.stack.append(layer)
             # self.initializeObject(layer)
-        assert len(self.stack) == thisDepth , "stack should have been properly refreshed"
+        assert len(self.stack) == thisDepth , "stack should have been properly refreshed"    
+
+    def refreshStackFromObject(self, objectData):
+        assert isinstance(objectData, ImportTreeObject)
+        return self.refreshStack(objectData.getRowcount(), objectData.getRow(), objectData.getDepth() )
 
     def processObject(self, objectData):
-        self.refreshStack(objectData)
+        oldstack = self.stack[:]
+        self.refreshStackFromObject(objectData)
+        assert oldstack == self.stack
         self.stack.append(objectData)
         super(CSVParse_Tree, self).processObject(objectData)
 

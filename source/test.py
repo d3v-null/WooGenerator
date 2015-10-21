@@ -1,24 +1,21 @@
-from collections import OrderedDict
+class first:
+    a = 'first'
+    def __init__(self):
+        print "first"
+        print self.a
 
-def combineOrderedDicts(a, b):
-    if not a:
-        return b if b else OrderedDict()
-    if not b: return a
-    c = OrderedDict(b.items())
-    for key, value in a.items():
-        c[key] = value
-    return c
+class second(first):
+    # a = 'second'
+    pass
 
-a = OrderedDict([
-    (1, 'a'),
-    (2, 'b')
-])
+class third:
+    a = 'third'
+    def __init__(self):
+        print "third"
+        print self.a
 
-b = OrderedDict([
-    (1, 'c'),
-])
+class fourth(second, third):
+    # a = 'fourth'
+    pass
 
-print a
-print b
-print combineOrderedDicts(a, b)
-print combineOrderedDicts(b, a)
+instance = fourth()

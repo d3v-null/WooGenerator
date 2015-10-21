@@ -31,7 +31,7 @@ DEBUG_WOO = True
 class ImportWooMixin:
     """docstring for ImportWooMixin"""
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self.attributes = OrderedDict()
         self.images = []
         self.specials = []
@@ -90,16 +90,15 @@ class ImportWooMixin:
 
 class ImportWooItem(ImportGenItem, ImportWooMixin):
     """docstring for ImportWooItem"""
-    def __init__(self, *args):
-        super(ImportWooItem, self).__init__(*args)
-        ImportWooMixin.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        super(ImportWooItem, self).__init__(*args, **kwargs)
+        ImportWooMixin.__init__(self, *args, **kwargs)
 
-class ImportWooProduct(ImportGenProduct, ImportWooMixin):
+class ImportWooProduct(ImportWooItem, ImportGenProduct):
     """docstring for ImportWooProduct"""
 
-    def __init__(self, *args):
-        super(ImportWooProduct, self).__init__(*args)
-        ImportWooMixin.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        super(ImportWooProduct, self).__init__(*args, **kwargs)
         self.categories = OrderedDict()
         self['prod_type'] = self.product_type
 
@@ -145,8 +144,8 @@ class ImportWooVariableProduct(ImportWooProduct):
     """docstring for ImportWooVariableProduct"""
     product_type = 'variable'
 
-    def __init__(self, *args):
-        super(ImportWooVariableProduct, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(ImportWooVariableProduct, self).__init__(*args, **kwargs)
         self.variations = OrderedDict()
 
     def registerVariation(self, varData):
@@ -203,9 +202,9 @@ class ImportWooCategory(ImportGenTaxo, ImportWooMixin):
     """docstring for ImportWooCategory"""
     productsKey = 'products'
 
-    def __init__(self, *args):
-        super(ImportWooCategory, self).__init__(*args) 
-        ImportWooMixin.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        ImportWooMixin.__init__(self, *args, **kwargs)
+        super(ImportWooCategory, self).__init__(*args, **kwargs) 
         self.members = OrderedDict()
 
     def registerMember(self, itemData):
@@ -233,6 +232,10 @@ class CSVParse_Woo(CSVParse_Gen):
         'G': ImportWooGroupedProduct,
         'B': ImportWooBundledProduct,
     }
+
+    itemContainer      = ImportWooItem
+    productContainer   = ImportWooProduct
+    taxoContainer      = ImportWooCategory
 
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
@@ -279,9 +282,6 @@ class CSVParse_Woo(CSVParse_Gen):
         self.dprcRules = dprcRules
         self.dprpRules = dprpRules
         self.specials = specials
-        self.itemContainer      = ImportWooItem
-        self.productContainer   = ImportWooProduct
-        self.taxoContainer      = ImportWooCategory
         if DEBUG_WOO:
             print "WOO initializing: "
             print "-> taxoDepth: ", self.taxoDepth

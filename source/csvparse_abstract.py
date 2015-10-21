@@ -8,6 +8,7 @@ DEBUG_PARSER = True
 class Registrar:
     messages = OrderedDict()
     errors = OrderedDict()
+    warnings = OrderedDict()
 
     def __init__(self):
         self.objectIndexer = id
@@ -76,6 +77,18 @@ class Registrar:
             index, 
             singular = False,
             registerName = 'errors'
+        )
+
+    def registerWarning(self, message, source=None):
+        if source is None:
+            source = debugUtils.getCallerProcedure()
+        if DEBUG: Registrar.printAnything(source, message, ' ')
+        self.registerAnything(
+            message,
+            self.warnings,
+            source,
+            singular = False,
+            registerName = 'warnings'
         )
 
     def registerMessage(self, message, source=None):
@@ -158,6 +171,8 @@ class debugUtils:
 class CSVParse_Base(object, Registrar):
     """docstring for CSVParse_Base"""
 
+    objectContainer = ImportObject
+
     def __init__(self, cols, defaults ):
         super(CSVParse_Base, self).__init__()
         Registrar.__init__(self)
@@ -168,9 +183,7 @@ class CSVParse_Base(object, Registrar):
         self.cols = listUtils.combineLists( cols, extra_cols )
         self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         self.pp = pprint.PrettyPrinter(indent=2, depth=2)
-        self.indexSingularity = True
         self.objectIndexer = self.getObjectRowcount
-        self.objectContainer = ImportObject
         self.clearTransients()
 
     def clearTransients(self):
@@ -219,15 +232,25 @@ class CSVParse_Base(object, Registrar):
                 rowData[col] = self.sanitizeCell(retrieved)
         return rowData
 
-    def newObject(self, rowcount, row):
-        self.registerMessage( '{} | {}'.format(rowcount, row) )
+    def getContainer(self, allData, **kwargs):
+        return self.objectContainer
+
+    def getKwargs(self, allData, container, **kwargs):
+        return kwargs
+
+    def newObject(self, rowcount, row, **kwargs):
+        self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
         self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
         self.registerMessage( "rowData: {}".format(rowData) )
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
         self.registerMessage( "allData: {}".format(allData) )
-        return self.objectContainer(allData, rowcount, row)
+        container = self.getContainer(allData, **kwargs)
+        self.registerMessage("container: {}".format(container.__name__))                
+        kwargs = self.getKwargs(allData, container, **kwargs)
+        self.registerMessage("kwargs: {}".format(kwargs))                
+        return container(allData, rowcount, row, **kwargs)
 
     def initializeObject(self, objectData):
         pass
@@ -254,19 +277,19 @@ class CSVParse_Base(object, Registrar):
                     continue
                 try:
                     objectData = self.newObject( rowcount, row )
-                except AssertionError as e:
-                    self.registerError("could not create new object: {}".format(e), rowcount)
+                except UserWarning as e:
+                    self.registerWarning("could not create new object: {}".format(e), rowcount)
                     continue
                 else:
                     self.registerMessage("%s CREATED" % objectData.getIdentifier() )
                 try:
                     self.processObject(objectData) 
-                except AssertionError as e:
+                except UserWarning as e:
                     self.registerError("could not process new object: {}".format(e), objectData)
                     continue
                 try:
                     self.registerObject(objectData)
-                except AssertionError as e:
+                except UserWarning as e:
                     self.registerError("could not register new object: {}".format(e), objectData)
                     continue
                             

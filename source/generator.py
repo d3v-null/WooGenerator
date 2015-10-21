@@ -485,7 +485,6 @@ for img, items in sorted(images.items(), cmp_vallen):
 		imgmeta.write_meta(title, description)
 		print imgmeta.read_meta()
 
-
 		image = Image.open(imgdstpath)
 		image.thumbnail(thumbsize)
 		image.save(imgdstpath)

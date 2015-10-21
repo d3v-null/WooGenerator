@@ -9,16 +9,20 @@ from collections import OrderedDict
 def sanitizeClass(string):
     return re.sub('[^a-z]', '', string.lower())
 
-class ImportDynRuleLine(ImportTreeItem):
+class ImportDynMixin:
+    def processMeta(self): pass
+    def verifyMeta(self): pass
+
+class ImportDynRuleLine(ImportTreeItem, ImportDynMixin):
     """docstring for ImportDynRuleLine"""
     # def __init__(self, *args):
     #     super(ImportDynRuleLine, self).__init__(*args)    
 
-class ImportDynRule(ImportTreeTaxo):
+class ImportDynRule(ImportTreeTaxo, ImportDynMixin):
 
     """docstring for ImportDynRule"""
-    def __init__(self, *args):
-        super(ImportDynRule, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(ImportDynRule, self).__init__(*args, **kwargs)
         # self.ruleData = ruleData
         self['ruleLines'] = []
 

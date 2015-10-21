@@ -13,14 +13,16 @@ class ImportFlat(ImportObject):
 
 class CSVParse_Flat(CSVParse_Base):
     """docstring for CSVParse_Flat"""
+
+    objectContainer = ImportFlat
     # def __init__(self, cols, defaults):
     #     super(CSVParse_Flat, self).__init__(cols, defaults)
 
 class ImportSpecial(ImportFlat):
     """docstring for ImportSpecial"""
-    def __init__(self,  data, rowcount, row, ID):
+    def __init__(self,  data, rowcount, row):
         super(ImportSpecial, self).__init__(data, rowcount, row)
-        self['ID'] = ID
+        assert self['ID'] is not None
 
     def getID(self):
         return self['ID']
@@ -30,6 +32,8 @@ class ImportSpecial(ImportFlat):
 
 class CSVParse_Special(CSVParse_Flat):
     """docstring for CSVParse_Special"""
+
+    objectContainer = ImportSpecial
 
     def __init__(self, cols=[], defaults={}):
         extra_cols = [
@@ -48,17 +52,19 @@ class CSVParse_Special(CSVParse_Flat):
         cols = listUtils.combineLists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
-        self.itemContainer = ImportSpecial
         self.itemIndexer = self.getID
 
     def getID(self, itemData):
         return itemData.getID()
 
-    def newObject(self, rowcount, row):
-        retrieved = self.retrieveColFromRow('ID', row)
-        assert retrieved, "must be able to retrieve ID for special"
-        ID = self.sanitizeCell(retrieved)
-        return self.itemContainer( self.defaults.items(), rowcount, row, ID )
+    def getKwargs(self, allData, container, **kwargs):
+        kwargs = super(CSVParse_Special, self).getKwargs(allData, container, **kwargs)
+        ID = allData.get('ID')
+        try:
+            assert ID is not None, "ID must be visible to CSVParse_Special.getKwargs"
+        except AssertionError as e:
+            raise UserWarning(str(e))
+        return kwargs
 
     def registerItem(self, itemData):
         if not self.itemIndexer(itemData):
@@ -68,8 +74,8 @@ class CSVParse_Special(CSVParse_Flat):
 
 class ImportUser(ImportObject):
     """docstring for ImportUser"""
-    def __init__(self, *args):
-        super(ImportUser, self).__init__(*args)
+    # def __init__(self, *args):
+    #     super(ImportUser, self).__init__(*args)
 
     def getEmail(self):
         return self.get('E-mail')

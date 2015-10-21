@@ -1,5 +1,5 @@
 from csvparse_abstract import listUtils
-from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeBase
+from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 from collections import OrderedDict
 import functools
 from itertools import chain
@@ -67,7 +67,7 @@ class sanitationUtils:
         #     print " | str_o: ",str_out
         return str_out
 
-class ImportGenMixin(ImportTreeBase):
+class ImportGenMixin:
     """docstring for ImportGenMixin"""
     codeKey = 'code'
     nameKey = 'name'
@@ -79,11 +79,10 @@ class ImportGenMixin(ImportTreeBase):
     def __init__(self, data, rowcount, row, depth, meta=None, parent=None, regex=None, subs=None):
         self.subs = subs
         self.regex = regex
-        super(ImportGenMixin, self).__init__(data, rowcount, row, depth, meta, parent)
 
     @classmethod
     def fromImportTreeObject(cls, objectData, regex, subs):
-        assert isinstance(objectData, ImportTreeBase)
+        assert isinstance(objectData, ImportTreeObject)
         row = objectData.getRow()
         rowcount = objectData.getRowcount()
         depth = objectData.getDepth()
@@ -212,8 +211,9 @@ class ImportGenItem(ImportTreeItem, ImportGenMixin):
     """docstring for ImportGenItem"""
     sumKey = 'itemsum'
 
-    def __init__(self, *args):
-        ImportGenMixin.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        ImportGenMixin.__init__(self, *args, **kwargs)
+        super(ImportGenItem, self).__init__(*args, **kwargs)
 
     def getCodeDelimeter(self):
         parent = self.getParent()
@@ -230,8 +230,9 @@ class ImportGenTaxo(ImportTreeTaxo, ImportGenMixin):
     """docstring for ImportGenTaxo"""
     sumKey = 'taxosum'
 
-    def __init__(self, *args):
-        ImportGenMixin.__init__(self, *args) 
+    def __init__(self, *args, **kwargs):
+        ImportGenMixin.__init__(self, *args, **kwargs) 
+        super(ImportGenTaxo, self).__init__(*args, **kwargs)
 
     def joinNames(self):
         ancestors = self.getAncestors() + [self]
@@ -242,6 +243,10 @@ class ImportGenTaxo(ImportTreeTaxo, ImportGenMixin):
 
 class CSVParse_Gen(CSVParse_Tree):
     """docstring for CSVParse_Gen"""
+
+    taxoContainer = ImportGenTaxo
+    itemContainer = ImportGenItem
+    productContainer = ImportGenProduct
 
     def __init__(self, cols, defaults, schema, \
                     taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2):
@@ -275,9 +280,7 @@ class CSVParse_Gen(CSVParse_Tree):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         super(CSVParse_Gen, self).__init__( cols, defaults, taxoDepth, itemDepth, metaWidth)
-        self.taxoContainer = ImportGenTaxo
-        self.itemContainer = ImportGenItem
-        self.productContainer = ImportGenProduct
+
         self.schema     = schema
         self.taxoSubs   = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
         self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )   
@@ -329,26 +332,32 @@ class CSVParse_Gen(CSVParse_Tree):
     def sanitizeCell(self, cell):
         return sanitationUtils.sanitizeCell(cell)  
 
-    def newObject(self, rowcount, row, depth=None, stack=None):
-        #todo: make this work a bit better
-        objectData = super(CSVParse_Gen, self).newObject(rowcount, row, depth, stack)
-        if objectData.isTaxo():
-            regex = self.taxoRegex
-            subs = self.taxoSubs
-            container = self.taxoContainer
-        else:
-            assert objectData.isItem()
-            regex = self.itemRegex
-            subs = self.itemSubs
-            container = self.itemContainer
-        itemtype = objectData.get(self.schema,'')
+    def getContainer(self, allData, **kwargs):
+        container = super(CSVParse_Gen, self).getContainer( allData, **kwargs)
+        itemtype = allData.get(self.schema,'')
         self.registerMessage("itemtype: {}".format(itemtype))
-        objectData['itemtype'] = itemtype
         if itemtype in self.prod_containers.keys():
             container = self.prod_containers[itemtype]
-        self.registerMessage("container: {}".format(container.__name__))    
-        return container.fromImportTreeObject(objectData, regex, subs) 
+        return container
 
+    def getKwargs(self, allData, container, **kwargs):
+        kwargs = super(CSVParse_Gen, self).getKwargs(allData, container, **kwargs)
+        assert issubclass(container, ImportGenMixin)
+        if issubclass(container, self.taxoContainer):
+            regex = self.taxoRegex
+            subs = self.taxoSubs
+        else:
+            assert issubclass(container, self.itemContainer), "class must be item or taxo subclass not %s" % container.__name__
+            regex = self.itemRegex
+            subs = self.itemSubs
+        kwargs['regex'] = regex
+        kwargs['subs'] = subs
+        for key in ['regex', 'subs']:
+            assert kwargs[key] is not None
+        return kwargs
+
+    # def newObject(self, rowcount, row, **kwargs):
+    #     return super(CSVParse_Gen, self).newObject(rowcount, row, **kwargs)
 
     def getProducts(self):
         self.registerMessage("returning products: {}".format(self.products.keys()))
