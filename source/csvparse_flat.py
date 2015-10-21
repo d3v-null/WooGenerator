@@ -22,7 +22,8 @@ class ImportSpecial(ImportFlat):
     """docstring for ImportSpecial"""
     def __init__(self,  data, rowcount, row):
         super(ImportSpecial, self).__init__(data, rowcount, row)
-        assert self['ID'] is not None
+        if not self.get('ID'):
+            raise UserWarning("ID must be visible to ImportSpecial.__init__")
 
     def getID(self):
         return self['ID']
@@ -52,25 +53,10 @@ class CSVParse_Special(CSVParse_Flat):
         cols = listUtils.combineLists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
-        self.itemIndexer = self.getID
+        self.objectIndexer = self.getObjectID
 
-    def getID(self, itemData):
-        return itemData.getID()
-
-    def getKwargs(self, allData, container, **kwargs):
-        kwargs = super(CSVParse_Special, self).getKwargs(allData, container, **kwargs)
-        ID = allData.get('ID')
-        try:
-            assert ID is not None, "ID must be visible to CSVParse_Special.getKwargs"
-        except AssertionError as e:
-            raise UserWarning(str(e))
-        return kwargs
-
-    def registerItem(self, itemData):
-        if not self.itemIndexer(itemData):
-            self.registerError(Exception("invalid index"), itemData )
-            return
-        super(CSVParse_Flat, self).registerItem(itemData)         
+    def getObjectID(self, objectData):
+        return objectData.getID()     
 
 class ImportUser(ImportObject):
     """docstring for ImportUser"""

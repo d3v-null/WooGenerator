@@ -1,6 +1,6 @@
 import os
 from csvparse_abstract import listUtils, debugUtils
-from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo
+from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 import bleach
 import re
 from collections import OrderedDict
@@ -9,25 +9,60 @@ from collections import OrderedDict
 def sanitizeClass(string):
     return re.sub('[^a-z]', '', string.lower())
 
-class ImportDynMixin:
-    def processMeta(self): pass
-    def verifyMeta(self): pass
+def isNotNone(arg):
+    return arg is not None
 
-class ImportDynRuleLine(ImportTreeItem, ImportDynMixin):
+def isContainedIn(l):
+    return lambda v: v in l
+
+class ImportDynObject(ImportTreeObject):
     """docstring for ImportDynRuleLine"""
-    # def __init__(self, *args):
-    #     super(ImportDynRuleLine, self).__init__(*args)    
+    def isRuleLine(self): return False
+    def validate(self):
+        for key, validation in self.validations:
+            assert callable(validation)
+            if not validation(self.get(key)):
+                raise UserWarning("%s could be be validated by %s" % (key,self.__class__.__name__) )
 
-class ImportDynRule(ImportTreeTaxo, ImportDynMixin):
+class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
+    """docstring for ImportDynRuleLine"""
+    
+    validations = {
+        'Discount': isNotNone,
+        'Discount Type': isContainedIn( ['PDSC'] )
+    }
 
+    def __init__(self, *args, **kwargs):
+        super(ImportDynRuleLine, self).__init__(*args, **kwargs)    
+
+        if all([
+            self.get('Min ( Buy )') is None,
+            self.get('Max ( Receive )') is None
+        ]):
+            raise UserWarning("one of buy or receiver must be visible to ImportDynObject")
+
+    def isRuleLine(self): return True
+
+class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     """docstring for ImportDynRule"""
+
+    validations = {
+        'ID':isNotNone, 
+        'Qty. Base': isContainedIn(['PROD', 'VAR', 'CAT']) , 
+        'Rule Mode': isContainedIn(['BULK', 'SPECIAL']), 
+        'Roles': isNotNone
+    }
+
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         # self.ruleData = ruleData
-        self['ruleLines'] = []
+        self.ruleLines = []
 
     def getID(self):
-        return self.get('ID')
+        return self['ID']
+
+    def getIndex(self):
+        return self.getID()
 
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
@@ -36,8 +71,17 @@ class ImportDynRule(ImportTreeTaxo, ImportDynMixin):
     #     if ruleLineData:
     #         self['children'].append(ruleLineData)
 
+    def registerRuleLine(self, lineData):
+        # assert isinstance(lineData, ImportDynObject)
+        assert lineData.isRuleLine()
+        self.registerAnything(
+            lineData,
+            self.getRuleLines()
+        )
+
     def getRuleLines(self):
-        return self.getChildren().values()
+        return self.ruleLines
+        # return self.getChildren().values()
 
     def getColNames(self, ruleMode='BULK'):
         ruleMode = self.get('Rule Mode', 'BULK')
@@ -101,6 +145,11 @@ class ImportDynRule(ImportTreeTaxo, ImportDynMixin):
 
 class CSVParse_Dyn(CSVParse_Tree):
     """docstring for CSVParse_Dyn"""
+
+    itemContainer = ImportDynRuleLine
+    taxoContainer = ImportDynRule
+    objectContainer = ImportDynObject
+
     def __init__(self, cols=[], defaults={}):
         extra_cols = [
             'ID', 'Qty. Base', 'Rule Mode', 'Roles',
@@ -115,8 +164,8 @@ class CSVParse_Dyn(CSVParse_Tree):
         defaults = listUtils.combineOrderedDicts(extra_defaults, defaults)
         super(CSVParse_Dyn, self).__init__( cols, defaults, \
                                 taxoDepth=1, itemDepth=1, metaWidth=0)
-        self.itemContainer = ImportDynRuleLine
-        self.taxoContainer = ImportDynRule
+
+        self.taxoIndexer = self.getObjectIndex
 
     # def clearTransients(self):
     #     super(CSVParse_Dyn, self).clearTransients()

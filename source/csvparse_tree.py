@@ -7,6 +7,12 @@ DEBUG_TREE = True
 class ImportTreeObject(ImportObject):
     def __init__(self, data, rowcount, row, depth=-1, meta=None, parent=None, **kwargs):
         super(ImportTreeObject, self).__init__(data, rowcount, row)
+        if not isinstance(self, ImportTreeRoot):
+            assert all([
+                depth is not None and depth is not -1,
+                meta is not None,
+                parent is not None
+            ])
         self.setDepth(depth)
         self.meta = meta
         self.parent = parent
@@ -28,6 +34,9 @@ class ImportTreeObject(ImportObject):
     def isItem(self): return False
     def isTaxo(self): return False
     def isRoot(self): return False
+
+    def processMeta(self): pass
+    def verifyMeta(self): pass
 
     def getIdentifierDelimeter(self):
         return "=" * self.getDepth()
@@ -86,9 +95,6 @@ class ImportTreeRoot(ImportTreeObject):
         rowcount = -1
         row = []
         super(ImportTreeRoot, self).__init__(data, rowcount, row)
-
-    def processMeta(self): pass
-    def verifyMeta(self): pass
 
     def getIdentifier(self):
         return " * "
@@ -180,12 +186,12 @@ class CSVParse_Tree(CSVParse_Base):
         self.taxoIndexer = self.getObjectRowcount
         super(CSVParse_Tree, self).__init__(cols, defaults)
 
-        if DEBUG_TREE:
-            print "TREE initializing: "
-            print "-> taxoDepth: ", self.taxoDepth
-            print "-> itemDepth: ", self.itemDepth
-            print "-> maxDepth: ", self.maxDepth
-            print "-> metaWidth: ", self.metaWidth
+        # if DEBUG_TREE:
+        #     print "TREE initializing: "
+        #     print "-> taxoDepth: ", self.taxoDepth
+        #     print "-> itemDepth: ", self.itemDepth
+        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> metaWidth: ", self.metaWidth
 
         
     def clearTransients(self):
@@ -201,15 +207,17 @@ class CSVParse_Tree(CSVParse_Base):
         itemData.registerParent(parentData)
     
     def registerItem(self, itemData):
+        assert itemData.isItem()
         self.registerAnything(
             itemData, 
             self.items, 
-            self.itemIndexer,
+            indexer = self.itemIndexer,
             singular = True,
             registerName = 'items'
         )    
 
     def registerTaxo(self, taxoData):
+        assert taxoData.isTaxo()
         self.registerAnything(
             taxoData, 
             self.taxos, 
@@ -259,7 +267,6 @@ class CSVParse_Tree(CSVParse_Base):
     def getKwargs(self, allData, container, **kwargs):
         kwargs = super(CSVParse_Tree, self).getKwargs(allData, container, **kwargs)
         assert issubclass(container, ImportTreeObject)
-        del kwargs['stack']
         for key in ['meta', 'parent']:
             assert kwargs[key] is not None
         return kwargs
@@ -275,11 +282,11 @@ class CSVParse_Tree(CSVParse_Base):
         self.registerMessage("depth: %d"%(depth))
         try:
             stack = kwargs['stack']
+            del kwargs['stack']
             assert stack is not None
         except:
             self.refreshStack(rowcount, row, depth)
             stack = self.stack
-            kwargs['stack'] = stack
         assert isinstance(stack, ImportStack)
         self.registerMessage("stack: {}".format(stack))
 

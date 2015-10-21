@@ -288,12 +288,13 @@ class CSVParse_Gen(CSVParse_Tree):
         self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )   
         self.taxoRegex  = sanitationUtils.compileRegex(self.taxoSubs)
         self.itemRegex  = sanitationUtils.compileRegex(self.itemSubs)
-        if DEBUG_GEN:
-            print "GEN initializing: "
-            print "-> taxoDepth: ", self.taxoDepth
-            print "-> itemDepth: ", self.itemDepth
-            print "-> maxDepth: ", self.maxDepth
-            print "-> metaWidth: ", self.metaWidth
+        self.productIndexer = self.getGenCodesum
+        # if DEBUG_GEN:
+        #     print "GEN initializing: "
+        #     print "-> taxoDepth: ", self.taxoDepth
+        #     print "-> itemDepth: ", self.itemDepth
+        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> metaWidth: ", self.metaWidth
 
 
     def clearTransients(self):
@@ -305,7 +306,7 @@ class CSVParse_Gen(CSVParse_Tree):
         self.registerAnything(
             prodData, 
             self.products,
-            prodData.getCodesum(),
+            indexer = self.productIndexer,
             singular = True,
             resolver = self.resolveConflict,
             registerName = 'products'
@@ -333,6 +334,10 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def sanitizeCell(self, cell):
         return sanitationUtils.sanitizeCell(cell)  
+
+    def getGenCodesum(self, genData):
+        assert isinstance(genData, ImportGenObject)
+        return genData.getCodesum()
 
     def getContainer(self, allData, **kwargs):
         container = super(CSVParse_Gen, self).getContainer( allData, **kwargs)

@@ -90,10 +90,14 @@ elif schema in woo_schemas:
 	dynParser.analyseFile(dprcPath)
 	dprcRules = dynParser.taxos
 
+	print dprcRules
+
 	if DEBUG: print "analysing dprpPath"
 	dynParser.clearTransients()
 	dynParser.analyseFile(dprpPath)
 	dprpRules = dynParser.taxos
+
+	print dprpRules
 
 	if DEBUG: print "analysing specPath"
 	specialParser = CSVParse_Special()

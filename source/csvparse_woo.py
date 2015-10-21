@@ -37,6 +37,7 @@ class ImportWooObject(ImportGenObject):
         self.images = []
         self.specials = []
 
+    def isCategory(): return False;
     def isFirstOrder(self): return False;
     def isVariable(self): return False;
     def isVariation(self): return False;
@@ -149,6 +150,7 @@ class ImportWooVariableProduct(ImportWooProduct):
         self.variations = OrderedDict()
 
     def registerVariation(self, varData):
+        assert varData.isVariation()
         self.registerAnything(
             varData,
             self.variations,
@@ -205,6 +207,8 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     def __init__(self, *args, **kwargs):
         super(ImportWooCategory, self).__init__(*args, **kwargs) 
         self.members = OrderedDict()
+
+    def isCategory(): return True
 
     def registerMember(self, itemData):
         self.registerAnything(
@@ -281,12 +285,14 @@ class CSVParse_Woo(CSVParse_Gen):
         self.dprcRules = dprcRules
         self.dprpRules = dprpRules
         self.specials = specials
-        if DEBUG_WOO:
-            print "WOO initializing: "
-            print "-> taxoDepth: ", self.taxoDepth
-            print "-> itemDepth: ", self.itemDepth
-            print "-> maxDepth: ", self.maxDepth
-            print "-> metaWidth: ", self.metaWidth
+        self.special_items = OrderedDict()
+        self.categoryIndexer = self.getGenCodesum
+        # if DEBUG_WOO:
+        #     print "WOO initializing: "
+        #     print "-> taxoDepth: ", self.taxoDepth
+        #     print "-> itemDepth: ", self.itemDepth
+        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> metaWidth: ", self.metaWidth
 
     def clearTransients(self):
         super(CSVParse_Woo, self).clearTransients()
@@ -313,7 +319,7 @@ class CSVParse_Woo(CSVParse_Gen):
             catData, 
             self.categories, 
             # indexer = self.getSum,
-            indexer = catData.getIndex(),
+            indexer = self.categoryIndexer,
             resolver = self.passiveResolver,
             singular = True,
             registerName = 'categories'
@@ -353,7 +359,9 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerAnything( 
             varData, 
             self.variations, 
-            indexer = varData.getIndex(),
+            indexer = self.productIndexer,
+            singular = True,
+            resolver = self.exceptionResolver,
             registerName = 'variations' 
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
@@ -366,24 +374,37 @@ class CSVParse_Woo(CSVParse_Gen):
             assert special is not '', 'Attribute must not be empty'
         except AssertionError as e:
             self.registerError("could not register special: {}".format(e))
-        # self.registerAnything(
-        #     objectData,
-        #     self.specials,
-        #     indexer = special,
-        #     singular = False,
-        #     registerName = 'specials'
-        # )
+        self.registerAnything(
+            objectData,
+            self.special_items,
+            indexer = special,
+            singular = False,
+            registerName = 'specials'
+        )
         objectData.registerSpecial(special)
 
     def processImages(self, objectData):
-        # if DEBUG_WOO: print "called processImages"
-
         imglist = filter(None, findAllImages(objectData.get('Images','')))
         for image in imglist:
             self.registerImage(image, objectData)
-            # objectData.registerImage(image)
-
-        # todo: share images with nearest parent
+        thisImages = objectData.getImages()
+        ancestors = objectData.getInheritanceAncestors()
+        for ancestor in ancestors:
+            ancestorImages = ancestor.getImages()
+            if len(thisImages) and not len(ancestorImages):
+                self.registerImage(thisImages[0], ancestor)
+            elif not len(thisImages) and len(ancestorImages):
+                self.registerImage(ancestorImages[0], objectData)
+        # if len(thisImages):
+        #     for ancestor in ancestors:
+        #         ancestorImages = ancestor.getImages()
+        #         if not len(ancestorImages):
+        #             self.registerImage(thisImages[0])
+        # else:
+        #     for ancestor in ancestors:
+        #         ancestorImages = ancestor.getImages()
+        #         if len(ancestorImages):
+        #             self.registerImage(ancestorImages[0])
 
     def processCategories(self, objectData):
         if objectData.isProduct():
@@ -482,7 +503,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerError('rule should exist: %s'%ruleID, itemData)
 
     def postProcessDyns(self, objectData):
-        self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.getIndex())
         if objectData.isProduct():
             ancestors = objectData.getInheritanceAncestors() + [objectData]
             for ancestor in ancestors:
@@ -522,7 +543,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
 
     def postProcessCategories(self, objectData):
-        self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.getIndex())
         if objectData.isProduct():
             categories = objectData.getCategories().values()
             objectData['catsum'] = '|'.join(listUtils.filterUniqueTrue(
@@ -534,22 +555,22 @@ class CSVParse_Woo(CSVParse_Gen):
             self.registerMessage("catsum of %s is %s"%(objectData.getIndex(), objectData.get('catsum')))
 
     def postProcessImages(self, objectData):
-        self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.getIndex())
         objectData['imgsum'] = '|'.join(filter(
             None, 
             objectData.getImages()
         ))
 
-        # if objectData.isProduct() :
-            # try:
-            #     assert objectData['imgsum'], "All Products should have images"
-            # except AssertionError as e:
-            #     self.registerError(e, objectData)
+        if objectData.isProduct() :
+            try:
+                assert objectData['imgsum'], "All Products should have images"
+            except AssertionError as e:
+                self.registerError(e, objectData)
 
         self.registerMessage("imgsum of %s is %s"%(objectData.getIndex(), objectData.get('imgsum')))
 
     def postProcessAttributes(self, objectData):
-        self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.getIndex())
         # print 'analysing attributes', objectData.get('codesum')
 
         for attr, data in objectData.getAttributes().items():
@@ -586,19 +607,19 @@ class CSVParse_Woo(CSVParse_Gen):
                 objectData['meta:attribute_'+attr] = values
 
     def postProcessSpecials(self, objectData):
-        self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.getIndex())
 
         if objectData.isProduct():
 
-            ancestors = objectData.getInheritanceAncestors() + [objectData]
+            ancestors = objectData.getInheritanceAncestors()
             for ancestor in ancestors:
-                for special in ancestor.getSpecials():
+                ancestorSpecials = ancestor.getSpecials()
+                for special in ancestorSpecials:
                     objectData.registerSpecial(special)
 
             specials = objectData.getSpecials()
             objectData['spsum'] = '|'.join(specials)
             self.registerMessage("spsum of %s is %s"%(objectData.getIndex(), objectData.get('spsum')))
-
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
@@ -732,12 +753,12 @@ class CSVParse_TT(CSVParse_Woo):
         super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials) 
-        if DEBUG_WOO:
-            print "WOO initializing: "
-            print "-> taxoDepth: ", self.taxoDepth
-            print "-> itemDepth: ", self.itemDepth
-            print "-> maxDepth: ", self.maxDepth
-            print "-> metaWidth: ", self.metaWidth
+        # if DEBUG_WOO:
+        #     print "WOO initializing: "
+        #     print "-> taxoDepth: ", self.taxoDepth
+        #     print "-> itemDepth: ", self.itemDepth
+        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> metaWidth: ", self.metaWidth
 
 class CSVParse_VT(CSVParse_Woo):
     """docstring for CSVParse_VT"""
@@ -781,12 +802,12 @@ class CSVParse_VT(CSVParse_Woo):
         super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials) 
-        if DEBUG_WOO:
-            print "WOO initializing: "
-            print "-> taxoDepth: ", self.taxoDepth
-            print "-> itemDepth: ", self.itemDepth
-            print "-> maxDepth: ", self.maxDepth
-            print "-> metaWidth: ", self.metaWidth
+        # if DEBUG_WOO:
+        #     print "WOO initializing: "
+        #     print "-> taxoDepth: ", self.taxoDepth
+        #     print "-> itemDepth: ", self.itemDepth
+        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> metaWidth: ", self.metaWidth
 
 
 if __name__ == '__main__':

@@ -20,11 +20,20 @@ class Registrar:
     def getObjectRowcount(self, objectData):
         return objectData.getRowcount()
 
+    def getObjectIndex(self, objectData):
+        return objectData.getIndex()
+
     def passiveResolver(*args):
         pass
 
     def exceptionResolver(self, new, old, index, registerName = ''):
-        raise Exception("could not register %s in %s. Duplicate key" % (str(new), registerName) )
+        raise Exception("could not register %s in %s. Duplicate index: %s" % (str(new), registerName, index) )
+
+    def warningResolver(self, new, old, index, registerName = ''):
+        try:
+            self.exceptionResolver(new, old, index, registerName)
+        except Exception as e:
+            self.registerError(e, new )
 
     @classmethod
     def stringAnything(self, index, thing, delimeter):
@@ -68,7 +77,7 @@ class Registrar:
             except:
                 index = data
         else:
-            index = ""
+            index = debugUtils.getCallerProcedure()
         error_string = str(error)
         if DEBUG: Registrar.printAnything(index, error, '!')
         self.registerAnything(
@@ -238,11 +247,11 @@ class CSVParse_Base(object, Registrar):
         return kwargs
 
     def newObject(self, rowcount, row, **kwargs):
-        self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
+        # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
-        self.registerMessage( "defaultData: {}".format(defaultData) )
+        # self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
-        self.registerMessage( "rowData: {}".format(rowData) )
+        # self.registerMessage( "rowData: {}".format(rowData) )
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
         self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
@@ -250,8 +259,7 @@ class CSVParse_Base(object, Registrar):
         kwargs = self.getKwargs(allData, container, **kwargs)
         self.registerMessage("kwargs: {}".format(kwargs))                
         objectData = container(allData, rowcount, row, **kwargs)
-        mro = type(objectData).__mro__
-        self.registerMessage("mro: {}".format(mro))
+        self.registerMessage("mro: {}".format(container.mro()))                
         return objectData
 
     def initializeObject(self, objectData):
