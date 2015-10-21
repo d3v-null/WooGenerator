@@ -93,7 +93,6 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
     """docstring for ImportWooItem"""
     def __init__(self, *args, **kwargs):
         super(ImportWooItem, self).__init__(*args, **kwargs)
-        ImportWooObject.__init__(self, *args, **kwargs)
 
 class ImportWooProduct(ImportWooItem, ImportGenProduct):
     """docstring for ImportWooProduct"""
@@ -204,7 +203,6 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     productsKey = 'products'
 
     def __init__(self, *args, **kwargs):
-        ImportWooObject.__init__(self, *args, **kwargs)
         super(ImportWooCategory, self).__init__(*args, **kwargs) 
         self.members = OrderedDict()
 

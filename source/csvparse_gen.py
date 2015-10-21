@@ -215,9 +215,8 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
     """docstring for ImportGenItem"""
     sumKey = 'itemsum'
 
-    def __init__(self, *args, **kwargs):
-        ImportGenObject.__init__(self, *args, **kwargs)
-        super(ImportGenItem, self).__init__(*args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     super(ImportGenItem, self).__init__(*args, **kwargs)
 
     def getCodeDelimeter(self):
         parent = self.getParent()
@@ -234,9 +233,8 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
     """docstring for ImportGenTaxo"""
     sumKey = 'taxosum'
 
-    def __init__(self, *args, **kwargs):
-        ImportGenObject.__init__(self, *args, **kwargs) 
-        super(ImportGenTaxo, self).__init__(*args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     super(ImportGenTaxo, self).__init__(*args, **kwargs)
 
     def joinNames(self):
         ancestors = self.getAncestors() + [self]
