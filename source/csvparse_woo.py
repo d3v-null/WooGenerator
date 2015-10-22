@@ -492,10 +492,12 @@ class CSVParse_Woo(CSVParse_Gen):
                     # print " -> DPRC", dprcString
                     dprclist = dprcString.split('|')
                     self.addDynRules(objectData, 'dprc', dprclist)
+                    self.registerMessage("found dprclist %s"%(dprclist))
                 dprpString = ancestor.get('DYNPROD')
                 if dprpString:
                     # print " -> DPRP", dprpString
                     dprplist = dprpString.split('|')
+                    self.registerMessage("found dprplist %s"%(dprplist))
                     self.addDynRules(objectData, 'dprp', dprplist)
 
             objectData['dprcsum'] = '<br/>'.join(

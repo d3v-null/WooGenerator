@@ -68,17 +68,17 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     #     if ruleLineData:
     #         self['children'].append(ruleLineData)
 
-    def registerRuleLine(self, lineData):
-        # assert isinstance(lineData, ImportDynObject)
-        assert lineData.isRuleLine()
-        self.registerAnything(
-            lineData,
-            self.getRuleLines()
-        )
+    # def registerRuleLine(self, lineData):
+    #     # assert isinstance(lineData, ImportDynObject)
+    #     assert lineData.isRuleLine()
+    #     self.registerAnything(
+    #         lineData,
+    #         self.getRuleLines()
+    #     )
 
     def getRuleLines(self):
-        return self.ruleLines
-        # return self.getChildren().values()
+        # return self.ruleLines
+        return self.getChildren()
 
     def getColNames(self, ruleMode='BULK'):
         ruleMode = self.get('Rule Mode', 'BULK')
@@ -123,7 +123,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
             html += '</th>'
         html +=   '</tr></thead>'
         ruleLines = self.getRuleLines()
-        self.registerMessage("ruleLines: {}" % (ruleLines))
+        self.registerMessage("ruleLines: %s" % (ruleLines))
         for ruleLineData in ruleLines:
             lineType = ruleLineData.get('Discount Type','')
             html += '<tr>'
