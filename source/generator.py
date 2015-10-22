@@ -253,16 +253,6 @@ elif schema in woo_schemas:
 		products.values()
 	)
 
-	productCols = listUtils.combineOrderedDicts( productCols, attributeCols )
-	print 'productCols: ', productCols
-	productColnames = colData.getColNames(productCols)
-	print 'productColnames: ', productColnames
-	exportItemsCSV(
-		flaPath + '2',
-		productColnames,
-		products.values()
-	)
-
 	#variations
 	variationCols = colData.getVariationCols()
 	# print 'variationCols:', variationCols
