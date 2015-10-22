@@ -388,7 +388,10 @@ class CSVParse_Woo(CSVParse_Gen):
         for image in imglist:
             self.registerImage(image, objectData)
         thisImages = objectData.getImages()
-        ancestors = objectData.getInheritanceAncestors()
+        if objectData.isItem():
+            ancestors = objectData.getItemAncestors()
+        else:
+            ancestors = []
         for ancestor in ancestors:
             ancestorImages = ancestor.getImages()
             if len(thisImages) and not len(ancestorImages):
