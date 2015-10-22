@@ -9,7 +9,7 @@ class ImportTreeObject(ImportObject):
         super(ImportTreeObject, self).__init__(data, rowcount, row)
         if not isinstance(self, ImportTreeRoot):
             assert all([
-                depth is not None and depth is not -1,
+                depth is not None and depth >= 0,
                 meta is not None,
                 parent is not None
             ])
@@ -65,7 +65,7 @@ class ImportTreeObject(ImportObject):
         assert childData, "childData must be valid"
         self.registerAnything(
             childData, 
-            self.getChildren(),
+            self.children,
             indexer = self.childIndexer,
             singular = True,
             # resolver = self.passiveResolver,
@@ -73,7 +73,10 @@ class ImportTreeObject(ImportObject):
         )
 
     def getChildren(self):
-        return self.children
+        return self.children.values()
+
+    def getSiblings(self):
+        return self.getParent().getChildren()
 
     def setDepth(self, depth):
         assert(isinstance(depth, int))
@@ -169,6 +172,9 @@ class ImportStack(list):
             except:
                 out += repr(objectData) + "\n"
         return out
+
+    def copy(self):
+        return ImportStack(self[:])
 
 class CSVParse_Tree(CSVParse_Base):
     objectContainer = ImportTreeObject
@@ -278,8 +284,16 @@ class CSVParse_Tree(CSVParse_Base):
         except:
             depth = self.depth( row )
             kwargs['depth'] = depth
-        assert isinstance(depth, int)
         self.registerMessage("depth: %d"%(depth))
+
+        try:
+            meta = kwargs['meta']
+            assert meta is not None
+        except:
+            meta = self.extractMeta(row, depth)
+            kwargs['meta'] = meta
+        self.registerMessage("meta: {}".format(meta))
+
         try:
             stack = kwargs['stack']
             del kwargs['stack']
@@ -294,10 +308,6 @@ class CSVParse_Tree(CSVParse_Base):
         if parent is None: parent = self.rootData
         self.registerMessage("parent: {}".format(parent))
         kwargs['parent'] = parent
-
-        meta = self.extractMeta(row, depth)
-        self.registerMessage("meta: {}".format(meta))
-        kwargs['meta'] = meta
         
         return super(CSVParse_Tree, self).newObject(rowcount, row, **kwargs)
 

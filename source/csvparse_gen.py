@@ -341,10 +341,11 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def getContainer(self, allData, **kwargs):
         container = super(CSVParse_Gen, self).getContainer( allData, **kwargs)
-        itemtype = allData.get(self.schema,'')
-        self.registerMessage("itemtype: {}".format(itemtype))
-        if itemtype in self.prod_containers.keys():
-            container = self.prod_containers[itemtype]
+        if issubclass( container, ImportGenItem ):
+            itemtype = allData.get(self.schema,'')
+            self.registerMessage("itemtype: {}".format(itemtype))
+            if itemtype in self.prod_containers.keys():
+                container = self.prod_containers[itemtype]
         return container
 
     def getKwargs(self, allData, container, **kwargs):

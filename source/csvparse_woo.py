@@ -398,24 +398,40 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerImage(thisImages[0], ancestor)
             elif not len(thisImages) and len(ancestorImages):
                 self.registerImage(ancestorImages[0], objectData)
-        # if len(thisImages):
-        #     for ancestor in ancestors:
-        #         ancestorImages = ancestor.getImages()
-        #         if not len(ancestorImages):
-        #             self.registerImage(thisImages[0])
-        # else:
-        #     for ancestor in ancestors:
-        #         ancestorImages = ancestor.getImages()
-        #         if len(ancestorImages):
-        #             self.registerImage(ancestorImages[0])
 
     def processCategories(self, objectData):
         if objectData.isProduct():
             for ancestor in objectData.getTaxoAncestors():
                 self.registerCategory(ancestor, objectData)
 
-        #todo: this "extra item" crap
+        if objectData.get('E'):
+            if objectData.isProduct():
+                extraDepth = self.taxoDepth - 1
+                extraRowcount = objectData.getRowcount()
+                extraStack = self.stack.getLeftSlice(extraDepth)
+                extraLayer = self.newObject(
+                    extraRowcount,
+                    objectData.getRow(),
+                    depth = extraDepth,
+                    meta = [
+                        objectData.getName() + ' Items',
+                        objectData.getCode()
+                    ],
+                    stack = extraStack
+                )
+                # extraStack.append(extraLayer)
+                extraCodesum = extraLayer.getCodesum()
+                for sibling in extraLayer.getSiblings():
+                    if sibling.getCodesum() == extraCodesum:
+                        if sibling.getRowcount() != extraRowcount:
+                            extraLayer = sibling
+                            self.registerMessage("found sibling: %s"% extraLayer.getIndex() )
+                            break
 
+                assert isinstance(extraLayer, ImportWooCategory )
+
+                self.registerCategory(extraLayer, objectData)
+            # todo maybe something with extra categories
 
     def processVariation(self, varData):
         assert varData.isVariation()
