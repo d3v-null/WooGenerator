@@ -7,7 +7,6 @@ import os
 DEBUG_MYO = True
 
 class CSVParse_MYO(CSVParse_Gen):
-    """docstring for CSVParse_MYO"""
 
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):

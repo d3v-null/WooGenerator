@@ -1,5 +1,5 @@
 import os
-from csvparse_abstract import listUtils, debugUtils
+from utils import listUtils, descriptorUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 import bleach
 import re
@@ -16,7 +16,7 @@ def isContainedIn(l):
     return lambda v: v in l
 
 class ImportDynObject(ImportTreeObject):
-    """docstring for ImportDynRuleLine"""
+
     def isRuleLine(self): return False
     def validate(self):
         for key, validation in self.validations:
@@ -25,8 +25,7 @@ class ImportDynObject(ImportTreeObject):
                 raise UserWarning("%s could be be validated by %s" % (key,self.__class__.__name__) )
 
 class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
-    """docstring for ImportDynRuleLine"""
-    
+
     validations = {
         'Discount': isNotNone,
         'Discount Type': isContainedIn( ['PDSC'] )
@@ -44,7 +43,6 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
     def isRuleLine(self): return True
 
 class ImportDynRule(ImportDynObject, ImportTreeTaxo):
-    """docstring for ImportDynRule"""
 
     validations = {
         'ID':isNotNone, 
@@ -55,14 +53,13 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
-        # self.ruleData = ruleData
         self.ruleLines = []
+        assert self.ID
 
-    def getID(self):
-        return self['ID']
+    ID = descriptorUtils.safeKeyProperty('ID')
 
-    def getIndex(self):
-        return self.getID()
+    @property
+    def index(self): return self.ID
 
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
@@ -144,7 +141,6 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
 
 class CSVParse_Dyn(CSVParse_Tree):
-    """docstring for CSVParse_Dyn"""
 
     itemContainer = ImportDynRuleLine
     taxoContainer = ImportDynRule

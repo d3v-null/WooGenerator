@@ -15,7 +15,7 @@ def key_compare(a, b):
 	return cmp(a[0], b[0])
 
 class Restful_Client(object):
-	"""docstring for Restful_Client"""
+
 	def __init__(self, endpoint, consumer_key, consumer_secret):
 		super(Restful_Client, self).__init__()
 		self.consumer_key = consumer_key

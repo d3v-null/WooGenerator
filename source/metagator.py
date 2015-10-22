@@ -6,7 +6,6 @@ from time import time
 
 class MetaGator(object):
 
-	"""docstring for MetaGator"""
 	def __init__(self, path):
 		super(MetaGator, self).__init__()
 		if not os.path.isfile(path):

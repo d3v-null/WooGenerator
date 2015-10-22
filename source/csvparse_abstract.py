@@ -1,6 +1,7 @@
-import csv, inspect
-from collections import OrderedDict
 import pprint
+from collections import OrderedDict
+from utils import debugUtils, listUtils
+import csv
 
 DEBUG = True
 DEBUG_PARSER = True
@@ -18,10 +19,10 @@ class Registrar:
         self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
 
     def getObjectRowcount(self, objectData):
-        return objectData.getRowcount()
+        return objectData.rowcount
 
     def getObjectIndex(self, objectData):
-        return objectData.getIndex()
+        return objectData.index
 
     def passiveResolver(*args):
         pass
@@ -73,7 +74,7 @@ class Registrar:
     def registerError(self, error, data = None):
         if data:
             try:
-                index = data.getIndex()
+                index = data.index
             except:
                 index = data
         else:
@@ -113,21 +114,20 @@ class Registrar:
         )
 
 class ImportObject(OrderedDict, Registrar):
-    """docstring for ImportObject"""
     def __init__(self, data, rowcount, row):
         super(ImportObject, self).__init__(data)
         Registrar.__init__(self)
         self['rowcount'] = rowcount
-        self.row = row
+        self._row = row
 
-    def getRowcount(self):
-        return self['rowcount']
+    @property
+    def row(self): return self._row
 
-    def getRow(self):
-        return self.row
+    @property
+    def rowcount(self): return self['rowcount']    
 
-    def getIndex(self):
-        return self.getRowcount()
+    @property
+    def index(self): return self.rowcount   
 
     def getTypeName(self):
         return type(self).__name__ 
@@ -136,49 +136,12 @@ class ImportObject(OrderedDict, Registrar):
         return ""
 
     def getIdentifier(self):
-        return Registrar.stringAnything( self.getIndex(), "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
+        return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
 
     def __str__(self):
-        return "%s <%s>" % (self.getIndex(), self.getTypeName())
-
-class listUtils:
-    @staticmethod
-    def combineLists(a, b):
-        if not a:
-            return b if b else []
-        if not b: return a
-        return list(set(a) | set(b))
-
-    @staticmethod
-    def combineOrderedDicts(a, b):
-        if not a:
-            return b if b else OrderedDict()
-        if not b: return a
-        c = OrderedDict(b.items())
-        for key, value in a.items():
-            c[key] = value
-        return c
-
-    @staticmethod
-    def filterUniqueTrue(a):
-        b = []
-        for i in a:
-            if i and i not in b:
-                b.append(i)
-        return b
-
-class debugUtils:
-    @staticmethod
-    def getProcedure():
-        return inspect.stack()[1][3]
-
-    @staticmethod
-    def getCallerProcedure():
-        return inspect.stack()[2][3]
+        return "%s <%s>" % (self.index, self.getTypeName())
 
 class CSVParse_Base(object, Registrar):
-    """docstring for CSVParse_Base"""
-
     objectContainer = ImportObject
 
     def __init__(self, cols, defaults ):

@@ -1,80 +1,19 @@
-from csvparse_abstract import listUtils
-from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 from collections import OrderedDict
-import functools
-from itertools import chain
-import re
+from utils import descriptorUtils, sanitationUtils, listUtils
+from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 
 DEBUG_GEN = True
 
-class sanitationUtils:
-    @staticmethod
-    def compose(*functions):
-        return functools.reduce(lambda f, g: lambda x: f(g(x)), functions)
-
-    @staticmethod
-    def removeLeadingDollarWhiteSpace(string):
-        return re.sub('^\W*\$','', string)
-
-    @staticmethod
-    def removeLeadingPercentWhiteSpace(string):
-        return re.sub('%\W*$','', string)
-
-    @staticmethod
-    def removeLoneDashes(string):
-        return re.sub('^-$', '', string)
-
-    @staticmethod
-    def removeThousandsSeparator(string):
-        return re.sub('(\d+),(\d{3})', '\g<1>\g<2>', string)
-
-    @staticmethod
-    def removeLoneWhiteSpace(string):
-        return re.sub('^\s*$','', string)    
-
-    @staticmethod
-    def compileRegex(subs):
-        if subs:
-            return re.compile( "(%s)" % '|'.join(filter(None, map(re.escape, subs))) )
-        else:
-            return None
-
-    @staticmethod
-    def sanitizeCell(cell):
-        return sanitationUtils.compose(
-            sanitationUtils.removeLeadingDollarWhiteSpace,
-            sanitationUtils.removeLeadingPercentWhiteSpace,
-            sanitationUtils.removeLoneDashes,
-            sanitationUtils.removeThousandsSeparator,
-            sanitationUtils.removeLoneWhiteSpace
-        )(cell)   
-
-    @staticmethod
-    def shorten(reg, subs, str_in):
-        # if(DEBUG_GEN):
-        #     print "calling shorten"
-        #     print " | reg:", reg
-        #     print " | subs:", subs
-            # print " | str_i: ",str_in
-        if not all([reg, subs, str_in]):
-            str_out = str_in
-        else:
-            str_out = reg.sub(
-                lambda mo: subs[mo.string[mo.start():mo.end()]],
-                str_in
-            )
-        # if DEBUG_GEN: 
-        #     print " | str_o: ",str_out
-        return str_out
-
 class ImportGenObject(ImportTreeObject):
-    """docstring for ImportGenObject"""
+
+    _isProduct = False
     codeKey = 'code'
     nameKey = 'name'
     fullnameKey = 'fullname'
-    descriptionKey = 'HTML description'
+    descriptionKey = 'HTML Description'
     codesumKey = 'codesum'
     descsumKey = 'descsum'
+    namesumKey = 'itemsum'
 
     def __init__(self, *args, **kwargs):
         subs = kwargs['subs']
@@ -86,22 +25,22 @@ class ImportGenObject(ImportTreeObject):
     @classmethod
     def fromImportTreeObject(cls, objectData, regex, subs):
         assert isinstance(objectData, ImportTreeObject)
-        row = objectData.getRow()
-        rowcount = objectData.getRowcount()
+        row = objectData.row
+        rowcount = objectData.rowcount
         depth = objectData.getDepth()
         meta = objectData.getMeta()
         parent = objectData.getParent()
         return cls(objectData, rowcount, row, depth, meta, parent, regex, subs)
 
-    def isProduct(self):
-        return False
+    @property
+    def isProduct(self): return self._isProduct
 
     def verifyMeta(self):
         keys = [
             self.codeKey,
             self.nameKey,
             self.fullnameKey,
-            self.sumKey,
+            self.namesumKey,
             self.codesumKey,
             self.descsumKey
         ]
@@ -112,57 +51,37 @@ class ImportGenObject(ImportTreeObject):
             # else:
             #     self.registerError("{} is not set".format( key ), "verifyMeta")
 
-    def assertGet(self, key):
-        assert key in self.keys(), "{} must be set before get".format(key)
-        return self[key]
+    code        = descriptorUtils.safeKeyProperty(codeKey)
+    name        = descriptorUtils.safeKeyProperty(nameKey)
+    fullname    = descriptorUtils.safeKeyProperty(fullnameKey)
+    namesum     = descriptorUtils.safeKeyProperty(namesumKey)
+    description = descriptorUtils.safeKeyProperty(descriptionKey)
+    codesum     = descriptorUtils.safeKeyProperty(codesumKey)
+    descsum     = descriptorUtils.safeKeyProperty(descsumKey)
 
-    def assertSet(self, key, value):
-        assert type(value) == str, "{} must be set with string not {}".format(key, type(value))
-        self[key] = value
-
-    def getCode(self):              return self.assertGet(self.codeKey)
-    def setCode(self, value):       return self.assertSet(self.codeKey, value)
-    def getName(self):              return self.assertGet(self.nameKey)
-    def setName(self, value):       return self.assertSet(self.nameKey, value) 
-    def getFullname(self):          return self.assertGet(self.fullnameKey)
-    def setFullname(self, value):   return self.assertSet(self.fullnameKey, value) 
-    def getSum(self):               return self.assertGet(self.sumKey)
-    def setSum(self, value):        return self.assertSet(self.sumKey, value)  
-    def getCodesum(self):           return self.assertGet(self.codesumKey)
-    def setCodesum(self, value):    return self.assertSet(self.codesumKey, value) 
-    def getDescsum(self):           return self.assertGet(self.descsumKey)
-    def setDescsum(self, value):    return self.assertSet(self.descsumKey, value) 
-
-    def getDescription(self):
-        return self.get(self.descriptionKey,"")
-
-    def setDescription(self, value):
-        assert type(value) == str
-        self[self.descriptionKey] = value
-
-    def getIndex(self):
-        return self.getCodesum()
+    @property
+    def index(self):
+        return self.codesum
 
     def getCodeDelimeter(self):
         return ''
 
     def joinCodes(self):
         parent = self.getParent()
-        codesum = self.getCode()
-        if parent and not parent.isRoot():
-            codesum = parent.getCodesum() + self.getCodeDelimeter() + codesum      
+        codesum = self.code
+        if parent and not parent.isRoot:
+            codesum = parent.codesum + self.getCodeDelimeter() + codesum      
         return codesum
 
     def joinDescs(self):
-        thisDescription = self.getDescription()
-        if thisDescription: return thisDescription
-        thisFullname = self.getFullname()
-        if thisFullname: return thisFullname
+        if self.description: return self.description
         parent = self.getParent()
-        if parent and not parent.isRoot():
-            parentDescription = parent.getDescription()
+        if parent and not parent.isRoot:
+            parentDescription = parent.descsum
             if parentDescription: return parentDescription
-            parentFullname = parent.getFullname()
+        if self.fullname: return self.fullname
+        if parent and not parent.isRoot:
+            parentFullname = parent.fullname
             if parentFullname: return parentFullname
         return ""
 
@@ -172,7 +91,7 @@ class ImportGenObject(ImportTreeObject):
     def joinNames(self):
         ancestors = self.getItemAncestors() + [self]
         # self.registerMessage("ancestors: {}".format(ancestors ) )
-        names = listUtils.filterUniqueTrue(map(lambda x: x.getName(), ancestors))
+        names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestors))
         # self.registerMessage("names: {}".format(names ) )
         nameDelimeter = self.getNameDelimeter()
         return nameDelimeter.join ( names )         
@@ -184,54 +103,53 @@ class ImportGenObject(ImportTreeObject):
 
         meta = self.getMeta()
         try:
-            self.setFullname( meta[0] )
+            self.fullname =  meta[0] 
         except:
-            self.setFullname( "" )
-        self.registerMessage("fullname: {}".format(self.getFullname() ) )
+            self.fullname =  "" 
+        self.registerMessage("fullname: {}".format(self.fullname ) )
 
         try:
-            self.setCode( meta[1] )
+            self.code = meta[1] 
         except:
-            self.setCode( "" )
-        self.registerMessage("code: {}".format(self.getCode() ) )
+            self.code = "" 
+        self.registerMessage("code: {}".format(self.code ) )
 
         codesum = self.joinCodes()
         self.registerMessage("codesum: {}".format(codesum) )
-        self.setCodesum(codesum)
+        self.codesum = codesum
 
         descsum = self.joinDescs()
         self.registerMessage("descsum: {}".format( descsum ) )
-        self.setDescsum(descsum)   
+        self.descsum = descsum   
 
-        name = self.changeName(self.getFullname())
+        name = self.changeName(self.fullname)
         self.registerMessage("name: {}".format(name ) )
-        self.setName(name)
+        self.name = name
 
-        nameSum = self.joinNames()
-        self.registerMessage("nameSum: {}".format(nameSum) )
-        self.setSum(nameSum)  
+        namesum = self.joinNames()
+        self.registerMessage("namesum: {}".format(namesum) )
+        self.namesum = namesum  
 
 class ImportGenItem(ImportGenObject, ImportTreeItem):
-    """docstring for ImportGenItem"""
-    sumKey = 'itemsum'
 
     # def __init__(self, *args, **kwargs):
     #     super(ImportGenItem, self).__init__(*args, **kwargs)
 
     def getCodeDelimeter(self):
         parent = self.getParent()
-        if not parent.isRoot() and parent.isTaxo():
+        if not parent.isRoot and parent.isTaxo:
             return '-'
         else:
             return super(ImportGenItem, self).getCodeDelimeter()
 
 class ImportGenProduct(ImportGenItem):
-    def isProduct(self):
-        return True   
+
+    _isProduct = True
 
 class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
-    """docstring for ImportGenTaxo"""
-    sumKey = 'taxosum'
+
+    namesumKey = 'taxosum'
+    namesum     = descriptorUtils.safeKeyProperty(namesumKey)
 
     # def __init__(self, *args, **kwargs):
     #     super(ImportGenTaxo, self).__init__(*args, **kwargs)
@@ -239,12 +157,11 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
     def joinNames(self):
         ancestors = self.getAncestors() + [self]
         # self.registerMessage("ancestors: {}".format(ancestors ) )
-        names = listUtils.filterUniqueTrue(map(lambda x: x.getName(), ancestors))
+        names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestors))
         # self.registerMessage("names: {}".format(names ) )
         return ' > '.join(names)
 
 class CSVParse_Gen(CSVParse_Tree):
-    """docstring for CSVParse_Gen"""
 
     taxoContainer = ImportGenTaxo
     itemContainer = ImportGenItem
@@ -259,7 +176,7 @@ class CSVParse_Gen(CSVParse_Tree):
             ('name', ''),
             ('fullname', ''),   
             ('description', ''),
-            ('HTML description', ''),
+            ('HTML Description', ''),
             ('imglist', [])
         ])
         extra_taxoSubs = OrderedDict([
@@ -302,7 +219,7 @@ class CSVParse_Gen(CSVParse_Tree):
         self.products   = OrderedDict() 
 
     def registerProduct(self, prodData):
-        assert prodData.isProduct()
+        assert prodData.isProduct
         self.registerAnything(
             prodData, 
             self.products,
@@ -314,7 +231,7 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def registerItem(self, itemData):
         super(CSVParse_Gen, self).registerItem(itemData)
-        if itemData.isProduct():
+        if itemData.isProduct:
             self.registerProduct(itemData)
 
     def changeItem(self, item):
@@ -337,7 +254,7 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def getGenCodesum(self, genData):
         assert isinstance(genData, ImportGenObject)
-        return genData.getCodesum()
+        return genData.codesum
 
     def getContainer(self, allData, **kwargs):
         container = super(CSVParse_Gen, self).getContainer( allData, **kwargs)

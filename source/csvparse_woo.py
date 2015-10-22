@@ -1,35 +1,15 @@
-from csvparse_abstract import listUtils
+from utils import listUtils, sanitationUtils
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
-import re
-import time
-import datetime
 import json
-
-def findAllImages(imgString):
-    assert type(imgString) == str, "param must be a string not %s"% type(imgString)
-    return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',imgString)
-
-def findAllTokens(tokenString, delim = "|"):
-    assert type(tokenString) == str, "param must be a string not %s"% type(tokenString)
-    return re.findall(r'\s*(\b[^\s.|]+\b)\s*', tokenString )
-
-def findallDollars(instring):
-    assert type(instring) == str, "param must be a string not %s"% type(instring)
-    return re.findall("\s*\$([\d,]+\.?\d*)", instring)
-
-def findallPercent(instring):
-    assert type(instring) == str, "param must be a string not %s"% type(instring)
-    return re.findall("\s*(\d+\.?\d*)%", instring)
-
-def datetotimestamp(datestring):
-    assert type(datestring) == str, "param must be a string not %s"% type(datestring)
-    return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))
+import time
 
 DEBUG_WOO = True
 
 class ImportWooObject(ImportGenObject):
-    """docstring for ImportWooObject"""
+    _isCategory = False
+    _isVariable = False
+    _isVariation = False
 
     def __init__(self, *args, **kwargs):
         super(ImportWooObject, self).__init__(*args, **kwargs)
@@ -37,10 +17,14 @@ class ImportWooObject(ImportGenObject):
         self.images = []
         self.specials = []
 
-    def isCategory(): return False;
-    def isFirstOrder(self): return False;
-    def isVariable(self): return False;
-    def isVariation(self): return False;
+    @property
+    def isCategory(self): return self._isCategory
+
+    @property
+    def isVariable(self): return self._isVariable
+    
+    @property 
+    def isVariation(self): return self._isVariation
 
     def registerImage(self, image):
         assert type(image) == str
@@ -57,7 +41,7 @@ class ImportWooObject(ImportGenObject):
 
     def registerAttribute(self, attr, val, var=False):
         if var:
-            assert self.isVariation() or self.isVariable()
+            assert self.isVariation or self.isVariable
         attrs = self.getAttributes()
         if attr not in attrs:
             attrs[attr] = {
@@ -91,12 +75,11 @@ class ImportWooObject(ImportGenObject):
         return self.getAncestors()
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
-    """docstring for ImportWooItem"""
+
     def __init__(self, *args, **kwargs):
         super(ImportWooItem, self).__init__(*args, **kwargs)
 
 class ImportWooProduct(ImportWooItem, ImportGenProduct):
-    """docstring for ImportWooProduct"""
 
     def __init__(self, *args, **kwargs):
         super(ImportWooProduct, self).__init__(*args, **kwargs)
@@ -108,7 +91,7 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
             catData,
             self.categories,
             # indexer = self.getSum,
-            indexer = catData.getRowcount(),
+            indexer = catData.rowcount,
             singular = True,
             resolver = self.exceptionResolver,
             registerName = 'product categories'
@@ -136,13 +119,10 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
         )
 
 class ImportWooSimpleProduct(ImportWooProduct):
-    """docstring for ImportWooSimpleProduct"""
     product_type = 'simple'
 
-    def isFirstOrder(): return True; 
-
 class ImportWooVariableProduct(ImportWooProduct):
-    """docstring for ImportWooVariableProduct"""
+    _isVariable = True
     product_type = 'variable'
 
     def __init__(self, *args, **kwargs):
@@ -150,11 +130,11 @@ class ImportWooVariableProduct(ImportWooProduct):
         self.variations = OrderedDict()
 
     def registerVariation(self, varData):
-        assert varData.isVariation()
+        assert varData.isVariation
         self.registerAnything(
             varData,
             self.variations,
-            indexer = varData.getCodesum(),
+            indexer = varData.codesum,
             singular = True,
             registerName = "product variations"
         )
@@ -162,16 +142,13 @@ class ImportWooVariableProduct(ImportWooProduct):
     def getVariations(self):
         return self.variations
 
-    def isFirstOrder(self): return True; 
-    def isVariable(self): return True; 
-
 class ImportWooVariation(ImportWooProduct):
-    """docstring for ImportWooVariation"""
+    _isVariation = True
     product_type = 'variable-instance'
 
     def registerParentProduct(self, parentData):
         self.parentProduct = parentData
-        self['parent_SKU'] = parentData.getCodesum()
+        self['parent_SKU'] = parentData.codesum
 
     def joinVariable(self, parentData):
         self.registerParentProduct(parentData)
@@ -183,39 +160,28 @@ class ImportWooVariation(ImportWooProduct):
     def isVariation(self): return True;        
 
 class ImportWooCompositeProduct(ImportWooProduct):
-    """docstring for ImportWooVariableProduct"""
     product_type = 'composite'
 
-    def isFirstOrder(self): return True; 
-
 class ImportWooGroupedProduct(ImportWooProduct):
-    """docstring for ImportWooGroupedProduct"""
     product_type = 'grouped'
 
-    def isFirstOrder(self): return True; 
-
 class ImportWooBundledProduct(ImportWooProduct):
-    """docstring for ImportWooBundledProduct"""
     product_type = 'bundle'
 
-    def isFirstOrder(self): return True; 
-
 class ImportWooCategory(ImportWooObject, ImportGenTaxo):
-    """docstring for ImportWooCategory"""
+    _isCategory = True
     productsKey = 'products'
 
     def __init__(self, *args, **kwargs):
         super(ImportWooCategory, self).__init__(*args, **kwargs) 
         self.members = OrderedDict()
 
-    def isCategory(): return True
-
     def registerMember(self, itemData):
         self.registerAnything(
             itemData,
             self.members,
             # indexer = self.getSum,
-            indexer = itemData.getRowcount(),
+            indexer = itemData.rowcount,
             singular = True,
             resolver = self.passiveResolver,
             registerName = 'product categories'
@@ -225,7 +191,6 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
         return self.members
 
 class CSVParse_Woo(CSVParse_Gen):
-    """docstring for CSVParse_Woo"""
 
     prod_containers = {
         'S': ImportWooSimpleProduct,
@@ -354,8 +319,8 @@ class CSVParse_Woo(CSVParse_Gen):
                 )
 
     def registerVariation(self, parentData, varData):
-        assert parentData.isVariable()
-        assert varData.isVariation()
+        assert parentData.isVariable
+        assert varData.isVariation
         self.registerAnything( 
             varData, 
             self.variations, 
@@ -384,11 +349,11 @@ class CSVParse_Woo(CSVParse_Gen):
         objectData.registerSpecial(special)
 
     def processImages(self, objectData):
-        imglist = filter(None, findAllImages(objectData.get('Images','')))
+        imglist = filter(None, sanitationUtils.findAllImages(objectData.get('Images','')))
         for image in imglist:
             self.registerImage(image, objectData)
         thisImages = objectData.getImages()
-        if objectData.isItem():
+        if objectData.isItem:
             ancestors = objectData.getItemAncestors()
         else:
             ancestors = []
@@ -400,32 +365,32 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerImage(ancestorImages[0], objectData)
 
     def processCategories(self, objectData):
-        if objectData.isProduct():
+        if objectData.isProduct:
             for ancestor in objectData.getTaxoAncestors():
                 self.registerCategory(ancestor, objectData)
 
         if objectData.get('E'):
-            if objectData.isProduct():
+            if objectData.isProduct:
                 extraDepth = self.taxoDepth - 1
-                extraRowcount = objectData.getRowcount()
+                extraRowcount = objectData.rowcount
                 extraStack = self.stack.getLeftSlice(extraDepth)
                 extraLayer = self.newObject(
                     extraRowcount,
-                    objectData.getRow(),
+                    objectData.row,
                     depth = extraDepth,
                     meta = [
-                        objectData.getName() + ' Items',
-                        objectData.getCode()
+                        objectData.name + ' Items',
+                        objectData.code
                     ],
                     stack = extraStack
                 )
                 # extraStack.append(extraLayer)
-                extraCodesum = extraLayer.getCodesum()
+                extraCodesum = extraLayer.codesum
                 for sibling in extraLayer.getSiblings():
-                    if sibling.getCodesum() == extraCodesum:
-                        if sibling.getRowcount() != extraRowcount:
+                    if sibling.codesum == extraCodesum:
+                        if sibling.rowcount != extraRowcount:
                             extraLayer = sibling
-                            self.registerMessage("found sibling: %s"% extraLayer.getIndex() )
+                            self.registerMessage("found sibling: %s"% extraLayer.index )
                             break
 
                 assert isinstance(extraLayer, ImportWooCategory )
@@ -434,15 +399,10 @@ class CSVParse_Woo(CSVParse_Gen):
             # todo maybe something with extra categories
 
     def processVariation(self, varData):
-        assert varData.isVariation()
+        assert varData.isVariation
         parentData = varData.getParent()
-        assert parentData and parentData.isVariable()
+        assert parentData and parentData.isVariable
         self.registerVariation(parentData, varData)
-
-    def decodeAttributes(self, string):
-        assert isinstance(string, str)
-        attrs = json.loads(string)
-        return attrs
 
     def processAttributes(self, objectData):
         ancestors = \
@@ -458,16 +418,16 @@ class CSVParse_Woo(CSVParse_Gen):
 
         for attrs in palist:
             try:
-                decoded = self.decodeAttributes(attrs)
+                decoded = sanitationUtils.decodeJSON(attrs)
                 for attr, val in decoded.items():
                     self.registerAttribute(objectData, attr, val)
             except Exception as e:
                 self.registerError("could not decode attributes: %s | %s" % (attrs, e), objectData )
 
-        if objectData.isVariation():
+        if objectData.isVariation:
             parentData = objectData.getParent()
-            assert parentData and parentData.isVariable()
-            vattrs = self.decodeAttributes(objectData.get('VA'))
+            assert parentData and parentData.isVariable
+            vattrs = sanitationUtils.decodeJSON(objectData.get('VA'))
             assert vattrs
             for attr, val in vattrs.items():
                 self.registerAttribute(parentData, attr, val, True)   
@@ -477,7 +437,7 @@ class CSVParse_Woo(CSVParse_Gen):
         schedule = objectData.get('SCHEDULE')
         if schedule:
             print "specials for %s: %s" % (objectData, schedule)
-            splist = filter(None, findAllTokens(schedule))
+            splist = filter(None, sanitationUtils.findAllTokens(schedule))
             for special in splist:
                 self.registerSpecial(objectData, special)
 
@@ -485,10 +445,10 @@ class CSVParse_Woo(CSVParse_Gen):
         super(CSVParse_Woo, self).processObject(objectData)
         assert isinstance(objectData, ImportWooObject)
         self.processCategories(objectData)
-        if objectData.isProduct():
-            catSKUs = map(lambda x: x.getCodesum(), objectData.getCategories().values())
+        if objectData.isProduct:
+            catSKUs = map(lambda x: x.codesum, objectData.getCategories().values())
             self.registerMessage("categories: {}".format(catSKUs))
-        if objectData.isVariation():
+        if objectData.isVariation:
             self.processVariation(objectData)
             self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
         self.processAttributes(objectData)
@@ -522,8 +482,8 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerError('rule should exist: %s'%ruleID, itemData)
 
     def postProcessDyns(self, objectData):
-        # self.registerMessage(objectData.getIndex())
-        if objectData.isProduct():
+        # self.registerMessage(objectData.index)
+        if objectData.isProduct:
             ancestors = objectData.getInheritanceAncestors() + [objectData]
             for ancestor in ancestors:
                 # print "%16s is a member of %s" % (objectData['codesum'], ancestor['taxosum'])
@@ -547,7 +507,7 @@ class CSVParse_Woo(CSVParse_Gen):
                     )
                 )
             )
-            self.registerMessage("dprcsum of %s is %s"%(objectData.getIndex(), objectData.get('dprcsum')))
+            self.registerMessage("dprcsum of %s is %s"%(objectData.index, objectData.get('dprcsum')))
 
             objectData['dprpsum'] = '<br/>'.join(
                 filter( 
@@ -558,38 +518,38 @@ class CSVParse_Woo(CSVParse_Gen):
                     )
                 )
             )
-            self.registerMessage("dprpsum of %s is %s"%(objectData.getIndex(), objectData.get('dprpsum')))
+            self.registerMessage("dprpsum of %s is %s"%(objectData.index, objectData.get('dprpsum')))
 
 
     def postProcessCategories(self, objectData):
-        # self.registerMessage(objectData.getIndex())
-        if objectData.isProduct():
+        # self.registerMessage(objectData.index)
+        if objectData.isProduct:
             categories = objectData.getCategories().values()
             objectData['catsum'] = '|'.join(listUtils.filterUniqueTrue(
                 map(
-                    lambda x: x.getSum(),
+                    lambda x: x.namesum,
                     categories
                 )
             ))
-            self.registerMessage("catsum of %s is %s"%(objectData.getIndex(), objectData.get('catsum')))
+            self.registerMessage("catsum of %s is %s"%(objectData.index, objectData.get('catsum')))
 
     def postProcessImages(self, objectData):
-        # self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.index)
         objectData['imgsum'] = '|'.join(filter(
             None, 
             objectData.getImages()
         ))
 
-        if objectData.isProduct() :
+        if objectData.isProduct :
             try:
                 assert objectData['imgsum'], "All Products should have images"
             except AssertionError as e:
                 self.registerError(e, objectData)
 
-        self.registerMessage("imgsum of %s is %s"%(objectData.getIndex(), objectData.get('imgsum')))
+        self.registerMessage("imgsum of %s is %s"%(objectData.index, objectData.get('imgsum')))
 
     def postProcessAttributes(self, objectData):
-        # self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.index)
         # print 'analysing attributes', objectData.get('codesum')
 
         for attr, data in objectData.getAttributes().items():
@@ -608,7 +568,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 'default':default
             })
 
-            if objectData.isProduct():
+            if objectData.isProduct:
                 objectData['attribute:'+attr] = values
                 objectData['attribute_data:'+attr] = '|'.join(map(str,[
                     position,
@@ -617,7 +577,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 ]))
                 objectData['attribute_default:'+attr] = default
 
-            if objectData.isVariation():
+            if objectData.isVariation:
                 try:
                     assert variation == 1, "variations should have 'variation' set" 
                 except Exception as e:
@@ -626,9 +586,9 @@ class CSVParse_Woo(CSVParse_Gen):
                 objectData['meta:attribute_'+attr] = values
 
     def postProcessSpecials(self, objectData):
-        # self.registerMessage(objectData.getIndex())
+        # self.registerMessage(objectData.index)
 
-        if objectData.isProduct():
+        if objectData.isProduct:
 
             ancestors = objectData.getInheritanceAncestors()
             for ancestor in ancestors:
@@ -638,7 +598,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
             specials = objectData.getSpecials()
             objectData['spsum'] = '|'.join(specials)
-            self.registerMessage("spsum of %s is %s"%(objectData.getIndex(), objectData.get('spsum')))
+            self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
@@ -647,8 +607,8 @@ class CSVParse_Woo(CSVParse_Gen):
 
                     specialparams = self.specials[special]
 
-                    specialfrom = datetotimestamp( specialparams["FROM"])
-                    specialto = datetotimestamp(specialparams["TO"])
+                    specialfrom = sanitationUtils.datetotimestamp( specialparams["FROM"])
+                    specialto = sanitationUtils.datetotimestamp(specialparams["TO"])
                     if( specialto < time.time() ):
                         self.registerMessage( "special %s is over" % special )
                         continue
@@ -661,7 +621,7 @@ class CSVParse_Woo(CSVParse_Gen):
                             # print "discount is ", discount
                             special_price = None
 
-                            percentages = findallPercent(discount)
+                            percentages = sanitationUtils.findallPercent(discount)
                             # print "percentages are", percentages
                             if percentages:
                                 coefficient = float(percentages[0]) / 100
@@ -671,7 +631,7 @@ class CSVParse_Woo(CSVParse_Gen):
                                     regular_price = float(regular_price_string)
                                     special_price = regular_price * coefficient  
                             else:    
-                                dollars = findallDollars(discount)
+                                dollars = sanitationUtils.findallDollars(discount)
                                 if dollars:
                                     dollar = float(self.sanitizeCell( dollars[0]) )
                                     if dollar:
@@ -706,7 +666,7 @@ class CSVParse_Woo(CSVParse_Gen):
         objects = super(CSVParse_Woo, self).analyseFile(fileName)  
         #post processing
         # for itemData in self.taxos.values() + self.items.values():
-            # print 'POST analysing product', itemData.getCodesum(), itemData.getSum()
+            # print 'POST analysing product', itemData.codesum, itemData.namesum
         
         for index, objectData in self.getObjects().items():
             print '%s POST' % objectData.getIdentifier()
@@ -731,7 +691,6 @@ class CSVParse_Woo(CSVParse_Gen):
 
 
 class CSVParse_TT(CSVParse_Woo):
-    """docstring for CSVParse_TT"""
 
     def __init__(self, cols={}, defaults ={}, importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
@@ -780,7 +739,6 @@ class CSVParse_TT(CSVParse_Woo):
         #     print "-> metaWidth: ", self.metaWidth
 
 class CSVParse_VT(CSVParse_Woo):
-    """docstring for CSVParse_VT"""
 
     def __init__(self, cols={}, defaults ={}, importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\

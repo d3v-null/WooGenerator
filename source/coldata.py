@@ -2,7 +2,7 @@ from collections import OrderedDict
 from csvparse_abstract import listUtils
 
 class ColData_Base(object):
-    """docstring for ColData_Base"""
+
     def __init__(self, data):
         super(ColData_Base, self).__init__()
         assert issubclass(type(data), dict), "Data should be a dictionary subclass"
@@ -38,7 +38,7 @@ class ColData_Base(object):
         return colNames
 
 class ColData_MYO(ColData_Base):
-    """docstring for ColData_MYO"""
+
     data = OrderedDict([
         ('codesum', {
             'label': 'Item Number',
@@ -114,7 +114,7 @@ class ColData_MYO(ColData_Base):
         return self.getExportCols('product')
 
 class ColData_Woo(ColData_Base):
-    """docstring for ColData_Woo"""
+
     data = OrderedDict([
         ('parent_SKU',{
             'variation':True,
@@ -501,7 +501,7 @@ class ColData_Woo(ColData_Base):
         return atttributeMetaCols
 
 class ColData_User(ColData_Base):
-    """docstring for ColData_User"""
+
     data = OrderedDict([
         ('username',{
             'user':True,
