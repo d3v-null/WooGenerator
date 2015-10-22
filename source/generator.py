@@ -6,6 +6,7 @@ import shutil
 from PIL import Image
 import time
 from metagator import MetaGator
+from utils import listUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
@@ -233,15 +234,32 @@ if schema in myo_schemas:
 	)
 elif schema in woo_schemas:
 
+	for product in products.values():
+		for key, value in product.items():
+			if 'attribute' in key:
+				print product.codesum, key, value
+
 	#products
 	attributeCols = colData.getAttributeCols(attributes, vattributes)
-	# print 'attributeCols:', attributeCols
+	print 'attributeCols:', attributeCols
+	productCols = joinOrderedDicts( productCols, attributeCols)
+	print 'productCols: ', productCols
+	productColnames = colData.getColNames(productCols)
+	print 'productColnames: ', productColnames
 
 	exportItemsCSV(
 		flaPath,
-		colData.getColNames(
-			joinOrderedDicts( productCols, attributeCols)
-		),
+		productColnames,
+		products.values()
+	)
+
+	productCols = listUtils.combineOrderedDicts( productCols, attributeCols )
+	print 'productCols: ', productCols
+	productColnames = colData.getColNames(productCols)
+	print 'productColnames: ', productColnames
+	exportItemsCSV(
+		flaPath + '2',
+		productColnames,
 		products.values()
 	)
 

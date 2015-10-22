@@ -40,10 +40,11 @@ class ImportWooObject(ImportGenObject):
         return self.images
 
     def registerAttribute(self, attr, val, var=False):
+        self.registerMessage("attr: %s ; val: %s ; var: %s" % (attr, val, var) )
         if var:
             assert self.isVariation or self.isVariable
         attrs = self.getAttributes()
-        if attr not in attrs:
+        if attr not in attrs.keys():
             attrs[attr] = {
                 'values':[val],
                 'visible':1,
@@ -58,11 +59,10 @@ class ImportWooObject(ImportGenObject):
                 attrs[attr]['default'] = val
             attrs[attr]['variation'] = 1
 
+        assert attrs == self.attributes
+
     def getAttributes(self):
-        try:
-            return self.attributes
-        except:
-            return OrderedDict()
+        return self.attributes
 
     def registerSpecial(self, special):
         if special not in self.specials:
@@ -103,9 +103,6 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
 
     def getCategories(self):
         return self.categories
-
-    def getAttributes(self):
-        return self.get('attributes', OrderedDict())
 
     def getVariations(self):
         return None
@@ -442,6 +439,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerSpecial(objectData, special)
 
     def processObject(self, objectData):
+        self.registerMessage(objectData.index)
         super(CSVParse_Woo, self).processObject(objectData)
         assert isinstance(objectData, ImportWooObject)
         self.processCategories(objectData)
@@ -555,6 +553,7 @@ class CSVParse_Woo(CSVParse_Gen):
         # print 'analysing attributes', objectData.get('codesum')
 
         for attr, data in objectData.getAttributes().items():
+
             if not data: continue
             values = '|'.join(map(str,data.get('values',[])))
             visible = data.get('visible', 1)
@@ -562,13 +561,13 @@ class CSVParse_Woo(CSVParse_Gen):
             position = data.get('position',0)
             default = data.get('default', '')
 
-            self.registerMessage({
-                'attr':attr,
-                'values':values,
-                'visible':visible,
-                'variation':variation,
-                'default':default
-            })
+            self.registerMessage(OrderedDict([
+                ('attr',attr),
+                ('values',values),
+                ('visible',visible),
+                ('variation',variation),
+                ('default',default)
+            ]))
 
             if objectData.isProduct:
                 objectData['attribute:'+attr] = values
