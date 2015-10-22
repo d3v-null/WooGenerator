@@ -1,7 +1,6 @@
 from utils import listUtils, sanitationUtils
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
-import json
 import time
 
 DEBUG_WOO = True
@@ -59,7 +58,7 @@ class ImportWooObject(ImportGenObject):
                 attrs[attr]['default'] = val
             attrs[attr]['variation'] = 1
 
-        assert attrs == self.attributes
+        assert attrs == self.getAttributes()
 
     def getAttributes(self):
         return self.attributes
@@ -344,6 +343,11 @@ class CSVParse_Woo(CSVParse_Gen):
             registerName = 'specials'
         )
         objectData.registerSpecial(special)
+
+    def registerProduct(self, objectData):
+        assert isinstance(objectData, ImportWooProduct)
+        if not objectData.isVariation:
+            super(CSVParse_Woo, self).registerProduct(objectData)
 
     def processImages(self, objectData):
         imglist = filter(None, sanitationUtils.findAllImages(objectData.get('Images','')))

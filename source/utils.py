@@ -35,6 +35,12 @@ class sanitationUtils:
         return re.sub('^\s*$','', string)    
 
     @staticmethod
+    def sanitizeNewlines(string):
+        if '\n' in string: 
+            print "!!! found newline in string"
+        return re.sub('\\n','</br>', string)
+
+    @staticmethod
     def compileRegex(subs):
         if subs:
             return re.compile( "(%s)" % '|'.join(filter(None, map(re.escape, subs))) )
@@ -48,7 +54,8 @@ class sanitationUtils:
             sanitationUtils.removeLeadingPercentWhiteSpace,
             sanitationUtils.removeLoneDashes,
             sanitationUtils.removeThousandsSeparator,
-            sanitationUtils.removeLoneWhiteSpace
+            sanitationUtils.removeLoneWhiteSpace,
+            sanitationUtils.sanitizeNewlines
         )(cell)   
 
     @staticmethod
