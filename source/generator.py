@@ -215,9 +215,11 @@ def addColGroup(parentElement, product, cols, tag):
 			subElement = addSubElement(parentElement, tag)
 			addCols(subElement, product, cols)
 
-def exportProductsXML(filePath, products, productCols, 
-		variationCols={}, attributeCols={}, attributeMetaCols={}, pricingCols={}, shippingCols={}, inventoryCols={}):
+def exportProductsXML(filePath, products, productCols, variationCols={}, categoryCols={},
+	attributeCols={}, attributeMetaCols={}, pricingCols={}, shippingCols={}, inventoryCols={}):
 	print "productCols: ", productCols.keys()
+	print "variationCols: ", variationCols.keys()
+	print "categoryCols: ", categoryCols.keys()
 	prod_exclude_keys = listUtils.getAllkeys(
 		attributeCols,
 		attributeMetaCols,
@@ -251,9 +253,16 @@ def exportProductsXML(filePath, products, productCols,
 			product_type = product.product_type
 		except:
 			product_type = None
-		productElement = addSubElement(root, 'product', attrib={'sku':sku, 'type':product_type})
+		productElement = addSubElement(root, 'product', attrib={'sku':str(sku), 'type':str(product_type)})
 		# main data:
 		addCols(productElement, product, product_only_cols )
+		# category data:
+		categories = product.getCategories()
+		if categories:
+			categoriesElement = addSubElement(productElement, 'categories')
+			for index, category in categories.items():
+				categoryElement = addSubElement(categoriesElement, 'category')
+				addCols(categoryElement, category, categoryCols)
 		# shipping data:
 		addColGroup(productElement, product, shipping_only_cols, 'shipping')
 		# pricing data:
@@ -265,14 +274,14 @@ def exportProductsXML(filePath, products, productCols,
 		if variations:
 			variationsElement = addSubElement(productElement, 'variations') 
 			for vsku, variation in variations.items():
-				variationElement = addSubElement(variationsElement, 'variation', {'sku':vsku})
+				variationElement = addSubElement(variationsElement, 'variation', {'sku':str(vsku)})
 				addCols(variationElement, variation, variationCols)
 		# attribute data:
 		attributes = product.getAttributes()
 		if attributes:
 			attributesElement = addSubElement(productElement, 'attributes')
 			for attr, data in attributes.items():
-				attributeElement = addSubElement(attributesElement, 'attribute', {'attr':attr})
+				attributeElement = addSubElement(attributesElement, 'attribute', {'attr':str(attr)})
 				values = data.get('values')
 				if values:
 					valuesElement = addSubElement(attributeElement, 'values')
@@ -377,18 +386,21 @@ elif schema in woo_schemas:
 	print 'shippingCols: ', shippingCols.keys()
 	inventoryCols = colData.getInventoryCols()
 	print 'inventoryCols: ', inventoryCols.keys()
+	categoryCols = colData.getCategoryCols()
+	print 'categoryCols: ', categoryCols.keys()
 
 	#export items XML
 	exportProductsXML(
 		xmlPath,
 		products,
 		productCols,
-		variationCols,
-		attributeCols, 
-		attributeMetaCols, 
-		pricingCols,
-		shippingCols,
-		inventoryCols
+		variationCols = variationCols,
+		categoryCols = categoryCols,
+		attributeCols = attributeCols, 
+		attributeMetaCols = attributeMetaCols, 
+		pricingCols = pricingCols,
+		shippingCols = shippingCols,
+		inventoryCols = inventoryCols
 	)
 
 
