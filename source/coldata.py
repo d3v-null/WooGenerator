@@ -145,6 +145,7 @@ class ColData_Woo(ColData_Base):
         }),
         ('descsum', {
             'label':'post_content',
+            'tag':'Description',
             'product': True,
             'category': True,
         }),
@@ -180,6 +181,7 @@ class ColData_Woo(ColData_Base):
             'import':True,
             'category': True,
             'product':True,
+            'pricing': True,
         }),
         ('DYNPROD', {
             'import':True,
@@ -426,7 +428,7 @@ class ColData_Woo(ColData_Base):
             'import': True,
             'product': True,
             'variation': True,
-            'Shipping':True
+            'shipping':True
         }),
         ('width', {
             'import': True,
@@ -483,6 +485,9 @@ class ColData_Woo(ColData_Base):
 
     def getShippingCols(self):
         return self.getExportCols('shipping')
+
+    def getInventoryCols(self):
+        return self.getExportCols('inventory')
 
     def getAttributeCols(self, attributes, vattributes):
         attributeCols = OrderedDict()

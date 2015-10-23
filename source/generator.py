@@ -7,7 +7,7 @@ from PIL import Image
 import time
 from itertools import chain
 from metagator import MetaGator
-from utils import listUtils
+from utils import listUtils, sanitationUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
@@ -45,7 +45,6 @@ refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened"
 logFolder = "../logs/"
 
 thumbsize = 1920, 1200
-
 
 rename = False
 rename = False
@@ -186,43 +185,100 @@ def exportItemsCSV(filePath, colNames, items):
 		dictwriter.writerows(items)
 	print "WROTE FILE: ", filePath
 
-def exportProductsXML(filePath, products, productCols, variationCols, *args):
-		# productCols, variationCols, attributeCols, attributeMetaCols, pricingCols, shippingCols):
+def addSubElement(parentElement, tag, attrib={}, value=None):
+	# print "addSubElement: tag %s ; attrib %s ; value %s" % (tag, attrib, value)
+	tag = sanitationUtils.cleanXMLString(tag)
+	# print "addSubElement: tag post clean: %s" % tag
+	subElement = ET.SubElement(parentElement, tag, attrib)
+	value = sanitationUtils.cleanXMLString(value)
+	# print "addSubElement: value post clean: %s" % value
+	if value:
+		subElement.text = value
+	return subElement
+
+def addCols(parentElement, product, cols):
+	assert isinstance(cols, dict)
+	assert isinstance(product, dict)
+	for index, data in cols.items():
+		tag = data.get('tag')
+		if not tag: tag = index
+		value = product.get(index)
+		if value is not None:
+			addSubElement(parentElement, tag, value=value)
+
+def addColGroup(parentElement, product, cols, tag):
+	assert isinstance(cols, dict)
+	assert isinstance(product, dict)
+	if cols:
+		prod_keys = product.keys()
+		if any([key in prod_keys for key in cols.keys()]):
+			subElement = addSubElement(parentElement, tag)
+			addCols(subElement, product, cols)
+
+def exportProductsXML(filePath, products, productCols, 
+		variationCols={}, attributeCols={}, attributeMetaCols={}, pricingCols={}, shippingCols={}, inventoryCols={}):
 	print "productCols: ", productCols.keys()
-	extra_col_groups = [arg for arg in args if isinstance(arg, dict)]
-	print "extra_col_groups: ", [ group.keys() for group in extra_col_groups ]
-	extra_col_keys = list(chain( *(group.keys() for group in extra_col_groups) ))
-	print "extra_col_keys: ", extra_col_keys
-	product_only_cols = OrderedDict([ (index, data) for index, data in productCols.items() if index not in extra_col_keys ])
+	prod_exclude_keys = listUtils.getAllkeys(
+		attributeCols,
+		attributeMetaCols,
+		pricingCols,
+		shippingCols,
+		inventoryCols
+	)
+	prod_exclude_keys += ['codesum', 'prod_type', 'catsum', 'imgsum']
+	print "prod_exclude_keys: ", prod_exclude_keys
+	product_only_cols = listUtils.keysNotIn(productCols, prod_exclude_keys) 
 	print "product_only_cols: ", product_only_cols.keys()
-	print "exporting products"
-	for k in productCols.keys():
-		if k in pricingCols.keys() + shippingCols.keys():
-			del productCols[k] 
+	shipping_exclude_keys = []
+	print "shipping_exclude_keys: ", shipping_exclude_keys
+	shipping_only_cols = listUtils.keysNotIn(shippingCols, shipping_exclude_keys)
+	# shipping_only_cols = listUtils.keysNotIn(shippingCols, listUtils.getAllkeys(pricingCols, inventoryCols)) 
+	print "shipping_only_cols: ", shipping_only_cols.keys()
+	pricing_exclude_keys = listUtils.getAllkeys(shipping_only_cols)
+	print "pricing_exclude_keys: ", pricing_exclude_keys
+	pricing_only_cols = listUtils.keysNotIn(pricingCols, pricing_exclude_keys) 
+	# pricing_only_cols = listUtils.keysNotIn(shippingCols, listUtils.getAllkeys(shippingCols, inventoryCols)) 
+	print "pricing_only_cols: ", pricing_only_cols.keys()
+	inventory_exclude_keys = listUtils.getAllkeys(shipping_only_cols, pricing_only_cols)
+	print "inventory_exclude_keys: ", inventory_exclude_keys
+	inventory_only_cols = listUtils.keysNotIn(inventoryCols, inventory_exclude_keys) 
+	print "inventory_only_cols: ", inventory_only_cols.keys()
+
 	root = ET.Element('products')
 	tree = ET.ElementTree(root)
 	for sku, product in products.items():
-		productElement = ET.SubElement(root, 'product', {'id':sku})
-		for index, data in product_only_cols.items():
-			tag = data.get('tag')
-			# tag = label if label else index
-			tag = tag if tag else index
-			value = product.get(index)
-			if value:
-				# value = unicode(value, 'utf-8')
-				# print "value of", tag, "is", value
-				value = str(value).decode('utf8', 'ignore')
-				productFieldElement = ET.SubElement(productElement, tag)
-				productFieldElement.text = value
-			else:
-				pass
-				# print "tag",tag,"has no value"
-
+		try:
+			product_type = product.product_type
+		except:
+			product_type = None
+		productElement = addSubElement(root, 'product', attrib={'sku':sku, 'type':product_type})
+		# main data:
+		addCols(productElement, product, product_only_cols )
+		# shipping data:
+		addColGroup(productElement, product, shipping_only_cols, 'shipping')
+		# pricing data:
+		addColGroup(productElement, product, pricing_only_cols, 'pricing')
+		# inventory data:
+		addColGroup(productElement, product, inventory_only_cols, 'inventory')
+		# variation data:
 		variations = product.getVariations()
 		if variations:
-			variationsElement = ET.SubElement(productElement, 'variations')		
+			variationsElement = addSubElement(productElement, 'variations') 
 			for vsku, variation in variations.items():
-				ET.SubElement(variationsElement, 'variation', {'id':vsku})
+				variationElement = addSubElement(variationsElement, 'variation', {'sku':vsku})
+				addCols(variationElement, variation, variationCols)
+		# attribute data:
+		attributes = product.getAttributes()
+		if attributes:
+			attributesElement = addSubElement(productElement, 'attributes')
+			for attr, data in attributes.items():
+				attributeElement = addSubElement(attributesElement, 'attribute', {'attr':attr})
+				values = data.get('values')
+				if values:
+					valuesElement = addSubElement(attributeElement, 'values')
+					valuesElement.text = '|'.join(values)
+					addCols(attributeElement, data, {'visible':{}, 'variation':{}, })
+
 	# print ET.dump(root)
 	tree.write(filePath)
 	print "WROTE FILE: ", filePath
@@ -246,10 +302,9 @@ elif schema in woo_schemas:
 
 	#products
 	attributeCols = colData.getAttributeCols(attributes, vattributes)
-	# print 'attributeCols:', attributeCols
-	productCols = joinOrderedDicts( productCols, attributeCols)
-	# print 'productCols: ', productCols
-	productColnames = colData.getColNames(productCols)
+	# print 'attributeCols:', attributeCols.keys()
+	# print 'productCols: ', productCols.keys()
+	productColnames = colData.getColNames( joinOrderedDicts( productCols, attributeCols))
 	# print 'productColnames: ', productColnames
 
 	exportItemsCSV(
@@ -317,7 +372,11 @@ elif schema in woo_schemas:
 		pass
 
 	pricingCols = colData.getPricingCols()
+	print 'pricingCols: ', pricingCols.keys()
 	shippingCols = colData.getShippingCols()
+	print 'shippingCols: ', shippingCols.keys()
+	inventoryCols = colData.getInventoryCols()
+	print 'inventoryCols: ', inventoryCols.keys()
 
 	#export items XML
 	exportProductsXML(
@@ -328,7 +387,8 @@ elif schema in woo_schemas:
 		attributeCols, 
 		attributeMetaCols, 
 		pricingCols,
-		shippingCols
+		shippingCols,
+		inventoryCols
 	)
 
 

@@ -1,4 +1,5 @@
 import functools
+import itertools
 # from itertools import chain
 import re
 import time
@@ -111,6 +112,21 @@ class sanitationUtils:
         attrs = json.loads(string)
         return attrs
 
+    @staticmethod
+    def cleanXMLString(string):
+        # print "cleaning string ", string
+        if string is None:
+            return None
+        elif isinstance(string, unicode):
+            unicode_content = string
+        else:
+            unicode_content = str(string).decode('utf8', 'ignore')
+            assert isinstance(unicode_content, unicode)
+        # print "unicode_content: ", unicode_content
+        xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')
+        # print "xml_content: ", xml_content
+        return xml_content
+
 class descriptorUtils:
     @staticmethod
     def safeKeyProperty(key):
@@ -149,6 +165,20 @@ class listUtils:
             if i and i not in b:
                 b.append(i)
         return b
+
+    @staticmethod
+    def getAllkeys(*args):
+        return listUtils.filterUniqueTrue(itertools.chain( *(
+            arg.keys() for arg in args if isinstance(arg, dict)
+        )))
+
+    @staticmethod
+    def keysNotIn(dictionary, keys):
+        assert isinstance(dictionary, dict)
+        return type(dictionary)([ \
+            (key, value) for key, value in dictionary.items()\
+            if key not in keys
+        ])
 
 class debugUtils:
     @staticmethod

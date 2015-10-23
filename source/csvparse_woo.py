@@ -107,7 +107,7 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
         return None
 
     def getNameDelimeter(self):
-        return ' \xe2\x80\x94 '
+        return ' - '
 
     def getInheritanceAncestors(self):
         return listUtils.filterUniqueTrue( 
