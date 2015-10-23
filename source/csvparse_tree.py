@@ -63,7 +63,7 @@ class ImportTreeObject(ImportObject):
         this = self.getParent()
         ancestors = []
         while this and not this.isRoot:
-            ancestors = [this] + ancestors
+            ancestors.insert(0, this)
             this = this.getParent()
         return ancestors
 

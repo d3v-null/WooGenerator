@@ -63,27 +63,37 @@ class ImportGenObject(ImportTreeObject):
     def index(self):
         return self.codesum
 
-    def getCodeDelimeter(self):
+    def getCodeDelimeter(self, other):
         return ''
 
     def joinCodes(self):
-        parent = self.getParent()
-        codesum = self.code
-        if parent and not parent.isRoot:
-            codesum = parent.codesum + self.getCodeDelimeter() + codesum      
+        ancestors = [ancestor for ancestor in self.getAncestors() + [self] if ancestor.code ]
+        if not ancestors: 
+            return ""
+        prev = ancestors.pop(0)
+        codesum = prev.code
+        while ancestors:
+            this = ancestors.pop(0)
+            codesum += this.getCodeDelimeter(prev) + this.code
+            prev = this
         return codesum
 
     def joinDescs(self):
-        if self.description: return self.description
-        parent = self.getParent()
-        if parent and not parent.isRoot:
-            parentDescription = parent.descsum
-            if parentDescription: return parentDescription
-        if self.fullname: return self.fullname
-        if parent and not parent.isRoot:
-            parentFullname = parent.fullname
-            if parentFullname: return parentFullname
-        return ""
+        if self.description: 
+            return self.description
+        fullnames = [self.fullname]
+        ancestors = self.getAncestors()
+        for ancestor in reversed(ancestors):
+            ancestorDescription = ancestor.description
+            if ancestorDescription:
+                return ancestorDescription
+            ancestorFullname = ancestor.fullname
+            if ancestorFullname: 
+                fullnames.insert(0, ancestorFullname)
+        if fullnames:
+            return " - ".join(reversed(fullnames))
+        else:
+            return ""
 
     def getNameDelimeter(self):
         return ' '
@@ -135,12 +145,12 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
     # def __init__(self, *args, **kwargs):
     #     super(ImportGenItem, self).__init__(*args, **kwargs)
 
-    def getCodeDelimeter(self):
-        parent = self.getParent()
-        if not parent.isRoot and parent.isTaxo:
+    def getCodeDelimeter(self, other):
+        assert isinstance(other, ImportGenObject)
+        if not other.isRoot and other.isTaxo:
             return '-'
         else:
-            return super(ImportGenItem, self).getCodeDelimeter()
+            return super(ImportGenItem, self).getCodeDelimeter(other)
 
 class ImportGenProduct(ImportGenItem):
 

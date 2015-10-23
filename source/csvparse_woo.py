@@ -47,7 +47,7 @@ class ImportWooObject(ImportGenObject):
             attrs[attr] = {
                 'values':[val],
                 'visible':1,
-                'variation':0
+                'variation':1 if var else 0
             }
             if var:
                 attrs[attr]['default'] = val
@@ -583,12 +583,8 @@ class CSVParse_Woo(CSVParse_Gen):
                 objectData['attribute_default:'+attr] = default
 
             if objectData.isVariation:
-                try:
-                    assert variation == 1, "variations should have 'variation' set" 
-                except Exception as e:
-                    self.registerError(e, objectData)
-
-                objectData['meta:attribute_'+attr] = values
+                if variation:
+                    objectData['meta:attribute_'+attr] = values
 
     def postProcessSpecials(self, objectData):
         # self.registerMessage(objectData.index)

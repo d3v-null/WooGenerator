@@ -234,18 +234,13 @@ if schema in myo_schemas:
 	)
 elif schema in woo_schemas:
 
-	for product in products.values():
-		for key, value in product.items():
-			if 'attribute' in key:
-				print product.codesum, key, value
-
 	#products
 	attributeCols = colData.getAttributeCols(attributes, vattributes)
-	print 'attributeCols:', attributeCols
+	# print 'attributeCols:', attributeCols
 	productCols = joinOrderedDicts( productCols, attributeCols)
-	print 'productCols: ', productCols
+	# print 'productCols: ', productCols
 	productColnames = colData.getColNames(productCols)
-	print 'productColnames: ', productColnames
+	# print 'productColnames: ', productColnames
 
 	exportItemsCSV(
 		flaPath,
