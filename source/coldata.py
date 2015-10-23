@@ -184,12 +184,14 @@ class ColData_Woo(ColData_Base):
         ('DYNPROD', {
             'import':True,
             'category': True,
-            'product':True
+            'product':True,
+            'pricing': True,
         }),
         ('SCHEDULE', {
             'import':True,
             'category':True,
             'product':True,
+            'pricing': True,
             'default':''
         }),
         ('spsum', {
@@ -200,25 +202,39 @@ class ColData_Woo(ColData_Base):
         }),
         ('dprclist', {
             'label': 'meta:dynamic_category_rulesets',
+            # 'pricing': True,
             # 'product': True,
-            'category': True  
+            # 'category': True  
         }),
         ('dprplist', {
             'label': 'meta:dynamic_product_rulesets',
-            'product': True,
+            # 'pricing': True,
+            # 'product': True,
             # 'category': True
         }),
         ('dprcIDlist', {
             'label': 'meta:dynamic_category_ruleset_IDs',
-            # 'product': True,
-            'category': True  
+            'pricing': True,
+            'product': True,
+            # 'category': True  
         }),
         ('dprpIDlist', {
             'label': 'meta:dynamic_product_ruleset_IDs',
             'product': True,
+            'pricing': True,
             # 'category': True
         }),
-        ('pricing', {
+        ('dprcsum', {
+            'label': 'meta:DPRC_Table',
+            'product': True,   
+            'pricing': True,
+        }),
+        ('dprpsum', {
+            'label': 'meta:DPRP_Table',
+            'product': True,   
+            'pricing': True,
+        }),
+        ('price', {
             'label':'regular_price',
             'product': True,
             'variation': True,
@@ -442,14 +458,6 @@ class ColData_Woo(ColData_Base):
         }),
         ('HTML Description', {
             'import': True,
-        }),
-        ('dprcsum', {
-            'label': 'meta:DPRC_Table',
-            'product': True,   
-        }),
-        ('dprpsum', {
-            'label': 'meta:DPRP_Table',
-            'product': True,   
         }),
         ('last_import',{
             'label':'meta:last_import',

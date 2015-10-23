@@ -5,6 +5,7 @@ import os
 import shutil
 from PIL import Image
 import time
+from itertools import chain
 from metagator import MetaGator
 from utils import listUtils
 from csvparse_abstract import Registrar
@@ -23,7 +24,8 @@ itemDepth = 2
 maxDepth = taxoDepth + itemDepth
 
 inFolder = "../input/"
-genPath = os.path.join(inFolder, 'generator.csv')
+# genPath = os.path.join(inFolder, 'generator.csv')
+genPath = os.path.join(inFolder, 'generator-solution.csv')
 dprcPath= os.path.join(inFolder, 'DPRC.csv')
 dprpPath= os.path.join(inFolder, 'DPRP.csv')
 specPath= os.path.join(inFolder, 'specials.csv')
@@ -184,8 +186,15 @@ def exportItemsCSV(filePath, colNames, items):
 		dictwriter.writerows(items)
 	print "WROTE FILE: ", filePath
 
-def exportProductsXML(filePath, products, \
-		productCols, variationCols, attributeCols, attributeMetaCols, pricingCols, shippingCols):
+def exportProductsXML(filePath, products, productCols, variationCols, *args):
+		# productCols, variationCols, attributeCols, attributeMetaCols, pricingCols, shippingCols):
+	print "productCols: ", productCols.keys()
+	extra_col_groups = [arg for arg in args if isinstance(arg, dict)]
+	print "extra_col_groups: ", [ group.keys() for group in extra_col_groups ]
+	extra_col_keys = list(chain( *(group.keys() for group in extra_col_groups) ))
+	print "extra_col_keys: ", extra_col_keys
+	product_only_cols = OrderedDict([ (index, data) for index, data in productCols.items() if index not in extra_col_keys ])
+	print "product_only_cols: ", product_only_cols.keys()
 	print "exporting products"
 	for k in productCols.keys():
 		if k in pricingCols.keys() + shippingCols.keys():
@@ -194,7 +203,7 @@ def exportProductsXML(filePath, products, \
 	tree = ET.ElementTree(root)
 	for sku, product in products.items():
 		productElement = ET.SubElement(root, 'product', {'id':sku})
-		for index, data in productCols.iteritems():
+		for index, data in product_only_cols.items():
 			tag = data.get('tag')
 			# tag = label if label else index
 			tag = tag if tag else index
@@ -216,6 +225,7 @@ def exportProductsXML(filePath, products, \
 				ET.SubElement(variationsElement, 'variation', {'id':vsku})
 	# print ET.dump(root)
 	tree.write(filePath)
+	print "WROTE FILE: ", filePath
 
 
 def onCurrentSpecial(product):
@@ -249,27 +259,30 @@ elif schema in woo_schemas:
 	)
 
 	#variations
+		
 	variationCols = colData.getVariationCols()
 	# print 'variationCols:', variationCols
 	attributeMetaCols = colData.getAttributeMetaCols(attributes)
 	# print 'attributeMetaCols:', attributeMetaCols
 
-	exportItemsCSV(
-		flvPath,
-		colData.getColNames(
-			joinOrderedDicts( variationCols, attributeMetaCols)
-		),
-		variations.values()
-	)
+	if variations:
 
-	#categories
-	categoryCols = colData.getCategoryCols()
+		exportItemsCSV(
+			flvPath,
+			colData.getColNames(
+				joinOrderedDicts( variationCols, attributeMetaCols)
+			),
+			variations.values()
+		)
 
-	exportItemsCSV(
-		catPath,
-		colData.getColNames(categoryCols),
-		categories.values()
-	)
+		#categories
+		categoryCols = colData.getCategoryCols()
+
+		exportItemsCSV(
+			catPath,
+			colData.getColNames(categoryCols),
+			categories.values()
+		)
 
 	#specials
 	try:
