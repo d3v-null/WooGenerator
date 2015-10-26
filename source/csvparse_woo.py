@@ -1,6 +1,7 @@
 from utils import listUtils, sanitationUtils
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
+import bisect
 import time
 
 DEBUG_WOO = True
@@ -73,6 +74,15 @@ class ImportWooObject(ImportGenObject):
     def getInheritanceAncestors(self):
         return self.getAncestors()
 
+    def inheritKey(self, key):
+        if not self.get(key):        
+            inheritence = filter(None, map(
+                lambda x: x.get(key),
+                self.getInheritanceAncestors()
+            ))
+            if inheritence:
+                self[key] = inheritence[-1]
+
 class ImportWooItem(ImportWooObject, ImportGenItem):
 
     def __init__(self, *args, **kwargs):
@@ -111,7 +121,7 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
 
     def getInheritanceAncestors(self):
         return listUtils.filterUniqueTrue( 
-            super(ImportWooProduct, self).getInheritanceAncestors() + self.getCategories().values() 
+            self.getCategories().values() + super(ImportWooProduct, self).getInheritanceAncestors()
         )
 
 class ImportWooSimpleProduct(ImportWooProduct):
@@ -185,6 +195,45 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
 
     def getMembers(self, itemData):
         return self.members
+
+class imgList(object):
+    def __init__(self, fileName):
+        self.fileName = fileName
+        self.items = []
+        self.taxos = []
+        super(imgList, self).__init__()
+
+    def addObject(self, objectData):
+        assert isinstance(objectData, ImportWooObject)
+        if objectData.isTaxo:
+            container = self.taxos
+        else:
+            assert objectData.isItem
+            container = self.items
+
+        if objectData not in container:
+            bisect.insort(container, objectData)
+
+    def getkey(self, key):
+        values = listUtils.filterUniqueTrue([
+            obj.get(key) for obj in self.items + self.taxos
+        ])
+
+        if values:
+            return values[0]
+
+    @property
+    def name(self):
+        return self.getkey('fullname')
+
+    def description(self):
+        description = self.getKey('HTML Description')
+        if not description:
+            description = self.getKey('descsum')
+        if not description:
+            description = self.name
+        return description
+    
 
 class CSVParse_Woo(CSVParse_Gen):
 
@@ -266,13 +315,9 @@ class CSVParse_Woo(CSVParse_Gen):
     def registerImage(self, image, objectData):
         assert isinstance(image,str) 
         assert image is not "" 
-        self.registerAnything(
-            objectData,
-            self.images,
-            indexer = image,
-            singular = False,
-            registerName = 'images'
-        )
+        if image not in self.images.keys():
+            self.images[image] = imgList(image)
+        self.images[image].addObject(objectData)
         objectData.registerImage(image)
 
     def registerCategory(self, catData, itemData):
@@ -662,6 +707,28 @@ class CSVParse_Woo(CSVParse_Gen):
             objectData['sale_price_dates_from'] = objectData.get('RNF')
             objectData['sale_price_dates_to'] = objectData.get('RNT')
 
+    def postProcessInventory(self, objectData):
+        objectData.inheritKey('stock_status')
+
+        if objectData.isItem:
+            stock = objectData.get('stock')
+            if stock or stock is "0":
+                objectData['manage_stock'] = 'yes'
+                if stock is "0":
+                    objectData['stock_status'] = 'outofstock'
+            else:
+                objectData['manage_stock'] = 'no'
+
+            if objectData.get('stock_status') != 'outofstock':
+                objectData['stock_status'] = 'instock'
+
+    def postProcessVisibility(self, objectData):
+        objectData.inheritKey('VISIBILITY')
+
+        if objectData.isItem:
+            visible = objectData.get('VISIBILITY')
+            if visible is "hidden":
+                objectData['catalog_visibility'] = "hidden"
 
     def analyseFile(self, fileName):
         objects = super(CSVParse_Woo, self).analyseFile(fileName)  
@@ -676,6 +743,8 @@ class CSVParse_Woo(CSVParse_Gen):
             self.postProcessImages(objectData)
             self.postProcessAttributes(objectData)
             self.postProcessSpecials(objectData)
+            self.postProcessInventory(objectData)
+            self.postProcessVisibility(objectData)
 
         return objects
 

@@ -141,6 +141,13 @@ class ImportObject(OrderedDict, Registrar):
     def __str__(self):
         return "%s <%s>" % (self.index, self.getTypeName())
 
+    def __cmp__(self, other):
+        if other == None:
+            return -1
+        if not isinstance(other, ImportObject):
+            return -1  
+        return cmp(self.rowcount, other.rowcount)
+
 class CSVParse_Base(object, Registrar):
     objectContainer = ImportObject
 
@@ -222,7 +229,7 @@ class CSVParse_Base(object, Registrar):
         kwargs = self.getKwargs(allData, container, **kwargs)
         self.registerMessage("kwargs: {}".format(kwargs))                
         objectData = container(allData, rowcount, row, **kwargs)
-        self.registerMessage("mro: {}".format(container.mro()))                
+        # self.registerMessage("mro: {}".format(container.mro()))                
         return objectData
 
     def initializeObject(self, objectData):

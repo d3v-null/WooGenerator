@@ -24,8 +24,7 @@ itemDepth = 2
 maxDepth = taxoDepth + itemDepth
 
 inFolder = "../input/"
-# genPath = os.path.join(inFolder, 'generator.csv')
-genPath = os.path.join(inFolder, 'generator-solution.csv')
+genPath = os.path.join(inFolder, 'generator.csv')
 dprcPath= os.path.join(inFolder, 'DPRC.csv')
 dprpPath= os.path.join(inFolder, 'DPRP.csv')
 specPath= os.path.join(inFolder, 'specials.csv')
@@ -38,7 +37,7 @@ flvPath = os.path.join(outFolder , "flattened-variations.csv")
 catPath = os.path.join(outFolder , "categories.csv")
 myoPath = os.path.join(outFolder , "myob.csv")
 bunPath = os.path.join(outFolder , "bundles.csv")
-xmlPath = os.path.join(outFolder , "items.xml")
+xmlPath = os.path.join(outFolder , "items-.xml")
 
 imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened"
 refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened"
@@ -66,6 +65,9 @@ woo_schemas = ["TT", "VT", "TS"]
 schema = "TT"
 # schema = "VT"
 # schema = "TS"
+
+genPath = os.path.join(inFolder, 'generator-solution.csv')
+xmlPath = os.path.join(outFolder , "items-solution.xml")
 
 DEBUG = True
 
@@ -227,7 +229,7 @@ def exportProductsXML(filePath, products, productCols, variationCols={}, categor
 		shippingCols,
 		inventoryCols
 	)
-	prod_exclude_keys += ['codesum', 'prod_type', 'catsum', 'imgsum']
+	prod_exclude_keys += ['codesum', 'prod_type']
 	print "prod_exclude_keys: ", prod_exclude_keys
 	product_only_cols = listUtils.keysNotIn(productCols, prod_exclude_keys) 
 	print "product_only_cols: ", product_only_cols.keys()
@@ -245,48 +247,61 @@ def exportProductsXML(filePath, products, productCols, variationCols={}, categor
 	print "inventory_exclude_keys: ", inventory_exclude_keys
 	inventory_only_cols = listUtils.keysNotIn(inventoryCols, inventory_exclude_keys) 
 	print "inventory_only_cols: ", inventory_only_cols.keys()
+	variation_exclude_keys = listUtils.getAllkeys(shipping_only_cols, pricing_only_cols, inventory_only_cols)
+	print "variation_exclude_keys: ", variation_exclude_keys
+	variation_only_cols = listUtils.keysNotIn(listUtils.combineOrderedDicts(attributeMetaCols, variationCols), variation_exclude_keys) 
+	print "variation_only_cols: ", variation_only_cols.keys()
+
 
 	root = ET.Element('products')
 	tree = ET.ElementTree(root)
+	prodcount = 0
 	for sku, product in products.items():
+		prodcount += 1
 		try:
 			product_type = product.product_type
 		except:
 			product_type = None
-		productElement = addSubElement(root, 'product', attrib={'sku':str(sku), 'type':str(product_type)})
+		productElement = addSubElement(root, 'product', attrib={'sku':str(sku), 'type':str(product_type), 'prodcount':str(prodcount)})
 		# main data:
 		addCols(productElement, product, product_only_cols )
 		# category data:
-		categories = product.getCategories()
-		if categories:
-			categoriesElement = addSubElement(productElement, 'categories')
-			for index, category in categories.items():
-				categoryElement = addSubElement(categoriesElement, 'category')
-				addCols(categoryElement, category, categoryCols)
+		# categories = product.getCategories()
+		# if categories:
+		# 	categoriesElement = addSubElement(productElement, 'categories')
+		# 	for index, category in categories.items():
+		# 		categoryElement = addSubElement(categoriesElement, 'category')
+		# 		addCols(categoryElement, category, categoryCols)
 		# shipping data:
 		addColGroup(productElement, product, shipping_only_cols, 'shipping')
 		# pricing data:
 		addColGroup(productElement, product, pricing_only_cols, 'pricing')
 		# inventory data:
 		addColGroup(productElement, product, inventory_only_cols, 'inventory')
-		# variation data:
-		variations = product.getVariations()
-		if variations:
-			variationsElement = addSubElement(productElement, 'variations') 
-			for vsku, variation in variations.items():
-				variationElement = addSubElement(variationsElement, 'variation', {'sku':str(vsku)})
-				addCols(variationElement, variation, variationCols)
 		# attribute data:
 		attributes = product.getAttributes()
 		if attributes:
 			attributesElement = addSubElement(productElement, 'attributes')
 			for attr, data in attributes.items():
-				attributeElement = addSubElement(attributesElement, 'attribute', {'attr':str(attr)})
 				values = data.get('values')
+				attributeElement = addSubElement(attributesElement, 'attribute', {'attr':str(attr)})
 				if values:
 					valuesElement = addSubElement(attributeElement, 'values')
-					valuesElement.text = '|'.join(values)
+					valuesElement.text = '|'.join( map(str, values))
 					addCols(attributeElement, data, {'visible':{}, 'variation':{}, })
+		# variation data:
+		variations = product.getVariations()
+		if variations:
+			variationsElement = addSubElement(productElement, 'variations') 
+			for vsku, variation in variations.items():
+				variationElement = addSubElement(variationsElement, 'variation', {'vsku':str(vsku)})
+				addCols(variationElement, variation, variation_only_cols)
+				addColGroup(variationElement, variation, shipping_only_cols, 'shipping')
+				addColGroup(variationElement, variation, pricing_only_cols, 'pricing')
+				addColGroup(variationElement, variation, inventory_only_cols, 'inventory')
+				addColGroup(variationElement, variation, attributeMetaCols, 'attributes')
+
+		print "completed item: ", sku
 
 	# print ET.dump(root)
 	tree.write(filePath)
@@ -326,7 +341,7 @@ elif schema in woo_schemas:
 		
 	variationCols = colData.getVariationCols()
 	# print 'variationCols:', variationCols
-	attributeMetaCols = colData.getAttributeMetaCols(attributes)
+	attributeMetaCols = colData.getAttributeMetaCols(vattributes)
 	# print 'attributeMetaCols:', attributeMetaCols
 
 	if variations:
@@ -339,14 +354,16 @@ elif schema in woo_schemas:
 			variations.values()
 		)
 
-		#categories
-		categoryCols = colData.getCategoryCols()
+	#categories
+	categoryCols = colData.getCategoryCols()
 
-		exportItemsCSV(
-			catPath,
-			colData.getColNames(categoryCols),
-			categories.values()
-		)
+	exportItemsCSV(
+		catPath,
+		colData.getColNames(categoryCols),
+		categories.values()
+	)
+
+	print 'categoryCols: ', categoryCols.keys()
 
 	#specials
 	try:
@@ -386,7 +403,6 @@ elif schema in woo_schemas:
 	print 'shippingCols: ', shippingCols.keys()
 	inventoryCols = colData.getInventoryCols()
 	print 'inventoryCols: ', inventoryCols.keys()
-	categoryCols = colData.getCategoryCols()
 	print 'categoryCols: ', categoryCols.keys()
 
 	#export items XML

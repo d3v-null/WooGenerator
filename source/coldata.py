@@ -130,6 +130,7 @@ class ColData_Woo(ColData_Base):
             'tag':'Title',
             'label':'post_title',
             'product':True, 
+            'variation': True
         }),
         ('taxosum',{
             'label':'category_title',
@@ -188,6 +189,13 @@ class ColData_Woo(ColData_Base):
             'category': True,
             'product':True,
             'pricing': True,
+        }),
+        ('VISIBILITY', {
+            'import':True,
+        }),
+        ('catalog_visibility', {
+            'product':True,
+            'default':'visible'    
         }),
         ('SCHEDULE', {
             'import':True,
@@ -454,6 +462,11 @@ class ColData_Woo(ColData_Base):
             'variation': True,
             'inventory':True
         }),
+        ('manage_stock', {
+            'product': True,
+            'variation': True,
+            'inventory':True
+        }),
         ('Images',{
             'import': True,
             'default': ''
@@ -505,11 +518,12 @@ class ColData_Woo(ColData_Base):
                 }
         return attributeCols
 
-    def getAttributeMetaCols(self, attributes):
+    def getAttributeMetaCols(self, vattributes):
         atttributeMetaCols = OrderedDict()
-        for attr in attributes.keys():
+        for attr in vattributes.keys():
             atttributeMetaCols['meta:attribute_'+attr] = {
-                'variable': True
+                'variable': True,
+                'tag': attr
             }
         return atttributeMetaCols
 
