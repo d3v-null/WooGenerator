@@ -214,7 +214,7 @@ class imgList(object):
         if objectData not in container:
             bisect.insort(container, objectData)
 
-    def getkey(self, key):
+    def getKey(self, key):
         values = listUtils.filterUniqueTrue([
             obj.get(key) for obj in self.items + self.taxos
         ])
@@ -224,8 +224,13 @@ class imgList(object):
 
     @property
     def name(self):
-        return self.getkey('fullname')
+        return Exception("deprecated name")
 
+    @property
+    def title(self):
+        return self.getKey('fullnamesum')
+
+    @property    
     def description(self):
         description = self.getKey('HTML Description')
         if not description:

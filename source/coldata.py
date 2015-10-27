@@ -18,7 +18,8 @@ class ColData_Base(object):
     def getDefaults(self):
         defaults = {}
         for col, data in self.data.items():
-            if data.get('import') and data.get('default'):
+            # if data.get('import') and data.get('default'):
+            if data.get('default'):
                     defaults[col] = data.get('default')
         return defaults
 
@@ -258,12 +259,14 @@ class ColData_Woo(ColData_Base):
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',
+            'tag':'sale_from',
             'product': True,
             'variation': True,
             'pricing': True,
         }),
         ('sale_price_dates_to', {
             'label':'sale_price_dates_to',
+            'tag':'sale_to',
             'product': True,
             'variation': True,
             'pricing': True,

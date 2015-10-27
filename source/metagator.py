@@ -12,11 +12,17 @@ class MetaGator(object):
 			raise Exception("file not found")
 
 		self.dir, self.fname = os.path.split(path)
+		self.name, self.ext = os.path.splitext(self.fname)
+
+	def isJPG(self):
+		return self.ext.lower() in ['.png']
+
+	def isPNG(self):
+		return self.ext.lower() in ['.jpg', '.jpeg']
 
 	def write_meta(self, title, description):
-		name, ext = os.path.splitext(self.fname)
 		title, description = map(str, (title, description))
-		if( ext.lower() in ['.png']):
+		if self.isPNG():
 			try:
 				new = Image.open(os.path.join(self.dir, self.fname))
 			except Exception as e:
@@ -29,7 +35,7 @@ class MetaGator(object):
 			except Exception as e:
 				raise Exception('unable to write image: '+str(e))
 
-		elif(ext.lower() in ['.jpeg', '.jpg']):
+		elif self.isJPG():
 			try:
 				
 				imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
@@ -52,19 +58,17 @@ class MetaGator(object):
 					imgmeta[index] = value
 			imgmeta.write()
 		else:
-			raise Exception("not an image file")
-
+			raise Exception("not an image file: ",self.ext)	
 
 
 	def read_meta(self):
-		name, ext = os.path.splitext(self.fname)
 		title, description = '', ''
 
-		if(ext.lower() in ['.png']):	
+		if self.isPNG():	
 			oldimg = Image.open(os.path.join(self.dir, self.fname))
 			title = oldimg.info.get('title','')
 			description = oldimg.info.get('description','')
-		elif(ext.lower() in ['.jpeg', '.jpg']):
+		elif self.isJPG():
 			try:
 				imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
 				imgmeta.read()
@@ -83,7 +87,7 @@ class MetaGator(object):
 					if field == 'title': title = value
 					if field == 'description': description = value
 		else:
-			raise Exception("not an image file")	
+			raise Exception("not an image file: ",self.ext)	
 
 		return {'title':title, 'description':description}
 
