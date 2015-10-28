@@ -113,6 +113,19 @@ class sanitationUtils:
         return attrs
 
     @staticmethod
+    def cleanBackslashString(string):
+        if string is None:
+            return None
+        elif isinstance(string, unicode):
+            unicode_content = string
+        else:
+            unicode_content = str(string).decode('utf-8', 'ignore')
+            assert isinstance(unicode_content, unicode)
+        backslashed = unicode_content.encode('utf-8', 'backslashreplace')
+        # print "backslashed: ", backslashed
+        return backslashed
+
+    @staticmethod
     def cleanXMLString(string):
         # print "cleaning string ", string
         if string is None:
@@ -120,7 +133,7 @@ class sanitationUtils:
         elif isinstance(string, unicode):
             unicode_content = string
         else:
-            unicode_content = str(string).decode('utf8', 'ignore')
+            unicode_content = str(string).decode('utf-8', 'ignore')
             assert isinstance(unicode_content, unicode)
         # print "unicode_content: ", unicode_content
         xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')

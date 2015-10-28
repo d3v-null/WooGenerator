@@ -1,5 +1,6 @@
 from PIL import Image
 from PIL import PngImagePlugin
+from utils import sanitationUtils
 from pyexiv2.metadata import ImageMetadata
 import os
 from time import time
@@ -11,18 +12,21 @@ class MetaGator(object):
 		if not os.path.isfile(path):
 			raise Exception("file not found")
 
+		self.path = path
 		self.dir, self.fname = os.path.split(path)
 		self.name, self.ext = os.path.splitext(self.fname)
 
 	def isJPG(self):
-		return self.ext.lower() in ['.png']
-
-	def isPNG(self):
 		return self.ext.lower() in ['.jpg', '.jpeg']
 
+	def isPNG(self):
+		return self.ext.lower() in ['.png']
+
 	def write_meta(self, title, description):
-		title, description = map(str, (title, description))
+		title, description = map(sanitationUtils.cleanBackslashString, (title, description))
+		# print "title, description: ", title, ', ', description
 		if self.isPNG():
+			# print "image is PNG"
 			try:
 				new = Image.open(os.path.join(self.dir, self.fname))
 			except Exception as e:
@@ -36,6 +40,7 @@ class MetaGator(object):
 				raise Exception('unable to write image: '+str(e))
 
 		elif self.isJPG():
+			# print "image is JPG"
 			try:
 				
 				imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
@@ -51,10 +56,10 @@ class MetaGator(object):
 			):
 				# print " -> imgmeta[%s] : %s" % (index, value)
 				if index[:4] == 'Iptc' :		
-					# print " --> setting IPTC key"
+					# print " --> setting IPTC key", index, "to", value
 					imgmeta[index] = [value]
 				if index[:4] == 'Exif' :
-					# print " --> setting EXIF key"
+					# print " --> setting EXIF key", index, "to", value
 					imgmeta[index] = value
 			imgmeta.write()
 		else:
@@ -94,17 +99,27 @@ class MetaGator(object):
 if __name__ == '__main__':
 	print "JPG test"
 
-	fname_src = '/Users/Derwent/Dropbox/technotan/reflattened/EAP-PECPRE.jpg'
+	print "Test read meta"
 
-	metagator_src = MetaGator(fname_src)
-	metagator_src.write_meta('TITLE', time())
-	print metagator_src.read_meta()
+	fname = '/Users/Derwent/Dropbox/technotan/CT-TE.jpg'
+	metagator = MetaGator(fname)
+	print metagator.read_meta()	
 
-	fname_src = '/Users/Derwent/Dropbox/technotan/reflattened/STFTO-CAL.png'
+	print "test read and write jpg"
 
-	metagator_src = MetaGator(fname_src)
-	metagator_src.write_meta('TITLE', time())
-	print metagator_src.read_meta()
+	fname = '/Users/Derwent/Dropbox/technotan/reflattened/EAP-PECPRE.jpg'
+
+	metagator = MetaGator(fname)
+	metagator.write_meta(u'TITLE \xa9', time())
+	print metagator.read_meta()
+
+	print "test read and write png"
+
+	fname = '/Users/Derwent/Dropbox/technotan/reflattened/STFTO-CAL.png'
+
+	metagator = MetaGator(fname)
+	metagator.write_meta(u'TITLE \xa9', time())
+	print metagator.read_meta()
 
 
 

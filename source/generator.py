@@ -507,7 +507,7 @@ for img, data in images.items():
 	if(not name): continue
 	title, description = data.title, data.description
 
-	print "-> title, description", title, description
+	# print "-> title, description", title, description
 
 	# ------
 	# REMETA
@@ -585,7 +585,7 @@ for img, data in images.items():
 # RSYNC
 # ------
 
-rsync.main([refFolder, wpaiFolder])
+rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
 
 for source, error in import_errors.items():
 	Registrar.printAnything(source, error, '!')
