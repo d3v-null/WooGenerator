@@ -68,14 +68,20 @@ schema = "TT"
 
 ###CUSTOM SETTINGS###
 
-# genPath = os.path.join(inFolder, 'generator-solution.csv')
-# xmlPath = os.path.join(outFolder , "items-solution.xml")
-# objPath = os.path.join(webFolder, "objects-solution.xml")
 # skip_images = True
 remeta = True
 resize = True
 delete = True
 
+#this override gives only solution
+# genPath = os.path.join(inFolder, 'generator-solution.csv')
+# xmlPath = os.path.join(outFolder , "items-solution.xml")
+# objPath = os.path.join(webFolder, "objects-solution.xml")
+
+# this override gives only accessories
+genPath = os.path.join(inFolder, 'generator-accessories.csv')
+xmlPath = os.path.join(outFolder , "items-accessories.xml")
+objPath = os.path.join(webFolder, "objects-accessories.xml")
 
 DEBUG = True
 
@@ -214,7 +220,11 @@ def addCols(parentElement, product, cols):
 			# pass
 			continue
 			#would normall not bother adding element if it is None
-		addSubElement(parentElement, tag, value=value)
+		attrs = {}
+		label = data.get('label')
+		if label and label.startswith('meta:'):
+			attrs['meta_key'] = label[len('meta:'):]
+		addSubElement(parentElement, tag, value=value, attrib=attrs)
 
 def addColGroup(parentElement, product, cols, tag):
 	assert isinstance(cols, dict)
