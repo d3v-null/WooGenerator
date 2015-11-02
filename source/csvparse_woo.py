@@ -198,10 +198,38 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
 
 class imgList(object):
     def __init__(self, fileName):
-        self.fileName = fileName
+        self._fileName = fileName
+        self._isValid = True
+        if not self._fileName:
+            self._isValid = False
         self.items = []
         self.taxos = []
         super(imgList, self).__init__()
+
+    @property
+    def name(self):
+        return Exception("deprecated name")
+
+    @property
+    def title(self):
+        return self.getKey('fullnamesum')
+
+    @property    
+    def description(self):
+        description = self.getKey('HTML Description')
+        if not description:
+            description = self.getKey('descsum')
+        if not description:
+            description = self.name
+        return description
+
+    @property
+    def isValid(self):
+        return self._isValid
+
+    @property
+    def fileName(self):
+        return self._fileName    
 
     def addObject(self, objectData):
         assert isinstance(objectData, ImportWooObject)
@@ -222,22 +250,10 @@ class imgList(object):
         if values:
             return values[0]
 
-    @property
-    def name(self):
-        return Exception("deprecated name")
+    def invalidate(self):
+        self._isValid = False;
 
-    @property
-    def title(self):
-        return self.getKey('fullnamesum')
-
-    @property    
-    def description(self):
-        description = self.getKey('HTML Description')
-        if not description:
-            description = self.getKey('descsum')
-        if not description:
-            description = self.name
-        return description
+    
     
 
 class CSVParse_Woo(CSVParse_Gen):

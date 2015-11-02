@@ -44,10 +44,10 @@ xmlPath = os.path.join(outFolder , "items.xml")
 webFolder = "/Applications/MAMP/htdocs/"
 objPath = os.path.join(webFolder, "objects.xml")
 
-wpaiFolder = "/Applications/MAMP/htdocs/wordpress/wp-content/uploads/wpallimport/files/"
-
+wpaiFolder = "/Applications/MAMP/htdocs/images/"
 imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened/"
-refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened/"
+refFolder = wpaiFolder
+# refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened/"
 logFolder = "../logs/"
 
 thumbsize = 1920, 1200
@@ -79,9 +79,9 @@ delete = True
 # objPath = os.path.join(webFolder, "objects-solution.xml")
 
 # this override gives only accessories
-genPath = os.path.join(inFolder, 'generator-accessories.csv')
-xmlPath = os.path.join(outFolder , "items-accessories.xml")
-objPath = os.path.join(webFolder, "objects-accessories.xml")
+# genPath = os.path.join(inFolder, 'generator-accessories.csv')
+# xmlPath = os.path.join(outFolder , "items-accessories.xml")
+# objPath = os.path.join(webFolder, "objects-accessories.xml")
 
 DEBUG = True
 
@@ -178,6 +178,146 @@ if schema in woo_schemas:
 import_errors = productParser.errors
 
 #########################################
+# Images
+#########################################	
+
+def reportImportError(source, error):
+	import_errors[source] = import_errors.get(source,[]) + [str(error)]
+
+def invalidImage(img, error):
+	reportImportError(img, error)
+	images[img].invalidate()
+
+if skip_images: images = {}
+
+print ""
+print "Images:"
+print "==========="
+
+#prepare reflattened directory
+
+if not os.path.exists(refFolder):
+	os.makedirs(refFolder)
+# if os.path.exists(refFolder):
+# 	print "PATH EXISTS"
+# 	shutil.rmtree(refFolder)
+# os.makedirs(refFolder)
+ls_flattened = os.listdir(imgFolder) 
+ls_reflattened = os.listdir(refFolder)
+for f in ls_reflattened:
+	if f not in images.keys():
+		print "DELETING", f, "FROM REFLATTENED"
+		if delete:
+			os.remove(os.path.join(refFolder,f))
+
+
+for img, data in images.items():
+	print img
+	if data.taxos:
+		print "-> Associated Taxos"
+		for taxo in data.taxos:
+			print " -> (%4d) %10s" % (taxo.rowcount, taxo.codesum)
+
+	if data.items:
+		print "-> Associated Items"
+		for item in data.items:
+			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
+
+	name, ext = os.path.splitext(img)
+	if(not name): 
+		invalidImage(img, "could not extract name")
+		continue
+
+	try:
+		title, description = data.title, data.description
+	except Exception as e:
+		invalidImage(img, "could not get title or description: "+str(e) )
+		continue
+
+	# print "-> title, description", title, description
+
+	# ------
+	# REMETA
+	# ------
+
+	try:
+		metagator = MetaGator(os.path.join(imgFolder, img))
+	except Exception, e:
+		invalidImage(img, "error creating metagator: " + str(e))
+		continue
+
+	try:
+		oldmeta = metagator.read_meta()
+	except Exception, e:
+		invalidImage(img, "error reading from metagator: " + str(e) )
+		continue
+
+	newmeta = {
+		'title': title,
+		'description': description
+	}
+
+	for oldval, newval in (
+		(oldmeta['title'], newmeta['title']),
+		(oldmeta['description'], newmeta['description']), 
+	):
+		if str(oldval) != str(newval):
+			print ("changing imgmeta from %s to %s" % (repr(oldval), str(newval)[:10]+'...'+str(newval)[-10:]))
+			try:	
+				metagator.write_meta(title, description)
+			except Exception, e:
+				invalidImage(img, "error writing to metagator: " + str(e))
+
+
+	# ------
+	# RESIZE
+	# ------
+
+	if resize:
+		imgsrcpath = os.path.join(imgFolder, img)
+		imgdstpath = os.path.join(refFolder, img)
+		if not os.path.isfile(imgsrcpath) :
+			print "SOURCE FILE NOT FOUND: ", imgsrcpath
+			continue
+
+		if os.path.isfile(imgdstpath) :
+			imgsrcmod = max(os.path.getmtime(imgsrcpath), os.path.getctime(imgsrcpath))
+			imgdstmod = os.path.getmtime(imgdstpath)
+			# print "image mod (src, dst): ", imgsrcmod, imgdstmod
+			if imgdstmod > imgsrcmod:
+				# print "DESTINATION FILE NEWER: ", imgdstpath
+				continue
+
+		print "resizing:", img
+		shutil.copy(imgsrcpath, imgdstpath)
+		
+		try:
+			imgmeta = MetaGator(imgdstpath)
+			imgmeta.write_meta(title, description)
+			print imgmeta.read_meta()
+
+			image = Image.open(imgdstpath)
+			image.thumbnail(thumbsize)
+			image.save(imgdstpath)
+
+			imgmeta = MetaGator(imgdstpath)
+			imgmeta.write_meta(title, description)
+			print imgmeta.read_meta()
+
+		except Exception as e:
+			invalidImage(img, "could not resize: " + str(e))
+			continue
+
+# ------
+# RSYNC
+# ------
+
+if not os.path.exists(wpaiFolder):
+	os.makedirs(wpaiFolder)
+
+rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
+
+#########################################
 # Export Info to Spreadsheets
 #########################################
 
@@ -241,15 +381,22 @@ def addColGroup(parentElement, product, cols, tag):
 
 def addImages(parentElement, product, imageData):
 	images = product.getImages()
-	if images:
+	datum = filter(
+		lambda data: data.isValid and data.fileName, 
+		[imageData.get(image) for image in images if image in imageData.keys()]
+	)
+	if not datum:
+		return None
+	else:
 		imagesElement = addSubElement(parentElement, 'images')
-		for image in images:
-			imageElement = addSubElement(imagesElement, 'image')
-			addSubElement(imageElement, 'filename', value=image)
-			data = imageData.get(image)
-			if data:
-				addSubElement(imageElement, 'title', value=data.title)
-				addSubElement(imageElement, 'description', value=data.description)
+		for data in datum:
+			fileName = data.fileName
+			if not fileName:
+				continue
+			imageElement = addSubElement(imagesElement, 'image', attrib={'filename': fileName})
+			addSubElement(imageElement, 'filename', value=fileName)
+			addSubElement(imageElement, 'title', value=data.title)
+			addSubElement(imageElement, 'description', value=data.description)
 
 		return imagesElement
 
@@ -345,7 +492,7 @@ def exportProductsXML(filePath, products, productCols, variationCols={}, categor
 				addColGroup(variationElement, variation, attributeMetaCols, 'attributes')
 				addImages(variationElement, variation, imageData)
 
-		print "completed item: ", sku
+		# print "completed item: ", sku
 
 	# print ET.dump(root)
 	if isinstance(filePath, str):
@@ -472,327 +619,5 @@ elif schema in woo_schemas:
 # Attempt import
 #########################################
 
-
-
-#########################################
-# Images
-#########################################	
-
-if skip_images: images = {}
-
-print ""
-print "Images:"
-print "==========="
-
-#prepare reflattened directory
-
-if not os.path.exists(refFolder):
-	os.makedirs(refFolder)
-# if os.path.exists(refFolder):
-# 	print "PATH EXISTS"
-# 	shutil.rmtree(refFolder)
-# os.makedirs(refFolder)
-ls_flattened = os.listdir(imgFolder) 
-ls_reflattened = os.listdir(refFolder)
-for f in ls_reflattened:
-	if f not in images.keys():
-		print "DELETING", f, "FROM REFLATTENED"
-		if delete:
-			os.remove(os.path.join(refFolder,f))
-
-
-for img, data in images.items():
-	print img
-	if data.taxos:
-		print "-> Associated Taxos"
-		for taxo in data.taxos:
-			print " -> (%4d) %10s" % (taxo.rowcount, taxo.codesum)
-
-	if data.items:
-		print "-> Associated Items"
-		for item in data.items:
-			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
-
-	name, ext = os.path.splitext(img)
-	if(not name): continue
-	title, description = data.title, data.description
-
-	# print "-> title, description", title, description
-
-	# ------
-	# REMETA
-	# ------
-
-	try:
-		metagator = MetaGator(os.path.join(imgFolder, img))
-	except Exception, e:
-		import_errors[img] = import_errors.get(img,[]) + ["error creating metagator: " + str(e)]
-		continue
-
-	try:
-		oldmeta = metagator.read_meta()
-	except Exception, e:
-		import_errors[img] = import_errors.get(img,[]) + ["error reading from metagator: " + str(e)]	
-		continue
-
-	newmeta = {
-		'title': title,
-		'description': description
-	}
-
-	for oldval, newval in (
-		(oldmeta['title'], newmeta['title']),
-		(oldmeta['description'], newmeta['description']), 
-	):
-		if str(oldval) != str(newval):
-			print ("changing imgmeta from %s to %s" % (repr(oldval), str(newval)[:10]+'...'+str(newval)[-10:]))
-			try:	
-				metagator.write_meta(title, description)
-			except Exception, e:
-				import_errors[img] = import_errors.get(img,[]) + ["error writing to metagator: " + str(e)]
-
-
-	# ------
-	# RESIZE
-	# ------
-
-	if resize:
-		imgsrcpath = os.path.join(imgFolder, img)
-		imgdstpath = os.path.join(refFolder, img)
-		if not os.path.isfile(imgsrcpath) :
-			print "SOURCE FILE NOT FOUND: ", imgsrcpath
-			continue
-
-		if os.path.isfile(imgdstpath) :
-			imgsrcmod = max(os.path.getmtime(imgsrcpath), os.path.getctime(imgsrcpath))
-			imgdstmod = os.path.getmtime(imgdstpath)
-			# print "image mod (src, dst): ", imgsrcmod, imgdstmod
-			if imgdstmod > imgsrcmod:
-				# print "DESTINATION FILE NEWER: ", imgdstpath
-				continue
-
-		print "resizing:", img
-		shutil.copy(imgsrcpath, imgdstpath)
-		
-		imgmeta = MetaGator(imgdstpath)
-		imgmeta.write_meta(title, description)
-		print imgmeta.read_meta()
-
-		image = Image.open(imgdstpath)
-		image.thumbnail(thumbsize)
-		image.save(imgdstpath)
-
-		# try:
-		# except Exception as e:
-		# 	print "!!!!!", type(e), str(e)
-		# 	continue
-
-		imgmeta = MetaGator(imgdstpath)
-		imgmeta.write_meta(title, description)
-		print imgmeta.read_meta()
-
-# ------
-# RSYNC
-# ------
-
-rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
-
 for source, error in import_errors.items():
 	Registrar.printAnything(source, error, '!')
-
-# cmp_vallen = lambda (ak, av), (bk, bv): cmp(len(av), len(bv))
-# cmp_codelen = lambda a, b: cmp( len(a.get('codesum',)), len(b.get('codesum')))
-# not_category = lambda x: x.get('thisDepth') >= 2
-
-# new_img = {}
-# changes_name = OrderedDict()
-# changes_meta = OrderedDict()
-# # for img, items in images.items():
-# for img, items in sorted(images.items(), cmp_vallen):
-# 	if img not in changes_meta.keys():
-# 		changes_meta[img] = []
-# 	if img not in changes_name.keys():
-# 		changes_name[img] = []
-# 	cm = changes_meta[img]
-# 	cn = changes_name[img]
-# 	# print ""
-# 	print img
-# 	print "-> Associated items"
-# 	for item in items:
-# 		print " -> (%4d) %10s" % (item['rowcount'], item['codesum'])
-	
-# 	#image name and extention
-
-# 	# extmatches = re.findall( r".[\w\d]+", img)
-# 	# assert len(extmatches) > 0
-# 	# ext = extmatches[-1]
-# 	# name = img[:-len(ext)]
-
-# 	name, ext = os.path.splitext(img)
-# 	if(not name): continue
-
-# 	# print "%s: name: %s, ext: %s" % (img, name, ext)
-
-# 	noncategories = filter(not_category, items )
-# 	# print noncategories
-# 	if noncategories:
-# 		head = sorted(noncategories, cmp_codelen)[0]
-# 		name = head.get('codesum')
-# 		title = filter(None, [head.get('itemsum'), head.get('fullname')])[0]
-# 		description = head.get('descsum')
-# 	else:
-# 		head = sorted(items, cmp_codelen)[0]
-# 		title = head.get('taxosum')
-# 		description = head.get('descsum')
-
-# 	#TODO: add exception for product categories
-# 	if not description:
-# 		description = title
-# 	if not title:
-# 		import_errors[img] = import_errors.get(img,[]) + ["no title"]
-# 	if not description:
-# 		import_errors[img] = import_errors.get(img,[]) + ["no description"]
-
-# 	# ------
-# 	# RENAME
-# 	# ------
-
-# 	for item in items:
-# 		if item['rowcount'] in new_img.keys():
-# 			new_img[item['rowcount']] += '|' + name + ext
-# 		else:
-# 			new_img[item['rowcount']] = name + ext
-
-# 	if name + ext != img:
-# 		cn.append("Changing name to %s" % (name + ext))
-# 		if rename: 
-# 			try:
-# 				shutil.move(imgFolder + img, imgFolder + name + ext )
-# 				img = name + ext
-# 			except IOError:
-# 				print "IMAGE NOT FOUND: ", img
-# 				continue
-
-
-# 	# ------
-# 	# REMETA
-# 	# ------
-
-# 	fullname = os.path.join(imgFolder, img)
-# 	# print "fullname", fullname
-# 	try:
-# 		metagator = MetaGator(os.path.join(imgFolder, img))
-# 	except Exception, e:
-# 		import_errors[img] = import_errors.get(img,[]) + ["error creating metagator: " + str(e)]
-# 		continue
-
-# 	try:
-# 		oldmeta = metagator.read_meta()
-# 	except Exception, e:
-# 		import_errors[img] = import_errors.get(img,[]) + ["error reading from metagator: " + str(e)]	
-# 		continue
-
-# 	newmeta = {
-# 		'title': title,
-# 		'description': description
-# 	}
-
-# 	for oldval, newval in (
-# 		(oldmeta['title'], newmeta['title']),
-# 		(oldmeta['description'], newmeta['description']), 
-# 	):
-# 		if str(oldval) != str(newval):
-# 			cm.append("changing imgmeta from %s to %s" % (repr(oldval), str(newval)[:10]+'...'+str(newval)[-10:]))
-
-# 	if len(cm) > 0 and remeta:
-# 		print ' -> errors', cm
-# 		try:	
-# 			metagator.write_meta(title, description)
-# 		except Exception, e:
-# 			import_errors[img] = import_errors.get(img,[]) + ["error writing to metagator: " + str(e)]
-
-
-# 	# ------
-# 	# RESIZE
-# 	# ------
-
-# 	if resize:
-# 		imgsrcpath = imgFolder + img
-# 		imgdstpath = refFolder + img
-# 		if not os.path.isfile(imgsrcpath) :
-# 			print "SOURCE FILE NOT FOUND:", imgsrcpath
-# 			continue
-
-# 		if os.path.isfile(imgdstpath) :
-# 			imgsrcmod = os.path.getmtime(imgsrcpath)
-# 			imgdstmod = os.path.getmtime(imgdstpath)
-# 			# print "image mod (src, dst): ", imgsrcmod, imgdstmod
-# 			if imgdstmod > imgsrcmod:
-# 				# print "DESTINATION FILE NEWER: ", imgdstpath
-# 				continue
-
-# 		print "resizing:", img
-# 		shutil.copy(imgsrcpath, imgdstpath)
-		
-# 		imgmeta = MetaGator(imgdstpath)
-# 		imgmeta.write_meta(title, description)
-# 		print imgmeta.read_meta()
-
-# 		image = Image.open(imgdstpath)
-# 		image.thumbnail(thumbsize)
-# 		image.save(imgdstpath)
-
-# 		# try:
-# 		# except Exception as e:
-# 		# 	print "!!!!!", type(e), str(e)
-# 		# 	continue
-
-# 		imgmeta = MetaGator(imgdstpath)
-# 		imgmeta.write_meta(title, description)
-# 		print imgmeta.read_meta()
-
-
-# if not os.path.exists(logFolder):
-
-# 	os.makedirs(logFolder)
-
-# logname = importName + ".log"
-# with open( os.path.join(logFolder, logname), 'w+' ) as logFile:
-
-# 	logFile.write( "import errors:\n")
-# 	for code, errors in import_errors.items():
-# 		logFile.write( "%s :\n" % code)
-# 		for error in errors:
-# 			logFile.write(" -> %s\n" % error)
-
-# 	logFile.write("")
-# 	logFile.write( "Changes:\n" )
-# 	logFile.write( " -> name\n")
-# 	for img, chlist in changes_name.iteritems():
-# 		if chlist: 
-# 			logFile.write( "%s: \n" % img )
-# 			for change in chlist:
-# 				logFile.write( "-> %s\n" % change	)
-# 	logFile.write( " -> meta\n")
-# 	for img, chlist in changes_meta.iteritems():
-# 		if chlist: 
-# 			logFile.write( "%s: \n" % img )
-# 			for change in chlist:
-# 				logFile.write( "-> %s\n" % change	)			
-
-# 	logFile.write("")
-# 	if rename:
-# 		logFile.write( "Img column:\n" )
-# 		i = 0
-# 		while new_img:
-# 			if i in new_img.keys():
-# 				logFile.write( "%s\n" % new_img[i] )
-# 				del new_img[i]
-# 			else:
-# 				logFile.write( "\n" )
-# 			i += 1
-
-# with open( os.path.join(logFolder, logname) ) as logFile:
-
-# 	for line in logFile:
-# 		print line[:-1]

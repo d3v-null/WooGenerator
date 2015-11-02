@@ -121,7 +121,7 @@ class sanitationUtils:
         else:
             unicode_content = str(string).decode('utf-8', 'ignore')
             assert isinstance(unicode_content, unicode)
-        backslashed = unicode_content.encode('utf-8', 'backslashreplace')
+        backslashed = unicode_content.encode('ascii', 'backslashreplace')
         # print "backslashed: ", backslashed
         return backslashed
 
