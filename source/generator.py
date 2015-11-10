@@ -16,33 +16,28 @@ from csvparse_flat import CSVParse_Special
 from coldata import ColData_Woo, ColData_MYO #, ColData_User
 import xml.etree.ElementTree as ET
 import rsync
+import sys
 
-
-
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
-
-taxoDepth = 3
-itemDepth = 2
-maxDepth = taxoDepth + itemDepth
+### DEFAULT CONFIG ###
 
 inFolder = "../input/"
 genPath = os.path.join(inFolder, 'generator.csv')
 dprcPath= os.path.join(inFolder, 'DPRC.csv')
 dprpPath= os.path.join(inFolder, 'DPRP.csv')
 specPath= os.path.join(inFolder, 'specials.csv')
-usPath 	= os.path.join(inFolder, 'US.csv')
-xsPath	= os.path.join(inFolder, 'XS.csv')
-
+usPath  = os.path.join(inFolder, 'US.csv')
+xsPath  = os.path.join(inFolder, 'XS.csv')
 outFolder = "../output/"
-flaPath = os.path.join(outFolder , "flattened.csv")
-flvPath = os.path.join(outFolder , "flattened-variations.csv")
-catPath = os.path.join(outFolder , "categories.csv")
-myoPath = os.path.join(outFolder , "myob.csv")
-bunPath = os.path.join(outFolder , "bundles.csv")
-xmlPath = os.path.join(outFolder , "items.xml")
+
+genFID = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
+genGID = "784188347"
+dprcGID = "1804075366"
+dprpGID = "122203075"
+specGID = "429573553"
+usGID = "836642938"
+xsGID = "931696965"
 
 webFolder = "/Applications/MAMP/htdocs/"
-objPath = os.path.join(webFolder, "objects.xml")
 
 wpaiFolder = "/Applications/MAMP/htdocs/images/"
 imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened/"
@@ -50,7 +45,13 @@ refFolder = wpaiFolder
 # refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened/"
 logFolder = "../logs/"
 
+taxoDepth = 3
+itemDepth = 2
+
 thumbsize = 1920, 1200
+
+myo_schemas = ["MY"]
+woo_schemas = ["TT", "VT", "TS"]
 
 rename = False
 resize = False
@@ -58,35 +59,64 @@ remeta = False
 delete = False
 skip_images = False
 
-myo_schemas = ["MY"]
-woo_schemas = ["TT", "VT", "TS"]
+importName = time.strftime("%Y-%m-%d %H:%M:%S")
 
-# schema = "MY"
-schema = "TT"
-# schema = "VT"
-# schema = "TS"
+### GET SHELL ARGS ###
 
-###CUSTOM SETTINGS###
+schema = ""
+variant = ""
+
+if __name__ == "__main__":
+	if sys.argv and len(sys.argv) > 1 and sys.argv[1]:
+		if sys.argv[1] in myo_schemas + woo_schemas :
+			schema = sys.argv[1]
+			if len(sys.argv) > 2 and sys.argv[2]:
+				variant = sys.argv[2]
+		else:
+			print "invalid schema"
+	else:
+		print "no schema specified"
+
+### FALLBACK SHELL ARGS ###
+
+if not schema:
+	schema = "TT"
+if not variant:
+	variant = ""
+
+### CONFIG OVERRIDE ###
 
 # skip_images = True
 remeta = True
 resize = True
 delete = True
 
-#this override gives only solution
-# genPath = os.path.join(inFolder, 'generator-solution.csv')
-# xmlPath = os.path.join(outFolder , "items-solution.xml")
-# objPath = os.path.join(webFolder, "objects-solution.xml")
+if variant == "ACC": 
+	genPath = os.path.join(inFolder, 'generator-solution.csv')
 
-# this override gives only accessories
-# genPath = os.path.join(inFolder, 'generator-accessories.csv')
-# xmlPath = os.path.join(outFolder , "items-accessories.xml")
-# objPath = os.path.join(webFolder, "objects-accessories.xml")
+if variant == "SOL":
+	genPath = os.path.join(inFolder, 'generator-accessories.csv')
 
 DEBUG = True
 
 currentSpecial = None
 # currentSpecial = "SP2015-09-18"
+
+### PROCESS CONFIG ###
+
+suffix = schema 
+if variant:
+	suffix += "-" + variant
+
+flaPath = os.path.join(outFolder , "flattened-"+suffix+".csv")
+flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
+catPath = os.path.join(outFolder , "categories-"+suffix+".csv")
+myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
+bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
+xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
+objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
+maxDepth = taxoDepth + itemDepth
+
 
 #########################################
 # Import Info From Spreadsheets
@@ -567,7 +597,8 @@ elif schema in woo_schemas:
 			products.values()
 		)
 		if specialProducts:
-			flsPath = os.path.join(outFolder , "flattened-"+currentSpecial+".csv")
+			flaName, flaExt = os.path.splitext(flaPath)
+			flsPath = os.path.join(outFolder , flaName+"-"+currentSpecial+flaExt)
 			exportItemsCSV(
 					flsPath,
 					colData.getColNames(
@@ -580,7 +611,8 @@ elif schema in woo_schemas:
 			variations.values()
 		)
 		if specialVariations:
-			flvsPath = os.path.join(outFolder , "flattened-variations-"+currentSpecial+".csv")
+			flvName, flvExt = os.path.splitext(flvPath)
+			flvsPath = os.path.join(outFolder , flvName+"-"+currentSpecial+flvExt)
 			exportItemsCSV(
 				flvsPath,
 				colData.getColNames(
