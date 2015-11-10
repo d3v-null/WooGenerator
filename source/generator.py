@@ -38,11 +38,7 @@ usGID = "836642938"
 xsGID = "931696965"
 
 webFolder = "/Applications/MAMP/htdocs/"
-
-wpaiFolder = "/Applications/MAMP/htdocs/images/"
 imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened/"
-refFolder = wpaiFolder
-# refFolder = "/Users/Derwent/Dropbox/TechnoTan/reflattened/"
 logFolder = "../logs/"
 
 taxoDepth = 3
@@ -87,9 +83,9 @@ if not variant:
 ### CONFIG OVERRIDE ###
 
 # skip_images = True
+delete = True
 remeta = True
 resize = True
-delete = True
 
 if variant == "ACC": 
 	genPath = os.path.join(inFolder, 'generator-solution.csv')
@@ -104,6 +100,11 @@ currentSpecial = None
 
 ### PROCESS CONFIG ###
 
+if variant:
+	delete = False
+	remeta = False
+	resize = False
+
 suffix = schema 
 if variant:
 	suffix += "-" + variant
@@ -115,6 +116,9 @@ myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
 bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
 xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
 objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
+wpaiFolder = os.path.join(webFolder, "images-"+schema)
+refFolder = wpaiFolder
+
 maxDepth = taxoDepth + itemDepth
 
 
@@ -252,6 +256,14 @@ for img, data in images.items():
 		print "-> Associated Items"
 		for item in data.items:
 			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
+
+	if data.products:
+		print "-> Associated Products"
+		for item in data.products:
+			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
+	else:
+		continue
+		# we only care about product images atm
 
 	name, ext = os.path.splitext(img)
 	if(not name): 

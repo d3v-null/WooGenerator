@@ -196,16 +196,21 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     def getMembers(self, itemData):
         return self.members
 
-class imgList(object):
+class objList(object):
     def __init__(self, fileName):
         self._fileName = fileName
         self._isValid = True
         if not self._fileName:
             self._isValid = False
+        self.products = []
         self.items = []
         self.taxos = []
-        super(imgList, self).__init__()
+        super(objList, self).__init__()
 
+    @property
+    def objects(self):
+        return self.products + self.items + self.taxos 
+    
     @property
     def name(self):
         return Exception("deprecated name")
@@ -236,15 +241,18 @@ class imgList(object):
         if objectData.isTaxo:
             container = self.taxos
         else:
-            assert objectData.isItem
-            container = self.items
+            if objectData.isProduct:
+                container = self.products
+            else:
+                assert objectData.isItem
+                container = self.items
 
         if objectData not in container:
             bisect.insort(container, objectData)
 
     def getKey(self, key):
         values = listUtils.filterUniqueTrue([
-            obj.get(key) for obj in self.items + self.taxos
+            obj.get(key) for obj in self.objects
         ])
 
         if values:
@@ -337,7 +345,7 @@ class CSVParse_Woo(CSVParse_Gen):
         assert isinstance(image,str) 
         assert image is not "" 
         if image not in self.images.keys():
-            self.images[image] = imgList(image)
+            self.images[image] = objList(image)
         self.images[image].addObject(objectData)
         objectData.registerImage(image)
 

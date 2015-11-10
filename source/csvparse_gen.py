@@ -230,12 +230,12 @@ class CSVParse_Gen(CSVParse_Tree):
         self.taxoRegex  = sanitationUtils.compileRegex(self.taxoSubs)
         self.itemRegex  = sanitationUtils.compileRegex(self.itemSubs)
         self.productIndexer = self.getGenCodesum
-        # if DEBUG_GEN:
-        #     print "GEN initializing: "
-        #     print "-> taxoDepth: ", self.taxoDepth
-        #     print "-> itemDepth: ", self.itemDepth
-        #     print "-> maxDepth: ", self.maxDepth
-        #     print "-> metaWidth: ", self.metaWidth
+
+        self.registerMessage("taxoDepth: {}".format(self.taxoDepth), 'CSVParse_Gen.__init__')
+        self.registerMessage("itemDepth: {}".format(self.itemDepth), 'CSVParse_Gen.__init__')
+        self.registerMessage("maxDepth: {}".format(self.maxDepth), 'CSVParse_Gen.__init__')
+        self.registerMessage("metaWidth: {}".format(self.metaWidth), 'CSVParse_Gen.__init__')
+        self.registerMessage("schema: {}".format(self.schema), 'CSVParse_Gen.__init__')
 
 
     def clearTransients(self):
