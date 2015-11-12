@@ -10,7 +10,7 @@ class MetaGator(object):
 	def __init__(self, path):
 		super(MetaGator, self).__init__()
 		if not os.path.isfile(path):
-			raise Exception("file not found")
+			raise Exception("file not found: "+path)
 
 		self.path = path
 		self.dir, self.fname = os.path.split(path)
@@ -42,11 +42,11 @@ class MetaGator(object):
 		elif self.isJPG():
 			# print "image is JPG"
 			try:
-				
-				imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
+				fullname = os.path.join(self.dir, self.fname)
+				imgmeta = ImageMetadata(fullname)
 				imgmeta.read()
 			except IOError:
-				raise Exception("file not found")
+				raise Exception("file not found: "+fullname)
 
 			for index, value in (
 				('Exif.Image.DocumentName', title),
@@ -64,7 +64,6 @@ class MetaGator(object):
 			imgmeta.write()
 		else:
 			raise Exception("not an image file: ",self.ext)	
-
 
 	def read_meta(self):
 		title, description = '', ''
@@ -96,26 +95,46 @@ class MetaGator(object):
 
 		return {'title':title, 'description':description}
 
+	def update_meta(self, newmeta):
+		oldmeta = self.read_meta()
+		changed = []
+		for key in ['title', 'description']:
+			if str(oldmeta[key]) != sanitationUtils.cleanBackslashString(newmeta[key]):
+				changed += [key]
+				print ("changing imgmeta[%s] from %s to %s" % (key, repr(oldmeta[key]), repr(newmeta[key])))
+		if changed:
+			self.write_meta(newmeta['title'], newmeta['description'])
+
 if __name__ == '__main__':
+	work_dir = "/Users/Derwent/Dropbox/Technotan"
+	assert os.path.isdir(work_dir)
+
 	print "JPG test"
 
 	print "Test read meta"
 
-	fname = '/Users/Derwent/Dropbox/technotan/CT-TE.jpg'
+	newmeta = {
+		'title': u'TITLE \xa9',
+		'description': time()
+	}
+
+	fname = os.path.join(work_dir, 'CT-TE.jpg')
 	metagator = MetaGator(fname)
 	print metagator.read_meta()	
 
 	print "test read and write jpg"
 
-	fname = '/Users/Derwent/Dropbox/technotan/reflattened/EAP-PECPRE.jpg'
+	fname = os.path.join(work_dir, 'EAP-PECPRE.jpg')
 
 	metagator = MetaGator(fname)
-	metagator.write_meta(u'TITLE \xa9', time())
+	metagator.write_meta(newmeta['title'], newmeta['description'])
+	metagator.update_meta(newmeta)
 	print metagator.read_meta()
+
 
 	print "test read and write png"
 
-	fname = '/Users/Derwent/Dropbox/technotan/reflattened/STFTO-CAL.png'
+	fname = os.path.join(work_dir, 'STFTO-CAL.png')
 
 	metagator = MetaGator(fname)
 	metagator.write_meta(u'TITLE \xa9', time())

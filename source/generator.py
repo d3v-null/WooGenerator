@@ -17,37 +17,20 @@ from coldata import ColData_Woo, ColData_MYO #, ColData_User
 import xml.etree.ElementTree as ET
 import rsync
 import sys
+import yaml
+
+### PIP DEPENDENCIES ###
+# - pyyaml
 
 ### DEFAULT CONFIG ###
 
 inFolder = "../input/"
-genPath = os.path.join(inFolder, 'generator.csv')
-dprcPath= os.path.join(inFolder, 'DPRC.csv')
-dprpPath= os.path.join(inFolder, 'DPRP.csv')
-specPath= os.path.join(inFolder, 'specials.csv')
-usPath  = os.path.join(inFolder, 'US.csv')
-xsPath  = os.path.join(inFolder, 'XS.csv')
 outFolder = "../output/"
-
-genFID = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
-genGID = "784188347"
-dprcGID = "1804075366"
-dprpGID = "122203075"
-specGID = "429573553"
-usGID = "836642938"
-xsGID = "931696965"
-
-webFolder = "/Applications/MAMP/htdocs/"
-imgFolder = "/Users/Derwent/Dropbox/TechnoTan/flattened/"
 logFolder = "../logs/"
 
-taxoDepth = 3
-itemDepth = 2
+yamlPath = "config.yaml"
 
 thumbsize = 1920, 1200
-
-myo_schemas = ["MY"]
-woo_schemas = ["TT", "VT", "TS"]
 
 rename = False
 resize = False
@@ -56,6 +39,42 @@ delete = False
 skip_images = False
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
+
+### Process YAML file ###
+
+with open(yamlPath) as stream:
+	config = yaml.load(stream)
+	#overrides
+	if 'inFolder' in config.keys():
+		inFolder = config['inFolder']
+	if 'outFolder' in config.keys():
+		outFolder = config['outFolder']
+	if 'logFolder' in config.keys():
+		logFolder = config['logFolder']
+
+	#mandatory	
+	webFolder = config.get('webFolder')
+	imgFolder_glb = config.get('imgFolder_glb')
+	myo_schemas = config.get('myo_schemas')
+	woo_schemas = config.get('woo_schemas')
+	taxoDepth = config.get('taxoDepth')
+	itemDepth = config.get('itemDepth')
+
+	#optional
+	fallback_schema = config.get('fallback_schema')
+	fallback_variant = config.get('fallback_variant')
+	imgFolder_extra = config.get('imgFolder_extra')
+
+#mandatory params
+assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb, woo_schemas, myo_schemas, taxoDepth, itemDepth])
+
+genPath = os.path.join(inFolder, 'generator.csv')
+dprcPath= os.path.join(inFolder, 'DPRC.csv')
+dprpPath= os.path.join(inFolder, 'DPRP.csv')
+specPath= os.path.join(inFolder, 'specials.csv')
+usPath  = os.path.join(inFolder, 'US.csv')
+xsPath  = os.path.join(inFolder, 'XS.csv')
+imgFolder = [imgFolder_glb]
 
 ### GET SHELL ARGS ###
 
@@ -73,12 +92,15 @@ if __name__ == "__main__":
 	else:
 		print "no schema specified"
 
+	#todo: set currentSpecial, imgFolder_glb from args
+
 ### FALLBACK SHELL ARGS ###
 
 if not schema:
-	schema = "TT"
-if not variant:
-	variant = ""
+	assert fallback_schema
+	schema = fallback_schema
+if not variant and fallback_variant:
+	variant = fallback_variant
 
 ### CONFIG OVERRIDE ###
 
@@ -120,6 +142,16 @@ wpaiFolder = os.path.join(webFolder, "images-"+schema)
 refFolder = wpaiFolder
 
 maxDepth = taxoDepth + itemDepth
+
+if imgFolder_extra and schema in imgFolder_extra.keys():
+	imgFolder += [imgFolder_extra[schema]]
+
+
+########################################
+# Download CSV files from GDrive
+########################################
+
+
 
 
 #########################################
@@ -215,6 +247,10 @@ import_errors = productParser.errors
 # Images
 #########################################	
 
+print ""
+print "Images:"
+print "==========="
+
 def reportImportError(source, error):
 	import_errors[source] = import_errors.get(source,[]) + [str(error)]
 
@@ -222,21 +258,24 @@ def invalidImage(img, error):
 	reportImportError(img, error)
 	images[img].invalidate()
 
-if skip_images: images = {}
+if skip_images: 
+	images = {}
+	delete = False;
 
-print ""
-print "Images:"
-print "==========="
 
-#prepare reflattened directory
+ls_imgs = {}
+for folder in imgFolder:
+	ls_imgs[folder] = os.listdir(folder)
+
+def getImage(img):
+	for folder in imgFolder:
+		if img in ls_imgs[folder]:
+			return os.path.join(folder, img)
+	raise UserWarning("no img found")
 
 if not os.path.exists(refFolder):
 	os.makedirs(refFolder)
-# if os.path.exists(refFolder):
-# 	print "PATH EXISTS"
-# 	shutil.rmtree(refFolder)
-# os.makedirs(refFolder)
-ls_flattened = os.listdir(imgFolder) 
+
 ls_reflattened = os.listdir(refFolder)
 for f in ls_reflattened:
 	if f not in images.keys():
@@ -265,6 +304,11 @@ for img, data in images.items():
 		continue
 		# we only care about product images atm
 
+	try:
+		imgsrcpath = getImage(img)
+	except Exception as e:
+		invalidImage(img, e)
+
 	name, ext = os.path.splitext(img)
 	if(not name): 
 		invalidImage(img, "could not extract name")
@@ -283,40 +327,24 @@ for img, data in images.items():
 	# ------
 
 	try:
-		metagator = MetaGator(os.path.join(imgFolder, img))
+		metagator = MetaGator(imgsrcpath)
 	except Exception, e:
 		invalidImage(img, "error creating metagator: " + str(e))
 		continue
-
+		
 	try:
-		oldmeta = metagator.read_meta()
-	except Exception, e:
-		invalidImage(img, "error reading from metagator: " + str(e) )
-		continue
-
-	newmeta = {
-		'title': title,
-		'description': description
-	}
-
-	for oldval, newval in (
-		(oldmeta['title'], newmeta['title']),
-		(oldmeta['description'], newmeta['description']), 
-	):
-		if str(oldval) != str(newval):
-			print ("changing imgmeta from %s to %s" % (repr(oldval), str(newval)[:10]+'...'+str(newval)[-10:]))
-			try:	
-				metagator.write_meta(title, description)
-			except Exception, e:
-				invalidImage(img, "error writing to metagator: " + str(e))
-
+		metagator.update_meta({
+			'title': title,
+			'description': description
+		})
+	except Exception as e:
+		invalidImage(img, "error updating meta: " + str(e))
 
 	# ------
 	# RESIZE
 	# ------
 
 	if resize:
-		imgsrcpath = os.path.join(imgFolder, img)
 		imgdstpath = os.path.join(refFolder, img)
 		if not os.path.isfile(imgsrcpath) :
 			print "SOURCE FILE NOT FOUND: ", imgsrcpath

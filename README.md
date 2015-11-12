@@ -3,6 +3,17 @@ Generates WooCommerce friendly CSV files from a Google Drive spreadsheet of prod
 
 This is a highly customized project for a very specific job and probably won't be very useful to other people
 
+Install Instructions
+====================
+
+Google Drive API
+----------------
+
+pip install --upgrade google-api-python-client
+
+https://developers.google.com/drive/web/quickstart/python
+
+
 Layout
 ------
 ```

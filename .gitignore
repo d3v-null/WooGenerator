@@ -60,3 +60,5 @@ input/
 output/
 logs/
 source/test.py
+
+source/config.yaml

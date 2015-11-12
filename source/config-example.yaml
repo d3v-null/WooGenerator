@@ -1,0 +1,37 @@
+#Generator file info
+taxoDepth: <taxo depth here>
+itemDepth: <item depth here>
+
+myo_schemas:
+    - <myo schemas here>
+
+woo_schemas:
+    - <woo schemas here>
+
+fallback_schema: <fallback_schema here>
+
+#File ID of generator file
+genFID: <FID here>
+
+#GIDs of each tab
+genGID: <GID here>
+dprcGID: <GID here>
+dprpGID: <GID here>
+specGID: <GID here>
+usGID: <GID here>
+xsGID: <GID here>
+
+#OAuth credentials
+oauth_clientID: <client ID here>
+oauth_clientSecret: <client secret here>
+
+#Image Sources
+imgFolder_glb: <img dir here>
+imgFolder_extra: {
+    schema: <extra img dir here>
+}
+
+# Location of webserver directory
+webFolder: <web dir here>
+
+
