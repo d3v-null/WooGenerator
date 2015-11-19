@@ -133,6 +133,14 @@ class ColData_Woo(ColData_Base):
             'product':True, 
             'variation': True
         }),
+        ('title_1', {
+            'label': 'meta:title_1',
+            'product':True
+        }),
+        ('title_2', {
+            'label': 'meta:title_2',
+            'product':True
+        }),
         ('taxosum',{
             'label':'category_title',
             'category':True,

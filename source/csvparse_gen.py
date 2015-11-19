@@ -16,6 +16,15 @@ class ImportGenObject(ImportTreeObject):
     namesumKey = 'itemsum'
     fullnamesumKey = 'fullnamesum'
 
+    code        = descriptorUtils.safeKeyProperty(codeKey)
+    name        = descriptorUtils.safeKeyProperty(nameKey)
+    fullname    = descriptorUtils.safeKeyProperty(fullnameKey)
+    namesum     = descriptorUtils.safeKeyProperty(namesumKey)
+    description = descriptorUtils.safeKeyProperty(descriptionKey)
+    codesum     = descriptorUtils.safeKeyProperty(codesumKey)
+    descsum     = descriptorUtils.safeKeyProperty(descsumKey)
+    fullnamesum = descriptorUtils.safeKeyProperty(fullnamesumKey)
+
     def __init__(self, *args, **kwargs):
         subs = kwargs['subs']
         regex = kwargs['regex']
@@ -53,15 +62,6 @@ class ImportGenObject(ImportTreeObject):
             # else:
             #     self.registerError("{} is not set".format( key ), "verifyMeta")
 
-    code        = descriptorUtils.safeKeyProperty(codeKey)
-    name        = descriptorUtils.safeKeyProperty(nameKey)
-    fullname    = descriptorUtils.safeKeyProperty(fullnameKey)
-    namesum     = descriptorUtils.safeKeyProperty(namesumKey)
-    description = descriptorUtils.safeKeyProperty(descriptionKey)
-    codesum     = descriptorUtils.safeKeyProperty(codesumKey)
-    descsum     = descriptorUtils.safeKeyProperty(descsumKey)
-    fullnamesum = descriptorUtils.safeKeyProperty(fullnamesumKey)
-
     @property
     def index(self):
         return self.codesum
@@ -72,23 +72,22 @@ class ImportGenObject(ImportTreeObject):
     def getCodeDelimeter(self, other):
         return ''
 
-    def joinCodes(self):
-        ancestors = [ancestor for ancestor in self.getAncestors() + [self] if ancestor.code ]
-        if not ancestors: 
+    def joinCodes(self, ancestors):
+        codeAncestors = [ancestor for ancestor in ancestors + [self] if ancestor.code ]
+        if not codeAncestors: 
             return ""
-        prev = ancestors.pop(0)
+        prev = codeAncestors.pop(0)
         codesum = prev.code
-        while ancestors:
-            this = ancestors.pop(0)
+        while codeAncestors:
+            this = codeAncestors.pop(0)
             codesum += this.getCodeDelimeter(prev) + this.code
             prev = this
         return codesum
 
-    def joinDescs(self):
+    def joinDescs(self, ancestors):
         if self.description: 
             return self.description
         fullnames = [self.fullname]
-        ancestors = self.getAncestors()
         for ancestor in reversed(ancestors):
             ancestorDescription = ancestor.description
             if ancestorDescription:
@@ -104,15 +103,15 @@ class ImportGenObject(ImportTreeObject):
     def getNameDelimeter(self):
         return ' '
 
-    def joinNames(self):
-        ancestors = self.getNameAncestors() + [self]
-        names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestors))
+    def joinNames(self, ancestors):
+        ancestorsSelf = ancestors + [self]
+        names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestorsSelf))
         nameDelimeter = self.getNameDelimeter()
         return nameDelimeter.join ( names )     
 
-    def joinFullnames(self):
-        ancestors = self.getNameAncestors() + [self]
-        names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestors))
+    def joinFullnames(self, ancestors):
+        ancestorsSelf = ancestors + [self]
+        names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
         nameDelimeter = self.getNameDelimeter()
         return nameDelimeter.join ( names )      
 
@@ -126,39 +125,40 @@ class ImportGenObject(ImportTreeObject):
             self.fullname =  meta[0] 
         except:
             self.fullname =  "" 
-        self.registerMessage("fullname: {}".format(self.fullname ) )
+        # self.registerMessage("fullname: {}".format(self.fullname ) )
 
         try:
             self.code = meta[1] 
         except:
             self.code = "" 
-        self.registerMessage("code: {}".format(self.code ) )
+        # self.registerMessage("code: {}".format(self.code ) )
 
-        codesum = self.joinCodes()
-        self.registerMessage("codesum: {}".format(codesum) )
+        ancestors = self.getAncestors()
+
+        codesum = self.joinCodes(ancestors)
+        self.registerMessage("codesum: {}".format( codesum) )
         self.codesum = codesum
 
-        descsum = self.joinDescs()
+        descsum = self.joinDescs(ancestors)
         self.registerMessage("descsum: {}".format( descsum ) )
         self.descsum = descsum   
 
         name = self.changeName(self.fullname)
-        self.registerMessage("name: {}".format(name ) )
+        self.registerMessage("name: {}".format( name ) )
         self.name = name
 
-        namesum = self.joinNames()
-        self.registerMessage("namesum: {}".format(namesum) )
+        nameAncestors = self.getNameAncestors()
+
+        namesum = self.joinNames(nameAncestors)
+        self.registerMessage("namesum: {}".format( namesum) )
         self.namesum = namesum  
 
-        fullnamesum = self.joinFullnames()
-        self.registerMessage("fullnamesum: {}".format(fullnamesum) )
+        fullnamesum = self.joinFullnames(nameAncestors)
+        self.registerMessage("fullnamesum: {}".format( fullnamesum) )
         self.fullnamesum = fullnamesum  
 
 
 class ImportGenItem(ImportGenObject, ImportTreeItem):
-
-    # def __init__(self, *args, **kwargs):
-    #     super(ImportGenItem, self).__init__(*args, **kwargs)
 
     def getNameAncestors(self):
         return self.getItemAncestors()
@@ -174,13 +174,27 @@ class ImportGenProduct(ImportGenItem):
 
     _isProduct = True
 
+    def processMeta(self):
+        super(ImportGenItem, self).processMeta()
+
+        #process titles
+        line1, line2 = sanitationUtils.titleSplitter( self.namesum )
+        if not line2:
+            nameAncestors = self.getNameAncestors()
+            ancestorsSelf = nameAncestors + [self]
+            names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestorsSelf))
+            if len(names) < 2:
+                line1 = names[0];
+                nameDelimeter = self.getNameDelimeter()
+                line2 = nameDelimeter.join(names[1:])
+        self['title_1'] = line1
+        self['title_2'] = line2
+
+
 class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
 
     namesumKey = 'taxosum'
     namesum     = descriptorUtils.safeKeyProperty(namesumKey)
-
-    # def __init__(self, *args, **kwargs):
-    #     super(ImportGenTaxo, self).__init__(*args, **kwargs)
 
     def getNameDelimeter(self):
         return ' > '

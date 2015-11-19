@@ -90,12 +90,23 @@ class sanitationUtils:
     @staticmethod
     def findallDollars(instring):
         assert type(instring) == str, "param must be a string not %s"% type(instring)
-        return re.findall("\s*\$([\d,]+\.?\d*)", instring)
+        return re.findall(r"\s*\$([\d,]+\.?\d*)", instring)
 
     @staticmethod
     def findallPercent(instring):
         assert type(instring) == str, "param must be a string not %s"% type(instring)
-        return re.findall("\s*(\d+\.?\d*)%", instring)
+        return re.findall(r"\s*(\d+\.?\d*)%", instring)
+
+    @staticmethod
+    def titleSplitter(instring):
+        assert type(instring) == str, "param must be a string not %s"% type(instring)
+        instring = instring.decode('utf-8')
+        found = re.findall(r"^\s*(.*?)\s+[^\s\w&\(\)]\s+(.*?)\s*$", instring)
+        if found:
+            return found[0]
+        else:
+            return instring, ""
+
 
     @staticmethod
     def stringIsEmail(email):
