@@ -117,8 +117,8 @@ if variant == "SOL":
 
 DEBUG = True
 
-currentSpecial = None
-# currentSpecial = "SP2015-09-18"
+# currentSpecial = None
+currentSpecial = "SP2015-11-13"
 
 ### PROCESS CONFIG ###
 
@@ -150,7 +150,6 @@ if imgFolder_extra and schema in imgFolder_extra.keys():
 ########################################
 # Download CSV files from GDrive
 ########################################
-
 
 
 
@@ -646,6 +645,8 @@ elif schema in woo_schemas:
 					),
 					specialProducts
 				)
+		else:
+			print "no products match special"
 		specialVariations = filter(
 			onCurrentSpecial,
 			variations.values()
@@ -660,7 +661,10 @@ elif schema in woo_schemas:
 				),
 				specialVariations
 			)
-	except:
+		else:
+			print "no variations match special"
+	except Exception as e:
+		print "no specials 4 u", e
 		pass
 
 	pricingCols = colData.getPricingCols()

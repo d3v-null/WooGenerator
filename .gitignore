@@ -62,3 +62,7 @@ logs/
 source/test.py
 
 source/config.yaml
+
+test/My Project-db965bac73b4.json
+
+test/client_secret.json
