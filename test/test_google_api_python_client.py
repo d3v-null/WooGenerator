@@ -2,15 +2,16 @@
 import httplib2
 import os
 
-from googleapiclient import discovery
+from apiclient import discovery
 import oauth2client
-from oauth2client import client, tools
+from oauth2client import client
+from oauth2client import tools
 
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
+# try:
+#     import argparse
+#     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+# except ImportError:
+#     flags = None
 
 SCOPES = 'https://spreadsheets.google.com/feeds https://docs.google.com/feeds'
 CLIENT_SECRET_FILE = 'client_secret.json'
@@ -31,14 +32,15 @@ def get_credentials():
     if not credentials or credentials.invalid:
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
         flow.user_agent = APPLICATION_NAME
-        if flags:
-            credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
-            credentials = tools.run(flow, store)
+        # if flags:
+        #     credentials = tools.run_flow(flow, store, flags)
+        # else: # Needed only for compatibility with Python 2.6
+        #     credentials = tools.run(flow, store)
+        credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
 
-def download_file_gid_csv(service, drive_file, gid):
+def download_file_gid_csv(service, drive_file, gid=None):
     """Download a file's content.
 
     Args:
@@ -52,7 +54,7 @@ def download_file_gid_csv(service, drive_file, gid):
     print( drive_file)
     download_url = drive_file['exportLinks']['text/csv']
     if gid:
-        download_url += "?gid=" + gid 
+        download_url += "&gid=" + gid 
     print download_url
     if download_url:
       resp, content = service._http.request(download_url)
@@ -73,7 +75,8 @@ def main():
     service = discovery.build('drive', 'v2', http=auth_http)
     print repr(service)
     drive_file = service.files().get(fileId=genFID).execute()
-    content = download_file_gid_csv(service, drive_file, )
+    # content = download_file_gid_csv(service, drive_file )
+    content = download_file_gid_csv(service, drive_file, "784188347" )
     print content
 
 
