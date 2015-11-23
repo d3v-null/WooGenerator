@@ -196,6 +196,17 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     def getMembers(self, itemData):
         return self.members
 
+    def findChildCategory(self, index):
+        for child in self.children.values():
+            if child.isCategory:
+                if child.index == index:
+                    return child
+                else:
+                    result = child.findChildCategory(index)
+                    if result:
+                        return result
+        return None
+
 class objList(object):
     def __init__(self, fileName):
         self._fileName = fileName
@@ -260,8 +271,6 @@ class objList(object):
 
     def invalidate(self):
         self._isValid = False;
-
-    
     
 
 class CSVParse_Woo(CSVParse_Gen):
@@ -281,7 +290,10 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}):
+                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
+        
+        print ("catMapping woo pre: %s" % str(catMapping))
+
         extra_cols = [ 'PA', 'VA', 'weight', 'length', 'width', 'height', 
                     'stock', 'stock_status', 'Images', 'HTML Description',
                     'post_status']
@@ -313,11 +325,14 @@ class CSVParse_Woo(CSVParse_Gen):
 
         extra_itemSubs = OrderedDict()
 
+        extra_catMaps = OrderedDict()
+
         if not importName: importName = time.strftime("%Y-%m-%d %H:%M:%S")
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
         itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
         if not schema: schema = "TT"
         super(CSVParse_Woo, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
@@ -326,6 +341,10 @@ class CSVParse_Woo(CSVParse_Gen):
         self.specials = specials
         self.special_items = OrderedDict()
         self.categoryIndexer = self.getGenCodesum
+        self.catMapping = catMapping
+
+        self.registerMessage("catMapping woo post: %s" % str(catMapping))
+
         # if DEBUG_WOO:
         #     print "WOO initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
@@ -473,6 +492,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerCategory(extraLayer, objectData)
             # todo maybe something with extra categories
 
+
     def processVariation(self, varData):
         assert varData.isVariation
         parentData = varData.getParent()
@@ -601,6 +621,17 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def postProcessCategories(self, objectData):
         # self.registerMessage(objectData.index)
+        if objectData.isCategory:
+            if objectData.get('E'):
+                objectIndex = self.categoryIndexer(objectData)
+                if objectIndex in self.catMapping.keys():
+                    index = self.catMapping[objectIndex]
+                    for ancestor in objectData.getAncestors():
+                        result = ancestor.findChildCategory(index)
+                        if result:
+                            for member in objectData.members.values():
+                                self.registerCategory(result, member)
+
         if objectData.isProduct:
             categories = objectData.getCategories().values()
             objectData['catsum'] = '|'.join(listUtils.filterUniqueTrue(
@@ -610,6 +641,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 )
             ))
             self.registerMessage("catsum of %s is %s"%(objectData.index, objectData.get('catsum')))
+
 
     def postProcessImages(self, objectData):
         # self.registerMessage(objectData.index)
@@ -666,7 +698,7 @@ class CSVParse_Woo(CSVParse_Gen):
         if objectData.isProduct:
 
             ancestors = objectData.getInheritanceAncestors()
-            for ancestor in ancestors:
+            for ancestor in reversed(ancestors):
                 ancestorSpecials = ancestor.getSpecials()
                 for special in ancestorSpecials:
                     objectData.registerSpecial(special)
@@ -687,8 +719,9 @@ class CSVParse_Woo(CSVParse_Gen):
                     if( specialto < time.time() ):
                         self.registerMessage( "special %s is over" % special )
                         continue
-
-                    self.registerMessage( "special %s is from %s to %s" % (special, specialfrom, specialto) )
+                    else:
+                        self.registerMessage( "special %s is from %s to %s" % (special, specialfrom, specialto) )
+            
 
                     for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                         discount = specialparams.get(tier)
@@ -727,6 +760,8 @@ class CSVParse_Woo(CSVParse_Gen):
                                 # objectData[tier_key] = special_price
                                 # objectData[tier_from_key] = specialfrom
                                 # objectData[tier_to_key] = specialto
+                    break 
+                    #only applies first special
 
                 else:
                     self.registerError("special %s does not exist " % special, objectData) 
@@ -793,7 +828,7 @@ class CSVParse_TT(CSVParse_Woo):
 
     def __init__(self, cols={}, defaults ={}, importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}):
+                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
 
         schema = "TT"
 
@@ -823,13 +858,22 @@ class CSVParse_TT(CSVParse_Woo):
         ])
         extra_itemSubs = OrderedDict()
 
+        extra_catMaps = OrderedDict([
+            ('CTPP', 'CTKPP')
+        ])
+
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
         itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
+
+
         super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials) 
+                dprcRules, dprpRules, specials, catMapping) 
+
+        self.registerMessage("catMapping: %s" % str(catMapping))
         # if DEBUG_WOO:
         #     print "WOO initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
@@ -841,7 +885,7 @@ class CSVParse_VT(CSVParse_Woo):
 
     def __init__(self, cols={}, defaults ={}, importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}):
+                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
 
         schema = "VT"
 
@@ -871,19 +915,19 @@ class CSVParse_VT(CSVParse_Woo):
         ])
         extra_itemSubs = OrderedDict()
 
+        extra_catMaps = OrderedDict()
+
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
         itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
+
+        self.registerMessage("catMapping: %s" % str(catMapping))
+
         super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials) 
-        # if DEBUG_WOO:
-        #     print "WOO initializing: "
-        #     print "-> taxoDepth: ", self.taxoDepth
-        #     print "-> itemDepth: ", self.itemDepth
-        #     print "-> maxDepth: ", self.maxDepth
-        #     print "-> metaWidth: ", self.metaWidth
+                dprcRules, dprpRules, specials, catMapping) 
 
 
 if __name__ == '__main__':

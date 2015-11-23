@@ -118,7 +118,7 @@ if variant == "SOL":
 DEBUG = True
 
 # currentSpecial = None
-currentSpecial = "SP2015-11-13"
+currentSpecial = "CHRS2015-"
 
 ### PROCESS CONFIG ###
 
