@@ -1,4 +1,5 @@
 from csvparse_gen import CSVParse_Gen, ImportGenProduct
+from utils import listUtils, sanitationUtils
 from collections import OrderedDict
 from coldata import ColData_MYO
 import time
@@ -8,12 +9,12 @@ DEBUG_MYO = True
 
 class CSVParse_MYO(CSVParse_Gen):
 
+    prod_containers = {
+        'Y': ImportGenProduct
+    }
+
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
-
-        prod_containers = {
-            'Y': ImportGenProduct
-        }
 
         extra_cols = [ 'WNRC', 'RNRC', 'HTML Description' ]
 
@@ -61,11 +62,13 @@ class CSVParse_MYO(CSVParse_Gen):
             ('Mosaic Minerals', 'MM'),
 
             ('Removal', 'Rem.'),
+            ('Remover', 'Rem.'),
             ('Application', 'App.'),
             ('Peach & Vanilla', 'P&V'),
             ('Tamarillo & Papaya', 'T&P'),
             ('Tamarillo', 'TAM'),
             ('Lavander & Rosmary', 'L&R'),
+            ('Lavender & Rosemary', 'L&R'),
             ('Coconut & Lime', 'C&L'),
             ('Melon & Cucumber', 'M&C'),
             ('Coconut Cream', 'CC'),
@@ -169,6 +172,9 @@ class CSVParse_MYO(CSVParse_Gen):
             ('Natural', 'NAT'),
             ('Bayonet', 'BAY'),
             ('Hexagonal', 'Hex.'),
+            ('Product Pack', 'PrPck'),
+            ('Complete', 'Compl.'),
+            ('Fanatic', 'Fan.'),
 
             ('one', '1'),
             ('One', '1'),
@@ -198,6 +204,8 @@ class CSVParse_MYO(CSVParse_Gen):
             ('Box of', 'Box/'),
             (' Fitting for ', ' Fit '),
             (' Fits ', ' Fit '),
+            (' and ', ' & '),
+            (' And ', ' & '),
 
             # (' (2hr)', ''),
             (' (sachet)', ''),
@@ -211,12 +219,13 @@ class CSVParse_MYO(CSVParse_Gen):
 
         ])
 
-        cols = list(set(cols) | set(extra_cols)) if cols else extra_cols
-        defaults = OrderedDict(extra_defaults.items() + defaults.items() + ('last_import', importName))\
-            if defaults else extra_defaults
         if not importName: importName = time.strftime("%Y-%m-%d %H:%M:%S")
-        taxoSubs = OrderedDict(extra_taxoSubs.items() + taxoSubs.items())
-        itemSubs = OrderedDict(extra_itemSubs.items() + itemSubs.items())
+        cols = listUtils.combineLists( cols, extra_cols )
+        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        if not schema: schema = "MY"        
+
         super(CSVParse_MYO, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
         if DEBUG_MYO: print "csvparse initialized with cols:",str(extra_cols)

@@ -45,7 +45,7 @@ class ColData_MYO(ColData_Base):
             'label': 'Item Number',
             'product':True,
         }),
-        ('item_name', {
+        ('itemsum', {
             'label': 'Item Name',
             'product':True,
         }),

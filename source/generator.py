@@ -199,7 +199,7 @@ def download_file_gid_csv(service, drive_file, gid=None):
     # print( drive_file)
     download_url = drive_file['exportLinks']['text/csv']
     if gid:
-        download_url += "&gid=" + gid 
+        download_url += "&gid=" + str(gid )
     print "Downloading: ", download_url
     if download_url:
       resp, content = service._http.request(download_url)
@@ -333,145 +333,147 @@ import_errors = productParser.errors
 # Images
 #########################################	
 
-print ""
-print "Images:"
-print "==========="
+if schema in woo_schemas:
 
-def reportImportError(source, error):
-	import_errors[source] = import_errors.get(source,[]) + [str(error)]
+	print ""
+	print "Images:"
+	print "==========="
 
-def invalidImage(img, error):
-	reportImportError(img, error)
-	images[img].invalidate()
+	def reportImportError(source, error):
+		import_errors[source] = import_errors.get(source,[]) + [str(error)]
 
-if skip_images: 
-	images = {}
-	delete = False;
+	def invalidImage(img, error):
+		reportImportError(img, error)
+		images[img].invalidate()
+
+	if skip_images: 
+		images = {}
+		delete = False;
 
 
-ls_imgs = {}
-for folder in imgFolder:
-	ls_imgs[folder] = os.listdir(folder)
-
-def getImage(img):
+	ls_imgs = {}
 	for folder in imgFolder:
-		if img in ls_imgs[folder]:
-			return os.path.join(folder, img)
-	raise UserWarning("no img found")
+		ls_imgs[folder] = os.listdir(folder)
 
-if not os.path.exists(refFolder):
-	os.makedirs(refFolder)
+	def getImage(img):
+		for folder in imgFolder:
+			if img in ls_imgs[folder]:
+				return os.path.join(folder, img)
+		raise UserWarning("no img found")
 
-ls_reflattened = os.listdir(refFolder)
-for f in ls_reflattened:
-	if f not in images.keys():
-		print "DELETING", f, "FROM REFLATTENED"
-		if delete:
-			os.remove(os.path.join(refFolder,f))
+	if not os.path.exists(refFolder):
+		os.makedirs(refFolder)
+
+	ls_reflattened = os.listdir(refFolder)
+	for f in ls_reflattened:
+		if f not in images.keys():
+			print "DELETING", f, "FROM REFLATTENED"
+			if delete:
+				os.remove(os.path.join(refFolder,f))
 
 
-for img, data in images.items():
-	print img
-	if data.taxos:
-		print "-> Associated Taxos"
-		for taxo in data.taxos:
-			print " -> (%4d) %10s" % (taxo.rowcount, taxo.codesum)
+	for img, data in images.items():
+		print img
+		if data.taxos:
+			print "-> Associated Taxos"
+			for taxo in data.taxos:
+				print " -> (%4d) %10s" % (taxo.rowcount, taxo.codesum)
 
-	if data.items:
-		print "-> Associated Items"
-		for item in data.items:
-			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
+		if data.items:
+			print "-> Associated Items"
+			for item in data.items:
+				print " -> (%4d) %10s" % (item.rowcount, item.codesum)
 
-	if data.products:
-		print "-> Associated Products"
-		for item in data.products:
-			print " -> (%4d) %10s" % (item.rowcount, item.codesum)
-	else:
-		continue
-		# we only care about product images atm
+		if data.products:
+			print "-> Associated Products"
+			for item in data.products:
+				print " -> (%4d) %10s" % (item.rowcount, item.codesum)
+		else:
+			continue
+			# we only care about product images atm
 
-	try:
-		imgsrcpath = getImage(img)
-	except Exception as e:
-		invalidImage(img, e)
+		try:
+			imgsrcpath = getImage(img)
+		except Exception as e:
+			invalidImage(img, e)
 
-	name, ext = os.path.splitext(img)
-	if(not name): 
-		invalidImage(img, "could not extract name")
-		continue
-
-	try:
-		title, description = data.title, data.description
-	except Exception as e:
-		invalidImage(img, "could not get title or description: "+str(e) )
-		continue
-
-	# print "-> title, description", title, description
-
-	# ------
-	# REMETA
-	# ------
-
-	try:
-		metagator = MetaGator(imgsrcpath)
-	except Exception, e:
-		invalidImage(img, "error creating metagator: " + str(e))
-		continue
-		
-	try:
-		metagator.update_meta({
-			'title': title,
-			'description': description
-		})
-	except Exception as e:
-		invalidImage(img, "error updating meta: " + str(e))
-
-	# ------
-	# RESIZE
-	# ------
-
-	if resize:
-		imgdstpath = os.path.join(refFolder, img)
-		if not os.path.isfile(imgsrcpath) :
-			print "SOURCE FILE NOT FOUND: ", imgsrcpath
+		name, ext = os.path.splitext(img)
+		if(not name): 
+			invalidImage(img, "could not extract name")
 			continue
 
-		if os.path.isfile(imgdstpath) :
-			imgsrcmod = max(os.path.getmtime(imgsrcpath), os.path.getctime(imgsrcpath))
-			imgdstmod = os.path.getmtime(imgdstpath)
-			# print "image mod (src, dst): ", imgsrcmod, imgdstmod
-			if imgdstmod > imgsrcmod:
-				# print "DESTINATION FILE NEWER: ", imgdstpath
+		try:
+			title, description = data.title, data.description
+		except Exception as e:
+			invalidImage(img, "could not get title or description: "+str(e) )
+			continue
+
+		# print "-> title, description", title, description
+
+		# ------
+		# REMETA
+		# ------
+
+		try:
+			metagator = MetaGator(imgsrcpath)
+		except Exception, e:
+			invalidImage(img, "error creating metagator: " + str(e))
+			continue
+			
+		try:
+			metagator.update_meta({
+				'title': title,
+				'description': description
+			})
+		except Exception as e:
+			invalidImage(img, "error updating meta: " + str(e))
+
+		# ------
+		# RESIZE
+		# ------
+
+		if resize:
+			imgdstpath = os.path.join(refFolder, img)
+			if not os.path.isfile(imgsrcpath) :
+				print "SOURCE FILE NOT FOUND: ", imgsrcpath
 				continue
 
-		print "resizing:", img
-		shutil.copy(imgsrcpath, imgdstpath)
-		
-		try:
-			imgmeta = MetaGator(imgdstpath)
-			imgmeta.write_meta(title, description)
-			print imgmeta.read_meta()
+			if os.path.isfile(imgdstpath) :
+				imgsrcmod = max(os.path.getmtime(imgsrcpath), os.path.getctime(imgsrcpath))
+				imgdstmod = os.path.getmtime(imgdstpath)
+				# print "image mod (src, dst): ", imgsrcmod, imgdstmod
+				if imgdstmod > imgsrcmod:
+					# print "DESTINATION FILE NEWER: ", imgdstpath
+					continue
 
-			image = Image.open(imgdstpath)
-			image.thumbnail(thumbsize)
-			image.save(imgdstpath)
+			print "resizing:", img
+			shutil.copy(imgsrcpath, imgdstpath)
+			
+			try:
+				imgmeta = MetaGator(imgdstpath)
+				imgmeta.write_meta(title, description)
+				print imgmeta.read_meta()
 
-			imgmeta = MetaGator(imgdstpath)
-			imgmeta.write_meta(title, description)
-			print imgmeta.read_meta()
+				image = Image.open(imgdstpath)
+				image.thumbnail(thumbsize)
+				image.save(imgdstpath)
 
-		except Exception as e:
-			invalidImage(img, "could not resize: " + str(e))
-			continue
+				imgmeta = MetaGator(imgdstpath)
+				imgmeta.write_meta(title, description)
+				print imgmeta.read_meta()
 
-# ------
-# RSYNC
-# ------
+			except Exception as e:
+				invalidImage(img, "could not resize: " + str(e))
+				continue
 
-if not os.path.exists(wpaiFolder):
-	os.makedirs(wpaiFolder)
+	# ------
+	# RSYNC
+	# ------
 
-rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
+	if not os.path.exists(wpaiFolder):
+		os.makedirs(wpaiFolder)
+
+	rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
 
 #########################################
 # Export Info to Spreadsheets
