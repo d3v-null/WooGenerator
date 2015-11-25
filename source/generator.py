@@ -236,10 +236,6 @@ if download and genFID:
 		    	with open(path, 'w') as outFile:
 		    		outFile.write(content)
 
-
-
-
-
 #########################################
 # Import Info From Spreadsheets
 #########################################

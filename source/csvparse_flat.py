@@ -4,7 +4,7 @@ from collections import OrderedDict
 from coldata import ColData_User
 import os
 import csv
-import re
+# import re
 
 usrs_per_file = 1000
 
@@ -56,14 +56,21 @@ class CSVParse_Special(CSVParse_Flat):
     def getObjectID(self, objectData):
         return objectData.ID     
 
-class ImportUser(ImportObject):
+class ImportUser(ImportFlat):
 
     email = descriptorUtils.safeKeyProperty('E-mail')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('username')
     role = descriptorUtils.safeKeyProperty('Role')
+
+    def __init__(self, data, rowcount, row, **kwargs):
+        super(ImportUser, self).__init__(data, rowcount, row)
+        for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
+            self[key] = data.get(key)
                             
 class CSVParse_User(CSVParse_Flat):
+
+    objectContainer = ImportUser
 
     def __init__(self, cols=[], defaults = {}):
         extra_cols = [  
@@ -77,38 +84,107 @@ class CSVParse_User(CSVParse_Flat):
         ])
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        try:
-            assert self.itemContainer 
-        except :
-            self.itemContainer = ImportUser
         super(CSVParse_User, self).__init__(cols, defaults)
-        self.itemIndexer = self.getUsername
+        # self.itemIndexer = self.getUsername
+
+    # def getKwargs(self, allData, container, **kwargs):
+    #     kwargs = super(CSVParse_User, self).getKwargs(allData, container, **kwargs)
+    #     for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
+    #         assert kwargs[key] is not None
+    #     return kwargs
+
+    # def newObject(self, rowcount, row, **kwargs):
+    #     for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
+    #         try:
+    #             assert kwargs[key]
+    #         except:
+    #             kwargs[key] = self.retrieveColFromRow
 
     def clearTransients(self):
         super(CSVParse_User, self).clearTransients()
         self.roles = OrderedDict()
+        self.emails = OrderedDict()
+        self.cards = OrderedDict()
+        self.usernames = OrderedDict()
 
-    def registerObject(self, objectData):
-        email = objectData.email
-        if not email or not sanitationUtils.stringIsEmail(email) :
-            raise Exception("invalid email address: %s"%email)
-        super(CSVParse_User, self).registerObject(objectData)
-
-    def processRoles(self, objectData):
-        role = objectData.role
-        if not self.roles.get(role): self.roles[role] = OrderedDict()
+    def registerEmail(self, objectData, email):
         self.registerAnything(
             objectData,
-            self.roles[role],
-            self.getUsername,
-            singular = True,
+            self.emails,
+            email,
+            singular = False,
+            registerName = 'emails'
+        )
+
+    def registerRole(self, objectData, role):
+        self.registerAnything(
+            objectData,
+            self.roles,
+            role,
+            singular = False,
             registerName = 'roles'
         )
 
-    def processObject(self, objectData):
-        objectData.username = self.getMYOBID(objectData)
-        super(CSVParse_Flat, self).processObject(objectData)
-        self.processRoles(objectData) 
+    def registerCard(self, objectData, card):
+        self.registerAnything(
+            objectData,
+            self.cards,
+            card,
+            singular = False,
+            registerName = 'cards'
+        )
+
+    def registerUsername(self, objectData, username):
+        self.registerAnything(
+            objectData,
+            self.usernames.
+            username,
+            singular = False,
+            registerName = 'usernames'
+        )
+
+    def registerObject(self, objectData):
+        email = objectData.email
+        if email and sanitationUtils.stringIsEmail(email) :
+            self.registerEmail(objectData, email)
+        else:
+            self.registerWarning("invalid email address: %s"%email)
+        
+        role = objectData.role
+        if role:
+            self.registerRole(objectData, role)
+        else:
+            self.registerWarning("invalid role: %s"%role)
+
+        card = objectData.MYOBID
+        if card:
+            self.registerCard(objectData, card)
+        else:
+            self.registerWarning("invalid card: %s"%card)
+
+        username = objectData.username
+        if username:
+            self.registerUsername(objectData, username)
+        else:
+            self.registerWarning("invalid username: %s"%username)
+
+        super(CSVParse_User, self).registerObject(objectData)
+
+    # def processRoles(self, objectData):
+    #     role = objectData.role
+    #     if not self.roles.get(role): self.roles[role] = OrderedDict()
+    #     self.registerAnything(
+    #         objectData,
+    #         self.roles[role],
+    #         self.getUsername,
+    #         singular = True,
+    #         registerName = 'roles'
+    #     )
+
+    # def processObject(self, objectData):
+    #     # objectData.username = self.getMYOBID(objectData)
+    #     super(CSVParse_Flat, self).processObject(objectData)
+    #     self.processRoles(objectData) 
 
     # def analyzeRow(self, row, objectData):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)

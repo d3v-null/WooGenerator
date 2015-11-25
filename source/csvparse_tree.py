@@ -96,6 +96,8 @@ class ImportTreeObject(ImportObject):
         assert(isinstance(depth, int))
         self.depth = depth
 
+#do we need these?
+
     def getDepth(self):
         return self.depth
 
@@ -282,7 +284,7 @@ class CSVParse_Tree(CSVParse_Base):
         except:
             depth = self.depth( row )
             kwargs['depth'] = depth
-        self.registerMessage("depth: %d"%(depth))
+        # self.registerMessage("depth: %d"%(depth))
 
         try:
             meta = kwargs['meta']
@@ -290,7 +292,7 @@ class CSVParse_Tree(CSVParse_Base):
         except:
             meta = self.extractMeta(row, depth)
             kwargs['meta'] = meta
-        self.registerMessage("meta: {}".format(meta))
+        # self.registerMessage("meta: {}".format(meta))
 
         try:
             stack = kwargs['stack']
