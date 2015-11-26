@@ -68,6 +68,10 @@ class ImportUser(ImportFlat):
         for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
             self[key] = data.get(key)
                             
+
+    def __repr__(self):
+        return super(ImportUser, self).__str__() + "| %s | %s | %s | %s " % (self.email, self.MYOBID, self.role, self.username)
+
 class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
@@ -104,6 +108,7 @@ class CSVParse_User(CSVParse_Flat):
         super(CSVParse_User, self).clearTransients()
         self.roles = OrderedDict()
         self.emails = OrderedDict()
+        self.noemails = OrderedDict()
         self.cards = OrderedDict()
         self.usernames = OrderedDict()
 
@@ -114,6 +119,15 @@ class CSVParse_User(CSVParse_Flat):
             email,
             singular = False,
             registerName = 'emails'
+        )
+
+    def registerNoEmail(self, objectData):
+        self.registerAnything(
+            objectData,
+            self.noemails,
+            objectData.index,
+            singular = True,
+            registerName = 'noemails'
         )
 
     def registerRole(self, objectData, role):
@@ -137,7 +151,7 @@ class CSVParse_User(CSVParse_Flat):
     def registerUsername(self, objectData, username):
         self.registerAnything(
             objectData,
-            self.usernames.
+            self.usernames,
             username,
             singular = False,
             registerName = 'usernames'
@@ -149,6 +163,7 @@ class CSVParse_User(CSVParse_Flat):
             self.registerEmail(objectData, email)
         else:
             self.registerWarning("invalid email address: %s"%email)
+            self.registerNoEmail(objectData)
         
         role = objectData.role
         if role:

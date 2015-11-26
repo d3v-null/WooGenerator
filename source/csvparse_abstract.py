@@ -139,7 +139,7 @@ class ImportObject(OrderedDict, Registrar):
         return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
 
     def __str__(self):
-        return "%s <%s>" % (self.index, self.getTypeName())
+        return "%10s <%s>" % (self.index, self.getTypeName())
 
     def __cmp__(self, other):
         if other == None:
