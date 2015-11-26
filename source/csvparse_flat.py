@@ -110,6 +110,7 @@ class CSVParse_User(CSVParse_Flat):
         self.emails = OrderedDict()
         self.noemails = OrderedDict()
         self.cards = OrderedDict()
+        self.nocards = OrderedDict()
         self.usernames = OrderedDict()
 
     def registerEmail(self, objectData, email):
@@ -148,6 +149,15 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'cards'
         )
 
+    def registerNoCard(self, objectData):
+        self.registerAnything(
+            objectData,
+            self.nocards,
+            objectData.index,
+            singular = True,
+            registerName = 'nocards'
+        )
+
     def registerUsername(self, objectData, username):
         self.registerAnything(
             objectData,
@@ -175,7 +185,7 @@ class CSVParse_User(CSVParse_Flat):
         if card:
             self.registerCard(objectData, card)
         else:
-            self.registerWarning("invalid card: %s"%card)
+            self.registerNoCard(objectData)
 
         username = objectData.username
         if username:
