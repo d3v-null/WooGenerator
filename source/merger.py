@@ -118,6 +118,7 @@ cardDuplicates = []
 cardFails = []
 
 for card, saObjects in saParser.cards.items():
+    print "card: ", card
     maObjects = maParser.cards.get(card) or []
     cardMatch = Match(maObjects, saObjects)
     if(cardMatch.isSingular):
@@ -133,83 +134,100 @@ for card, saObjects in saParser.cards.items():
         cardFails.append(cardMatch)
         print repr(cardMatch)
 
-print "matches:"
+print "cardMatches:"
 for match in cardMatches:
     print repr(match)
 
-print "slaveless matches:"
+print "slaveless cardMatches:"
 for match in slavelessCardMatches:
     print repr(match)    
 
-print "masterless matches:"
+print "masterless cardMatches:"
 for match in masterlessCardMatches:
     print repr(match)
 
-print "failures:"
+print "cardFailures:"
 for match in cardFails:
     print repr(match)
 
-print "duplicates:"
+print "cardDuplicates:"
 for match in cardDuplicates:
     print repr(match)    
 
-# matches = []
-# duplicates = []
-# fails = []
+emailMatches = []
+masterlessEmailMatches = []
+slavelessEmailMatches = []
+emailDuplicates = []
+emailFails = []
 
-# for email, saObjects in saParser.emails.items():
-#     print "email: ", email
-#     maObjects = maParser.emails.get(email) or []
-#     emailMatch = Match(maObjects, saObjects)
-#     if(emailMatch.isSingular):
-#         print " -> is singular!"
-#         matches.append(emailMatch)
-#     else:       
-#         print " -> not singular"
-#         if len(emailMatch.sObjects) == 1 and not emailMatch.sObjects[0].MYOBID:
-#             print " -> could not reconcile"
-#             print repr(emailMatch)
-#             fails.append(emailMatch) 
-#             continue
+for index, saObject in saParser.nocards.items():
+    saObjects =  [saObject]
+    email = saObject.email
+    print "email: ", email
+    maObjects = maParser.emails.get(email) or []
+    emailMatch = Match(maObjects, saObjects)
+    if(emailMatch.isSingular):
+        print " -> is singular!"
+        if(emailMatch.hasNoMaster):
+            masterlessEmailMatches.append(emailMatch)
+        elif(emailMatch.hasNoSlave):
+            slavelessEmailMatches.append(emailMatch)
+        else:
+            emailMatches.append(emailMatch)
+    else:       
+        print " -> not singular"
+        if len(emailMatch.sObjects) == 1 and not emailMatch.sObjects[0].MYOBID:
+            print " -> could not reconcile"
+            print repr(emailMatch)
+            emailFails.append(emailMatch) 
+            continue
 
-#         print " -> finding card matches"
-#         print " -> associated slave objects:"
-#         for saObject in saObjects:
-#             print " --> ", saObject.MYOBID, " | ", saObject.username 
+        print " -> finding card matches"
+        print " -> associated slave objects:"
+        for saObject in saObjects:
+            print " --> ", saObject.MYOBID, " | ", saObject.username 
 
-#         if maObjects:
-#             print " -> associated master objects:"
-#             for maObject in maObjects:
-#                 print " --> ", maObject.MYOBID, " | ", maObject.username 
-#         cardMatches = findCardMatches(emailMatch)
-#         for card, cardMatch in cardMatches.items():
-#             print " --> card: ", card
-#             print " --> slaves: ", len(cardMatch.sObjects)
-#             print " --> masters: ", len(cardMatch.mObjects)
-#             if cardMatch.isSingular:
-#                 print " ---> is singular!"
-#                 if cardMatch.hasNoSlave:
-#                     print " ---> slaveless duplicate"
-#                     duplicates.append(cardMatch)
-#                 else:
-#                     matches.append(cardMatch)
-#             else:
-#                 print " ---> is not singular"
-#                 print " ---> could not reconcile"
-#                 print repr(cardMatch)
-#                 fails.append(cardMatch)
+        if maObjects:
+            print " -> associated master objects:"
+            for maObject in maObjects:
+                print " --> ", maObject.MYOBID, " | ", maObject.username 
+        cardMatches = findCardMatches(emailMatch)
+        for card, cardMatch in cardMatches.items():
+            print " --> card: ", card
+            print " --> slaves: ", len(cardMatch.sObjects)
+            print " --> masters: ", len(cardMatch.mObjects)
+            if cardMatch.isSingular:
+                print " ---> is singular!"
+                if cardMatch.hasNoSlave:
+                    print " ---> slaveless duplicate"
+                    emailDuplicates.append(cardMatch)
+                else:
+                    emailMatches.append(cardMatch)
+            else:
+                print " ---> is not singular"
+                print " ---> could not reconcile"
+                print repr(cardMatch)
+                emailFails.append(cardMatch)
 
-# print "matches:"
-# for match in matches:
-#     print repr(match)
+print "emailMatches:"
+for match in emailMatches:
+    print repr(match)
 
-# print "failures:"
-# for match in fails:
-#     print repr(match)
+print "slaveless emailMatches:"
+for match in slavelessEmailMatches:
+    print repr(match)    
 
-# print "duplicates:"
-# for match in duplicates:
-#     print repr(match)
+print "masterless emailMatches:"
+for match in masterlessEmailMatches:
+    print repr(match)
+
+print "emailFails:"
+for match in emailFails:
+    print repr(match)
+
+print "emailDuplicates:"
+for match in emailDuplicates:
+    print repr(match)
 
 
 
