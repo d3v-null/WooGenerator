@@ -125,8 +125,8 @@ if variant == "SOL":
 
 DEBUG = True
 
-# currentSpecial = None
-currentSpecial = "CHRS2015-"
+currentSpecial = None
+# currentSpecial = "CHRS2015-"
 
 ### PROCESS CONFIG ###
 

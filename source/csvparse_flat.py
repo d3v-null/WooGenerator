@@ -60,12 +60,12 @@ class ImportUser(ImportFlat):
 
     email = descriptorUtils.safeKeyProperty('E-mail')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
-    username = descriptorUtils.safeKeyProperty('username')
+    username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
 
     def __init__(self, data, rowcount, row, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
-        for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
+        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role']:
             self[key] = data.get(key)
                             
 
@@ -107,11 +107,13 @@ class CSVParse_User(CSVParse_Flat):
     def clearTransients(self):
         super(CSVParse_User, self).clearTransients()
         self.roles = OrderedDict()
+        self.noroles = OrderedDict()
         self.emails = OrderedDict()
         self.noemails = OrderedDict()
         self.cards = OrderedDict()
         self.nocards = OrderedDict()
         self.usernames = OrderedDict()
+        self.nousernames = OrderedDict()
 
     def registerEmail(self, objectData, email):
         self.registerAnything(
@@ -138,6 +140,15 @@ class CSVParse_User(CSVParse_Flat):
             role,
             singular = False,
             registerName = 'roles'
+        )
+
+    def registerNoRole(self, objectData):
+        self.registerAnything(
+            objectData,
+            self.noroles,
+            objectData.index,
+            singular = True,
+            registerName = 'noroles'
         )
 
     def registerCard(self, objectData, card):
@@ -167,6 +178,15 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'usernames'
         )
 
+    def registerNoUsername(self, objectData):
+        self.registerAnything(
+            objectData,
+            self.nousernames,
+            objectData.index,
+            singular = True,
+            registerName = 'nousernames'
+        )
+
     def registerObject(self, objectData):
         email = objectData.email
         if email and sanitationUtils.stringIsEmail(email) :
@@ -180,6 +200,7 @@ class CSVParse_User(CSVParse_Flat):
             self.registerRole(objectData, role)
         else:
             self.registerWarning("invalid role: %s"%role)
+            self.registerNoRole(objectData)
 
         card = objectData.MYOBID
         if card:
@@ -192,6 +213,7 @@ class CSVParse_User(CSVParse_Flat):
             self.registerUsername(objectData, username)
         else:
             self.registerWarning("invalid username: %s"%username)
+            self.registerNoUsername(objectData)
 
         super(CSVParse_User, self).registerObject(objectData)
 

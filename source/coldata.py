@@ -541,7 +541,8 @@ class ColData_Woo(ColData_Base):
 class ColData_User(ColData_Base):
 
     data = OrderedDict([
-        ('username',{
+        ('Wordpress Username',{
+            'label':'username',
             'user':True,
         }),
         ('E-mail', {
