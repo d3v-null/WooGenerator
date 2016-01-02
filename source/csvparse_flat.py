@@ -199,7 +199,7 @@ class CSVParse_User(CSVParse_Flat):
         if role:
             self.registerRole(objectData, role)
         else:
-            self.registerWarning("invalid role: %s"%role)
+            # self.registerWarning("invalid role: %s"%role)
             self.registerNoRole(objectData)
 
         card = objectData.MYOBID

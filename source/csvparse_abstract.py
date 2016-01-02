@@ -178,6 +178,7 @@ class CSVParse_Base(object, Registrar):
         )
 
     def analyseHeader(self, row):
+        print row
         for col in self.cols:
             try:
                 self.indices[col] = row.index(col)
@@ -223,11 +224,11 @@ class CSVParse_Base(object, Registrar):
         rowData = self.getRowData(row)
         # self.registerMessage( "rowData: {}".format(rowData) )
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
-        self.registerMessage( "allData: {}".format(allData) )
+        # self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
-        self.registerMessage("container: {}".format(container.__name__))                
+        # self.registerMessage("container: {}".format(container.__name__))                
         kwargs = self.getKwargs(allData, container, **kwargs)
-        self.registerMessage("kwargs: {}".format(kwargs))                
+        # self.registerMessage("kwargs: {}".format(kwargs))                
         objectData = container(allData, rowcount, row, **kwargs)
         # self.registerMessage("mro: {}".format(container.mro()))                
         return objectData
@@ -249,7 +250,19 @@ class CSVParse_Base(object, Registrar):
         # self.clearTransients()
 
         with open(fileName) as filePointer:
-            csvreader = csv.reader(filePointer, strict=True)
+            try:
+                sample = filePointer.read(10000)
+                filePointer.seek(0)
+                csvdialect = csv.Sniffer().sniff(sample)
+            except Exception as e:
+                print e
+                print "dialect is probably ACT"
+                csv.register_dialect('act', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True)
+                csvdialect = 'act'
+            print "CSV DIALECT: "
+            print "DEL ", csvdialect.delimiter, "DBL ", csvdialect.doublequote, "ESC ", csvdialect.escapechar, "QUC ", csvdialect.quotechar, "QUT", csvdialect.quoting, "SWS ", csvdialect.skipinitialspace
+            
+            csvreader = csv.reader(filePointer, dialect=csvdialect, strict=True)
             objects = []
             for rowcount, row in enumerate(csvreader):
                 if not self.indices :
@@ -278,3 +291,7 @@ class CSVParse_Base(object, Registrar):
 
     def getObjects(self):
         return self.objects
+
+if __name__ == '__main__':
+    csvparse = CSVParse_Base( [], {})
+    csvparse.analyseFile('../input/bad act.csv')

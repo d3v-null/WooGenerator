@@ -11,12 +11,13 @@ inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 
-maPath = os.path.join(inFolder, "act-export-all-changes.csv")
+maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
+# maPath = os.path.join(inFolder, "bad act.csv")
 saPath = os.path.join(inFolder, "wordpress-export.csv")
 
 # maPath = os.path.join(inFolder, "100-act-records.csv")
-maPath = os.path.join(inFolder, "200-act-records.csv")
-saPath = os.path.join(inFolder, "100-wp-records.csv")
+# maPath = os.path.join(inFolder, "200-act-records.csv")
+# saPath = os.path.join(inFolder, "100-wp-records.csv")
 
 # master_all
 # slave_all
@@ -72,6 +73,22 @@ class Match(object):
     @property
     def hasNoSlave(self):
         return len(self.sObjects) == 0
+
+    @property
+    def type(self):
+        if(self.isSingular):
+            if(self.hasNoMaster):
+                if(not self.hasNoSlave):
+                    return 'masterless'
+                else:
+                    return 'empty'
+            elif(self.hasNoSlave):
+                return 'slaveless'
+            else:
+                return 'pure'
+        else:
+            return 'duplicate'
+    
 
     def addSObject(self, sObject):
         if sObject not in self.sObjects: self.sObjects.append(sObject)
@@ -137,9 +154,27 @@ class MatchList(list):
             self.mIndices.append(mIndex)
         self.append(match)
 
+    def addMatches(self, matches):
+        for match in matches:
+            self.addMatch(match)
 
-class Matcher(object):
+
+class AbstractMatcher(object):
     def __init__(self, keyFn = None):
+        # print "entering AbstractMatcher __init__"
+        if(keyFn):
+            # print "-> keyFn"
+            self.keyFn = keyFn
+        else:
+            # print "-> not keyFn"
+            self.keyFn = (lambda x: x.index)
+        self.processRegisters = self.processRegistersNonsingular
+        self.retrieveObjects = self.retrieveObjectsNonsingular
+        self.mFilterFn = None
+        self.fFilterFn = None
+        self.clear()
+
+    def clear(self):
         self._matches = {
             'all': MatchList(),
             'pure': MatchList(),
@@ -147,12 +182,6 @@ class Matcher(object):
             'masterless': MatchList(),
             'duplicate': MatchList()
         }
-        if(keyFn):
-            self._keyFn = keyFn
-        else:
-            self._keyFn = (lambda x: x.index)
-        self.processRegisters = self.processRegistersNonsingular
-        self.retrieveObjects = self.retrieveObjectsNonsingular
 
     @property
     def matches(self):
@@ -174,12 +203,14 @@ class Matcher(object):
     def duplicateMatches(self):
         return self._matches['duplicate']
 
+    # saRegister is in nonsingular form. regkey => [slaveObjects]
     def processRegistersNonsingular(self, saRegister, maRegister):
         # print "processing nonsingular register"
         for regKey, regValue in saRegister.items():
             maObjects = self.retrieveObjects(maRegister, regKey)
             self.processMatch(maObjects, regValue)            
 
+    # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
         # print "processing singular register"
         for regKey, regValue in saRegister.items():
@@ -199,15 +230,7 @@ class Matcher(object):
             return []
 
     def get_match_type(self, match):
-        if(match.isSingular):
-            if(match.hasNoMaster):
-                return 'masterless'
-            elif(match.hasNoSlave):
-                return 'slaveless'
-            else:
-                return 'pure'
-        else:
-            return 'duplicate'
+        return match.type
 
     def addMatch(self, match, match_type):
         try:
@@ -219,12 +242,26 @@ class Matcher(object):
         except Exception as e:
             print "could not add match to matches ", e
 
+    def mFilter(self, objects):
+        if(self.mFilterFn):
+            return filter(self.mFilterFn, objects)
+        else:
+            return objects
+
+    def sFilter(self, objects):
+        if(self.fFilterFn):
+            return filter(self.fFilterFn, objects)
+        else:
+            return objects
+
     def processMatch(self, maObjects, saObjects):
+        maObjects = self.mFilter(maObjects)
+        saObjects = self.sFilter(saObjects)
         match = Match(maObjects, saObjects)
         match_type = self.get_match_type(match)
-
-        print "match_type: ", match_type
-        self.addMatch(match, match_type)
+        if(match_type and match_type != 'empty'):
+            self.addMatch(match, match_type)
+            # print "match_type: ", match_type
 
     def __repr__(self):
         repr_str = ""
@@ -242,29 +279,120 @@ class Matcher(object):
              repr_str += " -> " + repr(match) + "\n"
         return repr_str
 
+class UsernameMatcher(AbstractMatcher):
+    def __init__(self):
+        super(UsernameMatcher, self).__init__( lambda x: x.username )
+
+class FilteringMatcher(AbstractMatcher):
+    def __init__(self, keyFn, sMatchIndices = [], mMatchIndices = []):
+        # print "entering FilteringMatcher __init__"
+        super(FilteringMatcher, self).__init__( keyFn )
+        self.sMatchIndices = sMatchIndices
+        self.mMatchIndices = mMatchIndices
+        self.mFilterFn = lambda x: x.index not in self.mMatchIndices
+        self.fFilterFn = lambda x: x.index not in self.sMatchIndices
+
+class CardMatcher(FilteringMatcher):
+    def __init__(self, sMatchIndices = [], mMatchIndices = []):
+        # print "entering CardMatcher __init__"
+        super(CardMatcher, self).__init__( lambda x: x.MYOBID, sMatchIndices, mMatchIndices  )
+
+class EmailMatcher(FilteringMatcher):
+    def __init__(self, sMatchIndices = [], mMatchIndices = []):
+        # print "entering EmailMatcher __init__"
+        super(EmailMatcher, self).__init__( lambda x: x.email.lower(), sMatchIndices, mMatchIndices )
+        
+class NocardEmailMatcher(EmailMatcher):
+    def __init__(self, sMatchIndices = [], mMatchIndices = []):
+        # print "entering NocardEmailMatcher __init__"
+        super(NocardEmailMatcher, self).__init__( sMatchIndices, mMatchIndices )
+        self.processRegisters = self.processRegistersSingular
+
 # get matches
 
 globalMatches = MatchList()
+anomalousMatchLists = {}
+newMasters = MatchList()
+newSlaves = MatchList()
+anomalousParselists = {}
+
+def denyAnomalousMatchList(matchListType, anomalousMatchList):
+    try:
+        assert not anomalousMatchList
+    except AssertionError as e:
+        print "could not deny anomalous match list", matchListType,  e
+        anomalousMatchLists[matchListType] = anomalousMatchList
+
+def denyAnomalousParselist(parselistType, anomalousParselist):
+    try:
+        assert not anomalousParselist
+    except AssertionError as e:
+        print "could not deny anomalous parse list", parselistType, e
+        anomalousParselists[parselistType] = anomalousParselist
 
 # for every username in slave, check that it exists in master
-
-class UsernameMatches(Matcher):
-    def __init__(self):
-        super(UsernameMatches, self).__init__( lambda x: x.username )
     
-usernameMatches = UsernameMatches();
+print "processing usernames"
 
-assert not saParser.nousernames
-usernameMatches.processRegisters(saParser.usernames, maParser.usernames)
+denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
 
-assert not usernameMatches.slavelessMatches
-assert not usernameMatches.duplicateMatches
-for match in usernameMatches.pureMatches:
-    globalMatches.addMatch(match)
+usernameMatcher = UsernameMatcher();
+usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
+
+denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
+denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
+globalMatches.addMatches( usernameMatcher.pureMatches)
+
+print "processing cards"
 
 #for every card in slave not already matched, check that it exists in master
 
+denyAnomalousParselist( 'maParser.nocards', maParser.nocards )
 
+cardMatcher = CardMatcher( globalMatches.sIndices, globalMatches.mIndices )
+cardMatcher.processRegisters( saParser.cards, maParser.cards )
+
+denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatches)
+denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
+
+globalMatches.addMatches( cardMatcher.pureMatches)
+
+# #for every email in slave, check that it exists in master
+
+print "processing emails"
+
+denyAnomalousParselist( "saParser.noemails", saParser.noemails )
+
+emailMatcher = NocardEmailMatcher( globalMatches.sIndices, globalMatches.mIndices )
+emailMatcher.processRegisters( saParser.nocards, maParser.emails)
+
+newMasters.addMatches(emailMatcher.masterlessMatches)
+
+newSlaves.addMatches(emailMatcher.slavelessMatches)
+
+globalMatches.addMatches(emailMatcher.pureMatches)
+
+print "email duplicates: "
+
+print emailMatcher.duplicateMatches
+
+# TODO: further sort emailMatcher
+
+print "results"
+
+print "perfect matches: ", len(globalMatches)
+
+print "anomalous MatchLists: "
+
+for matchlistType, matchList in anomalousMatchLists.items():
+    print " -> ", matchlistType, "(", len(matchList), ")"     
+    print matchList
+    
+print "anomalous ParseLists: "
+
+for matchlistType, matchList in anomalousParselists.items():
+    print " -> ", matchlistType, "(", len(matchList), ")"     
+    print matchList
 
 # cardMatches = []
 # slavelessCardMatches = []
