@@ -17,6 +17,9 @@ maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
 # maPath = os.path.join(inFolder, "bad act.csv")
 saPath = os.path.join(inFolder, "wordpress-export.csv")
 
+MASTER_NAME = "ACT"
+SLAVE_NAME = "WORDPRESS"
+
 # maPath = os.path.join(inFolder, "100-act-records.csv")
 # maPath = os.path.join(inFolder, "200-act-records.csv")
 # saPath = os.path.join(inFolder, "100-wp-records.csv")
@@ -31,6 +34,8 @@ saPath = os.path.join(inFolder, "wordpress-export.csv")
 #########################################
 # Import Info From Spreadsheets
 #########################################
+
+print "importing data"
 
 colData = ColData_User()
 maParser = CSVParse_User(
@@ -125,28 +130,37 @@ class Match(object):
     def rep_str(self):
         out  = ""
         match_type = self.type
-
+        m_len, s_len = len(self.mObjects), len(self.sObjects)
+        print_headings = False
         if(match_type in ['duplicate']):
-            m_len, s_len = len(self.mObjects), len(self.sObjects)
             if(m_len > 0):
                 out += "The following ACT records are diplicates"
                 if(s_len > 0):
+                    print_headings = True
                     out += " of the following WORDPRESS records"
             else:
                 assert (s_len > 0)
                 out += "The following WORDPRESS records are duplicates"
-            out += "\n"
-            users = UsrObjList()
-            if(m_len > 0):
+        elif(match_type in ['masterless', 'slavelaveless']):
+            out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
+        out += "\n"
+        users = UsrObjList()
+        if(m_len > 0):
+            objs = self.mObjects
+            if(print_headings): 
                 heading = ImportObject({}, 'ACT')
-                for obj in [heading] + self.mObjects:
-                    users.addObject(obj)
-            if(s_len > 0):
+                objs = [heading] + objs
+            for obj in objs :
+                users.addObject(obj)
+        if(s_len > 0):
+            objs = self.sObjects
+            if(print_headings): 
                 heading = ImportObject({}, 'WORDPRESS')
-                for obj in [heading] + self.sObjects:
-                    users.addObject(obj)
-            out += users.rep_str()
-            return out
+                objs = [heading] + objs
+            for obj in objs:
+                users.addObject(obj)
+        out += users.rep_str()
+        return out
 
 
 def findCardMatches(match):
@@ -186,6 +200,17 @@ class MatchList(list):
     def addMatches(self, matches):
         for match in matches:
             self.addMatch(match)
+
+    def merge(self):
+        mObjects = []
+        sObjects = []
+        for match in self:
+            for mObj in match.mObjects:
+                mObjects.append(mObj)
+            for sObj in match.sObjects:
+                sObjects.append(sObj)
+
+        return Match(mObjects, sObjects)
 
 
 class AbstractMatcher(object):
@@ -349,14 +374,16 @@ def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
         assert not anomalousMatchList
     except AssertionError as e:
-        print "could not deny anomalous match list", matchListType,  e
+        # print "could not deny anomalous match list", matchListType,  e
+        if(e): pass
         anomalousMatchLists[matchListType] = anomalousMatchList
 
 def denyAnomalousParselist(parselistType, anomalousParselist):
     try:
         assert not anomalousParselist
     except AssertionError as e:
-        print "could not deny anomalous parse list", parselistType, e
+        if(e): pass
+        # print "could not deny anomalous parse list", parselistType, e
         anomalousParselists[parselistType] = anomalousParselist
 
 # for every username in slave, check that it exists in master
@@ -401,33 +428,63 @@ newSlaves.addMatches(emailMatcher.slavelessMatches)
 
 globalMatches.addMatches(emailMatcher.pureMatches)
 
+
+# TODO: further sort emailMatcher
+
+def hashify(in_str):
+    out_str = "#" * (len(in_str) + 2) + "\n"
+    out_str += "# " + in_str + "\n"
+    out_str += "#" * (len(in_str) + 2) + "\n"
+    return out_str
+
+print hashify( "results")
+
+print "\n"
+
+print hashify( "perfect matches: (%d)" % len(globalMatches))
+
+print "\n"
+
 if( emailMatcher.duplicateMatches ):
-    print "email duplicates: (%d)" % len( emailMatcher.duplicateMatches )
+    print hashify("email duplicates: (%d)" % len( emailMatcher.duplicateMatches ))
     for match in emailMatcher.duplicateMatches:
         print match.rep_str()
         print "\n"
 else:
-    print "no email duplicates"
+    print hashify("no email duplicates")
 
-# print emailMatcher.duplicateMatches
+print "\n"
 
-# TODO: further sort emailMatcher
+print hashify("anomalous MatchLists: ")
 
-print "results"
-
-print "perfect matches: ", len(globalMatches)
-
-print "anomalous MatchLists: "
+matchListInstructions = {
+    'cardMatcher.masterlessMatches': 'The following records may have been deleted from %s because their MYOB Card ID does not exist' % MASTER_NAME
+}
 
 for matchlistType, matchList in anomalousMatchLists.items():
-    print " -> ", matchlistType, "(", len(matchList), ")"     
-    print matchList
+    print " -> ", matchListInstructions.get(matchlistType, matchlistType), "(", len(matchList), ")"     
+    if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
+        matchList = [matchList.merge()]    
+        
+    for match in matchList:
+        print match.rep_str()
+        print "\n"
     
-print "anomalous ParseLists: "
+print hashify("anomalous ParseLists: ")
 
-for matchlistType, matchList in anomalousParselists.items():
-    print " -> ", matchlistType, "(", len(matchList), ")"     
-    print matchList
+parseListInstructions = {
+    "saParser.noemails" : "The following %s records have invalid emails" % SLAVE_NAME,
+    "maParser.noemails" : "The following %s records have invalid emails" % MASTER_NAME,
+    "maParser.nocards"  : "The following %s records have no cards" % MASTER_NAME
+}
+
+for parselistType, parseList in anomalousParselists.items():
+    print " -> ", parseListInstructions.get(parselistType, parselistType), "(", len(parseList), ")"  
+    usrList  = UsrObjList()
+    for obj in parseList.values():
+        usrList.addObject(obj)
+    print usrList.rep_str()
+    print "\n"
 
 # cardMatches = []
 # slavelessCardMatches = []

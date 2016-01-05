@@ -5,7 +5,7 @@ from tabulate import tabulate
 import bisect
 import csv
 
-DEBUG = True
+DEBUG = False
 DEBUG_PARSER = False
 
 class Registrar:
@@ -230,7 +230,7 @@ class CSVParse_Base(object, Registrar):
         )
 
     def analyseHeader(self, row):
-        print row
+        # print row
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
@@ -309,12 +309,12 @@ class CSVParse_Base(object, Registrar):
                 filePointer.seek(0)
                 csvdialect = csv.Sniffer().sniff(sample)
             except Exception as e:
-                print e
-                print "dialect is probably ACT"
+                if(e): pass
+                # print "dialect is probably ACT"
                 csv.register_dialect('act', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True)
                 csvdialect = 'act'
-            print "CSV DIALECT: "
-            print "DEL ", csvdialect.delimiter, "DBL ", csvdialect.doublequote, "ESC ", csvdialect.escapechar, "QUC ", csvdialect.quotechar, "QUT", csvdialect.quoting, "SWS ", csvdialect.skipinitialspace
+            # print "CSV DIALECT: "
+            # print "DEL ", csvdialect.delimiter, "DBL ", csvdialect.doublequote, "ESC ", csvdialect.escapechar, "QUC ", csvdialect.quotechar, "QUT", csvdialect.quoting, "SWS ", csvdialect.skipinitialspace
             
             csvreader = csv.reader(filePointer, dialect=csvdialect, strict=True)
             objects = []
