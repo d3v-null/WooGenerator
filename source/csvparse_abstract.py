@@ -2,10 +2,9 @@ import pprint
 from collections import OrderedDict
 from utils import debugUtils, listUtils
 from tabulate import tabulate
-import bisect
 import csv
 
-DEBUG = False
+DEBUG = True
 DEBUG_PARSER = False
 
 class Registrar:
@@ -190,7 +189,7 @@ class ObjList(object):
                 header += [col]
             table = [header]
             for obj in objs:
-                table += [[obj.index] + [obj.get(col) for col in cols.keys()]]
+                table += [[obj.index] + [(obj.get(col) or "").decode('utf-8').encode('utf-8') for col in cols.keys()]]
             # print "table", table
             return tabulate(table, headers="firstrow")
         else:
@@ -342,7 +341,9 @@ class CSVParse_Base(object, Registrar):
                 except UserWarning as e:
                     self.registerError("could not register new object: {}".format(e), objectData)
                     continue
-                            
+                          
+            self.registerMessage("Completed analysis") 
+
             return objects
         return None
 

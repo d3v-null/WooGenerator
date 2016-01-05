@@ -269,14 +269,15 @@ def exportItems(filePath, colNames, items):
 
 if __name__ == '__main__':
     inFolder = "../input/"
-    actPath = os.path.join(inFolder, 'partial act records.csv')
+    # actPath = os.path.join(inFolder, 'partial act records.csv')
+    actPath = os.path.join(inFolder, 'export-everything-dec-23.csv')
     outFolder = "../output/"
     usrPath = os.path.join(outFolder, 'users.csv')
 
     usrData = ColData_User()
 
-    print "import cols", usrData.getImportCols()
-    print "defaults", usrData.getDefaults()
+    # print "import cols", usrData.getImportCols()
+    # print "defaults", usrData.getDefaults()
 
     usrParser = CSVParse_User(
         cols = usrData.getImportCols(),
@@ -287,7 +288,7 @@ if __name__ == '__main__':
 
     usrList = UsrObjList()
 
-    for usr in usrParser.objects.values():    
+    for usr in usrParser.objects.values()[:2000]:    
         usrList.addObject(usr)
 
     print usrList.rep_str()

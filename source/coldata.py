@@ -721,8 +721,8 @@ class ColData_User(ColData_Base):
         }),
         ('Personal E-mail', {
             'label':'billing_email',
-            # 'import':True,
-            # 'user':True,
+            'import':True,
+            'user':True,
             'report':True,
         }),
         # ('rowcount', {
@@ -730,6 +730,12 @@ class ColData_User(ColData_Base):
         #     # 'user':True,
         #     'report':True,
         # }),
+        # ('Edit Date', {
+        #     'report': True
+        # }),
+        # ('Edited in Act', {
+        #     'report': True
+        # })
     ])
 
     def __init__(self, data=None):

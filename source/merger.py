@@ -432,8 +432,8 @@ globalMatches.addMatches(emailMatcher.pureMatches)
 # TODO: further sort emailMatcher
 
 def hashify(in_str):
-    out_str = "#" * (len(in_str) + 2) + "\n"
-    out_str += "# " + in_str + "\n"
+    out_str = "#" * (len(in_str) + 4) + "\n"
+    out_str += "# " + in_str + " #\n"
     out_str += "#" * (len(in_str) + 2) + "\n"
     return out_str
 
@@ -565,3 +565,9 @@ for parselistType, parseList in anomalousParselists.items():
 #                 print " ---> could not reconcile"
 #                 print repr(cardMatch)
 #                 emailFails.append(cardMatch)
+
+
+print hashify("BEGINNING MERGE: ")
+
+for match in globalMatches:
+    print match.rep_str()
