@@ -544,26 +544,31 @@ class ColData_User(ColData_Base):
         ('Wordpress Username',{
             'label':'username',
             'user':True,
+            'report': True,
         }),
         ('E-mail', {
             'label':'user_email',
             'import': True,
             'user':True,
+            'report': True,
         }),
         ('Role', {
             'label': 'act_role',
             'import':True,
-            'user':True
+            'user':True,
+            'report': True,
         }),
         ('First Name', {
             'label':'first_name',
             'import':True,
             'user':True,
+            'report': True,
         }),
         ('Surname', {
             'label':'last_name',
             'import': True,
             'user':True,
+            'report': True,
         }),
         ('Contact',{
             'import':True,
@@ -579,6 +584,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'label':'direct_brand',
             'user':True,
+            'report': True,
         }),
         ('Agent', {
             'label':'agent',
@@ -604,6 +610,7 @@ class ColData_User(ColData_Base):
             'label':'billing_company',
             'import':True,
             'user':True,
+            'report': True,
         }),
         ('Address 1',{
             'label':'billing_address_1',
@@ -634,6 +641,7 @@ class ColData_User(ColData_Base):
             'label':'billing_phone',
             'import':True,
             'user':True,
+            'report': True,
         }),
         ('Home Address 1',{
             'label':'shipping_address_1',
@@ -669,6 +677,7 @@ class ColData_User(ColData_Base):
             'label':'myob_card_id',
             'import':True,
             'user':True,
+            'report':True,
         }),
         ('MYOB Customer Card ID',{
             'label':'myob_customer_card_id',
@@ -709,7 +718,18 @@ class ColData_User(ColData_Base):
             'label':'pref_tel',
             'import':True,
             'user':True,
-        })
+        }),
+        ('Personal E-mail', {
+            'label':'billing_email',
+            # 'import':True,
+            # 'user':True,
+            'report':True,
+        }),
+        # ('rowcount', {
+        #     # 'import':True,
+        #     # 'user':True,
+        #     'report':True,
+        # }),
     ])
 
     def __init__(self, data=None):
@@ -718,7 +738,9 @@ class ColData_User(ColData_Base):
 
     def getUserCols(self):
         return self.getExportCols('user')
-        
+
+    def getReportCols(self):
+        return self.getExportCols('report')
 
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"

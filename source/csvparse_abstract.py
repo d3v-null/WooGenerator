@@ -1,10 +1,12 @@
 import pprint
 from collections import OrderedDict
 from utils import debugUtils, listUtils
+from tabulate import tabulate
+import bisect
 import csv
 
 DEBUG = True
-DEBUG_PARSER = True
+DEBUG_PARSER = False
 
 class Registrar:
     messages = OrderedDict()
@@ -114,7 +116,7 @@ class Registrar:
         )
 
 class ImportObject(OrderedDict, Registrar):
-    def __init__(self, data, rowcount, row):
+    def __init__(self, data, rowcount, row =[]):
         super(ImportObject, self).__init__(data)
         Registrar.__init__(self)
         self['rowcount'] = rowcount
@@ -141,12 +143,62 @@ class ImportObject(OrderedDict, Registrar):
     def __str__(self):
         return "%10s <%s>" % (self.index, self.getTypeName())
 
+    def __repr__(self):
+        return self.__str__()
+
     def __cmp__(self, other):
         if other == None:
             return -1
         if not isinstance(other, ImportObject):
             return -1  
         return cmp(self.rowcount, other.rowcount)
+
+class ObjList(object):
+    def __init__(self):
+        super(ObjList, self).__init__()
+        self._objList_type = 'objects'
+        self._objects = []
+
+    @property
+    def objects(self):
+        return self._objects
+
+    def addObject(self, objectData):
+        assert(isinstance(objectData, ImportObject))
+        if(objectData not in self._objects):
+            self._objects.append(objectData)
+
+    def getKey(self, key):
+        values = listUtils.filterUniqueTrue([
+            obj.get(key) for obj in self.objects
+        ])
+
+        if values:
+            return values[0]
+
+    @property
+    def objList_type(self):
+        return self._objList_type
+
+    def rep_str(self):
+        objs = self.objects
+        if(objs):
+            # print "there are objects"
+            cols = self.getReportCols()                
+            header = [self.objList_type]
+            for col, data in cols.items():
+                header += [col]
+            table = [header]
+            for obj in objs:
+                table += [[obj.index] + [obj.get(col) for col in cols.keys()]]
+            # print "table", table
+            return tabulate(table, headers="firstrow")
+        else:
+            # print "there are no objects"
+            pass
+
+    def getReportCols(self):
+        return {'_row':{'label':'Row'}}
 
 class CSVParse_Base(object, Registrar):
     objectContainer = ImportObject
@@ -180,11 +232,13 @@ class CSVParse_Base(object, Registrar):
     def analyseHeader(self, row):
         print row
         for col in self.cols:
-            try:
+            if( col in row ):
                 self.indices[col] = row.index(col)
-                if DEBUG: print "indices [%s] = %d" % (col, row.index(col))
-            except ValueError as e:
-                self.registerError('Could not find index of '+str(col)+" | "+str(e) )
+            elif( '\xef\xbb\xbf'+col in row ):
+                self.indices[col] = row.index('\xef\xbb\xbf'+col)
+            else:
+                self.registerError('Could not find index of '+str(col) )
+            if DEBUG: print "indices [%s] = %d" % (col, self.indices.get(col))
 
     def retrieveColFromRow(self, col, row):
         # if DEBUG_PARSER: print "retrieveColFromRow | col: ", col
@@ -274,14 +328,17 @@ class CSVParse_Base(object, Registrar):
                     self.registerWarning("could not create new object: {}".format(e), rowcount)
                     continue
                 else:
-                    self.registerMessage("%s CREATED" % objectData.getIdentifier() )
+                    if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
+                    pass
                 try:
                     self.processObject(objectData) 
+                    if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
                 except UserWarning as e:
                     self.registerError("could not process new object: {}".format(e), objectData)
                     continue
                 try:
                     self.registerObject(objectData)
+                    if (DEBUG_PARSER): self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
                 except UserWarning as e:
                     self.registerError("could not register new object: {}".format(e), objectData)
                     continue
@@ -293,5 +350,17 @@ class CSVParse_Base(object, Registrar):
         return self.objects
 
 if __name__ == '__main__':
-    csvparse = CSVParse_Base( [], {})
-    csvparse.analyseFile('../input/bad act.csv')
+    parser = CSVParse_Base( [], {})
+    # parser.analyseFile('../input/export-everything-dec-23.csv')
+    parser.analyseFile('../input/100-act-records.csv')
+    objList = ObjList()
+    print "all objects: ", parser.objects
+    for obj in parser.objects.values():
+        print "adding object: ", obj
+        objList.addObject(obj)
+        if(len(objList.objects) > 4):
+            break
+    print objList.rep_str()
+
+
+

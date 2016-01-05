@@ -1,5 +1,5 @@
 from utils import descriptorUtils, listUtils, sanitationUtils
-from csvparse_abstract import CSVParse_Base, ImportObject
+from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from collections import OrderedDict
 from coldata import ColData_User
 import os
@@ -70,7 +70,23 @@ class ImportUser(ImportFlat):
                             
 
     def __repr__(self):
-        return super(ImportUser, self).__str__() + "| %s | %s | %s | %s " % (self.email, self.MYOBID, self.role, self.username)
+        return "<%s> %s | %s | %s | %s " % (self.index, self.email, self.MYOBID, self.role, self.username)
+
+class UsrObjList(ObjList):
+    def __init__(self):
+        super(UsrObjList, self).__init__()
+        self._objList_type = 'User'
+
+    def getReportCols(self):
+        usrData = ColData_User()
+        report_cols = usrData.getReportCols()
+        # for exclude_col in ['E-mail','MYOB Card ID','Wordpress Username','Role']:
+        #     if exclude_col in report_cols:
+        #         del report_cols[exclude_col]
+
+        return report_cols
+
+
 
 class CSVParse_User(CSVParse_Flat):
 
@@ -269,21 +285,28 @@ if __name__ == '__main__':
 
     usrParser.analyseFile(actPath)
 
-    usrCols = usrData.getUserCols()
+    usrList = UsrObjList()
 
-    exportItems(
-        usrPath,
-        usrData.getColNames(usrCols),
-        usrParser.objects.values()
-    )
+    for usr in usrParser.objects.values():    
+        usrList.addObject(usr)
 
-    for role, usrs in usrParser.roles.items():
-        for i, u in enumerate(range(0, len(usrs), usrs_per_file)):
-            rolPath = os.path.join(outFolder, 'users_%s_%d.csv'%(role,i))
+    print usrList.rep_str()
 
-            exportItems(
-                rolPath,
-                usrData.getColNames(usrCols),
-                usrs.values()[u:u+usrs_per_file]
-            )
+    # usrCols = usrData.getUserCols()
+
+    # exportItems(
+    #     usrPath,
+    #     usrData.getColNames(usrCols),
+    #     usrParser.objects.values()
+    # )
+
+    # for role, usrs in usrParser.roles.items():
+    #     for i, u in enumerate(range(0, len(usrs), usrs_per_file)):
+    #         rolPath = os.path.join(outFolder, 'users_%s_%d.csv'%(role,i))
+
+    #         exportItems(
+    #             rolPath,
+    #             usrData.getColNames(usrCols),
+    #             usrs.values()[u:u+usrs_per_file]
+    #         )
         

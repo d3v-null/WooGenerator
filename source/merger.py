@@ -3,8 +3,10 @@ from collections import OrderedDict
 import os
 import shutil
 from utils import listUtils, sanitationUtils
-from csvparse_flat import CSVParse_User
+from csvparse_abstract import ImportObject
+from csvparse_flat import CSVParse_User, UsrObjList
 from coldata import ColData_User
+from tabulate import tabulate
 import sys
 
 inFolder = "../input/"
@@ -113,12 +115,39 @@ class Match(object):
             kMatches[value].addMObject(mObject)
         return kMatches
     
-    def objListRepr(self, objs):
+    def WooObjListRepr(self, objs):
         length = len(objs)
         return "({0}) [{1:^200s}]".format(len(objs), ",".join(map(lambda obj: obj.__repr__()[:200/length], objs)))
 
     def __repr__(self):
-        return " | ".join( [self.objListRepr(self.mObjects), self.objListRepr(self.sObjects)] ) 
+        return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] ) 
+
+    def rep_str(self):
+        out  = ""
+        match_type = self.type
+
+        if(match_type in ['duplicate']):
+            m_len, s_len = len(self.mObjects), len(self.sObjects)
+            if(m_len > 0):
+                out += "The following ACT records are diplicates"
+                if(s_len > 0):
+                    out += " of the following WORDPRESS records"
+            else:
+                assert (s_len > 0)
+                out += "The following WORDPRESS records are duplicates"
+            out += "\n"
+            users = UsrObjList()
+            if(m_len > 0):
+                heading = ImportObject({}, 'ACT')
+                for obj in [heading] + self.mObjects:
+                    users.addObject(obj)
+            if(s_len > 0):
+                heading = ImportObject({}, 'WORDPRESS')
+                for obj in [heading] + self.sObjects:
+                    users.addObject(obj)
+            out += users.rep_str()
+            return out
+
 
 def findCardMatches(match):
     return match.findKeyMatches( lambda obj: obj.MYOBID or '')
@@ -372,9 +401,15 @@ newSlaves.addMatches(emailMatcher.slavelessMatches)
 
 globalMatches.addMatches(emailMatcher.pureMatches)
 
-print "email duplicates: "
+if( emailMatcher.duplicateMatches ):
+    print "email duplicates: (%d)" % len( emailMatcher.duplicateMatches )
+    for match in emailMatcher.duplicateMatches:
+        print match.rep_str()
+        print "\n"
+else:
+    print "no email duplicates"
 
-print emailMatcher.duplicateMatches
+# print emailMatcher.duplicateMatches
 
 # TODO: further sort emailMatcher
 

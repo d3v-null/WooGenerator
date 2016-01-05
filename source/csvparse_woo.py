@@ -1,4 +1,5 @@
 from utils import listUtils, sanitationUtils
+from csvparse_abstract import ObjList
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
 import bisect
@@ -207,7 +208,7 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
                         return result
         return None
 
-class objList(object):
+class WooObjList(ObjList):
     def __init__(self, fileName):
         self._fileName = fileName
         self._isValid = True
@@ -216,7 +217,7 @@ class objList(object):
         self.products = []
         self.items = []
         self.taxos = []
-        super(objList, self).__init__()
+        super(WooObjList, self).__init__()
 
     @property
     def objects(self):
@@ -260,14 +261,6 @@ class objList(object):
 
         if objectData not in container:
             bisect.insort(container, objectData)
-
-    def getKey(self, key):
-        values = listUtils.filterUniqueTrue([
-            obj.get(key) for obj in self.objects
-        ])
-
-        if values:
-            return values[0]
 
     def invalidate(self):
         self._isValid = False;
@@ -364,7 +357,7 @@ class CSVParse_Woo(CSVParse_Gen):
         assert isinstance(image,str) 
         assert image is not "" 
         if image not in self.images.keys():
-            self.images[image] = objList(image)
+            self.images[image] = WooObjList(image)
         self.images[image].addObject(objectData)
         objectData.registerImage(image)
 
