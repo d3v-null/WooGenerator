@@ -1,10 +1,10 @@
 import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils
+from utils import debugUtils, listUtils, UnicodeReader
 from tabulate import tabulate
 import csv
 
-DEBUG = True
+DEBUG = False
 DEBUG_PARSER = False
 
 class Registrar:
@@ -189,9 +189,12 @@ class ObjList(object):
                 header += [col]
             table = [header]
             for obj in objs:
-                table += [[obj.index] + [(obj.get(col) or "").decode('utf-8').encode('utf-8') for col in cols.keys()]]
+                table += [[obj.index] + [(obj.get(col) or "" ) for col in cols.keys()]]
             # print "table", table
-            return tabulate(table, headers="firstrow")
+            table = tabulate(table, headers="firstrow")
+            # print repr(table)
+            # print repr(table.encode('utf8'))
+            return table.encode('utf8')
         else:
             # print "there are no objects"
             pass
@@ -229,15 +232,15 @@ class CSVParse_Base(object, Registrar):
         )
 
     def analyseHeader(self, row):
-        # print row
+        if(DEBUG_PARSER): print row
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
-            elif( '\xef\xbb\xbf'+col in row ):
-                self.indices[col] = row.index('\xef\xbb\xbf'+col)
+            # elif( '\xef\xbb\xbf'+col in row ):
+            #     self.indices[col] = row.index('\xef\xbb\xbf'+col)
             else:
                 self.registerError('Could not find index of '+str(col) )
-            if DEBUG: print "indices [%s] = %d" % (col, self.indices.get(col))
+            if DEBUG: print "indices [%s] = %s" % (col, self.indices.get(col))
 
     def retrieveColFromRow(self, col, row):
         # if DEBUG_PARSER: print "retrieveColFromRow | col: ", col
@@ -277,7 +280,7 @@ class CSVParse_Base(object, Registrar):
         rowData = self.getRowData(row)
         # self.registerMessage( "rowData: {}".format(rowData) )
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
-        # self.registerMessage( "allData: {}".format(allData) )
+        if(DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
         # self.registerMessage("container: {}".format(container.__name__))                
         kwargs = self.getKwargs(allData, container, **kwargs)
@@ -312,10 +315,15 @@ class CSVParse_Base(object, Registrar):
                 # print "dialect is probably ACT"
                 csv.register_dialect('act', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True)
                 csvdialect = 'act'
-            # print "CSV DIALECT: "
-            # print "DEL ", csvdialect.delimiter, "DBL ", csvdialect.doublequote, "ESC ", csvdialect.escapechar, "QUC ", csvdialect.quotechar, "QUT", csvdialect.quoting, "SWS ", csvdialect.skipinitialspace
+            if(DEBUG_PARSER): print "CSV DIALECT: "
+            if(DEBUG_PARSER): print "DEL ", repr(csvdialect.delimiter), \
+                  "DBL ", repr(csvdialect.doublequote), \
+                  "ESC ", repr(csvdialect.escapechar), \
+                  "QUC ", repr(csvdialect.quotechar), \
+                  "QUT ", repr(csvdialect.quoting), \
+                  "SWS ", repr(csvdialect.skipinitialspace)
             
-            csvreader = csv.reader(filePointer, dialect=csvdialect, strict=True)
+            csvreader = UnicodeReader(filePointer, dialect=csvdialect, strict=True)
             objects = []
             for rowcount, row in enumerate(csvreader):
                 if not self.indices :

@@ -7,13 +7,32 @@ import datetime
 import inspect
 import json
 from collections import OrderedDict
+import codecs
+import csv
+import cStringIO
+
+DEFAULT_ENCODING = 'utf8'
+
+DEBUG = True
 
 class sanitationUtils:
     email_regex = "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    myobid_regex = "C\d+"
 
     @staticmethod
     def compose(*functions):
         return functools.reduce(lambda f, g: lambda x: f(g(x)), functions)
+
+    @staticmethod
+    def stringToUnicode(string):
+        if(not isinstance(string, unicode)):
+            string = string.decode(DEFAULT_ENCODING)
+        return string
+
+    @staticmethod
+    def unicodeToAscii(string):
+        string = sanitationUtils.stringToUnicode(string)
+        return string.encode('ascii', 'backslashreplace')
 
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
@@ -36,6 +55,34 @@ class sanitationUtils:
         return re.sub('^\s*$','', string)    
 
     @staticmethod
+    def removeNULL(string):
+        return re.sub('^NULL$', '', string)
+
+    @staticmethod
+    def stripLeadingWhitespace(string):
+        return re.sub('^\s*', '', string)
+
+    @staticmethod
+    def stripTailingWhitespace(string):
+        return re.sub('\s*$', '', string)
+
+    @staticmethod
+    def stripAllWhitespace(string):
+        return re.sub('\s', '', string)
+
+    @staticmethod
+    def stripNonNumbers(string):
+        return re.sub('[^\d]', '', string)
+
+    @staticmethod
+    def stripAreaCode(string):
+        return re.sub('\s*\+\d{2,3}\s*','', string)
+
+    @staticmethod
+    def toLower(string):
+        return string.lower()
+
+    @staticmethod
     def sanitizeNewlines(string):
         if '\n' in string: 
             print "!!! found newline in string"
@@ -56,8 +103,29 @@ class sanitationUtils:
             sanitationUtils.removeLoneDashes,
             sanitationUtils.removeThousandsSeparator,
             sanitationUtils.removeLoneWhiteSpace,
-            sanitationUtils.sanitizeNewlines
+            sanitationUtils.stripLeadingWhitespace,
+            sanitationUtils.stripTailingWhitespace,            
+            sanitationUtils.sanitizeNewlines,
+            sanitationUtils.removeNULL,
+            sanitationUtils.stringToUnicode
         )(cell)   
+
+    @staticmethod
+    def similarComparison(string):
+        return sanitationUtils.compose(
+            sanitationUtils.toLower,
+            sanitationUtils.stripLeadingWhitespace,
+            sanitationUtils.stripTailingWhitespace,
+            sanitationUtils.stringToUnicode
+        )(string)
+
+    @staticmethod
+    def similarPhoneComparison(string):
+        return sanitationUtils.compose(
+            sanitationUtils.stripNonNumbers,
+            sanitationUtils.stripAreaCode,
+            sanitationUtils.stringToUnicode
+        )(string)
 
     @staticmethod
     def shorten(reg, subs, str_in):
@@ -113,6 +181,10 @@ class sanitationUtils:
         return re.match(sanitationUtils.email_regex, email)
 
     @staticmethod
+    def stringIsMYOBID(card):
+        return re.match(sanitationUtils.myobid_regex, card)
+
+    @staticmethod
     def datetotimestamp(datestring):
         assert type(datestring) == str, "param must be a string not %s"% type(datestring)
         return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
@@ -150,6 +222,36 @@ class sanitationUtils:
         xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')
         # print "xml_content: ", xml_content
         return xml_content
+
+class TimeUtils:
+
+    wpTimeFormat = "%Y-%m-%d %H:%M:%S"
+    actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
+
+    @staticmethod
+    def starStrptime(string, fmt = wpTimeFormat ):
+        string = sanitationUtils.stringToUnicode(string)
+        if(string):
+            try:
+                tstruct = time.strptime(string, fmt)
+                if(tstruct):
+                    return time.mktime(tstruct)
+            except:
+                pass
+        return 0        
+
+    @staticmethod
+    def actStrptime(string):
+        return TimeUtils.starStrptime(string, TimeUtils.actTimeFormat)
+
+    # 2015-07-13 22:33:05
+    @staticmethod
+    def wpStrptime(string):
+        return TimeUtils.starStrptime(string)
+
+    @staticmethod
+    def wpTimeToString(t, fmt = wpTimeFormat):
+        return time.strftime(fmt, time.localtime(t))
 
 class descriptorUtils:
     @staticmethod
@@ -211,4 +313,103 @@ class debugUtils:
 
     @staticmethod
     def getCallerProcedure():
-        return inspect.stack()[2][3]        
+        return inspect.stack()[2][3]   
+
+class UTF8Recoder:
+    """
+    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    """
+    def __init__(self, f, encoding):
+        try:
+            bom = codecs.BOM_UTF8
+            # print "bom: ", repr(bom)
+            bomtest = f.read(len(bom))
+            # print "bomtest: ", repr(bomtest)
+            if(bomtest == bom):
+                pass
+                # print "starts with BOM_UTF8"
+            else:
+                raise Exception("does not start w/ BOM_UTF8")
+        except Exception as e:
+            if(e): pass
+            # print "could not remove bom, ",e
+            f.seek(0)
+        self.reader = codecs.getreader(encoding)(f)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.reader.next().encode("utf-8")
+
+class UnicodeReader:
+    """
+    A CSV reader which will iterate over lines in the CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        f = UTF8Recoder(f, encoding)
+        self.reader = csv.reader(f, dialect=dialect, **kwds)
+
+    def next(self):
+        row = self.reader.next()
+        return [unicode(s, "utf-8") for s in row]
+
+    def __iter__(self):
+        return self
+
+class UnicodeWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+
+    def writerow(self, row):
+        self.writer.writerow([s.encode("utf-8") for s in row])
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode("utf-8")
+        # ... and reencode it into the target encoding
+        data = self.encoder.encode(data)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
+
+if __name__ == '__main__':
+    t1 =  TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
+    t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
+    t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
+    t4 = TimeUtils.wpStrptime("2015-12-18 16:03:37")
+    print \
+        TimeUtils.wpTimeToString(t1), \
+        TimeUtils.wpTimeToString(t2), \
+        TimeUtils.wpTimeToString(t3), \
+        TimeUtils.wpTimeToString(t4)
+
+    n1 = u"D\u00C8RWENT"
+    n2 = u"d\u00E8rwent"
+    print sanitationUtils.unicodeToAscii(n1) , \
+        sanitationUtils.unicodeToAscii(sanitationUtils.similarComparison(n1)), \
+        sanitationUtils.unicodeToAscii(n2), \
+        sanitationUtils.unicodeToAscii(sanitationUtils.similarComparison(n2))
+
+    p1 = "+61 04 3190 8778"
+    p2 = "04 3190 8778"
+    p3 = "+61 (08) 93848512"
+    print \
+        sanitationUtils.similarPhoneComparison(p1), \
+        sanitationUtils.similarPhoneComparison(p2), \
+        sanitationUtils.similarPhoneComparison(p3)

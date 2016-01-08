@@ -4,9 +4,12 @@ from collections import OrderedDict
 from coldata import ColData_User
 import os
 import csv
+import time
 # import re
 
 usrs_per_file = 1000
+
+DEBUG_FLAT = False
 
 class ImportFlat(ImportObject):
     pass
@@ -208,7 +211,7 @@ class CSVParse_User(CSVParse_Flat):
         if email and sanitationUtils.stringIsEmail(email) :
             self.registerEmail(objectData, email)
         else:
-            self.registerWarning("invalid email address: %s"%email)
+            if(DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
             self.registerNoEmail(objectData)
         
         role = objectData.role
@@ -219,7 +222,7 @@ class CSVParse_User(CSVParse_Flat):
             self.registerNoRole(objectData)
 
         card = objectData.MYOBID
-        if card:
+        if card and sanitationUtils.stringIsMYOBID(card):
             self.registerCard(objectData, card)
         else:
             self.registerNoCard(objectData)
@@ -228,7 +231,7 @@ class CSVParse_User(CSVParse_Flat):
         if username:
             self.registerUsername(objectData, username)
         else:
-            self.registerWarning("invalid username: %s"%username)
+            if(DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
             self.registerNoUsername(objectData)
 
         super(CSVParse_User, self).registerObject(objectData)
@@ -290,6 +293,17 @@ if __name__ == '__main__':
 
     for usr in usrParser.objects.values()[:2000]:    
         usrList.addObject(usr)
+        card_id = usr.MYOBID
+        edit_date = usr.get('Edit Date')
+        act_date = usr.get('Edited in Act')
+        if(edit_date and act_date):
+            if(\
+                time.mktime(TimeUtils.actStrptime(edit_date)) < \
+                time.mktime(TimeUtils.actStrptime(act_date)) + 10\
+            ):
+                print "%10s assertion holds: " % card_id, edit_date, act_date
+            else:
+                print "%10s assertion broken: " % card_id, edit_date, act_date
 
     print usrList.rep_str()
 

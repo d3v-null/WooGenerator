@@ -542,185 +542,236 @@ class ColData_User(ColData_Base):
 
     data = OrderedDict([
         ('Wordpress Username',{
-            'label':'username',
+            'label':'Username',
             'user':True,
             'report': True,
-        }),
-        ('E-mail', {
-            'label':'user_email',
-            'import': True,
-            'user':True,
-            'report': True,
-        }),
-        ('Role', {
-            'label': 'act_role',
             'import':True,
-            'user':True,
-            'report': True,
-        }),
-        ('First Name', {
-            'label':'first_name',
-            'import':True,
-            'user':True,
-            'report': True,
-        }),
-        ('Surname', {
-            'label':'last_name',
-            'import': True,
-            'user':True,
-            'report': True,
-        }),
-        ('Contact',{
-            'import':True,
-            'label':'nickname',
-            'user':True,
-        }),
-        ('Client Grade',{
-            'import':True,
-            'label':'client_grade',
-            'user':True
-        }),
-        ('Direct Brand', {
-            'import':True,
-            'label':'direct_brand',
-            'user':True,
-            'report': True,
-        }),
-        ('Agent', {
-            'label':'agent',
-            'import':'true',
-            'user':True
-        }),
-        ('Birth Date',{
-            'label':'birth_date',
-            'import':True,
-            'user':True,
-        }),
-        ('Mobile Phone',{
-            'label':'mobile_number',
-            'import':True,
-            'user':True,
-        }),
-        ('Fax',{
-            'label':'fax_number',
-            'import':True,
-            'user':True,
-        }),
-        ('Company',{
-            'label':'billing_company',
-            'import':True,
-            'user':True,
-            'report': True,
-        }),
-        ('Address 1',{
-            'label':'billing_address_1',
-            'import':True,
-            'user':True,
-        }),
-        ('Address 2',{
-            'label':'billing_address_2',
-            'import':True,
-            'user':True,
-        }),
-        ('City',{
-            'label':'billing_city',
-            'import':True,
-            'user':True,
-        }),
-        ('Postcode',{
-            'label':'billing_postcode',
-            'import':True,
-            'user':True,
-        }),
-        ('State',{
-            'label':'billing_state',
-            'import':True,
-            'user':True,
-        }),
-        ('Phone',{
-            'label':'billing_phone',
-            'import':True,
-            'user':True,
-            'report': True,
-        }),
-        ('Home Address 1',{
-            'label':'shipping_address_1',
-            'import':True,
-            'user':True,
-        }),
-        ('Home Address 2',{
-            'label':'shipping_address_2',
-            'import':True,
-            'user':True,
-        }),
-        ('Home City',{
-            'label':'shipping_city',
-            'import':True,
-            'user':True,
-        }),
-        ('Home Postcode',{
-            'label':'shipping_postcode',
-            'import':True,
-            'user':True,
-        }),
-        ('Home Country',{
-            'label':'shipping_country',
-            'import':True,
-            'user':True,
-        }),
-        ('Home State',{
-            'label':'shipping_state',
-            'import':True,
-            'user':True,
+            'sync':'slave_override',
         }),
         ('MYOB Card ID',{
             'label':'myob_card_id',
             'import':True,
             'user':True,
             'report':True,
+            'sync':'master_override',
         }),
         ('MYOB Customer Card ID',{
             'label':'myob_customer_card_id',
             'import':True,
+            # 'report':True,
             'user':True,
+            'sync':'master_override',
+        }),
+        ('Client Grade',{
+            'import':True,
+            'label':'client_grade',
+            'user':True,
+            'report':True,
+            'sync':'master_override',
+        }),
+        ('Direct Brand', {
+            'import':True,
+            'label':'direct_brand',
+            'user':True,
+            'report': True,
+            'sync':'master_override',
+        }),
+        ('Agent', {
+            'label':'agent',
+            'import':'true',
+            'user':True,
+            'sync':'master_override',
+        }),
+        ('E-mail', {
+            'label':'user_email',
+            'import': True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn':True 
+        }),
+        ('Role', {
+            'label': 'act_role',
+            'import':True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('First Name', {
+            'label':'first_name',
+            'import':True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Surname', {
+            'label':'last_name',
+            'import': True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Company',{
+            'label':'billing_company',
+            'import':True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Mobile Phone',{
+            'label':'mobile_number',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'report':True,
+            'warn': True,
+        }),
+        ('Phone',{
+            'label':'billing_phone',
+            'import':True,
+            'user':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Contact',{
+            'import':True,
+            'label':'nickname',
+            'user':True,
+            'sync':True,
+        }),
+        ('Birth Date',{
+            'label':'birth_date',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Fax',{
+            'label':'fax_number',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Address 1',{
+            'label':'billing_address_1',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Address 2',{
+            'label':'billing_address_2',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('City',{
+            'label':'billing_city',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Postcode',{
+            'label':'billing_postcode',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('State',{
+            'label':'billing_state',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'warn': True,
+        }),
+        ('Home Address 1',{
+            'label':'shipping_address_1',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Home Address 2',{
+            'label':'shipping_address_2',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Home City',{
+            'label':'shipping_city',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Home Postcode',{
+            'label':'shipping_postcode',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Home Country',{
+            'label':'shipping_country',
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+        ('Home State',{
+            'label':'shipping_state',
+            'import':True,
+            'user':True,
+            'sync':True,
         }),
         ('Web Site',{
             'label':'url',
             'import':True,
             'user':True,
+            'sync':True,
         }),
         ('ABN',{
             'label':'abn',
             'import':True,
-            'user':True,            
+            'user':True,   
+            'sync':True,   
+            'warn': True,      
         }),
         ('Business Type',{
             'label':'business_type',
             'import':True,
             'user':True,    
+            'sync':True,
         }),
         ('Lead Source',{
             'label':'how_hear_about',
             'import':True,
             'user':True,    
+            'sync':True,
         }),
         ('Referred By',{
             'label':'referred_by',
             'import':True,
             'user':True,
+            'sync':True,
         }),
         ('Mobile Phone Preferred',{
             'label':'pref_mob',
             'import':True,
             'user':True,
+            'sync':True,
         }),
         ('Phone Preferred',{
             'label':'pref_tel',
             'import':True,
             'user':True,
+            'sync':True,
         }),
         ('Personal E-mail', {
-            'label':'billing_email',
+            'label':'personal_email',
             'import':True,
             'user':True,
             'report':True,
@@ -731,11 +782,17 @@ class ColData_User(ColData_Base):
         #     'report':True,
         # }),
         # ('Edit Date', {
+        #     'import': True,
         #     'report': True
         # }),
-        # ('Edited in Act', {
-        #     'report': True
-        # })
+        ('Edited in Act', {
+            'import': True,
+            'report': True
+        }),
+        ('updated', {
+            'import':True,
+            'report':True
+        }),
     ])
 
     def __init__(self, data=None):
@@ -747,6 +804,9 @@ class ColData_User(ColData_Base):
 
     def getReportCols(self):
         return self.getExportCols('report')
+
+    def getSyncCols(self):
+        return self.getExportCols('sync')
 
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"

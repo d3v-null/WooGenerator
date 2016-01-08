@@ -2,9 +2,9 @@ import csv
 from collections import OrderedDict
 import os
 import shutil
-from utils import listUtils, sanitationUtils
+from utils import listUtils, sanitationUtils, TimeUtils
 from csvparse_abstract import ImportObject
-from csvparse_flat import CSVParse_User, UsrObjList
+from csvparse_flat import CSVParse_User, UsrObjList, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
 import sys
@@ -13,14 +13,16 @@ inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 
-maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
-# maPath = os.path.join(inFolder, "bad act.csv")
-saPath = os.path.join(inFolder, "wordpress-export.csv")
-
 MASTER_NAME = "ACT"
 SLAVE_NAME = "WORDPRESS"
 
-# maPath = os.path.join(inFolder, "100-act-records.csv")
+merge_mode = "sync"
+merge_mode = "merge"
+
+maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
+# maPath = os.path.join(inFolder, "bad act.csv")
+saPath = os.path.join(inFolder, "wordpress_export.csv")
+
 # maPath = os.path.join(inFolder, "200-act-records.csv")
 # saPath = os.path.join(inFolder, "100-wp-records.csv")
 
@@ -39,12 +41,12 @@ print "importing data"
 
 colData = ColData_User()
 maParser = CSVParse_User(
-    cols = colData.getUserCols(),
+    cols = colData.getImportCols(),
     defaults = colData.getDefaults()
 )
 
 saParser = CSVParse_User(
-    cols = colData.getUserCols(),
+    cols = colData.getImportCols(),
     defaults = colData.getDefaults()
 )
 
@@ -134,15 +136,16 @@ class Match(object):
         print_headings = False
         if(match_type in ['duplicate']):
             if(m_len > 0):
-                out += "The following ACT records are diplicates"
+                # out += "The following ACT records are diplicates"
                 if(s_len > 0):
                     print_headings = True
-                    out += " of the following WORDPRESS records"
+                    # out += " of the following WORDPRESS records"
             else:
                 assert (s_len > 0)
-                out += "The following WORDPRESS records are duplicates"
+                # out += "The following WORDPRESS records are duplicates"
         elif(match_type in ['masterless', 'slavelaveless']):
-            out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
+            pass
+            # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
         out += "\n"
         users = UsrObjList()
         if(m_len > 0):
@@ -434,7 +437,7 @@ globalMatches.addMatches(emailMatcher.pureMatches)
 def hashify(in_str):
     out_str = "#" * (len(in_str) + 4) + "\n"
     out_str += "# " + in_str + " #\n"
-    out_str += "#" * (len(in_str) + 2) + "\n"
+    out_str += "#" * (len(in_str) + 4) + "\n"
     return out_str
 
 print hashify( "results")
@@ -448,7 +451,7 @@ print "\n"
 if( emailMatcher.duplicateMatches ):
     print hashify("email duplicates: (%d)" % len( emailMatcher.duplicateMatches ))
     for match in emailMatcher.duplicateMatches:
-        print match.rep_str()
+        # print match.rep_str()
         print "\n"
 else:
     print hashify("no email duplicates")
@@ -467,7 +470,7 @@ for matchlistType, matchList in anomalousMatchLists.items():
         matchList = [matchList.merge()]    
         
     for match in matchList:
-        print match.rep_str()
+        # print match.rep_str()
         print "\n"
     
 print hashify("anomalous ParseLists: ")
@@ -475,15 +478,16 @@ print hashify("anomalous ParseLists: ")
 parseListInstructions = {
     "saParser.noemails" : "The following %s records have invalid emails" % SLAVE_NAME,
     "maParser.noemails" : "The following %s records have invalid emails" % MASTER_NAME,
-    "maParser.nocards"  : "The following %s records have no cards" % MASTER_NAME
+    "maParser.nocards"  : "The following %s records have no cards" % MASTER_NAME,
+    "saParser.nousernames": "The following %s records have no username" % SLAVE_NAME
 }
 
 for parselistType, parseList in anomalousParselists.items():
     print " -> ", parseListInstructions.get(parselistType, parselistType), "(", len(parseList), ")"  
     usrList  = UsrObjList()
-    for obj in parseList.values():
-        usrList.addObject(obj)
-    print usrList.rep_str()
+    # for obj in parseList.values():
+    #     usrList.addObject(obj)
+    # print usrList.rep_str()
     print "\n"
 
 # cardMatches = []
@@ -569,5 +573,148 @@ for parselistType, parseList in anomalousParselists.items():
 
 print hashify("BEGINNING MERGE: ")
 
-for match in globalMatches:
+syncCols = colData.getSyncCols()
+syncWarnings = OrderedDict()
+
+def addSyncWarning(syncIndex, col, warning, oldVal =  "", newVal = ""):
+    if( syncIndex not in syncWarnings.keys() ):
+        syncWarnings[syncIndex] = OrderedDict()
+    if( col not in syncWarnings[syncIndex].keys()):
+        syncWarnings[syncIndex][col] = []
+    syncWarnings[syncIndex][col].append(warning)
+    arguments = map( sanitationUtils.unicodeToAscii, [col[:16], warning[:32], oldVal[:32], newVal[:32]] )
+    print "%16s | %32s | %32s -> %32s" % tuple(arguments)
+
+for i, match in enumerate(globalMatches):
+    print hashify( "MATCH NUMBER %d" % i )
+
+    print "-> INITIAL VALUES:"
     print match.rep_str()
+
+    mObject = match.mObjects[0]
+    sObject = match.sObjects[0]
+
+    mMod, sMod = False, False
+
+    mTime = TimeUtils.actStrptime( mObject.get('Edited in Act'))
+    sTime = TimeUtils.wpStrptime( sObject.get('updated') )
+    tTime = TimeUtils.wpStrptime( "2015-06-01 00:00:00")
+
+    if(mTime > tTime): 
+        print "-> Modified by %s at %s " % (MASTER_NAME, TimeUtils.wpTimeToString(mTime))
+        mMod = True
+
+    if(sTime > tTime): 
+        print "-> Modified by %s at %s " % (SLAVE_NAME, TimeUtils.wpTimeToString(sTime))
+        sMod = True
+
+    if(not sMod and not mMod):
+        continue
+
+    if(sTime >= mTime):
+        if(mMod and sMod): print "-> latest mod: %s" % SLAVE_NAME
+        winner = 'S'
+    else:
+        if(mMod and sMod): print "-> latest mod: %s" % MASTER_NAME
+        winner = 'M'
+
+    mNew = ImportUser(mObject, mObject.rowcount, mObject.row)
+    sNew = ImportUser(sObject, sObject.rowcount, sObject.row)
+    sChanged = False
+    mChanged = False
+
+    print "-> CHANGES:"
+
+    for col, data in syncCols.items():
+        try:
+            sync_mode = data['sync']
+        except:
+            continue
+        sync_warn = data.get('warn')
+        mValue = (mObject.get(col) or "")
+        sValue = (sObject.get(col) or "")
+        if( not mValue and not sValue):
+            continue  
+        elif( mValue == sValue ):
+            continue  
+        else:
+            if(sync_mode == 'master_override'):
+                if(sync_warn): addSyncWarning(i, col, "%s Override" % MASTER_NAME, sValue, mValue )
+                sNew[col] = mValue
+                sChanged = True
+            elif(sync_mode == 'slave_override'):
+                if(sync_warn): addSyncWarning(i, col, "%s Override" % SLAVE_NAME, mValue, sValue )
+                mNew[col] = sValue
+                mChanged = True                
+            else:
+                #check if they are similar
+                if( "phone" in col.lower() ):
+                    mPhone = sanitationUtils.similarPhoneComparison(mValue)
+                    sPhone = sanitationUtils.similarPhoneComparison(sValue)
+                    plen = min(len(mPhone), len(sPhone))
+                    if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
+                        continue
+                else:
+                    if( sanitationUtils.similarComparison(mValue) == sanitationUtils.similarComparison(sValue) ):
+                        continue
+
+                if(winner == 'M'):
+                    if(mValue and sValue):
+                        if(sync_warn): addSyncWarning(i, col, "%s value updated" % SLAVE_NAME, sValue, mValue)
+                        sChanged = True
+                        sNew[col] = mValue
+                    elif(not mValue):
+                        if(merge_mode == 'merge'):
+                            if(sync_warn): addSyncWarning(i, col, "%s value merged" % MASTER_NAME, mValue, sValue)
+                            mChanged = True
+                            mNew[col] = sValue
+                        else:
+                            if(sync_warn): addSyncWarning(i, col, "%s value deleted" % SLAVE_NAME, sValue, mValue)
+                            sChanged = True
+                            sNew[col] = mValue
+                    
+                elif(winner == 'S'):
+                    if(mValue and sValue):
+                        if(sync_warn): addSyncWarning(i, col, "%s value updated" % MASTER_NAME, mValue, sValue)
+                        mChanged = True
+                        mNew[col] = sValue
+                    elif(not sValue):
+                        if(merge_mode == 'merge'):
+                            if(sync_warn): addSyncWarning(i, col, "%s value merged" % SLAVE_NAME, sValue, mValue)
+                            sChanged = True
+                            sNew[col] = mValue
+                        else:
+                            if(sync_warn): addSyncWarning(i, col, "%s value deleted" % MASTER_NAME, mValue, sValue)
+                            mChanged = True
+                            mNew[col] = sValue
+    newMatch = Match()
+    if(sChanged):
+        newMatch = Match( [], [sNew])
+        newSlaves.addMatch( newMatch )
+        if(mChanged):
+            newMasters.addMatch( Match( [mNew], []))
+            newMatch = Match([mNew], [sNew])
+    elif(mChanged):
+        newMatch = Match( [mNew], [])
+        newMasters.addMatch( newMatch )
+
+    if(mChanged or sChanged):
+        print "\n-> FINAL VALUES:"
+        print newMatch.rep_str()
+    else:
+        print "\n-> NO CHANGES"    
+
+
+    print "\n\n"
+
+
+
+
+
+
+
+
+
+
+
+
