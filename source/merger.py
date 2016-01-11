@@ -15,6 +15,7 @@ logFolder = "../logs/"
 
 MASTER_NAME = "ACT"
 SLAVE_NAME = "WORDPRESS"
+DEFAULT_LAST_SYNC = "2015-06-01 00:00:00"
 
 merge_mode = "sync"
 merge_mode = "merge"
@@ -365,6 +366,214 @@ class NocardEmailMatcher(EmailMatcher):
         super(NocardEmailMatcher, self).__init__( sMatchIndices, mMatchIndices )
         self.processRegisters = self.processRegistersSingular
 
+class SyncUpdate(object):
+    def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
+        self._oldMObject = oldMObject
+        self._oldSObject = oldSObject
+        self._tTime = TimeUtils.wpStrptime( lastSync )
+        self._mTime = TimeUtils.actStrptime( self._oldMObject.get('Edited in Act'))
+        self._sTime = TimeUtils.wpStrptime( self._oldSObject.get('updated') )
+        self._winner = SLAVE_NAME if(self._sTime >= self._mTime) else MASTER_NAME
+        
+        self._newSObject = False
+        self._newMObject = False
+        # self._mUpdated = False
+        # self._sUpdated = False
+        self._static = True
+        self._syncWarnings = OrderedDict()
+
+    @property
+    def oldMObject(self):
+        return self._oldMObject
+    
+    @property
+    def oldSObject(self):
+        return self._oldSObject
+
+    @property
+    def newMObject(self):
+        return self._newMObject
+    
+    @property
+    def newSObject(self):
+        return self._newSObject
+
+    @property
+    def syncWarnings(self):
+        return self._syncWarnings
+
+    @property
+    def sUpdated(self):
+        return self._newSObject
+
+    @property
+    def mUpdated(self):
+        return self._newMObject
+
+    @property
+    def static(self):
+        return self._static
+        
+    # @property
+    # def mTime(self):
+    #     return self._mTime
+
+    # @property
+    # def sTime(self):
+    #     return self._sTime
+
+    # @property
+    # def tTime(self):
+    #     return self._tTime
+    
+    @property
+    def mMod(self):
+        return (self.mTime > self._tTime)
+
+    @property
+    def sMod(self):
+        return (self.sTime > self._tTime)
+
+    # @property
+    # def winner(self):
+    #     return self._winner
+    
+    # def colBlank(self, col):
+    #     mValue = (mObject.get(col) or "")
+    #     sValue = (sObject.get(col) or "")
+    #     return (not mValue and not sValue)
+
+    def getMValue(self, col):
+        return self._oldMObject.get(col) or ""
+
+    def getSValue(self, col):
+        return self._oldSObject.get(col) or ""
+
+    def colIdentical(self, col):
+        mValue = self.getMValue(col)
+        sValue = self.getSValue(col)
+        return (mValue == sValue)
+
+    def colSimilar(self, col):
+        mValue = self.getMValue(col)
+        sValue = self.getSValue(col)
+        #check if they are similar
+        if( "phone" in col.lower() ):
+            mPhone = sanitationUtils.similarPhoneComparison(mValue)
+            sPhone = sanitationUtils.similarPhoneComparison(sValue)
+            plen = min(len(mPhone), len(sPhone))
+            if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
+                return True
+        elif( "role" in col.lower() ):
+            mRole = sanitationUtils.similarComparison(mValue)
+            sRole = sanitationUtils.similarComparison(sValue)
+            if (mRole == 'rn'): 
+                mRole = ''
+            if (sRole == 'rn'): 
+                sRole = ''
+            if( mRole == sRole ): 
+                return True
+        else:
+            if( sanitationUtils.similarComparison(mValue) == sanitationUtils.similarComparison(sValue) ):
+                return True
+
+        return False
+
+    def addSyncWarning(self, col, subject, reason, oldVal =  "", newVal = ""):
+        if( col not in self._syncWarnings.keys()):
+            self._syncWarnings[col] = []
+        self._syncWarnings[col].append((subject, reason, oldVal, newVal))
+
+    def printSyncWarnings(self):
+        for col, (subject, reason, oldVal, newVal) in self.syncWarnings:
+            arguments = map( sanitationUtils.unicodeToAscii, [col[:16], (subject + ' ' + reason)[:32], oldVal[:32], newVal[:32]] )
+            print "%16s | %32s | %32s -> %32s" % tuple(arguments)
+
+    # def getOldLoserObject(self, winner=None):
+    #     if not winner: winner = self._winner
+    #     if(winner == MASTER_NAME):
+    #         oldLoserObject = self._oldSObject
+
+    def loserUpdate(self, winner, col, reason = "", data={}):
+        if(winner == MASTER_NAME):
+            oldLoserObject = self._oldSObject
+            oldWinnerObject = self._oldMObject
+            if(not self._newSObject): self._newSObject = ImportUser(sObject[:], sObject.rowcount, sObject.row[:])
+            newLoserObject = self._newSObject
+        elif(winner == SLAVE_NAME):
+            oldLoserObject = self._oldMObject
+            oldWinnerObject = self._oldSObject
+            if(not self._newMObject): self._newMObject = ImportUser(mObject[:], mObject.rowcount, mObject.row[:])
+            newLoserObject = self._newMObject
+        if data.get('warn'): self.addSyncWarning(col, winner, reason, oldLoserObject[col], oldWinnerObject[col])
+        if data.get('static'): self._static = False
+        newLoserObject[col] = oldWinnerObject[col]
+
+    # def mUpdate(self, col, value, warn = False, reason = "", static=False):
+    #     if(not self._newMObject): self._newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
+    #     if static: self._static = False
+    #     self._newMObject[col] = value
+
+    # def sUpdate(self, col, value, warn = False, reason = "", static=False):
+    #     if(not self._newSObject): self._newSObject = ImportUser(sObject, sObject.rowcount, sObject.row)
+    #     if warn: self.addSyncWarning(col, SLAVE_NAME, reason, self._oldSObject[col], )
+    #     if static: self._static = False
+    #     self._newSObject[col] = value
+        
+    def updateCol(self, col, data={}):
+        try:
+            sync_mode = data['sync']
+        except:
+            return
+        sync_warn = data.get('warn')
+        sync_static = data.get('static')
+        
+        # if(self.colBlank(col)): continue
+        if(self.colIdentical(col)): return
+
+        mValue = self.getMValue(col)
+        sValue = self.getSValue(col)
+
+        winner = self._winner
+        reason = 'updating'
+        if( 'override' in str(sync_mode).lower() ):
+            reason = 'overriding'
+            if( 'master' in str(sync_mode).lower() ):
+                winner = MASTER_NAME
+            elif( 'slave' in str(sync_mode).lower() ):
+                winner = SLAVE_NAME
+        else:
+            if(self.colSimilar(col)): return
+
+            if not (mValue and sValue):
+                if(merge_mode == 'merge'):
+                    if(winner == SLAVE_NAME and not sValue):
+                        winner = MASTER_NAME
+                        reason = 'merging'
+                    elif(winner == MASTER_NAME and not mValue):
+                        winner = SLAVE_NAME
+                        reason = 'merging'
+                else:
+                    if(winner == SLAVE_NAME and not sValue):
+                        reason = 'deleting'
+                    elif(winner == MASTER_NAME and not mValue):
+                        reason = 'deleting'
+
+        self.loserUpdate(winner, col, reason, data)
+
+    def update(self, syncCols, merge_mode):
+        for col, data in syncCols.items():
+            self.updateCol(col, data)
+
+    def rep_str(self):
+        out_str = ""
+        oldMatch = Match([self._oldMObject], [self._oldSObject])
+        out_str += oldMatch.rep_str()
+        newMatch = Match([self._newMObject], [self._newSObject])
+        out_str += newMatch.rep_str()
+        return out_str
+
+
 # get matches
 
 globalMatches = MatchList()
@@ -372,6 +581,8 @@ anomalousMatchLists = {}
 newMasters = MatchList()
 newSlaves = MatchList()
 anomalousParselists = {}
+nonstaticUpdates = []
+staticUpdates = []
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -469,9 +680,9 @@ for matchlistType, matchList in anomalousMatchLists.items():
     if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
         matchList = [matchList.merge()]    
         
-    for match in matchList:
+    # for match in matchList:
         # print match.rep_str()
-        print "\n"
+        # print "\n"
     
 print hashify("anomalous ParseLists: ")
 
@@ -490,224 +701,40 @@ for parselistType, parseList in anomalousParselists.items():
     # print usrList.rep_str()
     print "\n"
 
-# cardMatches = []
-# slavelessCardMatches = []
-# masterlessCardMatches = []
-# cardDuplicates = []
-# cardFails = []
-
-# for card, saObjects in saParser.cards.items():
-#     print "card: ", card
-#     maObjects = maParser.cards.get(card) or []
-#     cardMatch = Match(maObjects, saObjects)
-#     if(cardMatch.isSingular):
-#         print " -> is singular!"
-#         if(cardMatch.hasNoMaster):
-#             masterlessCardMatches.append(cardMatch)
-#         elif(cardMatch.hasNoSlave):
-#             slavelessCardMatches.append(cardMatch)
-#         else:
-#             cardMatches.append(cardMatch)
-#     else:
-#         print " -> not singular"
-#         cardFails.append(cardMatch)
-#         print repr(cardMatch)
-
-# #for every email in slave, check that it exists in master
-
-# emailMatches = []
-# masterlessEmailMatches = []
-# slavelessEmailMatches = []
-# emailDuplicates = []
-# emailFails = []
-
-# for index, saObject in saParser.nocards.items():
-#     saObjects =  [saObject]
-#     email = saObject.email
-#     print "email: ", email
-#     maObjects = maParser.emails.get(email) or []
-#     emailMatch = Match(maObjects, saObjects)
-#     if(emailMatch.isSingular):
-#         print " -> is singular!"
-#         if(emailMatch.hasNoMaster):
-#             masterlessEmailMatches.append(emailMatch)
-#         elif(emailMatch.hasNoSlave):
-#             slavelessEmailMatches.append(emailMatch)
-#         else:
-#             emailMatches.append(emailMatch)
-#     else:       
-#         print " -> not singular"
-#         if len(emailMatch.sObjects) == 1 and not emailMatch.sObjects[0].MYOBID:
-#             print " -> could not reconcile"
-#             print repr(emailMatch)
-#             emailFails.append(emailMatch) 
-#             continue
-
-#         print " -> finding card matches"
-#         print " -> associated slave objects:"
-#         for saObject in saObjects:
-#             print " --> ", saObject.MYOBID, " | ", saObject.username 
-
-#         if maObjects:
-#             print " -> associated master objects:"
-#             for maObject in maObjects:
-#                 print " --> ", maObject.MYOBID, " | ", maObject.username 
-#         cardMatches = findCardMatches(emailMatch)
-#         for card, cardMatch in cardMatches.items():
-#             print " --> card: ", card
-#             print " --> slaves: ", len(cardMatch.sObjects)
-#             print " --> masters: ", len(cardMatch.mObjects)
-#             if cardMatch.isSingular:
-#                 print " ---> is singular!"
-#                 if cardMatch.hasNoSlave:
-#                     print " ---> slaveless duplicate"
-#                     emailDuplicates.append(cardMatch)
-#                 else:
-#                     emailMatches.append(cardMatch)
-#             else:
-#                 print " ---> is not singular"
-#                 print " ---> could not reconcile"
-#                 print repr(cardMatch)
-#                 emailFails.append(cardMatch)
-
 
 print hashify("BEGINNING MERGE: ")
 
 syncCols = colData.getSyncCols()
-syncWarnings = OrderedDict()
 
-def addSyncWarning(syncIndex, col, warning, oldVal =  "", newVal = ""):
-    if( syncIndex not in syncWarnings.keys() ):
-        syncWarnings[syncIndex] = OrderedDict()
-    if( col not in syncWarnings[syncIndex].keys()):
-        syncWarnings[syncIndex][col] = []
-    syncWarnings[syncIndex][col].append(warning)
-    arguments = map( sanitationUtils.unicodeToAscii, [col[:16], warning[:32], oldVal[:32], newVal[:32]] )
-    print "%16s | %32s | %32s -> %32s" % tuple(arguments)
+for match in globalMatches:
+    # print hashify( "MATCH NUMBER %d" % i )
 
-for i, match in enumerate(globalMatches):
-    print hashify( "MATCH NUMBER %d" % i )
-
-    print "-> INITIAL VALUES:"
-    print match.rep_str()
+    # print "-> INITIAL VALUES:"
+    # print match.rep_str()
 
     mObject = match.mObjects[0]
     sObject = match.sObjects[0]
 
-    mMod, sMod = False, False
+    syncUpdate = SyncUpdate(mObject, sObject)
+    syncUpdate.update(syncCols, merge_mode)
 
-    mTime = TimeUtils.actStrptime( mObject.get('Edited in Act'))
-    sTime = TimeUtils.wpStrptime( sObject.get('updated') )
-    tTime = TimeUtils.wpStrptime( "2015-06-01 00:00:00")
-
-    if(mTime > tTime): 
-        print "-> Modified by %s at %s " % (MASTER_NAME, TimeUtils.wpTimeToString(mTime))
-        mMod = True
-
-    if(sTime > tTime): 
-        print "-> Modified by %s at %s " % (SLAVE_NAME, TimeUtils.wpTimeToString(sTime))
-        sMod = True
-
-    if(not sMod and not mMod):
-        continue
-
-    if(sTime >= mTime):
-        if(mMod and sMod): print "-> latest mod: %s" % SLAVE_NAME
-        winner = 'S'
+    if(not syncUpdate.static):
+        nonstaticUpdates.append(syncUpdate)
     else:
-        if(mMod and sMod): print "-> latest mod: %s" % MASTER_NAME
-        winner = 'M'
+        if(syncUpdate.sUpdated or syncUpdate.mUpdated):
+            staticUpdates.append(syncUpdate)
+            
+print hashify("STATIC")
 
-    mNew = ImportUser(mObject, mObject.rowcount, mObject.row)
-    sNew = ImportUser(sObject, sObject.rowcount, sObject.row)
-    sChanged = False
-    mChanged = False
+for update in staticUpdates:
+    print update.rep_str()
+    print "\n"
 
-    print "-> CHANGES:"
+print hashify("NONSTATIC")
 
-    for col, data in syncCols.items():
-        try:
-            sync_mode = data['sync']
-        except:
-            continue
-        sync_warn = data.get('warn')
-        mValue = (mObject.get(col) or "")
-        sValue = (sObject.get(col) or "")
-        if( not mValue and not sValue):
-            continue  
-        elif( mValue == sValue ):
-            continue  
-        else:
-            if(sync_mode == 'master_override'):
-                if(sync_warn): addSyncWarning(i, col, "%s Override" % MASTER_NAME, sValue, mValue )
-                sNew[col] = mValue
-                sChanged = True
-            elif(sync_mode == 'slave_override'):
-                if(sync_warn): addSyncWarning(i, col, "%s Override" % SLAVE_NAME, mValue, sValue )
-                mNew[col] = sValue
-                mChanged = True                
-            else:
-                #check if they are similar
-                if( "phone" in col.lower() ):
-                    mPhone = sanitationUtils.similarPhoneComparison(mValue)
-                    sPhone = sanitationUtils.similarPhoneComparison(sValue)
-                    plen = min(len(mPhone), len(sPhone))
-                    if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
-                        continue
-                else:
-                    if( sanitationUtils.similarComparison(mValue) == sanitationUtils.similarComparison(sValue) ):
-                        continue
-
-                if(winner == 'M'):
-                    if(mValue and sValue):
-                        if(sync_warn): addSyncWarning(i, col, "%s value updated" % SLAVE_NAME, sValue, mValue)
-                        sChanged = True
-                        sNew[col] = mValue
-                    elif(not mValue):
-                        if(merge_mode == 'merge'):
-                            if(sync_warn): addSyncWarning(i, col, "%s value merged" % MASTER_NAME, mValue, sValue)
-                            mChanged = True
-                            mNew[col] = sValue
-                        else:
-                            if(sync_warn): addSyncWarning(i, col, "%s value deleted" % SLAVE_NAME, sValue, mValue)
-                            sChanged = True
-                            sNew[col] = mValue
-                    
-                elif(winner == 'S'):
-                    if(mValue and sValue):
-                        if(sync_warn): addSyncWarning(i, col, "%s value updated" % MASTER_NAME, mValue, sValue)
-                        mChanged = True
-                        mNew[col] = sValue
-                    elif(not sValue):
-                        if(merge_mode == 'merge'):
-                            if(sync_warn): addSyncWarning(i, col, "%s value merged" % SLAVE_NAME, sValue, mValue)
-                            sChanged = True
-                            sNew[col] = mValue
-                        else:
-                            if(sync_warn): addSyncWarning(i, col, "%s value deleted" % MASTER_NAME, mValue, sValue)
-                            mChanged = True
-                            mNew[col] = sValue
-    newMatch = Match()
-    if(sChanged):
-        newMatch = Match( [], [sNew])
-        newSlaves.addMatch( newMatch )
-        if(mChanged):
-            newMasters.addMatch( Match( [mNew], []))
-            newMatch = Match([mNew], [sNew])
-    elif(mChanged):
-        newMatch = Match( [mNew], [])
-        newMasters.addMatch( newMatch )
-
-    if(mChanged or sChanged):
-        print "\n-> FINAL VALUES:"
-        print newMatch.rep_str()
-    else:
-        print "\n-> NO CHANGES"    
-
-
-    print "\n\n"
-
-
+for update in nonstaticUpdates:
+    print update.rep_str()
+    print "\n"
 
 
 

@@ -547,6 +547,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'import':True,
             'sync':'slave_override',
+            'warn':True,
         }),
         ('MYOB Card ID',{
             'label':'myob_card_id',
@@ -554,6 +555,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'report':True,
             'sync':'master_override',
+            'warn':True,
         }),
         ('MYOB Customer Card ID',{
             'label':'myob_customer_card_id',
@@ -561,6 +563,7 @@ class ColData_User(ColData_Base):
             # 'report':True,
             'user':True,
             'sync':'master_override',
+            'warn':True,
         }),
         ('Client Grade',{
             'import':True,
@@ -568,6 +571,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'report':True,
             'sync':'master_override',
+            'warn':True,
         }),
         ('Direct Brand', {
             'import':True,
@@ -575,12 +579,14 @@ class ColData_User(ColData_Base):
             'user':True,
             'report': True,
             'sync':'master_override',
+            'warn':True,
         }),
         ('Agent', {
             'label':'agent',
             'import':'true',
             'user':True,
             'sync':'master_override',
+            'warn':True,
         }),
         ('E-mail', {
             'label':'user_email',
@@ -588,7 +594,8 @@ class ColData_User(ColData_Base):
             'user':True,
             'report': True,
             'sync':True,
-            'warn':True 
+            'warn':True,
+            'static':True,
         }),
         ('Role', {
             'label': 'act_role',
@@ -597,6 +604,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('First Name', {
             'label':'first_name',
@@ -605,6 +613,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('Surname', {
             'label':'last_name',
@@ -613,6 +622,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('Company',{
             'label':'billing_company',
@@ -621,6 +631,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('Mobile Phone',{
             'label':'mobile_number',
@@ -629,6 +640,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'report':True,
             'warn': True,
+            'static':True,
         }),
         ('Phone',{
             'label':'billing_phone',
@@ -637,6 +649,7 @@ class ColData_User(ColData_Base):
             'report': True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('Contact',{
             'import':True,
@@ -662,6 +675,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('Address 2',{
             'label':'billing_address_2',
@@ -669,6 +683,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'warn': True,
+            'static':True,
         }),
         ('City',{
             'label':'billing_city',
@@ -676,6 +691,8 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'warn': True,
+            'static':True,
+            'report': True,
         }),
         ('Postcode',{
             'label':'billing_postcode',
@@ -683,6 +700,8 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'warn': True,
+            'static':True,
+            'report': True,
         }),
         ('State',{
             'label':'billing_state',
@@ -690,6 +709,8 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'warn': True,
+            'static':True,
+            'report':True
         }),
         ('Home Address 1',{
             'label':'shipping_address_1',
