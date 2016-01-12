@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from csvparse_abstract import listUtils
+from utils import listUtils
 
 class ColData_Base(object):
 
@@ -717,36 +717,42 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Home Address 2',{
             'label':'shipping_address_2',
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Home City',{
             'label':'shipping_city',
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Home Postcode',{
             'label':'shipping_postcode',
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Home Country',{
             'label':'shipping_country',
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Home State',{
             'label':'shipping_state',
             'import':True,
             'user':True,
             'sync':True,
+            'static':True,
         }),
         ('Web Site',{
             'label':'url',
