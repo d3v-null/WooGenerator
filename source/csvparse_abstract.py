@@ -1,11 +1,16 @@
-import pprint
+from pprint import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils, UnicodeReader
+from utils import debugUtils, listUtils, UnicodeReader, sanitationUtils
 from tabulate import tabulate
 import csv
+from coldata import ColData_User
+from copy import deepcopy, copy
 
-DEBUG = False
-DEBUG_PARSER = False
+DEBUG = True
+DEBUG_PARSER = True
+
+import os
+
 
 class Registrar:
     messages = OrderedDict()
@@ -115,11 +120,17 @@ class Registrar:
         )
 
 class ImportObject(OrderedDict, Registrar):
-    def __init__(self, data, rowcount, row =[]):
+    def __init__(self, data, rowcount = None, row = None):
         super(ImportObject, self).__init__(data)
         Registrar.__init__(self)
-        self['rowcount'] = rowcount
-        self._row = row
+        if rowcount is not None:
+            self['rowcount'] = rowcount
+        assert self['rowcount'], "must specify rowcount"
+        if row is not None:
+            self._row = row
+        else:
+            if not '_row' in self.keys():
+                self['_row'] = []
 
     @property
     def row(self): return self._row
@@ -138,6 +149,11 @@ class ImportObject(OrderedDict, Registrar):
 
     def getIdentifier(self):
         return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
+
+    def __getstate__(self): return self.__dict__
+    def __setstate__(self, d): self.__dict__.update(d)
+    def __copy__(self): return self.__class__(copy(super(ImportObject,self)), self.rowcount, self.row)
+    def __deepcopy__(self, memodict={}): return self.__class__(deepcopy(OrderedDict(self)), self.rowcount, self.row[:])
 
     def __str__(self):
         return "%10s <%s>" % (self.index, self.getTypeName())
@@ -163,7 +179,11 @@ class ObjList(object):
         return self._objects
 
     def addObject(self, objectData):
-        assert(isinstance(objectData, ImportObject))
+        try:
+            assert(isinstance(objectData, ImportObject))
+        except Exception as e:
+            pprint( objectData)
+            raise e
         if(objectData not in self._objects):
             self._objects.append(objectData)
 
@@ -189,12 +209,12 @@ class ObjList(object):
                 header += [col]
             table = [header]
             for obj in objs:
-                table += [[obj.index] + [(obj.get(col) or "" ) for col in cols.keys()]]
+                table += [[obj.index] + [ sanitationUtils.makeSafeOutput(obj.get(col) or "" ) for col in cols.keys()]]
             # print "table", table
-            table = tabulate(table, headers="firstrow")
+            return tabulate(table, headers="firstrow")
             # print repr(table)
             # print repr(table.encode('utf8'))
-            return table.encode('utf8')
+            # return table.encode('utf8')
         else:
             # print "there are no objects"
             pass
@@ -214,9 +234,11 @@ class CSVParse_Base(object, Registrar):
 
         self.cols = listUtils.combineLists( cols, extra_cols )
         self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        self.pp = pprint.PrettyPrinter(indent=2, depth=2)
         self.objectIndexer = self.getObjectRowcount
         self.clearTransients()
+
+    def __getstate__(self): return self.__dict__
+    def __setstate__(self, d): self.__dict__.update(d)
 
     def clearTransients(self):
         self.indices = OrderedDict()
@@ -359,17 +381,26 @@ class CSVParse_Base(object, Registrar):
         return self.objects
 
 if __name__ == '__main__':
-    parser = CSVParse_Base( [], {})
-    # parser.analyseFile('../input/export-everything-dec-23.csv')
-    parser.analyseFile('../input/100-act-records.csv')
-    objList = ObjList()
-    print "all objects: ", parser.objects
-    for obj in parser.objects.values():
-        print "adding object: ", obj
-        objList.addObject(obj)
-        if(len(objList.objects) > 4):
-            break
-    print objList.rep_str()
+    inFolder = "../input/"
+    # actPath = os.path.join(inFolder, 'partial act records.csv')
+    actPath = os.path.join(inFolder, "200-act-records.csv")
+    outFolder = "../output/"
+    usrPath = os.path.join(outFolder, 'users.csv')
+
+    usrData = ColData_User()
+
+    # print "import cols", usrData.getImportCols()
+    # print "defaults", usrData.getDefaults()
+
+    usrParser = CSVParse_Base(
+        cols = usrData.getImportCols(),
+        defaults = usrData.getDefaults()
+    )
+
+    usrParser.analyseFile(actPath)
+
+    for usr in usrParser.objects.values()[:3]:    
+        pprint(OrderedDict(usr))
 
 
 

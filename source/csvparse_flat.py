@@ -5,6 +5,7 @@ from coldata import ColData_User
 import os
 import csv
 import time
+from pprint import pprint
 # import re
 
 usrs_per_file = 1000
@@ -66,10 +67,14 @@ class ImportUser(ImportFlat):
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
 
-    def __init__(self, data, rowcount, row, **kwargs):
+    def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
         for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role']:
-            self[key] = data.get(key)
+            val = kwargs.get(key, "")
+            if(val):
+                self[key] = val
+            elif(not self.get(key)):
+                self[key] = ""
                             
 
     def __repr__(self):
@@ -273,7 +278,7 @@ def exportItems(filePath, colNames, items):
 if __name__ == '__main__':
     inFolder = "../input/"
     # actPath = os.path.join(inFolder, 'partial act records.csv')
-    actPath = os.path.join(inFolder, 'export-everything-dec-23.csv')
+    actPath = os.path.join(inFolder, "200-act-records.csv")
     outFolder = "../output/"
     usrPath = os.path.join(outFolder, 'users.csv')
 
@@ -291,19 +296,16 @@ if __name__ == '__main__':
 
     usrList = UsrObjList()
 
-    for usr in usrParser.objects.values()[:2000]:    
+    from copy import deepcopy
+
+    for usr in usrParser.objects.values()[:3]:    
         usrList.addObject(usr)
+        clone = deepcopy(usr)
+        usr['Wordpress Username'] = 'jonno'
+        usrList.addObject(clone)
         card_id = usr.MYOBID
         edit_date = usr.get('Edit Date')
         act_date = usr.get('Edited in Act')
-        if(edit_date and act_date):
-            if(\
-                time.mktime(TimeUtils.actStrptime(edit_date)) < \
-                time.mktime(TimeUtils.actStrptime(act_date)) + 10\
-            ):
-                print "%10s assertion holds: " % card_id, edit_date, act_date
-            else:
-                print "%10s assertion broken: " % card_id, edit_date, act_date
 
     print usrList.rep_str()
 

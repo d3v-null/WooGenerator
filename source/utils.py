@@ -13,7 +13,7 @@ import cStringIO
 
 DEFAULT_ENCODING = 'utf8'
 
-DEBUG = True
+DEBUG = False
 
 class sanitationUtils:
     email_regex = "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
@@ -26,61 +26,85 @@ class sanitationUtils:
     @staticmethod
     def stringToUnicode(string):
         if(not isinstance(string, unicode)):
-            string = string.decode(DEFAULT_ENCODING)
+            string = str(string).decode(DEFAULT_ENCODING)
         return string
 
     @staticmethod
     def unicodeToAscii(string):
-        string = sanitationUtils.stringToUnicode(string)
-        return string.encode('ascii', 'backslashreplace')
+        str_out = sanitationUtils.stringToUnicode(string)
+        return str_out.encode('ascii', 'backslashreplace')
 
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
-        return re.sub('^\W*\$','', string)
+        str_out = re.sub('^\W*\$','', string)
+        if DEBUG: print "removeLeadingDollarWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def removeLeadingPercentWhiteSpace(string):
-        return re.sub('%\W*$','', string)
+        str_out = re.sub('%\W*$','', string)
+        if DEBUG: print "removeLeadingPercentWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def removeLoneDashes(string):
-        return re.sub('^-$', '', string)
+        str_out = re.sub('^-$', '', string)
+        if DEBUG: print "removeLoneDashes", str_out
+        return str_out
 
     @staticmethod
     def removeThousandsSeparator(string):
-        return re.sub('(\d+),(\d{3})', '\g<1>\g<2>', string)
+        str_out = re.sub('(\d+),(\d{3})', '\g<1>\g<2>', string)
+        if DEBUG: print "removeThousandsSeparator", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def removeLoneWhiteSpace(string):
-        return re.sub('^\s*$','', string)    
+        str_out = re.sub('^\s*$','', string)    
+        if DEBUG: print "removeLoneWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def removeNULL(string):
-        return re.sub('^NULL$', '', string)
+        str_out = re.sub('^NULL$', '', string)
+        if DEBUG: print "removeNULL", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def stripLeadingWhitespace(string):
-        return re.sub('^\s*', '', string)
+        str_out = re.sub('^\s*', '', string)
+        if DEBUG: print "stripLeadingWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def stripTailingWhitespace(string):
-        return re.sub('\s*$', '', string)
+        str_out = re.sub('\s*$', '', string)
+        if DEBUG: print "stripTailingWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def stripAllWhitespace(string):
-        return re.sub('\s', '', string)
+        str_out = re.sub('\s', '', string)
+        if DEBUG: print "stripAllWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def stripNonNumbers(string):
-        return re.sub('[^\d]', '', string)
+        str_out = re.sub('[^\d]', '', string)
+        if DEBUG: print "stripNonNumbers", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def stripAreaCode(string):
-        return re.sub('\s*\+\d{2,3}\s*','', string)
+        str_out = re.sub('\s*\+\d{2,3}\s*','', string)
+        if DEBUG: print "stripAreaCode", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def toLower(string):
-        return string.lower()
+        str_out = string.lower()
+        if DEBUG: print "toLower", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        return str_out
 
     @staticmethod
     def sanitizeNewlines(string):
@@ -125,6 +149,20 @@ class sanitationUtils:
             sanitationUtils.stripNonNumbers,
             sanitationUtils.stripAreaCode,
             sanitationUtils.stringToUnicode
+        )(string)
+
+    @staticmethod
+    def makeSafeOutput(string):
+        return sanitationUtils.compose(
+            sanitationUtils.sanitizeNewlines,
+            sanitationUtils.unicodeToAscii
+        )(string)
+
+    @staticmethod
+    def similarTruStrComparison(string):
+        return sanitationUtils.compose(
+            sanitationUtils.truishStringToBool,
+            sanitationUtils.similarComparison
         )(string)
 
     @staticmethod
@@ -183,6 +221,15 @@ class sanitationUtils:
     @staticmethod
     def stringIsMYOBID(card):
         return re.match(sanitationUtils.myobid_regex, card)
+
+    @staticmethod
+    def truishStringToBool(string):
+        if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
+            if DEBUG: print "truishStringToBool", repr(string).encode('ascii','backslashreplace'), 'FALSE'
+            return "FALSE"
+        else:
+            if DEBUG: print "truishStringToBool", repr(string).encode('ascii','backslashreplace'), 'TRUE'
+            return "TRUE"
 
     @staticmethod
     def datetotimestamp(datestring):
@@ -413,3 +460,16 @@ if __name__ == '__main__':
         sanitationUtils.similarPhoneComparison(p1), \
         sanitationUtils.similarPhoneComparison(p2), \
         sanitationUtils.similarPhoneComparison(p3)
+
+    print sanitationUtils.makeSafeOutput(u"asdad \u00C3 <br> \n \b")
+
+    tru = sanitationUtils.similarComparison(u"TRUE")
+
+    print \
+        sanitationUtils.similarTruStrComparison('yes'), \
+        sanitationUtils.similarTruStrComparison('no'), \
+        sanitationUtils.similarTruStrComparison('TRUE'),\
+        sanitationUtils.similarTruStrComparison('FALSE'),\
+        sanitationUtils.similarTruStrComparison(0),\
+        sanitationUtils.similarTruStrComparison('0'),\
+        sanitationUtils.similarTruStrComparison(u"0")\
