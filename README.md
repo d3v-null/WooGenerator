@@ -13,6 +13,11 @@ pip install --upgrade google-api-python-client
 
 https://developers.google.com/drive/web/quickstart/python
 
+Other dependencies
+------------------
+
+pip install --upgrade tabulate dill
+
 
 Layout
 ------

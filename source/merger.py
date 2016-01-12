@@ -1,14 +1,14 @@
-import csv
+# import csv
 from collections import OrderedDict
 import os
-import shutil
+# import shutil
 from utils import listUtils, sanitationUtils, TimeUtils
 from csvparse_abstract import ImportObject
-from csvparse_flat import CSVParse_User, UsrObjList, ImportUser
+from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
-from pprint import pprint
-import sys
+# from pprint import pprint
+# import sys
 from copy import deepcopy
 # import pickle
 import dill as pickle
@@ -49,6 +49,7 @@ print "importing data"
 pkl_path = "parser_pickle.pkl"
 
 clear_pkl = False
+try_pkl = False
 # clear_pkl = True
 
 if(clear_pkl): 
@@ -58,11 +59,14 @@ if(clear_pkl):
 colData = ColData_User()
 
 try:
-    pkl_file = open(pkl_path, 'rb')
-    maParser = pickle.load(pkl_file)
-    saParser = pickle.load(pkl_file)    
+    if try_pkl:
+        pkl_file = open(pkl_path, 'rb')
+        maParser = pickle.load(pkl_file)
+        saParser = pickle.load(pkl_file)    
+    else:
+        raise Exception()
 except Exception as e:
-    print e
+    if(e): pass
     maParser = CSVParse_User(
         cols = colData.getImportCols(),
         defaults = colData.getDefaults()
