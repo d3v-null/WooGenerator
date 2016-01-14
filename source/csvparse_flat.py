@@ -261,20 +261,6 @@ class CSVParse_User(CSVParse_Flat):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
     #     return objectData
 
-def exportItems(filePath, colNames, items):
-    assert filePath, "needs a filepath"
-    assert colNames, "needs colNames"
-    assert items, "meeds items"
-    with open(filePath, 'w+') as outFile:
-        dictwriter = csv.DictWriter(
-            outFile,
-            fieldnames = colNames.keys(),
-            extrasaction = 'ignore',
-        )
-        dictwriter.writerow(colNames)
-        dictwriter.writerows(items)
-    print "WROTE FILE: ", filePath
-
 if __name__ == '__main__':
     inFolder = "../input/"
     # actPath = os.path.join(inFolder, 'partial act records.csv')
