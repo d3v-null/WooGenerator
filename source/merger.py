@@ -91,6 +91,33 @@ except Exception as e:
 # email valid and direct customer TechnoTan
 #no requirements for new account in act, everything goes in, but probably need email
 
+def fieldActLike(field):
+    if(sanitationUtils.unicodeToAscii(field) == sanitationUtils.unicodeToAscii(field).upper() ):
+        return True
+    else:
+        return False
+
+def addressActLike(obj):
+    for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
+        if(not fieldActLike(obj.get(col) or "")):
+            return False
+    return True
+
+def nameActLike(obj):
+    for col in ['First Name', 'Surname']:
+        if(not fieldActLike(obj.get(col)) or ""):
+            return False
+    return True
+
+# for email, users in maParser.emails.items():
+#     for user in users:
+#         address = addressActLike(user)
+#         fname =  fieldActLike(user.get('First Name'))
+#         if not fname or not address:
+#             print "-> ", repr(user), address, fname
+#             print "--> ", user.get('First Name')
+# quit()
+
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
         self._mObjects = filter(None, mObjects) or [] 
@@ -417,6 +444,21 @@ class SyncUpdate(object):
         self.importantUpdates = 0
         # self.problematic = False
 
+        #extra heuristics for merge mode:
+        if(merge_mode == 'merge' and not self.sMod):
+            might_be_sEdited = False
+            if(not(addressActLike(oldSObject))):
+                might_be_sEdited = True
+            elif( oldSObject.get('Home Country') == 'AU' ):
+                might_be_sEdited = True
+            if(might_be_sEdited):
+                # print repr(oldSObject), "might be edited"
+                self._sTime = self._tTime
+                if(self.mMod):
+                    self._static = False
+                    self._importantStatic = False
+
+
     @property
     def oldMObject(self):
         return self._oldMObject
@@ -472,11 +514,11 @@ class SyncUpdate(object):
     
     @property
     def mMod(self):
-        return (self.mTime > self.tTime)
+        return (self.mTime >= self.tTime)
 
     @property
     def sMod(self):
-        return (self.sTime > self.tTime)
+        return (self.sTime >= self.tTime)
 
     # @property
     # def winner(self):
@@ -893,12 +935,6 @@ for update in problematicUpdates:
 # PROBLEMATIC RECORDS:
     # STATIC MASTER, sMod
     # STATIC BOTH, sMod
-
-# NOW GET RECORDS FOR ACT IMPORT
-    # NONSTATIC MASTER
-    # NONSTATIC BOTH
-    # STATIC MASTER, not sMod
-    # STAT
 
 
 
