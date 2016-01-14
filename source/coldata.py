@@ -676,6 +676,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
+            'capitalized':True,
         }),
         ('Address 2',{
             'label':'billing_address_2',
@@ -684,6 +685,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
+            'capitalized':True,
         }),
         ('City',{
             'label':'billing_city',
@@ -693,6 +695,7 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
             'report': True,
+            'capitalized':True,
         }),
         ('Postcode',{
             'label':'billing_postcode',
@@ -710,7 +713,8 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
-            'report':True
+            'report':True,
+            'capitalized':True,
         }),
         ('Home Address 1',{
             'label':'shipping_address_1',
@@ -718,6 +722,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'static':True,
+            'capitalized':True,
         }),
         ('Home Address 2',{
             'label':'shipping_address_2',
@@ -725,6 +730,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'static':True,
+            'capitalized':True,
         }),
         ('Home City',{
             'label':'shipping_city',
@@ -732,6 +738,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'static':True,
+            'capitalized':True,
         }),
         ('Home Postcode',{
             'label':'shipping_postcode',
@@ -746,6 +753,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'static':True,
+            'capitalized':True,
         }),
         ('Home State',{
             'label':'shipping_state',
@@ -753,6 +761,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             'static':True,
+            'capitalized':True,
         }),
         ('Web Site',{
             'label':'url',
@@ -835,6 +844,9 @@ class ColData_User(ColData_Base):
     def getSyncCols(self):
         return self.getExportCols('sync')
 
+    def getCapitalCols(self):
+        return self.getExportCols('capitalized')
+
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"
     colData = ColData_MYO()
@@ -852,6 +864,9 @@ if __name__ == '__main__':
     print ""
     print "Testing ColData_User class:"
     colData = ColData_User()
-    print colData.getImportCols()
+    print "importCols", colData.getImportCols()
+    print "userCols", colData.getUserCols().keys()
+    print "reportCols", colData.getReportCols().keys()
+    print "capitalCols", colData.getCapitalCols().keys()
 
     

@@ -1,6 +1,6 @@
 from pprint import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils, UnicodeReader, sanitationUtils
+from utils import debugUtils, listUtils, UnicodeReader, sanitationUtils, UnicodeDictWriter
 from tabulate import tabulate
 import csv
 from coldata import ColData_User
@@ -173,10 +173,14 @@ class ObjList(object):
         super(ObjList, self).__init__()
         self._objList_type = 'objects'
         self._objects = []
+        self._indices = []
 
     @property
     def objects(self):
         return self._objects
+
+    def __len__(self):
+        return len(self.objects)
 
     def addObject(self, objectData):
         try:
@@ -184,8 +188,9 @@ class ObjList(object):
         except Exception as e:
             pprint( objectData)
             raise e
-        if(objectData not in self._objects):
+        if(objectData.index not in self._indices):
             self._objects.append(objectData)
+            self._indices.append(objectData.index)
 
     def getKey(self, key):
         values = listUtils.filterUniqueTrue([
@@ -199,11 +204,11 @@ class ObjList(object):
     def objList_type(self):
         return self._objList_type
 
-    def rep_str(self):
+    def rep_str(self, cols=None):
         objs = self.objects
         if(objs):
             # print "there are objects"
-            cols = self.getReportCols()                
+            if not cols: cols = self.getReportCols()                
             header = [self.objList_type]
             for col, data in cols.items():
                 header += [col]
@@ -218,6 +223,22 @@ class ObjList(object):
         else:
             # print "there are no objects"
             pass
+
+    def exportItems(self, filePath, colNames, dialect = None):
+        assert filePath, "needs a filepath"
+        assert colNames, "needs colNames"
+        assert self.objects, "meeds items"
+        with open(filePath, 'w+') as outFile:
+            csv.register_dialect('act_out', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            dictwriter = UnicodeDictWriter(
+                outFile,
+                dialect = 'act_out',
+                fieldnames = colNames.keys(),
+                # extrasaction = 'ignore',
+            )
+            dictwriter.writerow(colNames)
+            dictwriter.writerows(self.objects)
+        print "WROTE FILE: ", filePath
 
     def getReportCols(self):
         return {'_row':{'label':'Row'}}

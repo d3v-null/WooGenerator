@@ -435,6 +435,18 @@ class UnicodeWriter:
         for row in rows:
             self.writerow(row)
 
+class UnicodeDictWriter(UnicodeWriter):
+    def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
+        UnicodeWriter.__init__(self, f, dialect, encoding, **kwds)
+        self.fieldnames = fieldnames
+
+    def writerow(self, rowDict):
+        row = [unicode(rowDict.get(fieldname)) or "" for fieldname in self.fieldnames]
+        UnicodeWriter.writerow(self, row)
+
+    def writeheader(self):
+        UnicodeWriter.writerow(self, self.fieldnames)
+
 if __name__ == '__main__':
     t1 =  TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
     t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
@@ -473,3 +485,13 @@ if __name__ == '__main__':
         sanitationUtils.similarTruStrComparison(0),\
         sanitationUtils.similarTruStrComparison('0'),\
         sanitationUtils.similarTruStrComparison(u"0")\
+
+    testpath = "../output/UnicodeDictWriterTest.csv"
+    with open(testpath, 'w+') as testfile:
+        writer = UnicodeDictWriter(testfile, ['a', 'b', 'c'])
+        writer.writeheader()
+        writer.writerow( {'a':1, 'b':2, 'c':u"\u00C3"})
+
+    with open(testpath, 'r') as testfile:
+        for line in testfile.readlines():
+            print line[:-1]

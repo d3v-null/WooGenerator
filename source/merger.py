@@ -29,10 +29,13 @@ maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
 # maPath = os.path.join(inFolder, "bad act.csv")
 saPath = os.path.join(inFolder, "wordpress_export.csv")
 
-# maPath = os.path.join(inFolder, "200-act-records.csv")
-# saPath = os.path.join(inFolder, "100-wp-records.csv")
+testMode = False
+# testMode = True
+if(testMode):
+    maPath = os.path.join(inFolder, "200-act-records.csv")
+    saPath = os.path.join(inFolder, "100-wp-records.csv")
 
-
+moPath = os.path.join(outFolder, "act_import%s.csv" % ("_test" if testMode else ""))
 
 # master_all
 # slave_all
@@ -51,12 +54,14 @@ print "importing data"
 pkl_path = "parser_pickle.pkl"
 
 clear_pkl = True
-try_pkl = False
+try_pkl = not testMode
 # clear_pkl = True
 
 if(clear_pkl): 
-    os.remove(pkl_path)
-
+    try:
+        os.remove(pkl_path)
+    except:
+        pass
 
 colData = ColData_User()
 
@@ -104,18 +109,37 @@ def addressActLike(obj):
     return True
 
 def nameActLike(obj):
-    for col in ['First Name', 'Surname']:
+    for col in ['First Name']:
         if(not fieldActLike(obj.get(col)) or ""):
             return False
     return True
 
+capitalCols = colData.getCapitalCols()
+
+#assumes record has at least one of all capitalized cols
+def recordActLike(obj):
+    recordEmpty = True
+    actLike = True
+    for col in capitalCols.keys():
+        val = obj.get(col) or ""
+        if(val): 
+            recordEmpty = False
+        else:
+            if(not fieldActLike(val)):
+                actLike = False
+    if(actLike and not recordEmpty):
+        return True
+    else:
+        return False
+
 # for email, users in maParser.emails.items():
 #     for user in users:
-#         address = addressActLike(user)
-#         fname =  fieldActLike(user.get('First Name'))
-#         if not fname or not address:
-#             print "-> ", repr(user), address, fname
-#             print "--> ", user.get('First Name')
+#         actlike = recordActLike(user)
+#         if not actlike:
+#             print "-> ", repr(user)
+#             usrList = UsrObjList()
+#             usrList.addObject(user)
+#             print usrList.rep_str(capitalCols)
 # quit()
 
 class Match(object):
@@ -447,7 +471,7 @@ class SyncUpdate(object):
         #extra heuristics for merge mode:
         if(merge_mode == 'merge' and not self.sMod):
             might_be_sEdited = False
-            if(not(addressActLike(oldSObject))):
+            if(not(recordActLike(oldSObject))):
                 might_be_sEdited = True
             elif( oldSObject.get('Home Country') == 'AU' ):
                 might_be_sEdited = True
@@ -702,7 +726,7 @@ class SyncUpdate(object):
         return out_str
 
     def __cmp__(self, other):
-        return cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
+        return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
 
 
 # get matches
@@ -920,25 +944,30 @@ for match in globalMatches:
 
 print hashify(MASTER_NAME + " UPDATES(%d)" % len(masterUpdates))
 
-for update in masterUpdates:
-    print update.rep_str()
-    print "\n"
-
+# for update in masterUpdates:
+#     print update.rep_str()
+#     print "\n"
 
 print hashify("PROBLEMATIC UPDATES(%d)" % len(problematicUpdates))
 
-for update in problematicUpdates:
-    print update.rep_str()
-    print "\n"
+# for update in problematicUpdates:
+#     print update.rep_str()
+#     print "\n"
 
+importUsers = UsrObjList()
 
-# PROBLEMATIC RECORDS:
-    # STATIC MASTER, sMod
-    # STATIC BOTH, sMod
+for update in masterUpdates:
+    importUsers.addObject(update.newMObject)
 
+print hashify("IMPORT USERS (%d)" % len(importUsers))
 
+print importUsers.rep_str()
 
+importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getUserCols().keys()))
 
+with open(moPath) as outFile:
+    for line in outFile.readlines():
+        print line[:-1]
 
 
 
