@@ -848,4 +848,10 @@ if __name__ == '__main__':
     print colData.getImportCols()
     print colData.getDefaults()
     print colData.getProductCols()
+
+    print ""
+    print "Testing ColData_User class:"
+    colData = ColData_User()
+    print colData.getImportCols()
+
     

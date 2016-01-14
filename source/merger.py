@@ -29,8 +29,10 @@ maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
 # maPath = os.path.join(inFolder, "bad act.csv")
 saPath = os.path.join(inFolder, "wordpress_export.csv")
 
-maPath = os.path.join(inFolder, "200-act-records.csv")
-saPath = os.path.join(inFolder, "100-wp-records.csv")
+# maPath = os.path.join(inFolder, "200-act-records.csv")
+# saPath = os.path.join(inFolder, "100-wp-records.csv")
+
+
 
 # master_all
 # slave_all
@@ -48,7 +50,7 @@ print "importing data"
 
 pkl_path = "parser_pickle.pkl"
 
-clear_pkl = False
+clear_pkl = True
 try_pkl = False
 # clear_pkl = True
 
@@ -64,7 +66,7 @@ try:
         maParser = pickle.load(pkl_file)
         saParser = pickle.load(pkl_file)    
     else:
-        raise Exception()
+        raise Exception("not trying to load pickle")
 except Exception as e:
     if(e): pass
     maParser = CSVParse_User(
@@ -409,9 +411,11 @@ class SyncUpdate(object):
         self._newSObject = False
         self._newMObject = False
         self._static = True
+        self._importantStatic = True
         self._syncWarnings = OrderedDict()
         self.updates = 0
         self.importantUpdates = 0
+        # self.problematic = False
 
     @property
     def oldMObject(self):
@@ -444,6 +448,11 @@ class SyncUpdate(object):
     @property
     def static(self):
         return self._static
+
+    @property
+    def importantStatic(self):
+        return self._importantStatic
+    
         
     @property
     def mTime(self):
@@ -478,11 +487,19 @@ class SyncUpdate(object):
     #     sValue = (sObject.get(col) or "")
     #     return (not mValue and not sValue)
 
+    def sanitizeValue(self, col, value):
+        if('phone' in col.lower()):
+            if('preferred' in col.lower()):
+                if(value and len(sanitationUtils.stripNonNumbers(value)) > 1):
+                    # print "value nullified", value
+                    return ""
+        return value
+
     def getMValue(self, col):
-        return self._oldMObject.get(col) or ""
+        return self.sanitizeValue(col, self._oldMObject.get(col) or "")
 
     def getSValue(self, col):
-        return self._oldSObject.get(col) or ""
+        return self.sanitizeValue(col, self._oldSObject.get(col) or "")
 
     def colIdentical(self, col):
         mValue = self.getMValue(col)
@@ -552,22 +569,27 @@ class SyncUpdate(object):
 
     def loserUpdate(self, winner, col, reason = "", data={}):
         if(winner == MASTER_NAME):
-            oldLoserObject = self._oldSObject
-            oldWinnerObject = self._oldMObject
+            # oldLoserObject = self._oldSObject
+            oldLoserValue = self.getSValue(col)
+            # oldWinnerObject = self._oldMObject
+            oldWinnerValue = self.getMValue(col)
             if(not self._newSObject): self._newSObject = deepcopy(sObject)
             newLoserObject = self._newSObject
         elif(winner == SLAVE_NAME):
-            oldLoserObject = self._oldMObject
-            oldWinnerObject = self._oldSObject
+            # oldLoserObject = self._oldMObject
+            oldLoserValue = self.getMValue(col)
+            # oldWinnerObject = self._oldSObject
+            oldWinnerValue = self.getSValue(col)
             if(not self._newMObject): self._newMObject = deepcopy(mObject)
             newLoserObject = self._newMObject
         # if data.get('warn'): 
-        self.addSyncWarning(col, winner, reason, oldLoserObject[col], oldWinnerObject[col])
+        self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue)
         if data.get('static'): self._static = False
-        newLoserObject[col] = oldWinnerObject[col]
+        newLoserObject[col] = oldWinnerValue
         self.updates += 1
         if(reason in ['updating', 'deleting']):
             self.importantUpdates += 1
+            if data.get('static'): self._importantStatic = False
 
     # def mUpdate(self, col, value, warn = False, reason = "", static=False):
     #     if(not self._newMObject): self._newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
@@ -595,7 +617,7 @@ class SyncUpdate(object):
         sValue = self.getSValue(col)
 
         winner = self._winner
-        reason = 'updating' if self.mMod and self.sMod else 'inserting'
+        reason = 'updating' if mValue and sValue else 'inserting'
             
         if( 'override' in str(sync_mode).lower() ):
             reason = 'overriding'
@@ -654,6 +676,8 @@ nonstaticMUpdates = []
 staticUpdates = []
 staticSUpdates = []
 staticMUpdates = []
+problematicUpdates = []
+masterUpdates = []
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -789,37 +813,92 @@ for match in globalMatches:
     syncUpdate = SyncUpdate(mObject, sObject)
     syncUpdate.update(syncCols, merge_mode)
 
-    if(not syncUpdate.static):
-        insort(nonstaticUpdates, syncUpdate)
-        if(syncUpdate.sUpdated):
-            insort(nonstaticSUpdates, syncUpdate)
-        if(syncUpdate.mUpdated):
+    if(not syncUpdate.importantStatic):
+        if(syncUpdate.mUpdated and syncUpdate.sUpdated):
+            if(syncUpdate.sMod):
+                insort(problematicUpdates, syncUpdate)
+            else:
+                insort(masterUpdates, syncUpdate)
+        if(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
             insort(nonstaticMUpdates, syncUpdate)
+            if(syncUpdate.sMod):
+                insort(problematicUpdates, syncUpdate)
+            else:
+                insort(masterUpdates, syncUpdate)
+        # if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+        #     insort(nonstaticSUpdates, syncUpdate)
     else:
         if(syncUpdate.sUpdated or syncUpdate.mUpdated):
-            insort(staticUpdates, syncUpdate)
-            if(syncUpdate.sUpdated):
-                insort(staticSUpdates, syncUpdate)
-            if(syncUpdate.mUpdated):
-                insort(staticMUpdates, syncUpdate)
+            if(syncUpdate.mUpdated and syncUpdate.sUpdated):
+                insort(masterUpdates, syncUpdate)
+                # insort(staticUpdates, syncUpdate)
+            if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
+                insort(masterUpdates, syncUpdate)
+                # insort(staticMUpdates, syncUpdate)
+            if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+                pass
+                # insort(staticSUpdates, syncUpdate)
             
-print hashify("STATIC MASTER (%d)" % len(staticMUpdates))
+# print hashify("STATIC BOTH (%d)" % len(staticUpdates))
 
-for update in staticMUpdates:
-    print update.rep_str()
-    print "\n"
+# for update in staticUpdates:
+#     print update.rep_str()
+#     print "\n"     
 
-print hashify("STATIC SLAVE (%d)" % len(staticSUpdates))
+# print hashify("STATIC MASTER (%d)" % len(staticMUpdates))
 
-for update in staticSUpdates:
-    print update.rep_str()
-    print "\n"
+# for update in staticMUpdates:
+#     print update.rep_str()
+#     print "\n"
 
-# print hashify("NONSTATIC (%d)" % len(nonstaticUpdates))
+# print hashify("STATIC SLAVE (%d)" % len(staticSUpdates))
+
+# for update in staticSUpdates:
+#     print update.rep_str()
+#     print "\n"
+
+# print hashify("NONSTATIC BOTH (%d)" % len(nonstaticUpdates))
 
 # for update in nonstaticUpdates:
 #     print update.rep_str()
+#     print "\n"         
+
+# print hashify("NONSTATIC MASTER(%d)" % len(nonstaticMUpdates))
+
+# for update in nonstaticMUpdates:
+#     print update.rep_str()
 #     print "\n"
+
+
+# print hashify("NONSTATIC SLAVE(%d)" % len(nonstaticSUpdates))
+
+# for update in nonstaticSUpdates:
+#     print update.rep_str()
+#     print "\n"
+
+print hashify(MASTER_NAME + " UPDATES(%d)" % len(masterUpdates))
+
+for update in masterUpdates:
+    print update.rep_str()
+    print "\n"
+
+
+print hashify("PROBLEMATIC UPDATES(%d)" % len(problematicUpdates))
+
+for update in problematicUpdates:
+    print update.rep_str()
+    print "\n"
+
+
+# PROBLEMATIC RECORDS:
+    # STATIC MASTER, sMod
+    # STATIC BOTH, sMod
+
+# NOW GET RECORDS FOR ACT IMPORT
+    # NONSTATIC MASTER
+    # NONSTATIC BOTH
+    # STATIC MASTER, not sMod
+    # STAT
 
 
 
