@@ -694,7 +694,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
-            'report': True,
+            # 'report': True,
             'capitalized':True,
         }),
         ('Postcode',{
@@ -704,7 +704,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
-            'report': True,
+            # 'report': True,
         }),
         ('State',{
             'label':'billing_state',
@@ -713,8 +713,16 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
-            'report':True,
+            # 'report':True,
             'capitalized':True,
+        }),
+        ('Country', {
+            'label':'billing_country',
+            'import':True,
+            'user':True,
+            'warn':True,
+            'static':True,
+            'capitalized':True
         }),
         ('Home Address 1',{
             'label':'shipping_address_1',
@@ -810,7 +818,7 @@ class ColData_User(ColData_Base):
             'label':'personal_email',
             'import':True,
             'user':True,
-            'report':True,
+            # 'report':True,
         }),
         # ('rowcount', {
         #     # 'import':True,
@@ -829,6 +837,10 @@ class ColData_User(ColData_Base):
             'import':True,
             'report':True
         }),
+        ('Last Sale', {
+            'import': True,
+            'report': True
+        })
     ])
 
     def __init__(self, data=None):

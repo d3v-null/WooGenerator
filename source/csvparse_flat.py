@@ -1,4 +1,4 @@
-from utils import descriptorUtils, listUtils, sanitationUtils
+from utils import descriptorUtils, listUtils, sanitationUtils, AddressUtils
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from collections import OrderedDict
 from coldata import ColData_User
@@ -6,6 +6,7 @@ import os
 import csv
 import time
 from pprint import pprint
+import operator
 # import re
 
 usrs_per_file = 1000
@@ -60,22 +61,128 @@ class CSVParse_Special(CSVParse_Flat):
     def getObjectID(self, objectData):
         return objectData.ID     
 
+class ContactAddress(object):
+    stateAbbreviations = OrderedDict([
+            ('WA',  ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
+            ('ACT', ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
+            ('NSW', ['NEW SOUTH WALES']),
+            ('NT',  ['NORTHERN TERRITORY']),
+            ('QLD', ['QUEENSLAND']),
+            ('SA',  ['SOUTH AUSTRALIA']),
+            ('TAS', ['TASMAIA'])
+        ])
+
+
+    def __init__(self, schema=None, **kwargs):
+        self.valid = True
+        if not any( filter(None, map(
+            lambda key: kwargs.get(key, ''), 
+            ['line1', 'line2', 'city', 'postcode', 'state']
+        ))): 
+            self.empty = True
+            self.valid = False
+        else:
+            self.empty = False
+            if not schema: schema = self.__class__.determineSchema(**kwargs)
+
+            lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
+
+            if('state' in kwargs.keys() and kwargs.get('state', '')):
+                stateSanitized = AddressUtils.sanitizeState(kwargs['state'])
+                if stateSanitized in self.stateAbbreviations.keys():
+                    pass
+
+                # for state, abbrebiations in self.stateAbbreviations:
+
+                # self.state = 
+
+            numberLines = filter(
+                sanitationUtils.stringContainsNumbers, 
+                lines
+            )
+            numberlessLines = filter(
+                sanitationUtils.stringContainsNoNumbers,
+                lines
+            )
+            if(numberlessLines):
+                if len(numberlessLines) == 1:
+                    self.attn = numberlessLines[0]
+                else:
+                    self.valid = False
+
+            for line in numberLines:
+                pass
+                # shopNum, line = AddressUtils.extraxtShop(line)
+                # if(shopNum): self.shopNum = shopNum
+                # print shopNum, line
+                
+            if(schema in ['act']):
+                pass
+                #TODO: THIS
+            else:
+                pass
+                #TODO: THIS
+
+            if('country' in kwargs.keys() and kwargs.get('country', '')):
+                self.country = unicode(kwargs['country']).upper()
+
+
+
+
+    @staticmethod
+    def determineSchema(**kwargs):
+        fields = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2', 'city']))
+        if(fields):
+            actLike = all(map(sanitationUtils.stringCapitalized, fields))
+            if(actLike):
+                return 'act'
+        return None
+
+    def stringify(self, out_schema):
+        pass
+        #TODO: THIS
+
+
+
 class ImportUser(ImportFlat):
 
     email = descriptorUtils.safeKeyProperty('E-mail')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
+    contact_schema = descriptorUtils.safeKeyProperty('contact_schema')
+    billing_address = descriptorUtils.safeKeyProperty('Address')
+    shipping_address = descriptorUtils.safeKeyProperty('Home Address')
 
     def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
-        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role']:
+        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema']:
             val = kwargs.get(key, "")
             if(val):
                 self[key] = val
             elif(not self.get(key)):
                 self[key] = ""
-                            
+
+        self['Address'] = ContactAddress(
+            self.contact_schema,  
+            line1       = self.get('Address 1', ''),
+            line2       = self.get('Address 2', ''),
+            city        = self.get('City', ''),
+            postcode    = self.get('Postcode', ''),
+            state       = self.get('State', ''),
+            country     = self.get('Country'),
+        )
+
+        self['Home Address'] = ContactAddress(
+            self.contact_schema,  
+            line1       = self.get('Home Address 1', ''),
+            line2       = self.get('Home Address 2', ''),
+            city        = self.get('Home City', ''),
+            postcode    = self.get('Home Postcode', ''),
+            state       = self.get('Home State', ''),
+            country     = self.get('Home Country', '')
+        )
+
 
     def __repr__(self):
         return "<%s> %s | %s | %s | %s " % (self.index, self.email, self.MYOBID, self.role, self.username)
@@ -100,7 +207,7 @@ class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
 
-    def __init__(self, cols=[], defaults = {}):
+    def __init__(self, cols=[], defaults = {}, contact_schema = None):
         extra_cols = [  
             # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date', 
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
@@ -113,6 +220,7 @@ class CSVParse_User(CSVParse_Flat):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         super(CSVParse_User, self).__init__(cols, defaults)
+        self.contact_schema = contact_schema
         # self.itemIndexer = self.getUsername
 
     # def getKwargs(self, allData, container, **kwargs):
@@ -240,6 +348,12 @@ class CSVParse_User(CSVParse_Flat):
             self.registerNoUsername(objectData)
 
         super(CSVParse_User, self).registerObject(objectData)
+
+    def getKwargs(self, allData, container, **kwargs):
+        kwargs = super(CSVParse_User, self).getKwargs(allData, container, **kwargs)
+        if not 'contact_schema' in kwargs.keys():
+            kwargs['contact_schema'] = self.contact_schema
+        return kwargs
 
     # def processRoles(self, objectData):
     #     role = objectData.role

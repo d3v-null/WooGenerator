@@ -25,12 +25,14 @@ DEFAULT_LAST_SYNC = "2015-06-01 00:00:00"
 merge_mode = "sync"
 merge_mode = "merge"
 
-maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
+# maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
+maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
 # maPath = os.path.join(inFolder, "bad act.csv")
-saPath = os.path.join(inFolder, "wordpress_export.csv")
+# saPath = os.path.join(inFolder, "wordpress_export.csv")
+saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-15.csv")
 
 testMode = False
-# testMode = True
+testMode = True
 if(testMode):
     maPath = os.path.join(inFolder, "200-act-records.csv")
     saPath = os.path.join(inFolder, "100-wp-records.csv")
@@ -76,7 +78,8 @@ except Exception as e:
     if(e): pass
     maParser = CSVParse_User(
         cols = colData.getImportCols(),
-        defaults = colData.getDefaults()
+        defaults = colData.getDefaults(),
+        contact_schema = 'act'
     )
 
     saParser = CSVParse_User(
@@ -96,21 +99,21 @@ except Exception as e:
 # email valid and direct customer TechnoTan
 #no requirements for new account in act, everything goes in, but probably need email
 
-def fieldActLike(field):
-    if(sanitationUtils.unicodeToAscii(field) == sanitationUtils.unicodeToAscii(field).upper() ):
-        return True
-    else:
-        return False
+# def fieldActLike(field):
+    # if(sanitationUtils.unicodeToAscii(field) == sanitationUtils.unicodeToAscii(field).upper() ):
+    #     return True
+    # else:
+    #     return False
 
 def addressActLike(obj):
     for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
-        if(not fieldActLike(obj.get(col) or "")):
+        if(not sanitationUtils.fieldActLike(obj.get(col) or "")):
             return False
     return True
 
 def nameActLike(obj):
     for col in ['First Name']:
-        if(not fieldActLike(obj.get(col)) or ""):
+        if(not sanitationUtils.fieldActLike(obj.get(col)) or ""):
             return False
     return True
 
@@ -125,22 +128,35 @@ def recordActLike(obj):
         if(val): 
             recordEmpty = False
         else:
-            if(not fieldActLike(val)):
+            if(not sanitationUtils.fieldActLike(val)):
                 actLike = False
     if(actLike and not recordEmpty):
         return True
     else:
         return False
 
-# for email, users in maParser.emails.items():
-#     for user in users:
-#         actlike = recordActLike(user)
-#         if not actlike:
-#             print "-> ", repr(user)
-#             usrList = UsrObjList()
-#             usrList.addObject(user)
-#             print usrList.rep_str(capitalCols)
-# quit()
+def contactActLike(obj):
+    recordEmpty = not any(filter(None, map(lambda key: key in obj.keys(), ['First Name', 'Surname', 'Contact', 'Middle Name'])))
+    names = map( lambda key: obj.get(key) or "", ['First Name', 'Middle Name', 'Surname'])
+    nameSum = " ".join(filter(None, names))
+    return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
+
+
+
+for email, users in maParser.emails.items():
+    for user in users:
+        actlike = contactActLike(user)
+        if not actlike:
+            print "-> ", repr(user)
+            usrList = UsrObjList()
+            usrList.addObject(user)
+            print usrList.rep_str(OrderedDict([
+                ('First Name',{}),
+                ('Middle Name', {}),
+                ('Surname',{}),
+                ('Contact', {})    
+            ]))
+quit()
 
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
@@ -457,6 +473,7 @@ class SyncUpdate(object):
         self._tTime = TimeUtils.wpStrptime( lastSync )
         self._mTime = TimeUtils.actStrptime( self._oldMObject.get('Edited in Act'))
         self._sTime = TimeUtils.wpStrptime( self._oldSObject.get('updated') )
+        self._bTime = TimeUtils.actStrptime( self._oldMObject.get('Last Sale'))
         self._winner = SLAVE_NAME if(self._sTime >= self._mTime) else MASTER_NAME
         
         self._newSObject = False
@@ -531,6 +548,11 @@ class SyncUpdate(object):
     @property
     def tTime(self):
         return self._tTime
+
+    @property
+    def bTime(self):
+        return self._bTime
+    
 
     @property
     def lTime(self):
@@ -726,7 +748,8 @@ class SyncUpdate(object):
         return out_str
 
     def __cmp__(self, other):
-        return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
+        return -cmp(self.bTime, other.bTime)
+        # -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
 
 
 # get matches
@@ -950,24 +973,30 @@ print hashify(MASTER_NAME + " UPDATES(%d)" % len(masterUpdates))
 
 print hashify("PROBLEMATIC UPDATES(%d)" % len(problematicUpdates))
 
-# for update in problematicUpdates:
-#     print update.rep_str()
-#     print "\n"
+for update in problematicUpdates:
+    print update.rep_str()
+    print "\n"
 
-importUsers = UsrObjList()
 
-for update in masterUpdates:
-    importUsers.addObject(update.newMObject)
 
-print hashify("IMPORT USERS (%d)" % len(importUsers))
 
-print importUsers.rep_str()
 
-importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getUserCols().keys()))
+#uncomment below to export
 
-with open(moPath) as outFile:
-    for line in outFile.readlines():
-        print line[:-1]
+# importUsers = UsrObjList()
+
+# for update in masterUpdates:
+#     importUsers.addObject(update.newMObject)
+
+# print hashify("IMPORT USERS (%d)" % len(importUsers))
+
+# print importUsers.rep_str()
+
+# importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getUserCols().keys()))
+
+# with open(moPath) as outFile:
+#     for line in outFile.readlines():
+#         print line[:-1]
 
 
 
