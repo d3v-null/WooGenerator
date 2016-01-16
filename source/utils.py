@@ -84,6 +84,7 @@ class sanitationUtils:
 
     @staticmethod
     def stripAllWhitespace(string):
+        if DEBUG: print "stripAllWhitespace", repr(string)
         str_out = re.sub(r'\s', '', string)
         if DEBUG: print "stripAllWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
         return str_out
@@ -303,8 +304,99 @@ class sanitationUtils:
     def stringCapitalized(string):
         return unicode(string) == unicode(string).upper()
 
+
+
+def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
+    return "|".join(filter(None,[
+        "|".join(filter(None,abbrvs)),
+        abbrvKey
+    ]))
+
+def compileAbbrvRegex( abbrv ):
+    return "|".join(filter(None,
+        [compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
+    ))
+
+
 class AddressUtils:
-    shopRegex = r"\s*(SHOP|SH|SP|UNIT)?[\s#]*(?P<number>[\d /-]*)\s*(?P<rest>.*)$"
+    subunitAbbreviations = OrderedDict([
+        ('APT',     ['APARTMENT', 'APPARTMENT']),
+        ('FY',      ['FACTORY']),
+        ('F',       ['FLAT', 'FLT']),
+        ('MB',      ['MARINE BERTH']),
+        ('OFF',     ['OFFICE']),
+        ('RM',      ['ROOM']),
+        ('SHED',    []),
+        ('SHOP',    ['SH', 'SP']),
+        ('SITE',    []),
+        ('SL',      ['STALL']),
+        ('SE',      ['SUITE']),
+        ('U',       ['UNIT']),
+        ('VLLA',    ['VILLA']),
+        ('WE',      ['WAREHOUSE'])
+    ])
+
+    stateAbbreviations = OrderedDict([
+        ('WA',      ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
+        ('ACT',     ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
+        ('NSW',     ['NEW SOUTH WALES']),
+        ('NT',      ['NORTHERN TERRITORY']),
+        ('QLD',     ['QUEENSLAND']),
+        ('SA',      ['SOUTH AUSTRALIA']),
+        ('TAS',     ['TASMAIA'])
+    ])
+
+    floorAbbreviations = OrderedDict([
+        ('B',       ['BASEMENT']),
+        ('G',       ['GROUND FLOOR', 'GROUND']),
+        ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
+        ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND']),
+        ('FL',      ['FLOOR']),
+        ('L',       ['LEVEL']),
+        ('M',       ['MEZZANINE'])
+    ])
+
+    thoroughfareAbbreviations = OrderedDict([
+        ('ALLY',    ['ALLEY']),
+        ('ARC',     ['ARCADE']),
+        ('AVE',     ['AVENUE']),
+        ('BVD',     ['BOULEVARD']),
+        ('CL',      ['CLOSE']),
+        ('CT',      ['COURT']),
+        ('CRES',    ['CRESCENT']),
+        ('DR',      ['DRIVE'])
+    ])
+
+    numberRangeRegex = r"\d+ ?- ?\d+(?=[;/, ])"
+    numberAlphaRegex = r"\d+ ?[A-Z](?=[;/, ])"
+    numberRegex      = r"\d+"
+    slashAbbrvRegex  = r"[A-Z]+/[A-Z]+"
+    delimeterRegex   = r"[\s/,;]"
+    clearStartRegex  = r"(?<!%s)" % delimeterRegex
+    
+    floorLevelRegex = r"((FLOOR|LEVEL) )?(%s) ?%s" % (
+        compileAbbrvRegex(floorAbbreviations),
+        numberRegex
+    )
+    subunitRegex = r"(%s) (%s)" % (
+        compileAbbrvRegex(subunitAbbreviations),
+        "|".join([
+            numberAlphaRegex,
+            numberRangeRegex,
+            numberRegex
+        ])
+    )
+    stateRegex = r"(%s)" % compileAbbrvRegex(stateAbbreviations)
+
+    addressTokenRegex = r"(%s|[^,\s\d/()-]+)" % "|".join([
+        clearStartRegex + floorLevelRegex,
+        clearStartRegex + subunitRegex,
+        clearStartRegex + stateRegex,
+        numberRangeRegex, 
+        numberAlphaRegex,
+        numberRegex,
+        slashAbbrvRegex
+    ])
 
     @staticmethod
     def sanitizeState(string):
@@ -314,11 +406,30 @@ class AddressUtils:
             sanitationUtils.stripExtraWhitespace,   
             sanitationUtils.stripPunctuation,
             sanitationUtils.toUpper
+        )(string)
+
+    @staticmethod
+    def tokenizeAddress(string):
+        matches =  re.findall(
+            AddressUtils.addressTokenRegex, 
+            string
+        )
+        if DEBUG: print repr(matches)
+        if DEBUG: print repr(AddressUtils.addressTokenRegex)
+        return map(
+            lambda match: sanitationUtils.stripAllWhitespace(match[0]),
+            matches    
         )
 
     @staticmethod
-    def determineDigitLayout(string):
-        return re.findall(r"([\d-]+|[^,\s\d/-]+)", string)
+    def addressRemoveEndWord(string, word):
+        string_layout = AddressUtils.tokenizeAddress(string)
+        word_layout = AddressUtils.tokenizeAddress(word)
+        if not(word_layout and string_layout): return string
+        for i, word in enumerate(reversed(word_layout)):
+            if( 1 + i > len(word_layout)) or word != string_layout[-1-i]:
+                return string
+        return " ".join(string_layout[:-len(word_layout)])
 
     @staticmethod
     def extractShop(address):
@@ -558,6 +669,14 @@ if __name__ == '__main__':
     #     for line in testfile.readlines():
     #         print line[:-1]
 
+    # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
+
+    # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
+
+    print AddressUtils.subunitRegex
+    print AddressUtils.floorLevelRegex
+    print AddressUtils.stateRegex
+
     for line in [
         "8/5-7 KILVINGTON DRIVE",
         "SH20 SANCTUARY LAKES SHOPPING CENTRE",
@@ -684,7 +803,7 @@ if __name__ == '__main__':
         "WESTFIELD DONCASTER SHOPPING CENTRE",
         "153 BREBNER SR",
         "HELENSVALE TOWN CENTRE",
-        "SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (",
+        "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD, KENWICK WA (",
         "3/3 HOWARD AVA",
         "8/2 RIDER BLVD",
         "ROBINA PARKWAY",
@@ -699,8 +818,9 @@ if __name__ == '__main__':
         "A8/90 MOUNT STREET",
         "114 / 23 CORUNNA RD",
         "43 GINGHAM STREET",
-        "5 KERRY CRESCENT",
+        "5 KERRY CRESCENT, WESTERN AUSTRALIA",
         "UNIT 2/33 MARTINDALE STREET",
         "207/67 WATT ST"
     ]:
-        print sanitationUtils.unicodeToAscii("%100s %s" % (line, AddressUtils.determineDigitLayout(line)))
+        # pass
+        print sanitationUtils.unicodeToAscii("%100s %s" % (line, AddressUtils.tokenizeAddress(line)))
