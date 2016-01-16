@@ -143,19 +143,19 @@ def contactActLike(obj):
 
 
 
-for email, users in maParser.emails.items():
-    for user in users:
-        actlike = contactActLike(user)
-        if not actlike:
-            print "-> ", repr(user)
-            usrList = UsrObjList()
-            usrList.addObject(user)
-            print usrList.rep_str(OrderedDict([
-                ('First Name',{}),
-                ('Middle Name', {}),
-                ('Surname',{}),
-                ('Contact', {})    
-            ]))
+# for email, users in maParser.emails.items():
+#     for user in users:
+#         actlike = contactActLike(user)
+#         if not actlike:
+#             print "-> ", repr(user)
+#             usrList = UsrObjList()
+#             usrList.addObject(user)
+#             print usrList.rep_str(OrderedDict([
+#                 ('First Name',{}),
+#                 ('Middle Name', {}),
+#                 ('Surname',{}),
+#                 ('Contact', {})    
+#             ]))
 quit()
 
 class Match(object):

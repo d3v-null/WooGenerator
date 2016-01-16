@@ -62,18 +62,9 @@ class CSVParse_Special(CSVParse_Flat):
         return objectData.ID     
 
 class ContactAddress(object):
-    stateAbbreviations = OrderedDict([
-            ('WA',  ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
-            ('ACT', ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
-            ('NSW', ['NEW SOUTH WALES']),
-            ('NT',  ['NORTHERN TERRITORY']),
-            ('QLD', ['QUEENSLAND']),
-            ('SA',  ['SOUTH AUSTRALIA']),
-            ('TAS', ['TASMAIA'])
-        ])
-
-
     def __init__(self, schema=None, **kwargs):
+        self.kwargs = kwargs
+        self.properties = OrderedDict()
         self.valid = True
         if not any( filter(None, map(
             lambda key: kwargs.get(key, ''), 
@@ -82,19 +73,54 @@ class ContactAddress(object):
             self.empty = True
             self.valid = False
         else:
+            pprint(kwargs)
             self.empty = False
             if not schema: schema = self.__class__.determineSchema(**kwargs)
 
             lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
 
+
+            if('country' in kwargs.keys() and kwargs.get('country', '')):
+                countrySanitized = AddressUtils.sanitizeState(kwargs['country'])
+                # wordsToRemove.append(countrySanitized)
+                self.properties['country'] = countrySanitized
+
             if('state' in kwargs.keys() and kwargs.get('state', '')):
+                wordsToRemove = []
                 stateSanitized = AddressUtils.sanitizeState(kwargs['state'])
-                if stateSanitized in self.stateAbbreviations.keys():
-                    pass
+                wordsToRemove.append(stateSanitized)
+                if stateSanitized in AddressUtils.stateAbbreviations.keys():
+                    self.properties['state'] = stateSanitized
+                else:
+                    for state, abbrebiations in AddressUtils.stateAbbreviations.items():
+                        if stateSanitized in abbrebiations:
+                            self.properties['state'] = state
+                            wordsToRemove.append(state)
+                    if not self.properties.get('state'):
+                        self.properties['state'] = stateSanitized
+                for word in wordsToRemove:
+                    for i, line in enumerate(lines):
+                        if sanitationUtils.stringContainsNumbers(line):
+                            new_line = AddressUtils.addressRemoveEndWord(line, word)
+                            if(line != new_line):
+                                print ( "removing word %s from %s -> %s" % (word,line, new_line))
+                            lines[i] = new_line
+            else:
+                for state, abbrebiations in AddressUtils.stateAbbreviations.items():
+                    for word in [state] + abbrebiations:
+                        for i, line in enumerate(lines):
+                            new_line = AddressUtils.addressRemoveEndWord(line, word)
+                            if new_line != line:
+                                lines[i] = new_line
+                                print "found state %s in %s -> %s" % (state, line, new_line)
 
-                # for state, abbrebiations in self.stateAbbreviations:
 
-                # self.state = 
+            if 'city' in kwargs.keys() and kwargs.get('city', ''):
+                citySanitized = AddressUtils.sanitizeState(kwargs['city'])
+                self.properties['city'] = citySanitized
+                # wordsToRemove.append(citySanitized)
+
+
 
             numberLines = filter(
                 sanitationUtils.stringContainsNumbers, 
@@ -122,12 +148,6 @@ class ContactAddress(object):
             else:
                 pass
                 #TODO: THIS
-
-            if('country' in kwargs.keys() and kwargs.get('country', '')):
-                self.country = unicode(kwargs['country']).upper()
-
-
-
 
     @staticmethod
     def determineSchema(**kwargs):
