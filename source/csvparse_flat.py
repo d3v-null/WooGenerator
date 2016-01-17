@@ -7,7 +7,7 @@ import csv
 import time
 from pprint import pprint
 import operator
-# import re
+import re
 
 usrs_per_file = 1000
 
@@ -120,8 +120,6 @@ class ContactAddress(object):
                 self.properties['city'] = citySanitized
                 # wordsToRemove.append(citySanitized)
 
-
-
             numberLines = filter(
                 sanitationUtils.stringContainsNumbers, 
                 lines
@@ -136,8 +134,28 @@ class ContactAddress(object):
                 else:
                     self.valid = False
 
+            # Extract subunit numbers
+            self.properties.subunits = []
+            self.properties.isShop = False
             for line in numberLines:
-                pass
+                tokens = AddressUtils.tokenizeAddress(line)
+                print tokens
+                for i, token in enumerate(tokens):
+                    subunit = AddressUtils.getSubunit(token)
+                    if(subunit):
+                        subunit_type, subunit_number = subunit
+                        if subunit_type in ['SHOP', 'SE', 'KSK', 'SHRM']:
+                            self.isShop = True
+                        self.properties.subunits.append( (subunit_type, subunit_number) )
+
+            # Extract floor level number
+            # self.properties.floorLevel
+            # for line in numberLines:
+            #     for token in AddressUtils.tokenizeAddress(line):
+            #         match = re.match(AddressUtils.floorLevelRegex, token)
+            #         if(match): print match.groupdict()
+
+                        # AddressUtils.getAbbrevKey(AddressUtils.subunitAbbreviations, token)
                 # shopNum, line = AddressUtils.extraxtShop(line)
                 # if(shopNum): self.shopNum = shopNum
                 # print shopNum, line

@@ -320,20 +320,59 @@ def compileAbbrvRegex( abbrv ):
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
-        ('APT',     ['APARTMENT', 'APPARTMENT']),
-        ('FY',      ['FACTORY']),
-        ('F',       ['FLAT', 'FLT']),
-        ('MB',      ['MARINE BERTH']),
-        ('OFF',     ['OFFICE']),
-        ('RM',      ['ROOM']),
+        ('ANT',     ['ANTENNA']),
+        ('APT',     ['APARTMENT']),
+        ('ATM',     ['AUTOMATED TELLER MACHINE']),
+        ('BBQ',     ['BARBECUE']),
+        ('BTSD',    ['BOATSHED']),
+        ('BLDG',    ['BUILDING']),
+        ('BNGW',    ['BUNGALOW']),
+        ('CAGE',    []),
+        ('CARP',    ['CARPARK']),
+        ('CARS',    ['CARSPACE']),
+        ('CLUB',    []),
+        ('COOL',    ['COOLROOM']),
+        ('CTGE',    ['COTTAGE']),
+        ('DUPL',    ['DUPLEX']),
+        ('FCTY',    ['FACTORY', 'FY']),
+        ('FLAT',    ['FLT','FL','F']),
+        ('GRGE',    ['GARAGE']),
+        ('HALL',    []),
+        ('HSE',     ['HOUSE']),
+        ('KSK',     ['KIOSK']),
+        ('LSE',     ['LEASE']),
+        ('LBBY',    ['LOBBY']),
+        ('LOFT',    []),
+        ('LOT',     []),
+        ('MSNT',    ['MAISONETTE']),
+        ('MBTH',    ['MARINE BERTH', 'MB']),
+        ('OFFC',    ['OFFICE', 'OFF']),
+        ('RESV',    ['RESERVE']),
+        ('ROOM',    ['RM']),
         ('SHED',    []),
         ('SHOP',    ['SH', 'SP']),
+        ('SHRM',    ['SHOWROOM']),
+        ('SIGN',    []),
         ('SITE',    []),
-        ('SL',      ['STALL']),
+        ('STLL',    ['STALL', 'SL']),
+        ('STOR',    ['STORE']),
+        ('STR',     ['STRATA UNIT']),
+        ('STU',     ['STUDIO', 'STUDIO APARTMENT']),
+        ('SUBS',    ['SUBSTATION']),
         ('SE',      ['SUITE']),
-        ('U',       ['UNIT']),
+        ('TNCY',    ['TENANCY']),
+        ('TWR',     ['TOWER']),
+        ('TNHS',    ['TOWNHOUSE']),
+        ('UNIT',    ['U']),
+        ('VLT',     ['VAULT']),
         ('VLLA',    ['VILLA']),
-        ('WE',      ['WAREHOUSE'])
+        ('WARD',    []),
+        ('WHSE',    ['WAREHOUSE', 'WE']),
+        ('WKSH',    ['WORKSHOP'])
+    ])
+
+    shopAbbreviations = OrderedDict([
+        (key, subunitAbbreviations[key]) for key in ['SHOP', 'SUITE'] if key in subunitAbbreviations.keys()
     ])
 
     stateAbbreviations = OrderedDict([
@@ -357,46 +396,228 @@ class AddressUtils:
     ])
 
     thoroughfareAbbreviations = OrderedDict([
-        ('ALLY',    ['ALLEY']),
-        ('ARC',     ['ARCADE']),
-        ('AVE',     ['AVENUE']),
-        ('BVD',     ['BOULEVARD']),
-        ('CL',      ['CLOSE']),
-        ('CT',      ['COURT']),
-        ('CRES',    ['CRESCENT']),
-        ('DR',      ['DRIVE'])
+        ('ACCS',     ['ACCESS']),
+        ('ALLY',     ['ALLEY']),
+        ('ALWY',     ['ALLEYWAY']),
+        ('AMBL',     ['AMBLE']),
+        ('APP',      ['APPROACH']),
+        ('ARC',      ['ARCADE']),
+        ('ARTL',     ['ARTERIAL']),
+        ('ARTY',     ['ARTERY']),
+        ('AVE',      ['AVENUE','AV']),
+        ('BA',       ['BANAN']),
+        ('BEND',     []),
+        ('BWLK',     ['BOARDWALK']),
+        ('BVD',      ['BOULEVARD']),
+        ('BR',       ['BRACE']),
+        ('BRAE',     []),
+        ('BRK',      ['BREAK']),
+        ('BROW',     []),
+        ('BYPA',     ['BYPASS']),
+        ('BYWY',     ['BYWAY']),
+        ('CSWY',     ['CAUSEWAY']),
+        ('CTR',      ['CENTRE']),
+        ('CH',       ['CHASE']),
+        ('CIR',      ['CIRCLE']),
+        ('CCT',      ['CIRCUIT']),
+        ('CRCS',     ['CIRCUS']),
+        ('CL',       ['CLOSE']),
+        ('CON',      ['CONCOURSE']),
+        ('CPS',      ['COPSE']),
+        ('CNR',      ['CORNER']),
+        ('CT',       ['COURT']),
+        ('CTYD',     ['COURTYARD']),
+        ('COVE',     []),
+        ('CRES',     ['CRESCENT', 'CR']),
+        ('CRST',     ['CREST']),
+        ('CRSS',     ['CROSS']),
+        ('CSAC',     ['CUL-DE-SAC']),
+        ('CUTT',     ['CUTTING']),
+        ('DALE',     []),
+        ('DIP',      []),
+        ('DR',       ['DRIVE']),
+        ('DVWY',     ['DRIVEWAY']),
+        ('EDGE',     []),
+        ('ELB',      ['ELBOW']),
+        ('END',      []),
+        ('ENT',      ['ENTRANCE']),
+        ('ESP',      ['ESPLANADE']),
+        ('EXP',      ['EXPRESSWAY']),
+        ('FAWY',     ['FAIRWAY']),
+        ('FOLW',     ['FOLLOW']),
+        ('FTWY',     ['FOOTWAY']),
+        ('FORM',     ['FORMATION']),
+        ('FWY',      ['FREEWAY']),
+        ('FRTG',     ['FRONTAGE']),
+        ('GAP',      []),
+        ('GDNS',     ['GARDENS']),
+        ('GTE',      ['GATE']),
+        ('GLDE',     ['GLADE']),
+        ('GLEN',     []),
+        ('GRA',      ['GRANGE']),
+        ('GRN',      ['GREEN']),
+        ('GR',       ['GROVE']),
+        ('HTS',      ['HEIGHTS']),
+        ('HIRD',     ['HIGHROAD']),
+        ('HWY',      ['HIGHWAY']),
+        ('HILL',     []),
+        ('INTG',     ['INTERCHANGE']),
+        ('JNC',      ['JUNCTION']),
+        ('KEY',      []),
+        ('LANE',     []),
+        ('LNWY',     ['LANEWAY']),
+        ('LINE',     []),
+        ('LINK',     []),
+        ('LKT',      ['LOOKOUT']),
+        ('LOOP',     []),
+        ('MALL',     []),
+        ('MNDR',     ['MEANDER']),
+        ('MEWS',     []),
+        ('MTWY',     ['MOTORWAY']),
+        ('NOOK',     []),
+        ('OTLK',     ['OUTLOOK']),
+        ('PDE',      ['PARADE']),
+        ('PWY',      ['PARKWAY']),
+        ('PASS',     []),
+        ('PSGE',     ['PASSAGE']),
+        ('PATH',     []),
+        ('PWAY',     ['PATHWAY']),
+        ('PIAZ',     ['PIAZZA']),
+        ('PLZA',     ['PLAZA']),
+        ('PKT',      ['POCKET']),
+        ('PNT',      ['POINT']),
+        ('PORT',     []),
+        ('PROM',     ['PROMENADE']),
+        ('QDRT',     ['QUADRANT']),
+        ('QYS',      ['QUAYS']),
+        ('RMBL',     ['RAMBLE']),
+        ('REST',     []),
+        ('RTT',      ['RETREAT']),
+        ('RDGE',     ['RIDGE']),
+        ('RISE',     []),
+        ('RD',       []),
+        ('RTY',      ['ROTARY']),
+        ('RTE',      ['ROUTE']),
+        ('ROW',      []),
+        ('RUE',      []),
+        ('SVWY',     ['SERVICEWAY']),
+        ('SHUN',     ['SHUNT']),
+        ('SPUR',     []),
+        ('SQ',       ['SQUARE']),
+        ('ST',       ['STREET']),
+        ('SBWY',     ['SUBWAY']),
+        ('TARN',     []),
+        ('TCE',      ['TERRACE']),
+        ('THFR',     ['THOROUGHFARE']),
+        ('TLWY',     ['TOLLWAY']),
+        ('TOP',      []),
+        ('TOR',      []),
+        ('TRK',      ['TRACK']),
+        ('TRL',      ['TRAIL']),
+        ('TURN',     []),
+        ('UPAS',     ['UNDERPASS']),
+        ('VALE',     []),
+        ('VIAD',     ['VIADUCT']),
+        ('VIEW',     []),
+        ('VSTA',     ['VISTA']),
+        ('WALK',     []),
+        ('WKWY',     ['WALKWAY']),
+        ('WHRF',     ['WHARF']),
+        ('WYND',     [])
     ])
 
-    numberRangeRegex = r"\d+ ?- ?\d+(?=[;/, ])"
-    numberAlphaRegex = r"\d+ ?[A-Z](?=[;/, ])"
-    numberRegex      = r"\d+"
+    thoroughfareSuffixAbbreviations = OrderedDict([
+        ('CN',  ['CENTRAL']),
+        ('E',   ['EAST']),
+        ('EX',  ['EXTENSION']),
+        ('LR',  ['LOWER']),
+        ('N',   ['NORTH']),
+        ('NE',  ['NORTH EAST']),
+        ('NW',  ['NORTH WEST']),
+        ('S',   ['SOUTH']),
+        ('SE',  ['SOUTH EAST']),
+        ('SW',  ['SOUTH WEST']),
+        ('UP',  ['UPPER']),
+        ('W',   ['WEST'])
+    ])
+
+    buildingTypeAbbreviations = OrderedDict([
+        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING"]),
+        ('PLAZA',           []),
+        ('ARCADE',          []),
+        ('MALL',            [])
+    ])
+
+    delimeters       = [r"\s", r"/", r",", r";"]
+    delimeterRegex   = r"[%s]" % "".join(delimeters)
+    nondelimeterRegex= r"[^%s]" % "".join(delimeters)
+    clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
+    clearFinishRegex = r"(?!%s)" % nondelimeterRegex
+    numberRangeRegex = r"(\d+) ?- ?(\d+)"
+    numberAlphaRegex = r"(\d+) ?([A-Z])"
+    numberSlashRegex = r"(\d+)/(\d+)"
+    numberRegex      = r"(\d+)"
     slashAbbrvRegex  = r"[A-Z]+/[A-Z]+"
-    delimeterRegex   = r"[\s/,;]"
-    clearStartRegex  = r"(?<!%s)" % delimeterRegex
     
-    floorLevelRegex = r"((FLOOR|LEVEL) )?(%s) ?%s" % (
+    floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
         compileAbbrvRegex(floorAbbreviations),
-        numberRegex
+        numberRegex,
     )
-    subunitRegex = r"(%s) (%s)" % (
+    subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>%s)" % (
         compileAbbrvRegex(subunitAbbreviations),
         "|".join([
             numberAlphaRegex,
             numberRangeRegex,
+            # numberSlashRegex,
             numberRegex
-        ])
+        ]),
     )
     stateRegex = r"(%s)" % compileAbbrvRegex(stateAbbreviations)
+    buildingTypeRegex = r"(?P<building_type>%s)" % (
+        compileAbbrvRegex(buildingTypeAbbreviations)
+    )
+    thoroughfareRegex = r"(?P<thoroughfare_type>%s)" % (
+        compileAbbrvRegex(thoroughfareAbbreviations)
+    )
 
     addressTokenRegex = r"(%s|[^,\s\d/()-]+)" % "|".join([
-        clearStartRegex + floorLevelRegex,
-        clearStartRegex + subunitRegex,
-        clearStartRegex + stateRegex,
-        numberRangeRegex, 
-        numberAlphaRegex,
-        numberRegex,
-        slashAbbrvRegex
+        clearStartRegex + floorLevelRegex + clearFinishRegex,
+        clearStartRegex + subunitRegex + clearFinishRegex,
+        clearStartRegex + buildingTypeRegex + clearFinishRegex,
+        clearStartRegex + thoroughfareRegex + clearFinishRegex,
+        clearStartRegex + numberRangeRegex + clearFinishRegex,
+        # clearStartRegex + numberSlashRegex + clearFinishRegex,
+        clearStartRegex + numberAlphaRegex + clearFinishRegex,
+        clearStartRegex + numberRegex + clearFinishRegex,
+        clearStartRegex + slashAbbrvRegex + clearFinishRegex
     ])
+
+    @staticmethod
+    def identifyAbbreviation(abbrvDict, string):
+        for abbrvKey, abbrvs in abbrvDict.items():
+            if( string in [abbrvKey] + abbrvs):
+                return abbrvKey
+        None
+
+    @staticmethod
+    def identifySubunit(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.subunitAbbreviations, string)
+
+    @staticmethod
+    def getSubunit(token):
+        match = re.match(
+            AddressUtils.clearStartRegex + \
+                AddressUtils.subunitRegex + \
+                AddressUtils.clearFinishRegex, \
+            token)
+        matchdict = match.groupdict() if match else None
+        if(matchdict and matchdict.get('subunit_type') and matchdict.get('subunit_number')): 
+            subunit_type = AddressUtils.identifySubunit(matchdict.get('subunit_type'))
+            subunit_number = matchdict.get('subunit_number')
+            print "FOUND SUBUNIT %s %s" % (subunit_type, subunit_number)
+            return subunit_type, subunit_number
+        return None
+
 
     @staticmethod
     def sanitizeState(string):
@@ -409,6 +630,13 @@ class AddressUtils:
         )(string)
 
     @staticmethod
+    def sanitizeAddressToken(string):
+        string = sanitationUtils.stripExtraWhitespace(string)
+        string = re.sub(AddressUtils.numberAlphaRegex, r'\1\2', string)
+        string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
+        return string
+
+    @staticmethod
     def tokenizeAddress(string):
         matches =  re.findall(
             AddressUtils.addressTokenRegex, 
@@ -417,7 +645,7 @@ class AddressUtils:
         if DEBUG: print repr(matches)
         if DEBUG: print repr(AddressUtils.addressTokenRegex)
         return map(
-            lambda match: sanitationUtils.stripAllWhitespace(match[0]),
+            lambda match: AddressUtils.sanitizeAddressToken(match[0]),
             matches    
         )
 
@@ -676,6 +904,8 @@ if __name__ == '__main__':
     print AddressUtils.subunitRegex
     print AddressUtils.floorLevelRegex
     print AddressUtils.stateRegex
+
+    print AddressUtils.getSubunit("SHOP 4 A")
 
     for line in [
         "8/5-7 KILVINGTON DRIVE",
