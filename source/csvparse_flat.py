@@ -134,9 +134,14 @@ class ContactAddress(object):
                 else:
                     self.valid = False
 
-            # Extract subunit numbers
-            self.properties.subunits = []
-            self.properties.isShop = False
+            # Extract subunit numbers and floor level
+            self.properties['subunits'] = {}
+            self.properties['isShop'] = False
+            self.properties['floors'] = {}
+            self.properties['thoroughfares'] = {}
+            self.properties['buildings'] = {}
+            self.properties['weak_thoroughfares'] = {}
+
             for line in numberLines:
                 tokens = AddressUtils.tokenizeAddress(line)
                 print tokens
@@ -146,19 +151,20 @@ class ContactAddress(object):
                         subunit_type, subunit_number = subunit
                         if subunit_type in ['SHOP', 'SE', 'KSK', 'SHRM']:
                             self.isShop = True
-                        self.properties.subunits.append( (subunit_type, subunit_number) )
+                        self.properties['subunits'][i] = subunit
+                        continue
+                    floor = AddressUtils.getFloor(token)
+                    if(floor):
+                        floor_type, floor_number = floor
+                        self.properties['floors'][i] = floor
+                        continue
+                    thoroughfare = AddressUtils.getThoroughfare(token)
+                    if(thoroughfare):
+                        thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix = thoroughfare
+                        self.properties['thoroughfares'][i] = thoroughfare
+                        continue
 
-            # Extract floor level number
-            # self.properties.floorLevel
-            # for line in numberLines:
-            #     for token in AddressUtils.tokenizeAddress(line):
-            #         match = re.match(AddressUtils.floorLevelRegex, token)
-            #         if(match): print match.groupdict()
-
-                        # AddressUtils.getAbbrevKey(AddressUtils.subunitAbbreviations, token)
-                # shopNum, line = AddressUtils.extraxtShop(line)
-                # if(shopNum): self.shopNum = shopNum
-                # print shopNum, line
+            #now try and get thoroughfare without thoroughfare number
                 
             if(schema in ['act']):
                 pass
