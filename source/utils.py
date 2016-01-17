@@ -16,7 +16,10 @@ DEFAULT_ENCODING = 'utf8'
 DEBUG = False
 
 class sanitationUtils:
-    email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
+    punctuationChars = [
+        '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '\-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\\\', '\\]', '^', '_', '`', '{', '|', '}', '~' 
+    ]
     myobid_regex = r"C\d+"
 
     @staticmethod
@@ -103,7 +106,7 @@ class sanitationUtils:
 
     @staticmethod
     def stripPunctuation(string):
-        str_out = re.sub('[.,\-\/#!$%\^&\*;:{}=\-_`~()]', '', string)
+        str_out = re.sub('[%s]' % ''.join(sanitationUtils.punctuationChars) , '', string)
         if DEBUG: print "stripPunctuation", string.encode('ascii', 'backslashreplace'), str_out.encode('ascii', 'backslashreplace')
         return str_out
 
@@ -371,10 +374,6 @@ class AddressUtils:
         ('WKSH',    ['WORKSHOP'])
     ])
 
-    shopAbbreviations = OrderedDict([
-        (key, subunitAbbreviations[key]) for key in ['SHOP', 'SUITE'] if key in subunitAbbreviations.keys()
-    ])
-
     stateAbbreviations = OrderedDict([
         ('WA',      ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
         ('ACT',     ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
@@ -390,12 +389,12 @@ class AddressUtils:
         ('G',       ['GROUND FLOOR', 'GROUND']),
         ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
         ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND']),
-        ('FL',      ['FLOOR']),
-        ('L',       ['LEVEL']),
-        ('M',       ['MEZZANINE'])
+        ('FL',      ['FLOOR', 'FLR']),
+        ('L',       ['LEVEL', 'LVL']),
+        ('M',       ['MEZZANINE', 'MEZ'])
     ])
 
-    thoroughfareAbbreviations = OrderedDict([
+    thoroughfareTypeAbbreviations = OrderedDict([
         ('ACCS',     ['ACCESS']),
         ('ALLY',     ['ALLEY']),
         ('ALWY',     ['ALLEYWAY']),
@@ -408,7 +407,7 @@ class AddressUtils:
         ('BA',       ['BANAN']),
         ('BEND',     []),
         ('BWLK',     ['BOARDWALK']),
-        ('BVD',      ['BOULEVARD']),
+        ('BLVD',      ['BOULEVARD', 'BLVD']),
         ('BR',       ['BRACE']),
         ('BRAE',     []),
         ('BRK',      ['BREAK']),
@@ -483,6 +482,7 @@ class AddressUtils:
         ('PATH',     []),
         ('PWAY',     ['PATHWAY']),
         ('PIAZ',     ['PIAZZA']),
+        ('PL',       ['PLACE', 'PLCE']),
         ('PLZA',     ['PLAZA']),
         ('PKT',      ['POCKET']),
         ('PNT',      ['POINT']),
@@ -495,7 +495,7 @@ class AddressUtils:
         ('RTT',      ['RETREAT']),
         ('RDGE',     ['RIDGE']),
         ('RISE',     []),
-        ('RD',       []),
+        ('RD',       ['ROAD']),
         ('RTY',      ['ROTARY']),
         ('RTE',      ['ROUTE']),
         ('ROW',      []),
@@ -542,24 +542,28 @@ class AddressUtils:
     ])
 
     buildingTypeAbbreviations = OrderedDict([
-        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING"]),
+        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING CENTRE", "SHOPPING"]),
         ('PLAZA',           []),
         ('ARCADE',          []),
-        ('MALL',            [])
+        ('MALL',            []),
+        ('BUILDING',        ['BLDG']),
+        ('FORUM',           [])
     ])
 
-    delimeters       = [r"\s", r"/", r",", r";"]
-    delimeterRegex   = r"[%s]" % "".join(delimeters)
-    nondelimeterRegex= r"[^%s]" % "".join(delimeters)
+    allowedPunctuation = ['\\-', '.', '\'']
+    tokenDelimeters  = [r"\s", r"\d"] + list(set(sanitationUtils.punctuationChars) - set(allowedPunctuation))
+    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    nondelimeterRegex= r"[^%s]" % "".join(tokenDelimeters)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
     numberRangeRegex = r"(\d+) ?- ?(\d+)"
     numberAlphaRegex = r"(\d+) ?([A-Z])"
     numberSlashRegex = r"(\d+)/(\d+)"
     numberRegex      = r"(\d+)"
+    nameRegex        = r"(?:%s+\s?)+" % nondelimeterRegex
     slashAbbrvRegex  = r"[A-Z]+/[A-Z]+"
     
-    floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
+    floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL|LVL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
         compileAbbrvRegex(floorAbbreviations),
         numberRegex,
     )
@@ -573,24 +577,59 @@ class AddressUtils:
         ]),
     )
     stateRegex = r"(%s)" % compileAbbrvRegex(stateAbbreviations)
+    thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)" % (
+        compileAbbrvRegex(thoroughfareTypeAbbreviations)
+    )
+    thoroughfareSuffixRegex = r"(?P<thoroughfare_suffix>%s)" % (
+        compileAbbrvRegex(thoroughfareSuffixAbbreviations)
+    )
+    thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
+        "|".join([
+            numberAlphaRegex,
+            numberRangeRegex,
+            # numberSlashRegex,
+            numberRegex
+        ]),
+        nameRegex,
+        thoroughfareTypeRegex,
+        thoroughfareSuffixRegex
+    )
     buildingTypeRegex = r"(?P<building_type>%s)" % (
         compileAbbrvRegex(buildingTypeAbbreviations)
     )
-    thoroughfareRegex = r"(?P<thoroughfare_type>%s)" % (
-        compileAbbrvRegex(thoroughfareAbbreviations)
+    buildingRegex = r"(?P<building_name>%s)\s+%s" % (
+        nameRegex,
+        buildingTypeRegex
+    )
+    weakThoroughfareTypeRegex = r"(?P<weak_thoroughfare_type>%s)" % (
+        compileAbbrvRegex(thoroughfareTypeAbbreviations)
+    )
+    weakThoroughfareSuffixRegex = r"(?P<weak_thoroughfare_suffix>%s)" % (
+        compileAbbrvRegex(thoroughfareSuffixAbbreviations)
+    )
+    weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
+        nameRegex,
+        weakThoroughfareTypeRegex,
+        weakThoroughfareSuffixRegex
     )
 
     addressTokenRegex = r"(%s|[^,\s\d/()-]+)" % "|".join([
         clearStartRegex + floorLevelRegex + clearFinishRegex,
         clearStartRegex + subunitRegex + clearFinishRegex,
-        clearStartRegex + buildingTypeRegex + clearFinishRegex,
         clearStartRegex + thoroughfareRegex + clearFinishRegex,
+        clearStartRegex + buildingRegex + clearFinishRegex,
+        clearStartRegex + weakThoroughfareRegex + clearFinishRegex,
+        clearStartRegex + nameRegex + clearFinishRegex,
         clearStartRegex + numberRangeRegex + clearFinishRegex,
         # clearStartRegex + numberSlashRegex + clearFinishRegex,
         clearStartRegex + numberAlphaRegex + clearFinishRegex,
         clearStartRegex + numberRegex + clearFinishRegex,
-        clearStartRegex + slashAbbrvRegex + clearFinishRegex
+        clearStartRegex + slashAbbrvRegex + clearFinishRegex,
     ])
+
+    @staticmethod
+    def wrapClearRegex(regex):
+        return AddressUtils.clearStartRegex + regex + AddressUtils.clearFinishRegex
 
     @staticmethod
     def identifyAbbreviation(abbrvDict, string):
@@ -604,20 +643,83 @@ class AddressUtils:
         return AddressUtils.identifyAbbreviation(AddressUtils.subunitAbbreviations, string)
 
     @staticmethod
+    def identifyFloor(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.floorAbbreviations, string)
+
+    @staticmethod
     def getSubunit(token):
         match = re.match(
-            AddressUtils.clearStartRegex + \
-                AddressUtils.subunitRegex + \
-                AddressUtils.clearFinishRegex, \
-            token)
-        matchdict = match.groupdict() if match else None
-        if(matchdict and matchdict.get('subunit_type') and matchdict.get('subunit_number')): 
-            subunit_type = AddressUtils.identifySubunit(matchdict.get('subunit_type'))
-            subunit_number = matchdict.get('subunit_number')
+            AddressUtils.wrapClearRegex(
+                AddressUtils.subunitRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')): 
+            subunit_type = AddressUtils.identifySubunit(matchDict.get('subunit_type'))
+            subunit_number = matchDict.get('subunit_number')
             print "FOUND SUBUNIT %s %s" % (subunit_type, subunit_number)
             return subunit_type, subunit_number
         return None
 
+    @staticmethod
+    def getFloor(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.subunitRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('floor_type') and matchDict.get('floor_number') ): 
+            floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
+            floor_number = matchDict.get('floor_number')
+            print "FOUND FLOOR %s %s" % (floor_type, floor_number)
+            return floor_type, floor_number
+        return None
+
+    @staticmethod
+    def getThoroughfare(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.thoroughfareRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('thoroughfare_name') and matchDict.get('thoroughfare_type')):
+            print matchDict
+            thoroughfare_name = matchDict.get('thoroughfare_name')
+            thoroughfare_type = matchDict.get('thoroughfare_type')
+            thoroughfare_suffix = matchDict.get('thoroughfare_suffix')
+            thoroughfare_number = matchDict.get('thoroughfare_number')
+            print "FOUND ADDRESS (%s) %s | %s (%s)" % (
+                thoroughfare_number,
+                thoroughfare_name,
+                thoroughfare_type,
+                thoroughfare_suffix
+            )
+            return thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix
+        return None
+
+    @staticmethod
+    def getBuilding(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.buildingRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('building_name') and matchDict.get('building_type')):
+            building_name = matchDict.get('building_name')
+            building_type = matchDict.get('building_type')
+            print "FOUND BUILDING %s %s" % (
+                building_name, 
+                building_type
+            )
+            return building_name, building_type
+        return None
 
     @staticmethod
     def sanitizeState(string):
@@ -632,8 +734,9 @@ class AddressUtils:
     @staticmethod
     def sanitizeAddressToken(string):
         string = sanitationUtils.stripExtraWhitespace(string)
-        string = re.sub(AddressUtils.numberAlphaRegex, r'\1\2', string)
+        string = re.sub(AddressUtils.numberAlphaRegex + AddressUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
+        if DEBUG: print "sanitizeAddressToken", sanitationUtils.makeSafeOutput( string)
         return string
 
     @staticmethod
@@ -643,7 +746,6 @@ class AddressUtils:
             string
         )
         if DEBUG: print repr(matches)
-        if DEBUG: print repr(AddressUtils.addressTokenRegex)
         return map(
             lambda match: AddressUtils.sanitizeAddressToken(match[0]),
             matches    
@@ -901,16 +1003,18 @@ if __name__ == '__main__':
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
 
-    print AddressUtils.subunitRegex
-    print AddressUtils.floorLevelRegex
-    print AddressUtils.stateRegex
+    print "addressTokenRegex", AddressUtils.addressTokenRegex
+    print "subunitRegex", AddressUtils.subunitRegex
+    print "floorLevelRegex", AddressUtils.floorLevelRegex
+    print "stateRegex", AddressUtils.stateRegex
+    print "delimeterRegex", AddressUtils.delimeterRegex
 
     print AddressUtils.getSubunit("SHOP 4 A")
 
     for line in [
-        "8/5-7 KILVINGTON DRIVE",
+        "8/5-7 KILVINGTON DRIVE EAST",
         "SH20 SANCTUARY LAKES SHOPPING CENTRE",
-        "2 HIGH ST BAYSWATER",
+        "2 HIGH ST EAST BAYSWATER",
         "FLOREAT FORUM",
         "ANN LYONS",
         "SHOP 5, 370 VICTORIA AVE",
@@ -1033,7 +1137,7 @@ if __name__ == '__main__':
         "WESTFIELD DONCASTER SHOPPING CENTRE",
         "153 BREBNER SR",
         "HELENSVALE TOWN CENTRE",
-        "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD, KENWICK WA (",
+        "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD EAST, KENWICK WA (",
         "3/3 HOWARD AVA",
         "8/2 RIDER BLVD",
         "ROBINA PARKWAY",
@@ -1053,4 +1157,4 @@ if __name__ == '__main__':
         "207/67 WATT ST"
     ]:
         # pass
-        print sanitationUtils.unicodeToAscii("%100s %s" % (line, AddressUtils.tokenizeAddress(line)))
+        print sanitationUtils.unicodeToAscii("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))
