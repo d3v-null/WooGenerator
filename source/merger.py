@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import listUtils, sanitationUtils, TimeUtils
+from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import ImportObject
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
@@ -13,6 +13,7 @@ from copy import deepcopy
 # import pickle
 import dill as pickle
 from bisect import insort
+import re
 
 inFolder = "../input/"
 outFolder = "../output/"
@@ -37,7 +38,11 @@ if(testMode):
     maPath = os.path.join(inFolder, "200-act-records.csv")
     saPath = os.path.join(inFolder, "100-wp-records.csv")
 
-moPath = os.path.join(outFolder, "act_import%s.csv" % ("_test" if testMode else ""))
+fileSuffix = "_test" if testMode else ""
+
+moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
+
+resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 
 # master_all
 # slave_all
@@ -100,20 +105,20 @@ except Exception as e:
 #no requirements for new account in act, everything goes in, but probably need email
 
 # def fieldActLike(field):
-    # if(sanitationUtils.unicodeToAscii(field) == sanitationUtils.unicodeToAscii(field).upper() ):
+    # if(SanitationUtils.unicodeToAscii(field) == SanitationUtils.unicodeToAscii(field).upper() ):
     #     return True
     # else:
     #     return False
 
 def addressActLike(obj):
     for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
-        if(not sanitationUtils.fieldActLike(obj.get(col) or "")):
+        if(not SanitationUtils.fieldActLike(obj.get(col) or "")):
             return False
     return True
 
 def nameActLike(obj):
     for col in ['First Name']:
-        if(not sanitationUtils.fieldActLike(obj.get(col)) or ""):
+        if(not SanitationUtils.fieldActLike(obj.get(col)) or ""):
             return False
     return True
 
@@ -128,7 +133,7 @@ def recordActLike(obj):
         if(val): 
             recordEmpty = False
         else:
-            if(not sanitationUtils.fieldActLike(val)):
+            if(not SanitationUtils.fieldActLike(val)):
                 actLike = False
     if(actLike and not recordEmpty):
         return True
@@ -143,20 +148,36 @@ def contactActLike(obj):
 
 
 
-# for email, users in maParser.emails.items():
+# usrList = UsrObjList()
+# for email, users in maParser.emails.items()[:100]:
 #     for user in users:
-#         actlike = contactActLike(user)
-#         if not actlike:
-#             print "-> ", repr(user)
-#             usrList = UsrObjList()
-#             usrList.addObject(user)
-#             print usrList.rep_str(OrderedDict([
-#                 ('First Name',{}),
-#                 ('Middle Name', {}),
-#                 ('Surname',{}),
-#                 ('Contact', {})    
-#             ]))
-quit()
+#         usrList.addObject(user)
+
+# print usrList.tabulate(
+#     OrderedDict([
+#         ('E-mail', {}),
+#         ('MYOB Card ID', {}),
+#         ('Address', {}),
+#         ('Home Address', {})
+#     ]),
+#     tablefmt = 'html'
+# )
+
+
+# # for email, users in maParser.emails.items():
+# #     for user in users:
+# #         actlike = contactActLike(user)
+# #         if not actlike:
+# #             print "-> ", repr(user)
+# #             usrList = UsrObjList()
+# #             usrList.addObject(user)
+# #             print usrList.tabulate(OrderedDict([
+# #                 ('First Name',{}),
+# #                 ('Middle Name', {}),
+# #                 ('Surname',{}),
+# #                 ('Contact', {})    
+# #             ]))
+# quit()
 
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
@@ -229,7 +250,7 @@ class Match(object):
     def __repr__(self):
         return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] ) 
 
-    def rep_str(self):
+    def tabulate(self, tablefmt=None):
         out  = ""
         match_type = self.type
         m_len, s_len = len(self.mObjects), len(self.sObjects)
@@ -246,7 +267,7 @@ class Match(object):
         elif(match_type in ['masterless', 'slavelaveless']):
             pass
             # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
-        out += "\n"
+        # out += "\n"
         users = UsrObjList()
         if(m_len > 0):
             objs = self.mObjects
@@ -263,7 +284,7 @@ class Match(object):
             for obj in objs:
                 # pprint(obj)
                 users.addObject(obj)
-        out += users.rep_str()
+        out += users.tabulate(tablefmt=tablefmt)
         return out
 
 
@@ -274,13 +295,17 @@ def findPCodeMatches(match):
     return match.findKeyMatches( lambda obj: obj.get('Postcode') or obj.get('Home Postcode') or '')
 
 class MatchList(list):
-    def __init__(self, indexFn = None):
+    def __init__(self, matches=None, indexFn = None):
         if(indexFn):
             self._indexFn = indexFn
         else:
             self._indexFn = (lambda x: x.index)
         self._sIndices = []
         self._mIndices = []
+        if(matches):
+            for match in matches:
+                assert isinstance(match, Match)
+                self.addMatch(match)
 
     @property
     def sIndices(self):
@@ -315,6 +340,21 @@ class MatchList(list):
                 sObjects.append(sObj)
 
         return Match(mObjects, sObjects)
+
+    def tabulate(self, tablefmt=None):
+        if(self):
+            prefix, suffix = "", ""
+            delimeter = "\n"
+            if tablefmt == 'html':
+                delimeter = ''
+                prefix = '<div class="matchList">'
+                suffix = '</div>'
+            return prefix + delimeter.join(
+                [match.tabulate(tablefmt=tablefmt) for match in self if match]
+            ) + suffix
+        else: 
+            return ""
+
 
 
 class AbstractMatcher(object):
@@ -472,7 +512,7 @@ class SyncUpdate(object):
         self._oldSObject = oldSObject
         self._tTime = TimeUtils.wpStrptime( lastSync )
         self._mTime = TimeUtils.actStrptime( self._oldMObject.get('Edited in Act'))
-        self._sTime = TimeUtils.wpStrptime( self._oldSObject.get('updated') )
+        self._sTime = TimeUtils.wpStrptime( self._oldSObject.get('Wordpress Updated') )
         self._bTime = TimeUtils.actStrptime( self._oldMObject.get('Last Sale'))
         self._winner = SLAVE_NAME if(self._sTime >= self._mTime) else MASTER_NAME
         
@@ -578,7 +618,7 @@ class SyncUpdate(object):
     def sanitizeValue(self, col, value):
         if('phone' in col.lower()):
             if('preferred' in col.lower()):
-                if(value and len(sanitationUtils.stripNonNumbers(value)) > 1):
+                if(value and len(SanitationUtils.stripNonNumbers(value)) > 1):
                     # print "value nullified", value
                     return ""
         return value
@@ -604,21 +644,21 @@ class SyncUpdate(object):
         #check if they are similar
         if( "phone" in col.lower() ):
             if( "preferred" in col.lower() ):
-                mPreferred = sanitationUtils.similarTruStrComparison(mValue)
-                sPreferred = sanitationUtils.similarTruStrComparison(sValue)
+                mPreferred = SanitationUtils.similarTruStrComparison(mValue)
+                sPreferred = SanitationUtils.similarTruStrComparison(sValue)
                 # print repr(mValue), " -> ", mPreferred
                 # print repr(sValue), " -> ", sPreferred
                 if(mPreferred == sPreferred):
                     return True
             else:
-                mPhone = sanitationUtils.similarPhoneComparison(mValue)
-                sPhone = sanitationUtils.similarPhoneComparison(sValue)
+                mPhone = SanitationUtils.similarPhoneComparison(mValue)
+                sPhone = SanitationUtils.similarPhoneComparison(sValue)
                 plen = min(len(mPhone), len(sPhone))
                 if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
                     return True
         elif( "role" in col.lower() ):
-            mRole = sanitationUtils.similarComparison(mValue)
-            sRole = sanitationUtils.similarComparison(sValue)
+            mRole = SanitationUtils.similarComparison(mValue)
+            sRole = SanitationUtils.similarComparison(sValue)
             if (mRole == 'rn'): 
                 mRole = ''
             if (sRole == 'rn'): 
@@ -626,7 +666,7 @@ class SyncUpdate(object):
             if( mRole == sRole ): 
                 return True
         else:
-            if( sanitationUtils.similarComparison(mValue) == sanitationUtils.similarComparison(sValue) ):
+            if( SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue) ):
                 return True
 
         return False
@@ -643,7 +683,7 @@ class SyncUpdate(object):
             for col, warnings in self.syncWarnings.items():
                 for subject, reason, oldVal, newVal in warnings:    
                     table += [map( 
-                        lambda x: sanitationUtils.makeSafeOutput(x)[:64], 
+                        lambda x: SanitationUtils.makeSafeOutput(x)[:64], 
                         [col, subject, reason, oldVal, newVal] 
                     )]
             return tabulate(table, headers="firstrow")
@@ -736,15 +776,15 @@ class SyncUpdate(object):
         for col, data in syncCols.items():
             self.updateCol(col, data)
 
-    def rep_str(self):
+    def tabulate(self):
         out_str = "OLD:\n"
         oldMatch = Match([self._oldMObject], [self._oldSObject])
-        out_str += oldMatch.rep_str()
+        out_str += oldMatch.tabulate()
         out_str += '\nCHANGES:\n'
         out_str += self.displaySyncWarnings()
         newMatch = Match([self._newMObject], [self._newSObject])
         out_str += '\nNEW:\n'
-        out_str += newMatch.rep_str()
+        out_str += newMatch.tabulate()
         return out_str
 
     def __cmp__(self, other):
@@ -835,25 +875,96 @@ def hashify(in_str):
     out_str += "#" * (len(in_str) + 4) + "\n"
     return out_str
 
-print hashify( "results")
+with open(resPath, 'w+') as resFile:
+    def writeSection(title, description, data):
+        resFile.write('<div class="results_section">')
+        resFile.write('<h2>%s</h2>' % title)
+        resFile.write('<p class="description">%s</p>' % description)
+        resFile.write('<p class="data">%s</p>' % re.sub("<table>","<table class=\"table table-striped\">",data) )
+        resFile.write('</div>')
 
-print "\n"
+    resFile.write('<html>')
+    resFile.write('<head>')
+    resFile.write("""
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
-print hashify( "perfect matches: (%d)" % len(globalMatches))
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
 
-print "\n"
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+""")
+    resFile.write('<body>')
+    resFile.write('<div class="results">')
+    resFile.write('<h1>%s</h1>' % 'Matching Results')
+    
+    writeSection(
+        "Perfect Matches", 
+        "%s records match well between %s and %s" % (len(globalMatches) or 'No',SLAVE_NAME, MASTER_NAME),
+        globalMatches.tabulate(tablefmt="html")
+    )
 
-if( emailMatcher.duplicateMatches ):
-    print hashify("email duplicates: (%d)" % len( emailMatcher.duplicateMatches ))
-    for match in emailMatcher.duplicateMatches:
-        # print match.rep_str()
+    writeSection(
+        "Email Duplicates",
+        "%s records in %s match with multiple records in %s on email" % (len(emailMatcher.duplicateMatches) or 'No', SLAVE_NAME, MASTER_NAME),
+        emailMatcher.duplicateMatches.tabulate(tablefmt="html")
+    )
+
+    matchListInstructions = {
+        'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
+        'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
+        'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
+        'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+    }
+
+    for matchlistType, matchList in anomalousMatchLists.items():
+        if not matchList:
+            continue
+        description = "%s " % len(matchList) + matchListInstructions.get(matchlistType, matchlistType)
+        if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
+            data = matchList.merge().tabulate(tablefmt="html")
+        else:
+            data = matchList.tabulate(tablefmt="html")
+        writeSection(
+            matchlistType.title(),
+            description,
+            data
+        )
+            
+        
+    # print hashify("anomalous ParseLists: ")
+
+    parseListInstructions = {
+        "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
+        "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
+        "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
+        "saParser.nousernames": "%s records have no username" % SLAVE_NAME
+    }
+
+    for parselistType, parseList in anomalousParselists.items():
+        print " -> ", parseListInstructions.get(parselistType, parselistType), "(", len(parseList), ")"  
+        usrList  = UsrObjList()
+        # for obj in parseList.values():
+        #     usrList.addObject(obj)
+        # print usrList.tabulate()
         print "\n"
-else:
-    print hashify("no email duplicates")
 
-print "\n"
+    resFile.write('</div>')
+    resFile.write('</body>')
+    resFile.write('</html>')
 
-print hashify("anomalous MatchLists: ")
+# print hashify( "Printing Results")
+# print hashify( "perfect matches: (%d)" % len(globalMatches))
+
+# if( emailMatcher.duplicateMatches ):
+#     print hashify("email duplicates: (%d)" % len( emailMatcher.duplicateMatches ))
+#     # for match in emailMatcher.duplicateMatches:
+#         # print match.tabulate()
+# else:
+#     print hashify("no email duplicates")
+
+# print hashify("anomalous MatchLists: ")
 
 matchListInstructions = {
     'cardMatcher.masterlessMatches': 'The following records may have been deleted from %s because their MYOB Card ID does not exist' % MASTER_NAME
@@ -865,7 +976,7 @@ for matchlistType, matchList in anomalousMatchLists.items():
         matchList = [matchList.merge()]    
         
     # for match in matchList:
-        # print match.rep_str()
+        # print match.tabulate()
         # print "\n"
     
 print hashify("anomalous ParseLists: ")
@@ -882,7 +993,7 @@ for parselistType, parseList in anomalousParselists.items():
     usrList  = UsrObjList()
     # for obj in parseList.values():
     #     usrList.addObject(obj)
-    # print usrList.rep_str()
+    # print usrList.tabulate()
     print "\n"
 
 
@@ -890,11 +1001,13 @@ print hashify("BEGINNING MERGE: ")
 
 syncCols = colData.getSyncCols()
 
+quit()
+
 for match in globalMatches:
     # print hashify( "MATCH NUMBER %d" % i )
 
     # print "-> INITIAL VALUES:"
-    # print match.rep_str()
+    # print match.tabulate()
 
     mObject = match.mObjects[0]
     sObject = match.sObjects[0]
@@ -931,50 +1044,50 @@ for match in globalMatches:
 # print hashify("STATIC BOTH (%d)" % len(staticUpdates))
 
 # for update in staticUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"     
 
 # print hashify("STATIC MASTER (%d)" % len(staticMUpdates))
 
 # for update in staticMUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"
 
 # print hashify("STATIC SLAVE (%d)" % len(staticSUpdates))
 
 # for update in staticSUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"
 
 # print hashify("NONSTATIC BOTH (%d)" % len(nonstaticUpdates))
 
 # for update in nonstaticUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"         
 
 # print hashify("NONSTATIC MASTER(%d)" % len(nonstaticMUpdates))
 
 # for update in nonstaticMUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"
 
 
 # print hashify("NONSTATIC SLAVE(%d)" % len(nonstaticSUpdates))
 
 # for update in nonstaticSUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"
 
 print hashify(MASTER_NAME + " UPDATES(%d)" % len(masterUpdates))
 
 # for update in masterUpdates:
-#     print update.rep_str()
+#     print update.tabulate()
 #     print "\n"
 
 print hashify("PROBLEMATIC UPDATES(%d)" % len(problematicUpdates))
 
 for update in problematicUpdates:
-    print update.rep_str()
+    print update.tabulate(tablefmt = None)
     print "\n"
 
 
@@ -990,7 +1103,7 @@ for update in problematicUpdates:
 
 # print hashify("IMPORT USERS (%d)" % len(importUsers))
 
-# print importUsers.rep_str()
+# print importUsers.tabulate()
 
 # importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getUserCols().keys()))
 

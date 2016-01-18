@@ -1,6 +1,6 @@
 from PIL import Image
 from PIL import PngImagePlugin
-from utils import sanitationUtils
+from utils import SanitationUtils
 from pyexiv2.metadata import ImageMetadata
 import os
 from time import time
@@ -23,7 +23,7 @@ class MetaGator(object):
 		return self.ext.lower() in ['.png']
 
 	def write_meta(self, title, description):
-		title, description = map(sanitationUtils.cleanBackslashString, (title, description))
+		title, description = map(SanitationUtils.cleanBackslashString, (title, description))
 		# print "title, description: ", title, ', ', description
 		if self.isPNG():
 			# print "image is PNG"
@@ -99,7 +99,7 @@ class MetaGator(object):
 		oldmeta = self.read_meta()
 		changed = []
 		for key in ['title', 'description']:
-			if str(oldmeta[key]) != sanitationUtils.cleanBackslashString(newmeta[key]):
+			if str(oldmeta[key]) != SanitationUtils.cleanBackslashString(newmeta[key]):
 				changed += [key]
 				print ("changing imgmeta[%s] from %s to %s" % (key, repr(oldmeta[key]), repr(newmeta[key])))
 		if changed:

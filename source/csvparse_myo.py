@@ -1,5 +1,5 @@
 from csvparse_gen import CSVParse_Gen, ImportGenProduct
-from utils import listUtils, sanitationUtils
+from utils import listUtils, SanitationUtils
 from collections import OrderedDict
 from coldata import ColData_MYO
 import time
