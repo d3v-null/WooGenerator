@@ -21,7 +21,7 @@ logFolder = "../logs/"
 
 MASTER_NAME = "ACT"
 SLAVE_NAME = "WORDPRESS"
-DEFAULT_LAST_SYNC = "2015-06-01 00:00:00"
+DEFAULT_LAST_SYNC = "2015-05-29 04:33:40"
 
 merge_mode = "sync"
 merge_mode = "merge"
@@ -110,17 +110,17 @@ except Exception as e:
     # else:
     #     return False
 
-def addressActLike(obj):
-    for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
-        if(not SanitationUtils.fieldActLike(obj.get(col) or "")):
-            return False
-    return True
+# def addressActLike(obj):
+#     for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
+#         if(not SanitationUtils.fieldActLike(obj.get(col) or "")):
+#             return False
+#     return True
 
-def nameActLike(obj):
-    for col in ['First Name']:
-        if(not SanitationUtils.fieldActLike(obj.get(col)) or ""):
-            return False
-    return True
+# def nameActLike(obj):
+#     for col in ['First Name']:
+#         if(not SanitationUtils.fieldActLike(obj.get(col)) or ""):
+#             return False
+#     return True
 
 capitalCols = colData.getCapitalCols()
 
@@ -528,9 +528,11 @@ class SyncUpdate(object):
         #extra heuristics for merge mode:
         if(merge_mode == 'merge' and not self.sMod):
             might_be_sEdited = False
-            if(not(recordActLike(oldSObject))):
+            if not oldSObject.addressesActLike():
                 might_be_sEdited = True
             elif( oldSObject.get('Home Country') == 'AU' ):
+                might_be_sEdited = True
+            elif oldSObject.usernameActLike():
                 might_be_sEdited = True
             if(might_be_sEdited):
                 # print repr(oldSObject), "might be edited"
@@ -676,7 +678,7 @@ class SyncUpdate(object):
             self._syncWarnings[col] = []
         self._syncWarnings[col].append((subject, reason, oldVal, newVal))
 
-    def displaySyncWarnings(self):
+    def displaySyncWarnings(self, tablefmt=None):
         if self.syncWarnings:
             header = ["Column", "Source", "Reason", "Old", "New"]
             table = [header]
@@ -686,7 +688,7 @@ class SyncUpdate(object):
                         lambda x: SanitationUtils.makeSafeOutput(x)[:64], 
                         [col, subject, reason, oldVal, newVal] 
                     )]
-            return tabulate(table, headers="firstrow")
+            return tabulate(table, headers="firstrow", tablefmt=tablefmt)
         else:
             return ""
 
@@ -776,15 +778,18 @@ class SyncUpdate(object):
         for col, data in syncCols.items():
             self.updateCol(col, data)
 
-    def tabulate(self):
-        out_str = "OLD:\n"
+    def tabulate(self, tablefmt=None):
+        subtitle_fmt = "%s"
+        if(tablefmt == "html"):
+            subtitle_fmt = "<h3>%s</h3>" 
+        out_str = subtitle_fmt % "OLD"
         oldMatch = Match([self._oldMObject], [self._oldSObject])
-        out_str += oldMatch.tabulate()
-        out_str += '\nCHANGES:\n'
-        out_str += self.displaySyncWarnings()
+        out_str += oldMatch.tabulate(tablefmt)
+        out_str += subtitle_fmt % 'CHANGES'
+        out_str += self.displaySyncWarnings(tablefmt)
         newMatch = Match([self._newMObject], [self._newSObject])
-        out_str += '\nNEW:\n'
-        out_str += newMatch.tabulate()
+        out_str += subtitle_fmt % 'NEW'
+        out_str += newMatch.tabulate(tablefmt)
         return out_str
 
     def __cmp__(self, other):
@@ -875,133 +880,10 @@ def hashify(in_str):
     out_str += "#" * (len(in_str) + 4) + "\n"
     return out_str
 
-with open(resPath, 'w+') as resFile:
-    def writeSection(title, description, data):
-        resFile.write('<div class="results_section">')
-        resFile.write('<h2>%s</h2>' % title)
-        resFile.write('<p class="description">%s</p>' % description)
-        resFile.write('<p class="data">%s</p>' % re.sub("<table>","<table class=\"table table-striped\">",data) )
-        resFile.write('</div>')
 
-    resFile.write('<html>')
-    resFile.write('<head>')
-    resFile.write("""
-<!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-
-<!-- Latest compiled and minified JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-""")
-    resFile.write('<body>')
-    resFile.write('<div class="results">')
-    resFile.write('<h1>%s</h1>' % 'Matching Results')
-    
-    writeSection(
-        "Perfect Matches", 
-        "%s records match well between %s and %s" % (len(globalMatches) or 'No',SLAVE_NAME, MASTER_NAME),
-        globalMatches.tabulate(tablefmt="html")
-    )
-
-    writeSection(
-        "Email Duplicates",
-        "%s records in %s match with multiple records in %s on email" % (len(emailMatcher.duplicateMatches) or 'No', SLAVE_NAME, MASTER_NAME),
-        emailMatcher.duplicateMatches.tabulate(tablefmt="html")
-    )
-
-    matchListInstructions = {
-        'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
-        'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
-        'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
-        'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
-    }
-
-    for matchlistType, matchList in anomalousMatchLists.items():
-        if not matchList:
-            continue
-        description = "%s " % len(matchList) + matchListInstructions.get(matchlistType, matchlistType)
-        if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
-            data = matchList.merge().tabulate(tablefmt="html")
-        else:
-            data = matchList.tabulate(tablefmt="html")
-        writeSection(
-            matchlistType.title(),
-            description,
-            data
-        )
-            
-        
-    # print hashify("anomalous ParseLists: ")
-
-    parseListInstructions = {
-        "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
-        "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
-        "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
-        "saParser.nousernames": "%s records have no username" % SLAVE_NAME
-    }
-
-    for parselistType, parseList in anomalousParselists.items():
-        print " -> ", parseListInstructions.get(parselistType, parselistType), "(", len(parseList), ")"  
-        usrList  = UsrObjList()
-        # for obj in parseList.values():
-        #     usrList.addObject(obj)
-        # print usrList.tabulate()
-        print "\n"
-
-    resFile.write('</div>')
-    resFile.write('</body>')
-    resFile.write('</html>')
-
-# print hashify( "Printing Results")
-# print hashify( "perfect matches: (%d)" % len(globalMatches))
-
-# if( emailMatcher.duplicateMatches ):
-#     print hashify("email duplicates: (%d)" % len( emailMatcher.duplicateMatches ))
-#     # for match in emailMatcher.duplicateMatches:
-#         # print match.tabulate()
-# else:
-#     print hashify("no email duplicates")
-
-# print hashify("anomalous MatchLists: ")
-
-matchListInstructions = {
-    'cardMatcher.masterlessMatches': 'The following records may have been deleted from %s because their MYOB Card ID does not exist' % MASTER_NAME
-}
-
-for matchlistType, matchList in anomalousMatchLists.items():
-    print " -> ", matchListInstructions.get(matchlistType, matchlistType), "(", len(matchList), ")"     
-    if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
-        matchList = [matchList.merge()]    
-        
-    # for match in matchList:
-        # print match.tabulate()
-        # print "\n"
-    
-print hashify("anomalous ParseLists: ")
-
-parseListInstructions = {
-    "saParser.noemails" : "The following %s records have invalid emails" % SLAVE_NAME,
-    "maParser.noemails" : "The following %s records have invalid emails" % MASTER_NAME,
-    "maParser.nocards"  : "The following %s records have no cards" % MASTER_NAME,
-    "saParser.nousernames": "The following %s records have no username" % SLAVE_NAME
-}
-
-for parselistType, parseList in anomalousParselists.items():
-    print " -> ", parseListInstructions.get(parselistType, parselistType), "(", len(parseList), ")"  
-    usrList  = UsrObjList()
-    # for obj in parseList.values():
-    #     usrList.addObject(obj)
-    # print usrList.tabulate()
-    print "\n"
-
-
-print hashify("BEGINNING MERGE: ")
+print hashify("BEGINNING MERGE")
 
 syncCols = colData.getSyncCols()
-
-quit()
 
 for match in globalMatches:
     # print hashify( "MATCH NUMBER %d" % i )
@@ -1041,55 +923,121 @@ for match in globalMatches:
                 pass
                 # insort(staticSUpdates, syncUpdate)
             
-# print hashify("STATIC BOTH (%d)" % len(staticUpdates))
+with open(resPath, 'w+') as resFile:
+    def writeSection(title, description, data, length = 0, html_class="results_section"):
+        sectionID = SanitationUtils.makeSafeClass(title)
+        description = "%s %s" % (str(length) if length else "No", description)
+        resFile.write('<div class="%s">'% html_class )
+        resFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
+        resFile.write('<h2>%s (%d)</h2>' % (title, length))
+        resFile.write('</a>')
+        resFile.write('<div class="collapse" id="%s">' % sectionID)
+        resFile.write('<p class="description">%s</p>' % description)
+        resFile.write('<p class="data">' )
+        resFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
+        resFile.write('</p>')
+        resFile.write('</div>')
+        resFile.write('</div>')
 
-# for update in staticUpdates:
-#     print update.tabulate()
-#     print "\n"     
+    resFile.write('<!DOCTYPE html>')
+    resFile.write('<html lang="en">')
+    resFile.write('<head>')
+    resFile.write("""
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
-# print hashify("STATIC MASTER (%d)" % len(staticMUpdates))
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+""")
+    resFile.write('<body>')
+    resFile.write('<div class="matching">')
+    resFile.write('<h1>%s</h1>' % 'Matching Results')
+    
+    writeSection(
+        "Perfect Matches", 
+        "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+        globalMatches.tabulate(tablefmt="html"),
+        length = len(globalMatches)
+    )
 
-# for update in staticMUpdates:
-#     print update.tabulate()
-#     print "\n"
+    writeSection(
+        "Email Duplicates",
+        "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
+        emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
+        length = len(emailMatcher.duplicateMatches)
+    )
 
-# print hashify("STATIC SLAVE (%d)" % len(staticSUpdates))
+    matchListInstructions = {
+        'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
+        'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
+        'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
+        'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+    }
 
-# for update in staticSUpdates:
-#     print update.tabulate()
-#     print "\n"
+    for matchlistType, matchList in anomalousMatchLists.items():
+        if not matchList:
+            continue
+        description = matchListInstructions.get(matchlistType, matchlistType)
+        if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
+            data = matchList.merge().tabulate(tablefmt="html")
+        else:
+            data = matchList.tabulate(tablefmt="html")
+        writeSection(
+            matchlistType.title(),
+            description,
+            data,
+            length = len(matchList)
+        )
+            
+        
+    # print hashify("anomalous ParseLists: ")
 
-# print hashify("NONSTATIC BOTH (%d)" % len(nonstaticUpdates))
+    parseListInstructions = {
+        "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
+        "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
+        "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
+        "saParser.nousernames": "%s records have no username" % SLAVE_NAME
+    }
 
-# for update in nonstaticUpdates:
-#     print update.tabulate()
-#     print "\n"         
+    for parselistType, parseList in anomalousParselists.items():
+        description = matchListInstructions.get(parselistType, parselistType)
+        usrList  = UsrObjList()
+        for obj in parseList.values():
+            usrList.addObject(obj)
+        
 
-# print hashify("NONSTATIC MASTER(%d)" % len(nonstaticMUpdates))
+        writeSection(
+            parselistType.title(),
+            description,
+            usrList.tabulate(tablefmt="html"),
+            length = len(parseList)
+        )
 
-# for update in nonstaticMUpdates:
-#     print update.tabulate()
-#     print "\n"
+    resFile.write('</div>')
+    resFile.write('<div class="sync">')
+    resFile.write('<h1>%s</h1>' % 'Syncing Results')
 
+    # writeSection(
+    #     (MASTER_NAME + " Updates"),
+    #     "these items will be updated"
+    #     '<br/>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
+    #     length = len(masterUpdates)
+    # )
 
-# print hashify("NONSTATIC SLAVE(%d)" % len(nonstaticSUpdates))
+    writeSection(
+        ("Problematic Updates"),
+        "These items can't be merged because they are too dissimilar",
+        '<br/>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+        length = len(problematicUpdates)
+    )
 
-# for update in nonstaticSUpdates:
-#     print update.tabulate()
-#     print "\n"
-
-print hashify(MASTER_NAME + " UPDATES(%d)" % len(masterUpdates))
-
-# for update in masterUpdates:
-#     print update.tabulate()
-#     print "\n"
-
-print hashify("PROBLEMATIC UPDATES(%d)" % len(problematicUpdates))
-
-for update in problematicUpdates:
-    print update.tabulate(tablefmt = None)
-    print "\n"
-
+    resFile.write('</div>')
+    resFile.write("""
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+""")
+    resFile.write('</body>')
+    resFile.write('</html>')
 
 
 

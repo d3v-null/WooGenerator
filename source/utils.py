@@ -35,7 +35,10 @@ class SanitationUtils:
 
     @staticmethod
     def unicodeToAscii(string):
+        if(not isinstance(string, unicode)):
+            string = unicode(string)
         str_out = SanitationUtils.stringToUnicode(string)
+        if DEBUG: print "unicodeToAscii", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
         return str_out.encode('ascii', 'backslashreplace')
 
     @staticmethod
@@ -53,7 +56,7 @@ class SanitationUtils:
     @staticmethod
     def removeLoneDashes(string):
         str_out = re.sub('^-$', '', string)
-        if DEBUG: print "removeLoneDashes", str_out
+        if DEBUG: print "removeLoneDashes", str_out.encode('ascii','backslashreplace')
         return str_out
 
     @staticmethod
@@ -132,7 +135,7 @@ class SanitationUtils:
     @staticmethod
     def sanitizeNewlines(string):
         if '\n' in string: 
-            print "!!! found newline in string"
+            if DEBUG: print "!!! found newline in string"
         return re.sub('\\n','</br>', string)
 
     @staticmethod
@@ -186,6 +189,13 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.truishStringToBool,
             SanitationUtils.similarComparison
+        )(string)
+
+    @staticmethod
+    def makeSafeClass(string):
+        return SanitationUtils.compose(
+            SanitationUtils.stripAllWhitespace,
+            SanitationUtils.stripPunctuation
         )(string)
 
     @staticmethod
@@ -1126,7 +1136,7 @@ if __name__ == '__main__':
     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
-
+    print SanitationUtils.unicodeToAscii(u"\u00FC ASD")
     # print "addressTokenRegex", AddressUtils.addressTokenRegex
     print "thoroughfareRegex", AddressUtils.thoroughfareRegex
     print "subunitRegex", AddressUtils.subunitRegex

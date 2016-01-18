@@ -85,10 +85,11 @@ class ContactAddress(object):
         ))): 
             self.empty = True
             self.valid = False
+            self.schema = None
         else:
             if DEBUG_ADDRESS: pprint(kwargs)
             self.empty = False
-            if not schema: schema = self.__class__.determineSchema(**kwargs)
+            if not schema: self.schema = self.__class__.determineSchema(**kwargs)
 
             lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
 
@@ -266,7 +267,7 @@ class ContactAddress(object):
     def names(self):
         if self.properties['names']:
             return ", ".join(
-                [str(name) for name in self.properties['names']]
+                [unicode(name) for name in self.properties['names']]
             )
 
     @property
@@ -285,10 +286,19 @@ class ContactAddress(object):
             )
 
     @property
+    def state(self):
+        return self.properties.get('state') if self.valid else self.kwargs.get('state')    
+
+
+    @property
     def line1(self):
         if(self.valid):
             if not self.names and self.deliveries:
-                assert not any([self.subunits, self.floors, self.buildings])
+                try:
+                    assert not any([self.subunits, self.floors, self.buildings]), "can't have deliveries and buildings"
+                except AssertionError as e:
+                    print "failed assertion", e
+                    pprint (self)
                 elements = [self.deliveries]
             else:
                 elements = [
@@ -305,7 +315,13 @@ class ContactAddress(object):
     def line2(self):
         if(self.valid):
             if self.names and self.deliveries:
-                assert not any(self.thoroughfares)
+                try:
+                    assert not any([self.thoroughfares]), "can't have delivery and thoroughfare"
+                except AssertionError as e:
+                    print "failed assertion: ", e
+                    pprint (self)
+
+
                 elements = [self.deliveries]
             else:
                 elements = [
@@ -336,6 +352,8 @@ class ContactAddress(object):
             actLike = all(map(SanitationUtils.stringCapitalized, fields))
             if(actLike):
                 return 'act'
+            else:
+                return 'unknown'
         return None
 
     def __str__(self, out_schema = None):
@@ -391,6 +409,15 @@ class ImportUser(ImportFlat):
             country     = self.get('Home Country', '')
         )
 
+    def addressesActLike(self):
+        actLike = True
+        for address in filter(None, map(lambda key: self.get(key), ['Address', 'Home Address'])):
+            if address.schema and address.schema != 'act':
+                actLike = False
+        return actLike
+
+    def usernameActLike(self):
+        return self.username == self.MYOBID
 
     def __repr__(self):
         return "<%s> %s | %s | %s | %s " % (self.index, self.email, self.MYOBID, self.role, self.username)
