@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from utils import descriptorUtils, sanitationUtils, listUtils
+from utils import descriptorUtils, SanitationUtils, listUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 
 DEBUG_GEN = True
@@ -116,7 +116,7 @@ class ImportGenObject(ImportTreeObject):
         return nameDelimeter.join ( names )      
 
     def changeName(self, name):
-        return sanitationUtils.shorten(self.regex, self.subs, name)
+        return SanitationUtils.shorten(self.regex, self.subs, name)
 
     def processMeta(self):
 
@@ -178,7 +178,7 @@ class ImportGenProduct(ImportGenItem):
         super(ImportGenItem, self).processMeta()
 
         #process titles
-        line1, line2 = sanitationUtils.titleSplitter( self.namesum )
+        line1, line2 = SanitationUtils.titleSplitter( self.namesum )
         if not line2:
             nameAncestors = self.getNameAncestors()
             ancestorsSelf = nameAncestors + [self]
@@ -241,8 +241,8 @@ class CSVParse_Gen(CSVParse_Tree):
         self.schema     = schema
         self.taxoSubs   = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
         self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )   
-        self.taxoRegex  = sanitationUtils.compileRegex(self.taxoSubs)
-        self.itemRegex  = sanitationUtils.compileRegex(self.itemSubs)
+        self.taxoRegex  = SanitationUtils.compileRegex(self.taxoSubs)
+        self.itemRegex  = SanitationUtils.compileRegex(self.itemSubs)
         self.productIndexer = self.getGenCodesum
 
         self.registerMessage("taxoDepth: {}".format(self.taxoDepth), 'CSVParse_Gen.__init__')
@@ -273,11 +273,11 @@ class CSVParse_Gen(CSVParse_Tree):
             self.registerProduct(itemData)
 
     def changeItem(self, item):
-        return sanitationUtils.shorten(self.itemRegex, self.itemSubs, item)
+        return SanitationUtils.shorten(self.itemRegex, self.itemSubs, item)
 
     def changeFullname(self, item):
         subs = OrderedDict([(' \xe2\x80\x94 ', ' ')])
-        return sanitationUtils.shorten(sanitationUtils.compileRegex(subs), subs, item)
+        return SanitationUtils.shorten(SanitationUtils.compileRegex(subs), subs, item)
 
     def depth(self, row):
         for i, cell in enumerate(row):
@@ -288,7 +288,7 @@ class CSVParse_Gen(CSVParse_Tree):
         return -1
 
     def sanitizeCell(self, cell):
-        return sanitationUtils.sanitizeCell(cell)  
+        return SanitationUtils.sanitizeCell(cell)  
 
     def getGenCodesum(self, genData):
         assert isinstance(genData, ImportGenObject)

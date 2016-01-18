@@ -569,7 +569,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'label':'client_grade',
             'user':True,
-            'report':True,
+            # 'report':True,
             'sync':'master_override',
             'warn':True,
         }),
@@ -577,7 +577,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'label':'direct_brand',
             'user':True,
-            'report': True,
+            # 'report': True,
             'sync':'master_override',
             'warn':True,
         }),
@@ -686,6 +686,9 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
             'capitalized':True,
+        }),
+        ('Address',{
+            'report':True
         }),
         ('City',{
             'label':'billing_city',
@@ -833,7 +836,7 @@ class ColData_User(ColData_Base):
             'import': True,
             'report': True
         }),
-        ('updated', {
+        ('Wordpress Updated', {
             'import':True,
             'report':True
         }),

@@ -1,4 +1,4 @@
-from utils import descriptorUtils, listUtils, sanitationUtils, AddressUtils
+from utils import descriptorUtils, listUtils, SanitationUtils, AddressUtils
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from collections import OrderedDict
 from coldata import ColData_User
@@ -12,6 +12,7 @@ import re
 usrs_per_file = 1000
 
 DEBUG_FLAT = False
+DEBUG_ADDRESS = False
 
 class ImportFlat(ImportObject):
     pass
@@ -66,6 +67,18 @@ class ContactAddress(object):
         self.kwargs = kwargs
         self.properties = OrderedDict()
         self.valid = True
+        self.properties['subunits'] = []
+        self.properties['isShop'] = False
+        self.properties['deliveries'] = []
+        self.properties['floors'] = []
+        self.properties['thoroughfares'] = []
+        self.properties['buildings'] = []
+        self.properties['weak_thoroughfares'] = []
+        self.properties['names'] = []
+        self.properties['numbers'] = []
+        self.properties['unknowns'] = []
+        self.properties['ignores'] = []
+
         if not any( filter(None, map(
             lambda key: kwargs.get(key, ''), 
             ['line1', 'line2', 'city', 'postcode', 'state']
@@ -73,12 +86,14 @@ class ContactAddress(object):
             self.empty = True
             self.valid = False
         else:
-            pprint(kwargs)
+            if DEBUG_ADDRESS: pprint(kwargs)
             self.empty = False
             if not schema: schema = self.__class__.determineSchema(**kwargs)
 
             lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
 
+
+            wordsToRemove = []
 
             if('country' in kwargs.keys() and kwargs.get('country', '')):
                 countrySanitized = AddressUtils.sanitizeState(kwargs['country'])
@@ -86,33 +101,38 @@ class ContactAddress(object):
                 self.properties['country'] = countrySanitized
 
             if('state' in kwargs.keys() and kwargs.get('state', '')):
-                wordsToRemove = []
                 stateSanitized = AddressUtils.sanitizeState(kwargs['state'])
                 wordsToRemove.append(stateSanitized)
-                if stateSanitized in AddressUtils.stateAbbreviations.keys():
-                    self.properties['state'] = stateSanitized
+                stateIdentified = AddressUtils.identifyState(stateSanitized)
+                if stateIdentified != stateSanitized:
+                    wordsToRemove.append(stateIdentified)
+                    self.properties['state'] = stateIdentified
                 else:
-                    for state, abbrebiations in AddressUtils.stateAbbreviations.items():
-                        if stateSanitized in abbrebiations:
-                            self.properties['state'] = state
-                            wordsToRemove.append(state)
-                    if not self.properties.get('state'):
-                        self.properties['state'] = stateSanitized
-                for word in wordsToRemove:
-                    for i, line in enumerate(lines):
-                        if sanitationUtils.stringContainsNumbers(line):
-                            new_line = AddressUtils.addressRemoveEndWord(line, word)
-                            if(line != new_line):
-                                print ( "removing word %s from %s -> %s" % (word,line, new_line))
-                            lines[i] = new_line
-            else:
-                for state, abbrebiations in AddressUtils.stateAbbreviations.items():
-                    for word in [state] + abbrebiations:
-                        for i, line in enumerate(lines):
-                            new_line = AddressUtils.addressRemoveEndWord(line, word)
-                            if new_line != line:
-                                lines[i] = new_line
-                                print "found state %s in %s -> %s" % (state, line, new_line)
+                    self.properties['state'] = stateSanitized
+                # if stateSanitized in AddressUtils.stateAbbreviations.keys():
+                #     self.properties['state'] = stateSanitized
+                # else:
+                #     for state, abbrebiations in AddressUtils.stateAbbreviations.items():
+                #         if stateSanitized in abbrebiations:
+                #             self.properties['state'] = state
+                #             wordsToRemove.append(state)
+                #     if not self.properties.get('state'):
+                #         self.properties['state'] = stateSanitized
+                # for word in wordsToRemove:
+                #     for i, line in enumerate(lines):
+                #         if SanitationUtils.stringContainsNumbers(line):
+                #             new_line = AddressUtils.addressRemoveEndWord(line, word)
+                #             if(line != new_line):
+                #                 print ( "removing word %s from %s -> %s" % (word,line, new_line))
+                #             lines[i] = new_line
+            # else:
+            #     for state, abbrebiations in AddressUtils.stateAbbreviations.items():
+            #         for word in [state] + abbrebiations:
+            #             for i, line in enumerate(lines):
+            #                 new_line = AddressUtils.addressRemoveEndWord(line, word)
+            #                 if new_line != line:
+            #                     lines[i] = new_line
+            #                     print "found state %s in %s -> %s" % (state, line, new_line)
 
 
             if 'city' in kwargs.keys() and kwargs.get('city', ''):
@@ -120,52 +140,98 @@ class ContactAddress(object):
                 self.properties['city'] = citySanitized
                 # wordsToRemove.append(citySanitized)
 
+            if 'postcode' in kwargs.keys() and kwargs.get('postcode'):
+                self.properties['postcode'] = kwargs.get('postcode')
+
             numberLines = filter(
-                sanitationUtils.stringContainsNumbers, 
+                SanitationUtils.stringContainsNumbers, 
                 lines
             )
             numberlessLines = filter(
-                sanitationUtils.stringContainsNoNumbers,
+                SanitationUtils.stringContainsNoNumbers,
                 lines
             )
             if(numberlessLines):
                 if len(numberlessLines) == 1:
-                    self.attn = numberlessLines[0]
+                    self.properties['names'] += numberlessLines
                 else:
                     self.valid = False
 
             # Extract subunit numbers and floor level
-            self.properties['subunits'] = {}
-            self.properties['isShop'] = False
-            self.properties['floors'] = {}
-            self.properties['thoroughfares'] = {}
-            self.properties['buildings'] = {}
-            self.properties['weak_thoroughfares'] = {}
 
-            for line in numberLines:
+
+            for i, line in enumerate(numberLines):
                 tokens = AddressUtils.tokenizeAddress(line)
-                print tokens
-                for i, token in enumerate(tokens):
+                for j, token in enumerate(tokens):
+                    if DEBUG_ADDRESS: print "-> token[%d]: " % j, SanitationUtils.makeSafeOutput(token )
+                    delivery = AddressUtils.getDelivery(token)
+                    if(delivery):
+                        # delivery_type, delivery_name = delivery
+                        self.properties['deliveries'] += [delivery]
+                        continue
                     subunit = AddressUtils.getSubunit(token)
                     if(subunit):
                         subunit_type, subunit_number = subunit
                         if subunit_type in ['SHOP', 'SE', 'KSK', 'SHRM']:
                             self.isShop = True
-                        self.properties['subunits'][i] = subunit
+                        self.properties['subunits'] += [subunit]
                         continue
                     floor = AddressUtils.getFloor(token)
                     if(floor):
-                        floor_type, floor_number = floor
-                        self.properties['floors'][i] = floor
+                        # floor_type, floor_number = floor
+                        self.properties['floors'] += [floor]
                         continue
                     thoroughfare = AddressUtils.getThoroughfare(token)
                     if(thoroughfare):
-                        thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix = thoroughfare
-                        self.properties['thoroughfares'][i] = thoroughfare
+                        # thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix = thoroughfare
+                        self.properties['thoroughfares'] += [thoroughfare]
+                        continue
+                    building = AddressUtils.getBuilding(token)
+                    if(building):
+                        # building_name, building_type = building
+                        self.properties['buildings'] += [building]
+                        continue
+                    weak_thoroughfare = AddressUtils.getThoroughfare(token)
+                    if(weak_thoroughfare):
+                        # weak_thoroughfare_name, weak_thoroughfare_type, weak_thoroughfare_suffix = weak_thoroughfare
+                        self.properties['weak_thoroughfares'] += [weak_thoroughfare]
+                        continue
+                    #ignore if unknown is city or state
+                    if token in wordsToRemove:
+                        self.properties['ignores'] += [token]
+                        if DEBUG_ADDRESS: print "IGNORING WORD", token
                         continue
 
-            #now try and get thoroughfare without thoroughfare number
-                
+                    state = AddressUtils.getState(token)
+                    if(state and not self.properties['state']):
+                        #this might be the state but can't rule it out being something else
+                        self.properties['possible_states'] = list( 
+                            set( self.properties['possible_states'] ) + set([token])
+                        )
+                        if DEBUG_ADDRESS: print "IGNORING STATE", state
+                        continue
+
+                    name = AddressUtils.getName(token)
+                    if(name and not self.properties['names']):
+                        self.properties['names'] += [name]
+                        continue
+                    number = AddressUtils.getNumber(token)
+
+                    #there can only be one number
+                    if(number and not self.properties['numbers']):
+                        self.properties['numbers'] += [number]
+                        continue
+                    self.properties['unknowns'] += [token]
+                    self.valid = False
+                    # break
+
+            if self.properties['numbers'] :
+                if not self.properties['subunits']:
+                    self.properties['subunits'] += [(None, self.properties['numbers'][0])]
+                else:
+                    self.valid = False
+            #if any unknowns match number, then add them as a blank subunit
+
             if(schema in ['act']):
                 pass
                 #TODO: THIS
@@ -173,17 +239,115 @@ class ContactAddress(object):
                 pass
                 #TODO: THIS
 
+            # print SanitationUtils.makeSafeOutput( self.__str__())
+    
+    @property
+    def subunits(self):
+        if(self.properties['subunits']):
+            return ", ".join(
+                [" ".join(filter(None, subunit)) for subunit in self.properties['subunits']]
+            )
+
+    @property
+    def floors(self):
+        if self.properties['floors']:
+            return ", ".join(
+                [" ".join(filter(None,floor)) for floor in self.properties['floors']]
+            )
+
+    @property
+    def buildings(self):
+        if self.properties['buildings']:
+            return ", ".join(
+                [" ".join(filter(None,building)) for building in self.properties['buildings']]
+            )
+    
+    @property
+    def names(self):
+        if self.properties['names']:
+            return ", ".join(
+                [str(name) for name in self.properties['names']]
+            )
+
+    @property
+    def deliveries(self):
+        if self.properties['deliveries']:
+            return ", ".join(
+                [" ".join(filter(None, delivery)) for delivery in self.properties['deliveries']]
+            )
+    
+    @property
+    def thoroughfares(self):
+        if self.properties['thoroughfares'] or self.properties['weak_thoroughfares']:
+            return ", ".join(
+                [" ".join(filter(None, thoroughfare)) for thoroughfare in \
+                    self.properties['thoroughfares'] + self.properties['weak_thoroughfares']]
+            )
+
+    @property
+    def line1(self):
+        if(self.valid):
+            if not self.names and self.deliveries:
+                assert not any([self.subunits, self.floors, self.buildings])
+                elements = [self.deliveries]
+            else:
+                elements = [
+                    self.names,
+                    self.subunits,
+                    self.floors,
+                    self.buildings,
+                ]
+            return ", ".join( filter(None, elements)) 
+        else:
+            return self.kwargs.get('line1')
+
+    @property
+    def line2(self):
+        if(self.valid):
+            if self.names and self.deliveries:
+                assert not any(self.thoroughfares)
+                elements = [self.deliveries]
+            else:
+                elements = [
+                    self.thoroughfares
+                ]
+            return ", ".join( filter(None, elements)) 
+        else:
+            return self.kwargs.get('line2')
+
+    @property
+    def line3(self):
+        if(self.valid):
+            state = self.properties.get('state')
+            country = self.properties.get('country')
+            city = self.properties.get('city')
+            postcode = self.properties.get('postcode')
+        else:
+            state = self.kwargs.get('state')
+            country = self.kwargs.get('country')
+            city = self.kwargs.get('city')
+            postcode = self.kwargs.get('postcode')
+        return ", ".join( filter(None, [city, state, postcode, country]))
+
     @staticmethod
     def determineSchema(**kwargs):
         fields = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2', 'city']))
         if(fields):
-            actLike = all(map(sanitationUtils.stringCapitalized, fields))
+            actLike = all(map(SanitationUtils.stringCapitalized, fields))
             if(actLike):
                 return 'act'
         return None
 
-    def stringify(self, out_schema):
-        pass
+    def __str__(self, out_schema = None):
+        prefix = ""
+        if DEBUG_ADDRESS:
+            prefix = "VALID: " if self.valid else "INVALID: "
+        return  prefix + "\n".join(filter(None,[
+            self.line1,
+            self.line2,
+            self.line3
+        ]))  
+
         #TODO: THIS
 
 
@@ -291,6 +455,9 @@ class CSVParse_User(CSVParse_Flat):
         self.usernames = OrderedDict()
         self.nousernames = OrderedDict()
 
+    def sanitizeCell(self, cell):
+        return SanitationUtils.sanitizeCell(cell)
+
     def registerEmail(self, objectData, email):
         self.registerAnything(
             objectData,
@@ -365,7 +532,7 @@ class CSVParse_User(CSVParse_Flat):
 
     def registerObject(self, objectData):
         email = objectData.email
-        if email and sanitationUtils.stringIsEmail(email) :
+        if email and SanitationUtils.stringIsEmail(email) :
             self.registerEmail(objectData, email)
         else:
             if(DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
@@ -379,7 +546,7 @@ class CSVParse_User(CSVParse_Flat):
             self.registerNoRole(objectData)
 
         card = objectData.MYOBID
-        if card and sanitationUtils.stringIsMYOBID(card):
+        if card and SanitationUtils.stringIsMYOBID(card):
             self.registerCard(objectData, card)
         else:
             self.registerNoCard(objectData)
@@ -451,7 +618,7 @@ if __name__ == '__main__':
         edit_date = usr.get('Edit Date')
         act_date = usr.get('Edited in Act')
 
-    print usrList.rep_str()
+    print usrList.tabulate()
 
     # usrCols = usrData.getUserCols()
 

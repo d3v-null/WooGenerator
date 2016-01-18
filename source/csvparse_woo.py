@@ -1,4 +1,4 @@
-from utils import listUtils, sanitationUtils
+from utils import listUtils, SanitationUtils
 from csvparse_abstract import ObjList
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
@@ -436,7 +436,7 @@ class CSVParse_Woo(CSVParse_Gen):
             super(CSVParse_Woo, self).registerProduct(objectData)
 
     def processImages(self, objectData):
-        imglist = filter(None, sanitationUtils.findAllImages(objectData.get('Images','')))
+        imglist = filter(None, SanitationUtils.findAllImages(objectData.get('Images','')))
         for image in imglist:
             self.registerImage(image, objectData)
         thisImages = objectData.getImages()
@@ -506,7 +506,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
         for attrs in palist:
             try:
-                decoded = sanitationUtils.decodeJSON(attrs)
+                decoded = SanitationUtils.decodeJSON(attrs)
                 for attr, val in decoded.items():
                     self.registerAttribute(objectData, attr, val)
             except Exception as e:
@@ -515,7 +515,7 @@ class CSVParse_Woo(CSVParse_Gen):
         if objectData.isVariation:
             parentData = objectData.getParent()
             assert parentData and parentData.isVariable
-            vattrs = sanitationUtils.decodeJSON(objectData.get('VA'))
+            vattrs = SanitationUtils.decodeJSON(objectData.get('VA'))
             assert vattrs
             for attr, val in vattrs.items():
                 self.registerAttribute(parentData, attr, val, True)   
@@ -525,7 +525,7 @@ class CSVParse_Woo(CSVParse_Gen):
         schedule = objectData.get('SCHEDULE')
         if schedule:
             print "specials for %s: %s" % (objectData, schedule)
-            splist = filter(None, sanitationUtils.findAllTokens(schedule))
+            splist = filter(None, SanitationUtils.findAllTokens(schedule))
             for special in splist:
                 self.registerSpecial(objectData, special)
 
@@ -707,8 +707,8 @@ class CSVParse_Woo(CSVParse_Gen):
 
                     specialparams = self.specials[special]
 
-                    specialfrom = sanitationUtils.datetotimestamp( specialparams["FROM"])
-                    specialto = sanitationUtils.datetotimestamp(specialparams["TO"])
+                    specialfrom = SanitationUtils.datetotimestamp( specialparams["FROM"])
+                    specialto = SanitationUtils.datetotimestamp(specialparams["TO"])
                     if( specialto < time.time() ):
                         self.registerMessage( "special %s is over" % special )
                         continue
@@ -722,7 +722,7 @@ class CSVParse_Woo(CSVParse_Gen):
                             # print "discount is ", discount
                             special_price = None
 
-                            percentages = sanitationUtils.findallPercent(discount)
+                            percentages = SanitationUtils.findallPercent(discount)
                             # print "percentages are", percentages
                             if percentages:
                                 coefficient = float(percentages[0]) / 100
@@ -732,7 +732,7 @@ class CSVParse_Woo(CSVParse_Gen):
                                     regular_price = float(regular_price_string)
                                     special_price = regular_price * coefficient  
                             else:    
-                                dollars = sanitationUtils.findallDollars(discount)
+                                dollars = SanitationUtils.findallDollars(discount)
                                 if dollars:
                                     dollar = float(self.sanitizeCell( dollars[0]) )
                                     if dollar:

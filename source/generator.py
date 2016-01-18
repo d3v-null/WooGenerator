@@ -7,7 +7,7 @@ from PIL import Image
 import time
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, sanitationUtils
+from utils import listUtils, SanitationUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
@@ -494,10 +494,10 @@ def exportItemsCSV(filePath, colNames, items):
 
 def addSubElement(parentElement, tag, attrib={}, value=None):
 	# print "addSubElement: tag %s ; attrib %s ; value %s" % (tag, attrib, value)
-	tag = sanitationUtils.cleanXMLString(tag)
+	tag = SanitationUtils.cleanXMLString(tag)
 	# print "addSubElement: tag post clean: %s" % tag
 	subElement = ET.SubElement(parentElement, tag, attrib)
-	value = sanitationUtils.cleanXMLString(value)
+	value = SanitationUtils.cleanXMLString(value)
 	# print "addSubElement: value post clean: %s" % value
 	if value:
 		subElement.text = value

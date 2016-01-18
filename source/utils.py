@@ -14,8 +14,9 @@ import cStringIO
 DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
+DEBUG_ADDRESS = False
 
-class sanitationUtils:
+class SanitationUtils:
     email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
     punctuationChars = [
         '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '\-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\\\', '\\]', '^', '_', '`', '{', '|', '}', '~' 
@@ -34,7 +35,7 @@ class sanitationUtils:
 
     @staticmethod
     def unicodeToAscii(string):
-        str_out = sanitationUtils.stringToUnicode(string)
+        str_out = SanitationUtils.stringToUnicode(string)
         return str_out.encode('ascii', 'backslashreplace')
 
     @staticmethod
@@ -106,7 +107,7 @@ class sanitationUtils:
 
     @staticmethod
     def stripPunctuation(string):
-        str_out = re.sub('[%s]' % ''.join(sanitationUtils.punctuationChars) , '', string)
+        str_out = re.sub('[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
         if DEBUG: print "stripPunctuation", string.encode('ascii', 'backslashreplace'), str_out.encode('ascii', 'backslashreplace')
         return str_out
 
@@ -143,48 +144,48 @@ class sanitationUtils:
 
     @staticmethod
     def sanitizeCell(cell):
-        return sanitationUtils.compose(
-            sanitationUtils.removeLeadingDollarWhiteSpace,
-            sanitationUtils.removeLeadingPercentWhiteSpace,
-            sanitationUtils.removeLoneDashes,
-            sanitationUtils.removeThousandsSeparator,
-            sanitationUtils.removeLoneWhiteSpace,
-            sanitationUtils.stripLeadingWhitespace,
-            sanitationUtils.stripTailingWhitespace,            
-            sanitationUtils.sanitizeNewlines,
-            sanitationUtils.removeNULL,
-            sanitationUtils.stringToUnicode
+        return SanitationUtils.compose(
+            SanitationUtils.removeLeadingDollarWhiteSpace,
+            SanitationUtils.removeLeadingPercentWhiteSpace,
+            SanitationUtils.removeLoneDashes,
+            SanitationUtils.removeThousandsSeparator,
+            SanitationUtils.removeLoneWhiteSpace,
+            SanitationUtils.stripLeadingWhitespace,
+            SanitationUtils.stripTailingWhitespace,            
+            SanitationUtils.sanitizeNewlines,
+            SanitationUtils.removeNULL,
+            SanitationUtils.stringToUnicode
         )(cell)   
 
     @staticmethod
     def similarComparison(string):
-        return sanitationUtils.compose(
-            sanitationUtils.toLower,
-            sanitationUtils.stripLeadingWhitespace,
-            sanitationUtils.stripTailingWhitespace,
-            sanitationUtils.stringToUnicode
+        return SanitationUtils.compose(
+            SanitationUtils.toLower,
+            SanitationUtils.stripLeadingWhitespace,
+            SanitationUtils.stripTailingWhitespace,
+            SanitationUtils.stringToUnicode
         )(string)
 
     @staticmethod
     def similarPhoneComparison(string):
-        return sanitationUtils.compose(
-            sanitationUtils.stripNonNumbers,
-            sanitationUtils.stripAreaCode,
-            sanitationUtils.stringToUnicode
+        return SanitationUtils.compose(
+            SanitationUtils.stripNonNumbers,
+            SanitationUtils.stripAreaCode,
+            SanitationUtils.stringToUnicode
         )(string)
 
     @staticmethod
     def makeSafeOutput(string):
-        return sanitationUtils.compose(
-            sanitationUtils.sanitizeNewlines,
-            sanitationUtils.unicodeToAscii
+        return SanitationUtils.compose(
+            SanitationUtils.sanitizeNewlines,
+            SanitationUtils.unicodeToAscii
         )(string)
 
     @staticmethod
     def similarTruStrComparison(string):
-        return sanitationUtils.compose(
-            sanitationUtils.truishStringToBool,
-            sanitationUtils.similarComparison
+        return SanitationUtils.compose(
+            SanitationUtils.truishStringToBool,
+            SanitationUtils.similarComparison
         )(string)
 
     @staticmethod
@@ -238,11 +239,11 @@ class sanitationUtils:
 
     @staticmethod
     def stringIsEmail(email):
-        return re.match(sanitationUtils.email_regex, email)
+        return re.match(SanitationUtils.email_regex, email)
 
     @staticmethod
     def stringIsMYOBID(card):
-        return re.match(sanitationUtils.myobid_regex, card)
+        return re.match(SanitationUtils.myobid_regex, card)
 
     @staticmethod
     def stringContainsNumbers(string):
@@ -253,7 +254,7 @@ class sanitationUtils:
 
     @staticmethod
     def stringContainsNoNumbers(string):
-        return not sanitationUtils.stringContainsNumbers(string)
+        return not SanitationUtils.stringContainsNumbers(string)
 
     @staticmethod
     def truishStringToBool(string):
@@ -323,19 +324,19 @@ def compileAbbrvRegex( abbrv ):
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
-        ('ANT',     ['ANTENNA']),
-        ('APT',     ['APARTMENT']),
-        ('ATM',     ['AUTOMATED TELLER MACHINE']),
+        # ('ANT',     ['ANTENNA']),
+        ('APT',     ['APARTMENT', 'A']),
+        # ('ATM',     ['AUTOMATED TELLER MACHINE']),
         ('BBQ',     ['BARBECUE']),
-        ('BTSD',    ['BOATSHED']),
+        # ('BTSD',    ['BOATSHED']),
         ('BLDG',    ['BUILDING']),
-        ('BNGW',    ['BUNGALOW']),
-        ('CAGE',    []),
-        ('CARP',    ['CARPARK']),
-        ('CARS',    ['CARSPACE']),
-        ('CLUB',    []),
-        ('COOL',    ['COOLROOM']),
-        ('CTGE',    ['COTTAGE']),
+        # ('BNGW',    ['BUNGALOW']),
+        # ('CAGE',    []),
+        # ('CARP',    ['CARPARK']),
+        # ('CARS',    ['CARSPACE']),
+        # ('CLUB',    []),
+        # ('COOL',    ['COOLROOM']),
+        # ('CTGE',    ['COTTAGE']),
         ('DUPL',    ['DUPLEX']),
         ('FCTY',    ['FACTORY', 'FY']),
         ('FLAT',    ['FLT','FL','F']),
@@ -347,15 +348,15 @@ class AddressUtils:
         ('LBBY',    ['LOBBY']),
         ('LOFT',    []),
         ('LOT',     []),
-        ('MSNT',    ['MAISONETTE']),
-        ('MBTH',    ['MARINE BERTH', 'MB']),
+        # ('MSNT',    ['MAISONETTE']),
+        # ('MBTH',    ['MARINE BERTH', 'MB']),
         ('OFFC',    ['OFFICE', 'OFF']),
-        ('RESV',    ['RESERVE']),
+        # ('RESV',    ['RESERVE']),
         ('ROOM',    ['RM']),
         ('SHED',    []),
         ('SHOP',    ['SH', 'SP']),
         ('SHRM',    ['SHOWROOM']),
-        ('SIGN',    []),
+        # ('SIGN',    []),
         ('SITE',    []),
         ('STLL',    ['STALL', 'SL']),
         ('STOR',    ['STORE']),
@@ -390,7 +391,7 @@ class AddressUtils:
         ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
         ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND']),
         ('FL',      ['FLOOR', 'FLR']),
-        ('L',       ['LEVEL', 'LVL']),
+        ('LVL',       ['LEVEL', 'L']),
         ('M',       ['MEZZANINE', 'MEZ'])
     ])
 
@@ -427,7 +428,7 @@ class AddressUtils:
         ('CT',       ['COURT']),
         ('CTYD',     ['COURTYARD']),
         ('COVE',     []),
-        ('CRES',     ['CRESCENT', 'CR']),
+        ('CRES',     ['CRESCENT', 'CR', 'CRESENT']),
         ('CRST',     ['CREST']),
         ('CRSS',     ['CROSS']),
         ('CSAC',     ['CUL-DE-SAC']),
@@ -521,6 +522,7 @@ class AddressUtils:
         ('VIEW',     []),
         ('VSTA',     ['VISTA']),
         ('WALK',     []),
+        ('WAY',      ['WY']),
         ('WKWY',     ['WALKWAY']),
         ('WHRF',     ['WHARF']),
         ('WYND',     [])
@@ -550,8 +552,16 @@ class AddressUtils:
         ('FORUM',           [])
     ])
 
+    deliveryTypeAbbreviations = OrderedDict([
+        ('CARE PO',     []),
+        ('GPO BOX',     []),
+        ('LOCKED BAG',  []),
+        ('PO BOX',      []),
+        ('RMB',         [])
+    ])
+
     allowedPunctuation = ['\\-', '.', '\'']
-    tokenDelimeters  = [r"\s", r"\d"] + list(set(sanitationUtils.punctuationChars) - set(allowedPunctuation))
+    tokenDelimeters  = [r"\s", r"\d"] + list(set(SanitationUtils.punctuationChars) - set(allowedPunctuation))
     delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
     nondelimeterRegex= r"[^%s]" % "".join(tokenDelimeters)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
@@ -560,8 +570,14 @@ class AddressUtils:
     numberAlphaRegex = r"(\d+) ?([A-Z])"
     numberSlashRegex = r"(\d+)/(\d+)"
     numberRegex      = r"(\d+)"
-    nameRegex        = r"(?:%s+\s?)+" % nondelimeterRegex
+    nameRegex        = r"(%s+(\s*%s)*)" % (nondelimeterRegex, nondelimeterRegex)
     slashAbbrvRegex  = r"[A-Z]+/[A-Z]+"
+    multiNumberRegex = "|".join([
+        numberAlphaRegex,
+        numberRangeRegex,
+        # numberSlashRegex,
+        numberRegex
+    ])
     
     floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL|LVL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
         compileAbbrvRegex(floorAbbreviations),
@@ -569,12 +585,7 @@ class AddressUtils:
     )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>%s)" % (
         compileAbbrvRegex(subunitAbbreviations),
-        "|".join([
-            numberAlphaRegex,
-            numberRangeRegex,
-            # numberSlashRegex,
-            numberRegex
-        ]),
+        multiNumberRegex,
     )
     stateRegex = r"(%s)" % compileAbbrvRegex(stateAbbreviations)
     thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)" % (
@@ -584,12 +595,7 @@ class AddressUtils:
         compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
     thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
-        "|".join([
-            numberAlphaRegex,
-            numberRangeRegex,
-            # numberSlashRegex,
-            numberRegex
-        ]),
+        multiNumberRegex,
         nameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
@@ -612,19 +618,30 @@ class AddressUtils:
         weakThoroughfareTypeRegex,
         weakThoroughfareSuffixRegex
     )
+    deliveryTypeRegex = r"(?P<delivery_type>%s)" % (
+        compileAbbrvRegex(deliveryTypeAbbreviations),
+    )
+    deliveryRegex = r"%s(?:\s*(?P<delivery_number>%s))?" % (
+        deliveryTypeRegex,
+        numberRegex + "|[A-Z]\d+"
+    )
 
-    addressTokenRegex = r"(%s|[^,\s\d/()-]+)" % "|".join([
+# [^,\s\d/()-]+
+    addressTokenRegex = r"(%s)" % "|".join([
+        clearStartRegex + deliveryRegex + clearFinishRegex,
         clearStartRegex + floorLevelRegex + clearFinishRegex,
         clearStartRegex + subunitRegex + clearFinishRegex,
         clearStartRegex + thoroughfareRegex + clearFinishRegex,
         clearStartRegex + buildingRegex + clearFinishRegex,
-        clearStartRegex + weakThoroughfareRegex + clearFinishRegex,
+        # clearStartRegex + weakThoroughfareRegex + clearFinishRegex,
+        clearStartRegex + stateRegex + clearFinishRegex,
         clearStartRegex + nameRegex + clearFinishRegex,
         clearStartRegex + numberRangeRegex + clearFinishRegex,
         # clearStartRegex + numberSlashRegex + clearFinishRegex,
         clearStartRegex + numberAlphaRegex + clearFinishRegex,
         clearStartRegex + numberRegex + clearFinishRegex,
-        clearStartRegex + slashAbbrvRegex + clearFinishRegex,
+        clearStartRegex + slashAbbrvRegex + clearFinishRegex
+
     ])
 
     @staticmethod
@@ -636,7 +653,7 @@ class AddressUtils:
         for abbrvKey, abbrvs in abbrvDict.items():
             if( string in [abbrvKey] + abbrvs):
                 return abbrvKey
-        None
+        return string
 
     @staticmethod
     def identifySubunit(string):
@@ -645,6 +662,26 @@ class AddressUtils:
     @staticmethod
     def identifyFloor(string):
         return AddressUtils.identifyAbbreviation(AddressUtils.floorAbbreviations, string)
+
+    @staticmethod
+    def identifyThoroughfareType(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.thoroughfareTypeAbbreviations, string)
+
+    @staticmethod
+    def identifyThoroughfareSuffix(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.thoroughfareSuffixAbbreviations, string)
+
+    @staticmethod
+    def identifyState(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.stateAbbreviations, string)
+
+    @staticmethod
+    def identifyBuildingType(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.buildingTypeAbbreviations, string)
+
+    @staticmethod
+    def identifyDeliveryType(string):
+        return AddressUtils.identifyAbbreviation(AddressUtils.deliveryTypeAbbreviations, string)
 
     @staticmethod
     def getSubunit(token):
@@ -658,7 +695,7 @@ class AddressUtils:
         if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')): 
             subunit_type = AddressUtils.identifySubunit(matchDict.get('subunit_type'))
             subunit_number = matchDict.get('subunit_number')
-            print "FOUND SUBUNIT %s %s" % (subunit_type, subunit_number)
+            if DEBUG_ADDRESS: print "FOUND SUBUNIT %s %s" % (subunit_type, subunit_number)
             return subunit_type, subunit_number
         return None
 
@@ -666,15 +703,15 @@ class AddressUtils:
     def getFloor(token):
         match = re.match(
             AddressUtils.wrapClearRegex(
-                AddressUtils.subunitRegex
+                AddressUtils.floorLevelRegex
             ),
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('floor_type') and matchDict.get('floor_number') ): 
+        if(matchDict): 
             floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
             floor_number = matchDict.get('floor_number')
-            print "FOUND FLOOR %s %s" % (floor_type, floor_number)
+            if DEBUG_ADDRESS: print "FOUND FLOOR %s %s" % (floor_type, floor_number)
             return floor_type, floor_number
         return None
 
@@ -688,12 +725,15 @@ class AddressUtils:
         )
         matchDict = match.groupdict() if match else None
         if(matchDict and matchDict.get('thoroughfare_name') and matchDict.get('thoroughfare_type')):
-            print matchDict
             thoroughfare_name = matchDict.get('thoroughfare_name')
-            thoroughfare_type = matchDict.get('thoroughfare_type')
-            thoroughfare_suffix = matchDict.get('thoroughfare_suffix')
+            thoroughfare_type = AddressUtils.identifyThoroughfareType( 
+                matchDict.get('thoroughfare_type') 
+            )
+            thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(  
+                matchDict.get('thoroughfare_suffix') 
+            )
             thoroughfare_number = matchDict.get('thoroughfare_number')
-            print "FOUND ADDRESS (%s) %s | %s (%s)" % (
+            if DEBUG_ADDRESS: print "FOUND THOROUGHFARE (%s) %s | %s (%s)" % (
                 thoroughfare_number,
                 thoroughfare_name,
                 thoroughfare_type,
@@ -711,39 +751,123 @@ class AddressUtils:
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('building_name') and matchDict.get('building_type')):
+        if(matchDict):
             building_name = matchDict.get('building_name')
-            building_type = matchDict.get('building_type')
-            print "FOUND BUILDING %s %s" % (
+            building_type = AddressUtils.identifyBuildingType(
+                matchDict.get('building_type')
+            )
+            if DEBUG_ADDRESS: print "FOUND BUILDING %s %s" % (
                 building_name, 
                 building_type
             )
             return building_name, building_type
-        return None
+
+    @staticmethod
+    def getWeakThoroughfare(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.weakThoroughfareRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('weak_thoroughfare_name') and matchDict.get('weak_thoroughfare_type')):
+            # print matchDict
+            weak_thoroughfare_name = matchDict.get('weak_thoroughfare_name')
+            weak_thoroughfare_type = AddressUtils.identifyThoroughfareType( 
+                matchDict.get('weak_thoroughfare_type')
+            )
+            weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(  
+                matchDict.get('weak_thoroughfare_suffix')
+            )
+
+            if DEBUG_ADDRESS: print "FOUND WEAK THOROUGHFARE (%s) %s | %s (%s)" % (
+                weak_thoroughfare_name,
+                weak_thoroughfare_type,
+                weak_thoroughfare_suffix
+            )
+            return weak_thoroughfare_name, weak_thoroughfare_type, weak_thoroughfare_suffix
+
+    @staticmethod
+    def getState(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.stateRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict and matchDict.get('state_name')):
+            state_name = matchDict.get('state_name')
+            if DEBUG_ADDRESS: print "FOUND SATE ", state_name
+            return state_name
+
+    @staticmethod
+    def getDelivery(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.deliveryRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict):
+            delivery_type = AddressUtils.identifyDeliveryType(matchDict.get('delivery_type'))
+            delivery_number = matchDict.get('delivery_number')
+            if DEBUG_ADDRESS: print "FOUND DELIVERY ", delivery_type, delivery_number
+            return delivery_type, delivery_number
+
+    @staticmethod
+    def getName(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                AddressUtils.nameRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            name = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND NAME ", repr(name)
+            return name
+
+    @staticmethod
+    def getNumber(token):
+        match = re.match(
+            AddressUtils.wrapClearRegex(
+                "(" + AddressUtils.multiNumberRegex + ")"
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            number = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND NUMBER ", repr(number)
+            return number
 
     @staticmethod
     def sanitizeState(string):
-        return sanitationUtils.compose(
-            sanitationUtils.stripLeadingWhitespace,
-            sanitationUtils.stripTailingWhitespace,
-            sanitationUtils.stripExtraWhitespace,   
-            sanitationUtils.stripPunctuation,
-            sanitationUtils.toUpper
+        return SanitationUtils.compose(
+            SanitationUtils.stripLeadingWhitespace,
+            SanitationUtils.stripTailingWhitespace,
+            SanitationUtils.stripExtraWhitespace,   
+            SanitationUtils.stripPunctuation,
+            SanitationUtils.toUpper
         )(string)
 
     @staticmethod
     def sanitizeAddressToken(string):
-        string = sanitationUtils.stripExtraWhitespace(string)
+        string = SanitationUtils.stripExtraWhitespace(string)
         string = re.sub(AddressUtils.numberAlphaRegex + AddressUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
-        if DEBUG: print "sanitizeAddressToken", sanitationUtils.makeSafeOutput( string)
+        if DEBUG: print "sanitizeAddressToken", SanitationUtils.makeSafeOutput( string)
         return string
 
     @staticmethod
     def tokenizeAddress(string):
         matches =  re.findall(
             AddressUtils.addressTokenRegex, 
-            string
+            string.upper()
         )
         if DEBUG: print repr(matches)
         return map(
@@ -780,7 +904,7 @@ class TimeUtils:
 
     @staticmethod
     def starStrptime(string, fmt = wpTimeFormat ):
-        string = sanitationUtils.stringToUnicode(string)
+        string = SanitationUtils.stringToUnicode(string)
         if(string):
             try:
                 tstruct = time.strptime(string, fmt)
@@ -963,31 +1087,31 @@ if __name__ == '__main__':
 
     # n1 = u"D\u00C8RWENT"
     # n2 = u"d\u00E8rwent"
-    # print sanitationUtils.unicodeToAscii(n1) , \
-    #     sanitationUtils.unicodeToAscii(sanitationUtils.similarComparison(n1)), \
-    #     sanitationUtils.unicodeToAscii(n2), \
-    #     sanitationUtils.unicodeToAscii(sanitationUtils.similarComparison(n2))
+    # print SanitationUtils.unicodeToAscii(n1) , \
+    #     SanitationUtils.unicodeToAscii(SanitationUtils.similarComparison(n1)), \
+    #     SanitationUtils.unicodeToAscii(n2), \
+    #     SanitationUtils.unicodeToAscii(SanitationUtils.similarComparison(n2))
 
     # p1 = "+61 04 3190 8778"
     # p2 = "04 3190 8778"
     # p3 = "+61 (08) 93848512"
     # print \
-    #     sanitationUtils.similarPhoneComparison(p1), \
-    #     sanitationUtils.similarPhoneComparison(p2), \
-    #     sanitationUtils.similarPhoneComparison(p3)
+    #     SanitationUtils.similarPhoneComparison(p1), \
+    #     SanitationUtils.similarPhoneComparison(p2), \
+    #     SanitationUtils.similarPhoneComparison(p3)
 
-    # print sanitationUtils.makeSafeOutput(u"asdad \u00C3 <br> \n \b")
+    # print SanitationUtils.makeSafeOutput(u"asdad \u00C3 <br> \n \b")
 
-    # tru = sanitationUtils.similarComparison(u"TRUE")
+    # tru = SanitationUtils.similarComparison(u"TRUE")
 
     # print \
-    #     sanitationUtils.similarTruStrComparison('yes'), \
-    #     sanitationUtils.similarTruStrComparison('no'), \
-    #     sanitationUtils.similarTruStrComparison('TRUE'),\
-    #     sanitationUtils.similarTruStrComparison('FALSE'),\
-    #     sanitationUtils.similarTruStrComparison(0),\
-    #     sanitationUtils.similarTruStrComparison('0'),\
-    #     sanitationUtils.similarTruStrComparison(u"0")\
+    #     SanitationUtils.similarTruStrComparison('yes'), \
+    #     SanitationUtils.similarTruStrComparison('no'), \
+    #     SanitationUtils.similarTruStrComparison('TRUE'),\
+    #     SanitationUtils.similarTruStrComparison('FALSE'),\
+    #     SanitationUtils.similarTruStrComparison(0),\
+    #     SanitationUtils.similarTruStrComparison('0'),\
+    #     SanitationUtils.similarTruStrComparison(u"0")\
 
     # testpath = "../output/UnicodeDictWriterTest.csv"
     # with open(testpath, 'w+') as testfile:
@@ -1003,13 +1127,15 @@ if __name__ == '__main__':
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
 
-    print "addressTokenRegex", AddressUtils.addressTokenRegex
+    # print "addressTokenRegex", AddressUtils.addressTokenRegex
+    print "thoroughfareRegex", AddressUtils.thoroughfareRegex
     print "subunitRegex", AddressUtils.subunitRegex
     print "floorLevelRegex", AddressUtils.floorLevelRegex
     print "stateRegex", AddressUtils.stateRegex
     print "delimeterRegex", AddressUtils.delimeterRegex
 
     print AddressUtils.getSubunit("SHOP 4 A")
+    print AddressUtils.getFloor("LEVEL 8")
 
     for line in [
         "8/5-7 KILVINGTON DRIVE EAST",
@@ -1154,7 +1280,8 @@ if __name__ == '__main__':
         "43 GINGHAM STREET",
         "5 KERRY CRESCENT, WESTERN AUSTRALIA",
         "UNIT 2/33 MARTINDALE STREET",
-        "207/67 WATT ST"
+        "207/67 WATT ST",
+        "LEVEL 8, BLIGH"
     ]:
-        # pass
-        print sanitationUtils.unicodeToAscii("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))
+        pass
+        # print SanitationUtils.unicodeToAscii("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))

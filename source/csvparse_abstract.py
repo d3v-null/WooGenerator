@@ -1,6 +1,6 @@
 from pprint import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils, UnicodeReader, sanitationUtils, UnicodeDictWriter
+from utils import debugUtils, listUtils, UnicodeReader, SanitationUtils, UnicodeDictWriter
 from tabulate import tabulate
 import csv
 from coldata import ColData_User
@@ -204,7 +204,7 @@ class ObjList(object):
     def objList_type(self):
         return self._objList_type
 
-    def rep_str(self, cols=None):
+    def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
         if(objs):
             # print "there are objects"
@@ -212,11 +212,11 @@ class ObjList(object):
             header = [self.objList_type]
             for col, data in cols.items():
                 header += [col]
-            table = [header]
+            table = []
             for obj in objs:
-                table += [[obj.index] + [ sanitationUtils.makeSafeOutput(obj.get(col) or "" ) for col in cols.keys()]]
+                table += [[obj.index] + [ SanitationUtils.makeSafeOutput(obj.get(col) or "" ) for col in cols.keys()]]
             # print "table", table
-            return tabulate(table, headers="firstrow")
+            return tabulate(table, headers=header, tablefmt=tablefmt)
             # print repr(table)
             # print repr(table.encode('utf8'))
             # return table.encode('utf8')
@@ -294,6 +294,7 @@ class CSVParse_Base(object, Registrar):
             return None
         try:
             # if DEBUG: print "row [%s] = %s" % (index, row[index])
+            #this may break shit
             return row[index]
         except Exception as e:
             self.registerError('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+str(e))
