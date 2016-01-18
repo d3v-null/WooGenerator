@@ -214,7 +214,7 @@ class ObjList(object):
                 header += [col]
             table = []
             for obj in objs:
-                table += [[obj.index] + [ SanitationUtils.makeSafeOutput(obj.get(col) or "" ) for col in cols.keys()]]
+                table += [[obj.index] + [ SanitationUtils.makeSafeOutput(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
             return tabulate(table, headers=header, tablefmt=tablefmt)
             # print repr(table)

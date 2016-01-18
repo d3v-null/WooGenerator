@@ -669,11 +669,23 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
         }),
+        ('Address',{
+            'report':True,
+            'warn':True,
+            'static':True,
+            'sync':True
+        }),
+        ('Home Address',{
+            'report':True,
+            'warn':True,
+            'static':True,
+            'sync':True
+        }),
         ('Address 1',{
             'label':'billing_address_1',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'warn': True,
             'static':True,
             'capitalized':True,
@@ -682,19 +694,16 @@ class ColData_User(ColData_Base):
             'label':'billing_address_2',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'warn': True,
             'static':True,
             'capitalized':True,
-        }),
-        ('Address',{
-            'report':True
         }),
         ('City',{
             'label':'billing_city',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'warn': True,
             'static':True,
             # 'report': True,
@@ -704,7 +713,7 @@ class ColData_User(ColData_Base):
             'label':'billing_postcode',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'warn': True,
             'static':True,
             # 'report': True,
@@ -713,7 +722,7 @@ class ColData_User(ColData_Base):
             'label':'billing_state',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'warn': True,
             'static':True,
             # 'report':True,
@@ -731,7 +740,7 @@ class ColData_User(ColData_Base):
             'label':'shipping_address_1',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
             'capitalized':True,
         }),
@@ -739,7 +748,7 @@ class ColData_User(ColData_Base):
             'label':'shipping_address_2',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
             'capitalized':True,
         }),
@@ -747,7 +756,7 @@ class ColData_User(ColData_Base):
             'label':'shipping_city',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
             'capitalized':True,
         }),
@@ -755,14 +764,14 @@ class ColData_User(ColData_Base):
             'label':'shipping_postcode',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
         }),
         ('Home Country',{
             'label':'shipping_country',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
             'capitalized':True,
         }),
@@ -770,7 +779,7 @@ class ColData_User(ColData_Base):
             'label':'shipping_state',
             'import':True,
             'user':True,
-            'sync':True,
+            # 'sync':True,
             'static':True,
             'capitalized':True,
         }),
@@ -834,15 +843,15 @@ class ColData_User(ColData_Base):
         # }),
         ('Edited in Act', {
             'import': True,
-            'report': True
+            # 'report': True
         }),
         ('Wordpress Updated', {
             'import':True,
-            'report':True
+            # 'report':True
         }),
         ('Last Sale', {
             'import': True,
-            'report': True
+            # 'report': True
         })
     ])
 
