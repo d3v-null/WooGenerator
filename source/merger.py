@@ -15,6 +15,11 @@ from copy import deepcopy
 import dill as pickle
 from bisect import insort
 import re
+import time
+
+start_time = time.time()
+def timediff():
+    return time.time() - start_time
 
 inFolder = "../input/"
 outFolder = "../output/"
@@ -59,10 +64,11 @@ resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 
 print "importing data"
 
-pkl_path = "parser_pickle.pkl"
+pkl_path = "parser_pickle%s.pkl" % fileSuffix
 
-clear_pkl = True
+clear_pkl = False
 try_pkl = not testMode
+# try_pkl = False
 # clear_pkl = True
 
 if(clear_pkl): 
@@ -78,6 +84,7 @@ try:
         pkl_file = open(pkl_path, 'rb')
         maParser = pickle.load(pkl_file)
         saParser = pickle.load(pkl_file)    
+        print "loaded pickle", timediff()
     else:
         raise Exception("not trying to load pickle")
 except Exception as e:
@@ -94,9 +101,12 @@ except Exception as e:
     )
 
     maParser.analyseFile(maPath)
+    print "imported master", timediff()
     saParser.analyseFile(saPath)
+    print "imported slave", timediff()
 
     pkl_file = open(pkl_path, 'wb')
+    print "dumping pickle", timediff()
     pickle.dump(maParser, pkl_file)
     pickle.dump(saParser, pkl_file)
 
@@ -690,15 +700,22 @@ class SyncUpdate(object):
 
     def displaySyncWarnings(self, tablefmt=None):
         if self.syncWarnings:
-            header = ["Column", "Source", "Reason", "Old", "New"]
-            table = [header]
+            delimeter = "<br/>" if tablefmt=="html" else "\n"
+            subject_fmt = "<h4>%s</h4>" if tablefmt=="html" else "%s"
+            header = ["Column", "Reason", "Old", "New"]
+            subjects = {}
             for col, warnings in self.syncWarnings.items():
                 for subject, reason, oldVal, newVal in warnings:    
-                    table += [map( 
+                    if subject not in subjects.keys():
+                        subjects[subject] = []
+                    subjects[subject] += [map( 
                         lambda x: SanitationUtils.makeSafeOutput(x)[:64], 
-                        [col, subject, reason, oldVal, newVal] 
+                        [col, reason, oldVal, newVal] 
                     )]
-            return tabulate(table, headers="firstrow", tablefmt=tablefmt)
+            tables = []
+            for subject, subjList in subjects.items():
+                tables += [delimeter.join([(subject_fmt % self.opposite_src(subject)), tabulate(subjList, headers=header, tablefmt=tablefmt)])]
+            return delimeter.join(tables)
         else:
             return ""
 
@@ -706,6 +723,12 @@ class SyncUpdate(object):
     #     if not winner: winner = self._winner
     #     if(winner == MASTER_NAME):
     #         oldLoserObject = self._oldSObject
+
+    def opposite_src(self, subject):
+        if subject == MASTER_NAME:
+            return SLAVE_NAME
+        else:
+            return MASTER_NAME
 
     def loserUpdate(self, winner, col, reason = "", data={}):
         if(winner == MASTER_NAME):
@@ -809,8 +832,8 @@ class SyncUpdate(object):
         out_str += subtitle_fmt % "INFO"
         out_str += info_delimeter.join(filter(None,[
             (info_fmt % ("Last Sale", self._bTime)) if self.bTime else "No Last Sale",
-            (info_fmt % ("%s Mod Time" % MASTER_NAME, self.mTime)) if self.mMod else "%s Not Modded" % MASTER_NAME,
-            (info_fmt % ("%s Mod Time" % SLAVE_NAME, self.sTime)) if self.sMod else "%s Not Modded" % SLAVE_NAME,
+            (info_fmt % ("%s Mod Time" % MASTER_NAME, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % MASTER_NAME,
+            (info_fmt % ("%s Mod Time" % SLAVE_NAME, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % SLAVE_NAME,
             (info_fmt % ("static", "yes" if self._static else "no")),
             (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
         ]))
@@ -823,7 +846,7 @@ class SyncUpdate(object):
 
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
-        # -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
+        # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
 
 
 # get matches
@@ -911,6 +934,8 @@ def hashify(in_str):
 
 
 print hashify("BEGINNING MERGE")
+print timediff()
+
 
 syncCols = colData.getSyncCols()
 
@@ -951,7 +976,10 @@ for match in globalMatches:
             if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
                 pass
                 # insort(staticSUpdates, syncUpdate)
-            
+    
+print hashify("COMPLETED MERGE")
+print timediff()
+
 with open(resPath, 'w+') as resFile:
     def writeSection(title, description, data, length = 0, html_class="results_section"):
         sectionID = SanitationUtils.makeSafeClass(title)
