@@ -548,6 +548,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'sync':'slave_override',
             'warn':True,
+            'static':True,
         }),
         ('MYOB Card ID',{
             'label':'myob_card_id',
@@ -556,6 +557,7 @@ class ColData_User(ColData_Base):
             'report':True,
             'sync':'master_override',
             'warn':True,
+            'static':True,
         }),
         ('MYOB Customer Card ID',{
             'label':'myob_customer_card_id',
@@ -654,6 +656,7 @@ class ColData_User(ColData_Base):
         ('Contact',{
             'import':True,
             'label':'nickname',
+            'warn': True,
             'user':True,
             'sync':True,
         }),
@@ -892,5 +895,6 @@ if __name__ == '__main__':
     print "userCols", colData.getUserCols().keys()
     print "reportCols", colData.getReportCols().keys()
     print "capitalCols", colData.getCapitalCols().keys()
+    print "syncCols", colData.getSyncCols().keys()
 
     

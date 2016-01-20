@@ -5,6 +5,7 @@ import os
 from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import ImportObject
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
+from contact_objects import ContactAddress
 from coldata import ColData_User
 from tabulate import tabulate
 # from pprint import pprint
@@ -30,10 +31,10 @@ merge_mode = "merge"
 maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
 # maPath = os.path.join(inFolder, "bad act.csv")
 # saPath = os.path.join(inFolder, "wordpress_export.csv")
-saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-15.csv")
+saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-20.csv")
 
 testMode = False
-testMode = True
+# testMode = True
 if(testMode):
     maPath = os.path.join(inFolder, "200-act-records.csv")
     saPath = os.path.join(inFolder, "100-wp-records.csv")
@@ -508,6 +509,8 @@ class NocardEmailMatcher(EmailMatcher):
 
 class SyncUpdate(object):
     def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
+        # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
+
         self._oldMObject = oldMObject
         self._oldSObject = oldSObject
         self._tTime = TimeUtils.wpStrptime( lastSync )
@@ -539,7 +542,7 @@ class SyncUpdate(object):
                 self._sTime = self._tTime
                 if(self.mMod):
                     self._static = False
-                    self._importantStatic = False
+                    # self._importantStatic = False
 
 
     @property
@@ -577,8 +580,7 @@ class SyncUpdate(object):
     @property
     def importantStatic(self):
         return self._importantStatic
-    
-        
+          
     @property
     def mTime(self):
         return self._mTime
@@ -594,7 +596,6 @@ class SyncUpdate(object):
     @property
     def bTime(self):
         return self._bTime
-    
 
     @property
     def lTime(self):
@@ -618,6 +619,7 @@ class SyncUpdate(object):
     #     return (not mValue and not sValue)
 
     def sanitizeValue(self, col, value):
+        # print "sanitizing", col, repr(value)
         if('phone' in col.lower()):
             if('preferred' in col.lower()):
                 if(value and len(SanitationUtils.stripNonNumbers(value)) > 1):
@@ -633,10 +635,13 @@ class SyncUpdate(object):
 
     def colIdentical(self, col):
         mValue = self.getMValue(col)
+        # print "-> mValue", mValue
         sValue = self.getSValue(col)
+        # print "-> sValue", sValue
         return (mValue == sValue)
 
     def colSimilar(self, col):
+        # print "-> comparing ", col
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
         if not (mValue or sValue):
@@ -667,6 +672,11 @@ class SyncUpdate(object):
                 sRole = ''
             if( mRole == sRole ): 
                 return True
+        elif( "address" in col.lower() and isinstance(mValue, ContactAddress)):
+            if( mValue != sValue ):
+                pass
+                # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
+            return mValue.similar(sValue)
         else:
             if( SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue) ):
                 return True
@@ -733,6 +743,8 @@ class SyncUpdate(object):
     #     self._newSObject[col] = value
         
     def updateCol(self, col, data={}):
+        # print "sync ", col
+
         try:
             sync_mode = data['sync']
         except:
@@ -741,7 +753,12 @@ class SyncUpdate(object):
         # sync_static = data.get('static')
         
         # if(self.colBlank(col)): continue
-        if(self.colIdentical(col)): return
+        if(self.colIdentical(col)): 
+            # print "-> cols identical"
+            return
+        else:
+            # print "-> cols not identical"
+            pass
 
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
@@ -750,7 +767,7 @@ class SyncUpdate(object):
         reason = 'updating' if mValue and sValue else 'inserting'
             
         if( 'override' in str(sync_mode).lower() ):
-            reason = 'overriding'
+            # reason = 'overriding'
             if( 'master' in str(sync_mode).lower() ):
                 winner = MASTER_NAME
             elif( 'slave' in str(sync_mode).lower() ):
@@ -780,12 +797,24 @@ class SyncUpdate(object):
 
     def tabulate(self, tablefmt=None):
         subtitle_fmt = "%s"
+        info_delimeter = "\n"
+        info_fmt = "%s: %s"
         if(tablefmt == "html"):
             subtitle_fmt = "<h3>%s</h3>" 
+            info_delimeter = "<br/>"
+            info_fmt = "<strong>%s:</strong> %s"
         out_str = subtitle_fmt % "OLD"
         oldMatch = Match([self._oldMObject], [self._oldSObject])
         out_str += oldMatch.tabulate(tablefmt)
-        out_str += subtitle_fmt % 'CHANGES'
+        out_str += subtitle_fmt % "INFO"
+        out_str += info_delimeter.join(filter(None,[
+            (info_fmt % ("Last Sale", self._bTime)) if self.bTime else "No Last Sale",
+            (info_fmt % ("%s Mod Time" % MASTER_NAME, self.mTime)) if self.mMod else "%s Not Modded" % MASTER_NAME,
+            (info_fmt % ("%s Mod Time" % SLAVE_NAME, self.sTime)) if self.sMod else "%s Not Modded" % SLAVE_NAME,
+            (info_fmt % ("static", "yes" if self._static else "no")),
+            (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
+        ]))
+        out_str += subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates)
         out_str += self.displaySyncWarnings(tablefmt)
         newMatch = Match([self._newMObject], [self._newSObject])
         out_str += subtitle_fmt % 'NEW'
@@ -1017,17 +1046,17 @@ with open(resPath, 'w+') as resFile:
     resFile.write('<div class="sync">')
     resFile.write('<h1>%s</h1>' % 'Syncing Results')
 
-    # writeSection(
-    #     (MASTER_NAME + " Updates"),
-    #     "these items will be updated"
-    #     '<br/>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
-    #     length = len(masterUpdates)
-    # )
+    writeSection(
+        (MASTER_NAME + " Updates"),
+        "these items will be updated",
+        '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
+        length = len(masterUpdates)
+    )
 
     writeSection(
         ("Problematic Updates"),
         "These items can't be merged because they are too dissimilar",
-        '<br/>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+        '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
         length = len(problematicUpdates)
     )
 
@@ -1058,9 +1087,4 @@ with open(resPath, 'w+') as resFile:
 # with open(moPath) as outFile:
 #     for line in outFile.readlines():
 #         print line[:-1]
-
-
-
-
-
 
