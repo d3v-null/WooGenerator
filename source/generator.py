@@ -35,7 +35,7 @@ inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 
-yamlPath = "config.yaml"
+yamlPath = "generator_config.yaml"
 
 thumbsize = 1920, 1200
 

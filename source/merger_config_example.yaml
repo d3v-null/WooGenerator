@@ -1,0 +1,14 @@
+master_name: ACT
+slave_name: WORDPRESS
+
+#merge_mode: sync|merge
+
+ssh_user: web_server_ssh_user
+ssh_pass: web_server_ssh_pass
+ssh_host: web_server_ssh_address
+ssh_port: web_server_ssh_port
+remote_bind_host: 127.0.0.1
+remote_bind_port: 3306
+db_user: wordpress_db_user
+db_pass: wordpress_db_pass
+db_name: wordpress_db_name

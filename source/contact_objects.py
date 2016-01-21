@@ -3,6 +3,7 @@ from pprint import pprint
 from collections import OrderedDict
 
 DEBUG_ADDRESS = False
+# DEBUG_ADDRESS = True
 
 class ContactAddress(object):
     def __init__(self, schema=None, **kwargs):

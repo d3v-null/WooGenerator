@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import listUtils, SanitationUtils, TimeUtils
+from utils import SanitationUtils, TimeUtils #listUtils, 
 from csvparse_abstract import ImportObject
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
@@ -16,21 +16,53 @@ import dill as pickle
 from bisect import insort
 import re
 import time
+import yaml
+import MySQLdb
+from sshtunnel import SSHTunnelForwarder
 
 start_time = time.time()
 def timediff():
     return time.time() - start_time
 
+### DEFAULT CONFIG ###
+
 inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 
-MASTER_NAME = "ACT"
-SLAVE_NAME = "WORDPRESS"
-DEFAULT_LAST_SYNC = "2015-05-29 04:33:40"
+yamlPath = "merger_config.yaml"
 
-merge_mode = "sync"
-merge_mode = "merge"
+with open(yamlPath) as stream:
+    config = yaml.load(stream)
+
+    if 'inFolder' in config.keys():
+        inFolder = config['inFolder']
+    if 'outFolder' in config.keys():
+        outFolder = config['outFolder']
+    if 'logFolder' in config.keys():
+        logFolder = config['logFolder']
+
+    #mandatory
+    merge_mode = config.get('merge_mode', 'sync')
+    MASTER_NAME = config.get('master_name', 'MASTER')
+    SLAVE_NAME = config.get('slave_name', 'SLAVE')
+    DEFAULT_LAST_SYNC = config.get('default_last_sync')
+    ssh_user = config.get('ssh_user')
+    ssh_pass = config.get('ssh_pass')
+    ssh_host = config.get('ssh_host')
+    ssh_port = config.get('ssh_port')
+    remote_bind_host = config.get('remote_bind_host', '127.0.0.1')
+    remote_bind_port = config.get('remote_bind_port')
+    db_user = config.get('db_user')
+    db_pass = config.get('db_pass')
+    db_name = config.get('db_name')
+
+# MASTER_NAME = "ACT"
+# SLAVE_NAME = "WORDPRESS"
+# DEFAULT_LAST_SYNC = "2015-05-29 04:33:40"
+
+# merge_mode = "sync"
+# merge_mode = "merge"
 
 # maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
 maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
@@ -39,7 +71,7 @@ maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
 saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-20.csv")
 
 testMode = False
-# testMode = True
+testMode = True
 if(testMode):
     maPath = os.path.join(inFolder, "200-act-records.csv")
     saPath = os.path.join(inFolder, "100-wp-records.csv")
@@ -56,6 +88,32 @@ resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 # slave_changed
 # master_updates
 # slave_updates
+
+#########################################
+# Download / Generate spreadsheets
+#########################################
+
+with SSHTunnelForwarder(
+    (ssh_host, ssh_port),
+    ssh_password=ssh_pass,
+    ssh_username=ssh_user,
+    remote_bind_address=(remote_bind_host, remote_bind_port)
+) as server:
+    # server.start()
+    print server.local_bind_address
+    conn = MySQLdb.connect(
+        host='127.0.0.1',
+        port=server.local_bind_port,
+        user=db_user,
+        passwd=db_pass,
+        db=db_name)
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT VERSION()")
+    print cursor.fetchone()
+    # server.stop()
+
+# quit()
 
 #########################################
 # Import Info From Spreadsheets
@@ -831,7 +889,7 @@ class SyncUpdate(object):
         out_str += oldMatch.tabulate(tablefmt)
         out_str += subtitle_fmt % "INFO"
         out_str += info_delimeter.join(filter(None,[
-            (info_fmt % ("Last Sale", self._bTime)) if self.bTime else "No Last Sale",
+            (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self._bTime))) if self.bTime else "No Last Sale",
             (info_fmt % ("%s Mod Time" % MASTER_NAME, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % MASTER_NAME,
             (info_fmt % ("%s Mod Time" % SLAVE_NAME, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % SLAVE_NAME,
             (info_fmt % ("static", "yes" if self._static else "no")),

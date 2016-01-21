@@ -72,3 +72,13 @@ test/client_secret.json
 *.pkl
 
 *.pkl
+
+source/sql_test.py
+
+source/generator_config.yaml
+
+source/parser_pickle.pkl
+
+source/parser_pickle.pkl
+
+source/merger_config.yaml

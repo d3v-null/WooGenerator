@@ -13,25 +13,15 @@ pip install --upgrade google-api-python-client
 
 https://developers.google.com/drive/web/quickstart/python
 
+MySQL DB
+--------
+
+install mysql client on your local machine using  and then install mysql-python using pip
+
+pip install --upgrade mysql-python
+
+
 Other dependencies
 ------------------
 
-pip install --upgrade tabulate dill
-
-
-Layout
-------
-```
-  CSVParse_Abstract
-   |-CSVParse_Flat
-   |  |-CSVParse_USXS
-   |  |-CSVParse_SSS
-   |  |-CSVParse_Users
-   |-CSVParse_Tree
-      |-CSVParse_DPR 
-      |-CSVParse_Gen
-        |-CSVParse_WOO
-        |  |-CSVParse_TT
-        |  |-CSVParse_VT
-        |-CSVParse_MYO
-```
+pip install --upgrade tabulate dill pyyaml sshtunnel
