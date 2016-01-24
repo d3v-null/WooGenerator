@@ -1395,7 +1395,7 @@ if __name__ == '__main__':
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
     print SanitationUtils.unicodeToAscii(u"\u00FC ASD")
-    # print "addressTokenRegex", AddressUtils.addressTokenRegex
+    print "addressTokenRegex", AddressUtils.addressTokenRegex
     print "thoroughfareRegex", AddressUtils.thoroughfareRegex
     print "subunitRegex", AddressUtils.subunitRegex
     print "floorLevelRegex", AddressUtils.floorLevelRegex

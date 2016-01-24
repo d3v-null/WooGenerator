@@ -1,4 +1,3 @@
-
 SELECT
     ud.*,
     MAX(tu.`time`) as `updated`
@@ -51,13 +50,13 @@ FROM
             u.display_name,
             u.ID
         FROM
-            tt6164_users u
-            LEFT JOIN tt6164_usermeta um
+            %s u
+            LEFT JOIN %s um
             ON ( um.`user_id` = u.ID)
         GROUP BY
            u.ID
     ) as ud
-    LEFT JOIN tt6164_tansync_updates as tu
+    LEFT JOIN %s as tu
     ON (ud.`ID` = tu.`user_id`)
 GROUP BY
-    ud.ID
+    ud.ID;

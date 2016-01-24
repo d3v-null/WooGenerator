@@ -29,6 +29,7 @@ def timediff():
 inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
+srcFolder = "../source/"
 
 yamlPath = "merger_config.yaml"
 
@@ -56,6 +57,7 @@ with open(yamlPath) as stream:
     db_user = config.get('db_user')
     db_pass = config.get('db_pass')
     db_name = config.get('db_name')
+    tbl_prefix = config.get('tbl_prefix', '')
 
 # MASTER_NAME = "ACT"
 # SLAVE_NAME = "WORDPRESS"
@@ -82,6 +84,8 @@ moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
 
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 
+sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
+
 # master_all
 # slave_all
 # master_changed
@@ -98,7 +102,7 @@ with SSHTunnelForwarder(
     ssh_password=ssh_pass,
     ssh_username=ssh_user,
     remote_bind_address=(remote_bind_host, remote_bind_port)
-) as server:
+) as server, open(sqlPath) as sqlFile:
     # server.start()
     print server.local_bind_address
     conn = MySQLdb.connect(
@@ -109,11 +113,11 @@ with SSHTunnelForwarder(
         db=db_name)
 
     cursor = conn.cursor()
-    cursor.execute("SELECT VERSION()")
+    cursor.execute(sqlFile.read() % ('%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
     print cursor.fetchone()
     # server.stop()
 
-# quit()
+quit()
 
 #########################################
 # Import Info From Spreadsheets
