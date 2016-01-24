@@ -44,7 +44,7 @@ class Registrar:
 
     @classmethod
     def stringAnything(self, index, thing, delimeter):
-        return "%31s %s %s" % (index, delimeter, thing)
+        return "%31s %s %s" % tuple(map(SanitationUtils.makeSafeOutput, (index, delimeter, thing)))
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
@@ -120,12 +120,13 @@ class Registrar:
         )
 
 class ImportObject(OrderedDict, Registrar):
+
     def __init__(self, data, rowcount = None, row = None):
         super(ImportObject, self).__init__(data)
         Registrar.__init__(self)
         if rowcount is not None:
             self['rowcount'] = rowcount
-        assert self['rowcount'], "must specify rowcount"
+        assert isinstance(self['rowcount'], int), "must specify integer rowcount"
         if row is not None:
             self._row = row
         else:
@@ -140,6 +141,10 @@ class ImportObject(OrderedDict, Registrar):
 
     @property
     def index(self): return self.rowcount   
+
+    @staticmethod
+    def getContainer():
+        return ObjList
 
     def getTypeName(self):
         return type(self).__name__ 
@@ -168,19 +173,31 @@ class ImportObject(OrderedDict, Registrar):
             return -1  
         return cmp(self.rowcount, other.rowcount)
 
-class ObjList(object):
-    def __init__(self):
+class ObjList(list):
+    def __init__(self, objects=None, indexer=None):
         super(ObjList, self).__init__()
+        self._indexer = indexer if indexer else (lambda x: x.index)
         self._objList_type = 'objects'
-        self._objects = []
+        # self._objects = []
         self._indices = []
+        if objects:
+            self.addObjects(objects)
 
     @property
     def objects(self):
-        return self._objects
+        return self[:]
 
-    def __len__(self):
-        return len(self.objects)
+    @property
+    def objList_type(self):
+        return self._objList_type
+
+    @property
+    def indices(self):
+        return self._indices
+    
+
+    # def __len__(self):
+    #     return len(self.objects)
 
     def addObject(self, objectData):
         try:
@@ -188,9 +205,14 @@ class ObjList(object):
         except Exception as e:
             pprint( objectData)
             raise e
-        if(objectData.index not in self._indices):
-            self._objects.append(objectData)
-            self._indices.append(objectData.index)
+        index = self._indexer(objectData)
+        if(index not in self._indices):
+            self.append(objectData)
+            self._indices.append(index)
+
+    def addObjects(self, objects):
+        for obj in objects:
+            self.addObject(obj)
 
     def getKey(self, key):
         values = listUtils.filterUniqueTrue([
@@ -199,10 +221,6 @@ class ObjList(object):
 
         if values:
             return values[0]
-
-    @property
-    def objList_type(self):
-        return self._objList_type
 
     def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
@@ -241,7 +259,10 @@ class ObjList(object):
         print "WROTE FILE: ", filePath
 
     def getReportCols(self):
-        return {'_row':{'label':'Row'}}
+        return OrderedDict([
+                    ('row',{'label':'Row'}),
+                    ('index',{})
+                ])
 
 class CSVParse_Base(object, Registrar):
     objectContainer = ImportObject
@@ -345,6 +366,33 @@ class CSVParse_Base(object, Registrar):
         # self.processObject(objectData)
         # self.registerObject(objectData)
 
+    def analyseRows(self, rows):
+        for rowcount, row in enumerate(rows):
+            if not self.indices :
+                self.analyseHeader(row)
+                continue
+            try:
+                objectData = self.newObject( rowcount, row )
+            except UserWarning as e:
+                self.registerWarning("could not create new object: {}".format(e), rowcount)
+                continue
+            else:
+                if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
+                pass
+            try:
+                self.processObject(objectData) 
+                if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
+            except UserWarning as e:
+                self.registerError("could not process new object: {}".format(e), objectData)
+                continue
+            try:
+                self.registerObject(objectData)
+                if (DEBUG_PARSER): self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
+            except UserWarning as e:
+                self.registerError("could not register new object: {}".format(e), objectData)
+                continue
+        self.registerMessage("Completed analysis") 
+
     def analyseFile(self, fileName):
         self.registerMessage("Analysing file: {}".format(fileName))
         # self.clearTransients()
@@ -368,39 +416,16 @@ class CSVParse_Base(object, Registrar):
                   "SWS ", repr(csvdialect.skipinitialspace)
             
             csvreader = UnicodeReader(filePointer, dialect=csvdialect, strict=True)
-            objects = []
-            for rowcount, row in enumerate(csvreader):
-                if not self.indices :
-                    self.analyseHeader(row)
-                    continue
-                try:
-                    objectData = self.newObject( rowcount, row )
-                except UserWarning as e:
-                    self.registerWarning("could not create new object: {}".format(e), rowcount)
-                    continue
-                else:
-                    if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
-                    pass
-                try:
-                    self.processObject(objectData) 
-                    if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
-                except UserWarning as e:
-                    self.registerError("could not process new object: {}".format(e), objectData)
-                    continue
-                try:
-                    self.registerObject(objectData)
-                    if (DEBUG_PARSER): self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
-                except UserWarning as e:
-                    self.registerError("could not register new object: {}".format(e), objectData)
-                    continue
-                          
-            self.registerMessage("Completed analysis") 
-
-            return objects
+            return self.analyseRows(csvreader)
         return None
 
     def getObjects(self):
         return self.objects
+
+    def tabulate(self, cols=None, tablefmt=None):
+        listClass = self.objectContainer.getContainer()
+        objlist = listClass(self.objects.values())
+        return objlist.tabulate(cols, tablefmt)
 
 if __name__ == '__main__':
     inFolder = "../input/"
@@ -420,6 +445,8 @@ if __name__ == '__main__':
     )
 
     usrParser.analyseFile(actPath)
+
+    print usrParser.tabulate()
 
     for usr in usrParser.objects.values()[:3]:    
         pprint(OrderedDict(usr))

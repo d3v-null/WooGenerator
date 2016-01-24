@@ -101,6 +101,10 @@ class ImportUser(ImportFlat):
             country     = self.get('Home Country', '')
         )
 
+    @staticmethod
+    def getContainer():
+        return UsrObjList
+
     def addressesActLike(self):
         actLike = True
         for address in filter(None, map(lambda key: self.get(key), ['Address', 'Home Address'])):
@@ -115,8 +119,8 @@ class ImportUser(ImportFlat):
         return "<%s> %s | %s | %s | %s " % (self.index, self.email, self.MYOBID, self.role, self.username)
 
 class UsrObjList(ObjList):
-    def __init__(self):
-        super(UsrObjList, self).__init__()
+    def __init__(self, objects=None, indexer=None):
+        super(UsrObjList, self).__init__(objects, indexer=None)
         self._objList_type = 'User'
 
     def getReportCols(self):

@@ -31,8 +31,8 @@ class SanitationUtils:
     def stringToUnicode(string):
         # print unicode(string).encode('ascii','backslashreplace')
         if(not isinstance(string, unicode)):
-            string = unicode(string)
-            # string = str(string).decode(DEFAULT_ENCODING)
+            # string = str(string).dec
+            string = str(string).decode(DEFAULT_ENCODING)
         return string
 
     @staticmethod

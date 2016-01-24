@@ -20,6 +20,7 @@ import yaml
 import MySQLdb
 from sshtunnel import SSHTunnelForwarder
 
+importName = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
 def timediff():
     return time.time() - start_time
@@ -30,6 +31,7 @@ inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source/"
+pklFolder = "../pickles/"
 
 yamlPath = "merger_config.yaml"
 
@@ -51,25 +53,23 @@ with open(yamlPath) as stream:
     ssh_user = config.get('ssh_user')
     ssh_pass = config.get('ssh_pass')
     ssh_host = config.get('ssh_host')
-    ssh_port = config.get('ssh_port')
+    ssh_port = config.get('ssh_port', 22)
     remote_bind_host = config.get('remote_bind_host', '127.0.0.1')
-    remote_bind_port = config.get('remote_bind_port')
+    remote_bind_port = config.get('remote_bind_port', 3306)
     db_user = config.get('db_user')
     db_pass = config.get('db_pass')
     db_name = config.get('db_name')
     tbl_prefix = config.get('tbl_prefix', '')
 
-# MASTER_NAME = "ACT"
-# SLAVE_NAME = "WORDPRESS"
-# DEFAULT_LAST_SYNC = "2015-05-29 04:33:40"
+#########################################
+# Set up directories
+#########################################
 
-# merge_mode = "sync"
-# merge_mode = "merge"
+for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-# maPath = os.path.join(inFolder, "export-everything-dec-23.csv")
 maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
-# maPath = os.path.join(inFolder, "bad act.csv")
-# saPath = os.path.join(inFolder, "wordpress_export.csv")
 saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-20.csv")
 
 testMode = False
@@ -86,66 +86,89 @@ resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 
-# master_all
-# slave_all
-# master_changed
-# slave_changed
-# master_updates
-# slave_updates
+pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
 
 #########################################
-# Download / Generate spreadsheets
+# Download / Generate Slave Parser Object
 #########################################
 
-with SSHTunnelForwarder(
-    (ssh_host, ssh_port),
-    ssh_password=ssh_pass,
-    ssh_username=ssh_user,
-    remote_bind_address=(remote_bind_host, remote_bind_port)
-) as server, open(sqlPath) as sqlFile:
-    # server.start()
-    print server.local_bind_address
-    conn = MySQLdb.connect(
-        host='127.0.0.1',
-        port=server.local_bind_port,
-        user=db_user,
-        passwd=db_pass,
-        db=db_name)
+colData = ColData_User()
 
-    cursor = conn.cursor()
-    cursor.execute(sqlFile.read() % ('%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
-    print cursor.fetchone()
-    # server.stop()
+saRows = []
+if not testMode: 
+    with \
+        SSHTunnelForwarder(
+            (ssh_host, ssh_port),
+            ssh_password=ssh_pass,
+            ssh_username=ssh_user,
+            remote_bind_address=(remote_bind_host, remote_bind_port)
+        ) as server, \
+        open(sqlPath) as sqlFile:
+        # server.start()
+        print server.local_bind_address
+        conn = MySQLdb.connect(
+            host='127.0.0.1',
+            port=server.local_bind_port,
+            user=db_user,
+            passwd=db_pass,
+            db=db_name)
 
-quit()
+        userdata_select = ",\n\t\t\t".join([
+            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'][0] else "u.%s as `%s`") % (data['wp'][1], col)\
+            for col, data in colData.getWPCols().items()
+        ] + ["u.ID as ID"])
+
+        print sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix)
+        sqlFile.seek(0)
+
+        cursor = conn.cursor()
+        cursor.execute(sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
+        # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
+        headers = [i[0] for i in cursor.description]
+        # print headers
+        saRows = [headers] + list(cursor.fetchall())
+
+saParser = CSVParse_User(
+    cols = colData.getImportCols(),
+    defaults = colData.getDefaults()
+)
+if saRows:
+    saParser.analyseRows(saRows)
+else:
+    assert testMode
+    saParser.analyseFile(saPath)
+print "generated slave", timediff()
 
 #########################################
-# Import Info From Spreadsheets
+# Generate ACT CSV files
+#########################################
+
+# TODO: This
+
+#########################################
+# Import Master Info From Spreadsheets
 #########################################
 
 
 print "importing data"
 
-pkl_path = "parser_pickle%s.pkl" % fileSuffix
+
 
 clear_pkl = False
 try_pkl = not testMode
-# try_pkl = False
-# clear_pkl = True
+try_pkl = False
+clear_pkl = True
 
 if(clear_pkl): 
     try:
-        os.remove(pkl_path)
+        os.remove(pklPath)
     except:
         pass
 
-colData = ColData_User()
-
 try:
     if try_pkl:
-        pkl_file = open(pkl_path, 'rb')
+        pkl_file = open(pklPath, 'rb')
         maParser = pickle.load(pkl_file)
-        saParser = pickle.load(pkl_file)    
         print "loaded pickle", timediff()
     else:
         raise Exception("not trying to load pickle")
@@ -157,20 +180,12 @@ except Exception as e:
         contact_schema = 'act'
     )
 
-    saParser = CSVParse_User(
-        cols = colData.getImportCols(),
-        defaults = colData.getDefaults()
-    )
-
     maParser.analyseFile(maPath)
     print "imported master", timediff()
-    saParser.analyseFile(saPath)
-    print "imported slave", timediff()
 
-    pkl_file = open(pkl_path, 'wb')
+    pkl_file = open(pklPath, 'wb')
     print "dumping pickle", timediff()
     pickle.dump(maParser, pkl_file)
-    pickle.dump(saParser, pkl_file)
 
 
 #requirements for new account in wordpress:
