@@ -82,3 +82,11 @@ source/parser_pickle.pkl
 source/parser_pickle.pkl
 
 source/merger_config.yaml
+
+source/utils.py.orig
+
+source/merger.py.orig
+
+source/coldata.py.orig
+
+README.md.orig
