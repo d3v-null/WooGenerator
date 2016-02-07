@@ -28,7 +28,7 @@ class ImportWooObject(ImportGenObject):
     def isVariation(self): return self._isVariation
 
     def registerImage(self, image):
-        assert type(image) == str
+        assert isinstance(image, (str, unicode))
         thisImages = self.getImages()
         if image not in thisImages:
             thisImages.append(image)
@@ -354,7 +354,7 @@ class CSVParse_Woo(CSVParse_Gen):
         self.images     = OrderedDict()        
 
     def registerImage(self, image, objectData):
-        assert isinstance(image,str) 
+        assert isinstance(image,(str,unicode)) 
         assert image is not "" 
         if image not in self.images.keys():
             self.images[image] = WooObjList(image)
@@ -376,7 +376,7 @@ class CSVParse_Woo(CSVParse_Gen):
     def registerAttribute(self, objectData, attr, val, var=False):
         try:
             attr = str(attr)
-            assert isinstance(attr, str), 'Attribute must be a string not {}'.format(type(attr).__name__)
+            assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(type(attr).__name__)
             assert attr is not '', 'Attribute must not be empty'
             assert attr[0] is not ' ', 'Attribute must not start with whitespace or '
         except AssertionError as e:
@@ -417,7 +417,7 @@ class CSVParse_Woo(CSVParse_Gen):
     def registerSpecial(self, objectData, special):
         try:
             special = str(special)
-            assert isinstance(special, str), 'Special must be a string not {}'.format(type(special).__name__)
+            assert isinstance(special, (str, unicode)), 'Special must be a string not {}'.format(type(special).__name__)
             assert special is not '', 'Attribute must not be empty'
         except AssertionError as e:
             self.registerError("could not register special: {}".format(e))

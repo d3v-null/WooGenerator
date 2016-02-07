@@ -6,9 +6,9 @@ FROM (
         FROM
             %s u
             LEFT JOIN %s um
-            ON ( um.`user_id` = u.ID)
+            ON ( um.`user_id` = u.`ID`)
         GROUP BY
-           u.ID
+           u.`ID`
     ) as ud
     LEFT JOIN (
         SELECT
@@ -19,5 +19,5 @@ FROM (
         GROUP BY 
             tu.`user_id`
     ) as lu
-    ON (ud.`ID` = lu.`user_id`)
+    ON (ud.`Wordpress ID` = lu.`user_id`)
 ) ;

@@ -23,7 +23,7 @@ class MetaGator(object):
 		return self.ext.lower() in ['.png']
 
 	def write_meta(self, title, description):
-		title, description = map(SanitationUtils.cleanBackslashString, (title, description))
+		title, description = map(SanitationUtils.makeSafeOutput, (title, description))
 		# print "title, description: ", title, ', ', description
 		if self.isPNG():
 			# print "image is PNG"
@@ -66,7 +66,7 @@ class MetaGator(object):
 			raise Exception("not an image file: ",self.ext)	
 
 	def read_meta(self):
-		title, description = '', ''
+		title, description = u'', u''
 
 		if self.isPNG():	
 			oldimg = Image.open(os.path.join(self.dir, self.fname))
@@ -93,15 +93,16 @@ class MetaGator(object):
 		else:
 			raise Exception("not an image file: ",self.ext)	
 
+		title, description = tuple(map(SanitationUtils.asciiToUnicode, [title, description]))
 		return {'title':title, 'description':description}
 
 	def update_meta(self, newmeta):
 		oldmeta = self.read_meta()
 		changed = []
 		for key in ['title', 'description']:
-			if str(oldmeta[key]) != SanitationUtils.cleanBackslashString(newmeta[key]):
+			if SanitationUtils.similarComparison(oldmeta[key]) != SanitationUtils.similarComparison(newmeta[key]):
 				changed += [key]
-				print ("changing imgmeta[%s] from %s to %s" % (key, repr(oldmeta[key]), repr(newmeta[key])))
+				print (u"changing imgmeta[%s] from %s to %s" % (key, repr(oldmeta[key]), repr(newmeta[key])))
 		if changed:
 			self.write_meta(newmeta['title'], newmeta['description'])
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
 	print "Test read meta"
 
 	newmeta = {
-		'title': u'TITLE \xa9',
+		'title': u'TITLE \xa9 \u2014',
 		'description': time()
 	}
 
@@ -137,11 +138,7 @@ if __name__ == '__main__':
 	fname = os.path.join(work_dir, 'STFTO-CAL.png')
 
 	metagator = MetaGator(fname)
-	metagator.write_meta(u'TITLE \xa9', time())
+	metagator.write_meta(u'TITLE \xa9 \u2014', time())
 	print metagator.read_meta()
-
-
-
-
 
 

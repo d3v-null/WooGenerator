@@ -44,7 +44,7 @@ class Registrar:
 
     @classmethod
     def stringAnything(self, index, thing, delimeter):
-        return "%31s %s %s" % tuple(map(SanitationUtils.makeSafeOutput, (index, delimeter, thing)))
+        return SanitationUtils.makeSafeOutput( u"%31s %s %s" % (index, delimeter, thing) )
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
@@ -224,6 +224,8 @@ class ObjList(list):
 
     def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
+        sanitizer = SanitationUtils.makeSafeOutput
+        # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
         if(objs):
             # print "there are objects"
             if not cols: cols = self.getReportCols()                
@@ -232,7 +234,7 @@ class ObjList(list):
                 header += [col]
             table = []
             for obj in objs:
-                table += [[obj.index] + [ SanitationUtils.makeSafeOutput(obj.get(col) )or "" for col in cols.keys()]]
+                table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
             return tabulate(table, headers=header, tablefmt=tablefmt)
             # print repr(table)

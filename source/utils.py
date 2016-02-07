@@ -28,117 +28,165 @@ class SanitationUtils:
         return functools.reduce(lambda f, g: lambda x: f(g(x)), functions)
 
     @staticmethod
-    def stringToUnicode(string):
+    def byteToUnicode(string):
         # print unicode(string).encode('ascii','backslashreplace')
-        if(not isinstance(string, unicode)):
+
+        if(not isinstance(string, str)):
+            if isinstance(string, unicode):
+                return string
+            else:
+                string = str(string)
             # string = str(string).dec
-            string = str(string).decode(DEFAULT_ENCODING)
-        return string
+        str_out = string.decode(DEFAULT_ENCODING)
+        if DEBUG: print "byteToUnicode", repr(string), repr(str_out)
+        return str_out
 
     @staticmethod
-    def unicodeToAscii(string):
+    def unicodeToByte(string):
         if(not isinstance(string, unicode)):
-            string = unicode(string)
-        str_out = SanitationUtils.stringToUnicode(string)
-        if DEBUG: print "unicodeToAscii", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
-        return str_out.encode('ascii', 'backslashreplace')
+            if(isinstance(string, str)):
+                string = string.decode(DEFAULT_ENCODING)
+            else:
+                string = unicode(string)
+        str_out = string.encode('ascii', 'backslashreplace')
+        if DEBUG: print "unicodeToByte", repr(string), repr(str_out)
+        return str_out
+
+    # @staticmethod
+    # def unicodeToAscii(string):
+    #     if(not isinstance(string, unicode)):
+
+
+    @staticmethod
+    def asciiToUnicode(string):
+        if isinstance(string, unicode):
+            return string
+        else:
+            try:
+                bytestr = str(string).decode('string_escape')
+                return bytestr.decode(DEFAULT_ENCODING)
+            except:
+                asciistr = str(string).encode('string_escape')
+                return unicode(asciistr)
+
+    # @staticmethod
+    # def anythingToUnicode(thing):
+    #     if isinstance(thing, unicode):
+    #         return thing
+    #     elif not isinstance(thing, str):
+    #         string = str(thing)
+
+
+    @staticmethod
+    def anythingToAscii(thing):
+        if isinstance(thing, unicode):
+            string = thing.encode(DEFAULT_ENCODING)
+        else:
+            string = str(thing)
+        return string.encode('string_escape')
+
+    # @staticmethod
+    # def decodeStringEscape(string):
+    #     str_out = string.decode('string_escape')
+    #     if DEBUG: print "decodeStringEscape", repr(string), repr(str_out)
+    #     return str_out
 
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
         str_out = re.sub('^\W*\$','', string)
-        if DEBUG: print "removeLeadingDollarWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLeadingPercentWhiteSpace(string):
         str_out = re.sub('%\W*$','', string)
-        if DEBUG: print "removeLeadingPercentWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLoneDashes(string):
         str_out = re.sub('^-$', '', string)
-        if DEBUG: print "removeLoneDashes", str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeLoneDashes", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeThousandsSeparator(string):
         str_out = re.sub(r'(\d+),(\d{3})', '\g<1>\g<2>', string)
-        if DEBUG: print "removeThousandsSeparator", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeThousandsSeparator", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLoneWhiteSpace(string):
         str_out = re.sub(r'^\s*$','', string)    
-        if DEBUG: print "removeLoneWhiteSpace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeLoneWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeNULL(string):
         str_out = re.sub(r'^NULL$', '', string)
-        if DEBUG: print "removeNULL", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "removeNULL", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripLeadingWhitespace(string):
         str_out = re.sub(r'^\s*', '', string)
-        if DEBUG: print "stripLeadingWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripLeadingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripTailingWhitespace(string):
         str_out = re.sub(r'\s*$', '', string)
-        if DEBUG: print "stripTailingWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripTailingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAllWhitespace(string):
         if DEBUG: print "stripAllWhitespace", repr(string)
         str_out = re.sub(r'\s', '', string)
-        if DEBUG: print "stripAllWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripAllWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripExtraWhitespace(string):
         str_out = re.sub(r'\s{2,}', ' ', string)
-        if DEBUG: print "stripExtraWhitespace", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripExtraWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripNonNumbers(string):
         str_out = re.sub('[^\d]', '', string)
-        if DEBUG: print "stripNonNumbers", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripNonNumbers", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripPunctuation(string):
         str_out = re.sub('[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
-        if DEBUG: print "stripPunctuation", string.encode('ascii', 'backslashreplace'), str_out.encode('ascii', 'backslashreplace')
+        if DEBUG: print "stripPunctuation", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAreaCode(string):
         str_out = re.sub('\s*\+\d{2,3}\s*','', string)
-        if DEBUG: print "stripAreaCode", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "stripAreaCode", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def toLower(string):
         str_out = string.lower()
-        if DEBUG: print "toLower", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "toLower", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def toUpper(string):
         str_out = string.upper()
-        if DEBUG: print "toUpper", string.encode('ascii','backslashreplace'), str_out.encode('ascii','backslashreplace')
+        if DEBUG: print "toUpper", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def sanitizeNewlines(string):
         if '\n' in string: 
             if DEBUG: print "!!! found newline in string"
-        return re.sub('\\n','</br>', string)
+        return re.sub(r'\n','</br>', string)
 
     @staticmethod
     def compileRegex(subs):
@@ -159,7 +207,7 @@ class SanitationUtils:
             SanitationUtils.stripTailingWhitespace,            
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.removeNULL,
-            SanitationUtils.stringToUnicode
+            SanitationUtils.byteToUnicode
         )(cell)   
 
     @staticmethod
@@ -168,7 +216,7 @@ class SanitationUtils:
             SanitationUtils.toLower,
             SanitationUtils.stripLeadingWhitespace,
             SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.stringToUnicode
+            SanitationUtils.byteToUnicode
         )(string)
 
     @staticmethod
@@ -176,14 +224,21 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.stripNonNumbers,
             SanitationUtils.stripAreaCode,
-            SanitationUtils.stringToUnicode
+            SanitationUtils.byteToUnicode
         )(string)
 
     @staticmethod
     def makeSafeOutput(string):
         return SanitationUtils.compose(
             SanitationUtils.sanitizeNewlines,
-            SanitationUtils.unicodeToAscii
+            SanitationUtils.anythingToAscii
+        )(string)
+
+    @staticmethod
+    def decodeSafeOutput(string):
+        return SanitationUtils.compose(
+            # SanitationUtils.byteToUnicode,
+            SanitationUtils.asciiToUnicode
         )(string)
 
     @staticmethod
@@ -219,29 +274,38 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
-    def findAllImages(imgString):
-        assert type(imgString) == str, "param must be a string not %s"% type(imgString)
-        return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',imgString)
+    def findAllImages(instring):
+        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        if not isinstance(instring, unicode):
+            instring = instring.decode('utf-8')
+        return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',instring)
 
     @staticmethod
-    def findAllTokens(tokenString, delim = "|"):
-        assert type(tokenString) == str, "param must be a string not %s"% type(tokenString)
-        return re.findall(r'\s*(\b[^\s.|]+\b)\s*', tokenString )
+    def findAllTokens(instring, delim = "|"):
+        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        if not isinstance(instring, unicode):
+            instring = instring.decode('utf-8')
+        return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring )
 
     @staticmethod
     def findallDollars(instring):
-        assert type(instring) == str, "param must be a string not %s"% type(instring)
+        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        if not isinstance(instring, unicode):
+            instring = instring.decode('utf-8')
         return re.findall(r"\s*\$([\d,]+\.?\d*)", instring)
 
     @staticmethod
     def findallPercent(instring):
-        assert type(instring) == str, "param must be a string not %s"% type(instring)
+        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        if not isinstance(instring, unicode):
+            instring = instring.decode('utf-8')
         return re.findall(r"\s*(\d+\.?\d*)%", instring)
 
     @staticmethod
     def titleSplitter(instring):
-        assert type(instring) == str, "param must be a string not %s"% type(instring)
-        instring = instring.decode('utf-8')
+        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        if not isinstance(instring, unicode):
+            instring = instring.decode('utf-8')
         found = re.findall(r"^\s*(.*?)\s+[^\s\w&\(\)]\s+(.*?)\s*$", instring)
         if found:
             return found[0]
@@ -271,20 +335,20 @@ class SanitationUtils:
     @staticmethod
     def truishStringToBool(string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
-            if DEBUG: print "truishStringToBool", repr(string).encode('ascii','backslashreplace'), 'FALSE'
+            if DEBUG: print "truishStringToBool", repr(string), 'FALSE'
             return "FALSE"
         else:
-            if DEBUG: print "truishStringToBool", repr(string).encode('ascii','backslashreplace'), 'TRUE'
+            if DEBUG: print "truishStringToBool", repr(string), 'TRUE'
             return "TRUE"
 
     @staticmethod
     def datetotimestamp(datestring):
-        assert type(datestring) == str, "param must be a string not %s"% type(datestring)
+        assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
         return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
 
     @staticmethod
     def decodeJSON(string):
-        assert isinstance(string, str)
+        assert isinstance(string, (str, unicode))
         attrs = json.loads(string)
         return attrs
 
@@ -1172,7 +1236,7 @@ class TimeUtils:
 
     @staticmethod
     def starStrptime(string, fmt = wpTimeFormat ):
-        string = SanitationUtils.stringToUnicode(string)
+        string = SanitationUtils.byteToUnicode(string)
         if(string):
             try:
                 tstruct = time.strptime(string, fmt)
@@ -1203,7 +1267,7 @@ class descriptorUtils:
             return self[key]
 
         def setter(self, value):
-            assert isinstance(value, str), "{} must be set with string not {}".format(key, type(value))
+            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(key, type(value))
             self[key] = value
 
         return property(getter, setter)
@@ -1318,6 +1382,7 @@ class UnicodeWriter:
         self.writer.writerow([s.encode("utf-8") for s in row])
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
+        if data is None: data = ""
         data = data.decode("utf-8")
         # ... and reencode it into the target encoding
         data = self.encoder.encode(data)
@@ -1336,7 +1401,7 @@ class UnicodeDictWriter(UnicodeWriter):
         self.fieldnames = fieldnames
 
     def writerow(self, rowDict):
-        row = [unicode(rowDict.get(fieldname)) or "" for fieldname in self.fieldnames]
+        row = [unicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
         UnicodeWriter.writerow(self, row)
 
     def writeheader(self):
@@ -1355,10 +1420,10 @@ if __name__ == '__main__':
 
     # n1 = u"D\u00C8RWENT"
     # n2 = u"d\u00E8rwent"
-    # print SanitationUtils.unicodeToAscii(n1) , \
-    #     SanitationUtils.unicodeToAscii(SanitationUtils.similarComparison(n1)), \
-    #     SanitationUtils.unicodeToAscii(n2), \
-    #     SanitationUtils.unicodeToAscii(SanitationUtils.similarComparison(n2))
+    # print SanitationUtils.unicodeToByte(n1) , \
+    #     SanitationUtils.unicodeToByte(SanitationUtils.similarComparison(n1)), \
+    #     SanitationUtils.unicodeToByte(n2), \
+    #     SanitationUtils.unicodeToByte(SanitationUtils.similarComparison(n2))
 
     # p1 = "+61 04 3190 8778"
     # p2 = "04 3190 8778"
@@ -1394,16 +1459,23 @@ if __name__ == '__main__':
     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
-    print SanitationUtils.unicodeToAscii(u"\u00FC ASD")
-    print "addressTokenRegex", AddressUtils.addressTokenRegex
-    print "thoroughfareRegex", AddressUtils.thoroughfareRegex
-    print "subunitRegex", AddressUtils.subunitRegex
-    print "floorLevelRegex", AddressUtils.floorLevelRegex
-    print "stateRegex", AddressUtils.stateRegex
-    print "delimeterRegex", AddressUtils.delimeterRegex
+    # print SanitationUtils.unicodeToByte(u"\u00FC ASD")
+    # print "addressTokenRegex", AddressUtils.addressTokenRegex
+    # print "thoroughfareRegex", AddressUtils.thoroughfareRegex
+    # print "subunitRegex", AddressUtils.subunitRegex
+    # print "floorLevelRegex", AddressUtils.floorLevelRegex
+    # print "stateRegex", AddressUtils.stateRegex
+    # print "delimeterRegex", AddressUtils.delimeterRegex
 
-    print AddressUtils.getSubunit("SHOP 4 A")
-    print AddressUtils.getFloor("LEVEL 8")
+    # print AddressUtils.getSubunit("SHOP 4 A")
+    # print AddressUtils.getFloor("LEVEL 8")
+
+    a = u'TechnoTan Roll Up Banner Insert \u2014 Non personalised - Style D'
+    print 'a', repr(a)
+    b = SanitationUtils.makeSafeOutput(a)
+    print 'b', repr(b)
+    c = SanitationUtils.decodeSafeOutput(b)
+    print 'c', repr(c)
 
     for line in [
         "8/5-7 KILVINGTON DRIVE EAST",
@@ -1552,4 +1624,4 @@ if __name__ == '__main__':
         "LEVEL 8, BLIGH"
     ]:
         pass
-        # print SanitationUtils.unicodeToAscii("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))
+        # print SanitationUtils.unicodeToByte("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))

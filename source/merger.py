@@ -95,7 +95,11 @@ pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
 colData = ColData_User()
 
 saRows = []
-if not testMode: 
+
+sql_run = not testMode
+# sql_run = True
+
+if sql_run: 
     with \
         SSHTunnelForwarder(
             (ssh_host, ssh_port),
@@ -113,10 +117,16 @@ if not testMode:
             passwd=db_pass,
             db=db_name)
 
+        assert all([
+            'Wordpress ID' in colData.getWPCols().keys(),
+            colData.getWPCols()['Wordpress ID'].get('wp', {}).get('key') == 'ID',
+            colData.getWPCols()['Wordpress ID'].get('wp', {}).get('final')
+        ]), 'ColData should be configured correctly'
         userdata_select = ",\n\t\t\t".join([
-            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'][0] else "u.%s as `%s`") % (data['wp'][1], col)\
+            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp']['meta'] else "u.%s as `%s`") % (data['wp']['key'], col)\
             for col, data in colData.getWPCols().items()
-        ] + ["u.ID as ID"])
+        ])
+
 
         print sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix)
         sqlFile.seek(0)
@@ -631,74 +641,40 @@ class SyncUpdate(object):
                     self._static = False
                     # self._importantStatic = False
 
-
     @property
-    def oldMObject(self):
-        return self._oldMObject
-    
+    def oldMObject(self): return self._oldMObject
     @property
-    def oldSObject(self):
-        return self._oldSObject
-
+    def oldSObject(self): return self._oldSObject
     @property
-    def newMObject(self):
-        return self._newMObject
-    
+    def newMObject(self): return self._newMObject
     @property
-    def newSObject(self):
-        return self._newSObject
-
+    def newSObject(self): return self._newSObject
     @property
-    def syncWarnings(self):
-        return self._syncWarnings
-
+    def syncWarnings(self): return self._syncWarnings
     @property
-    def sUpdated(self):
-        return self._newSObject
-
+    def sUpdated(self): return self._newSObject
     @property
-    def mUpdated(self):
-        return self._newMObject
-
+    def mUpdated(self): return self._newMObject
     @property
-    def static(self):
-        return self._static
-
+    def static(self): return self._static
     @property
-    def importantStatic(self):
-        return self._importantStatic
-          
+    def importantStatic(self): return self._importantStatic
     @property
-    def mTime(self):
-        return self._mTime
-
+    def mTime(self): return self._mTime
     @property
-    def sTime(self):
-        return self._sTime
-
+    def sTime(self): return self._sTime
     @property
-    def tTime(self):
-        return self._tTime
-
+    def tTime(self): return self._tTime
     @property
-    def bTime(self):
-        return self._bTime
-
+    def bTime(self): return self._bTime
     @property
-    def lTime(self):
-        return max(self.mTime, self.sTime)
-    
+    def lTime(self): return max(self.mTime, self.sTime)
     @property
-    def mMod(self):
-        return (self.mTime >= self.tTime)
-
+    def mMod(self): return (self.mTime >= self.tTime)
     @property
-    def sMod(self):
-        return (self.sTime >= self.tTime)
-
+    def sMod(self): return (self.sTime >= self.tTime)
     # @property
-    # def winner(self):
-    #     return self._winner
+    # def winner(self): return self._winner
     
     # def colBlank(self, col):
     #     mValue = (mObject.get(col) or "")

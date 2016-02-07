@@ -136,25 +136,25 @@ class ImportGenObject(ImportTreeObject):
         ancestors = self.getAncestors()
 
         codesum = self.joinCodes(ancestors)
-        self.registerMessage("codesum: {}".format( codesum) )
+        self.registerMessage(u"codesum: {}".format( codesum) )
         self.codesum = codesum
 
         descsum = self.joinDescs(ancestors)
-        self.registerMessage("descsum: {}".format( descsum ) )
+        self.registerMessage(u"descsum: {}".format( descsum ) )
         self.descsum = descsum   
 
         name = self.changeName(self.fullname)
-        self.registerMessage("name: {}".format( name ) )
+        self.registerMessage(u"name: {}".format( name ) )
         self.name = name
 
         nameAncestors = self.getNameAncestors()
 
         namesum = self.joinNames(nameAncestors)
-        self.registerMessage("namesum: {}".format( namesum) )
+        self.registerMessage(u"namesum: {}".format( namesum) )
         self.namesum = namesum  
 
         fullnamesum = self.joinFullnames(nameAncestors)
-        self.registerMessage("fullnamesum: {}".format( fullnamesum) )
+        self.registerMessage(u"fullnamesum: {}".format( fullnamesum) )
         self.fullnamesum = fullnamesum  
 
 

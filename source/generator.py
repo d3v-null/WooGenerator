@@ -7,7 +7,7 @@ from PIL import Image
 import time
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils
+from utils import listUtils, SanitationUtils, UnicodeDictWriter
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_myo import CSVParse_MYO
@@ -38,12 +38,6 @@ logFolder = "../logs/"
 yamlPath = "generator_config.yaml"
 
 thumbsize = 1920, 1200
-
-rename = False
-resize = False
-remeta = False
-delete = False
-skip_images = False
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -114,7 +108,9 @@ if not variant and fallback_variant:
 # skip_images = True
 delete = True
 remeta = True
-resize = True
+resize = False
+rename = False
+skip_images = False
 download = True
 
 if variant == "ACC": 
@@ -125,8 +121,8 @@ if variant == "SOL":
 
 DEBUG = True
 
-currentSpecial = None
-# currentSpecial = "CHRS2015-"
+# currentSpecial = None
+currentSpecial = "SP2016-02-08-"
 
 ### PROCESS CONFIG ###
 
@@ -446,9 +442,9 @@ if schema in woo_schemas:
 			shutil.copy(imgsrcpath, imgdstpath)
 			
 			try:
-				imgmeta = MetaGator(imgdstpath)
-				imgmeta.write_meta(title, description)
-				print imgmeta.read_meta()
+				# imgmeta = MetaGator(imgdstpath)
+				# imgmeta.write_meta(title, description)
+				# print imgmeta.read_meta()
 
 				image = Image.open(imgdstpath)
 				image.thumbnail(thumbsize)
@@ -456,7 +452,7 @@ if schema in woo_schemas:
 
 				imgmeta = MetaGator(imgdstpath)
 				imgmeta.write_meta(title, description)
-				print imgmeta.read_meta()
+				# print imgmeta.read_meta()
 
 			except Exception as e:
 				invalidImage(img, "could not resize: " + str(e))
@@ -483,10 +479,9 @@ def exportItemsCSV(filePath, colNames, items):
 	assert colNames, "needs colNames"
 	assert items, "meeds items"
 	with open(filePath, 'w+') as outFile:
-		dictwriter = csv.DictWriter(
+		dictwriter = UnicodeDictWriter(
 			outFile,
 			fieldnames = colNames.keys(),
-			extrasaction = 'ignore',
 		)
 		dictwriter.writerow(colNames)
 		dictwriter.writerows(items)
@@ -718,9 +713,16 @@ elif schema in woo_schemas:
 		assert currentSpecial, "currentSpecial should be set"
 		specialProducts = filter(
 			onCurrentSpecial,
-			products.values()
+			products.values()[:]
 		)
 		if specialProducts:
+			for specialProduct in specialProducts:
+				specialProduct['catsum'] = "|".join(
+					filter(None,[
+						specialProduct.get('catsum', ""),
+						"specials"
+					])
+				)
 			flaName, flaExt = os.path.splitext(flaPath)
 			flsPath = os.path.join(outFolder , flaName+"-"+currentSpecial+flaExt)
 			exportItemsCSV(

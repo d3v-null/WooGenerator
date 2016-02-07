@@ -88,7 +88,7 @@ class ContactAddress(object):
             for i, line in enumerate(numberLines):
                 tokens = AddressUtils.tokenizeAddress(line)
                 for j, token in enumerate(tokens):
-                    if DEBUG_ADDRESS: print "-> token[%d]: " % j, SanitationUtils.makeSafeOutput(token )
+                    if DEBUG_ADDRESS: print SanitationUtils.makeSafeOutput( u"-> token[%d]: %s" % (j, token) )
                     delivery = AddressUtils.getDelivery(token)
                     if(delivery):
                         # delivery_type, delivery_name = delivery
@@ -165,14 +165,12 @@ class ContactAddress(object):
                     self.valid = False
             #if any unknowns match number, then add them as a blank subunit
 
-            if(schema in ['act']):
-                pass
-                #TODO: THIS
-            else:
-                pass
-                #TODO: THIS
-
-            # print SanitationUtils.makeSafeOutput( self.__str__())
+            # if(schema in ['act']):
+            #     pass
+            #     #TODO: THIS
+            # else:
+            #     pass
+            #     #TODO: THIS
     
     @property
     def subunits(self):
