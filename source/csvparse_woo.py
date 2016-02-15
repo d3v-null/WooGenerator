@@ -1,4 +1,4 @@
-from utils import listUtils, SanitationUtils
+from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import ObjList
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
@@ -6,6 +6,8 @@ import bisect
 import time
 
 DEBUG_WOO = True
+
+
 
 class ImportWooObject(ImportGenObject):
     _isCategory = False
@@ -705,64 +707,83 @@ class CSVParse_Woo(CSVParse_Gen):
                 if special in self.specials.keys():
                     self.registerMessage( "special %s exists!" % special )
 
-                    specialparams = self.specials[special]
+                    if not objectData.isVariable :
 
-                    specialfrom = SanitationUtils.datetotimestamp( specialparams["FROM"])
-                    specialto = SanitationUtils.datetotimestamp(specialparams["TO"])
-                    if( specialto < time.time() ):
-                        self.registerMessage( "special %s is over" % special )
-                        continue
-                    else:
-                        self.registerMessage( "special %s is from %s to %s" % (special, specialfrom, specialto) )
-            
+                        specialparams = self.specials[special]
 
-                    for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
-                        discount = specialparams.get(tier)
-                        if discount:
-                            # print "discount is ", discount
-                            special_price = None
+                        specialfrom = specialparams.start_time
+                        specialto = specialparams.end_time
 
-                            percentages = SanitationUtils.findallPercent(discount)
-                            # print "percentages are", percentages
-                            if percentages:
-                                coefficient = float(percentages[0]) / 100
-                                regular_price_string = objectData.get(tier[:-1]+"R")
-                                # print "regular_price_string", regular_price_string
-                                if regular_price_string:
-                                    regular_price = float(regular_price_string)
-                                    special_price = regular_price * coefficient  
-                            else:    
-                                dollars = SanitationUtils.findallDollars(discount)
-                                if dollars:
-                                    dollar = float(self.sanitizeCell( dollars[0]) )
-                                    if dollar:
-                                        special_price = dollar
+                        # specialfrom = SanitationUtils.datetotimestamp( specialparams["FROM"])
+                        # specialto = SanitationUtils.datetotimestamp(specialparams["TO"])
+                        if( not TimeUtils.hasHappenedYet(specialto) ):
+                            self.registerMessage( "special %s is over" % special )
+                            continue
+                        else:
+                            specialfromString = TimeUtils.wpTimeToString(specialfrom)
+                            specialtoString = TimeUtils.wpTimeToString(specialto)
+                            self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
+                
+                        for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
+                            discount = specialparams.get(tier)
+                            if discount:
+                                # print "discount is ", discount
+                                special_price = None
 
-                            if special_price:
-                                self.registerMessage( "special %s price is %s " % (special, special_price) )
-                                tier_key = tier
-                                tier_from_key = tier[:-1]+"F"
-                                tier_to_key = tier[:-1]+"T"
-                                for key, value in {
-                                    tier_key: special_price,
-                                    tier_from_key: specialfrom,
-                                    tier_to_key: specialto
-                                }.items():
-                                    self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
-                                    objectData[key] = value
-                                # objectData[tier_key] = special_price
-                                # objectData[tier_from_key] = specialfrom
-                                # objectData[tier_to_key] = specialto
+                                percentages = SanitationUtils.findallPercent(discount)
+                                # print "percentages are", percentages
+                                if percentages:
+                                    coefficient = float(percentages[0]) / 100
+                                    regular_price_string = objectData.get(tier[:-1]+"R")
+                                    # print "regular_price_string", regular_price_string
+                                    if regular_price_string:
+                                        regular_price = float(regular_price_string)
+                                        special_price = regular_price * coefficient  
+                                else:    
+                                    dollars = SanitationUtils.findallDollars(discount)
+                                    if dollars:
+                                        dollar = float(self.sanitizeCell( dollars[0]) )
+                                        if dollar:
+                                            special_price = dollar
+
+                                if special_price:
+                                    self.registerMessage( "special %s price is %s " % (special, special_price) )
+                                    tier_key = tier
+                                    tier_from_key = tier[:-1]+"F"
+                                    tier_to_key = tier[:-1]+"T"
+                                    for key, value in {
+                                        tier_key: special_price,
+                                        tier_from_key: TimeUtils.localToServerTime( specialfrom),
+                                        tier_to_key: TimeUtils.localToServerTime(specialto)
+                                    }.items():
+                                        self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
+                                        objectData[key] = value
+                                    # objectData[tier_key] = special_price
+                                    # objectData[tier_from_key] = specialfrom
+                                    # objectData[tier_to_key] = specialto
                     break 
-                    #only applies first special
+                    #only applies first special                                
 
                 else:
                     self.registerError("special %s does not exist " % special, objectData) 
 
-            objectData['price'] = objectData.get('RNR')
-            objectData['sale_price'] = objectData.get('RNS')
-            objectData['sale_price_dates_from'] = objectData.get('RNF')
-            objectData['sale_price_dates_to'] = objectData.get('RNT')
+            for key, value in {
+                'price': objectData.get('RNR'),
+                'sale_price': objectData.get('RNS')
+            }.items():
+                if value is not None:
+                    objectData[key] = value
+
+            for key, value in {
+                'sale_price_dates_from': objectData.get('RNF'),
+                'sale_price_dates_to': objectData.get('RNT')
+            }.items():
+                if value is not None:
+                    objectData[key] = TimeUtils.wpTimeToString(TimeUtils.serverToLocalTime(value))
+            # objectData['price'] = objectData.get('RNR')
+            # objectData['sale_price'] = objectData.get('RNS')
+            # objectData['sale_price_dates_from'] = objectData.get('RNF')
+            # objectData['sale_price_dates_to'] = objectData.get('RNT')
 
     def postProcessInventory(self, objectData):
         objectData.inheritKey('stock_status')

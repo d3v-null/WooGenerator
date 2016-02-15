@@ -8,6 +8,7 @@ from copy import deepcopy, copy
 
 DEBUG = False
 DEBUG_PARSER = False
+DEBUG_MESSAGE = True
 
 import os
 
@@ -110,7 +111,7 @@ class Registrar:
     def registerMessage(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
-        if DEBUG: Registrar.printAnything(source, message, ' ')
+        if DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
             self.messages,

@@ -1,4 +1,4 @@
-from utils import descriptorUtils, listUtils, SanitationUtils, AddressUtils
+from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from collections import OrderedDict
 from coldata import ColData_User
@@ -24,6 +24,17 @@ class CSVParse_Flat(CSVParse_Base):
     #     super(CSVParse_Flat, self).__init__(cols, defaults)
 
 class ImportSpecial(ImportFlat):
+
+    ID = descriptorUtils.safeKeyProperty('ID')
+    start_time = descriptorUtils.safeKeyProperty('start_time')
+    end_time = descriptorUtils.safeKeyProperty('end_time')
+
+    # @property
+    # def start_time_iso(self): return TimeUtils.isoTimeToString(self.start_time)
+
+    # @property
+    # def end_time_iso(self): return TimeUtils.isoTimeToString(self.end_time)
+
     def __init__(self,  data, rowcount, row):
         super(ImportSpecial, self).__init__(data, rowcount, row)
         try:
@@ -31,7 +42,8 @@ class ImportSpecial(ImportFlat):
         except:
             raise UserWarning('ID exist for Special to be valid')
 
-    ID = descriptorUtils.safeKeyProperty('ID')
+        self['start_time'] = TimeUtils.gDriveStrpTime(self['FROM'])
+        self['end_time'] = TimeUtils.gDriveStrpTime(self['TO'])
 
     def getIndex(self):
         return self.ID

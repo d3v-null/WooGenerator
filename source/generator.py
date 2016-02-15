@@ -110,8 +110,8 @@ delete = True
 remeta = True
 resize = False
 rename = False
-skip_images = False
-download = True
+skip_images = True
+download = False
 
 if variant == "ACC": 
 	genPath = os.path.join(inFolder, 'generator-solution.csv')
@@ -122,7 +122,7 @@ if variant == "SOL":
 DEBUG = True
 
 # currentSpecial = None
-currentSpecial = "SP2016-02-08-"
+currentSpecial = "SP2016-02-14-"
 
 ### PROCESS CONFIG ###
 

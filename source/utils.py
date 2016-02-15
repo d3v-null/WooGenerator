@@ -274,6 +274,13 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
+    def makeUnicodeCSVSafe(thing):
+        if thing is None:
+            return ""
+        else:
+            return unicode(thing)
+
+    @staticmethod
     def findAllImages(instring):
         assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         if not isinstance(instring, unicode):
@@ -343,8 +350,9 @@ class SanitationUtils:
 
     @staticmethod
     def datetotimestamp(datestring):
-        assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
-        return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
+        raise DeprecationWarning()
+        # assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
+        # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
 
     @staticmethod
     def decodeJSON(string):
@@ -1233,6 +1241,7 @@ class TimeUtils:
 
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
+    gDriveTimeFormat = "%d/%m/%Y"
 
     @staticmethod
     def starStrptime(string, fmt = wpTimeFormat ):
@@ -1256,8 +1265,26 @@ class TimeUtils:
         return TimeUtils.starStrptime(string)
 
     @staticmethod
+    def gDriveStrpTime(string):
+        return TimeUtils.starStrptime(string, TimeUtils.gDriveTimeFormat)
+
+    @staticmethod
     def wpTimeToString(t, fmt = wpTimeFormat):
         return time.strftime(fmt, time.localtime(t))
+
+    @staticmethod
+    def hasHappenedYet(t):
+        assert isinstance(t, (int, float)), "param must be an int not %s"% type(t)
+        return t >= time.time()
+
+    @staticmethod
+    def localToServerTime(t, timezoneOffset = time.timezone):
+        return int(t - timezoneOffset)
+
+    @staticmethod
+    def serverToLocalTime(t, timezoneOffset = time.timezone):
+        return int(t + timezoneOffset)
+
 
 class descriptorUtils:
     @staticmethod
@@ -1379,6 +1406,11 @@ class UnicodeWriter:
         self.encoder = codecs.getincrementalencoder(encoding)()
 
     def writerow(self, row):
+        row = map(
+            lambda x: "" if x is None else x,
+            row
+        )
+        assert 'None' not in row
         self.writer.writerow([s.encode("utf-8") for s in row])
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
@@ -1401,13 +1433,22 @@ class UnicodeDictWriter(UnicodeWriter):
         self.fieldnames = fieldnames
 
     def writerow(self, rowDict):
-        row = [unicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
+        row = [SanitationUtils.makeUnicodeCSVSafe(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
         UnicodeWriter.writerow(self, row)
 
     def writeheader(self):
         UnicodeWriter.writerow(self, self.fieldnames)
 
 if __name__ == '__main__':
+    gTime = TimeUtils.gDriveStrpTime("14/02/2016")
+    print "gTime", gTime
+    sTime = TimeUtils.localToServerTime(gTime)
+    print "sTime", sTime
+
+    print TimeUtils.wpTimeToString(1455379200)
+
+
+
     # t1 =  TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
     # t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
     # t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
@@ -1470,158 +1511,158 @@ if __name__ == '__main__':
     # print AddressUtils.getSubunit("SHOP 4 A")
     # print AddressUtils.getFloor("LEVEL 8")
 
-    a = u'TechnoTan Roll Up Banner Insert \u2014 Non personalised - Style D'
-    print 'a', repr(a)
-    b = SanitationUtils.makeSafeOutput(a)
-    print 'b', repr(b)
-    c = SanitationUtils.decodeSafeOutput(b)
-    print 'c', repr(c)
+    # a = u'TechnoTan Roll Up Banner Insert \u2014 Non personalised - Style D'
+    # print 'a', repr(a)
+    # b = SanitationUtils.makeSafeOutput(a)
+    # print 'b', repr(b)
+    # c = SanitationUtils.decodeSafeOutput(b)
+    # print 'c', repr(c)
 
-    for line in [
-        "8/5-7 KILVINGTON DRIVE EAST",
-        "SH20 SANCTUARY LAKES SHOPPING CENTRE",
-        "2 HIGH ST EAST BAYSWATER",
-        "FLOREAT FORUM",
-        "ANN LYONS",
-        "SHOP 5, 370 VICTORIA AVE",
-        "SHOP 34 ADELAIDE ARCADE",
-        "SHOP 5/562 PENNANT HILLS RD",
-        "MT OMMANEY SHOPPING",
-        "BUCKLAND STREET",
-        "6/7 118 RODWAY ARCADE",
-        "INGLE FARM SHOPPING CENTRE",
-        "EASTLAND SHOPPING CENTRE",
-        "SHOP 3044 WESTFEILD",
-        "303 HAWTHORN RD",
-        "7 KALBARRI ST,  WA",
-        "229 FORREST HILL CHASE",
-        "THE VILLAGE SHOP 5",
-        "GARDEN CITY SHOPPING CENTRE",
-        "SHOP 2 EAST MALL",
-        "SAMANTHA PALMER",
-        "134 THE GLEN SHOPPING CENTRE",
-        "SHOP 3 A, 24 TEDDER AVE",
-        "SHOP 205, DANDENONG PLAZA",
-        "SHOP 5 / 20 -21 OLD TOWN PLAZA",
-        "18A BORONIA RD",
-        "SHOP 426 LEVEL 4",
-        "WATERFORD PLAZA",
-        "BEAUDESERT RD",
-        "173 GLENAYR AVE",
-        "SHOP 14-16 ALBANY PLAZA S/C",
-        "861 ALBANY HIGHWAY",
-        "4/479 SYDNEY RD",
-        "90 WINSTON AVE",
-        "SHOP 2004 - LEVEL LG1",
-        "142 THE PARADE",
-        "46 MARKET STREET",
-        "AUSTRALIA FAIR",
-        "538 MAINS RD",
-        "SHOP 28 GRENFELL ST",
-        "309 MAIN ST",
-        "60 TOMPSON ROAD",
-        "SHOP 10 2-28 EVAN ST",
-        "VENESSA MILETO",
-        "BOX RD",
-        "34 RAILWAY PARADE",
-        "SHOP 14A WOODLAKE VILLAGE S/C",
-        "17 ROKEBY RD",
-        "AUSTRALIA FAIR SHOPPING",
-        "SHOP 1, 18-26 ANDERSON ST",
-        "INDOOROOPILLY SHOPPINGTOWN",
-        "17 CASUARINA RD",
-        "WHITFORDS WESTFIELD",
-        "4, 175 LABOUCHERE RD",
-        "2 PEEL STREET",
-        "SHOP 71 THE ENTRANCE RD",
-        "SHOP 2014 LEVEL 2",
-        "PLAZA ARCADE",
-        "SHOP 27 ADELAIDE ARCADE",
-        "152 WENTWORTH RD",
-        "92 PROSPECT RD",
-        "31 REITA AVE",
-        "33 NEW ENGLAND HWY",
-        "46 HUNTER ST",
-        "1/34-36 MCPHERSON ST",
-        "SHOP 358",
-        "147 SOUTH TCE",
-        "SHOP 1003 L1",
-        "357 CAMBRIDGE STREET",
-        "495 BURWOOD HWY",
-        "CAROUSAL MALL",
-        "SHOP 22 BAYSIDE VILLAGE",
-        "1/64 GYMEA BAY RD",
-        "1/15 RAILWAY RD",
-        "SOUTHLANDS BOULEVARD",
-        "83A COMMERCIAL RD",
-        u"456 ROCKY PT R\u010E",
-        "95 ROCKEBY RD",
-        "4/13-17 WARBURTON ST",
-        "1/18 ADDISON SY",
-        "SUNNYPARK",
-        "SHOP 4,81 PROSPECT",
-        "WESTFIELD",
-        "15 - 16 KEVLAR CLOSE",
-        "31",
-        "3/71 DORE ST",
-        "SHOP 11 RIVERSTONE PDE",
-        "SOUTHERN RIVER SHOPPING CENTRE RANFORD ROAD",
-        "6 RODINGA CLOSE",
-        "SHOP 2013 WESTFIELDS",
-        "SHOP 524 THE GLEN SHOPPING CENTRE",
-        "JOONDALUP SHOPPING CENTRE",
-        "48/14 JAMES PLACE",
-        "3/66 TENTH AVE",
-        "SHOP 23 GORDON VILLAGE ARCADE",
-        "HORNSBY WESTFIELD",
-        "SHOP 81",
-        "215/152 BUNNERONG RD",
-        "SP 1032 KNOX CITY SHOPPING CENTRE",
-        "SHOP 152 RUNDLE MALL",
-        "37 BURWOOD RD",
-        "SHOP 52 LEVEL 3",
-        "ALBANY PLAZA SHOPPING CENTRE",
-        "LEVEL 3 SHOP 3094",
-        "SHOP 19 B LAKE MACQUARIE",
-        "18/70 HURTLE",
-        "309 GEORGE ST",
-        "76 EDWARDES",
-        "SUNNYBANK PLAZA",
-        "1/134 HIGH ST",
-        "CARRUM DOWNS SHOPPING CENTER",
-        "SHOP 13 1 WENTWORTH ST",
-        "234 BROADWAY",
-        "288 STATION ST",
-        "KMART PLAZA",
-        "15 FLINTLOCK CT",
-        "17 O'CONNELL ST",
-        "JILL STREET SHOPPING CENTRE",
-        "SHOP 3, 2-10 WILLIAM THWAITES BLVD",
-        "170 CLOVELLY RD",
-        "SHOP 11 451 SYDNEY RD",
-        "PRINCES HIGHWAY ULLADULLA",
-        "WESTFIELD DONCASTER SHOPPING CENTRE",
-        "153 BREBNER SR",
-        "HELENSVALE TOWN CENTRE",
-        "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD EAST, KENWICK WA (",
-        "3/3 HOWARD AVA",
-        "8/2 RIDER BLVD",
-        "ROBINA PARKWAY",
-        "VICTORIA PT SHOPPING",
-        "ROBINSON ROAD",
-        "3/3 BEASLEY RD,",
-        "39 HAWKESBURY RETREAT",
-        "171 MORAYFIELD ROAD",
-        "149 ST JOHN STREET",
-        "49 GEORGE ST,  WA",
-        "UNIT 1",
-        "A8/90 MOUNT STREET",
-        "114 / 23 CORUNNA RD",
-        "43 GINGHAM STREET",
-        "5 KERRY CRESCENT, WESTERN AUSTRALIA",
-        "UNIT 2/33 MARTINDALE STREET",
-        "207/67 WATT ST",
-        "LEVEL 8, BLIGH"
-    ]:
-        pass
+    # for line in [
+    #     "8/5-7 KILVINGTON DRIVE EAST",
+    #     "SH20 SANCTUARY LAKES SHOPPING CENTRE",
+    #     "2 HIGH ST EAST BAYSWATER",
+    #     "FLOREAT FORUM",
+    #     "ANN LYONS",
+    #     "SHOP 5, 370 VICTORIA AVE",
+    #     "SHOP 34 ADELAIDE ARCADE",
+    #     "SHOP 5/562 PENNANT HILLS RD",
+    #     "MT OMMANEY SHOPPING",
+    #     "BUCKLAND STREET",
+    #     "6/7 118 RODWAY ARCADE",
+    #     "INGLE FARM SHOPPING CENTRE",
+    #     "EASTLAND SHOPPING CENTRE",
+    #     "SHOP 3044 WESTFEILD",
+    #     "303 HAWTHORN RD",
+    #     "7 KALBARRI ST,  WA",
+    #     "229 FORREST HILL CHASE",
+    #     "THE VILLAGE SHOP 5",
+    #     "GARDEN CITY SHOPPING CENTRE",
+    #     "SHOP 2 EAST MALL",
+    #     "SAMANTHA PALMER",
+    #     "134 THE GLEN SHOPPING CENTRE",
+    #     "SHOP 3 A, 24 TEDDER AVE",
+    #     "SHOP 205, DANDENONG PLAZA",
+    #     "SHOP 5 / 20 -21 OLD TOWN PLAZA",
+    #     "18A BORONIA RD",
+    #     "SHOP 426 LEVEL 4",
+    #     "WATERFORD PLAZA",
+    #     "BEAUDESERT RD",
+    #     "173 GLENAYR AVE",
+    #     "SHOP 14-16 ALBANY PLAZA S/C",
+    #     "861 ALBANY HIGHWAY",
+    #     "4/479 SYDNEY RD",
+    #     "90 WINSTON AVE",
+    #     "SHOP 2004 - LEVEL LG1",
+    #     "142 THE PARADE",
+    #     "46 MARKET STREET",
+    #     "AUSTRALIA FAIR",
+    #     "538 MAINS RD",
+    #     "SHOP 28 GRENFELL ST",
+    #     "309 MAIN ST",
+    #     "60 TOMPSON ROAD",
+    #     "SHOP 10 2-28 EVAN ST",
+    #     "VENESSA MILETO",
+    #     "BOX RD",
+    #     "34 RAILWAY PARADE",
+    #     "SHOP 14A WOODLAKE VILLAGE S/C",
+    #     "17 ROKEBY RD",
+    #     "AUSTRALIA FAIR SHOPPING",
+    #     "SHOP 1, 18-26 ANDERSON ST",
+    #     "INDOOROOPILLY SHOPPINGTOWN",
+    #     "17 CASUARINA RD",
+    #     "WHITFORDS WESTFIELD",
+    #     "4, 175 LABOUCHERE RD",
+    #     "2 PEEL STREET",
+    #     "SHOP 71 THE ENTRANCE RD",
+    #     "SHOP 2014 LEVEL 2",
+    #     "PLAZA ARCADE",
+    #     "SHOP 27 ADELAIDE ARCADE",
+    #     "152 WENTWORTH RD",
+    #     "92 PROSPECT RD",
+    #     "31 REITA AVE",
+    #     "33 NEW ENGLAND HWY",
+    #     "46 HUNTER ST",
+    #     "1/34-36 MCPHERSON ST",
+    #     "SHOP 358",
+    #     "147 SOUTH TCE",
+    #     "SHOP 1003 L1",
+    #     "357 CAMBRIDGE STREET",
+    #     "495 BURWOOD HWY",
+    #     "CAROUSAL MALL",
+    #     "SHOP 22 BAYSIDE VILLAGE",
+    #     "1/64 GYMEA BAY RD",
+    #     "1/15 RAILWAY RD",
+    #     "SOUTHLANDS BOULEVARD",
+    #     "83A COMMERCIAL RD",
+    #     u"456 ROCKY PT R\u010E",
+    #     "95 ROCKEBY RD",
+    #     "4/13-17 WARBURTON ST",
+    #     "1/18 ADDISON SY",
+    #     "SUNNYPARK",
+    #     "SHOP 4,81 PROSPECT",
+    #     "WESTFIELD",
+    #     "15 - 16 KEVLAR CLOSE",
+    #     "31",
+    #     "3/71 DORE ST",
+    #     "SHOP 11 RIVERSTONE PDE",
+    #     "SOUTHERN RIVER SHOPPING CENTRE RANFORD ROAD",
+    #     "6 RODINGA CLOSE",
+    #     "SHOP 2013 WESTFIELDS",
+    #     "SHOP 524 THE GLEN SHOPPING CENTRE",
+    #     "JOONDALUP SHOPPING CENTRE",
+    #     "48/14 JAMES PLACE",
+    #     "3/66 TENTH AVE",
+    #     "SHOP 23 GORDON VILLAGE ARCADE",
+    #     "HORNSBY WESTFIELD",
+    #     "SHOP 81",
+    #     "215/152 BUNNERONG RD",
+    #     "SP 1032 KNOX CITY SHOPPING CENTRE",
+    #     "SHOP 152 RUNDLE MALL",
+    #     "37 BURWOOD RD",
+    #     "SHOP 52 LEVEL 3",
+    #     "ALBANY PLAZA SHOPPING CENTRE",
+    #     "LEVEL 3 SHOP 3094",
+    #     "SHOP 19 B LAKE MACQUARIE",
+    #     "18/70 HURTLE",
+    #     "309 GEORGE ST",
+    #     "76 EDWARDES",
+    #     "SUNNYBANK PLAZA",
+    #     "1/134 HIGH ST",
+    #     "CARRUM DOWNS SHOPPING CENTER",
+    #     "SHOP 13 1 WENTWORTH ST",
+    #     "234 BROADWAY",
+    #     "288 STATION ST",
+    #     "KMART PLAZA",
+    #     "15 FLINTLOCK CT",
+    #     "17 O'CONNELL ST",
+    #     "JILL STREET SHOPPING CENTRE",
+    #     "SHOP 3, 2-10 WILLIAM THWAITES BLVD",
+    #     "170 CLOVELLY RD",
+    #     "SHOP 11 451 SYDNEY RD",
+    #     "PRINCES HIGHWAY ULLADULLA",
+    #     "WESTFIELD DONCASTER SHOPPING CENTRE",
+    #     "153 BREBNER SR",
+    #     "HELENSVALE TOWN CENTRE",
+    #     "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD EAST, KENWICK WA (",
+    #     "3/3 HOWARD AVA",
+    #     "8/2 RIDER BLVD",
+    #     "ROBINA PARKWAY",
+    #     "VICTORIA PT SHOPPING",
+    #     "ROBINSON ROAD",
+    #     "3/3 BEASLEY RD,",
+    #     "39 HAWKESBURY RETREAT",
+    #     "171 MORAYFIELD ROAD",
+    #     "149 ST JOHN STREET",
+    #     "49 GEORGE ST,  WA",
+    #     "UNIT 1",
+    #     "A8/90 MOUNT STREET",
+    #     "114 / 23 CORUNNA RD",
+    #     "43 GINGHAM STREET",
+    #     "5 KERRY CRESCENT, WESTERN AUSTRALIA",
+    #     "UNIT 2/33 MARTINDALE STREET",
+    #     "207/67 WATT ST",
+    #     "LEVEL 8, BLIGH"
+    # ]:
+    #     pass
         # print SanitationUtils.unicodeToByte("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))
