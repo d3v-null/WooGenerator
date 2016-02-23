@@ -24,4 +24,4 @@ pip install --upgrade mysql-python
 Other dependencies
 ------------------
 
-pip install --upgrade tabulate dill pyyaml sshtunnel
+pip install --upgrade tabulate dill pyyaml sshtunnel phpserialize uniqid

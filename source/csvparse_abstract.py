@@ -202,7 +202,7 @@ class ObjList(list):
 
     def addObject(self, objectData):
         try:
-            assert(isinstance(objectData, ImportObject))
+            assert issubclass(objectData.__class__, ImportObject), "object must be subclass of ImportObject not %s" % str(objectData.__class__)
         except Exception as e:
             pprint( objectData)
             raise e
@@ -225,7 +225,7 @@ class ObjList(list):
 
     def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
-        sanitizer = SanitationUtils.makeSafeOutput
+        sanitizer = SanitationUtils.makeUnicodeCSVSafe
         # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
         if(objs):
             # print "there are objects"

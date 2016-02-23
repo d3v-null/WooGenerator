@@ -9,7 +9,7 @@ import time
 from metagator import MetaGator
 from utils import listUtils, SanitationUtils, UnicodeDictWriter
 from csvparse_abstract import Registrar
-from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
+from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
 from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special
@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 import rsync
 import sys
 import yaml
+import re
 
 import httplib2
 
@@ -142,6 +143,7 @@ myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
 bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
 xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
 objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
+spoPath = os.path.join(outFolder , "specials-"+suffix+".html")
 wpaiFolder = os.path.join(webFolder, "images-"+schema)
 refFolder = wpaiFolder
 
@@ -776,6 +778,67 @@ elif schema in woo_schemas:
 		inventoryCols = inventoryCols,
 		imageData = images
 	)
+
+with open(spoPath, 'w+') as spoFile:
+    def writeSection(title, description, data, length = 0, html_class="results_section"):
+        sectionID = SanitationUtils.makeSafeClass(title)
+        description = "%s %s" % (str(length) if length else "No", description)
+        spoFile.write('<div class="%s">'% html_class )
+        spoFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
+        spoFile.write('<h2>%s (%d)</h2>' % (title, length))
+        spoFile.write('</a>')
+        spoFile.write('<div class="collapse" id="%s">' % sectionID)
+        spoFile.write('<p class="description">%s</p>' % description)
+        spoFile.write('<p class="data">' )
+        spoFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
+        spoFile.write('</p>')
+        spoFile.write('</div>')
+        spoFile.write('</div>')
+
+    spoFile.write('<!DOCTYPE html>')
+    spoFile.write('<html lang="en">')
+    spoFile.write('<head>')
+    spoFile.write("""
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+""")
+    spoFile.write('<body>')
+    spoFile.write('<div class="matching">')
+    spoFile.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
+
+    dynProducts = [ \
+    	product \
+    	for product in products.values() \
+    	if product.get('dprpIDlist') or product.get('dprcIDlist') \
+    ]
+
+    dynProductList = WooObjList("fileName", dynProducts )
+    
+    writeSection(
+        "Dynamic Pricing Rules", 
+        "all products and their dynaimc pricing rules",
+        re.sub("<table>","<table class=\"table table-striped\">", 
+        	dynProductList.tabulate(cols=OrderedDict([
+	        	('itemsum', {}),
+	        	('dprcIDlist', {}),
+	        	('dprcsum', {}),
+	        	('dprpIDlist', {}),
+	        	('dprpsum', {})
+	        ]), tablefmt="html")
+        ),
+        length = len(dynProductList.objects)
+    )
+
+    spoFile.write('</div>')
+    spoFile.write("""
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+""")
+    spoFile.write('</body>')
+    spoFile.write('</html>')
 
 
 #########################################

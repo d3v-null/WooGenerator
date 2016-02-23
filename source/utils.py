@@ -3,13 +3,15 @@ import itertools
 # from itertools import chain
 import re
 import time
-import datetime
+# import datetime
 import inspect
 import json
 from collections import OrderedDict
 import codecs
 import csv
 import cStringIO
+from uniqid import uniqid
+from phpserialize import dumps
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -211,6 +213,10 @@ class SanitationUtils:
         )(cell)   
 
     @staticmethod
+    def sanitizeClass(string):
+        return re.sub('[^a-z]', '', string.lower())
+
+    @staticmethod
     def similarComparison(string):
         return SanitationUtils.compose(
             SanitationUtils.toLower,
@@ -392,7 +398,23 @@ class SanitationUtils:
     def stringCapitalized(string):
         return unicode(string) == unicode(string).upper()
 
+class ValidationUtils:
+    @staticmethod
+    def isNotNone(arg):
+        return arg is not None
 
+    @staticmethod
+    def isContainedIn(l):
+        return lambda v: v in l
+
+class PHPUtils:
+    @staticmethod
+    def uniqid(prefix="", more_entropy=False):
+        return uniqid(prefix, more_entropy)
+
+    @staticmethod
+    def serialize(thing):
+        return dumps(thing)
 
 def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
     return "|".join(filter(None,[

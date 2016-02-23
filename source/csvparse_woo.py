@@ -211,7 +211,7 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
         return None
 
 class WooObjList(ObjList):
-    def __init__(self, fileName):
+    def __init__(self, fileName, objects=None):
         self._fileName = fileName
         self._isValid = True
         if not self._fileName:
@@ -219,7 +219,7 @@ class WooObjList(ObjList):
         self.products = []
         self.items = []
         self.taxos = []
-        super(WooObjList, self).__init__()
+        super(WooObjList, self).__init__(objects)
 
     @property
     def objects(self):
