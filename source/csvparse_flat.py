@@ -1,7 +1,8 @@
 from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
+from csvparse_woo import ImportWooProduct
 from collections import OrderedDict
-from coldata import ColData_User
+from coldata import ColData_User, ColData_Woo
 from contact_objects import ContactAddress
 import os
 import csv
@@ -321,12 +322,84 @@ class CSVParse_User(CSVParse_Flat):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
     #     return objectData
 
-if __name__ == '__main__':
-    inFolder = "../input/"
-    # actPath = os.path.join(inFolder, 'partial act records.csv')
+
+class ImportSqlProduct(ImportFlat):
+    ID          = descriptorUtils.safeKeyProperty('ID')
+    codesum     = descriptorUtils.safeKeyProperty('codesum')
+    itemsum     = descriptorUtils.safeKeyProperty('itemsum')
+
+    @property
+    def index(self):
+        return self.codesum
+
+class CSVParse_WPSQLProd(CSVParse_Flat):
+
+    objectContainer = ImportSqlProduct
+
+    """docstring for CSVParse_WPSQLProd"""
+    # def __init__(self, arg):
+        # super(CSVParse_WPSQLProd, self).__init__()
+
+def testSqlParser(inFolder, outFolder):
+    prodData = ColData_Woo()
+
+    sqlRows = [
+        ['ID', 'codesum', 'itemsum', 'title_1', 'title_2', 'pricing_rules', 'price', 'sale_price', 'sale_price_dates_from', 'sale_price_dates_to', 'RNR', 'RNS', 'RNF', 'RNT', 'RPR', 'RPS', 'RPF', 'RPT', 'WNR', 'WNS', 'WNF', 'WNT', 'WPR', 'WPS', 'WPF', 'WPT', 'DNR', 'DNS', 'DNF', 'DNT', 'DPR', 'DPS', 'DPF', 'DPT', 'CVC', 'weight', 'length', 'width', 'height', 'stock', 'stock_status', 'manage_stock'], 
+        (4481L, 'CTMITT-REM', 'Tan Removal Mitt', 'Tan Removal Mitt', '', 'Tan Removal Mitt', '14.90', '11.175', '', '', '14.90', '11.175', '1479744000', '1482336000', '12.90', '', '', '', '8.90', '6.675000000000001', '1479744000', '1482336000', '8.01', '', '', '', '5.34', '', '', '', '5.12', '', '', '', '1', '0.04', '147', '6', '232', '', 'instock', 'no'), (4482L, 'CTMITT-APP', 'Tan Application Mitt', 'Tan Application Mitt', '', 'Tan Application Mitt', '9.90', '7.425000000000001', '', '', '9.90', '7.425000000000001', '1479744000', '1482336000', '8.40', '', '', '', '5.90', '4.425000000000001', '1479744000', '1482336000', '5.31', '', '', '', '3.54', '', '', '', '3.39', '', '', '', '1', '0.04', '147', '3', '232', '', 'instock', 'no'),
+        (4498L, 'CTTC-250', 'Tan in a Can - 250ml', 'Tan in a Can', '250ml', 'Tan in a Can - 250ml', '39.90', '29.924999999999997', '', '', '39.90', '29.924999999999997', '1479744000', '1482336000', '35.90', '', '', '', '24.90', '18.674999999999997', '1479744000', '1482336000', '22.41', '', '', '', '17.43', '', '', '', '16.18', '', '', '', '1', '0.33', '50', '50', '210', '', 'instock', 'no'),
+        (4506L, 'ACS-FBLK', 'Female C-String \xe2\x80\x94 Black', '', '', 'Female C-String \xe2\x80\x94 Black', '8.4', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.4', '', '', '', '5.4', '4.050000000000001', '1440000000', '1440950400', '4.59', '', '', '', '3.27', '', '', '', '3.11', '', '', '', '1', '0.01', '80', '120', '75', '', 'instock', 'no'),
+        (4507L, 'ACS-FLEP', 'Female C-String \xe2\x80\x94 Leopard Print', '', '', 'Female C-String \xe2\x80\x94 Leopard Print', '8.4', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.4', '', '', '', '5.4', '4.050000000000001', '1440000000', '1440950400', '4.59', '', '', '', '3.27', '', '', '', '3.11', '', '', '', '1', '0.01', '80', '120', '75', '', 'instock', 'no'),
+        (4508L, 'ACS-MBLK', 'Male C-String \xe2\x80\x94 Black', '', '', 'Male C-String \xe2\x80\x94 Black', '9.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '9.9', '', '', '', '6.4', '4.800000000000001', '1440000000', '1440950400', '5.44', '', '', '', '3.84', '', '', '', '3.68', '', '', '', '1', '0.02', '170', '100', '90', '', 'instock', 'no'),
+        (4509L, 'ACS-WBF', 'C-String Wash Bag \xe2\x80\x94 Female', '', '', 'C-String Wash Bag \xe2\x80\x94 Female', '3.4', '', '', '', '3.9', '2.925', '1440000000', '1440950400', '3.4', '', '', '', '2.4', '1.7999999999999998', '1440000000', '1440950400', '2.04', '', '', '', '1.44', '', '', '', '1.38', '', '', '', '0.5', '0.01', '220', '150', '2', '', 'instock', 'no'),
+        (4510L, 'ACS-WBM', 'C-String Wash Bag \xe2\x80\x94 Male', '', '', 'C-String Wash Bag \xe2\x80\x94 Male', '3.4', '', '', '', '3.9', '2.925', '1440000000', '1440950400', '3.4', '', '', '', '2.4', '1.7999999999999998', '1440000000', '1440950400', '2.04', '', '', '', '1.44', '', '', '', '1.38', '', '', '', '0.5', '0.01', '220', '150', '2', '', 'instock', 'no'),
+        (4511L, 'ATOW-BLKL', 'Black Towel (No logo) \xe2\x80\x94 Large (560 x 1150mm)', '', '', 'Black Towel (No logo) \xe2\x80\x94 Large (560 x 1150mm)', '', '', '', '', '', '', '', '', '', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.71', '', '', '', '8.33', '', '', '', '8.33', '', '', '', '0.75', '0.41', '230', '310', '30', '', 'instock', 'no'),
+        (4512L, 'ATOW-GRYS', 'Grey Towel (No logo) \xe2\x80\x94 Small (400 x 570mm)', '', '', 'Grey Towel (No logo) \xe2\x80\x94 Small (400 x 570mm)', '', '', '', '', '', '', '', '', '', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.91', '', '', '', '6.93', '', '', '', '6.93', '', '', '', '0.75', '0.16', '200', '200', '18', '', 'instock', 'no'),
+        (4513L, 'AGL-CP5', 'Cotton Glove Pack x5 Pairs', '', '', 'Cotton Glove Pack x5 Pairs', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4515L, 'ATBCS', 'TechnoTan Brush Cleaning Solution', '', '', 'TechnoTan Brush Cleaning Solution', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4516L, 'ATTOW-BLKXL', 'Black Towel (TT logo) \xe2\x80\x94 Extra Large (750mm X 1440mm)', '', '', 'Black Towel (TT logo) \xe2\x80\x94 Extra Large (750mm X 1440mm)', '', '', '', '', '', '', '', '', '', '', '', '', '14.9', '11.175', '1440000000', '1440950400', '13.41', '', '', '', '10.43', '', '', '', '10.43', '', '', '', '0.8', '0.66', '260', '380', '50', '', 'instock', 'no'),
+        (4517L, 'ATTOW-BLKL', 'Black Towel (TT logo) \xe2\x80\x94 Large  (560mm X 1150mm)', '', '', 'Black Towel (TT logo) \xe2\x80\x94 Large  (560mm X 1150mm)', '', '', '', '', '', '', '', '', '', '', '', '', '12.9', '9.675', '1440000000', '1440950400', '11.61', '', '', '', '9.03', '', '', '', '9.03', '', '', '', '0.8', '0.41', '230', '310', '30', '', 'outofstock', 'no'),
+        (4518L, 'ATTOW-GRYS', 'Grey Towel (TT logo) \xe2\x80\x94 Small  (400mm X 570mm)', '', '', 'Grey Towel (TT logo) \xe2\x80\x94 Small  (400mm X 570mm)', '', '', '', '', '', '', '', '', '', '', '', '', '10.9', '8.175', '1440000000', '1440950400', '9.81', '', '', '', '7.63', '', '', '', '7.63', '', '', '', '0.8', '0.16', '200', '200', '18', '', 'instock', 'no'),
+        (4519L, 'ATUMB-L', 'Large Umbrella (TT logo)', '', '', 'Large Umbrella (TT logo)', '15.9', '', '', '', '17.9', '13.424999999999999', '1440000000', '1440950400', '15.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.71', '', '', '', '8.33', '', '', '', '8.33', '', '', '', '1', '0.35', '115', '830', '115', '', 'instock', 'no'),
+        (4520L, 'ATCB-MINBLK', 'Mini TechnoTan Cooler Bag \xe2\x80\x94 Black', '', '', 'Mini TechnoTan Cooler Bag \xe2\x80\x94 Black', '8.9', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.9', '', '', '', '6.9', '5.175000000000001', '1440000000', '1440950400', '6.21', '', '', '', '4.83', '', '', '', '4.83', '', '', '', '0.75', '0.21', '370', '165', '25', '', 'instock', 'no'),
+        (4521L, 'ATCB-LRGBLK', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Black', '', '', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Black', '67.5', '', '', '', '75', '56.25', '1440000000', '1440950400', '67.5', '', '', '', '50', '37.5', '1440000000', '1440950400', '45', '', '', '', '35', '', '', '', '35', '', '', '', '0.75', '2.54', '285', '500', '100', '', 'instock', 'no'),
+        (4522L, 'ATCB-LRGPNK', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Pink', '', '', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Pink', '67.5', '', '', '', '75', '56.25', '1440000000', '1440950400', '67.5', '', '', '', '50', '37.5', '1440000000', '1440950400', '45', '', '', '', '35', '', '', '', '35', '', '', '', '0.75', '2.54', '285', '500', '100', '', 'instock', 'no'),
+        (4523L, 'ATCB-LRGBLU', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Blue', '', '', 'Insulated TechnoTan Cooler Bag \xe2\x80\x94 Blue', '67.5', '', '', '', '75', '56.25', '1440000000', '1440950400', '67.5', '', '', '', '50', '37.5', '1440000000', '1440950400', '45', '', '', '', '35', '', '', '', '35', '', '', '', '0.75', '2.54', '285', '500', '100', '', 'instock', 'no'),
+        (4525L, 'ATBAG-PLA50', 'Plastic Carry Bag \xe2\x80\x94 Pack / 50', '', '', 'Plastic Carry Bag \xe2\x80\x94 Pack / 50', '', '', '', '', '', '', '', '', '', '', '', '', '10', '7.5', '1440000000', '1440950400', '9', '', '', '', '6', '', '', '', '5.75', '', '', '', '0.5', '0.51', '402', '258', '10', '', 'instock', 'no'),
+        (4526L, 'ATBAG-GIF10', 'Gloss Gift Bag,  \xe2\x80\x94 Pack / 10', '', '', 'Gloss Gift Bag,  \xe2\x80\x94 Pack / 10', '', '', '', '', '12.25', '', '', '', '10.4', '', '', '', '7', '5.25', '1440000000', '1440950400', '6.3', '', '', '', '4.2', '', '', '', '4.03', '', '', '', '0.5', '0.84', '275', '280', '70', '', 'instock', 'no'),
+        (4527L, 'ATBAG-ECO10', 'Eco Carry Bag \xe2\x80\x94 Pack / 10', '', '', 'Eco Carry Bag \xe2\x80\x94 Pack / 10', '', '', '', '', '', '', '', '', '', '', '', '', '6', '4.5', '1440000000', '1440950400', '5.4', '', '', '', '3.6', '', '', '', '3.45', '', '', '', '0.5', '0.49', '275', '280', '70', '', 'instock', 'no'),
+        (4528L, 'ATBAG-DEL5', 'Deluxe Eco Carry Bag \xe2\x80\x94 Pack / 5', '', '', 'Deluxe Eco Carry Bag \xe2\x80\x94 Pack / 5', '', '', '', '', '8.75', '', '', '', '7.4', '', '', '', '5', '3.75', '1440000000', '1440950400', '4.5', '', '', '', '3', '', '', '', '2.88', '', '', '', '0.5', '0.45', '400', '300', '30', '', 'instock', 'no'),
+        (4529L, 'ATFS-BLK', 'TechnoTan Floor Sheet \xe2\x80\x94 Black', '', '', 'TechnoTan Floor Sheet \xe2\x80\x94 Black', '', '', '', '', '', '', '', '', '', '', '', '', '35', '26.25', '1440000000', '1440950400', '31.5', '', '', '', '21', '', '', '', '20.13', '', '', '', '1', '0.4', '250', '220', '15', '', 'instock', 'no'),
+        (4530L, 'ATFS-BLU', 'TechnoTan Floor Sheet \xe2\x80\x94 Blue', '', '', 'TechnoTan Floor Sheet \xe2\x80\x94 Blue', '', '', '', '', '', '', '', '', '', '', '', '', '35', '26.25', '1440000000', '1440950400', '31.5', '', '', '', '21', '', '', '', '20.13', '', '', '', '1', '0.4', '250', '220', '15', '', 'instock', 'no'),
+        (4531L, 'SQMITT-APP', 'Tan Application Mitt', '', '', 'Tan Application Mitt', '12.9', '', '', '', '14.9', '11.175', '1440000000', '1440950400', '12.9', '', '', '', '8.9', '6.675000000000001', '1440000000', '1440950400', '7.57', '', '', '', '5.34', '', '', '', '5.12', '', '', '', '1', '0.04', '147', '3', '232', '', 'instock', 'no'),
+        (4532L, 'SQMITT-REM', 'Tan Removal Mitt', '', '', 'Tan Removal Mitt', '8.4', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.4', '', '', '', '5.9', '4.425000000000001', '1440000000', '1440950400', '5.02', '', '', '', '3.54', '', '', '', '3.39', '', '', '', '1', '0.04', '147', '3', '232', '', 'instock', 'no'),
+        (4533L, 'SQEX-MITT', 'Massage Mitt', '', '', 'Massage Mitt', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4534L, 'SQEX-SPO', 'Exfoliating Massage Sponge', '', '', 'Exfoliating Massage Sponge', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4535L, 'SQEX-BS', 'Exfoliating Back Strap', '', '', 'Exfoliating Back Strap', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4536L, 'SQEX-BG', 'Exfoliating Body Gloves', '', '', 'Exfoliating Body Gloves', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', '', '', '', '', '', 'instock', 'no'),
+        (4541L, 'SQMBP-BLU', 'Light Blue Polisher Cloth', '', '', 'Light Blue Polisher Cloth', '5.9', '', '', '', '6.9', '5.175000000000001', '1440000000', '1440950400', '5.9', '', '', '', '4', '3.0', '1440000000', '1440950400', '3.4', '', '', '', '2.4', '', '', '', '2.3', '', '', '', '1', '0.03', '200', '150', '2', '', 'instock', 'no'),
+        (4542L, 'SQMBP-PNK', 'Pink Polisher Cloth', '', '', 'Pink Polisher Cloth', '5.9', '', '', '', '6.9', '5.175000000000001', '1440000000', '1440950400', '5.9', '', '', '', '4', '3.0', '1440000000', '1440950400', '3.4', '', '', '', '2.4', '', '', '', '2.3', '', '', '', '1', '0.03', '200', '150', '2', '', 'instock', 'no'),
+        (4543L, 'SQHN-P50BLU', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Blue', '', '', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Blue', '11.9', '', '', '', '13.9', '10.425', '1440000000', '1440950400', '11.9', '', '', '', '7.9', '5.925000000000001', '1440000000', '1440950400', '6.72', '', '', '', '4.77', '', '', '', '4.54', '', '', '', '1', '0.13', '150', '90', '80', '', 'instock', 'no'),
+        (4544L, 'SQHN-P50BLK', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Black', '', '', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Black', '11.9', '', '', '', '13.9', '10.425', '1440000000', '1440950400', '11.9', '', '', '', '7.9', '5.925000000000001', '1440000000', '1440950400', '6.72', '', '', '', '4.77', '', '', '', '4.54', '', '', '', '1', '0.13', '150', '90', '80', '', 'instock', 'no'),
+        (4545L, 'SQHN-P50PNK', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Pink', '', '', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 Pink', '11.9', '', '', '', '13.9', '10.425', '1440000000', '1440950400', '11.9', '', '', '', '7.9', '5.925000000000001', '1440000000', '1440950400', '6.72', '', '', '', '4.77', '', '', '', '4.54', '', '', '', '1', '0.13', '150', '90', '80', '', 'instock', 'no'),
+        (4546L, 'SQHN-P50WHI', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 White', '', '', 'Disposable Hair Nets, Pack / 50 \xe2\x80\x94 White', '11.9', '', '', '', '13.9', '10.425', '1440000000', '1440950400', '11.9', '', '', '', '7.9', '5.925000000000001', '1440000000', '1440950400', '6.72', '', '', '', '4.77', '', '', '', '4.54', '', '', '', '1', '0.13', '150', '90', '80', '', 'instock', 'no'),
+        (4547L, 'SQGS-P50BLK', 'G Strings, Pack / 50 \xe2\x80\x94 Black', '', '', 'G Strings, Pack / 50 \xe2\x80\x94 Black', '16.9', '', '', '', '19.9', '14.924999999999999', '1440000000', '1440950400', '16.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.12', '', '', '', '7.14', '', '', '', '6.84', '', '', '', '1', '0.19', '200', '170', '25', '', 'instock', 'no'),
+        (4548L, 'SQGS-P50WHI', 'G Strings, Pack / 50 \xe2\x80\x94 White', '', '', 'G Strings, Pack / 50 \xe2\x80\x94 White', '16.9', '', '', '', '19.9', '14.924999999999999', '1440000000', '1440950400', '16.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.12', '', '', '', '7.14', '', '', '', '6.84', '', '', '', '1', '0.19', '200', '170', '25', '', 'instock', 'no'),
+        (4549L, 'SQGS-P50BLU', 'G Strings, Pack / 50 \xe2\x80\x94 Blue', '', '', 'G Strings, Pack / 50 \xe2\x80\x94 Blue', '16.9', '', '', '', '19.9', '14.924999999999999', '1440000000', '1440950400', '16.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.12', '', '', '', '7.14', '', '', '', '6.84', '', '', '', '1', '0.19', '200', '170', '25', '', 'outofstock', 'no')
+    ]
+    sqlParser = CSVParse_WPSQLProd(
+        cols = prodData.getWPCols(),
+        defaults = prodData.getDefaults()
+    )
+
+    sqlParser.analyseRows(sqlRows)
+
+    print sqlParser.objects
+
+
+def testUsrParser(inFolder, outFolder):
     actPath = os.path.join(inFolder, "200-act-records.csv")
-    outFolder = "../output/"
-    usrPath = os.path.join(outFolder, 'users.csv')
+    # usrPath = os.path.join(outFolder, 'users.csv')
+    # actPath = os.path.join(inFolder, 'partial act records.csv')
 
     usrData = ColData_User()
 
@@ -349,9 +422,9 @@ if __name__ == '__main__':
         clone = deepcopy(usr)
         usr['Wordpress Username'] = 'jonno'
         usrList.addObject(clone)
-        card_id = usr.MYOBID
-        edit_date = usr.get('Edit Date')
-        act_date = usr.get('Edited in Act')
+        # card_id = usr.MYOBID
+        # edit_date = usr.get('Edit Date')
+        # act_date = usr.get('Edited in Act')
 
     print usrList.tabulate()
 
@@ -372,4 +445,11 @@ if __name__ == '__main__':
     #             usrData.getColNames(usrCols),
     #             usrs.values()[u:u+usrs_per_file]
     #         )
-        
+
+if __name__ == '__main__':
+    inFolder = "../input/"
+    
+    outFolder = "../output/"
+
+    # testUsrParser(inFolder, outFolder)
+    testSqlParser(inFolder, outFolder)

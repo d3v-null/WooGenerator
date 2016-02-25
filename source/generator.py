@@ -12,13 +12,15 @@ from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
 from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
-from csvparse_flat import CSVParse_Special
+from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
 from coldata import ColData_Woo, ColData_MYO #, ColData_User
 import xml.etree.ElementTree as ET
 import rsync
 import sys
 import yaml
 import re
+import MySQLdb
+from sshtunnel import SSHTunnelForwarder
 
 import httplib2
 
@@ -35,6 +37,7 @@ from oauth2client import tools
 inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
+srcFolder = "../source"
 
 yamlPath = "generator_config.yaml"
 
@@ -67,6 +70,17 @@ with open(yamlPath) as stream:
 	fallback_variant = config.get('fallback_variant')
 	imgFolder_extra = config.get('imgFolder_extra')
 
+	ssh_user = config.get('ssh_user')
+	ssh_pass = config.get('ssh_pass')
+	ssh_host = config.get('ssh_host')
+	ssh_port = config.get('ssh_port', 22)
+	remote_bind_host = config.get('remote_bind_host', '127.0.0.1')
+	remote_bind_port = config.get('remote_bind_port', 3306)
+	db_user = config.get('db_user')
+	db_pass = config.get('db_pass')
+	db_name = config.get('db_name')
+	tbl_prefix = config.get('tbl_prefix', '')
+
 #mandatory params
 assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb, woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
@@ -77,6 +91,8 @@ specPath= os.path.join(inFolder, 'specials.csv')
 usPath  = os.path.join(inFolder, 'US.csv')
 xsPath  = os.path.join(inFolder, 'XS.csv')
 imgFolder = [imgFolder_glb]
+
+sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
 ### GET SHELL ARGS ###
 
@@ -324,10 +340,64 @@ if schema in woo_schemas:
 import_errors = productParser.errors
 
 #########################################
+# Import Info from Database
+#########################################
+
+
+# sql_run = True
+
+# if sql_run: 
+#     with \
+#         SSHTunnelForwarder(
+#             (ssh_host, ssh_port),
+#             ssh_password=ssh_pass,
+#             ssh_username=ssh_user,
+#             remote_bind_address=(remote_bind_host, remote_bind_port)
+#         ) as server,\
+#         open(sqlPath) as sqlFile:
+#         # server.start()
+#         print server.local_bind_address
+#         conn = MySQLdb.connect(
+#             host='127.0.0.1',
+#             port=server.local_bind_port,
+#             user=db_user,
+#             passwd=db_pass,
+#             db=db_name)
+
+#         wpCols = colData.getWPCols()
+
+#         assert all([
+#             'ID' in wpCols.keys(),
+#             wpCols['ID'].get('wp', {}).get('key') == 'ID',
+#         ]), 'ColData should be configured correctly'
+#         postdata_select = ",\n\t\t\t".join([
+#             ("MAX(CASE WHEN pm.meta_key = '%s' THEN pm.meta_value ELSE \"\" END) as `%s`" \
+#             	if data['wp']['meta'] \
+#             	else "p.%s as `%s`") % (data['wp']['key'], col) \
+# 	            for col, data in wpCols.items()
+#         ])
+
+#         cursor = conn.cursor()
+#         cursor.execute(
+#         	sqlFile.read() \
+#         	% (postdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
+#         # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
+#         headers = [i[0] for i in cursor.description]
+#         # print headers
+#         sqlRows = [headers] + list(cursor.fetchall())
+
+# sqlParser = CSVParse_WPSQLProd(
+#     cols = colData.getWPCols(),
+#     defaults = colData.getDefaults()
+# )
+
+# sqlParser.analyseRows(sqlRows)
+
+#########################################
 # Images
 #########################################	
 
-if schema in woo_schemas:
+if schema in woo_schemas and not skip_images:
 
 	print ""
 	print "Images:"
@@ -473,8 +543,8 @@ if schema in woo_schemas:
 # Export Info to Spreadsheets
 #########################################
 
-def joinOrderedDicts(a, b):
-	return OrderedDict(a.items() + b.items())
+# def joinOrderedDicts(a, b):
+# 	return OrderedDict(a.items() + b.items())
 
 def exportItemsCSV(filePath, colNames, items):
 	assert filePath, "needs a filepath"
@@ -656,7 +726,16 @@ def exportProductsXML(filePath, products, productCols, variationCols={}, categor
 def onCurrentSpecial(product):
 	return currentSpecial in product.get('spsum')
 
+def isUpdated(product):
+	return 'Y' in ( product.get('Updated') or  "")
+
+def hasPricingRule(product):
+	return product.get('pricing_rules')
+
 productCols = colData.getProductCols()
+if skip_images:
+	if(productCols.get('Images')):
+		del productCols['Images']
 
 # print "productCols", productCols
 
@@ -673,7 +752,7 @@ elif schema in woo_schemas:
 	attributeCols = colData.getAttributeCols(attributes, vattributes)
 	# print 'attributeCols:', attributeCols.keys()
 	# print 'productCols: ', productCols.keys()
-	productColnames = colData.getColNames( joinOrderedDicts( productCols, attributeCols))
+	productColnames = colData.getColNames( listUtils.combineOrderedDicts( productCols, attributeCols))
 	# print 'productColnames: ', productColnames
 
 	exportItemsCSV(
@@ -694,7 +773,7 @@ elif schema in woo_schemas:
 		exportItemsCSV(
 			flvPath,
 			colData.getColNames(
-				joinOrderedDicts( variationCols, attributeMetaCols)
+				listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
 			),
 			variations.values()
 		)
@@ -730,7 +809,7 @@ elif schema in woo_schemas:
 			exportItemsCSV(
 					flsPath,
 					colData.getColNames(
-						joinOrderedDicts( productCols, attributeCols)
+						listUtils.combineOrderedDicts( productCols, attributeCols)
 					),
 					specialProducts
 				)
@@ -746,7 +825,7 @@ elif schema in woo_schemas:
 			exportItemsCSV(
 				flvsPath,
 				colData.getColNames(
-					joinOrderedDicts( variationCols, attributeMetaCols)
+					listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
 				),
 				specialVariations
 			)
@@ -755,6 +834,38 @@ elif schema in woo_schemas:
 	except Exception as e:
 		print "no specials 4 u", e
 		pass
+
+	#Updated
+	updatedProducts = filter(
+		isUpdated,
+		products.values()[:]
+	)
+	if updatedProducts:
+		flaName, flaExt = os.path.splitext(flaPath)
+		fluPath = os.path.join(outFolder , flaName+"-Updated"+flaExt)
+		exportItemsCSV(
+			fluPath,
+			colData.getColNames(
+				listUtils.combineOrderedDicts(productCols, attributeCols)
+			),
+			updatedProducts
+		)
+
+	#Updated
+	updatedProducts = filter(
+		hasPricingRule,
+		products.values()[:]
+	)
+	if updatedProducts:
+		flaName, flaExt = os.path.splitext(flaPath)
+		flpPath = os.path.join(outFolder , flaName+"-pricing_rules"+flaExt)
+		exportItemsCSV(
+			flpPath,
+			colData.getColNames(
+				listUtils.combineOrderedDicts(productCols, attributeCols)
+			),
+			updatedProducts
+		)
 
 	pricingCols = colData.getPricingCols()
 	print 'pricingCols: ', pricingCols.keys()
@@ -827,7 +938,7 @@ with open(spoPath, 'w+') as spoFile:
 	        	('dprcsum', {}),
 	        	('dprpIDlist', {}),
 	        	('dprpsum', {}),
-	        	('_pricing_rules', {})
+	        	('pricing_rules', {})
 	        ]), tablefmt="html")
         ),
         length = len(dynProductList.objects)
@@ -841,10 +952,9 @@ with open(spoPath, 'w+') as spoFile:
     spoFile.write('</body>')
     spoFile.write('</html>')
 
+for source, error in import_errors.items():
+	Registrar.printAnything(source, error, '!')
 
 #########################################
 # Attempt import
 #########################################
-
-for source, error in import_errors.items():
-	Registrar.printAnything(source, error, '!')

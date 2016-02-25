@@ -117,6 +117,12 @@ class ColData_MYO(ColData_Base):
 class ColData_Woo(ColData_Base):
 
     data = OrderedDict([
+        ('ID', {
+            'wp':{
+                'key': 'ID',
+                'meta': False
+            }
+        }),
         ('parent_SKU',{
             'variation':True,
         }),
@@ -126,20 +132,36 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'category': True,
+            'wp':{
+                'key':'_sku',
+                'meta':True
+            }
         }),
         ('itemsum', {
             'tag':'Title',
             'label':'post_title',
             'product':True, 
-            'variation': True
+            'variation': True,
+            'wp':{
+                'key':'post_title',
+                'meta':False
+            }
         }),
         ('title_1', {
             'label': 'meta:title_1',
-            'product':True
+            'product':True,
+            'wp':{
+                'key':'title_1',
+                'meta':True
+            }
         }),
         ('title_2', {
             'label': 'meta:title_2',
-            'product':True
+            'product':True,
+            'wp':{
+                'key':'title_2',
+                'meta':True
+            }
         }),
         ('taxosum',{
             'label':'category_title',
@@ -253,17 +275,34 @@ class ColData_Woo(ColData_Base):
             'product': True,   
             'pricing': True,
         }),
+        ('pricing_rules',{
+            'label': 'meta:_pricing_rules',
+            'pricing':True,
+            'wp':{
+                'key':'post_title',
+                'meta':False
+            },
+            'product':True,
+        }),
         ('price', {
             'label':'regular_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'_regular_price',
+                'meta':True
+            },
         }),
         ('sale_price', {
             'label':'sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'_sale_price',
+                'meta':True
+            },
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',
@@ -271,6 +310,10 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('sale_price_dates_to', {
             'label':'sale_price_dates_to',
@@ -278,6 +321,10 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('RNR', {
             'label': 'meta:lc_rn_regular_price',
@@ -285,24 +332,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rn_regular_price',
+                'meta':True
+            },        
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rn_sale_price',
+                'meta':True
+            },        
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rn_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('RNT', {
             'label': 'meta:lc_rn_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rn_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('RPR', {
             'label': 'meta:lc_rp_regular_price',
@@ -310,24 +373,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rp_regular_price',
+                'meta':True
+            },        
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rp_sale_price',
+                'meta':True
+            },        
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rp_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('RPT', {
             'label': 'meta:lc_rp_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_rp_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('WNR', {
             'label': 'meta:lc_wn_regular_price',
@@ -335,24 +414,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wn_regular_price',
+                'meta':True
+            },        
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wn_sale_price',
+                'meta':True
+            },        
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wn_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('WNT', {
             'label': 'meta:lc_wn_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wn_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('WPR', {
             'label': 'meta:lc_wp_regular_price',
@@ -360,24 +455,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wp_regular_price',
+                'meta':True
+            },        
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wp_sale_price',
+                'meta':True
+            },        
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wp_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('WPT', {
             'label': 'meta:lc_wp_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_wp_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('DNR', {
             'label': 'meta:lc_dn_regular_price',
@@ -385,24 +496,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dn_regular_price',
+                'meta':True
+            },        
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dn_sale_price',
+                'meta':True
+            },        
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dn_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('DNT', {
             'label': 'meta:lc_dn_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dn_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('DPR', {
             'label': 'meta:lc_dp_regular_price',
@@ -410,24 +537,40 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dp_regular_price',
+                'meta':True
+            },        
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dp_sale_price',
+                'meta':True
+            },        
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dp_sale_price_dates_from',
+                'meta':True
+            },        
         }),
         ('DPT', {
             'label': 'meta:lc_dp_sale_price_dates_to',
             'product': True,
             'variation': True,
             'pricing': True,
+            'wp':{
+                'key':'lc_dp_sale_price_dates_to',
+                'meta':True
+            },        
         }),
         ('CVC', {
             'label': 'meta:commissionable_value',
@@ -435,48 +578,80 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'variation': True,
             'pricing': True,
-            'default': 0
+            'default': 0,
+            'wp':{
+                'key':'commissionable_value',
+                'meta':True
+            },     
         }),
         ('weight', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
+            'wp':{
+                'key':'_weight',
+                'meta':True
+            },     
         }),
         ('length', {
             'import': True,
             'product': True,
             'variation': True,
-            'shipping':True
+            'shipping':True,
+            'wp':{
+                'key':'_length',
+                'meta':True
+            },     
         }),
         ('width', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
+            'wp':{
+                'key':'_width',
+                'meta':True
+            },     
         }),
         ('height', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
+            'wp':{
+                'key':'_height',
+                'meta':True
+            },     
         }),
         ('stock', {
             'import': True,
             'product': True,
             'variation': True,
-            'inventory':True
+            'inventory':True,
+            'wp':{
+                'key':'_stock',
+                'meta':True
+            },     
         }),
         ('stock_status', {
             'import': True,
             'product': True,
             'variation': True,
-            'inventory':True
+            'inventory':True,
+            'wp':{
+                'key':'_stock_status',
+                'meta':True
+            },     
         }),
         ('manage_stock', {
             'product': True,
             'variation': True,
-            'inventory':True
+            'inventory':True,
+            'wp':{
+                'key':'_manage_stock',
+                'meta':True
+            },     
         }),
         ('Images',{
             'import': True,
@@ -488,6 +663,9 @@ class ColData_Woo(ColData_Base):
         ('last_import',{
             'label':'meta:last_import',
             'product': True,
+        }),
+        ('Updated',{
+            'import': True,
         })
     ])
 
@@ -512,6 +690,9 @@ class ColData_Woo(ColData_Base):
 
     def getInventoryCols(self):
         return self.getExportCols('inventory')
+
+    def getWPCols(self):
+        return self.getExportCols('wp')
 
     def getAttributeCols(self, attributes, vattributes):
         attributeCols = OrderedDict()

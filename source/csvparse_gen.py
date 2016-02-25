@@ -26,10 +26,12 @@ class ImportGenObject(ImportTreeObject):
     fullnamesum = descriptorUtils.safeKeyProperty(fullnamesumKey)
 
     def __init__(self, *args, **kwargs):
-        subs = kwargs['subs']
-        regex = kwargs['regex']
-        self.subs = subs
-        self.regex = regex
+        subs = kwargs.get('subs')
+        regex = kwargs.get('regex')
+        if subs:
+            self.subs = subs
+        if regex:
+            self.regex = regex
         super(ImportGenObject, self).__init__(*args, **kwargs)
 
     @classmethod

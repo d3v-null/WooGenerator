@@ -1343,8 +1343,8 @@ class listUtils:
         if not a:
             return b if b else OrderedDict()
         if not b: return a
-        c = OrderedDict(b.items())
-        for key, value in a.items():
+        c = OrderedDict(a.items())
+        for key, value in b.items():
             c[key] = value
         return c
 

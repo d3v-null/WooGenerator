@@ -92,11 +92,13 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
         super(ImportWooItem, self).__init__(*args, **kwargs)
 
 class ImportWooProduct(ImportWooItem, ImportGenProduct):
+    product_type = None
 
     def __init__(self, *args, **kwargs):
         super(ImportWooProduct, self).__init__(*args, **kwargs)
         self.categories = OrderedDict()
-        self['prod_type'] = self.product_type
+        if self.product_type:
+            self['prod_type'] = self.product_type
 
     def registerCategory(self, catData):
         self.registerAnything(
@@ -619,7 +621,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 for rule in objectData.get('dprplist', ''):
                     pricing_rules[PHPUtils.ruleset_uniqid()] = PHPUtils.unserialize(rule.to_pricing_rule())
 
-                objectData['_pricing_rules'] = PHPUtils.serialize(pricing_rules)
+                objectData['pricing_rules'] = PHPUtils.serialize(pricing_rules)
 
 
     def postProcessCategories(self, objectData):
