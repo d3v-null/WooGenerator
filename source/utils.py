@@ -11,7 +11,7 @@ import codecs
 import csv
 import cStringIO
 from uniqid import uniqid
-from phpserialize import dumps
+from phpserialize import dumps, loads
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -413,8 +413,17 @@ class PHPUtils:
         return uniqid(prefix, more_entropy)
 
     @staticmethod
+    def ruleset_uniqid():
+        return PHPUtils.uniqid("set_")
+
+    @staticmethod
     def serialize(thing):
         return dumps(thing)
+
+    @staticmethod
+    def unserialize(string):
+        return loads(string)
+
 
 def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
     return "|".join(filter(None,[

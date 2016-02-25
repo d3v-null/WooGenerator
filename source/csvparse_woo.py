@@ -1,4 +1,4 @@
-from utils import listUtils, SanitationUtils, TimeUtils
+from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils
 from csvparse_abstract import ObjList
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
 from collections import OrderedDict
@@ -591,27 +591,35 @@ class CSVParse_Woo(CSVParse_Gen):
                     self.registerMessage("found dprplist %s"%(dprplist))
                     self.addDynRules(objectData, 'dprp', dprplist)
 
-            objectData['dprcsum'] = '<br/>'.join(
-                filter( 
-                    None,
-                    map(
-                        lambda x: x.toHTML(),
-                        objectData.get( 'dprclist','')
+            if(objectData.get( 'dprclist','')):
+                objectData['dprcsum'] = '<br/>'.join(
+                    filter( 
+                        None,
+                        map(
+                            lambda x: x.toHTML(),
+                            objectData.get( 'dprclist','')
+                        )
                     )
                 )
-            )
-            self.registerMessage("dprcsum of %s is %s"%(objectData.index, objectData.get('dprcsum')))
+                self.registerMessage("dprcsum of %s is %s"%(objectData.index, objectData.get('dprcsum')))
 
-            objectData['dprpsum'] = '<br/>'.join(
-                filter( 
-                    None,
-                    map(
-                        lambda x: x.toHTML(),
-                        objectData.get('dprplist','')
+            if(objectData.get('dprplist','')):
+                objectData['dprpsum'] = '<br/>'.join(
+                    filter( 
+                        None,
+                        map(
+                            lambda x: x.toHTML(),
+                            objectData.get('dprplist','')
+                        )
                     )
                 )
-            )
-            self.registerMessage("dprpsum of %s is %s"%(objectData.index, objectData.get('dprpsum')))
+                self.registerMessage("dprpsum of %s is %s"%(objectData.index, objectData.get('dprpsum')))
+
+                pricing_rules = {}
+                for rule in objectData.get('dprplist', ''):
+                    pricing_rules[PHPUtils.ruleset_uniqid()] = PHPUtils.unserialize(rule.to_pricing_rule())
+
+                objectData['_pricing_rules'] = PHPUtils.serialize(pricing_rules)
 
 
     def postProcessCategories(self, objectData):

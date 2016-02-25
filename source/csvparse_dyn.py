@@ -86,13 +86,14 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     @property
     def pricing_rule_conditions(self):
-        roles = self.roles.split('|')
+        roles = map(unicode.lower, self.roles.split('|'))
         return {
             1: {
                 'args':{
                     'applies_to':'roles',
                     'roles':roles
-                }
+                },
+                'type':'apply_to'
             }
         }
     

@@ -826,7 +826,8 @@ with open(spoPath, 'w+') as spoFile:
 	        	('dprcIDlist', {}),
 	        	('dprcsum', {}),
 	        	('dprpIDlist', {}),
-	        	('dprpsum', {})
+	        	('dprpsum', {}),
+	        	('_pricing_rules', {})
 	        ]), tablefmt="html")
         ),
         length = len(dynProductList.objects)
