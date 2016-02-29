@@ -129,6 +129,11 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
             self.getCategories().values() + super(ImportWooProduct, self).getInheritanceAncestors()
         )
 
+    def getExtraSpecialCategory(self):
+        ancestorsSelf = self.getTaxoAncestors() + [self]
+        names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
+        return "Specials > " + names[0] + " Specials"
+
 class ImportWooSimpleProduct(ImportWooProduct):
     product_type = 'simple'
 
@@ -700,7 +705,7 @@ class CSVParse_Woo(CSVParse_Gen):
     def postProcessSpecials(self, objectData):
         # self.registerMessage(objectData.index)
 
-        if objectData.isProduct:
+        if objectData.isProduct or objectData.isVariation:
 
             ancestors = objectData.getInheritanceAncestors()
             for ancestor in reversed(ancestors):

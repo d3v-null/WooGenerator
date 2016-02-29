@@ -666,6 +666,7 @@ class ColData_Woo(ColData_Base):
         }),
         ('Updated',{
             'import': True,
+            'product':True
         })
     ])
 

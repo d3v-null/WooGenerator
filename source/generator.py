@@ -81,6 +81,14 @@ with open(yamlPath) as stream:
 	db_name = config.get('db_name')
 	tbl_prefix = config.get('tbl_prefix', '')
 
+	download = config.get('download')
+	skip_images = config.get('skip_images')
+	assert isinstance(download, bool), "%s %s" % tuple(map(str, [download, download.__class__] ))
+	assert isinstance(skip_images, bool), "%s %s" % tuple(map(str, [skip_images, skip_images.__class__] ))
+
+
+	currentSpecial = config.get('currentSpecial')
+
 #mandatory params
 assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb, woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
@@ -127,8 +135,6 @@ delete = True
 remeta = True
 resize = False
 rename = False
-skip_images = True
-download = False
 
 if variant == "ACC": 
 	genPath = os.path.join(inFolder, 'generator-solution.csv')
@@ -137,9 +143,6 @@ if variant == "SOL":
 	genPath = os.path.join(inFolder, 'generator-accessories.csv')
 
 DEBUG = True
-
-# currentSpecial = None
-currentSpecial = "SP2016-02-14-"
 
 ### PROCESS CONFIG ###
 
@@ -801,7 +804,8 @@ elif schema in woo_schemas:
 				specialProduct['catsum'] = "|".join(
 					filter(None,[
 						specialProduct.get('catsum', ""),
-						"specials"
+						"Specials",
+						specialProduct.getExtraSpecialCategory()
 					])
 				)
 			flaName, flaExt = os.path.splitext(flaPath)
@@ -890,70 +894,70 @@ elif schema in woo_schemas:
 		imageData = images
 	)
 
-with open(spoPath, 'w+') as spoFile:
-    def writeSection(title, description, data, length = 0, html_class="results_section"):
-        sectionID = SanitationUtils.makeSafeClass(title)
-        description = "%s %s" % (str(length) if length else "No", description)
-        spoFile.write('<div class="%s">'% html_class )
-        spoFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
-        spoFile.write('<h2>%s (%d)</h2>' % (title, length))
-        spoFile.write('</a>')
-        spoFile.write('<div class="collapse" id="%s">' % sectionID)
-        spoFile.write('<p class="description">%s</p>' % description)
-        spoFile.write('<p class="data">' )
-        spoFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
-        spoFile.write('</p>')
-        spoFile.write('</div>')
-        spoFile.write('</div>')
+	with open(spoPath, 'w+') as spoFile:
+	    def writeSection(title, description, data, length = 0, html_class="results_section"):
+	        sectionID = SanitationUtils.makeSafeClass(title)
+	        description = "%s %s" % (str(length) if length else "No", description)
+	        spoFile.write('<div class="%s">'% html_class )
+	        spoFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
+	        spoFile.write('<h2>%s (%d)</h2>' % (title, length))
+	        spoFile.write('</a>')
+	        spoFile.write('<div class="collapse" id="%s">' % sectionID)
+	        spoFile.write('<p class="description">%s</p>' % description)
+	        spoFile.write('<p class="data">' )
+	        spoFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
+	        spoFile.write('</p>')
+	        spoFile.write('</div>')
+	        spoFile.write('</div>')
 
-    spoFile.write('<!DOCTYPE html>')
-    spoFile.write('<html lang="en">')
-    spoFile.write('<head>')
-    spoFile.write("""
-<!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	    spoFile.write('<!DOCTYPE html>')
+	    spoFile.write('<html lang="en">')
+	    spoFile.write('<head>')
+	    spoFile.write("""
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-""")
-    spoFile.write('<body>')
-    spoFile.write('<div class="matching">')
-    spoFile.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+	""")
+	    spoFile.write('<body>')
+	    spoFile.write('<div class="matching">')
+	    spoFile.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
 
-    dynProducts = [ \
-    	product \
-    	for product in products.values() \
-    	if product.get('dprpIDlist') or product.get('dprcIDlist') \
-    ]
+	    dynProducts = [ \
+	    	product \
+	    	for product in products.values() \
+	    	if product.get('dprpIDlist') or product.get('dprcIDlist') \
+	    ]
 
-    dynProductList = WooObjList("fileName", dynProducts )
-    
-    writeSection(
-        "Dynamic Pricing Rules", 
-        "all products and their dynaimc pricing rules",
-        re.sub("<table>","<table class=\"table table-striped\">", 
-        	dynProductList.tabulate(cols=OrderedDict([
-	        	('itemsum', {}),
-	        	('dprcIDlist', {}),
-	        	('dprcsum', {}),
-	        	('dprpIDlist', {}),
-	        	('dprpsum', {}),
-	        	('pricing_rules', {})
-	        ]), tablefmt="html")
-        ),
-        length = len(dynProductList.objects)
-    )
+	    dynProductList = WooObjList("fileName", dynProducts )
+	    
+	    writeSection(
+	        "Dynamic Pricing Rules", 
+	        "all products and their dynaimc pricing rules",
+	        re.sub("<table>","<table class=\"table table-striped\">", 
+	        	dynProductList.tabulate(cols=OrderedDict([
+		        	('itemsum', {}),
+		        	('dprcIDlist', {}),
+		        	('dprcsum', {}),
+		        	('dprpIDlist', {}),
+		        	('dprpsum', {}),
+		        	('pricing_rules', {})
+		        ]), tablefmt="html")
+	        ),
+	        length = len(dynProductList.objects)
+	    )
 
-    spoFile.write('</div>')
-    spoFile.write("""
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-""")
-    spoFile.write('</body>')
-    spoFile.write('</html>')
+	    spoFile.write('</div>')
+	    spoFile.write("""
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+	""")
+	    spoFile.write('</body>')
+	    spoFile.write('</html>')
 
-for source, error in import_errors.items():
-	Registrar.printAnything(source, error, '!')
+	for source, error in import_errors.items():
+		Registrar.printAnything(source, error, '!')
 
 #########################################
 # Attempt import
