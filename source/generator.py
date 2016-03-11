@@ -767,6 +767,11 @@ elif schema in woo_schemas:
 	#variations
 		
 	variationCols = colData.getVariationCols()
+
+	if skip_images:
+		if(variationCols.get('Images')):
+			del variationCols['Images']
+
 	# print 'variationCols:', variationCols
 	attributeMetaCols = colData.getAttributeMetaCols(vattributes)
 	# print 'attributeMetaCols:', attributeMetaCols
@@ -800,6 +805,15 @@ elif schema in woo_schemas:
 			products.values()[:]
 		)
 		if specialProducts:
+			flaName, flaExt = os.path.splitext(flaPath)
+			fldPath = os.path.join(outFolder , flaName+"-destroy-"+currentSpecial+flaExt)
+			exportItemsCSV(
+					fldPath,
+					colData.getColNames(
+						listUtils.combineOrderedDicts( productCols, attributeCols)
+					),
+					specialProducts
+				)
 			for specialProduct in specialProducts:
 				specialProduct['catsum'] = "|".join(
 					filter(None,[
@@ -855,12 +869,28 @@ elif schema in woo_schemas:
 			updatedProducts
 		)
 
-	#Updated
-	updatedProducts = filter(
+	#updatedVariations
+	updatedVariations = filter(
+		isUpdated,
+		variations.values()[:]
+	)
+	if updatedVariations:
+		flvName, flvExt = os.path.splitext(flvPath)
+		flvuPath = os.path.join(outFolder , flvName+"-Updated"+flvExt)
+		exportItemsCSV(
+			flvuPath,
+			colData.getColNames(
+				listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
+			),
+			updatedVariations
+		)
+
+	#pricingRule
+	pricingRuleProducts = filter(
 		hasPricingRule,
 		products.values()[:]
 	)
-	if updatedProducts:
+	if pricingRuleProducts:
 		flaName, flaExt = os.path.splitext(flaPath)
 		flpPath = os.path.join(outFolder , flaName+"-pricing_rules"+flaExt)
 		exportItemsCSV(
@@ -868,7 +898,7 @@ elif schema in woo_schemas:
 			colData.getColNames(
 				listUtils.combineOrderedDicts(productCols, attributeCols)
 			),
-			updatedProducts
+			pricingRuleProducts
 		)
 
 	pricingCols = colData.getPricingCols()

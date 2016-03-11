@@ -1272,7 +1272,7 @@ class TimeUtils:
 
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
-    gDriveTimeFormat = "%d/%m/%Y"
+    gDriveTimeFormat = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
     def starStrptime(string, fmt = wpTimeFormat ):

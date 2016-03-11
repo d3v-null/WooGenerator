@@ -667,7 +667,12 @@ class ColData_Woo(ColData_Base):
         ('Updated',{
             'import': True,
             'product':True
-        })
+        }),
+        ('post_status', {
+            'import':True,
+            'product':True,
+            'variation':True
+        }),
     ])
 
     def __init__( self, data = None):

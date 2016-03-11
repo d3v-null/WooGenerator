@@ -301,7 +301,7 @@ class CSVParse_Woo(CSVParse_Gen):
                     'post_status']
 
         extra_defaults =  OrderedDict([
-            ('post_status', 'publish'),
+            # ('post_status', 'publish'),
             # ('last_import', importName),
         ])
 
