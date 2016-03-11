@@ -69,23 +69,20 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
     if not os.path.exists(path):
         os.mkdir(path)
 
-maPath = os.path.join(inFolder, "act_cilent_export_all_2016-01-15.csv")
-saPath = os.path.join(inFolder, "wordpress_export_all_2016-01-20.csv")
+maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
+saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
 
 testMode = False
-testMode = True
+# testMode = True
 if(testMode):
-    maPath = os.path.join(inFolder, "200-act-records.csv")
-    saPath = os.path.join(inFolder, "100-wp-records.csv")
+    maPath = os.path.join(inFolder, "500-act-records.csv")
+    saPath = os.path.join(inFolder, "500-wp-records.csv")
 
 fileSuffix = "_test" if testMode else ""
 
 moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
-
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
-
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
-
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
 
 #########################################
@@ -97,7 +94,7 @@ colData = ColData_User()
 saRows = []
 
 sql_run = not testMode
-# sql_run = True
+sql_run = False
 
 if sql_run: 
     with \
@@ -147,7 +144,7 @@ saParser = CSVParse_User(
 if saRows:
     saParser.analyseRows(saRows)
 else:
-    assert testMode
+    print "generating slave", timediff()
     saParser.analyseFile(saPath)
 print "generated slave", timediff()
 
@@ -168,7 +165,7 @@ print "importing data"
 
 clear_pkl = False
 try_pkl = not testMode
-try_pkl = False
+# try_pkl = False
 clear_pkl = True
 
 if(clear_pkl): 

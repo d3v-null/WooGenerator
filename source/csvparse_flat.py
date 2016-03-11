@@ -136,6 +136,13 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._objList_type = 'User'
 
+    def getSanitizer(self, tablefmt):
+        if tablefmt is 'html':
+            return SanitationUtils.makeSafeHTMLOutput
+        else:
+            return super(self, UsrObjList).getSanitizer(tablefmt)
+
+
     def getReportCols(self):
         usrData = ColData_User()
         report_cols = usrData.getReportCols()

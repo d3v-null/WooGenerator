@@ -127,7 +127,8 @@ class ImportObject(OrderedDict, Registrar):
         Registrar.__init__(self)
         if rowcount is not None:
             self['rowcount'] = rowcount
-        assert isinstance(self['rowcount'], int), "must specify integer rowcount"
+        # if not self.get('rowcount'): self['rowcount'] = 0
+        # assert isinstance(self['rowcount'], int), "must specify integer rowcount not %s" % (self['rowcount'])
         if row is not None:
             self._row = row
         else:
@@ -223,9 +224,12 @@ class ObjList(list):
         if values:
             return values[0]
 
+    def getSanitizer(self, tablefmt=None):
+        return SanitationUtils.makeUnicodeCSVSafe
+
     def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
-        sanitizer = SanitationUtils.makeUnicodeCSVSafe
+        sanitizer = self.getSanitizer(tablefmt);
         # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
         if(objs):
             # print "there are objects"
@@ -235,7 +239,13 @@ class ObjList(list):
                 header += [col]
             table = []
             for obj in objs:
-                table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
+                row = [obj.index]
+                for col in cols.keys():
+                    # if col == 'Address':
+                    #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
+                    row += [ sanitizer(obj.get(col) )or ""]
+                table += [row]
+                # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
             return tabulate(table, headers=header, tablefmt=tablefmt)
             # print repr(table)

@@ -83,6 +83,8 @@ class SanitationUtils:
     def anythingToAscii(thing):
         if isinstance(thing, unicode):
             string = thing.encode(DEFAULT_ENCODING)
+        elif thing is None:
+            string = ""
         else:
             string = str(thing)
         return string.encode('string_escape')
@@ -187,8 +189,8 @@ class SanitationUtils:
     @staticmethod
     def sanitizeNewlines(string):
         if '\n' in string: 
-            if DEBUG: print "!!! found newline in string"
-        return re.sub(r'\n','</br>', string)
+            if(DEBUG): print "!!! found newline in string"
+        return re.sub('\n','</br>', string)
 
     @staticmethod
     def compileRegex(subs):
@@ -238,6 +240,14 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.anythingToAscii
+        )(string)
+
+    @staticmethod
+    def makeSafeHTMLOutput(string):
+        return SanitationUtils.compose(
+            SanitationUtils.sanitizeNewlines,
+            SanitationUtils.cleanXMLString,
+            SanitationUtils.makeUnicodeCSVSafe
         )(string)
 
     @staticmethod
@@ -1546,6 +1556,11 @@ if __name__ == '__main__':
     # print 'a', repr(a)
     # b = SanitationUtils.makeSafeOutput(a)
     # print 'b', repr(b)
+    b = SanitationUtils.makeSafeHTMLOutput(u"T\u00C8A GRAHAM\nYEAH")
+    print 'b', b, repr(b)
+    c = SanitationUtils.makeSafeHTMLOutput(None)
+    print 'c', c, repr(c)
+    print SanitationUtils.makeSafeOutput(None)
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
 
