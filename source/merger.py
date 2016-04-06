@@ -165,8 +165,8 @@ print "importing data"
 
 clear_pkl = False
 try_pkl = not testMode
-# try_pkl = False
-clear_pkl = True
+try_pkl = False
+# clear_pkl = True
 
 if(clear_pkl): 
     try:
