@@ -123,8 +123,7 @@ changeDataFmt = \
     [
         user_id, 
         time, 
-        map2table(changed), 
-        map2table(subtractDicts(data, changed)) if isinstance(changed, dict) else data 
+        "C:%s<br/>S:%s" % (map2table(changed), map2table(subtractDicts(data, changed)) if isinstance(changed, dict) else data )
     ] \
     for rowcount, (user_id, time, changed, data) in enumerate(changeDataFmt[1:]) \
     if isinstance(changed, dict) 

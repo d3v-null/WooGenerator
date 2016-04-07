@@ -280,7 +280,7 @@ class ObjList(list):
 class CSVParse_Base(object, Registrar):
     objectContainer = ImportObject
 
-    def __init__(self, cols, defaults ):
+    def __init__(self, cols, defaults):
         super(CSVParse_Base, self).__init__()
         Registrar.__init__(self)
 
@@ -406,7 +406,7 @@ class CSVParse_Base(object, Registrar):
                 continue
         self.registerMessage("Completed analysis") 
 
-    def analyseFile(self, fileName):
+    def analyseFile(self, fileName, streamFilter=None):
         self.registerMessage("Analysing file: {}".format(fileName))
         # self.clearTransients()
 

@@ -35,6 +35,8 @@ pklFolder = "../pickles/"
 
 yamlPath = "merger_config.yaml"
 
+userFile = cardFile = emailFile = sinceM = sinceS = False
+
 with open(yamlPath) as stream:
     config = yaml.load(stream)
 
@@ -61,6 +63,18 @@ with open(yamlPath) as stream:
     db_name = config.get('db_name')
     tbl_prefix = config.get('tbl_prefix', '')
 
+    if 'userFile' in config.keys():
+        userFile = config.get('userFile')
+    if 'cardFile' in config.keys():
+        cardFile = config.get('cardFile')
+    if 'emailFile' in config.keys():
+        emailFile = config.get('emailFile')
+    if 'sinceM' in config.keys():
+        sinceM = config.get('sinceM')
+    if 'sinceS' in config.keys():
+        sinceS = config.get('sinceS')
+
+
 #########################################
 # Set up directories
 #########################################
@@ -84,6 +98,26 @@ moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
+
+#########################################
+# Prepare Filter Data
+#########################################
+
+filterFiles = {
+    'users': userFile, 
+    'emails': emailFile, 
+    'cards': cardFile
+}
+filterItems = {}
+if any(filterFiles) :
+    for key, filterFile in filterFiles:
+        if filterFile:
+            with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
+                filterItems[key] = list(filterFileObj)
+if sinceM:
+    filterItems['sinceM'] = sinceM
+if sinceS:
+    filterItems['sinceS'] = sinceS
 
 #########################################
 # Download / Generate Slave Parser Object
@@ -139,7 +173,8 @@ if sql_run:
 
 saParser = CSVParse_User(
     cols = colData.getImportCols(),
-    defaults = colData.getDefaults()
+    defaults = colData.getDefaults(),
+    filterItems = filterItems
 )
 if saRows:
     saParser.analyseRows(saRows)
@@ -149,7 +184,7 @@ else:
 print "generated slave", timediff()
 
 #########################################
-# Generate ACT CSV files
+# Generate ACT CSV files using shell
 #########################################
 
 # TODO: This
