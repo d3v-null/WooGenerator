@@ -85,6 +85,24 @@ class ImportUser(ImportFlat):
     billing_address = descriptorUtils.safeKeyProperty('Address')
     shipping_address = descriptorUtils.safeKeyProperty('Home Address')
 
+    @property
+    def act_modtime(self):
+        return TimeUtils.actStrptime(self.get('Edited in Act', 0))
+
+    @property
+    def wp_modtime(self):
+        return TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) )
+
+    @property
+    def last_sale(self):
+        return TimeUtils.actStrptime(self.get('Last Sale', 0))
+
+    @property
+    def last_modtime(self):
+        times = [self.act_modtime, self.wp_modtime]
+        return max(times)
+    
+
     def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
         for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema']:
@@ -136,11 +154,13 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._objList_type = 'User'
 
-    def getSanitizer(self, tablefmt):
+    def getSanitizer(self, tablefmt=None):
         if tablefmt is 'html':
             return SanitationUtils.makeSafeHTMLOutput
+        elif tablefmt is 'simple':
+            return SanitationUtils.anythingToAscii
         else:
-            return super(self, UsrObjList).getSanitizer(tablefmt)
+            return super(UsrObjList, self).getSanitizer(tablefmt)
 
 
     def getReportCols(self):
@@ -158,7 +178,7 @@ class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
 
-    def __init__(self, cols=[], defaults = {}, contact_schema = None):
+    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None):
         extra_cols = [  
             # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date', 
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
@@ -172,6 +192,7 @@ class CSVParse_User(CSVParse_Flat):
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         super(CSVParse_User, self).__init__(cols, defaults)
         self.contact_schema = contact_schema
+        self.filterItems = filterItems
         # self.itemIndexer = self.getUsername
 
     # def getKwargs(self, allData, container, **kwargs):
@@ -197,6 +218,7 @@ class CSVParse_User(CSVParse_Flat):
         self.nocards = OrderedDict()
         self.usernames = OrderedDict()
         self.nousernames = OrderedDict()
+        self.filtered = OrderedDict()
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)
@@ -273,7 +295,41 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'nousernames'
         )
 
+    def registerFiltered(self, objectData):
+        self.registerAnything(
+            objectData,
+            self.filtered,
+            objectData.index,
+            singular = True,
+            registerName = 'filtered'
+        )
+
+    def validateFilters(self, objectData):
+        if self.filterItems:
+            if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']: 
+                self.registerWarning("could not register object %s because did not match role" % objectData.__repr__() )
+                return False
+            if 'sinceM' in self.filterItems.keys() and objectData.act_modtime < self.filterItems['sinceM']:
+                self.registerWarning("could not register object %s because did not meet sinceM condition" % objectData.__repr__() )
+                return False
+            if 'sinceS' in self.filterItems.keys() and objectData.wp_modtime < self.filterItems['sinceS']: 
+                self.registerWarning("could not register object %s because did not meet sinceS condition" % objectData.__repr__() )
+                return False
+            if objectData.username in self.filterItems.get('users', []): return True
+            if objectData.MYOBID in self.filterItems.get('cards', []): return True
+            if objectData.email in self.filterItems.get('emails', []): return False
+            self.registerWarning("could not register object %s because did not meet users, cards or emails conditions" % objectData.__repr__() )
+            return False
+        else:
+            return True
+
+
     def registerObject(self, objectData):
+
+        if not self.validateFilters(objectData):
+            self.registerFiltered(objectData)
+            return
+
         email = objectData.email
         if email and SanitationUtils.stringIsEmail(email) :
             self.registerEmail(objectData, email)

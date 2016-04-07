@@ -13,7 +13,7 @@ FROM (
     LEFT JOIN (
         SELECT
             tu.`user_id` as `user_id`,
-            MAX(tu.`time`) as `updated`
+            MAX(tu.`time`) as `Edited in Wordpress`
         FROM
             %s tu
         GROUP BY 

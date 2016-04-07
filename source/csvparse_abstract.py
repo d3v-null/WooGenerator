@@ -6,7 +6,7 @@ import csv
 from coldata import ColData_User
 from copy import deepcopy, copy
 
-DEBUG = False
+DEBUG = True
 DEBUG_PARSER = False
 DEBUG_MESSAGE = False
 

@@ -8,6 +8,7 @@ from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
 from coldata import ColData_User
 from tabulate import tabulate
+from itertools import chain
 # from pprint import pprint
 # import sys
 from copy import deepcopy
@@ -25,6 +26,10 @@ start_time = time.time()
 def timediff():
     return time.time() - start_time
 
+DEBUG = True
+testMode = False
+# testMode = True
+
 ### DEFAULT CONFIG ###
 
 inFolder = "../input/"
@@ -38,6 +43,8 @@ yamlPath = "merger_config.yaml"
 userFile = cardFile = emailFile = sinceM = sinceS = False
 
 with open(yamlPath) as stream:
+    optionNamePrefix = 'test_' if testMode else ''
+
     config = yaml.load(stream)
 
     if 'inFolder' in config.keys():
@@ -52,16 +59,16 @@ with open(yamlPath) as stream:
     MASTER_NAME = config.get('master_name', 'MASTER')
     SLAVE_NAME = config.get('slave_name', 'SLAVE')
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
-    ssh_user = config.get('ssh_user')
-    ssh_pass = config.get('ssh_pass')
-    ssh_host = config.get('ssh_host')
-    ssh_port = config.get('ssh_port', 22)
-    remote_bind_host = config.get('remote_bind_host', '127.0.0.1')
-    remote_bind_port = config.get('remote_bind_port', 3306)
-    db_user = config.get('db_user')
-    db_pass = config.get('db_pass')
-    db_name = config.get('db_name')
-    tbl_prefix = config.get('tbl_prefix', '')
+    ssh_user = config.get(optionNamePrefix+'ssh_user')
+    ssh_pass = config.get(optionNamePrefix+'ssh_pass')
+    ssh_host = config.get(optionNamePrefix+'ssh_host')
+    ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
+    remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
+    remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
+    db_user = config.get(optionNamePrefix+'db_user')
+    db_pass = config.get(optionNamePrefix+'db_pass')
+    db_name = config.get(optionNamePrefix+'db_name')
+    tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
 
     if 'userFile' in config.keys():
         userFile = config.get('userFile')
@@ -84,10 +91,9 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
         os.mkdir(path)
 
 maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
+maPath = os.path.join(inFolder, "ACT Report_Entire Database_06.04.16.csv")
 saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
 
-testMode = False
-# testMode = True
 if(testMode):
     maPath = os.path.join(inFolder, "500-act-records.csv")
     saPath = os.path.join(inFolder, "500-wp-records.csv")
@@ -106,18 +112,25 @@ pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
 filterFiles = {
     'users': userFile, 
     'emails': emailFile, 
-    'cards': cardFile
+    'cards': cardFile,
 }
 filterItems = {}
 if any(filterFiles) :
-    for key, filterFile in filterFiles:
+    for key, filterFile in filterFiles.items():
         if filterFile:
             with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
-                filterItems[key] = list(filterFileObj)
+                filterItems[key] = [\
+                    re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)\
+                    for line in filterFileObj\
+                ]
+
+                # print "filterItems[%s] = %s" % (key, filterItems[key])
 if sinceM:
-    filterItems['sinceM'] = sinceM
+    filterItems['sinceM'] = TimeUtils.wpStrptime(sinceM)
 if sinceS:
-    filterItems['sinceS'] = sinceS
+    filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
+
+# filterItems = None
 
 #########################################
 # Download / Generate Slave Parser Object
@@ -127,26 +140,32 @@ colData = ColData_User()
 
 saRows = []
 
-sql_run = not testMode
-sql_run = False
+sql_run = True
+# sql_run = not testMode
+# sql_run = False
+
+SSHTunnelForwarderParams = {
+    'ssh_address_or_host':(ssh_host, ssh_port),
+    'ssh_password':ssh_pass,
+    'ssh_username':ssh_user,
+    'remote_bind_address':(remote_bind_host, remote_bind_port)
+}
+MySQLdbConnectParams = {
+    'host':'127.0.0.1',
+    'user':db_user,
+    'passwd':db_pass,
+    'db':db_name
+}
 
 if sql_run: 
     with \
-        SSHTunnelForwarder(
-            (ssh_host, ssh_port),
-            ssh_password=ssh_pass,
-            ssh_username=ssh_user,
-            remote_bind_address=(remote_bind_host, remote_bind_port)
-        ) as server, \
+        SSHTunnelForwarder(**SSHTunnelForwarderParams) as server, \
         open(sqlPath) as sqlFile:
         # server.start()
         print server.local_bind_address
-        conn = MySQLdb.connect(
-            host='127.0.0.1',
-            port=server.local_bind_port,
-            user=db_user,
-            passwd=db_pass,
-            db=db_name)
+
+        MySQLdbConnectParams['port'] = server.local_bind_port
+        conn = MySQLdb.connect( **MySQLdbConnectParams )
 
         wpCols = colData.getWPCols()
 
@@ -169,7 +188,12 @@ if sql_run:
         # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
         headers = [i[0] for i in cursor.description]
         # print headers
-        saRows = [headers] + list(cursor.fetchall())
+        if testMode:
+            saRows = [headers] + list(cursor.fetchall())[:100]
+        else:
+            saRows = [headers] + list(cursor.fetchall())
+
+# print tabulate(saRows, tablefmt="simple")
 
 saParser = CSVParse_User(
     cols = colData.getImportCols(),
@@ -181,7 +205,7 @@ if saRows:
 else:
     print "generating slave", timediff()
     saParser.analyseFile(saPath)
-print "generated slave", timediff()
+print "analysed %d slave objects" % len(saParser.objects), timediff()
 
 #########################################
 # Generate ACT CSV files using shell
@@ -200,7 +224,7 @@ print "importing data"
 
 clear_pkl = False
 try_pkl = not testMode
-try_pkl = False
+# try_pkl = False
 # clear_pkl = True
 
 if(clear_pkl): 
@@ -221,16 +245,18 @@ except Exception as e:
     maParser = CSVParse_User(
         cols = colData.getImportCols(),
         defaults = colData.getDefaults(),
-        contact_schema = 'act'
+        contact_schema = 'act',
+        filterItems = filterItems
     )
 
     maParser.analyseFile(maPath)
-    print "imported master", timediff()
+    print "imported %d master objects" % len(maParser.objects), timediff()
 
-    pkl_file = open(pklPath, 'wb')
-    print "dumping pickle", timediff()
-    pickle.dump(maParser, pkl_file)
 
+    if try_pkl:
+        pkl_file = open(pklPath, 'wb')
+        print "dumping pickle", timediff()
+        pickle.dump(maParser, pkl_file)
 
 #requirements for new account in wordpress:
 # email valid and direct customer TechnoTan
@@ -278,23 +304,29 @@ def contactActLike(obj):
     nameSum = " ".join(filter(None, names))
     return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
 
+def printBasicColumns(users):
+    usrList = UsrObjList()
+    for user in users:
+        usrList.addObject(user)
+    print usrList.tabulate(
+        OrderedDict([
+            ('E-mail', {}),
+            ('MYOB Card ID', {}),
+            ('Address', {}),
+            ('Home Address', {}),
+            ('Edited in Wordpress', {})
+        ]),
+        tablefmt = 'html'
+    )
 
+# printBasicColumns( list(chain( *maParser.emails.values() ))[:100] )
+printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
 
-# usrList = UsrObjList()
-# for email, users in maParser.emails.items()[:100]:
-#     for user in users:
-#         usrList.addObject(user)
-
-# print usrList.tabulate(
-#     OrderedDict([
-#         ('E-mail', {}),
-#         ('MYOB Card ID', {}),
-#         ('Address', {}),
-#         ('Home Address', {})
-#     ]),
-#     tablefmt = 'html'
-# )
-
+first = list(chain(*saParser.emails.values()))[0]
+print first.__repr__()
+print first['Edited in Wordpress']
+print TimeUtils.wpStrptime(first['Edited in Wordpress'])
+print first.wp_modtime
 
 # # for email, users in maParser.emails.items():
 # #     for user in users:
@@ -318,9 +350,22 @@ class SyncUpdate(object):
         self._oldMObject = oldMObject
         self._oldSObject = oldSObject
         self._tTime = TimeUtils.wpStrptime( lastSync )
-        self._mTime = TimeUtils.actStrptime( self._oldMObject.get('Edited in Act'))
-        self._sTime = TimeUtils.wpStrptime( self._oldSObject.get('Wordpress Updated') )
-        self._bTime = TimeUtils.actStrptime( self._oldMObject.get('Last Sale'))
+        self._mTime = self._oldMObject.act_modtime
+        self._sTime = self._oldSObject.wp_modtime
+        self._bTime = self._oldMObject.last_sale
+
+#         print """\
+# creating SyncUpdate object
+#  -> %s
+#  -> %s
+#  -> %s
+#  -> %s""" % (
+#     oldMObject.__repr__(),
+#     oldSObject.__repr__(),
+#     self._mTime,
+#     self._sTime
+# )
+
         self._winner = SLAVE_NAME if(self._sTime >= self._mTime) else MASTER_NAME
         
         self._newSObject = False
@@ -347,7 +392,7 @@ class SyncUpdate(object):
                 if(self.mMod):
                     self._static = False
                     # self._importantStatic = False
-
+# 
     @property
     def oldMObject(self): return self._oldMObject
     @property
@@ -654,6 +699,11 @@ denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slave
 denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
 globalMatches.addMatches( usernameMatcher.pureMatches)
 
+# debug stuff
+# if(DEBUG):
+#     print "all username matches"
+#     print usernameMatcher.matches.tabulate(tablefmt="simple");
+
 print "processing cards"
 
 #for every card in slave not already matched, check that it exists in master
@@ -667,6 +717,10 @@ denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatc
 denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
 
 globalMatches.addMatches( cardMatcher.pureMatches)
+
+# if(DEBUG):
+#     print "all card matches"
+#     print cardMatcher.matches.tabulate(tablefmt="simple");
 
 # #for every email in slave, check that it exists in master
 

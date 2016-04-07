@@ -1210,14 +1210,22 @@ class ColData_User(ColData_Base):
         #     'report': True
         # }),
         ('Edited in Act', {
+            'wp': {
+                'meta': True, 
+                'key': 'edited_in_act'
+            },
             'import': True,
-            # 'report': True
+            'report': True
         }),
-        ('Wordpress Updated', {
+        ('Edited in Wordpress', {
             'import':True,
-            # 'report':True
+            'report':True
         }),
         ('Last Sale', {
+            'wp': {
+                'meta': True, 
+                'key': 'act_last_sale'
+            },
             'import': True,
             # 'report': True
         })
