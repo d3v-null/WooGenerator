@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils #listUtils, 
+from utils import SanitationUtils, TimeUtils, HtmlReporter #listUtils, 
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
@@ -28,7 +28,7 @@ def timediff():
 
 DEBUG = True
 testMode = False
-# testMode = True
+testMode = True
 
 ### DEFAULT CONFIG ###
 
@@ -347,12 +347,12 @@ class SyncUpdate(object):
     def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
 
-        self._oldMObject = oldMObject
-        self._oldSObject = oldSObject
-        self._tTime = TimeUtils.wpStrptime( lastSync )
-        self._mTime = self._oldMObject.act_modtime
-        self._sTime = self._oldSObject.wp_modtime
-        self._bTime = self._oldMObject.last_sale
+        self.oldMObject = oldMObject
+        self.oldSObject = oldSObject
+        self.tTime = TimeUtils.wpStrptime( lastSync )
+        self.mTime = self.oldMObject.act_modtime
+        self.sTime = self.oldSObject.wp_modtime
+        self.bTime = self.oldMObject.last_sale
 
 #         print """\
 # creating SyncUpdate object
@@ -362,17 +362,17 @@ class SyncUpdate(object):
 #  -> %s""" % (
 #     oldMObject.__repr__(),
 #     oldSObject.__repr__(),
-#     self._mTime,
-#     self._sTime
+#     self.mTime,
+#     self.sTime
 # )
 
-        self._winner = SLAVE_NAME if(self._sTime >= self._mTime) else MASTER_NAME
+        self._winner = SLAVE_NAME if(self.sTime >= self.mTime) else MASTER_NAME
         
-        self._newSObject = False
-        self._newMObject = False
-        self._static = True
-        self._importantStatic = True
-        self._syncWarnings = OrderedDict()
+        self.newSObject = False
+        self.newMObject = False
+        self.static = True
+        self.importantStatic = True
+        self.syncWarnings = OrderedDict()
         self.updates = 0
         self.importantUpdates = 0
         # self.problematic = False
@@ -388,37 +388,15 @@ class SyncUpdate(object):
                 might_be_sEdited = True
             if(might_be_sEdited):
                 # print repr(oldSObject), "might be edited"
-                self._sTime = self._tTime
+                self.sTime = self.tTime
                 if(self.mMod):
-                    self._static = False
-                    # self._importantStatic = False
+                    self.static = False
+                    # self.importantStatic = False
 # 
     @property
-    def oldMObject(self): return self._oldMObject
+    def sUpdated(self): return self.newSObject
     @property
-    def oldSObject(self): return self._oldSObject
-    @property
-    def newMObject(self): return self._newMObject
-    @property
-    def newSObject(self): return self._newSObject
-    @property
-    def syncWarnings(self): return self._syncWarnings
-    @property
-    def sUpdated(self): return self._newSObject
-    @property
-    def mUpdated(self): return self._newMObject
-    @property
-    def static(self): return self._static
-    @property
-    def importantStatic(self): return self._importantStatic
-    @property
-    def mTime(self): return self._mTime
-    @property
-    def sTime(self): return self._sTime
-    @property
-    def tTime(self): return self._tTime
-    @property
-    def bTime(self): return self._bTime
+    def mUpdated(self): return self.newMObject
     @property
     def lTime(self): return max(self.mTime, self.sTime)
     @property
@@ -443,10 +421,10 @@ class SyncUpdate(object):
         return value
 
     def getMValue(self, col):
-        return self.sanitizeValue(col, self._oldMObject.get(col) or "")
+        return self.sanitizeValue(col, self.oldMObject.get(col) or "")
 
     def getSValue(self, col):
-        return self.sanitizeValue(col, self._oldSObject.get(col) or "")
+        return self.sanitizeValue(col, self.oldSObject.get(col) or "")
 
     def colIdentical(self, col):
         mValue = self.getMValue(col)
@@ -498,10 +476,10 @@ class SyncUpdate(object):
 
         return False
 
-    def addSyncWarning(self, col, subject, reason, oldVal =  "", newVal = ""):
-        if( col not in self._syncWarnings.keys()):
-            self._syncWarnings[col] = []
-        self._syncWarnings[col].append((subject, reason, oldVal, newVal))
+    def addSyncWarning(self, col, subject, reason, oldVal =  "", newVal = "", data = {}):
+        if( col not in self.syncWarnings.keys()):
+            self.syncWarnings[col] = []
+        self.syncWarnings[col].append((subject, reason, oldVal, newVal, data))
 
     def displaySyncWarnings(self, tablefmt=None):
         if self.syncWarnings:
@@ -510,7 +488,7 @@ class SyncUpdate(object):
             header = ["Column", "Reason", "Old", "New"]
             subjects = {}
             for col, warnings in self.syncWarnings.items():
-                for subject, reason, oldVal, newVal in warnings:    
+                for subject, reason, oldVal, newVal, data in warnings:    
                     if subject not in subjects.keys():
                         subjects[subject] = []
                     subjects[subject] += [map( 
@@ -527,7 +505,7 @@ class SyncUpdate(object):
     # def getOldLoserObject(self, winner=None):
     #     if not winner: winner = self._winner
     #     if(winner == MASTER_NAME):
-    #         oldLoserObject = self._oldSObject
+    #         oldLoserObject = self.oldSObject
 
     def opposite_src(self, subject):
         if subject == MASTER_NAME:
@@ -537,38 +515,39 @@ class SyncUpdate(object):
 
     def loserUpdate(self, winner, col, reason = "", data={}):
         if(winner == MASTER_NAME):
-            # oldLoserObject = self._oldSObject
+            # oldLoserObject = self.oldSObject
             oldLoserValue = self.getSValue(col)
-            # oldWinnerObject = self._oldMObject
+            # oldWinnerObject = self.oldMObject
             oldWinnerValue = self.getMValue(col)
-            if(not self._newSObject): self._newSObject = deepcopy(sObject)
-            newLoserObject = self._newSObject
+            if(not self.newSObject): self.newSObject = deepcopy(sObject)
+            newLoserObject = self.newSObject
         elif(winner == SLAVE_NAME):
-            # oldLoserObject = self._oldMObject
+            # oldLoserObject = self.oldMObject
             oldLoserValue = self.getMValue(col)
-            # oldWinnerObject = self._oldSObject
+            # oldWinnerObject = self.oldSObject
             oldWinnerValue = self.getSValue(col)
-            if(not self._newMObject): self._newMObject = deepcopy(mObject)
-            newLoserObject = self._newMObject
+            if(not self.newMObject): self.newMObject = deepcopy(mObject)
+            newLoserObject = self.newMObject
         # if data.get('warn'): 
-        self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue)
-        if data.get('static'): self._static = False
+        self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data)
         newLoserObject[col] = oldWinnerValue
         self.updates += 1
+        if data.get('static'): 
+            self.static = False
         if(reason in ['updating', 'deleting']):
             self.importantUpdates += 1
-            if data.get('static'): self._importantStatic = False
+            if data.get('static'): self.importantStatic = False
 
     # def mUpdate(self, col, value, warn = False, reason = "", static=False):
-    #     if(not self._newMObject): self._newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
-    #     if static: self._static = False
-    #     self._newMObject[col] = value
+    #     if(not self.newMObject): self.newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
+    #     if static: self.static = False
+    #     self.newMObject[col] = value
 
     # def sUpdate(self, col, value, warn = False, reason = "", static=False):
-    #     if(not self._newSObject): self._newSObject = ImportUser(sObject, sObject.rowcount, sObject.row)
-    #     if warn: self.addSyncWarning(col, SLAVE_NAME, reason, self._oldSObject[col], )
-    #     if static: self._static = False
-    #     self._newSObject[col] = value
+    #     if(not self.newSObject): self.newSObject = ImportUser(sObject, sObject.rowcount, sObject.row)
+    #     if warn: self.addSyncWarning(col, SLAVE_NAME, reason, self.oldSObject[col], )
+    #     if static: self.static = False
+    #     self.newSObject[col] = value
         
     def updateCol(self, col, data={}):
         # print "sync ", col
@@ -578,7 +557,7 @@ class SyncUpdate(object):
         except:
             return
         # sync_warn = data.get('warn')
-        # sync_static = data.get('static')
+        # syncstatic = data.get('static')
         
         # if(self.colBlank(col)): continue
         if(self.colIdentical(col)): 
@@ -632,22 +611,71 @@ class SyncUpdate(object):
             info_delimeter = "<br/>"
             info_fmt = "<strong>%s:</strong> %s"
         out_str = subtitle_fmt % "OLD"
-        oldMatch = Match([self._oldMObject], [self._oldSObject])
+        oldMatch = Match([self.oldMObject], [self.oldSObject])
         out_str += oldMatch.tabulate(tablefmt)
         out_str += subtitle_fmt % "INFO"
         out_str += info_delimeter.join(filter(None,[
-            (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self._bTime))) if self.bTime else "No Last Sale",
+            (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self.bTime))) if self.bTime else "No Last Sale",
             (info_fmt % ("%s Mod Time" % MASTER_NAME, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % MASTER_NAME,
             (info_fmt % ("%s Mod Time" % SLAVE_NAME, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % SLAVE_NAME,
-            (info_fmt % ("static", "yes" if self._static else "no")),
+            (info_fmt % ("static", "yes" if self.static else "no")),
             (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
         ]))
         out_str += subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates)
         out_str += self.displaySyncWarnings(tablefmt)
-        newMatch = Match([self._newMObject], [self._newSObject])
+        out_str += subtitle_fmt % 'WP CHANGES'
+        out_str += self.changes2WPSQL(tablefmt)
+        newMatch = Match([self.newMObject], [self.newSObject])
         out_str += subtitle_fmt % 'NEW'
         out_str += newMatch.tabulate(tablefmt)
         return out_str
+
+    def changes2WPSQL(self, tablefmt=None):
+        out = ""
+        if self.syncWarnings:
+            info_delimeter = "\n"
+            subtitle_fmt = "%s"
+            if(tablefmt == "html"):
+                info_delimeter = "<br/>"
+                subtitle_fmt = "<h4>%s</h4>" 
+
+            user_updates = {}
+            meta_updates = {}
+            for col, warnings in self.syncWarnings.items():
+                for subject, reason, oldVal, newVal, data in warnings:  
+                    if subject == 'ACT' and data.get('wp'):
+                        data_wp = data.get('wp',{})
+                        if data_wp.get('meta'):
+                            meta_updates[data_wp.get('key')] = [newVal]
+                        elif not data_wp.get('final'):
+                            user_updates[data_wp.get('key')] = [newVal]
+
+            #generate user_sql
+            sql  = ""
+            user_pkey = self.oldMObject.WPID
+            assert user_pkey, "must have a primary key to update user database"
+            if user_pkey and (user_updates or meta_updates) :
+                if user_updates:
+                    sql += 'UPDATE {}_users'.format(tbl_prefix)
+                    sql += '   SET ' + ' AND '.join([\
+                        "{} = '{}'".format(key, value) for key, value in user_updates\
+                    ])
+                    sql += ' WHERE ID = {};\n'.format(user_pkey)
+                if 
+
+
+
+
+            out += info_delimeter.join([
+                subtitle_fmt % "usermeta updates" + tabulate(meta_updates, headers="keys", tablefmt=tablefmt),
+                subtitle_fmt % "user updates" + tabulate(user_updates, headers="keys", tablefmt=tablefmt),
+                subtitle_fmt % "usermeta sql" + meta_sql,
+                subtitle_fmt % "user sql" + user_sql,
+
+            ])
+
+
+        return out
 
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
@@ -669,6 +697,7 @@ staticSUpdates = []
 staticMUpdates = []
 problematicUpdates = []
 masterUpdates = []
+slaveUpdates = []
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -771,6 +800,8 @@ for match in globalMatches:
                 insort(problematicUpdates, syncUpdate)
             else:
                 insort(masterUpdates, syncUpdate)
+                insort(slaveUpdates, syncUpdate)
+
         if(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
             insort(nonstaticMUpdates, syncUpdate)
             if(syncUpdate.sMod):
@@ -783,59 +814,43 @@ for match in globalMatches:
         if(syncUpdate.sUpdated or syncUpdate.mUpdated):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
                 insort(masterUpdates, syncUpdate)
+                insort(slaveUpdates, syncUpdate)
                 # insort(staticUpdates, syncUpdate)
             if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
                 insort(masterUpdates, syncUpdate)
                 # insort(staticMUpdates, syncUpdate)
             if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-                pass
+                insort(slaveUpdates, syncUpdate)
                 # insort(staticSUpdates, syncUpdate)
     
 print hashify("COMPLETED MERGE")
 print timediff()
 
 with open(resPath, 'w+') as resFile:
-    def writeSection(title, description, data, length = 0, html_class="results_section"):
-        sectionID = SanitationUtils.makeSafeClass(title)
-        description = "%s %s" % (str(length) if length else "No", description)
-        resFile.write('<div class="%s">'% html_class )
-        resFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
-        resFile.write('<h2>%s (%d)</h2>' % (title, length))
-        resFile.write('</a>')
-        resFile.write('<div class="collapse" id="%s">' % sectionID)
-        resFile.write('<p class="description">%s</p>' % description)
-        resFile.write('<p class="data">' )
-        resFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
-        resFile.write('</p>')
-        resFile.write('</div>')
-        resFile.write('</div>')
+    reporter = HtmlReporter(resFile)
 
-    resFile.write('<!DOCTYPE html>')
-    resFile.write('<html lang="en">')
-    resFile.write('<head>')
-    resFile.write("""
-<!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-""")
-    resFile.write('<body>')
-    resFile.write('<div class="matching">')
-    resFile.write('<h1>%s</h1>' % 'Matching Results')
-    
-    writeSection(
-        "Perfect Matches", 
-        "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-        globalMatches.tabulate(tablefmt="html"),
-        length = len(globalMatches)
+    matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
+    matchingGroup.addSection(
+        HtmlReporter.Section(
+            'perfect_matches', 
+            **{
+                'title': 'Perfect Matches',
+                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                'data': globalMatches.tabulate(tablefmt="html"),
+                'length': len(globalMatches)
+            }
+        )
     )
-
-    writeSection(
-        "Email Duplicates",
-        "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
-        emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
-        length = len(emailMatcher.duplicateMatches)
+    matchingGroup.addSection(
+        HtmlReporter.Section(
+            'email_duplicates', 
+            **{
+                'title': 'Email Duplicates',
+                'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
+                'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
+                'length': len(emailMatcher.duplicateMatches)
+            }
+        )
     )
 
     matchListInstructions = {
@@ -853,13 +868,17 @@ with open(resPath, 'w+') as resFile:
             data = matchList.merge().tabulate(tablefmt="html")
         else:
             data = matchList.tabulate(tablefmt="html")
-        writeSection(
-            matchlistType.title(),
-            description,
-            data,
-            length = len(matchList)
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                matchlistType,
+                **{
+                    # 'title': matchlistType.title(),
+                    'description': description,
+                    'data': data,
+                    'length': len(matchList)
+                }
+            )   
         )
-            
         
     # print hashify("anomalous ParseLists: ")
 
@@ -875,42 +894,55 @@ with open(resPath, 'w+') as resFile:
         usrList  = UsrObjList()
         for obj in parseList.values():
             usrList.addObject(obj)
-        
 
-        writeSection(
-            parselistType.title(),
-            description,
-            usrList.tabulate(tablefmt="html"),
-            length = len(parseList)
+        data = usrList.tabulate(tablefmt="html")
+        
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                parselistType,
+                **{
+                    # 'title': matchlistType.title(),
+                    'description': description,
+                    'data': data,
+                    'length': len(parseList)
+                }
+            )
         )
 
-    resFile.write('</div>')
-    resFile.write('<div class="sync">')
-    resFile.write('<h1>%s</h1>' % 'Syncing Results')
+    reporter.addGroup(matchingGroup)
 
-    writeSection(
-        (MASTER_NAME + " Updates"),
-        "these items will be updated",
-        '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
-        length = len(masterUpdates)
+    syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+
+    # syncingGroup.addSection(
+    #     HtmlReporter.Section(
+    #         (MASTER_NAME + "_updates"),
+    #         description = MASTER_NAME + " items will be updated",
+    #         data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
+    #         length = len(masterUpdates)
+    #     )
+    # )
+
+    # syncingGroup.addSection(
+    #     HtmlReporter.Section(
+    #         (SLAVE_NAME + "_updates"),
+    #         description = SLAVE_NAME + " items will be updated",
+    #         data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
+    #         length = len(masterUpdates)
+    #     )
+    # )
+
+    syncingGroup.addSection(
+        HtmlReporter.Section(
+            "problematic_updates",
+            description = "items can't be merged because they are too dissimilar",
+            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+            length = len(problematicUpdates)
+        )
     )
 
-    writeSection(
-        ("Problematic Updates"),
-        "These items can't be merged because they are too dissimilar",
-        '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
-        length = len(problematicUpdates)
-    )
+    reporter.addGroup(syncingGroup)
 
-    resFile.write('</div>')
-    resFile.write("""
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-""")
-    resFile.write('</body>')
-    resFile.write('</html>')
-
-
+    reporter.writeDocument()
 
 
 #uncomment below to export

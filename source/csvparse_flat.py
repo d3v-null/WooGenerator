@@ -77,6 +77,7 @@ class CSVParse_Special(CSVParse_Flat):
 
 class ImportUser(ImportFlat):
 
+    WPID = descriptorUtils.safeKeyProperty('Wordpress ID')
     email = descriptorUtils.safeKeyProperty('E-mail')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
