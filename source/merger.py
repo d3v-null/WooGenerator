@@ -661,7 +661,10 @@ class SyncUpdate(object):
                         "{} = '{}'".format(key, value) for key, value in user_updates\
                     ])
                     sql += ' WHERE ID = {};\n'.format(user_pkey)
-                if 
+                if meta_updates:
+                    sql += "\n".join(
+
+                    );
 
 
 
@@ -669,8 +672,7 @@ class SyncUpdate(object):
             out += info_delimeter.join([
                 subtitle_fmt % "usermeta updates" + tabulate(meta_updates, headers="keys", tablefmt=tablefmt),
                 subtitle_fmt % "user updates" + tabulate(user_updates, headers="keys", tablefmt=tablefmt),
-                subtitle_fmt % "usermeta sql" + meta_sql,
-                subtitle_fmt % "user sql" + user_sql,
+                subtitle_fmt % "sql" + sql,
 
             ])
 

@@ -96,3 +96,5 @@ usernames.py
 usernames.txt
 
 source/fileregextest.py
+
+source/test_wp_api.py

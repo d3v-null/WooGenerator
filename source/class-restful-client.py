@@ -10,18 +10,63 @@ from urllib import quote, urlencode
 import httplib2
 from collections import OrderedDict
 import json
+from base64 import b64encode
 
 def key_compare(a, b):
 	return cmp(a[0], b[0])
 
-class Restful_Client(object):
+class API_Client(object):
+	def __init__(self, endpoint):
+		super(API_Client, self).__init__()
+		self.endpoint = endpoint
 
-	def __init__(self, endpoint, consumer_key, consumer_secret):
-		super(Restful_Client, self).__init__()
+	def make_request(self, resource, params, method='GET' ):
+		pass
+
+	def normalize_string(self, s):
+		return quote(str(s), safe="")
+
+	def normalize_params(self, params):
+		return OrderedDict( [
+			(self.normalize_string(key), self.normalize_string(value))\
+			for key, value \
+			in params.iteritems()
+		])
+
+	def sort_params(self, params):
+		return OrderedDict(sorted(
+			params.iteritems(),
+			cmp=key_compare
+		))
+
+class Basic_Client(API_Client):
+	def __init__(self, endpoint, username=None, password=None):
+		super(Basic_Client, self).__init__(endpoint)
+		self.username = username
+		self.password = password
+		self.http = httplib2.Http(".cache")
+		self.http.add_credentials(self.username, self.password)
+
+	def make_request(self, resource, params, method='GET' ):
+		clean_params = self.sort_params(self.normalize_params(params))
+		uri = self.endpoint + resource
+		p_string = urlencode(clean_params)
+
+		userAndPass = b64encode(b"username:password").decode("ascii")
+		headers = { 'Authorization' : 'Basic %s' %  userAndPass }
+
+		uri_params = uri + ('' if not p_string else '?' + p_string )
+
+		return self.http.request(uri_params, method, headers=headers)
+
+class OAuth_1_Client(API_Client):
+
+	def __init__(self, endpoint, consumer_key=None, consumer_secret=None):
+		super(OAuth_1_Client, self).__init__(endpoint)
 		self.consumer_key = consumer_key
 		self.consumer_secret = consumer_secret
-		self.endpoint = endpoint
-		
+		self.http = httplib2.Http()
+
 	def make_request(self, resource, params, method='GET' ):
 		oauth_params = {
 			'oauth_consumer_key': self.consumer_key,
@@ -38,13 +83,15 @@ class Restful_Client(object):
 		params = OrderedDict( params.items() + oauth_params.items() )
 		clean_params = self.sort_params(self.normalize_params(params))
 
-		uri = endpoint + resource
+		uri = self.endpoint + resource
 		p_string = urlencode(clean_params)
 
 		print 'p string:'
 		print '\n'.join(p_string.split('&'))
 
-		return httplib2.Http().request(uri + '?' + p_string)
+		uri_params = uri + ('' if not p_string else '?' + p_string )
+
+		return self.http.request(uri_params, method)
 
 	def gen_signature(self, resource, params, method):
 		base_request_uri = quote(self.endpoint + resource, safe = "")
@@ -65,22 +112,6 @@ class Restful_Client(object):
 		hashed = hmac.new(self.consumer_secret, raw_string, sha1)
 		return binascii.b2a_base64( hashed.digest() )[:-1]
 
-	def normalize_string(self, s):
-		return quote(str(s), safe="")
-
-	def normalize_params(self, params):
-		return OrderedDict( [
-			(self.normalize_string(key), self.normalize_string(value))\
-			for key, value \
-			in params.iteritems()
-		])
-
-	def sort_params(self, params):
-		return OrderedDict(sorted(
-			params.iteritems(),
-			cmp=key_compare
-		))
-
 	def gen_timestamp(self):
 		return int(time.time())
 		# return 1429451603
@@ -89,7 +120,7 @@ class Restful_Client(object):
 		return hex(self.gen_timestamp())
 		#todo: make this more secure
 
-if __name__ == "__main__":
+def testWithLocal():
 	store_url = 'http://derwent-mac.ddns.me:8888/wordpress'
 	api_base = 'wc-api'
 	api_ver = 'v2'
@@ -100,14 +131,37 @@ if __name__ == "__main__":
 
 	resource = 'customers'
 	parameters = {
-		# 'filter[role]':'wholesale',
-	# 	'filter[q]':'biotan',
-	# 	'fields':'id,title'
 	}
 
 
-	rc = Restful_Client(endpoint, consumer_key, consumer_secret)
+	rc = OAuth_1_Client(endpoint, consumer_key, consumer_secret)
 	r, c = rc.make_request(resource, parameters, 'GET')
 	print r
-	print c
+	print c	
+
+def testWithMinimac():
+	store_url = 'http://minimac.derwent-asus.ddns.me:11182/'
+	api_base = 'wp-json/wp'
+	api_ver = 'v2'
+	endpoint = "%s/%s/%s/" % (store_url, api_base, api_ver)
+
+	# consumer_key = 'gkPUTHeTta3M'
+	# consumer_secret = '77hxCG51gV8nJHRMJqjFgbdQmhkykaZFqtLsyRVcI7EOoprF'
+
+	username = 'Neil'
+	password = 'Stretch6164'
+
+	resource = 'posts'
+	parameters = {
+		# 'first_name':'asd'
+	}
+
+
+	rc = Basic_Client(endpoint, username, password)
+	r, c = rc.make_request(resource, parameters, 'GET')
+	print r
+	print c	
+
+if __name__ == "__main__":
+	testWithMinimac()
 
