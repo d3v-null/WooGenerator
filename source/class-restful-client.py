@@ -57,6 +57,8 @@ class Basic_Client(API_Client):
 
 		uri_params = uri + ('' if not p_string else '?' + p_string )
 
+		print uri_params
+
 		return self.http.request(uri_params, method, headers=headers)
 
 class OAuth_1_Client(API_Client):
