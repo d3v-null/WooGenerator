@@ -12,6 +12,8 @@ import csv
 import cStringIO
 from uniqid import uniqid
 from phpserialize import dumps, loads
+from kitchen.text import converters
+import io
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -29,47 +31,112 @@ class SanitationUtils:
     def compose(*functions):
         return functools.reduce(lambda f, g: lambda x: f(g(x)), functions)
 
-    @staticmethod
-    def byteToUnicode(string):
-        # print unicode(string).encode('ascii','backslashreplace')
-
-        if(not isinstance(string, str)):
-            if isinstance(string, unicode):
-                return string
-            else:
-                string = str(string)
-            # string = str(string).dec
-        str_out = string.decode(DEFAULT_ENCODING)
-        if DEBUG: print "byteToUnicode", repr(string), repr(str_out)
-        return str_out
+    # Functions for dealing with string encodings
 
     @staticmethod
-    def unicodeToByte(string):
-        if(not isinstance(string, unicode)):
-            if(isinstance(string, str)):
-                string = string.decode(DEFAULT_ENCODING)
-            else:
-                string = unicode(string)
-        str_out = string.encode('ascii', 'backslashreplace')
-        if DEBUG: print "unicodeToByte", repr(string), repr(str_out)
-        return str_out
+    def unicodeToUTF8(u_str):
+        return converters.to_bytes(u_str, "utf8")
+
+    @staticmethod
+    def unicodeToAscii(u_str):
+        return converters.to_bytes(u_str, "ascii", "backslashreplace")
+
+    @staticmethod
+    def unicodeToXml(u_str, ascii_only = False):
+        if ascii_only:
+            return converters.unicode_to_xml(u_str, encoding="ascii")
+        else:
+            return converters.unicode_to_xml(u_str)
+
+    @staticmethod
+    def utf8ToUnicode(utf8_str):
+        return converters.to_unicode(utf8_str, "utf8")
+
+    @staticmethod
+    def xmlToUnicode(utf8_str):
+        return converters.xml_to_unicode(utf8_str)
+
+    @staticmethod
+    def asciiToUnicode(ascii_str):
+        return converters.to_unicode(ascii_str, "ascii")
+
+    @staticmethod
+    def coerceUnicode(thing):
+        if thing is None:
+            return u""
+        else:
+            return converters.to_unicode(thing, encoding="utf8")
+
+    @staticmethod
+    def coerceBytes(thing):
+        return SanitationUtils.compose(
+            SanitationUtils.unicodeToUTF8,
+            SanitationUtils.coerceUnicode
+        )(thing)
+
+    @staticmethod
+    def coerceAscii(thing):
+        return SanitationUtils.compose(
+            SanitationUtils.unicodeToAscii,
+            SanitationUtils.coerceUnicode
+        )(thing)
+
+    @staticmethod
+    def coerceXML(thing):
+        return SanitationUtils.compose(
+            SanitationUtils.unicodeToXml,
+            SanitationUtils.coerceUnicode
+        )(thing)
+
+    @staticmethod
+    def sanitizeForTable(thing):
+        return SanitationUtils.compose(
+            SanitationUtils.escapeNewlines,
+            SanitationUtils.coerceUnicode
+        )(thing)
+
+    @staticmethod
+    def sanitizeForXml(thing):
+        return SanitationUtils.compose(
+            SanitationUtils.sanitizeNewlines,
+            SanitationUtils.unicodeToXml,
+            SanitationUtils.coerceUnicode
+        )(thing)
 
     # @staticmethod
-    # def unicodeToAscii(string):
+    # def anythingToAscii(thing):
+    #     if isinstance(thing, unicode):
+    #         string = thing.encode(DEFAULT_ENCODING)
+    #     elif thing is None:
+    #         string = ""
+    #     else:
+    #         string = str(thing)
+    #     return string.encode('ascii', 'backslashreplace')
+
+    # @staticmethod
+    # def byteToUnicode(string):
+    #     # print unicode(string).encode('ascii','backslashreplace')
+
+    #     if(not isinstance(string, str)):
+    #         if isinstance(string, unicode):
+    #             return string
+    #         else:
+    #             string = str(string)
+    #         # string = str(string).dec
+    #     str_out = string.decode(DEFAULT_ENCODING)
+    #     if DEBUG: print "byteToUnicode", repr(string), repr(str_out)
+    #     return str_out
+
+    # @staticmethod
+    # def unicodeToByte(string):
     #     if(not isinstance(string, unicode)):
-
-
-    @staticmethod
-    def asciiToUnicode(string):
-        if isinstance(string, unicode):
-            return string
-        else:
-            try:
-                bytestr = str(string).decode('string_escape')
-                return bytestr.decode(DEFAULT_ENCODING)
-            except:
-                asciistr = str(string).encode('string_escape')
-                return unicode(asciistr)
+    #         if(isinstance(string, str)):
+    #             string = string.decode(DEFAULT_ENCODING)
+    #         else:
+    #             string = unicode(string)
+    #     str_out = string.encode('ascii', 'backslashreplace')
+    #     if DEBUG: print "unicodeToByte", repr(string), repr(str_out)
+    #     return str_out
 
     # @staticmethod
     # def anythingToUnicode(thing):
@@ -78,22 +145,71 @@ class SanitationUtils:
     #     elif not isinstance(thing, str):
     #         string = str(thing)
 
-
-    @staticmethod
-    def anythingToAscii(thing):
-        if isinstance(thing, unicode):
-            string = thing.encode(DEFAULT_ENCODING)
-        elif thing is None:
-            string = ""
-        else:
-            string = str(thing)
-        return string.encode('string_escape')
-
     # @staticmethod
     # def decodeStringEscape(string):
     #     str_out = string.decode('string_escape')
     #     if DEBUG: print "decodeStringEscape", repr(string), repr(str_out)
     #     return str_out
+
+
+    # @staticmethod
+    # def makeSafeOutput(string):
+    #     return SanitationUtils.compose(
+    #         SanitationUtils.sanitizeNewlines,
+    #         SanitationUtils.anythingToAscii
+    #     )(string)
+
+    # @staticmethod
+    # def makeSafeHTMLOutput(string):
+    #     return SanitationUtils.compose(
+    #         SanitationUtils.sanitizeNewlines,
+    #         SanitationUtils.cleanXMLString,
+    #         SanitationUtils.makeUnicodeCSVSafe
+    #     )(string)
+
+    # @staticmethod
+    # def decodeSafeOutput(string):
+    #     return SanitationUtils.compose(
+    #         # SanitationUtils.byteToUnicode,
+    #         SanitationUtils.asciiToUnicode
+    #     )(string)
+
+    # @staticmethod
+    # def makeUnicodeCSVSafe(thing):
+    #     if thing is None:
+    #         return ""
+    #     else:
+    #         return unicode(thing)
+
+
+    # @staticmethod
+    # def cleanBackslashString(string):
+    #     if string is None:
+    #         return None
+    #     elif isinstance(string, unicode):
+    #         unicode_content = string
+    #     else:
+    #         unicode_content = str(string).decode('utf-8', 'ignore')
+    #         assert isinstance(unicode_content, unicode)
+    #     backslashed = unicode_content.encode('ascii', 'backslashreplace')
+    #     # print "backslashed: ", backslashed
+    #     return backslashed
+
+    # @staticmethod
+    # def cleanXMLString(string):
+    #     # print "cleaning string ", string
+    #     if string is None:
+    #         return None
+    #     elif isinstance(string, unicode):
+    #         unicode_content = string
+    #     else:
+    #         unicode_content = str(string).decode('utf-8', 'ignore')
+    #         assert isinstance(unicode_content, unicode)
+    #     # print "unicode_content: ", unicode_content
+    #     xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')
+    #     # print "xml_content: ", xml_content
+    #     return xml_content
+
 
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
@@ -188,9 +304,11 @@ class SanitationUtils:
 
     @staticmethod
     def sanitizeNewlines(string):
-        if '\n' in string: 
-            if(DEBUG): print "!!! found newline in string"
         return re.sub('\n','</br>', string)
+
+    @staticmethod
+    def escapeNewlines(string):
+        return re.sub('\n','\\n', string)
 
     @staticmethod
     def compileRegex(subs):
@@ -211,7 +329,7 @@ class SanitationUtils:
             SanitationUtils.stripTailingWhitespace,            
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.removeNULL,
-            SanitationUtils.byteToUnicode
+            SanitationUtils.coerceUnicode
         )(cell)   
 
     @staticmethod
@@ -224,7 +342,7 @@ class SanitationUtils:
             SanitationUtils.toLower,
             SanitationUtils.stripLeadingWhitespace,
             SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.byteToUnicode
+            SanitationUtils.coerceUnicode
         )(string)
 
     @staticmethod
@@ -232,29 +350,7 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.stripNonNumbers,
             SanitationUtils.stripAreaCode,
-            SanitationUtils.byteToUnicode
-        )(string)
-
-    @staticmethod
-    def makeSafeOutput(string):
-        return SanitationUtils.compose(
-            SanitationUtils.sanitizeNewlines,
-            SanitationUtils.anythingToAscii
-        )(string)
-
-    @staticmethod
-    def makeSafeHTMLOutput(string):
-        return SanitationUtils.compose(
-            SanitationUtils.sanitizeNewlines,
-            SanitationUtils.cleanXMLString,
-            SanitationUtils.makeUnicodeCSVSafe
-        )(string)
-
-    @staticmethod
-    def decodeSafeOutput(string):
-        return SanitationUtils.compose(
-            # SanitationUtils.byteToUnicode,
-            SanitationUtils.asciiToUnicode
+            SanitationUtils.coerceUnicode
         )(string)
 
     @staticmethod
@@ -288,13 +384,6 @@ class SanitationUtils:
         # if DEBUG_GEN: 
         #     print " | str_o: ",str_out
         return str_out
-
-    @staticmethod
-    def makeUnicodeCSVSafe(thing):
-        if thing is None:
-            return ""
-        else:
-            return unicode(thing)
 
     @staticmethod
     def findAllImages(instring):
@@ -345,6 +434,10 @@ class SanitationUtils:
         return re.match(SanitationUtils.myobid_regex, card)
 
     @staticmethod
+    def stringCapitalized(string):
+        return unicode(string) == unicode(string).upper()
+
+    @staticmethod
     def stringContainsNumbers(string):
         if(re.search('\d', string)):
             return True
@@ -375,38 +468,6 @@ class SanitationUtils:
         assert isinstance(string, (str, unicode))
         attrs = json.loads(string)
         return attrs
-
-    @staticmethod
-    def cleanBackslashString(string):
-        if string is None:
-            return None
-        elif isinstance(string, unicode):
-            unicode_content = string
-        else:
-            unicode_content = str(string).decode('utf-8', 'ignore')
-            assert isinstance(unicode_content, unicode)
-        backslashed = unicode_content.encode('ascii', 'backslashreplace')
-        # print "backslashed: ", backslashed
-        return backslashed
-
-    @staticmethod
-    def cleanXMLString(string):
-        # print "cleaning string ", string
-        if string is None:
-            return None
-        elif isinstance(string, unicode):
-            unicode_content = string
-        else:
-            unicode_content = str(string).decode('utf-8', 'ignore')
-            assert isinstance(unicode_content, unicode)
-        # print "unicode_content: ", unicode_content
-        xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')
-        # print "xml_content: ", xml_content
-        return xml_content
-
-    @staticmethod
-    def stringCapitalized(string):
-        return unicode(string) == unicode(string).upper()
 
 
 def testSanitationUtils():
@@ -442,11 +503,11 @@ def testSanitationUtils():
     # print 'a', repr(a)
     # b = SanitationUtils.makeSafeOutput(a)
     # print 'b', repr(b)
-    b = SanitationUtils.makeSafeHTMLOutput(u"T\u00C8A GRAHAM\nYEAH")
-    print 'b', b, repr(b)
-    c = SanitationUtils.makeSafeHTMLOutput(None)
-    print 'c', c, repr(c)
-    print SanitationUtils.makeSafeOutput(None)
+    # b = SanitationUtils.makeSafeHTMLOutput(u"T\u00C8A GRAHAM\nYEAH")
+    # print 'b', b, repr(b)
+    # c = SanitationUtils.makeSafeHTMLOutput(None)
+    # print 'c', c, repr(c)
+    # print SanitationUtils.makeSafeOutput(None)
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
 
@@ -1283,7 +1344,7 @@ class AddressUtils:
         string = SanitationUtils.stripExtraWhitespace(string)
         string = re.sub(AddressUtils.numberAlphaRegex + AddressUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
-        if DEBUG: print "sanitizeAddressToken", SanitationUtils.makeSafeOutput( string)
+        if DEBUG: print "sanitizeAddressToken", SanitationUtils.coerceBytes( string)
         return string
 
     @staticmethod
@@ -1493,7 +1554,7 @@ class TimeUtils:
 
     @staticmethod
     def starStrptime(string, fmt = wpTimeFormat ):
-        string = SanitationUtils.byteToUnicode(string)
+        string = SanitationUtils.coerceUnicode(string)
         if(string):
             try:
                 tstruct = time.strptime(string, fmt)
@@ -1573,7 +1634,9 @@ class HtmlReporter(object):
             out += '<div class="collapse" id="' + sectionID + '">'
             out += '<p class="description">' + (str(self.length) if self.length else "No") + ' ' + self.description + '</p>'
             out += '<p class="data">'
-            out += re.sub("<table>","<table class=\"table table-striped\">",self.data)
+            out += SanitationUtils.sanitizeForXml(
+                re.sub("<table>","<table class=\"table table-striped\">",self.data)
+            )
             out += '</p>'
             out += '</div>'
             return out
@@ -1600,47 +1663,55 @@ class HtmlReporter(object):
 
     groups = OrderedDict()
 
-    def __init__(self, fileObj):
-        self.fileObj = fileObj
+    def __init__(self):
+        pass
 
     def addGroup( self, group):
         self.groups[group.classname] = group
 
-    def writeToFile(self, string):
-        self.fileObj.write(string)
-
-    def writeHead(self):
-        self.writeToFile('<head>')
-        self.writeToFile("""
+    def getHead(self):
+        return """\
+<head>
+    <meta charset="UTF-8">
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    """)
-        self.writeToFile('</head>')
+</head>
+"""
 
-    def writeBody(self):
-        self.writeToFile('<body>')
-        for group in self.groups.values():
-            self.writeToFile(group.toHtml() )
-        self.writeToFile("""
+    def getBody(self):
+        return """
+<body>
+    {content}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-    """)
-        self.writeToFile('</body>')
+</body>
+""".format(
+            content = "<br/>".join(
+                group.toHtml() for group in self.groups.values()
+            )
+        )
 
-    def writeDocument(self):
-        self.writeToFile('<!DOCTYPE html>')
-        self.writeToFile('<html lang="en">')
-        self.writeHead()
-        self.writeBody()
-        self.writeToFile('</html>')
+    def getDocument(self):
+        return """\
+<!DOCTYPE html>
+<html lang="en">
+{head}
+{body}
+</html>
+""".format(
+            head=self.getHead(),
+            body=self.getBody()
+        )      
 
         
 def testHTMLReporter():
-    with open('../output/htmlReporterTest.html', 'w+') as resFile:
-        reporter = HtmlReporter(resFile)
+    with\
+             open('../output/htmlReporterTest.html', 'w+') as resFile,\
+             io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as uresFile :
+        reporter = HtmlReporter()
 
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
 
@@ -1650,7 +1721,7 @@ def testHTMLReporter():
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % ("WP", "ACT"),
-                    'data': "data",
+                    'data': u"<\U0001F44C'&>",
                     'length': 3
                 }
             )
@@ -1658,7 +1729,10 @@ def testHTMLReporter():
 
         reporter.addGroup(matchingGroup)
 
-        reporter.writeDocument()
+        document = reporter.getDocument()
+        print SanitationUtils.coerceBytes( document)
+        uresFile.write( SanitationUtils.coerceUnicode(document))
+        resFile.write( SanitationUtils.coerceAscii(document) )
 
 
 class descriptorUtils:
@@ -1808,7 +1882,7 @@ class UnicodeDictWriter(UnicodeWriter):
         self.fieldnames = fieldnames
 
     def writerow(self, rowDict):
-        row = [SanitationUtils.makeUnicodeCSVSafe(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
+        row = [SanitationUtils.coerceUnicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
         UnicodeWriter.writerow(self, row)
 
     def writeheader(self):

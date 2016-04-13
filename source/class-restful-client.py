@@ -24,6 +24,9 @@ class API_Client(object):
 		pass
 
 	def normalize_string(self, s):
+		# convert to utf8 bytestr first.
+
+
 		return quote(str(s), safe="")
 
 	def normalize_params(self, params):
@@ -137,7 +140,8 @@ def testWithLocal():
 
 
 	rc = OAuth_1_Client(endpoint, consumer_key, consumer_secret)
-	r, c = rc.make_request(resource, parameters, 'GET')
+	print rc.normalize_string(u'no\u2015odle')
+	# r, c = rc.make_request(resource, parameters, 'GET')
 	print r
 	print c	
 
@@ -165,5 +169,6 @@ def testWithMinimac():
 	print c	
 
 if __name__ == "__main__":
-	testWithMinimac()
+	# testWithMinimac()
+	testWithLocal()
 

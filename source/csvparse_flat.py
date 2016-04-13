@@ -157,9 +157,9 @@ class UsrObjList(ObjList):
 
     def getSanitizer(self, tablefmt=None):
         if tablefmt is 'html':
-            return SanitationUtils.makeSafeHTMLOutput
+            return SanitationUtils.sanitizeForXml
         elif tablefmt is 'simple':
-            return SanitationUtils.anythingToAscii
+            return SanitationUtils.sanitizeForTable
         else:
             return super(UsrObjList, self).getSanitizer(tablefmt)
 

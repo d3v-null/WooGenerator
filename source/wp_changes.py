@@ -2,10 +2,11 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, listUtils
+from utils import SanitationUtils, TimeUtils, listUtils, HtmlReporter
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
+import codecs
 from coldata import ColData_User
 from tabulate import tabulate
 import re
@@ -14,6 +15,7 @@ import yaml
 import MySQLdb
 from sshtunnel import SSHTunnelForwarder
 import json
+import io
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
@@ -63,7 +65,7 @@ colData = ColData_User()
 
 saRows = []
 
-since = "2016-03-01"
+since = "2016-03-13"
 # since = ""
 
 with \
@@ -95,9 +97,12 @@ print "formatting data..."
 
 def json2map(map_json):
     try:
+        sanitizer = SanitationUtils.coerceUnicode
         map_obj = json.loads(map_json)
         map_obj = OrderedDict([ \
-            ((map_key, [SanitationUtils.anythingToAscii(map_value)]) if not isinstance(map_value, list) else (map_key, map(SanitationUtils.anythingToAscii, map_value))) \
+            ((map_key, [sanitizer(map_value)]) \
+                if not isinstance(map_value, list) \
+                else (map_key, map(sanitizer, map_value))) \
             for map_key, map_value in sorted(map_obj.items()) if any (map_value) \
         ])
         if not map_obj:
@@ -110,70 +115,41 @@ def json2map(map_json):
 def map2table(map_obj):
     return tabulate(map_obj, headers="keys", tablefmt="html")
 
-def subtractDicts(a, b):
-    return listUtils.keysNotIn(a, b.keys())
+changeDataFmt = changeData[:1]
 
-changeDataFmt = [
-    [user_id, time, json2map(changed), json2map(data)] for user_id, time, changed, data in sorted(changeData)
-]
-
-changeDataFmt = \
-[["ID", "time", "changed", "not changed"]] + \
-[
-    [
-        user_id, 
-        time, 
-        "C:%s<br/>S:%s" % (map2table(changed), map2table(subtractDicts(data, changed)) if isinstance(changed, dict) else data )
-    ] \
-    for rowcount, (user_id, time, changed, data) in enumerate(changeDataFmt[1:]) \
-    if isinstance(changed, dict) 
-]
+for user_id, c_time, changed, data in sorted(changeData[1:]):
+    if user_id == 1:
+        print SanitationUtils.coerceBytes(changed)
+    changedMap = json2map(changed)
+    if not isinstance(changedMap, dict): continue
+    if user_id == 1:
+        for value in changedMap.values():
+            for val in value: 
+                print SanitationUtils.coerceBytes(val)
+    dataMap = json2map(data)
+    diffMap = listUtils.keysNotIn(dataMap, changedMap.keys()) if isinstance(changedMap, dict) else dataMap
+    changeDataFmt.append( [
+        user_id,
+        c_time,
+        "C:%s<br/>S:%s" % (map2table(changedMap), map2table(diffMap))
+    ] )
 
 print "creating report..."
 
-with open(resPath, 'w+') as resFile:
-        def writeSection(title, description, data, length = 0, html_class="results_section"):
-            sectionID = SanitationUtils.makeSafeClass(title)
-            description = "%s %s" % (str(length) if length else "No", description)
-            resFile.write('<div class="%s">'% html_class )
-            resFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
-            resFile.write('<h2>%s (%d)</h2>' % (title, length))
-            resFile.write('</a>')
-            resFile.write('<div class="collapse" id="%s">' % sectionID)
-            resFile.write('<p class="description">%s</p>' % description)
-            resFile.write('<p class="data">' )
-            resFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
-            resFile.write('</p>')
-            resFile.write('</div>')
-            resFile.write('</div>')
+with io.open(resPath, 'w+', encoding='utf-8') as resFile:
+    reporter = HtmlReporter()
 
-        resFile.write('<!DOCTYPE html>')
-        resFile.write('<html lang="en">')
-        resFile.write('<head>')
-        resFile.write("""
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    """)
-        resFile.write('<body>')
-        resFile.write('<div class="matching">')
-        resFile.write('<h1>%s</h1>' % 'Wordpress Changes Report')
-
-        writeSection(
-            "Wordpress Changes", 
+    group = HtmlReporter.Group('changes', 'Changes')
+    group.addSection(
+        HtmlReporter.Section(
+            'wp_changes',
+            'Wordpress Changes',
             "modifications made to wordpress" + ( "since %s" % since if since else ""),
-            re.sub("<table>","<table class=\"table table-striped\">", 
+            data = re.sub("<table>","<table class=\"table table-striped\">", 
                 tabulate(changeDataFmt, headers="firstrow", tablefmt="html")
             ),
             length = len(changeDataFmt)
         )
+    )
 
-        resFile.write('</div>')
-        resFile.write("""
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-    """)
-        resFile.write('</body>')
-        resFile.write('</html>')
+    resFile.write( SanitationUtils.coerceUnicode( reporter.getDocument() ))

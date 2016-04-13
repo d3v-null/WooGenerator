@@ -20,6 +20,7 @@ import time
 import yaml
 import MySQLdb
 from sshtunnel import SSHTunnelForwarder
+import io
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
@@ -828,8 +829,8 @@ for match in globalMatches:
 print hashify("COMPLETED MERGE")
 print timediff()
 
-with open(resPath, 'w+') as resFile:
-    reporter = HtmlReporter(resFile)
+with io.open(resPath, 'w+', encoding='utf8') as resFile:
+    reporter = HtmlReporter(SanitationUtils.sanitizeForXml)
 
     matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
     matchingGroup.addSection(
@@ -944,7 +945,7 @@ with open(resPath, 'w+') as resFile:
 
     reporter.addGroup(syncingGroup)
 
-    reporter.writeDocument()
+    resFile.write( reporter.getDocument() )
 
 
 #uncomment below to export
