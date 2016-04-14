@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import functools
 import itertools
 # from itertools import chain
@@ -14,6 +15,7 @@ from uniqid import uniqid
 from phpserialize import dumps, loads
 from kitchen.text import converters
 import io
+import base64
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -464,14 +466,48 @@ class SanitationUtils:
         # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
 
     @staticmethod
-    def decodeJSON(string):
-        assert isinstance(string, (str, unicode))
-        attrs = json.loads(string)
+    def decodeJSON(json_str):
+        assert isinstance(json_str, (str, unicode))
+        attrs = json.loads(json_str)
         return attrs
+
+    @staticmethod
+    def encodeJSON(obj):
+        assert isinstance(obj, (dict, list))
+        json_str = json.dumps(obj, encoding="utf8", ensure_ascii=False)
+        return json_str
+
+    @staticmethod
+    def encodeBase64(str):
+        utf8_str = SanitationUtils.coerceBytes(str)
+        return base64.encodestring(utf8_str)
+
+    @staticmethod
+    def decodeBase64(b64_str):
+        return base64.decodestring(b64_str)
+
 
 
 def testSanitationUtils():
-    pass
+    # pass
+
+    obj = {
+        'key': SanitationUtils.coerceBytes(" 👌 ashdfk"),
+        'list': [
+            "🐸",
+            u"\u2014"
+        ]
+    }
+    print obj, repr(obj)
+    obj_json = SanitationUtils.encodeJSON(obj)
+    print SanitationUtils.coerceBytes(obj_json), repr(obj_json)
+    obj_json_base64 = SanitationUtils.encodeBase64(obj_json)
+    print obj_json_base64
+    obj_json_decoded = SanitationUtils.decodeBase64(obj_json_base64)
+    print obj_json_decoded
+    obj_decoded = SanitationUtils.decodeJSON(obj_json_decoded)
+    print obj_decoded
+
     # n1 = u"D\u00C8RWENT"
     # n2 = u"d\u00E8rwent"
     # print SanitationUtils.unicodeToByte(n1) , \
@@ -1901,8 +1937,8 @@ def testUnicodeWriter():
     #         print line[:-1]
     
 if __name__ == '__main__':
-    testHTMLReporter()
+    # testHTMLReporter()
     # testTimeUtils()
-    # testSanitationUtils()
+    testSanitationUtils()
     # testUnicodeWriter()
     # testAddressUtils()
