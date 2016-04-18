@@ -1670,9 +1670,7 @@ class HtmlReporter(object):
             out += '<div class="collapse" id="' + sectionID + '">'
             out += '<p class="description">' + (str(self.length) if self.length else "No") + ' ' + self.description + '</p>'
             out += '<p class="data">'
-            out += SanitationUtils.sanitizeForXml(
-                re.sub("<table>","<table class=\"table table-striped\">",self.data)
-            )
+            out += re.sub("<table>","<table class=\"table table-striped\">",self.data)
             out += '</p>'
             out += '</div>'
             return out
@@ -1740,8 +1738,10 @@ class HtmlReporter(object):
 """.format(
             head=self.getHead(),
             body=self.getBody()
-        )      
+        )     
 
+    def getDocumentUnicode(self): 
+        return SanitationUtils.coerceUnicode( self.getDocument() )
         
 def testHTMLReporter():
     with\

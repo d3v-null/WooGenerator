@@ -88,7 +88,7 @@ class ContactAddress(object):
             for i, line in enumerate(numberLines):
                 tokens = AddressUtils.tokenizeAddress(line)
                 for j, token in enumerate(tokens):
-                    if DEBUG_ADDRESS: print SanitationUtils.makeSafeOutput( u"-> token[%d]: %s" % (j, token) )
+                    if DEBUG_ADDRESS: print SanitationUtils.coerceBytes( u"-> token[%d]: %s" % (j, token) )
                     delivery = AddressUtils.getDelivery(token)
                     if(delivery):
                         # delivery_type, delivery_name = delivery
@@ -297,7 +297,7 @@ class ContactAddress(object):
         delimeter = "\n"
         if out_schema == "flat":
             delimeter = ";"
-        return SanitationUtils.makeSafeOutput( prefix + delimeter.join(filter(None,[
+        return SanitationUtils.coerceBytes( prefix + delimeter.join(filter(None,[
             self.line1,
             self.line2,
             self.line3

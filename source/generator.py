@@ -564,10 +564,11 @@ def exportItemsCSV(filePath, colNames, items):
 
 def addSubElement(parentElement, tag, attrib={}, value=None):
 	# print "addSubElement: tag %s ; attrib %s ; value %s" % (tag, attrib, value)
-	tag = SanitationUtils.cleanXMLString(tag)
+	tag, value = map(SanitationUtils.sanitizeForXml, (tag, value))
+	# tag = SanitationUtils.sanitizeForXml(tag)
 	# print "addSubElement: tag post clean: %s" % tag
 	subElement = ET.SubElement(parentElement, tag, attrib)
-	value = SanitationUtils.cleanXMLString(value)
+	# value = SanitationUtils.sanitizeForXml(value)
 	# print "addSubElement: value post clean: %s" % value
 	if value:
 		subElement.text = value

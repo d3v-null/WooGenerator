@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter #listUtils, 
+from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
@@ -91,7 +91,7 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
     if not os.path.exists(path):
         os.mkdir(path)
 
-maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
+# maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
 maPath = os.path.join(inFolder, "ACT Report_Entire Database_06.04.16.csv")
 saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
 
@@ -142,7 +142,7 @@ colData = ColData_User()
 saRows = []
 
 sql_run = True
-# sql_run = not testMode
+sql_run = not testMode
 # sql_run = False
 
 SSHTunnelForwarderParams = {
@@ -374,6 +374,7 @@ class SyncUpdate(object):
         self.static = True
         self.importantStatic = True
         self.syncWarnings = OrderedDict()
+        self.syncPasses = OrderedDict()
         self.updates = 0
         self.importantUpdates = 0
         # self.problematic = False
@@ -404,6 +405,12 @@ class SyncUpdate(object):
     def mMod(self): return (self.mTime >= self.tTime)
     @property
     def sMod(self): return (self.sTime >= self.tTime)
+
+
+
+    @property
+    def winnerWPID(self):
+        return self.getWinnerKey("Wordpress ID")
     # @property
     # def winner(self): return self._winner
     
@@ -411,6 +418,33 @@ class SyncUpdate(object):
     #     mValue = (mObject.get(col) or "")
     #     sValue = (sObject.get(col) or "")
     #     return (not mValue and not sValue)
+
+    def getWinnerKey(self, key):
+        if self.syncWarnings and key in self.syncWarnings.keys():
+            (subject, reason, oldVal, newVal, data) = self.syncWarnings[key]
+            return newVal
+        if self.syncPasses and key in self.syncPasses.keys():
+            (reason, val, data) = self.syncPasses[key]
+            return val
+        else:
+            if newSObject or newMObject:
+                try:
+                    vals = filter(None, [newMObject.get(key), newSObject.get(key)])
+                    if any(vals):
+                        return vals[0]
+                except:
+                    pass
+            if oldSObject or oldMObject:
+                try:
+                    vals = filter(None, [oldMObject.get(key), oldSObject.get(key)])
+                    if any(vals):
+                        return vals[0]
+                except:
+                    pass
+
+        return None
+
+            
 
     def sanitizeValue(self, col, value):
         # print "sanitizing", col, repr(value)
@@ -482,6 +516,11 @@ class SyncUpdate(object):
             self.syncWarnings[col] = []
         self.syncWarnings[col].append((subject, reason, oldVal, newVal, data))
 
+    def addSyncPass(self, col, reason, val="", data={}):
+        if( col not in self.syncPasses.keys()):
+            self.syncPasses[col] = []
+        self.syncPasses[col].append((reason, val, data))
+
     def displaySyncWarnings(self, tablefmt=None):
         if self.syncWarnings:
             delimeter = "<br/>" if tablefmt=="html" else "\n"
@@ -493,7 +532,7 @@ class SyncUpdate(object):
                     if subject not in subjects.keys():
                         subjects[subject] = []
                     subjects[subject] += [map( 
-                        lambda x: SanitationUtils.makeSafeOutput(x)[:64], 
+                        lambda x: SanitationUtils.coerceBytes(x)[:64], 
                         [col, reason, oldVal, newVal] 
                     )]
             tables = []
@@ -563,6 +602,7 @@ class SyncUpdate(object):
         # if(self.colBlank(col)): continue
         if(self.colIdentical(col)): 
             # print "-> cols identical"
+            self.addSyncPass(col, "identical", self.newSObject.get(col))
             return
         else:
             # print "-> cols not identical"
@@ -581,7 +621,8 @@ class SyncUpdate(object):
             elif( 'slave' in str(sync_mode).lower() ):
                 winner = SLAVE_NAME
         else:
-            if(self.colSimilar(col)): return
+            if(self.colSimilar(col)): 
+                self.addSyncPass(col, "similar", self.newSObject.get(col))
 
             if not (mValue and sValue):
                 if(merge_mode == 'merge'):
@@ -624,15 +665,14 @@ class SyncUpdate(object):
         ]))
         out_str += subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates)
         out_str += self.displaySyncWarnings(tablefmt)
-        out_str += subtitle_fmt % 'WP CHANGES'
-        out_str += self.changes2WPSQL(tablefmt)
+        out_str += subtitle_fmt % 'XMLRPC CHANGES'
+        out_str += self.changesForXMLRPC(tablefmt)
         newMatch = Match([self.newMObject], [self.newSObject])
         out_str += subtitle_fmt % 'NEW'
         out_str += newMatch.tabulate(tablefmt)
         return out_str
 
-    def changes2WPSQL(self, tablefmt=None):
-        out = ""
+    def changesForXMLRPC(self, tablefmt=None):
         if self.syncWarnings:
             info_delimeter = "\n"
             subtitle_fmt = "%s"
@@ -652,33 +692,29 @@ class SyncUpdate(object):
                             user_updates[data_wp.get('key')] = [newVal]
 
             #generate user_sql
-            sql  = ""
-            user_pkey = self.oldMObject.WPID
-            assert user_pkey, "must have a primary key to update user database"
-            if user_pkey and (user_updates or meta_updates) :
-                if user_updates:
-                    sql += 'UPDATE {}_users'.format(tbl_prefix)
-                    sql += '   SET ' + ' AND '.join([\
-                        "{} = '{}'".format(key, value) for key, value in user_updates\
-                    ])
-                    sql += ' WHERE ID = {};\n'.format(user_pkey)
-                if meta_updates:
-                    sql += "\n".join(
-
-                    );
-
-
-
-
-            out += info_delimeter.join([
+            print_elements = [
                 subtitle_fmt % "usermeta updates" + tabulate(meta_updates, headers="keys", tablefmt=tablefmt),
-                subtitle_fmt % "user updates" + tabulate(user_updates, headers="keys", tablefmt=tablefmt),
-                subtitle_fmt % "sql" + sql,
-
-            ])
-
-
-        return out
+                subtitle_fmt % "user updates" + tabulate(user_updates, headers="keys", tablefmt=tablefmt)
+            ]
+            try:
+                user_pkey = self.winnerWPID
+            except :
+                user_pkey = None
+            if user_pkey:
+                if user_updates or meta_updates :
+                    all_updates = listUtils.combineOrderedDicts(user_updates , meta_updates )
+                    #all_updates is in table format: k => [v]. change to k => v
+                    for key, value in all_updates.items():
+                        all_updates[key] = value[0]
+                    all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+                    print_elements.append(all_updates_json_base64)
+                    # return (user_pkey, all_updates_json_base64)
+                else:
+                    print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")    
+            else:
+                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))    
+            return info_delimeter.join(print_elements)
+        return ""
 
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
@@ -830,7 +866,7 @@ print hashify("COMPLETED MERGE")
 print timediff()
 
 with io.open(resPath, 'w+', encoding='utf8') as resFile:
-    reporter = HtmlReporter(SanitationUtils.sanitizeForXml)
+    reporter = HtmlReporter()
 
     matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
     matchingGroup.addSection(
@@ -945,7 +981,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
     reporter.addGroup(syncingGroup)
 
-    resFile.write( reporter.getDocument() )
+    resFile.write( reporter.getDocumentUnicode() )
 
 
 #uncomment below to export

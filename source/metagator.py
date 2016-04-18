@@ -23,7 +23,7 @@ class MetaGator(object):
 		return self.ext.lower() in ['.png']
 
 	def write_meta(self, title, description):
-		title, description = map(SanitationUtils.makeSafeOutput, (title, description))
+		title, description = map(SanitationUtils.coerceAscii, (title, description))
 		# print "title, description: ", title, ', ', description
 		if self.isPNG():
 			# print "image is PNG"

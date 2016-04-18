@@ -761,12 +761,12 @@ class ColData_User(ColData_Base):
                 'key': 'ID',
                 'final': True
             },
-            # 'user':True,
+            'user':True,
             'report': True,
             'import':True,
-            # 'sync':'slave_override',
-            # 'warn':True,
-            # 'static':True,
+            'sync':'slave_override',
+            'warn':True,
+            'static':True,
         }),
         ('Wordpress Username',{
             # 'label':'Username',

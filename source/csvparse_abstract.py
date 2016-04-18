@@ -6,9 +6,9 @@ import csv
 from coldata import ColData_User
 from copy import deepcopy, copy
 
-DEBUG = True
+DEBUG = False
 DEBUG_PARSER = False
-DEBUG_MESSAGE = False
+DEBUG_MESSAGE = True
 
 import os
 
@@ -45,7 +45,7 @@ class Registrar:
 
     @classmethod
     def stringAnything(self, index, thing, delimeter):
-        return SanitationUtils.makeSafeOutput( u"%31s %s %s" % (index, delimeter, thing) )
+        return SanitationUtils.coerceBytes( u"%31s %s %s" % (index, delimeter, thing) )
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
@@ -225,7 +225,10 @@ class ObjList(list):
             return values[0]
 
     def getSanitizer(self, tablefmt=None):
-        return SanitationUtils.makeUnicodeCSVSafe
+        if tablefmt == 'html':
+            return SanitationUtils.sanitizeForXml
+        else:
+            return SanitationUtils.sanitizeForTable
 
     def tabulate(self, cols=None, tablefmt=None):
         objs = self.objects
@@ -400,7 +403,10 @@ class CSVParse_Base(object, Registrar):
                 continue
             try:
                 self.registerObject(objectData)
-                if (DEBUG_PARSER): self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
+                if (DEBUG_PARSER): 
+                    self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
+                    self.registerMessage("%s" % objectData.__repr__())
+
             except UserWarning as e:
                 self.registerError("could not register new object: {}".format(e), objectData)
                 continue

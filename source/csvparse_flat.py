@@ -13,7 +13,7 @@ import re
 
 usrs_per_file = 1000
 
-DEBUG_FLAT = False
+DEBUG_FLAT = True
 
 class ImportFlat(ImportObject):
     pass
@@ -106,12 +106,13 @@ class ImportUser(ImportFlat):
 
     def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
-        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema']:
+        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema', 'Wordpress ID']:
             val = kwargs.get(key, "")
             if(val):
                 self[key] = val
             elif(not self.get(key)):
                 self[key] = ""
+            if(DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
 
         self['Address'] = ContactAddress(
             self.contact_schema,  
@@ -148,7 +149,7 @@ class ImportUser(ImportFlat):
         return self.username == self.MYOBID
 
     def __repr__(self):
-        return "<%s> %s | %s | %s | %s " % (self.index, self.email, self.MYOBID, self.role, self.username)
+        return "<%s> %s | %s | %s | %s | %s" % (self.index, self.email, self.MYOBID, self.role, self.username, self.WPID)
 
 class UsrObjList(ObjList):
     def __init__(self, objects=None, indexer=None):

@@ -7,8 +7,6 @@ import time
 
 DEBUG_WOO = True
 
-
-
 class ImportWooObject(ImportGenObject):
     _isCategory = False
     _isVariable = False
@@ -533,7 +531,7 @@ class CSVParse_Woo(CSVParse_Gen):
     def processSpecials(self, objectData):
         schedule = objectData.get('SCHEDULE')
         if schedule:
-            print "specials for %s: %s" % (objectData, schedule)
+            if(DEBUG_WOO): self.registerMessage( "specials for %s: %s" % (objectData, schedule) )
             splist = filter(None, SanitationUtils.findAllTokens(schedule))
             for special in splist:
                 self.registerSpecial(objectData, special)
@@ -545,16 +543,16 @@ class CSVParse_Woo(CSVParse_Gen):
         self.processCategories(objectData)
         if objectData.isProduct:
             catSKUs = map(lambda x: x.codesum, objectData.getCategories().values())
-            self.registerMessage("categories: {}".format(catSKUs))
+            if(DEBUG_WOO): self.registerMessage("categories: {}".format(catSKUs))
         if objectData.isVariation:
             self.processVariation(objectData)
-            self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
+            if(DEBUG_WOO): self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
         self.processAttributes(objectData)
-        self.registerMessage("attributes: {}".format(objectData.getAttributes()))
+        if(DEBUG_WOO): self.registerMessage("attributes: {}".format(objectData.getAttributes()))
         self.processImages(objectData)
-        self.registerMessage("images: {}".format(objectData.getImages()))
+        if(DEBUG_WOO): self.registerMessage("images: {}".format(objectData.getImages()))
         self.processSpecials(objectData)
-        self.registerMessage("specials: {}".format(objectData.getSpecials()))
+        if(DEBUG_WOO): self.registerMessage("specials: {}".format(objectData.getSpecials()))
 
 
     def addDynRules(self, itemData, dynType, ruleIDs):
@@ -715,7 +713,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
             specials = objectData.getSpecials()
             objectData['spsum'] = '|'.join(specials)
-            self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
+            if(DEBUG_WOO): self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
@@ -729,10 +727,8 @@ class CSVParse_Woo(CSVParse_Gen):
                         specialfrom = specialparams.start_time
                         specialto = specialparams.end_time
 
-                        # specialfrom = SanitationUtils.datetotimestamp( specialparams["FROM"])
-                        # specialto = SanitationUtils.datetotimestamp(specialparams["TO"])
                         if( not TimeUtils.hasHappenedYet(specialto) ):
-                            self.registerMessage( "special %s is over" % special )
+                            self.registerMessage( "special %s is over: %s" % (special, specialto) )
                             continue
                         else:
                             specialfromString = TimeUtils.wpTimeToString(specialfrom)
@@ -742,7 +738,7 @@ class CSVParse_Woo(CSVParse_Gen):
                         for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                             discount = specialparams.get(tier)
                             if discount:
-                                # print "discount is ", discount
+                                print "discount is ", discount
                                 special_price = None
 
                                 percentages = SanitationUtils.findallPercent(discount)
