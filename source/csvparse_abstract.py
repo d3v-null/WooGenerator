@@ -8,7 +8,7 @@ from copy import deepcopy, copy
 
 DEBUG = False
 DEBUG_PARSER = False
-DEBUG_MESSAGE = True
+DEBUG_MESSAGE = False
 
 import os
 

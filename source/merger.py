@@ -421,27 +421,29 @@ class SyncUpdate(object):
 
     def getWinnerKey(self, key):
         if self.syncWarnings and key in self.syncWarnings.keys():
-            (subject, reason, oldVal, newVal, data) = self.syncWarnings[key]
+            # print "key in warnings"
+            subject, reason, oldVal, newVal, data = self.syncWarnings[key][0]
             return newVal
         if self.syncPasses and key in self.syncPasses.keys():
-            (reason, val, data) = self.syncPasses[key]
+            # print "key in passes"
+            reason, val, data = self.syncPasses[key][0]
             return val
         else:
-            if newSObject or newMObject:
+            if self.newSObject or self.newMObject:
                 try:
-                    vals = filter(None, [newMObject.get(key), newSObject.get(key)])
+                    vals = filter(None, [self.newMObject.get(key), self.newSObject.get(key)])
                     if any(vals):
                         return vals[0]
                 except:
                     pass
-            if oldSObject or oldMObject:
+            if self.oldSObject or self.oldMObject:
                 try:
-                    vals = filter(None, [oldMObject.get(key), oldSObject.get(key)])
+                    vals = filter(None, [self.oldMObject.get(key), self.oldSObject.get(key)])
                     if any(vals):
                         return vals[0]
                 except:
                     pass
-
+        print "could not find any value for key {key}".format(key=key)
         return None
 
             
@@ -578,6 +580,14 @@ class SyncUpdate(object):
             self.importantUpdates += 1
             if data.get('static'): self.importantStatic = False
 
+    def tieUpdate(self, col, reason, data={}):
+        if self.oldSObject:
+            self.addSyncPass(col, reason, self.oldSObject.get(col))
+        elif self.oldMObject:
+            self.addSyncPass(col, reason, self.oldMObject.get(col))
+        else:
+            self.addSyncPass(col, reason)        
+
     # def mUpdate(self, col, value, warn = False, reason = "", static=False):
     #     if(not self.newMObject): self.newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
     #     if static: self.static = False
@@ -602,7 +612,7 @@ class SyncUpdate(object):
         # if(self.colBlank(col)): continue
         if(self.colIdentical(col)): 
             # print "-> cols identical"
-            self.addSyncPass(col, "identical", self.newSObject.get(col))
+            self.tieUpdate(col, "identical", data)
             return
         else:
             # print "-> cols not identical"
@@ -622,7 +632,8 @@ class SyncUpdate(object):
                 winner = SLAVE_NAME
         else:
             if(self.colSimilar(col)): 
-                self.addSyncPass(col, "similar", self.newSObject.get(col))
+                self.tieUpdate(col, "identical", data)
+                return 
 
             if not (mValue and sValue):
                 if(merge_mode == 'merge'):
@@ -666,13 +677,24 @@ class SyncUpdate(object):
         out_str += subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates)
         out_str += self.displaySyncWarnings(tablefmt)
         out_str += subtitle_fmt % 'XMLRPC CHANGES'
-        out_str += self.changesForXMLRPC(tablefmt)
+        out_str += self.displayChangesForXMLRPC(tablefmt)
         newMatch = Match([self.newMObject], [self.newSObject])
         out_str += subtitle_fmt % 'NEW'
         out_str += newMatch.tabulate(tablefmt)
         return out_str
 
-    def changesForXMLRPC(self, tablefmt=None):
+    def getWPUpdates(self):
+        all_updates = {}
+        for col, warnings in self.syncWarnings.items():
+            for subject, reason, oldVal, newVal, data in warnings:  
+                if subject == 'ACT' and data.get('wp'):
+                    data_wp = data.get('wp',{})
+                    if data_wp.get('meta'):
+                        all_updates[data_wp.get('key')] = newVal
+                    elif not data_wp.get('final'):
+                        all_updates[data_wp.get('key')] = newVal
+
+    def displayChangesForXMLRPC(self, tablefmt=None):
         if self.syncWarnings:
             info_delimeter = "\n"
             subtitle_fmt = "%s"
@@ -680,39 +702,75 @@ class SyncUpdate(object):
                 info_delimeter = "<br/>"
                 subtitle_fmt = "<h4>%s</h4>" 
 
-            user_updates = {}
-            meta_updates = {}
-            for col, warnings in self.syncWarnings.items():
-                for subject, reason, oldVal, newVal, data in warnings:  
-                    if subject == 'ACT' and data.get('wp'):
-                        data_wp = data.get('wp',{})
-                        if data_wp.get('meta'):
-                            meta_updates[data_wp.get('key')] = [newVal]
-                        elif not data_wp.get('final'):
-                            user_updates[data_wp.get('key')] = [newVal]
+            print_elements = []
+            all_updates = self.getWPUpdates()
+            if all_updates:
+                print_elements.append(
+                    info_delimeter.join([
+                        subtitle_fmt % "all updates" ,
+                        tabulate(all_updates, headers="keys", tablefmt=tablefmt)
+                    ])
+                )
 
-            #generate user_sql
-            print_elements = [
-                subtitle_fmt % "usermeta updates" + tabulate(meta_updates, headers="keys", tablefmt=tablefmt),
-                subtitle_fmt % "user updates" + tabulate(user_updates, headers="keys", tablefmt=tablefmt)
-            ]
+            # user_updates = {}
+            # meta_updates = {}
+            # for col, warnings in self.syncWarnings.items():
+            #     for subject, reason, oldVal, newVal, data in warnings:  
+            #         if subject == 'ACT' and data.get('wp'):
+            #             data_wp = data.get('wp',{})
+            #             if data_wp.get('meta'):
+            #                 meta_updates[data_wp.get('key')] = [newVal]
+            #             elif not data_wp.get('final'):
+            #                 user_updates[data_wp.get('key')] = [newVal]
+
+            # #generate user_sql
+            # print_elements = []
+            # if meta_updates:
+            #     print_elements.append(
+            #         info_delimeter.join([
+            #             subtitle_fmt % "usermeta updates" ,
+            #             tabulate(meta_updates, headers="keys", tablefmt=tablefmt)
+            #         ])
+            #     )
+
+            # if user_updates:
+            #     print_elements.append(
+            #         info_delimeter.join([
+            #             subtitle_fmt % "user core updates" ,
+            #             tabulate(user_updates, headers="keys", tablefmt=tablefmt)
+            #         ])
+            #     )
+            
             try:
                 user_pkey = self.winnerWPID
-            except :
+            except Exception as e:
+                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
                 user_pkey = None
+                return info_delimeter.join(print_elements)
+
             if user_pkey:
-                if user_updates or meta_updates :
-                    all_updates = listUtils.combineOrderedDicts(user_updates , meta_updates )
-                    #all_updates is in table format: k => [v]. change to k => v
-                    for key, value in all_updates.items():
-                        all_updates[key] = value[0]
+                if all_updates :
                     all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
                     print_elements.append(all_updates_json_base64)
                     # return (user_pkey, all_updates_json_base64)
                 else:
                     print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")    
             else:
-                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))    
+                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))  
+
+            # if user_pkey:
+            #     if user_updates or meta_updates :
+            #         all_updates = listUtils.combineOrderedDicts(user_updates , meta_updates )
+            #         #all_updates is in table format: k => [v]. change to k => v
+            #         for key, value in all_updates.items():
+            #             all_updates[key] = value[0]
+            #         all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+            #         print_elements.append(all_updates_json_base64)
+            #         # return (user_pkey, all_updates_json_base64)
+            #     else:
+            #         print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")    
+            # else:
+            #     print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))    
             return info_delimeter.join(print_elements)
         return ""
 
@@ -985,6 +1043,17 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
 
 #uncomment below to export
+
+importProblematicWordpress = True
+if importProblematicWordpress:
+    for update in problematicUpdates:
+        print update.displayChangesForXMLRPC()
+        all_updates = update.getWPUpdates()
+        all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+        WPID = update.winnerWPID
+        print (WPID, all_updates_json_base64)
+
+
 
 # importUsers = UsrObjList()
 
