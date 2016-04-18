@@ -1,5 +1,6 @@
 from csvparse_abstract import ImportObject
 from csvparse_flat import UsrObjList #, ImportUser
+from utils import SanitationUtils
 
 
 class Match(object):
@@ -108,7 +109,8 @@ class Match(object):
                 # pprint(obj)
                 users.addObject(obj)
         out += users.tabulate(tablefmt=tablefmt)
-        return out
+        # return SanitationUtils.coerceUnicode(out)
+        return (out)
 
 
 def findCardMatches(match):
@@ -173,7 +175,7 @@ class MatchList(list):
                 prefix = '<div class="matchList">'
                 suffix = '</div>'
             return prefix + delimeter.join(
-                [match.tabulate(tablefmt=tablefmt) for match in self if match]
+                [SanitationUtils.coerceBytes(match.tabulate(tablefmt=tablefmt)) for match in self if match]
             ) + suffix
         else: 
             return ""

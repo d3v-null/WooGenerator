@@ -104,7 +104,8 @@ fileSuffix = "_test" if testMode else ""
 moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
-pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix)
+# pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
+pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 
 #########################################
 # Prepare Filter Data
@@ -143,7 +144,7 @@ saRows = []
 
 sql_run = True
 sql_run = not testMode
-# sql_run = False
+sql_run = False
 
 SSHTunnelForwarderParams = {
     'ssh_address_or_host':(ssh_host, ssh_port),
@@ -202,6 +203,7 @@ saParser = CSVParse_User(
     filterItems = filterItems
 )
 if saRows:
+    print "analysing slave rows", timediff()
     saParser.analyseRows(saRows)
 else:
     print "generating slave", timediff()
@@ -224,9 +226,10 @@ print "importing data"
 
 
 clear_pkl = False
-try_pkl = not testMode
-# try_pkl = False
 # clear_pkl = True
+# try_pkl = not testMode
+# try_pkl = True
+try_pkl = False
 
 if(clear_pkl): 
     try:
@@ -236,9 +239,10 @@ if(clear_pkl):
 
 try:
     if try_pkl:
+        print "loading master pickle", timediff()
         pkl_file = open(pklPath, 'rb')
         maParser = pickle.load(pkl_file)
-        print "loaded pickle", timediff()
+        print "loaded master pickle", timediff()
     else:
         raise Exception("not trying to load pickle")
 except Exception as e:
@@ -309,7 +313,7 @@ def printBasicColumns(users):
     usrList = UsrObjList()
     for user in users:
         usrList.addObject(user)
-    print usrList.tabulate(
+    print SanitationUtils.coerceBytes( usrList.tabulate(
         OrderedDict([
             ('E-mail', {}),
             ('MYOB Card ID', {}),
@@ -317,17 +321,17 @@ def printBasicColumns(users):
             ('Home Address', {}),
             ('Edited in Wordpress', {})
         ]),
-        tablefmt = 'html'
-    )
+        tablefmt = 'simple'
+    ))
 
-# printBasicColumns( list(chain( *maParser.emails.values() ))[:100] )
-printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
+printBasicColumns( list(chain( *maParser.emails.values() )) )
+# printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
 
-first = list(chain(*saParser.emails.values()))[0]
-print first.__repr__()
-print first['Edited in Wordpress']
-print TimeUtils.wpStrptime(first['Edited in Wordpress'])
-print first.wp_modtime
+# first = list(chain(*saParser.emails.values()))[0]
+# print first.__repr__()
+# print first['Edited in Wordpress']
+# print TimeUtils.wpStrptime(first['Edited in Wordpress'])
+# print first.wp_modtime
 
 # # for email, users in maParser.emails.items():
 # #     for user in users:
@@ -693,6 +697,7 @@ class SyncUpdate(object):
                         all_updates[data_wp.get('key')] = newVal
                     elif not data_wp.get('final'):
                         all_updates[data_wp.get('key')] = newVal
+        return all_updates
 
     def displayChangesForXMLRPC(self, tablefmt=None):
         if self.syncWarnings:
@@ -705,10 +710,11 @@ class SyncUpdate(object):
             print_elements = []
             all_updates = self.getWPUpdates()
             if all_updates:
+                updates_table = OrderedDict([(key, [value]) for key, value in all_updates.items()])
                 print_elements.append(
                     info_delimeter.join([
                         subtitle_fmt % "all updates" ,
-                        tabulate(all_updates, headers="keys", tablefmt=tablefmt)
+                        tabulate(updates_table, headers="keys", tablefmt=tablefmt)
                     ])
                 )
 
@@ -1010,23 +1016,23 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
     syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
 
-    # syncingGroup.addSection(
-    #     HtmlReporter.Section(
-    #         (MASTER_NAME + "_updates"),
-    #         description = MASTER_NAME + " items will be updated",
-    #         data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
-    #         length = len(masterUpdates)
-    #     )
-    # )
+    syncingGroup.addSection(
+        HtmlReporter.Section(
+            (MASTER_NAME + "_updates"),
+            description = MASTER_NAME + " items will be updated",
+            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
+            length = len(masterUpdates)
+        )
+    )
 
-    # syncingGroup.addSection(
-    #     HtmlReporter.Section(
-    #         (SLAVE_NAME + "_updates"),
-    #         description = SLAVE_NAME + " items will be updated",
-    #         data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-    #         length = len(masterUpdates)
-    #     )
-    # )
+    syncingGroup.addSection(
+        HtmlReporter.Section(
+            (SLAVE_NAME + "_updates"),
+            description = SLAVE_NAME + " items will be updated",
+            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
+            length = len(masterUpdates)
+        )
+    )
 
     syncingGroup.addSection(
         HtmlReporter.Section(
@@ -1047,11 +1053,11 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 importProblematicWordpress = True
 if importProblematicWordpress:
     for update in problematicUpdates:
-        print update.displayChangesForXMLRPC()
+        print SanitationUtils.coerceBytes( update.displayChangesForXMLRPC())
         all_updates = update.getWPUpdates()
         all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
         WPID = update.winnerWPID
-        print (WPID, all_updates_json_base64)
+        print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
 
 
 

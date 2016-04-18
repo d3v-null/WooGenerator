@@ -6,9 +6,9 @@ import csv
 from coldata import ColData_User
 from copy import deepcopy, copy
 
-DEBUG = False
+DEBUG = True
 DEBUG_PARSER = False
-DEBUG_MESSAGE = False
+DEBUG_MESSAGE = True
 
 import os
 
@@ -247,10 +247,17 @@ class ObjList(list):
                     # if col == 'Address':
                     #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
                     row += [ sanitizer(obj.get(col) )or ""]
+                    try:
+                        unicode(row[-1])
+                    except:
+                        print "can't turn row into unicode:", repr(row), SanitationUtils.coerceBytes(row)
+
                 table += [row]
                 # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
-            return tabulate(table, headers=header, tablefmt=tablefmt)
+            print SanitationUtils.coerceBytes(table)
+            # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
+            return (tabulate(table, headers=header, tablefmt=tablefmt))
             # print repr(table)
             # print repr(table.encode('utf8'))
             # return table.encode('utf8')
@@ -276,7 +283,7 @@ class ObjList(list):
 
     def getReportCols(self):
         return OrderedDict([
-                    ('row',{'label':'Row'}),
+                    ('_row',{'label':'Row'}),
                     ('index',{})
                 ])
 
@@ -444,12 +451,12 @@ class CSVParse_Base(object, Registrar):
     def tabulate(self, cols=None, tablefmt=None):
         listClass = self.objectContainer.getContainer()
         objlist = listClass(self.objects.values())
-        return objlist.tabulate(cols, tablefmt)
+        return SanitationUtils.coerceBytes(objlist.tabulate(cols, tablefmt))
 
 if __name__ == '__main__':
     inFolder = "../input/"
     # actPath = os.path.join(inFolder, 'partial act records.csv')
-    actPath = os.path.join(inFolder, "200-act-records.csv")
+    actPath = os.path.join(inFolder, "500-act-records.csv")
     outFolder = "../output/"
     usrPath = os.path.join(outFolder, 'users.csv')
 
@@ -465,7 +472,8 @@ if __name__ == '__main__':
 
     usrParser.analyseFile(actPath)
 
-    print usrParser.tabulate()
+    print SanitationUtils.coerceBytes( usrParser.tabulate(cols = usrData.getReportCols()))
+    print ( usrParser.tabulate(cols = usrData.getReportCols()))
 
     for usr in usrParser.objects.values()[:3]:    
         pprint(OrderedDict(usr))

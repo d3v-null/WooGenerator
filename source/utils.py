@@ -93,6 +93,7 @@ class SanitationUtils:
     @staticmethod
     def sanitizeForTable(thing):
         return SanitationUtils.compose(
+            SanitationUtils.coerceUnicode,
             SanitationUtils.escapeNewlines,
             SanitationUtils.coerceUnicode
         )(thing)
@@ -100,6 +101,7 @@ class SanitationUtils:
     @staticmethod
     def sanitizeForXml(thing):
         return SanitationUtils.compose(
+            SanitationUtils.coerceUnicode,
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.unicodeToXml,
             SanitationUtils.coerceUnicode
@@ -1673,6 +1675,7 @@ class HtmlReporter(object):
             out += re.sub("<table>","<table class=\"table table-striped\">",self.data)
             out += '</p>'
             out += '</div>'
+            out = SanitationUtils.coerceUnicode( out )
             return out
 
 
@@ -1693,6 +1696,7 @@ class HtmlReporter(object):
             for section in self.sections.values():
                 out += section.toHtml()
             out += '</div>'
+            out = SanitationUtils.coerceUnicode( out )
             return out
 
     groups = OrderedDict()
@@ -1716,29 +1720,31 @@ class HtmlReporter(object):
 """
 
     def getBody(self):
-        return """
+        content = "<br/>".join(
+            group.toHtml() for group in self.groups.values()
+        )
+        out = """
 <body>
-    {content}
+""" + content + """
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </body>
-""".format(
-            content = "<br/>".join(
-                group.toHtml() for group in self.groups.values()
-            )
-        )
+"""     
+        out = SanitationUtils.coerceUnicode( out )
+        return out
 
     def getDocument(self):
-        return """\
+        head = self.getHead()
+        body = self.getBody()
+        out = """\
 <!DOCTYPE html>
 <html lang="en">
-{head}
-{body}
+""" + head + """"
+""" + body + """
 </html>
-""".format(
-            head=self.getHead(),
-            body=self.getBody()
-        )     
+"""
+        out = SanitationUtils.coerceUnicode( out )
+        return out
 
     def getDocumentUnicode(self): 
         return SanitationUtils.coerceUnicode( self.getDocument() )
@@ -1869,10 +1875,16 @@ class UnicodeReader:
     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
+        self.lastRow = None
 
     def next(self):
-        row = self.reader.next()
-        return [unicode(s, "utf-8") for s in row]
+        try:
+            row = self.reader.next()
+        except Exception as e:
+            print "could not get next row, previous row: ", repr(e), SanitationUtils.coerceBytes(self.lastRow)
+            raise e
+        self.lastRow = row
+        return [SanitationUtils.coerceUnicode(s) for s in row]
 
     def __iter__(self):
         return self
