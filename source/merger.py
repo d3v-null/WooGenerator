@@ -1,4 +1,3 @@
-# import csv
 from collections import OrderedDict
 import os
 # import shutil
@@ -21,13 +20,14 @@ import yaml
 import MySQLdb
 from sshtunnel import SSHTunnelForwarder
 import io
+import wordpress_xmlrpc
 
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
 def timediff():
     return time.time() - start_time
 
-DEBUG = True
+DEBUG = False
 testMode = False
 testMode = True
 
@@ -70,6 +70,9 @@ with open(yamlPath) as stream:
     db_pass = config.get(optionNamePrefix+'db_pass')
     db_name = config.get(optionNamePrefix+'db_name')
     tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
+    wp_user = config.get(optionNamePrefix+'wp_user', '')
+    wp_pass = config.get(optionNamePrefix+'wp_pass', '')
+    store_url = config.get(optionNamePrefix+'store_url', '')
 
     if 'userFile' in config.keys():
         userFile = config.get('userFile')
@@ -93,11 +96,18 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
 
 # maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
 maPath = os.path.join(inFolder, "ACT Report_Entire Database_06.04.16.csv")
+maEncoding = "latin-1"
 saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
+saEncoding = "utf8"
 
 if(testMode):
     maPath = os.path.join(inFolder, "500-act-records.csv")
+    maEncoding = "utf8"
     saPath = os.path.join(inFolder, "500-wp-records.csv")
+    saEncoding = "utf8"
+
+assert store_url, "store url must not be blank"
+xmlrpc_uri = store_url + 'xmlrpc.php'
 
 fileSuffix = "_test" if testMode else ""
 
@@ -207,7 +217,7 @@ if saRows:
     saParser.analyseRows(saRows)
 else:
     print "generating slave", timediff()
-    saParser.analyseFile(saPath)
+    saParser.analyseFile(saPath, saEncoding)
 print "analysed %d slave objects" % len(saParser.objects), timediff()
 
 #########################################
@@ -254,7 +264,7 @@ except Exception as e:
         filterItems = filterItems
     )
 
-    maParser.analyseFile(maPath)
+    maParser.analyseFile(maPath, maEncoding)
     print "imported %d master objects" % len(maParser.objects), timediff()
 
 
@@ -538,7 +548,7 @@ class SyncUpdate(object):
                     if subject not in subjects.keys():
                         subjects[subject] = []
                     subjects[subject] += [map( 
-                        lambda x: SanitationUtils.coerceBytes(x)[:64], 
+                        lambda x: SanitationUtils.coerceUnicode(x)[:64], 
                         [col, reason, oldVal, newVal] 
                     )]
             tables = []
@@ -687,16 +697,19 @@ class SyncUpdate(object):
         out_str += newMatch.tabulate(tablefmt)
         return out_str
 
+    def getWPUpdatesRecursive(self, col):
+
     def getWPUpdates(self):
         all_updates = {}
         for col, warnings in self.syncWarnings.items():
             for subject, reason, oldVal, newVal, data in warnings:  
-                if subject == 'ACT' and data.get('wp'):
+                if subject == 'ACT' and (data.get('wp') or data.get('aliases')):
                     data_wp = data.get('wp',{})
                     if data_wp.get('meta'):
                         all_updates[data_wp.get('key')] = newVal
                     elif not data_wp.get('final'):
                         all_updates[data_wp.get('key')] = newVal
+
         return all_updates
 
     def displayChangesForXMLRPC(self, tablefmt=None):
@@ -708,61 +721,33 @@ class SyncUpdate(object):
                 subtitle_fmt = "<h4>%s</h4>" 
 
             print_elements = []
+
+            try:
+                user_pkey = self.winnerWPID
+                assert user_pkey, "primary key must be valid, %s" % repr(user_pkey)
+            except Exception as e:
+                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
+                user_pkey = None
+                return info_delimeter.join(print_elements)
+
             all_updates = self.getWPUpdates()
+            additional_updates = OrderedDict()
+            if user_pkey:
+                additional_updates['ID'] = user_pkey
+
             if all_updates:
-                updates_table = OrderedDict([(key, [value]) for key, value in all_updates.items()])
+                updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + all_updates.items()])
                 print_elements.append(
                     info_delimeter.join([
                         subtitle_fmt % "all updates" ,
                         tabulate(updates_table, headers="keys", tablefmt=tablefmt)
                     ])
                 )
-
-            # user_updates = {}
-            # meta_updates = {}
-            # for col, warnings in self.syncWarnings.items():
-            #     for subject, reason, oldVal, newVal, data in warnings:  
-            #         if subject == 'ACT' and data.get('wp'):
-            #             data_wp = data.get('wp',{})
-            #             if data_wp.get('meta'):
-            #                 meta_updates[data_wp.get('key')] = [newVal]
-            #             elif not data_wp.get('final'):
-            #                 user_updates[data_wp.get('key')] = [newVal]
-
-            # #generate user_sql
-            # print_elements = []
-            # if meta_updates:
-            #     print_elements.append(
-            #         info_delimeter.join([
-            #             subtitle_fmt % "usermeta updates" ,
-            #             tabulate(meta_updates, headers="keys", tablefmt=tablefmt)
-            #         ])
-            #     )
-
-            # if user_updates:
-            #     print_elements.append(
-            #         info_delimeter.join([
-            #             subtitle_fmt % "user core updates" ,
-            #             tabulate(user_updates, headers="keys", tablefmt=tablefmt)
-            #         ])
-            #     )
-            
-            try:
-                user_pkey = self.winnerWPID
-            except Exception as e:
-                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
-                user_pkey = None
-                return info_delimeter.join(print_elements)
-
-            if user_pkey:
-                if all_updates :
-                    all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-                    print_elements.append(all_updates_json_base64)
-                    # return (user_pkey, all_updates_json_base64)
-                else:
-                    print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")    
+                all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+                print_elements.append(all_updates_json_base64)
+                # return (user_pkey, all_updates_json_base64)
             else:
-                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))  
+                print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")     
 
             # if user_pkey:
             #     if user_updates or meta_updates :
@@ -929,6 +914,13 @@ for match in globalMatches:
 print hashify("COMPLETED MERGE")
 print timediff()
 
+#########################################
+# Write Report
+#########################################
+
+print hashify("Write Report")
+print timediff()
+
 with io.open(resPath, 'w+', encoding='utf8') as resFile:
     reporter = HtmlReporter()
 
@@ -1047,17 +1039,39 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
     resFile.write( reporter.getDocumentUnicode() )
 
+#########################################
+# Update database
+#########################################
 
-#uncomment below to export
+print hashify("Update database")
+print timediff()
+
+class UpdateUser( wordpress_xmlrpc.AuthenticatedMethod ):
+    method_name = 'tansync.update_user_fields'
+    method_args = ('user_id', 'fields_json_base64')
+
+# print repr(xmlrpc_uri)
+# print repr(wp_user)
+# print repr(wp_pass)
+
+xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
 
 importProblematicWordpress = True
 if importProblematicWordpress:
     for update in problematicUpdates:
+        print u"CHANGES XLMRPC START (%s)" % unicode(update)
         print SanitationUtils.coerceBytes( update.displayChangesForXMLRPC())
+        print "CHANGES XLMRPC END"
         all_updates = update.getWPUpdates()
+
         all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
         WPID = update.winnerWPID
-        print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
+
+        # print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
+
+        xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
+
+        print "XMLRPC OUT: ", xmlrpc_out
 
 
 

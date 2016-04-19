@@ -9,7 +9,7 @@ import inspect
 import json
 from collections import OrderedDict
 import codecs
-import csv
+import unicodecsv
 import cStringIO
 from uniqid import uniqid
 from phpserialize import dumps, loads
@@ -20,14 +20,26 @@ import base64
 DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
-DEBUG_ADDRESS = False
+DEBUG_ADDRESS = True
 
 class SanitationUtils:
     email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
-    punctuationChars = [
-        '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '\-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\\\', '\\]', '^', '_', '`', '{', '|', '}', '~' 
-    ]
     myobid_regex = r"C\d+"
+    punctuationChars = [
+        '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '\-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\\\', '\\]', '^', '_', '`', '{', '|', '}', '~', '\n'
+    ]
+    allowedPunctuation = [
+        '\\-', '.', '\''
+    ]
+    tokenDelimeters  = [r"\s", r"\d"] + list(set(punctuationChars) - set(allowedPunctuation))
+    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    nondelimeterRegex= r"[^%s]" % "".join(tokenDelimeters)
+    clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
+    clearFinishRegex = r"(?!%s)" % nondelimeterRegex
+
+    @staticmethod
+    def wrapClearRegex(regex):
+        return SanitationUtils.clearStartRegex + regex + SanitationUtils.clearFinishRegex
 
     @staticmethod
     def compose(*functions):
@@ -37,75 +49,105 @@ class SanitationUtils:
 
     @staticmethod
     def unicodeToUTF8(u_str):
-        return converters.to_bytes(u_str, "utf8")
+        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
+        byte_return = converters.to_bytes(u_str, "utf8")
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def unicodeToAscii(u_str):
-        return converters.to_bytes(u_str, "ascii", "backslashreplace")
+        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
+        byte_return = converters.to_bytes(u_str, "ascii", "backslashreplace")
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def unicodeToXml(u_str, ascii_only = False):
+        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         if ascii_only:
-            return converters.unicode_to_xml(u_str, encoding="ascii")
+            byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
         else:
-            return converters.unicode_to_xml(u_str)
+            byte_return = converters.unicode_to_xml(u_str)
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def utf8ToUnicode(utf8_str):
-        return converters.to_unicode(utf8_str, "utf8")
+        assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
+        byte_return = converters.to_unicode(utf8_str, "utf8")
+        assert isinstance(byte_return, unicode), "something went wrong, should return unicode not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def xmlToUnicode(utf8_str):
-        return converters.xml_to_unicode(utf8_str)
+        assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
+        byte_return = converters.xml_to_unicode(utf8_str)
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def asciiToUnicode(ascii_str):
-        return converters.to_unicode(ascii_str, "ascii")
+        assert isinstance(ascii_str, str), "parameter should be str not %s" % type(ascii_str)
+        unicode_return = converters.to_unicode(ascii_str, "ascii")
+        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        return unicode_return
 
     @staticmethod
     def coerceUnicode(thing):
         if thing is None:
-            return u""
+            unicode_return = u""
         else:
-            return converters.to_unicode(thing, encoding="utf8")
+            unicode_return = converters.to_unicode(thing, encoding="utf8")
+        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        return unicode_return
 
     @staticmethod
     def coerceBytes(thing):
-        return SanitationUtils.compose(
+        byte_return = SanitationUtils.compose(
             SanitationUtils.unicodeToUTF8,
             SanitationUtils.coerceUnicode
         )(thing)
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def coerceAscii(thing):
-        return SanitationUtils.compose(
+        byte_return = SanitationUtils.compose(
             SanitationUtils.unicodeToAscii,
             SanitationUtils.coerceUnicode
         )(thing)
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def coerceXML(thing):
-        return SanitationUtils.compose(
+        byte_return = SanitationUtils.compose(
             SanitationUtils.unicodeToXml,
             SanitationUtils.coerceUnicode
         )(thing)
+        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        return byte_return
 
     @staticmethod
     def sanitizeForTable(thing):
-        return SanitationUtils.compose(
+        unicode_return = SanitationUtils.compose(
             SanitationUtils.coerceUnicode,
             SanitationUtils.escapeNewlines,
             SanitationUtils.coerceUnicode
         )(thing)
+        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        return unicode_return
 
     @staticmethod
     def sanitizeForXml(thing):
-        return SanitationUtils.compose(
+        unicode_return = SanitationUtils.compose(
             SanitationUtils.coerceUnicode,
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.unicodeToXml,
             SanitationUtils.coerceUnicode
         )(thing)
+        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        return unicode_return
 
     # @staticmethod
     # def anythingToAscii(thing):
@@ -264,6 +306,12 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
+    def stripTailingNewline(string):
+        str_out = re.sub(r'(\\n|\n)$', '', string)
+        if DEBUG: print "stripTailingNewline", repr(string), repr(str_out)
+        return str_out
+
+    @staticmethod
     def stripAllWhitespace(string):
         if DEBUG: print "stripAllWhitespace", repr(string)
         str_out = re.sub(r'\s', '', string)
@@ -312,7 +360,7 @@ class SanitationUtils:
 
     @staticmethod
     def escapeNewlines(string):
-        return re.sub('\n','\\n', string)
+        return re.sub('\n',r'\\n', string)
 
     @staticmethod
     def compileRegex(subs):
@@ -332,6 +380,7 @@ class SanitationUtils:
             SanitationUtils.stripLeadingWhitespace,
             SanitationUtils.stripTailingWhitespace,            
             SanitationUtils.sanitizeNewlines,
+            SanitationUtils.stripTailingNewline,
             SanitationUtils.removeNULL,
             SanitationUtils.coerceUnicode
         )(cell)   
@@ -482,11 +531,11 @@ class SanitationUtils:
     @staticmethod
     def encodeBase64(str):
         utf8_str = SanitationUtils.coerceBytes(str)
-        return base64.encodestring(utf8_str)
+        return base64.urlsafe_b64encode(utf8_str)
 
     @staticmethod
     def decodeBase64(b64_str):
-        return base64.decodestring(b64_str)
+        return base64.urlsafe_b64decode(b64_str)
 
 
 
@@ -548,6 +597,8 @@ def testSanitationUtils():
     # print SanitationUtils.makeSafeOutput(None)
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
+    a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
+    print SanitationUtils.coerceBytes( SanitationUtils.escapeNewlines(a))
 
 class ValidationUtils:
     @staticmethod
@@ -587,6 +638,9 @@ def compileAbbrvRegex( abbrv ):
         [compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
     ))
 
+
+class NameUtils:
+    nameRegex        = r"({0}+(\s*{0})*)".format(SanitationUtils.nondelimeterRegex)  
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
@@ -1076,18 +1130,11 @@ class AddressUtils:
         ('AX', ['ALAND ISLANDS'])
     ])
 
-    allowedPunctuation = ['\\-', '.', '\'']
-    tokenDelimeters  = [r"\s", r"\d"] + list(set(SanitationUtils.punctuationChars) - set(allowedPunctuation))
-    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
-    nondelimeterRegex= r"[^%s]" % "".join(tokenDelimeters)
-    clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
-    clearFinishRegex = r"(?!%s)" % nondelimeterRegex
     numberRangeRegex = r"(\d+) ?- ?(\d+)"
     numberAlphaRegex = r"(\d+) ?([A-Z])"
     numberSlashRegex = r"(\d+)/(\d+)"
     alphaNumberRegex = r"[A-Z](\d+)"
     numberRegex      = r"(\d+)"
-    nameRegex        = r"(%s+(\s*%s)*)" % (nondelimeterRegex, nondelimeterRegex)
     slashAbbrvRegex  = r"[A-Z]/[A-Z]+"
     multiNumberRegex = "|".join([
         numberAlphaRegex,
@@ -1113,7 +1160,7 @@ class AddressUtils:
     )
     thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
         multiNumberRegex,
-        nameRegex,
+        NameUtils.nameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
     )
@@ -1121,7 +1168,7 @@ class AddressUtils:
         compileAbbrvRegex(buildingTypeAbbreviations)
     )
     buildingRegex = r"(?P<building_name>%s)\s+%s" % (
-        nameRegex,
+        NameUtils.nameRegex,
         buildingTypeRegex
     )
     weakThoroughfareTypeRegex = r"(?P<weak_thoroughfare_type>%s)" % (
@@ -1131,7 +1178,7 @@ class AddressUtils:
         compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
     weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
-        nameRegex,
+        NameUtils.nameRegex,
         weakThoroughfareTypeRegex,
         weakThoroughfareSuffixRegex
     )
@@ -1146,25 +1193,21 @@ class AddressUtils:
 
 # [^,\s\d/()-]+
     addressTokenRegex = r"(%s)" % "|".join([
-        clearStartRegex + deliveryRegex + clearFinishRegex,
-        clearStartRegex + floorLevelRegex + clearFinishRegex,
-        clearStartRegex + subunitRegex + clearFinishRegex,
-        clearStartRegex + thoroughfareRegex + clearFinishRegex,
-        clearStartRegex + buildingRegex + clearFinishRegex,
+        SanitationUtils.wrapClearRegex( deliveryRegex),
+        SanitationUtils.wrapClearRegex( floorLevelRegex),
+        SanitationUtils.wrapClearRegex( subunitRegex),
+        SanitationUtils.wrapClearRegex( thoroughfareRegex),
+        SanitationUtils.wrapClearRegex( buildingRegex),
         # clearStartRegex + weakThoroughfareRegex + clearFinishRegex,
-        clearStartRegex + stateRegex + clearFinishRegex,
-        clearStartRegex + nameRegex + clearFinishRegex,
-        clearStartRegex + numberRangeRegex + clearFinishRegex,
+        SanitationUtils.wrapClearRegex( stateRegex),
+        SanitationUtils.wrapClearRegex( NameUtils.nameRegex),
+        SanitationUtils.wrapClearRegex( numberRangeRegex),
         # clearStartRegex + numberSlashRegex + clearFinishRegex,
-        clearStartRegex + numberAlphaRegex + clearFinishRegex,
-        clearStartRegex + numberRegex + clearFinishRegex,
-        clearStartRegex + slashAbbrvRegex + clearFinishRegex
+        SanitationUtils.wrapClearRegex( numberAlphaRegex),
+        SanitationUtils.wrapClearRegex( numberRegex),
+        SanitationUtils.wrapClearRegex( slashAbbrvRegex)
 
     ])
-
-    @staticmethod
-    def wrapClearRegex(regex):
-        return AddressUtils.clearStartRegex + regex + AddressUtils.clearFinishRegex
 
     @staticmethod
     def identifyAbbreviation(abbrvDict, string):
@@ -1208,7 +1251,7 @@ class AddressUtils:
     @staticmethod
     def getSubunit(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.subunitRegex
             ),
             token
@@ -1224,7 +1267,7 @@ class AddressUtils:
     @staticmethod
     def getFloor(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.floorLevelRegex
             ),
             token
@@ -1240,7 +1283,7 @@ class AddressUtils:
     @staticmethod
     def getThoroughfare(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.thoroughfareRegex
             ),
             token
@@ -1267,7 +1310,7 @@ class AddressUtils:
     @staticmethod
     def getBuilding(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.buildingRegex
             ),
             token
@@ -1287,7 +1330,7 @@ class AddressUtils:
     @staticmethod
     def getWeakThoroughfare(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.weakThoroughfareRegex
             ),
             token
@@ -1313,7 +1356,7 @@ class AddressUtils:
     @staticmethod
     def getState(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.stateRegex
             ),
             token
@@ -1327,7 +1370,7 @@ class AddressUtils:
     @staticmethod
     def getDelivery(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 AddressUtils.deliveryRegex
             ),
             token
@@ -1342,13 +1385,14 @@ class AddressUtils:
     @staticmethod
     def getName(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
-                AddressUtils.nameRegex
+            SanitationUtils.wrapClearRegex(
+                NameUtils.nameRegex
             ),
             token
         )
         matchGrps = match.groups() if match else None
         if(matchGrps):
+            # name = " ".join(matchGrps)
             name = matchGrps[0]
             if DEBUG_ADDRESS: print "FOUND NAME ", repr(name)
             return name
@@ -1356,7 +1400,7 @@ class AddressUtils:
     @staticmethod
     def getNumber(token):
         match = re.match(
-            AddressUtils.wrapClearRegex(
+            SanitationUtils.wrapClearRegex(
                 "(" + AddressUtils.multiNumberRegex + ")"
             ),
             token
@@ -1380,7 +1424,7 @@ class AddressUtils:
     @staticmethod
     def sanitizeAddressToken(string):
         string = SanitationUtils.stripExtraWhitespace(string)
-        string = re.sub(AddressUtils.numberAlphaRegex + AddressUtils.clearStartRegex , r'\1\2', string)
+        string = re.sub(AddressUtils.numberAlphaRegex + SanitationUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
         if DEBUG: print "sanitizeAddressToken", SanitationUtils.coerceBytes( string)
         return string
@@ -1772,7 +1816,7 @@ def testHTMLReporter():
         reporter.addGroup(matchingGroup)
 
         document = reporter.getDocument()
-        print SanitationUtils.coerceBytes( document)
+        # print SanitationUtils.coerceBytes( document)
         uresFile.write( SanitationUtils.coerceUnicode(document))
         resFile.write( SanitationUtils.coerceAscii(document) )
 
@@ -1839,114 +1883,117 @@ class debugUtils:
     def getCallerProcedure():
         return inspect.stack()[2][3]   
 
-class UTF8Recoder:
-    """
-    Iterator that reads an encoded stream and reencodes the input to UTF-8
-    """
-    def __init__(self, f, encoding):
-        try:
-            bom = codecs.BOM_UTF8
-            # print "bom: ", repr(bom)
-            bomtest = f.read(len(bom))
-            # print "bomtest: ", repr(bomtest)
-            if(bomtest == bom):
-                pass
-                # print "starts with BOM_UTF8"
-            else:
-                raise Exception("does not start w/ BOM_UTF8")
-        except Exception as e:
-            if(e): pass
-            # print "could not remove bom, ",e
-            f.seek(0)
-        self.reader = codecs.getreader(encoding)(f)
+# class UTF8Recoder:
+#     """
+#     Iterator that reads an encoded stream and reencodes the input to UTF-8
+#     """
+#     def __init__(self, f, encoding):
+#         self.encoding = encoding
+#         try:
+#             bom = codecs.BOM_UTF8
+#             # print "bom: ", repr(bom)
+#             bomtest = f.read(len(bom))
+#             # print "bomtest: ", repr(bomtest)
+#             if(bomtest == bom):
+#                 pass
+#                 # print "starts with BOM_UTF8"
+#             else:
+#                 raise Exception("does not start w/ BOM_UTF8")
+#         except Exception as e:
+#             if(e): pass
+#             # print "could not remove bom, ",e
+#             f.seek(0)
+#         self.reader = codecs.getreader(encoding)(f)
 
-    def __iter__(self):
-        return self
+#     def __iter__(self):
+#         return self
 
-    def next(self):
-        return self.reader.next().encode("utf-8")
+#     def next(self):
+#         reader_next = self.reader.next()
+#         print "READER NEXT: ", repr(reader_next)
+#         return reader_next.encode('utf-8')
 
-class UnicodeReader:
-    """
-    A CSV reader which will iterate over lines in the CSV file "f",
-    which is encoded in the given encoding.
-    """
+# class UnicodeReader:
+#     """
+#     A CSV reader which will iterate over lines in the CSV file "f",
+#     which is encoded in the given encoding.
+#     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        f = UTF8Recoder(f, encoding)
-        self.reader = csv.reader(f, dialect=dialect, **kwds)
-        self.lastRow = None
+#     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+#         f = UTF8Recoder(f, encoding)
+#         self.reader = csv.reader(f, dialect=dialect, **kwds)
+#         self.lastRow = None
 
-    def next(self):
-        try:
-            row = self.reader.next()
-        except Exception as e:
-            print "could not get next row, previous row: ", repr(e), SanitationUtils.coerceBytes(self.lastRow)
-            raise e
-        self.lastRow = row
-        return [SanitationUtils.coerceUnicode(s) for s in row]
+#     def next(self):
+#         try:
+#             row = self.reader.next()
+#         except Exception as e:
+#             print "could not get next row, previous row: ", repr(e), SanitationUtils.coerceBytes(self.lastRow)
+#             raise e
+#         self.lastRow = row
+#         return [SanitationUtils.coerceUnicode(s) for s in row]
 
-    def __iter__(self):
-        return self
+#     def __iter__(self):
+#         return self
 
-class UnicodeWriter:
-    """
-    A CSV writer which will write rows to CSV file "f",
-    which is encoded in the given encoding.
-    """
+# class UnicodeWriter:
+#     """
+#     A CSV writer which will write rows to CSV file "f",
+#     which is encoded in the given encoding.
+#     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
-        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
+#     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+#         # Redirect output to a queue
+#         self.queue = cStringIO.StringIO()
+#         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+#         self.stream = f
+#         self.encoder = codecs.getincrementalencoder(encoding)()
 
-    def writerow(self, row):
-        row = map(
-            lambda x: "" if x is None else x,
-            row
-        )
-        assert 'None' not in row
-        self.writer.writerow([s.encode("utf-8") for s in row])
-        # Fetch UTF-8 output from the queue ...
-        data = self.queue.getvalue()
-        if data is None: data = ""
-        data = data.decode("utf-8")
-        # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
+#     def writerow(self, row):
+#         row = map(
+#             lambda x: "" if x is None else x,
+#             row
+#         )
+#         assert 'None' not in row
+#         self.writer.writerow([s.encode("utf-8") for s in row])
+#         # Fetch UTF-8 output from the queue ...
+#         data = self.queue.getvalue()
+#         if data is None: data = ""
+#         data = data.decode("utf-8")
+#         # ... and reencode it into the target encoding
+#         data = self.encoder.encode(data)
+#         # write to the target stream
+#         self.stream.write(data)
+#         # empty queue
+#         self.queue.truncate(0)
 
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
+#     def writerows(self, rows):
+#         for row in rows:
+#             self.writerow(row)
 
-class UnicodeDictWriter(UnicodeWriter):
-    def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
-        UnicodeWriter.__init__(self, f, dialect, encoding, **kwds)
-        self.fieldnames = fieldnames
+# class UnicodeDictWriter(UnicodeWriter):
+#     def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
+#         UnicodeWriter.__init__(self, f, dialect, encoding, **kwds)
+#         self.fieldnames = fieldnames
 
-    def writerow(self, rowDict):
-        row = [SanitationUtils.coerceUnicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
-        UnicodeWriter.writerow(self, row)
+#     def writerow(self, rowDict):
+#         row = [SanitationUtils.coerceUnicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
+#         UnicodeWriter.writerow(self, row)
 
-    def writeheader(self):
-        UnicodeWriter.writerow(self, self.fieldnames)
+#     def writeheader(self):
+#         UnicodeWriter.writerow(self, self.fieldnames)
     
-def testUnicodeWriter():
-    pass
-    # testpath = "../output/UnicodeDictWriterTest.csv"
-    # with open(testpath, 'w+') as testfile:
-    #     writer = UnicodeDictWriter(testfile, ['a', 'b', 'c'])
-    #     writer.writeheader()
-    #     writer.writerow( {'a':1, 'b':2, 'c':u"\u00C3"})
+# def testUnicodeWriter():
+#     pass
+#     # testpath = "../output/UnicodeDictWriterTest.csv"
+#     # with open(testpath, 'w+') as testfile:
+#     #     writer = UnicodeDictWriter(testfile, ['a', 'b', 'c'])
+#     #     writer.writeheader()
+#     #     writer.writerow( {'a':1, 'b':2, 'c':u"\u00C3"})
 
-    # with open(testpath, 'r') as testfile:
-    #     for line in testfile.readlines():
-    #         print line[:-1]
+#     # with open(testpath, 'r') as testfile:
+#     #     for line in testfile.readlines():
+#     #         print line[:-1]
     
 if __name__ == '__main__':
     # testHTMLReporter()

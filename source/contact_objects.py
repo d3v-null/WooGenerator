@@ -1,9 +1,9 @@
-from utils import descriptorUtils, listUtils, SanitationUtils, AddressUtils
+from utils import  SanitationUtils, AddressUtils # descriptorUtils, listUtils,
 from pprint import pprint
 from collections import OrderedDict
 
 DEBUG_ADDRESS = False
-# DEBUG_ADDRESS = True
+DEBUG_ADDRESS = True
 
 class ContactAddress(object):
     def __init__(self, schema=None, **kwargs):
@@ -35,7 +35,6 @@ class ContactAddress(object):
             if not schema: self.schema = self.__class__.determineSchema(**kwargs)
 
             lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
-
 
             wordsToRemove = []
 
@@ -317,89 +316,157 @@ class ContactAddress(object):
         else:
             return False
 
-if __name__ == '__main__':
+def testContactAddress():
     #GETS
     print ContactAddress(
-        city = 'Perth',
+        city = 'Jandakot',
         state = 'WA',
         country = 'Australia',
-        line1 = "SHOP G159 BROADMEADOWS SHOP. CENTRE",
-        line2 = "104 PEARCEDALE PARADE"
+        line1 = "Unit 1\\n",
+        line2 = "41 Biscayne Way",
+        postcode = "6164"
     ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        city = 'Perth',
-        state = 'WA',
-        country = 'Australia',
-        line1 = "SHOP 5/562 PENNANT HILLS RD",
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     city = 'Perth',
+    #     state = 'WA',
+    #     country = 'Australia',
+    #     line1 = "SHOP G159 BROADMEADOWS SHOP. CENTRE",
+    #     line2 = "104 PEARCEDALE PARADE"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "SH115A, FLOREAT FORUM"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     city = 'Perth',
+    #     state = 'WA',
+    #     country = 'Australia',
+    #     line1 = "SHOP 5/562 PENNANT HILLS RD",
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "A8/90 MOUNT STREET"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "SH115A, FLOREAT FORUM"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "DANNY, SPG1 LG3 INGLE FARM SHOPPING CENTRE"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "A8/90 MOUNT STREET"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "8/5-7 KILVINGTON DRIVE EAST"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "DANNY, SPG1 LG3 INGLE FARM SHOPPING CENTRE"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-         line1 = u'ANTONY WHITE, PO BOX 886',
-         line2 = u'LEVEL1 468 KINGSFORD SMITH DRIVE'
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "8/5-7 KILVINGTON DRIVE EAST"
+    # ).__str__(out_schema="flat")
+
+    # print ContactAddress(
+    #      line1 = u'ANTONY WHITE, PO BOX 886',
+    #      line2 = u'LEVEL1 468 KINGSFORD SMITH DRIVE'
+    # ).__str__(out_schema="flat")
     
-    # DOESN'T GET
+    # # DOESN'T GET
 
-    print ContactAddress(
-        line1 = "THE VILLAGE SHOP 5"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "THE VILLAGE SHOP 5"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "3/3 HOWARD AVA"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "3/3 HOWARD AVA"
+    # ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "6/7 118 RODWAY ARCADE"
-    ).__str__(out_schema="flat")
+    # print ContactAddress(
+    #     line1 = "6/7 118 RODWAY ARCADE"
+    # ).__str__(out_schema="flat")
 
 
-    #Try see if similar works:
+    # #Try see if similar works:
 
-    M = ContactAddress(
-        line1 = "20 BOWERBIRD ST",
-        city = "DEEBING HEIGHTS",
-        state = "QLD",
-        postcode = "4306", 
-        country = "AU"
-    )
-    N = ContactAddress(
-        line1 = "MAX POWER",
-        line2 = "20 BOWERBIRD STREET",
-        city = "DEEBING HEIGHTS",
-        state = "QLD",
-        postcode = "4306"
-    )
-    O = ContactAddress(
-        line2 = "20 BOWERBIRD STREET",
-        city = "DEEBING HEIGHTS",
-        state = "QLD",
-        postcode = "4306",
-        country = "AU"
-    )
+    # M = ContactAddress(
+    #     line1 = "20 BOWERBIRD ST",
+    #     city = "DEEBING HEIGHTS",
+    #     state = "QLD",
+    #     postcode = "4306", 
+    #     country = "AU"
+    # )
+    # N = ContactAddress(
+    #     line1 = "MAX POWER",
+    #     line2 = "20 BOWERBIRD STREET",
+    #     city = "DEEBING HEIGHTS",
+    #     state = "QLD",
+    #     postcode = "4306"
+    # )
+    # O = ContactAddress(
+    #     line2 = "20 BOWERBIRD STREET",
+    #     city = "DEEBING HEIGHTS",
+    #     state = "QLD",
+    #     postcode = "4306",
+    #     country = "AU"
+    # )
 
-    S = ContactAddress(
-        line1 = "1 HARRIET CT",
-        city = "SPRINGFIELD LAKES",
-        state = "QLD", 
-        postcode = "4300"
-    )
-    print M.similar(S)
-    print M.similar(N)
-    print M == O
+    # S = ContactAddress(
+    #     line1 = "1 HARRIET CT",
+    #     city = "SPRINGFIELD LAKES",
+    #     state = "QLD", 
+    #     postcode = "4300"
+    # )
+    # print M.similar(S)
+    # print M.similar(N)
+    # print M == O
+    
+class ContactName(object):
+    def __init__(self, schema=None, **kwargs):
+        self.kwargs = kwargs
+        self.properties = OrderedDict()
+        self.valid = True
+        self.problematic = False
+        self.empty = False
+
+        if not any( filter(None, map(
+            lambda key: kwargs.get(key, ''), 
+            ['first_name', 'family_name', 'contact', 'company']
+        ))): 
+            self.empty = True
+            self.valid = False 
+        else:
+            wordsToRemove = []
+
+            if('country' in kwargs.keys() and kwargs.get('country', '')):
+                countrySanitized = AddressUtils.sanitizeState(kwargs['country'])
+                countryIdentified = AddressUtils.identifyCountry(countrySanitized)
+                # if DEBUG_ADDRESS: print "countrySanitized", countrySanitized, "countryIdentified", countryIdentified
+                if countrySanitized != countryIdentified:
+                    self.properties['country'] = countryIdentified
+                else:
+                    self.properties['country'] = countrySanitized
+                # wordsToRemove.append(countrySanitized)
+
+            if('state' in kwargs.keys() and kwargs.get('state', '')):
+                stateSanitized = AddressUtils.sanitizeState(kwargs['state'])
+                wordsToRemove.append(stateSanitized)
+                stateIdentified = AddressUtils.identifyState(stateSanitized)
+                if stateIdentified != stateSanitized:
+                    wordsToRemove.append(stateIdentified)
+                    self.properties['state'] = stateIdentified
+                else:
+                    self.properties['state'] = stateSanitized
+
+
+            if 'city' in kwargs.keys() and kwargs.get('city', ''):
+                citySanitized = AddressUtils.sanitizeState(kwargs['city'])
+                self.properties['city'] = citySanitized
+
+
+        # first_name  = self.get('First Name', ''),
+        # middle_name = self.get('Middle Name', ''),
+        # family_name = self.get('Surname', ''),
+        # name_prefix = self.get('Name Prefix', ''),
+        # name_suffix = self.get('Name Suffix', ''),
+        # contact     = self.get('Contact', ''),
+        # company     = self.get('Company', ''),
+        # city        = self.get('City', ''),
+        # country     = self.get('Country', ''),
+        # state       = self.get('State', '')
+
+if __name__ == '__main__':
+    testContactAddress()
+    # testContactName()
+

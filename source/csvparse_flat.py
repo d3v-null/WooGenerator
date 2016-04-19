@@ -3,9 +3,8 @@ from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from csvparse_woo import ImportWooProduct
 from collections import OrderedDict
 from coldata import ColData_User, ColData_Woo
-from contact_objects import ContactAddress
+from contact_objects import ContactAddress, ContactName
 import os
-import csv
 import time
 from pprint import pprint
 import operator
@@ -85,6 +84,7 @@ class ImportUser(ImportFlat):
     contact_schema = descriptorUtils.safeKeyProperty('contact_schema')
     billing_address = descriptorUtils.safeKeyProperty('Address')
     shipping_address = descriptorUtils.safeKeyProperty('Home Address')
+    name = descriptorUtils.safeKeyProperty('Name')
 
     @property
     def act_modtime(self):
@@ -101,8 +101,7 @@ class ImportUser(ImportFlat):
     @property
     def last_modtime(self):
         times = [self.act_modtime, self.wp_modtime]
-        return max(times)
-    
+        return max(times)    
 
     def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
@@ -121,7 +120,7 @@ class ImportUser(ImportFlat):
             city        = self.get('City', ''),
             postcode    = self.get('Postcode', ''),
             state       = self.get('State', ''),
-            country     = self.get('Country'),
+            country     = self.get('Country', ''),
         )
 
         self['Home Address'] = ContactAddress(
@@ -132,6 +131,19 @@ class ImportUser(ImportFlat):
             postcode    = self.get('Home Postcode', ''),
             state       = self.get('Home State', ''),
             country     = self.get('Home Country', '')
+        )
+
+        self['Name'] = ContactName(
+            first_name  = self.get('First Name', ''),
+            middle_name = self.get('Middle Name', ''),
+            family_name = self.get('Surname', ''),
+            name_prefix = self.get('Name Prefix', ''),
+            name_suffix = self.get('Name Suffix', ''),
+            contact     = self.get('Contact', ''),
+            company     = self.get('Company', ''),
+            city        = self.get('City', ''),
+            country     = self.get('Country', ''),
+            state       = self.get('State', '')
         )
 
     @staticmethod

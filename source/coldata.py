@@ -807,6 +807,19 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
         }),
+        ('Contact',{
+            'import':True,
+            'wp': {
+                'meta': True, 
+                'key': 'contact_name'
+            },
+            # 'label':'contact_name',
+            'warn': True,
+            'user':True,
+            'sync':True,
+            'aliases': ['First Name', 'Surname', 'Middle Name', 'Company']
+
+        }),
         ('First Name', {
             'wp': {
                 'meta': True, 
@@ -833,17 +846,14 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
         }),
-        ('Contact',{
-            'import':True,
+        ('Middle Name', {
             'wp': {
-                'meta': True, 
-                'key': 'contact_name'
+                'meta': True,
+                'key': 'middle_name'
             },
-            # 'label':'contact_name',
-            'warn': True,
-            'user':True,
-            'sync':True,
-        }),
+            'import': True,
+            'user': True,    
+        })
         ('Company',{
             'wp': {
                 'meta': True, 
@@ -954,13 +964,15 @@ class ColData_User(ColData_Base):
             'report':True,
             'warn':True,
             'static':True,
-            'sync':True
+            'sync':True,
+            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country']
         }),
         ('Home Address',{
             'report':True,
             'warn':True,
             'static':True,
-            'sync':True
+            'sync':True,
+            'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country']
         }),
         ('Address 1',{
             'wp': {

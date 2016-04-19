@@ -1,14 +1,14 @@
 from pprint import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils, UnicodeReader, SanitationUtils, UnicodeDictWriter
+from utils import debugUtils, listUtils, SanitationUtils
 from tabulate import tabulate
-import csv
+import unicodecsv
 from coldata import ColData_User
 from copy import deepcopy, copy
 
-DEBUG = True
+DEBUG = False
 DEBUG_PARSER = False
-DEBUG_MESSAGE = True
+DEBUG_MESSAGE = False
 
 import os
 
@@ -255,7 +255,7 @@ class ObjList(list):
                 table += [row]
                 # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
-            print SanitationUtils.coerceBytes(table)
+            # print SanitationUtils.coerceBytes(table)
             # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
             return (tabulate(table, headers=header, tablefmt=tablefmt))
             # print repr(table)
@@ -265,16 +265,18 @@ class ObjList(list):
             # print "there are no objects"
             pass
 
-    def exportItems(self, filePath, colNames, dialect = None):
+    def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
         assert filePath, "needs a filepath"
         assert colNames, "needs colNames"
         assert self.objects, "meeds items"
         with open(filePath, 'w+') as outFile:
-            csv.register_dialect('act_out', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            dictwriter = UnicodeDictWriter(
+            unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            dictwriter = unicodecsv.dictWriter(
                 outFile,
                 dialect = 'act_out',
                 fieldnames = colNames.keys(),
+                encoding = encoding
+
                 # extrasaction = 'ignore',
             )
             dictwriter.writerow(colNames)
@@ -389,13 +391,14 @@ class CSVParse_Base(object, Registrar):
         # self.processObject(objectData)
         # self.registerObject(objectData)
 
-    def analyseRows(self, rows):
-        for rowcount, row in enumerate(rows):
+    def analyseRows(self, unicode_rows):
+        for rowcount, unicode_row in enumerate(unicode_rows):
+            if unicode_row: assert all(map(lambda unicode_cell: isinstance(unicode_cell, unicode) if unicode_cell else True, unicode_row)), "non-empty cells must be unicode objects"
             if not self.indices :
-                self.analyseHeader(row)
+                self.analyseHeader(unicode_row)
                 continue
             try:
-                objectData = self.newObject( rowcount, row )
+                objectData = self.newObject( rowcount, unicode_row )
             except UserWarning as e:
                 self.registerWarning("could not create new object: {}".format(e), rowcount)
                 continue
@@ -419,30 +422,25 @@ class CSVParse_Base(object, Registrar):
                 continue
         self.registerMessage("Completed analysis") 
 
-    def analyseFile(self, fileName, streamFilter=None):
-        self.registerMessage("Analysing file: {}".format(fileName))
-        # self.clearTransients()
-
-        with open(fileName) as filePointer:
-            try:
-                sample = filePointer.read(10000)
-                filePointer.seek(0)
-                csvdialect = csv.Sniffer().sniff(sample)
-            except Exception as e:
-                if(e): pass
-                # print "dialect is probably ACT"
-                csv.register_dialect('act', delimiter=',', quoting=csv.QUOTE_ALL, doublequote=False, strict=True)
-                csvdialect = 'act'
-            if(DEBUG_PARSER): print "CSV DIALECT: "
-            if(DEBUG_PARSER): print "DEL ", repr(csvdialect.delimiter), \
-                  "DBL ", repr(csvdialect.doublequote), \
-                  "ESC ", repr(csvdialect.escapechar), \
-                  "QUC ", repr(csvdialect.quotechar), \
-                  "QUT ", repr(csvdialect.quoting), \
-                  "SWS ", repr(csvdialect.skipinitialspace)
+    def analyseFile(self, fileName, encoding=None):
+        if encoding is None:
+            encoding = "utf8"
+        self.registerMessage("Analysing file: {0}, encoding: {1}".format(fileName, encoding))
+        with open(fileName, 'rb') as byte_file_obj:
+            # I can't imagine this having any problems
+            byte_sample = byte_file_obj.read(1000)
+            byte_file_obj.seek(0)
+            csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
+            if DEBUG_PARSER: print "CSV Dialect:",    \
+                "DEL ", repr(csvdialect.delimiter)  , \
+                "DBL ", repr(csvdialect.doublequote), \
+                "ESC ", repr(csvdialect.escapechar) , \
+                "QUC ", repr(csvdialect.quotechar)  , \
+                "QUT ", repr(csvdialect.quoting)    , \
+                "SWS ", repr(csvdialect.skipinitialspace)
             
-            csvreader = UnicodeReader(filePointer, dialect=csvdialect, strict=True)
-            return self.analyseRows(csvreader)
+            unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
+            return self.analyseRows(unicodecsvreader)
         return None
 
     def getObjects(self):

@@ -819,8 +819,8 @@ class CSVParse_Woo(CSVParse_Gen):
             if visible is "hidden":
                 objectData['catalog_visibility'] = "hidden"
 
-    def analyseFile(self, fileName):
-        objects = super(CSVParse_Woo, self).analyseFile(fileName)  
+    def analyseFile(self, fileName, encoding=None):
+        objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding)  
         #post processing
         # for itemData in self.taxos.values() + self.items.values():
             # print 'POST analysing product', itemData.codesum, itemData.namesum
