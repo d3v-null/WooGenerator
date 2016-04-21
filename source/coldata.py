@@ -811,12 +811,13 @@ class ColData_User(ColData_Base):
             'import':True,
             'wp': {
                 'meta': True, 
-                'key': 'contact_name'
+                'key': 'nickname'
             },
             # 'label':'contact_name',
             'warn': True,
             'user':True,
             'sync':True,
+            "static": True,
             'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
 
         }),
@@ -828,10 +829,10 @@ class ColData_User(ColData_Base):
             # 'label':'first_name',
             'import':True,
             'user':True,
-            'report': True,
-            'sync':True,
-            'warn': True,
-            'static':True,
+            # 'report': True,
+            # 'sync':True,
+            # 'warn': True,
+            # 'static':True,
         }),
         ('Surname', {
             'wp': {
@@ -841,15 +842,31 @@ class ColData_User(ColData_Base):
             # 'label':'last_name',
             'import': True,
             'user':True,
-            'report': True,
-            'sync':True,
-            'warn': True,
-            'static':True,
+            # 'report': True,
+            # 'sync':True,
+            # 'warn': True,
+            # 'static':True,
         }),
         ('Middle Name', {
             'wp': {
                 'meta': True,
                 'key': 'middle_name'
+            },
+            'import': True,
+            'user': True,    
+        }),
+        ('Name Suffix', {
+            'wp': {
+                'meta': True,
+                'key': 'name_suffix'
+            },
+            'import': True,
+            'user': True,    
+        }),
+        ('Name Prefix', {
+            'wp': {
+                'meta': True,
+                'key': 'name_prefix'
             },
             'import': True,
             'user': True,    
@@ -862,10 +879,10 @@ class ColData_User(ColData_Base):
             # 'label':'billing_company',
             'import':True,
             'user':True,
-            'report': True,
-            'sync':True,
-            'warn': True,
-            'static':True,
+            # 'report': True,
+            # 'sync':True,
+            # 'warn': True,
+            # 'static':True,
         }),
         ('Mobile Phone',{
             'wp': {
@@ -1205,13 +1222,13 @@ class ColData_User(ColData_Base):
             'user':True,
             # 'report':True,
         }),
-        ('Nick Name', {
-            'wp': {
-                'meta': True, 
-                'key': 'nickname'
-            },
-            # 'label': 'nickname'
-        }),
+        # ('Nick Name', {
+        #     'wp': {
+        #         'meta': True, 
+        #         'key': 'nickname'
+        #     },
+        #     # 'label': 'nickname'
+        # }),
         # ('rowcount', {
         #     # 'import':True,
         #     # 'user':True,

@@ -22,6 +22,7 @@ DEFAULT_ENCODING = 'utf8'
 DEBUG = False
 DEBUG_ADDRESS = False
 DEBUG_MESSAGE = False
+DEBUG_NAME = True
 
 class SanitationUtils:
     email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
@@ -41,6 +42,26 @@ class SanitationUtils:
     @staticmethod
     def wrapClearRegex(regex):
         return SanitationUtils.clearStartRegex + regex + SanitationUtils.clearFinishRegex
+
+    @staticmethod
+    def identifyAbbreviation(abbrvDict, string):
+        for abbrvKey, abbrvs in abbrvDict.items():
+            if( string in [abbrvKey] + abbrvs):
+                return abbrvKey
+        return string        
+
+    @staticmethod
+    def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
+        return "|".join(filter(None,[
+            "|".join(filter(None,abbrvs)),
+            abbrvKey
+        ]))
+
+    @staticmethod
+    def compileAbbrvRegex( abbrv ):
+        return "|".join(filter(None,
+            [SanitationUtils.compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
+        ))
 
     @staticmethod
     def compose(*functions):
@@ -151,12 +172,20 @@ class SanitationUtils:
         return unicode_return
 
     @staticmethod
+    def safePrint(thing):
+        utf8_thing = SanitationUtils.coerceBytes(thing)
+        print utf8_thing
+
+    @staticmethod
     def normalizeVal(thing):
         unicode_return = SanitationUtils.compose(
             SanitationUtils.coerceUnicode,
-            SanitationUtils.toLower,
+            SanitationUtils.toUpper,
+            SanitationUtils.stripLeadingWhitespace,
+            SanitationUtils.stripTailingWhitespace,
+            SanitationUtils.stripExtraWhitespace,
             SanitationUtils.coerceUnicode
-        )
+        )(thing)
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
@@ -405,6 +434,10 @@ class SanitationUtils:
         return not SanitationUtils.stringContainsNumbers(string)
 
     @staticmethod
+    def stringContainsDelimeters(string):
+        return True if(re.search(SanitationUtils.delimeterRegex, string)) else False
+
+    @staticmethod
     def truishStringToBool(string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
             if DEBUG: print "truishStringToBool", repr(string), 'FALSE'
@@ -454,7 +487,7 @@ def testSanitationUtils():
     }
     print obj, repr(obj)
     obj_json = SanitationUtils.encodeJSON(obj)
-    print SanitationUtils.coerceBytes(obj_json), repr(obj_json)
+    SanitationUtils.safePrint(obj_json), repr(obj_json)
     obj_json_base64 = SanitationUtils.encodeBase64(obj_json)
     print obj_json_base64
     obj_json_decoded = SanitationUtils.decodeBase64(obj_json_base64)
@@ -501,7 +534,7 @@ def testSanitationUtils():
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
     a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
-    print SanitationUtils.coerceBytes( SanitationUtils.escapeNewlines(a))
+    SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
 
 class ValidationUtils:
     @staticmethod
@@ -530,20 +563,190 @@ class PHPUtils:
         return loads(string)
 
 
-def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
-    return "|".join(filter(None,[
-        "|".join(filter(None,abbrvs)),
-        abbrvKey
-    ]))
-
-def compileAbbrvRegex( abbrv ):
-    return "|".join(filter(None,
-        [compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
-    ))
-
-
 class NameUtils:
-    nameRegex        = r"({0}+(\s*{0})*)".format(SanitationUtils.nondelimeterRegex)  
+    nameRegex        = r"({0}+)".format(SanitationUtils.nondelimeterRegex)  
+
+    titleAbbreviations = OrderedDict([
+        ('DR', ['DOCTOR', 'DR.']),
+        ('HON', ['HONORABLE', 'HON.']),
+        ('REV', ['REVEREND', 'REV.']),
+        ('MR', ['MISTER', 'MR.']),
+        ('MS', ['MISS', 'MISSES', 'MS.']),
+        ('MRS', []),
+        ('MX', []),
+    ])
+
+    positionAbbreviations = OrderedDict([
+        ('OWNER', []),
+        ('ACCOUNTANT', ['ACCTS']),
+        ('MANAGER', []),
+        ('BEAUTICIAN', []),
+        ('DIRECTOR', []),
+        ('HAIRDRESSER', []),
+        ('STYLIST', []),
+    ])
+
+    noteAbbreviations = OrderedDict([
+        ("C/O", []),
+        (" - ", []),
+        (", ", []),
+        (" & ", []),
+        ('AND', []),
+        ('SPOKE WITH', ['SPIKE WITH', 'SPOKE W', "SPOKE TO"]),
+        ('CLOSED', ['CLOSED DOWN']),
+        ('PRONOUNCED', []),
+        ('OR', []),
+        ('ARCHIVE', []),
+        ('STOCK ACCOUNT', ['STOCK ACCT', 'STOCK ACCNT']),
+        ('STAFF', []),
+        ('RECEPTION', []),
+        ('FINALIST', []),
+        ('BOOK A TAN CUSTOMER', []),
+        ('SOLD EQUIPMENT', []),
+        ("NOT THIS ONE", []),
+        ("TECHNOTAN", []),
+        ("TECHNICIAN", []),
+        ("SPONSORSHIP", []),
+        ("TRAINING", []),
+        ("OPEN BY APPT ONLY", []),
+        ('CUSTOMER', []),
+
+    ])
+
+    nameSuffixAbbreviations = OrderedDict([
+        ('SR', ['SENIOR', 'SR.']),
+        ('JR', ['JUNIOR', 'DR.'])
+    ])
+
+    familyNamePrefixes = [
+        'MC',
+        'MAC',
+        'VAN',
+        'DER',
+        'VAN DER',
+    ]
+
+    titleRegex = r"(?P<name_title>%s)" % (
+        SanitationUtils.compileAbbrvRegex(titleAbbreviations)
+    )
+
+    positionRegex = r"(?P<name_position>%s)" % (
+        SanitationUtils.compileAbbrvRegex(positionAbbreviations)
+    )
+
+    noteRegex = r"\(?(?P<name_notes>((%s)|(\s+%s)))\)?" % (
+        SanitationUtils.compileAbbrvRegex(noteAbbreviations),
+        nameRegex
+    )
+
+    nameSuffixRegex = r"\(?(?P<name_suffix>%s)\)?" % (
+        SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
+    )
+
+    nameTokenRegex = r"(%s)" % "|".join([
+        SanitationUtils.wrapClearRegex( titleRegex),
+        SanitationUtils.wrapClearRegex( positionRegex),
+        SanitationUtils.wrapClearRegex( nameSuffixRegex),
+        SanitationUtils.wrapClearRegex( noteRegex),
+        nameRegex
+    ])
+
+    @staticmethod
+    def identifyName(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.nameRegex, string)
+
+    @staticmethod
+    def identifyTitle(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.titleRegex, string)
+
+    @staticmethod
+    def identifyNote(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.noteRegex, string)
+
+    @staticmethod
+    def identifyPosition(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.positionRegex, string)
+
+    @staticmethod
+    def identifyNameSuffix(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.nameSuffixRegex, string)
+
+    @staticmethod
+    def sanitizeNameToken(string):
+        return SanitationUtils.normalizeVal(string)
+
+    @staticmethod
+    def getName(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.nameRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # name = " ".join(matchGrps)
+            name = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND NAME ", repr(name)
+            return name
+
+    @staticmethod
+    def getTitle(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.titleRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # title = " ".join(matchGrps)
+            title = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND TITLE ", repr(title)
+            return title
+
+    @staticmethod
+    def getPosition(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.positionRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # position = " ".join(matchGrps)
+            position = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND POSITION ", repr(position)
+            return position
+
+    @staticmethod
+    def getNote(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.noteRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # note = " ".join(matchGrps)
+            note = matchGrps[0]
+            if DEBUG_ADDRESS: print "FOUND NOTE ", repr(note)
+            return note
+
+
+    @staticmethod
+    def tokenizeName(string):
+        matches =  re.findall(
+            NameUtils.nameTokenRegex, 
+            string.upper()
+        )
+        # if DEBUG_NAME: print repr(matches)
+        return map(
+            lambda match: NameUtils.sanitizeNameToken(match[0]),
+            matches    
+        )
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
@@ -1047,19 +1250,19 @@ class AddressUtils:
     ])
     
     floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL|LVL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
-        compileAbbrvRegex(floorAbbreviations),
+        SanitationUtils.compileAbbrvRegex(floorAbbreviations),
         numberRegex,
     )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>%s)" % (
-        compileAbbrvRegex(subunitAbbreviations),
+        SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
         '|'.join([multiNumberRegex, alphaNumberRegex]),
     )
-    stateRegex = r"(%s)" % compileAbbrvRegex(stateAbbreviations)
+    stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
     thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)" % (
-        compileAbbrvRegex(thoroughfareTypeAbbreviations)
+        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
     )
     thoroughfareSuffixRegex = r"(?P<thoroughfare_suffix>%s)" % (
-        compileAbbrvRegex(thoroughfareSuffixAbbreviations)
+        SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
     thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
         multiNumberRegex,
@@ -1068,17 +1271,17 @@ class AddressUtils:
         thoroughfareSuffixRegex
     )
     buildingTypeRegex = r"(?P<building_type>%s)" % (
-        compileAbbrvRegex(buildingTypeAbbreviations)
+        SanitationUtils.compileAbbrvRegex(buildingTypeAbbreviations)
     )
     buildingRegex = r"(?P<building_name>%s)\s+%s" % (
         NameUtils.nameRegex,
         buildingTypeRegex
     )
     weakThoroughfareTypeRegex = r"(?P<weak_thoroughfare_type>%s)" % (
-        compileAbbrvRegex(thoroughfareTypeAbbreviations)
+        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
     )
     weakThoroughfareSuffixRegex = r"(?P<weak_thoroughfare_suffix>%s)" % (
-        compileAbbrvRegex(thoroughfareSuffixAbbreviations)
+        SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
     weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
         NameUtils.nameRegex,
@@ -1086,13 +1289,13 @@ class AddressUtils:
         weakThoroughfareSuffixRegex
     )
     deliveryTypeRegex = r"(?P<delivery_type>%s)" % (
-        compileAbbrvRegex(deliveryTypeAbbreviations),
+        SanitationUtils.compileAbbrvRegex(deliveryTypeAbbreviations),
     )
     deliveryRegex = r"%s(?:\s*(?P<delivery_number>%s))?" % (
         deliveryTypeRegex,
         "|".join([numberRegex, alphaNumberRegex])
     )
-    countryRegex = r"(%s)" % compileAbbrvRegex(countryAbbreviations)
+    countryRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(countryAbbreviations)
 
 # [^,\s\d/()-]+
     addressTokenRegex = r"(%s)" % "|".join([
@@ -1113,43 +1316,36 @@ class AddressUtils:
     ])
 
     @staticmethod
-    def identifyAbbreviation(abbrvDict, string):
-        for abbrvKey, abbrvs in abbrvDict.items():
-            if( string in [abbrvKey] + abbrvs):
-                return abbrvKey
-        return string
-
-    @staticmethod
     def identifySubunit(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.subunitAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.subunitAbbreviations, string)
 
     @staticmethod
     def identifyFloor(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.floorAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.floorAbbreviations, string)
 
     @staticmethod
     def identifyThoroughfareType(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.thoroughfareTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.thoroughfareTypeAbbreviations, string)
 
     @staticmethod
     def identifyThoroughfareSuffix(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.thoroughfareSuffixAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.thoroughfareSuffixAbbreviations, string)
 
     @staticmethod
     def identifyState(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.stateAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.stateAbbreviations, string)
 
     @staticmethod
     def identifyBuildingType(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.buildingTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
     def identifyDeliveryType(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.deliveryTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.deliveryTypeAbbreviations, string)
 
     @staticmethod
     def identifyCountry(string):
-        return AddressUtils.identifyAbbreviation(AddressUtils.countryAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(AddressUtils.countryAbbreviations, string)
 
     @staticmethod
     def getSubunit(token):
@@ -1284,21 +1480,6 @@ class AddressUtils:
             delivery_number = matchDict.get('delivery_number')
             if DEBUG_ADDRESS: print "FOUND DELIVERY ", delivery_type, delivery_number
             return delivery_type, delivery_number
-
-    @staticmethod
-    def getName(token):
-        match = re.match(
-            SanitationUtils.wrapClearRegex(
-                NameUtils.nameRegex
-            ),
-            token
-        )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # name = " ".join(matchGrps)
-            name = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND NAME ", repr(name)
-            return name
 
     @staticmethod
     def getNumber(token):
@@ -1719,7 +1900,7 @@ def testHTMLReporter():
         reporter.addGroup(matchingGroup)
 
         document = reporter.getDocument()
-        # print SanitationUtils.coerceBytes( document)
+        # SanitationUtils.safePrint( document)
         uresFile.write( SanitationUtils.coerceUnicode(document))
         resFile.write( SanitationUtils.coerceAscii(document) )
 

@@ -29,7 +29,7 @@ def timediff():
 
 DEBUG = False
 testMode = False
-testMode = True
+# testMode = True
 
 ### DEFAULT CONFIG ###
 
@@ -326,7 +326,7 @@ def printBasicColumns(users):
     usrList = UsrObjList()
     for user in users:
         usrList.addObject(user)
-    print SanitationUtils.coerceBytes( usrList.tabulate(
+    SanitationUtils.safePrint( usrList.tabulate(
         OrderedDict([
             ('E-mail', {}),
             ('MYOB Card ID', {}),
@@ -426,8 +426,8 @@ class SyncUpdate(Registrar):
 
 
     @property
-    def winnerWPID(self):
-        return self.getWinnerKey("Wordpress ID")
+    def WPID(self):
+        return self.getSValue("Wordpress ID")
     # @property
     # def winner(self): return self.winner
     
@@ -548,6 +548,7 @@ class SyncUpdate(Registrar):
                     )]
             tables = []
             for subject, subjList in subjects.items():
+                subjList = [map(SanitationUtils.sanitizeForTable, subj ) for subj in subjList ]
                 tables += [delimeter.join([(subject_fmt % self.opposite_src(subject)), tabulate(subjList, headers=header, tablefmt=tablefmt)])]
             return delimeter.join(tables)
         else:
@@ -677,7 +678,7 @@ class SyncUpdate(Registrar):
         out_str += info_delimeter.join([
             subtitle_fmt % "OLD",
             oldMatch.tabulate(tablefmt)
-        ]
+        ])
         out_str += info_delimeter
         out_str += info_delimeter.join(filter(None,[
             subtitle_fmt % "INFO",
@@ -716,13 +717,19 @@ class SyncUpdate(Registrar):
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
+                    if \
+                        SanitationUtils.coerceUnicode(self.newSObject.get(alias)) == \
+                        SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
+                        continue
+                    #if the new value is not the same as the old value
                     all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(alias))
+            return all_updates
 
     def getWPUpdates(self):
         all_updates = {}
         for col, warnings in self.syncWarnings.items():
             for subject, reason, oldVal, newVal, data in warnings:  
-                if subject == 'ACT':
+                if subject == self.opposite_src(SLAVE_NAME):
                     all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(col))
         return all_updates
 
@@ -737,7 +744,7 @@ class SyncUpdate(Registrar):
             print_elements = []
 
             try:
-                user_pkey = self.winnerWPID
+                user_pkey = self.WPID
                 assert user_pkey, "primary key must be valid, %s" % repr(user_pkey)
             except Exception as e:
                 print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
@@ -1074,16 +1081,16 @@ importProblematicWordpress = True
 if importProblematicWordpress:
     for update in problematicUpdates:
         print u"UPDATE START"
-        print SanitationUtils.coerceBytes(  update.tabulate(tablefmt="simple") )
-        # print SanitationUtils.coerceBytes( update.displayChangesForXMLRPC())
+        SanitationUtils.safePrint(  update.tabulate(tablefmt="simple") )
+        # SanitationUtils.safePrint( update.displayChangesForXMLRPC())
         print "UPDATE END"
         all_updates = update.getWPUpdates()
 
         if all_updates:
             all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-            WPID = update.winnerWPID
+            WPID = update.WPID
 
-            # print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
+            # SanitationUtils.safePrint((WPID, all_updates_json_base64))
             xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
 
             print "XMLRPC OUT: ", xmlrpc_out

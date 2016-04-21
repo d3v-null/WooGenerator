@@ -6,7 +6,7 @@ from PIL import Image
 import time
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils, UnicodeDictWriter
+from utils import listUtils, SanitationUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
 from csvparse_myo import CSVParse_MYO

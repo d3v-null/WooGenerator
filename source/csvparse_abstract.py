@@ -146,7 +146,7 @@ class ObjList(list):
                 table += [row]
                 # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
-            # print SanitationUtils.coerceBytes(table)
+            # SanitationUtils.safePrint(table)
             # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
             return (tabulate(table, headers=header, tablefmt=tablefmt))
             # print repr(table)
@@ -367,7 +367,7 @@ if __name__ == '__main__':
 
     usrParser.analyseFile(actPath)
 
-    print SanitationUtils.coerceBytes( usrParser.tabulate(cols = usrData.getReportCols()))
+    SanitationUtils.safePrint( usrParser.tabulate(cols = usrData.getReportCols()))
     print ( usrParser.tabulate(cols = usrData.getReportCols()))
 
     for usr in usrParser.objects.values()[:3]:    

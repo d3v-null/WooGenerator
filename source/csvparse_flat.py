@@ -86,6 +86,12 @@ class ImportUser(ImportFlat):
     shipping_address = descriptorUtils.safeKeyProperty('Home Address')
     name = descriptorUtils.safeKeyProperty('Name')
 
+    aliasMapping = {
+        'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
+        'Home Address': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
+        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
+    }
+
     @property
     def act_modtime(self):
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
@@ -115,49 +121,52 @@ class ImportUser(ImportFlat):
 
         self['Address'] = ContactAddress(
             self.contact_schema,  
-            line1       = self.get('Address 1', ''),
-            line2       = self.get('Address 2', ''),
-            city        = self.get('City', ''),
-            postcode    = self.get('Postcode', ''),
-            state       = self.get('State', ''),
-            country     = self.get('Country', ''),
+            line1       = data.get('Address 1', ''),
+            line2       = data.get('Address 2', ''),
+            city        = data.get('City', ''),
+            postcode    = data.get('Postcode', ''),
+            state       = data.get('State', ''),
+            country     = data.get('Country', ''),
         )
 
         self['Home Address'] = ContactAddress(
             self.contact_schema,  
-            line1       = self.get('Home Address 1', ''),
-            line2       = self.get('Home Address 2', ''),
-            city        = self.get('Home City', ''),
-            postcode    = self.get('Home Postcode', ''),
-            state       = self.get('Home State', ''),
-            country     = self.get('Home Country', '')
+            line1       = data.get('Home Address 1', ''),
+            line2       = data.get('Home Address 2', ''),
+            city        = data.get('Home City', ''),
+            postcode    = data.get('Home Postcode', ''),
+            state       = data.get('Home State', ''),
+            country     = data.get('Home Country', '')
         )
 
         self['Name'] = ContactName(
-            first_name  = self.get('First Name', ''),
-            middle_name = self.get('Middle Name', ''),
-            family_name = self.get('Surname', ''),
-            name_prefix = self.get('Name Prefix', ''),
-            name_suffix = self.get('Name Suffix', ''),
-            contact     = self.get('Contact', ''),
-            company     = self.get('Company', ''),
-            city        = self.get('City', ''),
-            country     = self.get('Country', ''),
-            state       = self.get('State', '')
+            self.contact_schema,  
+            first_name  = data.get('First Name', ''),
+            middle_name = data.get('Middle Name', ''),
+            family_name = data.get('Surname', ''),
+            name_prefix = data.get('Name Prefix', ''),
+            name_suffix = data.get('Name Suffix', ''),
+            contact     = data.get('Contact', ''),
+            company     = data.get('Company', ''),
+            city        = data.get('City', ''),
+            country     = data.get('Country', ''),
+            state       = data.get('State', '')
         )
 
     def __getitem__(self, key):
-        if key in ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country']:
-            val = self.billing_address[key]
-        elif key in ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country']:
-            val = self.shipping_address[key]
-        elif key in ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']:
-            val = self.name[key]
-        else:
-            val = super(ImportUser, self).__getitem__(key)
+        for alias, keys in self.aliasMapping.items():
+            if key in keys:
+                return self[alias][key]
+        return super(ImportUser, self).__getitem__(key)
 
-        if(DEBUG_FLAT): self.registerMessage("Accessed key {} returning value {}".format(key, val))
-        return val
+    def get(self, key, default = None):
+        for alias, keys in self.aliasMapping.items():
+            if key in keys:
+                try:
+                    return self[alias][key]
+                except:
+                    return default
+        return super(ImportUser, self).get(key, default)
 
     @staticmethod
     def getContainer():
@@ -476,6 +485,7 @@ def testSqlParser(inFolder, outFolder):
         (4548L, 'SQGS-P50WHI', 'G Strings, Pack / 50 \xe2\x80\x94 White', '', '', 'G Strings, Pack / 50 \xe2\x80\x94 White', '16.9', '', '', '', '19.9', '14.924999999999999', '1440000000', '1440950400', '16.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.12', '', '', '', '7.14', '', '', '', '6.84', '', '', '', '1', '0.19', '200', '170', '25', '', 'instock', 'no'),
         (4549L, 'SQGS-P50BLU', 'G Strings, Pack / 50 \xe2\x80\x94 Blue', '', '', 'G Strings, Pack / 50 \xe2\x80\x94 Blue', '16.9', '', '', '', '19.9', '14.924999999999999', '1440000000', '1440950400', '16.9', '', '', '', '11.9', '8.925', '1440000000', '1440950400', '10.12', '', '', '', '7.14', '', '', '', '6.84', '', '', '', '1', '0.19', '200', '170', '25', '', 'outofstock', 'no')
     ]
+    sqlRows = [map(SanitationUtils.coerceUnicode, row) for row in sqlRows]
     sqlParser = CSVParse_WPSQLProd(
         cols = prodData.getWPCols(),
         defaults = prodData.getDefaults()

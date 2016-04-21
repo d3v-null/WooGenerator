@@ -1,11 +1,13 @@
-from utils import  SanitationUtils, AddressUtils # descriptorUtils, listUtils,
+from utils import  SanitationUtils, AddressUtils, NameUtils, listUtils # descriptorUtils, listUtils,
 from pprint import pprint
 from collections import OrderedDict
 
 DEBUG_ADDRESS = False
-# DEBUG_ADDRESS = True
+DEBUG_ADDRESS = True
+STRICT_ADDRESS = True
 
 DEBUG_NAME = True
+STRICT_NAME = True
 
 class ContactObject(object):
     equality_keys = []
@@ -18,6 +20,9 @@ class ContactObject(object):
         self.valid = True
         self.problematic = False
         self.empty = False
+        self.properties['ignores'] = []
+        self.properties['unknowns'] = []
+        self.reason = ""
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -33,6 +38,12 @@ class ContactObject(object):
         for attr, keys in self.key_mappings.items():
             if key in keys:
                 return getattr(self, attr)
+
+    # def get(self, key, default = None):
+    #     for attr, keys in self.key_mappings.items():
+    #         if key in keys:
+    #             return getattr(self, attr)
+    #     return super(ContactObject, self).get(key, default)
 
     def normalizeVal(self, val):
         return SanitationUtils.normalizeVal(val)
@@ -81,15 +92,12 @@ class ContactAddress(ContactObject):
         self.properties['weak_thoroughfares'] = []
         self.properties['names'] = []
         self.properties['numbers'] = []
-        self.properties['unknowns'] = []
-        self.properties['ignores'] = []
 
         if not any( filter(None, map(
             lambda key: kwargs.get(key, ''), 
             ['line1', 'line2', 'city', 'postcode', 'state']
         ))): 
             self.empty = True
-            self.valid = False
             self.schema = None
         else:
             if DEBUG_ADDRESS: pprint(kwargs)
@@ -141,6 +149,11 @@ class ContactAddress(ContactObject):
                     self.properties['names'] += numberlessLines
                 else:
                     self.valid = False
+                    self.reason = "More than one numberless line"
+
+            if kwargs.get('postcode') and SanitationUtils.stringContainsNoNumbers( kwargs.get('postcode')) :
+                self.valid = False
+                self.reason = "Invalid postcode"
 
             # Extract subunit numbers and floor level
 
@@ -148,7 +161,7 @@ class ContactAddress(ContactObject):
             for i, line in enumerate(numberLines):
                 tokens = AddressUtils.tokenizeAddress(line)
                 for j, token in enumerate(tokens):
-                    if DEBUG_ADDRESS: print SanitationUtils.coerceBytes( u"-> token[%d]: %s" % (j, token) )
+                    if DEBUG_ADDRESS: SanitationUtils.safePrint( u"-> token[%d]: %s" % (j, token) )
                     delivery = AddressUtils.getDelivery(token)
                     if(delivery):
                         # delivery_type, delivery_name = delivery
@@ -204,7 +217,7 @@ class ContactAddress(ContactObject):
                         if DEBUG_ADDRESS: print "IGNORING STATE", state
                         continue
 
-                    name = AddressUtils.getName(token)
+                    name = NameUtils.getName(token)
                     if(name and not self.properties['names']):
                         self.properties['names'] += [name]
                         continue
@@ -216,6 +229,7 @@ class ContactAddress(ContactObject):
                         continue
                     self.properties['unknowns'] += [token]
                     self.valid = False
+                    self.reason = "There are some unknown tokens"
                     # break
 
             if self.properties['numbers'] :
@@ -223,6 +237,7 @@ class ContactAddress(ContactObject):
                     self.properties['subunits'] += [(None, self.properties['numbers'][0])]
                 else:
                     self.valid = False
+                    self.reason = "No street numbers"
             #if any unknowns match number, then add them as a blank subunit
 
             # if(schema in ['act']):
@@ -351,8 +366,6 @@ class ContactAddress(ContactObject):
     def __str__(self, out_schema=None):
         return SanitationUtils.coerceBytes(self.__unicode__(out_schema)) 
 
-
-
 def testContactAddress():
     #GETS
     print ContactAddress(
@@ -364,90 +377,90 @@ def testContactAddress():
         postcode = "6164"
     ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     city = 'Perth',
-    #     state = 'WA',
-    #     country = 'Australia',
-    #     line1 = "SHOP G159 BROADMEADOWS SHOP. CENTRE",
-    #     line2 = "104 PEARCEDALE PARADE"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        city = 'Perth',
+        state = 'WA',
+        country = 'Australia',
+        line1 = "SHOP G159 BROADMEADOWS SHOP. CENTRE",
+        line2 = "104 PEARCEDALE PARADE"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     city = 'Perth',
-    #     state = 'WA',
-    #     country = 'Australia',
-    #     line1 = "SHOP 5/562 PENNANT HILLS RD",
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        city = 'Perth',
+        state = 'WA',
+        country = 'Australia',
+        line1 = "SHOP 5/562 PENNANT HILLS RD",
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "SH115A, FLOREAT FORUM"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "SH115A, FLOREAT FORUM"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "A8/90 MOUNT STREET"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "A8/90 MOUNT STREET"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "DANNY, SPG1 LG3 INGLE FARM SHOPPING CENTRE"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "DANNY, SPG1 LG3 INGLE FARM SHOPPING CENTRE"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "8/5-7 KILVINGTON DRIVE EAST"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "8/5-7 KILVINGTON DRIVE EAST"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #      line1 = u'ANTONY WHITE, PO BOX 886',
-    #      line2 = u'LEVEL1 468 KINGSFORD SMITH DRIVE'
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+         line1 = u'ANTONY WHITE, PO BOX 886',
+         line2 = u'LEVEL1 468 KINGSFORD SMITH DRIVE'
+    ).__str__(out_schema="flat")
     
-    # # DOESN'T GET
+    # DOESN'T GET
 
-    # print ContactAddress(
-    #     line1 = "THE VILLAGE SHOP 5"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "THE VILLAGE SHOP 5"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "3/3 HOWARD AVA"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "3/3 HOWARD AVA"
+    ).__str__(out_schema="flat")
 
-    # print ContactAddress(
-    #     line1 = "6/7 118 RODWAY ARCADE"
-    # ).__str__(out_schema="flat")
+    print ContactAddress(
+        line1 = "6/7 118 RODWAY ARCADE"
+    ).__str__(out_schema="flat")
 
 
-    # #Try see if similar works:
+    #Try see if similar works:
 
-    # M = ContactAddress(
-    #     line1 = "20 BOWERBIRD ST",
-    #     city = "DEEBING HEIGHTS",
-    #     state = "QLD",
-    #     postcode = "4306", 
-    #     country = "AU"
-    # )
-    # N = ContactAddress(
-    #     line1 = "MAX POWER",
-    #     line2 = "20 BOWERBIRD STREET",
-    #     city = "DEEBING HEIGHTS",
-    #     state = "QLD",
-    #     postcode = "4306"
-    # )
-    # O = ContactAddress(
-    #     line2 = "20 BOWERBIRD STREET",
-    #     city = "DEEBING HEIGHTS",
-    #     state = "QLD",
-    #     postcode = "4306",
-    #     country = "AU"
-    # )
+    M = ContactAddress(
+        line1 = "20 BOWERBIRD ST",
+        city = "DEEBING HEIGHTS",
+        state = "QLD",
+        postcode = "4306", 
+        country = "AU"
+    )
+    N = ContactAddress(
+        line1 = "MAX POWER",
+        line2 = "20 BOWERBIRD STREET",
+        city = "DEEBING HEIGHTS",
+        state = "QLD",
+        postcode = "4306"
+    )
+    O = ContactAddress(
+        line2 = "20 BOWERBIRD STREET",
+        city = "DEEBING HEIGHTS",
+        state = "QLD",
+        postcode = "4306",
+        country = "AU"
+    )
 
-    # S = ContactAddress(
-    #     line1 = "1 HARRIET CT",
-    #     city = "SPRINGFIELD LAKES",
-    #     state = "QLD", 
-    #     postcode = "4300"
-    # )
-    # print M.similar(S)
-    # print M.similar(N)
-    # print M == O
+    S = ContactAddress(
+        line1 = "1 HARRIET CT",
+        city = "SPRINGFIELD LAKES",
+        state = "QLD", 
+        postcode = "4300"
+    )
+    print M.similar(S)
+    print M.similar(N)
+    print M == O
     
 class ContactName(ContactObject):
     equality_keys = ['first_name', 'middle_name']
@@ -461,23 +474,26 @@ class ContactName(ContactObject):
     }
 
     def __init__(self, schema=None, **kwargs):
+        super(ContactName, self).__init__(schema, **kwargs)
         self.kwargs = kwargs
-        self.properties = OrderedDict()
-        # self.valid = True
-        self.valid = False #uncomment this once class is complete
+        
+        # self.valid = False 
         self.problematic = False
-        self.empty = False
+        self.properties['titles'] = []
+        self.properties['names'] = []
+        self.properties['positions'] = []
+        self.properties['notes'] = []
+
 
         if not any( filter(None, map(
             lambda key: kwargs.get(key, ''), 
             ['first_name', 'family_name', 'contact', 'company']
         ))): 
             self.empty = True
-            self.valid = False 
         else:
             wordsToRemove = []
 
-            if('country' in kwargs.keys() and kwargs.get('country', '')):
+            if kwargs.get('country'):
                 countrySanitized = AddressUtils.sanitizeState(kwargs['country'])
                 countryIdentified = AddressUtils.identifyCountry(countrySanitized)
                 # if DEBUG_ADDRESS: print "countrySanitized", countrySanitized, "countryIdentified", countryIdentified
@@ -487,7 +503,7 @@ class ContactName(ContactObject):
                     self.properties['country'] = countrySanitized
                 # wordsToRemove.append(countrySanitized)
 
-            if('state' in kwargs.keys() and kwargs.get('state', '')):
+            if kwargs.get('state'):
                 stateSanitized = AddressUtils.sanitizeState(kwargs['state'])
                 wordsToRemove.append(stateSanitized)
                 stateIdentified = AddressUtils.identifyState(stateSanitized)
@@ -498,30 +514,129 @@ class ContactName(ContactObject):
                     self.properties['state'] = stateSanitized
 
 
-            if 'city' in kwargs.keys() and kwargs.get('city', ''):
+            if kwargs.get('city'):
                 citySanitized = AddressUtils.sanitizeState(kwargs['city'])
                 self.properties['city'] = citySanitized
 
+            if kwargs.get('company'):
+                companySanitized = SanitationUtils.normalizeVal(kwargs['company'])
+                wordsToRemove.append(companySanitized)
+
+            full_name_contact = SanitationUtils.normalizeVal(kwargs.get('contact'))
+            full_name_components = SanitationUtils.normalizeVal(' '.join(filter(None, map(
+                lambda k: kwargs.get(k),
+                ['name_prefix', 'first_name', 'middle_name', 'family_name', 'name_suffix']
+            ))))
+
+            full_names = listUtils.filterUniqueTrue([full_name_components, full_name_contact])
+
+            if len(full_names) > 1:
+                self.problematic = True
+                SanitationUtils.safePrint("THERE ARE MORE THAN 1 FULLNAMES: " + repr(full_names))
+
+            for full_name in full_names:
+                tokens = NameUtils.tokenizeName(full_name)
+                # SanitationUtils.safePrint(u"TOKENS {} FOR {} ARE {}".format(len(tokens), full_name, tokens))
+                for j, token in enumerate(tokens):
+                    if token in wordsToRemove:
+                        self.properties['ignores'] += [token]
+                        if DEBUG_ADDRESS: print "IGNORING WORD", token
+                        continue
+
+                    title = NameUtils.getTitle(token)
+                    if title:
+                        if title not in self.properties['titles']:
+                            self.properties['titles'] += [title]
+                        continue
+
+                    position = NameUtils.getPosition(token)
+                    if position:
+                        if position not in self.properties['positions']:
+                            self.properties['positions'] += [position]
+                        continue
+
+                    note = NameUtils.getNote(token)
+                    if note:
+                        if note not in self.properties['notes']:
+                            self.properties['notes'] += [note]
+                        continue
+
+                    name = NameUtils.getName(token)
+                    if name:
+                        if name not in self.properties['names']:
+                            self.properties['names'] += [name]
+                        continue
+
+                    self.properties['unknowns'] += [token]
+                    self.valid = False
+
+            if len(self.properties['names'] ) > 3:
+                self.problematic = True
+                if STRICT_NAME:
+                    self.valid = False
+                    self.reason = "THERE ARE MORE THAN 3 NAMES"
+                    SanitationUtils.safePrint(self.reason + ": " + repr(self.properties['names']))
+            elif len(self.properties['names']) == 0:
+                self.empty = True
+                # self.problematic = True
+                # SanitationUtils.safePrint("THERE ARE NO NAMES: " + repr(kwargs))
+
+            if len(self.properties['titles'] ) > 1:
+                self.problematic = True
+                if STRICT_NAME:
+                    self.valid = False
+                    self.reason = "THERE MULTIPLE TITLES"
+                    SanitationUtils.safePrint(self.reason + ": " + repr(self.properties['titles']))
+
+            if len(self.properties['notes'] ) > 1:
+                self.problematic = True
+                if STRICT_NAME:
+                    self.valid = False
+                    self.reason = "THERE MULTIPLE NOTES"                
+                    SanitationUtils.safePrint(self.reason + ": " + repr(self.properties['notes']))
+
+            if len(self.properties['positions'] ) > 1:
+                self.problematic = True
+                if STRICT_NAME:
+                    self.valid = False
+                    self.reason = "THERE MULTIPLE POSITIONS"                
+                SanitationUtils.safePrint(self.reason + ": " + repr(self.properties['positions']))
+
+
     @property
     def first_name(self):
-        return self.properties.get('first_name') if self.valid else self.kwargs.get('first_name') 
+        if self.valid and len(self.properties.get('names', [])) > 0 :
+            return self.properties.get('names')[0] 
+        else :
+            self.kwargs.get('first_name') 
 
     @property
     def family_name(self):
-        return self.properties.get('family_name') if self.valid else self.kwargs.get('family_name') 
+        if self.valid and len(self.properties.get('names', [])) > 1:
+            return self.properties.get('names')[-1] 
+        else:
+            return self.kwargs.get('family_name') 
 
     @property
     def middle_name(self):
-        return self.properties.get('middle_name') if self.valid else self.kwargs.get('middle_name') 
+        if self.valid and len(self.properties.get('names', [])) > 2 :
+            return " ".join(self.properties.get('names')[1:-1]) 
+        else :
+            self.kwargs.get('middle_name') 
 
     @property
     def name_prefix(self):
-        return self.properties.get('name_prefix') if self.valid else self.kwargs.get('name_prefix') 
+        if self.valid and len(self.properties.get('titles', [])) > 0:
+            return " ".join(self.properties.get('titles')) 
+        else:
+            return self.kwargs.get('name_prefix') 
 
     @property
     def name_suffix(self):
-        return self.properties.get('name_suffix') if self.valid else self.kwargs.get('name_suffix') 
-
+        if self.valid and len(self.properties.get('positions', [])) > 0:
+            return " ".join(self.properties.get('positions')) 
+        else:
+            return self.kwargs.get('name_suffix') 
 
     def __unicode__(self, out_schema=None):
         prefix = ""
@@ -529,11 +644,12 @@ class ContactName(ContactObject):
             prefix = "VALID: " if self.valid else "INVALID: "
         delimeter = " "
         return SanitationUtils.coerceUnicode( prefix + delimeter.join(filter(None,[
-            self.name_prefix,
-            self.first_name,
-            self.middle_name,
-            self.family_name,
-            self.name_suffix
+            (("PREF: "+ self.name_prefix) if DEBUG_NAME and self.name_prefix else self.name_prefix),
+            (("FIRST: " + self.first_name) if DEBUG_NAME and self.first_name else self.first_name),
+            (("MID: " + self.middle_name) if DEBUG_NAME and self.middle_name else self.middle_name),
+            (("FAM: " + self.family_name) if DEBUG_NAME and self.family_name else self.family_name),
+            ((", " + self.name_suffix) if self.name_suffix else ""),
+            (("|UNKN:" + " ".join(self.properties['unknowns'])) if DEBUG_NAME else "")
         ])))
 
     def __str__(self, out_schema = None):
@@ -550,7 +666,19 @@ class ContactName(ContactObject):
         # country     = self.get('Country', ''),
         # state       = self.get('State', '')
 
+def testContactName():
+    SanitationUtils.safePrint( 
+        ContactName(
+            city = 'Jandakot',
+            state = 'WA',
+            country = 'Australia',
+            first_name = 'Dr. Neil',
+            family_name = 'Cunliffe-Williams (ACCOUNTANT)',
+            contact = "NEIL CUNLIFFE-WILLIAMS",
+        ).__unicode__(out_schema="flat")
+    )
+
+
 if __name__ == '__main__':
     testContactAddress()
     # testContactName()
-

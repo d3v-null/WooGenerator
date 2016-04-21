@@ -26,7 +26,7 @@ print SanitationUtils.xmlToUnicode(None)
 print SanitationUtils.unicodeToAscii(None)
 print SanitationUtils.asciiToUnicode(None)
 print SanitationUtils.coerceUnicode(None)
-print SanitationUtils.coerceBytes(None)
+SanitationUtils.safePrint(None)
 
 print converters.to_bytes(SanitationUtils.coerceUnicode("\xf0\x9f\x91\x8c"))
 
