@@ -20,7 +20,8 @@ import base64
 DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
-DEBUG_ADDRESS = True
+DEBUG_ADDRESS = False
+DEBUG_MESSAGE = False
 
 class SanitationUtils:
     email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
@@ -149,113 +150,15 @@ class SanitationUtils:
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    # @staticmethod
-    # def anythingToAscii(thing):
-    #     if isinstance(thing, unicode):
-    #         string = thing.encode(DEFAULT_ENCODING)
-    #     elif thing is None:
-    #         string = ""
-    #     else:
-    #         string = str(thing)
-    #     return string.encode('ascii', 'backslashreplace')
-
-    # @staticmethod
-    # def byteToUnicode(string):
-    #     # print unicode(string).encode('ascii','backslashreplace')
-
-    #     if(not isinstance(string, str)):
-    #         if isinstance(string, unicode):
-    #             return string
-    #         else:
-    #             string = str(string)
-    #         # string = str(string).dec
-    #     str_out = string.decode(DEFAULT_ENCODING)
-    #     if DEBUG: print "byteToUnicode", repr(string), repr(str_out)
-    #     return str_out
-
-    # @staticmethod
-    # def unicodeToByte(string):
-    #     if(not isinstance(string, unicode)):
-    #         if(isinstance(string, str)):
-    #             string = string.decode(DEFAULT_ENCODING)
-    #         else:
-    #             string = unicode(string)
-    #     str_out = string.encode('ascii', 'backslashreplace')
-    #     if DEBUG: print "unicodeToByte", repr(string), repr(str_out)
-    #     return str_out
-
-    # @staticmethod
-    # def anythingToUnicode(thing):
-    #     if isinstance(thing, unicode):
-    #         return thing
-    #     elif not isinstance(thing, str):
-    #         string = str(thing)
-
-    # @staticmethod
-    # def decodeStringEscape(string):
-    #     str_out = string.decode('string_escape')
-    #     if DEBUG: print "decodeStringEscape", repr(string), repr(str_out)
-    #     return str_out
-
-
-    # @staticmethod
-    # def makeSafeOutput(string):
-    #     return SanitationUtils.compose(
-    #         SanitationUtils.sanitizeNewlines,
-    #         SanitationUtils.anythingToAscii
-    #     )(string)
-
-    # @staticmethod
-    # def makeSafeHTMLOutput(string):
-    #     return SanitationUtils.compose(
-    #         SanitationUtils.sanitizeNewlines,
-    #         SanitationUtils.cleanXMLString,
-    #         SanitationUtils.makeUnicodeCSVSafe
-    #     )(string)
-
-    # @staticmethod
-    # def decodeSafeOutput(string):
-    #     return SanitationUtils.compose(
-    #         # SanitationUtils.byteToUnicode,
-    #         SanitationUtils.asciiToUnicode
-    #     )(string)
-
-    # @staticmethod
-    # def makeUnicodeCSVSafe(thing):
-    #     if thing is None:
-    #         return ""
-    #     else:
-    #         return unicode(thing)
-
-
-    # @staticmethod
-    # def cleanBackslashString(string):
-    #     if string is None:
-    #         return None
-    #     elif isinstance(string, unicode):
-    #         unicode_content = string
-    #     else:
-    #         unicode_content = str(string).decode('utf-8', 'ignore')
-    #         assert isinstance(unicode_content, unicode)
-    #     backslashed = unicode_content.encode('ascii', 'backslashreplace')
-    #     # print "backslashed: ", backslashed
-    #     return backslashed
-
-    # @staticmethod
-    # def cleanXMLString(string):
-    #     # print "cleaning string ", string
-    #     if string is None:
-    #         return None
-    #     elif isinstance(string, unicode):
-    #         unicode_content = string
-    #     else:
-    #         unicode_content = str(string).decode('utf-8', 'ignore')
-    #         assert isinstance(unicode_content, unicode)
-    #     # print "unicode_content: ", unicode_content
-    #     xml_content = unicode_content.encode('ascii', 'xmlcharrefreplace')
-    #     # print "xml_content: ", xml_content
-    #     return xml_content
-
+    @staticmethod
+    def normalizeVal(thing):
+        unicode_return = SanitationUtils.compose(
+            SanitationUtils.coerceUnicode,
+            SanitationUtils.toLower,
+            SanitationUtils.coerceUnicode
+        )
+        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        return unicode_return
 
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
@@ -1882,6 +1785,113 @@ class debugUtils:
     @staticmethod
     def getCallerProcedure():
         return inspect.stack()[2][3]   
+
+class Registrar:
+    messages = OrderedDict()
+    errors = OrderedDict()
+    warnings = OrderedDict()
+
+    def __init__(self):
+        self.objectIndexer = id
+        self.conflictResolver = self.passiveResolver
+
+    def resolveConflict(self, new, old, index, registerName = ''):
+        self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
+
+    def getObjectRowcount(self, objectData):
+        return objectData.rowcount
+
+    def getObjectIndex(self, objectData):
+        return objectData.index
+
+    def passiveResolver(*args):
+        pass
+
+    def exceptionResolver(self, new, old, index, registerName = ''):
+        raise Exception("could not register %s in %s. Duplicate index: %s" % (str(new), registerName, index) )
+
+    def warningResolver(self, new, old, index, registerName = ''):
+        try:
+            self.exceptionResolver(new, old, index, registerName)
+        except Exception as e:
+            self.registerError(e, new )
+
+    @classmethod
+    def stringAnything(self, index, thing, delimeter):
+        return SanitationUtils.coerceBytes( u"%31s %s %s" % (index, delimeter, thing) )
+
+    @classmethod
+    def printAnything(self, index, thing, delimeter):
+        print Registrar.stringAnything(index, thing, delimeter)
+
+    def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
+        if resolver is None: resolver = self.conflictResolver
+        if indexer is None: indexer = self.Indexer
+        index = None
+        try:
+            if callable(indexer):
+                index = indexer(thing)
+            else: 
+                index = indexer
+            assert index.__hash__, "Index must be hashable"
+            assert index == index, "index must support eq"
+        except AssertionError as e:
+            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (indexer.__name__, repr(index), str(e)))
+        else:
+            # if not register:
+            #     register = OrderedDict()
+            if singular:
+                if index not in register:
+                    register[index] = thing
+                else:
+                    resolver(thing, register[index], index, registerName)
+            else:
+                if index not in register:
+                    register[index] = []
+                register[index].append(thing)
+        # print "registered", thing
+
+    def registerError(self, error, data = None):
+        if data:
+            try:
+                index = data.index
+            except:
+                index = data
+        else:
+            index = debugUtils.getCallerProcedure()
+        error_string = str(error)
+        if DEBUG: Registrar.printAnything(index, error, '!')
+        self.registerAnything(
+            error_string, 
+            self.errors, 
+            index, 
+            singular = False,
+            registerName = 'errors'
+        )
+
+    def registerWarning(self, message, source=None):
+        if source is None:
+            source = debugUtils.getCallerProcedure()
+        if DEBUG: Registrar.printAnything(source, message, ' ')
+        self.registerAnything(
+            message,
+            self.warnings,
+            source,
+            singular = False,
+            registerName = 'warnings'
+        )
+
+    def registerMessage(self, message, source=None):
+        if source is None:
+            source = debugUtils.getCallerProcedure()
+        if DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
+        self.registerAnything(
+            message,
+            self.messages,
+            source,
+            singular = False,
+            registerName = 'messages'
+        )
 
 # class UTF8Recoder:
 #     """

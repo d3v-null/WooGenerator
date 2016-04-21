@@ -817,7 +817,7 @@ class ColData_User(ColData_Base):
             'warn': True,
             'user':True,
             'sync':True,
-            'aliases': ['First Name', 'Surname', 'Middle Name', 'Company']
+            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
 
         }),
         ('First Name', {
@@ -853,7 +853,7 @@ class ColData_User(ColData_Base):
             },
             'import': True,
             'user': True,    
-        })
+        }),
         ('Company',{
             'wp': {
                 'meta': True, 
@@ -1261,6 +1261,9 @@ class ColData_User(ColData_Base):
 
     def getWPCols(self):
         return self.getExportCols('wp')
+
+    def getAliasCols(self):
+        return self.getExportCols('aliases')
 
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"

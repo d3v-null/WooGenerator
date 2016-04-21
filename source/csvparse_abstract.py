@@ -1,6 +1,6 @@
 from pprint import pprint
 from collections import OrderedDict
-from utils import debugUtils, listUtils, SanitationUtils
+from utils import listUtils, SanitationUtils, Registrar
 from tabulate import tabulate
 import unicodecsv
 from coldata import ColData_User
@@ -8,117 +8,8 @@ from copy import deepcopy, copy
 
 DEBUG = False
 DEBUG_PARSER = False
-DEBUG_MESSAGE = False
 
 import os
-
-
-class Registrar:
-    messages = OrderedDict()
-    errors = OrderedDict()
-    warnings = OrderedDict()
-
-    def __init__(self):
-        self.objectIndexer = id
-        self.conflictResolver = self.passiveResolver
-
-    def resolveConflict(self, new, old, index, registerName = ''):
-        self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
-
-    def getObjectRowcount(self, objectData):
-        return objectData.rowcount
-
-    def getObjectIndex(self, objectData):
-        return objectData.index
-
-    def passiveResolver(*args):
-        pass
-
-    def exceptionResolver(self, new, old, index, registerName = ''):
-        raise Exception("could not register %s in %s. Duplicate index: %s" % (str(new), registerName, index) )
-
-    def warningResolver(self, new, old, index, registerName = ''):
-        try:
-            self.exceptionResolver(new, old, index, registerName)
-        except Exception as e:
-            self.registerError(e, new )
-
-    @classmethod
-    def stringAnything(self, index, thing, delimeter):
-        return SanitationUtils.coerceBytes( u"%31s %s %s" % (index, delimeter, thing) )
-
-    @classmethod
-    def printAnything(self, index, thing, delimeter):
-        print Registrar.stringAnything(index, thing, delimeter)
-
-    def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
-        if resolver is None: resolver = self.conflictResolver
-        if indexer is None: indexer = self.Indexer
-        index = None
-        try:
-            if callable(indexer):
-                index = indexer(thing)
-            else: 
-                index = indexer
-            assert index.__hash__, "Index must be hashable"
-            assert index == index, "index must support eq"
-        except AssertionError as e:
-            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (indexer.__name__, repr(index), str(e)))
-        else:
-            # if not register:
-            #     register = OrderedDict()
-            if singular:
-                if index not in register:
-                    register[index] = thing
-                else:
-                    resolver(thing, register[index], index, registerName)
-            else:
-                if index not in register:
-                    register[index] = []
-                register[index].append(thing)
-        # print "registered", thing
-
-    def registerError(self, error, data = None):
-        if data:
-            try:
-                index = data.index
-            except:
-                index = data
-        else:
-            index = debugUtils.getCallerProcedure()
-        error_string = str(error)
-        if DEBUG: Registrar.printAnything(index, error, '!')
-        self.registerAnything(
-            error_string, 
-            self.errors, 
-            index, 
-            singular = False,
-            registerName = 'errors'
-        )
-
-    def registerWarning(self, message, source=None):
-        if source is None:
-            source = debugUtils.getCallerProcedure()
-        if DEBUG: Registrar.printAnything(source, message, ' ')
-        self.registerAnything(
-            message,
-            self.warnings,
-            source,
-            singular = False,
-            registerName = 'warnings'
-        )
-
-    def registerMessage(self, message, source=None):
-        if source is None:
-            source = debugUtils.getCallerProcedure()
-        if DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
-        self.registerAnything(
-            message,
-            self.messages,
-            source,
-            singular = False,
-            registerName = 'messages'
-        )
 
 class ImportObject(OrderedDict, Registrar):
 
@@ -393,7 +284,13 @@ class CSVParse_Base(object, Registrar):
 
     def analyseRows(self, unicode_rows):
         for rowcount, unicode_row in enumerate(unicode_rows):
-            if unicode_row: assert all(map(lambda unicode_cell: isinstance(unicode_cell, unicode) if unicode_cell else True, unicode_row)), "non-empty cells must be unicode objects"
+            if unicode_row: 
+                non_unicode = filter(
+                    lambda unicode_cell: not isinstance(unicode_cell, unicode) if unicode_cell else False,
+                    unicode_row
+                )
+                assert not non_unicode, "non-empty cells must be unicode objects, {}".format(repr(non_unicode))
+                    
             if not self.indices :
                 self.analyseHeader(unicode_row)
                 continue

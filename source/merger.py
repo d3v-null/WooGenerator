@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
+from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils, Registrar
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
@@ -198,12 +198,15 @@ if sql_run:
         cursor = conn.cursor()
         cursor.execute(sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
         # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
-        headers = [i[0] for i in cursor.description]
+        headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
         # print headers
+        saRows = [headers]
         if testMode:
-            saRows = [headers] + list(cursor.fetchall())[:100]
+             for row in cursor[:100]:
+                saRows += [map(SanitationUtils.coerceUnicode, row)]
         else:
-            saRows = [headers] + list(cursor.fetchall())
+             for row in cursor:
+                saRows += [map(SanitationUtils.coerceUnicode, row)] 
 
 # print tabulate(saRows, tablefmt="simple")
 
@@ -358,7 +361,7 @@ printBasicColumns( list(chain( *maParser.emails.values() )) )
 # #             ]))
 # quit()
 
-class SyncUpdate(object):
+class SyncUpdate(Registrar):
     def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
 
@@ -381,7 +384,7 @@ class SyncUpdate(object):
 #     self.sTime
 # )
 
-        self._winner = SLAVE_NAME if(self.sTime >= self.mTime) else MASTER_NAME
+        self.winner = SLAVE_NAME if(self.sTime >= self.mTime) else MASTER_NAME
         
         self.newSObject = False
         self.newMObject = False
@@ -426,7 +429,7 @@ class SyncUpdate(object):
     def winnerWPID(self):
         return self.getWinnerKey("Wordpress ID")
     # @property
-    # def winner(self): return self._winner
+    # def winner(self): return self.winner
     
     # def colBlank(self, col):
     #     mValue = (mObject.get(col) or "")
@@ -434,33 +437,25 @@ class SyncUpdate(object):
     #     return (not mValue and not sValue)
 
     def getWinnerKey(self, key):
-        if self.syncWarnings and key in self.syncWarnings.keys():
-            # print "key in warnings"
-            subject, reason, oldVal, newVal, data = self.syncWarnings[key][0]
-            return newVal
-        if self.syncPasses and key in self.syncPasses.keys():
-            # print "key in passes"
-            reason, val, data = self.syncPasses[key][0]
-            return val
-        else:
-            if self.newSObject or self.newMObject:
-                try:
-                    vals = filter(None, [self.newMObject.get(key), self.newSObject.get(key)])
-                    if any(vals):
-                        return vals[0]
-                except:
-                    pass
-            if self.oldSObject or self.oldMObject:
-                try:
-                    vals = filter(None, [self.oldMObject.get(key), self.oldSObject.get(key)])
-                    if any(vals):
-                        return vals[0]
-                except:
-                    pass
-        print "could not find any value for key {key}".format(key=key)
+        # if self.syncWarnings and key in self.syncWarnings.keys():
+        #     # print "key in warnings"
+        #     keySyncWarnings = self.syncWarnings[key]
+        #     assert len(keySyncWarnings) < 2
+        #     subject, reason, oldVal, newVal, data = keySyncWarnings[0]
+        #     return newVal
+        # if self.syncPasses and key in self.syncPasses.keys():
+        #     # print "key in passes"
+        #     keySyncPasses = self.syncPasses[key]
+        #     assert len(keySyncPasses) < 2
+        #     reason, val, data = keySyncPasses[0]
+        #     return val
+        # else:
+        if self.winner == SLAVE_NAME and self.newSObject:
+            return self.newSObject.get(key)
+        if self.winner == MASTER_NAME and self.newMObject:
+            return self.newMObject.get(key)
+        self.registerError( "could not find any value for key {}".format(key) )
         return None
-
-            
 
     def sanitizeValue(self, col, value):
         # print "sanitizing", col, repr(value)
@@ -559,7 +554,7 @@ class SyncUpdate(object):
             return ""
 
     # def getOldLoserObject(self, winner=None):
-    #     if not winner: winner = self._winner
+    #     if not winner: winner = self.winner
     #     if(winner == MASTER_NAME):
     #         oldLoserObject = self.oldSObject
 
@@ -635,7 +630,7 @@ class SyncUpdate(object):
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
 
-        winner = self._winner
+        winner = self.winner
         reason = 'updating' if mValue and sValue else 'inserting'
             
         if( 'override' in str(sync_mode).lower() ):
@@ -677,39 +672,58 @@ class SyncUpdate(object):
             subtitle_fmt = "<h3>%s</h3>" 
             info_delimeter = "<br/>"
             info_fmt = "<strong>%s:</strong> %s"
-        out_str = subtitle_fmt % "OLD"
         oldMatch = Match([self.oldMObject], [self.oldSObject])
-        out_str += oldMatch.tabulate(tablefmt)
-        out_str += subtitle_fmt % "INFO"
+        out_str =  ""
+        out_str += info_delimeter.join([
+            subtitle_fmt % "OLD",
+            oldMatch.tabulate(tablefmt)
+        ]
+        out_str += info_delimeter
         out_str += info_delimeter.join(filter(None,[
+            subtitle_fmt % "INFO",
             (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self.bTime))) if self.bTime else "No Last Sale",
             (info_fmt % ("%s Mod Time" % MASTER_NAME, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % MASTER_NAME,
             (info_fmt % ("%s Mod Time" % SLAVE_NAME, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % SLAVE_NAME,
             (info_fmt % ("static", "yes" if self.static else "no")),
             (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
         ]))
-        out_str += subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates)
-        out_str += self.displaySyncWarnings(tablefmt)
-        out_str += subtitle_fmt % 'XMLRPC CHANGES'
-        out_str += self.displayChangesForXMLRPC(tablefmt)
+        out_str += info_delimeter
+        out_str += info_delimeter.join([
+            subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates),
+            self.displaySyncWarnings(tablefmt),
+            subtitle_fmt % 'XMLRPC CHANGES',
+            self.displayChangesForXMLRPC(tablefmt)        
+        ])
         newMatch = Match([self.newMObject], [self.newSObject])
-        out_str += subtitle_fmt % 'NEW'
-        out_str += newMatch.tabulate(tablefmt)
+        out_str += info_delimeter
+        out_str += info_delimeter.join([
+            subtitle_fmt % 'NEW',
+            newMatch.tabulate(tablefmt)
+        ])
+
         return out_str
 
     def getWPUpdatesRecursive(self, col):
+        all_updates = OrderedDict()
+        if col in ColData_User.data.keys():
+            data = ColData_User.data[col]
+            if data.get('wp'):
+                data_wp = data.get('wp',{})
+                if data_wp.get('meta'):
+                    all_updates[data_wp.get('key')] = self.newSObject.get(col)
+                elif not data_wp.get('final'):
+                    all_updates[data_wp.get('key')] = self.newSObject.get(col)
+            if data.get('aliases'):
+                data_aliases = data.get('aliases')
+                for alias in data_aliases:
+                    all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(alias))
 
     def getWPUpdates(self):
         all_updates = {}
         for col, warnings in self.syncWarnings.items():
             for subject, reason, oldVal, newVal, data in warnings:  
-                if subject == 'ACT' and (data.get('wp') or data.get('aliases')):
-                    data_wp = data.get('wp',{})
-                    if data_wp.get('meta'):
-                        all_updates[data_wp.get('key')] = newVal
-                    elif not data_wp.get('final'):
-                        all_updates[data_wp.get('key')] = newVal
-
+                if subject == 'ACT':
+                    all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(col))
         return all_updates
 
     def displayChangesForXMLRPC(self, tablefmt=None):
@@ -1059,19 +1073,20 @@ xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
 importProblematicWordpress = True
 if importProblematicWordpress:
     for update in problematicUpdates:
-        print u"CHANGES XLMRPC START (%s)" % unicode(update)
-        print SanitationUtils.coerceBytes( update.displayChangesForXMLRPC())
-        print "CHANGES XLMRPC END"
+        print u"UPDATE START"
+        print SanitationUtils.coerceBytes(  update.tabulate(tablefmt="simple") )
+        # print SanitationUtils.coerceBytes( update.displayChangesForXMLRPC())
+        print "UPDATE END"
         all_updates = update.getWPUpdates()
 
-        all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-        WPID = update.winnerWPID
+        if all_updates:
+            all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+            WPID = update.winnerWPID
 
-        # print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
+            # print SanitationUtils.coerceBytes((WPID, all_updates_json_base64))
+            xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
 
-        xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
-
-        print "XMLRPC OUT: ", xmlrpc_out
+            print "XMLRPC OUT: ", xmlrpc_out
 
 
 

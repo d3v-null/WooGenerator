@@ -3,13 +3,75 @@ from pprint import pprint
 from collections import OrderedDict
 
 DEBUG_ADDRESS = False
-DEBUG_ADDRESS = True
+# DEBUG_ADDRESS = True
 
-class ContactAddress(object):
+DEBUG_NAME = True
+
+class ContactObject(object):
+    equality_keys = []
+    similarity_keys = []
+    key_mappings = {}
+
     def __init__(self, schema=None, **kwargs):
         self.kwargs = kwargs
         self.properties = OrderedDict()
         self.valid = True
+        self.problematic = False
+        self.empty = False
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            # for key in ['country', 'state', 'postcode', 'city', 'thoroughfares', 'deliveries', 'names', 'buildings', 'floors', 'subunits']:
+            for key in self.equality_keys:
+                if getattr(self, key) != getattr(other, key):
+                    return False
+            return True
+        else:
+            return False
+
+    def __getitem__(self, key):
+        for attr, keys in self.key_mappings.items():
+            if key in keys:
+                return getattr(self, attr)
+
+    def normalizeVal(self, val):
+        return SanitationUtils.normalizeVal(val)
+
+    def similar(self, other):
+        if(self.empty or other.empty):
+            return True if self.empty and other.empty else False
+        for key in self.similarity_keys:
+            # print "-> LOOKING AT KEY", key
+            if getattr(self, key) and getattr(other, key):
+                # print "--> self", 
+                if self.normalizeVal(getattr(self, key)) != self.normalizeVal(getattr(other, key)):
+                    # print "->NOT THE SAME BECAUSE OF", key
+                    return False
+                else:
+                    pass
+                    # print "->KEY IS THE SAME", key
+        return True
+        # print "THEY ARE SIMILAR"
+        #todo: this
+
+    def __bool__(self):
+        return not self.empty
+    __nonzero__=__bool__
+
+class ContactAddress(ContactObject):
+    equality_keys = ['line1', 'line2', 'line3']
+    similarity_keys = ['country', 'state', 'postcode', 'city', 'thoroughfares', 'deliveries', 'names', 'buildings', 'floors', 'subunits']
+    key_mappings = {
+        'country':['Country', 'Home Country'],
+        'state':['State', 'Home State'],
+        'postcode':['Postcode', 'Home Postcode'],
+        'city':['City', 'Home City'],
+        'line1':['Address 1', 'Home Address 1'],
+        'line2':['Address 2', 'Home Address 2']
+    }
+
+    def __init__(self, schema=None, **kwargs):
+        super(ContactAddress, self).__init__(schema, **kwargs)
         self.properties['subunits'] = []
         self.properties['isShop'] = False
         self.properties['deliveries'] = []
@@ -31,7 +93,6 @@ class ContactAddress(object):
             self.schema = None
         else:
             if DEBUG_ADDRESS: pprint(kwargs)
-            self.empty = False
             if not schema: self.schema = self.__class__.determineSchema(**kwargs)
 
             lines = filter(None, map(lambda key: kwargs.get(key, ''), ['line1', 'line2']))
@@ -270,51 +331,27 @@ class ContactAddress(object):
                 return 'unknown'
         return None
 
-    def similar(self, other):
-        if(self.empty or other.empty):
-            return True if self.empty and other.empty else False
-        # print "comparing addresses\n ->", self.__str__(out_schema="flat"), '\n ->', other.__str__(out_schema="flat")
-        for key in ['country', 'state', 'postcode', 'city', 'thoroughfares', 'deliveries', 'names', 'buildings', 'floors', 'subunits']:
-            # print "-> LOOKING AT KEY", key
-            if getattr(self, key) and getattr(other, key):
-                # print "--> self", 
-                if AddressUtils.sanitizeState(getattr(self, key)) != AddressUtils.sanitizeState(getattr(other, key)):
-                    # print "->NOT THE SAME BECAUSE OF", key
-                    return False
-                else:
-                    pass
-                    # print "->KEY IS THE SAME", key
-        return True
-        # print "THEY ARE SIMILAR"
-        #todo: this
 
+    def normalizeVal(self, val):
+        return AddressUtils.sanitizeState(val)
 
-    def __str__(self, out_schema = None):
+    def __unicode__(self, out_schema = None):
         prefix = ""
         if DEBUG_ADDRESS:
             prefix = "VALID: " if self.valid else "INVALID: "
         delimeter = "\n"
         if out_schema == "flat":
             delimeter = ";"
-        return SanitationUtils.coerceBytes( prefix + delimeter.join(filter(None,[
+        return SanitationUtils.coerceUnicode( prefix + delimeter.join(filter(None,[
             self.line1,
             self.line2,
             self.line3
         ])) ) 
 
-    def __bool__(self):
-        return not self.empty
-    __nonzero__=__bool__
+    def __str__(self, out_schema=None):
+        return SanitationUtils.coerceBytes(self.__unicode__(out_schema)) 
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            # for key in ['country', 'state', 'postcode', 'city', 'thoroughfares', 'deliveries', 'names', 'buildings', 'floors', 'subunits']:
-            for key in ['line1', 'line2', 'line3']:
-                if getattr(self, key) != getattr(other, key):
-                    return False
-            return True
-        else:
-            return False
+
 
 def testContactAddress():
     #GETS
@@ -412,11 +449,22 @@ def testContactAddress():
     # print M.similar(N)
     # print M == O
     
-class ContactName(object):
+class ContactName(ContactObject):
+    equality_keys = ['first_name', 'middle_name']
+    similarity_keys = ['first_name', 'middle_name', 'family_name', 'contact', 'company']
+    key_mappings = {
+        'first_name':['First Name'],
+        'family_name':['Surname'],
+        'middle_name':['Middle Name'],
+        'name_prefix':['Name Prefix'],
+        'name_suffix':['name_suffix']
+    }
+
     def __init__(self, schema=None, **kwargs):
         self.kwargs = kwargs
         self.properties = OrderedDict()
-        self.valid = True
+        # self.valid = True
+        self.valid = False #uncomment this once class is complete
         self.problematic = False
         self.empty = False
 
@@ -454,6 +502,42 @@ class ContactName(object):
                 citySanitized = AddressUtils.sanitizeState(kwargs['city'])
                 self.properties['city'] = citySanitized
 
+    @property
+    def first_name(self):
+        return self.properties.get('first_name') if self.valid else self.kwargs.get('first_name') 
+
+    @property
+    def family_name(self):
+        return self.properties.get('family_name') if self.valid else self.kwargs.get('family_name') 
+
+    @property
+    def middle_name(self):
+        return self.properties.get('middle_name') if self.valid else self.kwargs.get('middle_name') 
+
+    @property
+    def name_prefix(self):
+        return self.properties.get('name_prefix') if self.valid else self.kwargs.get('name_prefix') 
+
+    @property
+    def name_suffix(self):
+        return self.properties.get('name_suffix') if self.valid else self.kwargs.get('name_suffix') 
+
+
+    def __unicode__(self, out_schema=None):
+        prefix = ""
+        if DEBUG_NAME:
+            prefix = "VALID: " if self.valid else "INVALID: "
+        delimeter = " "
+        return SanitationUtils.coerceUnicode( prefix + delimeter.join(filter(None,[
+            self.name_prefix,
+            self.first_name,
+            self.middle_name,
+            self.family_name,
+            self.name_suffix
+        ])))
+
+    def __str__(self, out_schema = None):
+        return SanitationUtils.coerceBytes(self.__unicode__(out_schema)) 
 
         # first_name  = self.get('First Name', ''),
         # middle_name = self.get('Middle Name', ''),

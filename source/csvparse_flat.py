@@ -146,6 +146,19 @@ class ImportUser(ImportFlat):
             state       = self.get('State', '')
         )
 
+    def __getitem__(self, key):
+        if key in ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country']:
+            val = self.billing_address[key]
+        elif key in ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country']:
+            val = self.shipping_address[key]
+        elif key in ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']:
+            val = self.name[key]
+        else:
+            val = super(ImportUser, self).__getitem__(key)
+
+        if(DEBUG_FLAT): self.registerMessage("Accessed key {} returning value {}".format(key, val))
+        return val
+
     @staticmethod
     def getContainer():
         return UsrObjList
