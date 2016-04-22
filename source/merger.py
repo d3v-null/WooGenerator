@@ -142,7 +142,7 @@ if sinceM:
 if sinceS:
     filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
 
-# filterItems = None
+filterItems = None
 
 #########################################
 # Download / Generate Slave Parser Object
@@ -323,13 +323,17 @@ def contactActLike(obj):
     return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
 
 def printBasicColumns(users):
+    # print len(users)
     usrList = UsrObjList()
     for user in users:
         usrList.addObject(user)
+        # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
+
     SanitationUtils.safePrint( usrList.tabulate(
         OrderedDict([
             ('E-mail', {}),
             ('MYOB Card ID', {}),
+            ('Name', {}),
             ('Address', {}),
             ('Home Address', {}),
             ('Edited in Wordpress', {})
@@ -337,7 +341,10 @@ def printBasicColumns(users):
         tablefmt = 'simple'
     ))
 
-printBasicColumns( list(chain( *maParser.emails.values() )) )
+# print "WHAT THE FUCK"
+# print len(maParser.emails.values())
+
+printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
 # printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
 
 # first = list(chain(*saParser.emails.values()))[0]
@@ -840,7 +847,7 @@ globalMatches.addMatches( usernameMatcher.pureMatches)
 # debug stuff
 # if(DEBUG):
 #     print "all username matches"
-#     print usernameMatcher.matches.tabulate(tablefmt="simple");
+#     print usernameMatcher.matasdadches.tabulate(tablefmt="simple");
 
 print "processing cards"
 
@@ -944,6 +951,81 @@ print timediff()
 
 with io.open(resPath, 'w+', encoding='utf8') as resFile:
     reporter = HtmlReporter()
+
+    sanitizingGroup = HtmlReporter.Group('sanitizing', 'Sanitizing Results')
+    sanitizingGroup.addSection(
+        HtmlReporter.Section(
+            's_bad_addresses',
+            title = "Bad %s Addresses" % SLAVE_NAME.title(),
+            description = '%s records that have badly formatted addresses' % SLAVE_NAME,
+            data = "".join([
+                "".join([
+                    HtmlReporter.Section.data_heading_fmt % heading,
+                    "".join([
+                        address.tabulate(tablefmt='html') for address in addresses
+                    ]),
+                    HtmlReporter.Section.data_separater 
+                ]) for heading, addresses in saParser.badAddress.items()
+            ]),
+            length = len(saParser.badAddress)
+        )
+    )
+
+    sanitizingGroup.addSection(
+        HtmlReporter.Section(
+            's_bad_names',
+            title = "Bad %s Names" % SLAVE_NAME.title(),
+            description = '%s records that have badly formatted names' % SLAVE_NAME,
+            data = "".join([
+                "".join([
+                    HtmlReporter.Section.data_heading_fmt % heading,
+                    "".join([
+                        name.tabulate(tablefmt='html') for name in names
+                    ]),
+                    HtmlReporter.Section.data_separater 
+                ]) for heading, names in saParser.badName.items()
+            ]),
+            length = len(saParser.badName)
+        )
+    )
+
+    sanitizingGroup.addSection(
+        HtmlReporter.Section(
+            'm_bad_addresses',
+            title = "Bad %s Addresses" % MASTER_NAME.title(),
+            description = '%s records that have badly formatted addresses' % MASTER_NAME,
+            data = "".join([
+                "".join([
+                    HtmlReporter.Section.data_heading_fmt % heading,
+                    "".join([
+                        address.tabulate(tablefmt='html') for address in addresses
+                    ]),
+                    HtmlReporter.Section.data_separater 
+                ]) for heading, addresses in maParser.badAddress.items()
+            ]),
+            length = len(maParser.badAddress)
+        )
+    )
+
+    sanitizingGroup.addSection(
+        HtmlReporter.Section(
+            'm_bad_names',
+            title = "Bad %s Names" % MASTER_NAME.title(),
+            description = '%s records that have badly formatted names' % MASTER_NAME,
+            data = "".join([
+                "".join([
+                    HtmlReporter.Section.data_heading_fmt % heading,
+                    "".join([
+                        name.tabulate(tablefmt='html') for name in names
+                    ]),
+                    HtmlReporter.Section.data_separater 
+                ]) for heading, names in maParser.badName.items()
+            ]),
+            length = len(maParser.badName)
+        )
+    )
+
+    reporter.addGroup(sanitizingGroup)
 
     matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
     matchingGroup.addSection(
@@ -1056,7 +1138,9 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
         )
     )
 
-    reporter.addGroup(syncingGroup)
+    report_sync = False
+    if report_sync:
+        reporter.addGroup(syncingGroup)
 
     resFile.write( reporter.getDocumentUnicode() )
 
@@ -1075,25 +1159,29 @@ class UpdateUser( wordpress_xmlrpc.AuthenticatedMethod ):
 # print repr(wp_user)
 # print repr(wp_pass)
 
-xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
+do_xmlrpc = False
 
-importProblematicWordpress = True
-if importProblematicWordpress:
-    for update in problematicUpdates:
-        print u"UPDATE START"
-        SanitationUtils.safePrint(  update.tabulate(tablefmt="simple") )
-        # SanitationUtils.safePrint( update.displayChangesForXMLRPC())
-        print "UPDATE END"
-        all_updates = update.getWPUpdates()
+if do_xmlrpc:
 
-        if all_updates:
-            all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-            WPID = update.WPID
+    xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
 
-            # SanitationUtils.safePrint((WPID, all_updates_json_base64))
-            xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
+    importProblematicWordpress = True
+    if importProblematicWordpress:
+        for update in problematicUpdates:
+            print u"UPDATE START"
+            SanitationUtils.safePrint(  update.tabulate(tablefmt="simple") )
+            # SanitationUtils.safePrint( update.displayChangesForXMLRPC())
+            print "UPDATE END"
+            all_updates = update.getWPUpdates()
 
-            print "XMLRPC OUT: ", xmlrpc_out
+            if all_updates:
+                all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
+                WPID = update.WPID
+
+                # SanitationUtils.safePrint((WPID, all_updates_json_base64))
+                xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
+
+                print "XMLRPC OUT: ", xmlrpc_out
 
 
 

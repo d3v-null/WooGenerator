@@ -818,6 +818,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
             "static": True,
+            'repor':True,
             'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
 
         }),

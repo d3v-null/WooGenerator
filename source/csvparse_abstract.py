@@ -5,9 +5,11 @@ from tabulate import tabulate
 import unicodecsv
 from coldata import ColData_User
 from copy import deepcopy, copy
+from time import time
 
 DEBUG = False
 DEBUG_PARSER = False
+DEBUG_PROGRESS = True
 
 import os
 
@@ -153,8 +155,9 @@ class ObjList(list):
             # print repr(table.encode('utf8'))
             # return table.encode('utf8')
         else:
-            # print "there are no objects"
-            pass
+            if DEBUG:
+                print "there are no objects"
+            return None
 
     def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
         assert filePath, "needs a filepath"
@@ -283,7 +286,19 @@ class CSVParse_Base(object, Registrar):
         # self.registerObject(objectData)
 
     def analyseRows(self, unicode_rows):
+        if DEBUG_PROGRESS:
+            unicode_rows = list(unicode_rows)
+            rowlen = len(unicode_rows)
+            last_print = time()
+
         for rowcount, unicode_row in enumerate(unicode_rows):
+            if DEBUG_PROGRESS:
+                now = time()
+                if now - last_print > 1:
+                    last_print = now
+                    print "%d of %d rows processed" % (rowcount, rowlen)
+
+
             if unicode_row: 
                 non_unicode = filter(
                     lambda unicode_cell: not isinstance(unicode_cell, unicode) if unicode_cell else False,

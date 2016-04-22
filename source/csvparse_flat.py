@@ -118,15 +118,23 @@ class ImportUser(ImportFlat):
             elif(not self.get(key)):
                 self[key] = ""
             if(DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
+        if(DEBUG_FLAT): self.registerMessage("data:" + repr(data))
+
+        kwargs = OrderedDict(filter(None,[
+            (('line1',    data.get('Address 1') ) if data.get('Address 1') else None),
+            (('line2',    data.get('Address 2') ) if data.get('Address 2') else None),
+            (('city',     data.get('City')      ) if data.get('City')      else None),
+            (('postcode', data.get('Postcode')  ) if data.get('Postcode')  else None),
+            (('state',    data.get('State')     ) if data.get('State')     else None),
+            (('country',  data.get('Country')   ) if data.get('Country')   else None)
+        ]))
+
+        # print kwargs
+
 
         self['Address'] = ContactAddress(
             self.contact_schema,  
-            line1       = data.get('Address 1', ''),
-            line2       = data.get('Address 2', ''),
-            city        = data.get('City', ''),
-            postcode    = data.get('Postcode', ''),
-            state       = data.get('State', ''),
-            country     = data.get('Country', ''),
+            **kwargs
         )
 
         self['Home Address'] = ContactAddress(
@@ -157,7 +165,11 @@ class ImportUser(ImportFlat):
         for alias, keys in self.aliasMapping.items():
             if key in keys:
                 return self[alias][key]
-        return super(ImportUser, self).__getitem__(key)
+        try:
+            return super(ImportUser, self).__getitem__(key)
+        except:
+            return None
+
 
     def get(self, key, default = None):
         for alias, keys in self.aliasMapping.items():
@@ -165,8 +177,11 @@ class ImportUser(ImportFlat):
                 try:
                     return self[alias][key]
                 except:
-                    return default
-        return super(ImportUser, self).get(key, default)
+                    break
+        try:
+            return super(ImportUser, self).get(key, default)
+        except:
+            return None
 
     @staticmethod
     def getContainer():
@@ -255,6 +270,8 @@ class CSVParse_User(CSVParse_Flat):
         self.usernames = OrderedDict()
         self.nousernames = OrderedDict()
         self.filtered = OrderedDict()
+        self.badName = OrderedDict()
+        self.badAddress = OrderedDict()
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)
@@ -340,6 +357,25 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'filtered'
         )
 
+    def registerBadAddress(self, objectData, address):
+        self.registerAnything(
+            address,
+            self.badAddress,
+            objectData.__repr__(),
+            singular = False,
+            registerName = 'badaddress'
+        )
+
+    def registerBadName(self, objectData, name):
+        print "registering bad name"
+        self.registerAnything(
+            name,
+            self.badName,
+            objectData.__repr__(),
+            singular = False,
+            registerName = 'badname'
+        )
+
     def validateFilters(self, objectData):
         if self.filterItems:
             if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']: 
@@ -361,7 +397,6 @@ class CSVParse_User(CSVParse_Flat):
 
 
     def registerObject(self, objectData):
-
         if not self.validateFilters(objectData):
             self.registerFiltered(objectData)
             return
@@ -392,6 +427,21 @@ class CSVParse_User(CSVParse_Flat):
         else:
             if(DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
             self.registerNoUsername(objectData)
+
+        addresses = [objectData.billing_address, objectData.shipping_address]
+        for address in filter(None, addresses):
+            if not address.valid:
+                reason = address.reason
+                assert reason, "there must be a reason that this address is invalid: " + address
+                self.registerBadAddress(objectData, address)
+            
+        name = objectData.name
+        # print "NAME OF %s IS %s" % (repr(objectData), name.__str__(out_schema="flat"))
+        if not name.valid:
+            reason = name.reason
+            assert reason, "there must be a reason that this name is invalid: " + name
+            # print "registering bad name: ", SanitationUtils.coerceBytes(name)
+            self.registerBadName(objectData, name)
 
         super(CSVParse_User, self).registerObject(objectData)
 

@@ -22,20 +22,28 @@ DEFAULT_ENCODING = 'utf8'
 DEBUG = False
 DEBUG_ADDRESS = False
 DEBUG_MESSAGE = False
-DEBUG_NAME = True
+DEBUG_NAME = False
 
 class SanitationUtils:
     email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
     myobid_regex = r"C\d+"
     punctuationChars = [
-        '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '\-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\\\', '\\]', '^', '_', '`', '{', '|', '}', '~', '\n'
+        '!', '"', '#', '$', '%', 
+        '&', '\'', '(', ')', '*', 
+        '+', ',', '\-', '.', '/', 
+        ':', ';', '<', '=', '>', 
+        '?', '@', '[', '\\\\', '\\]', 
+        '^', '_', '`', '{', '|', '}', '~'
     ]
     allowedPunctuation = [
         '\\-', '.', '\''
     ]
-    tokenDelimeters  = [r"\s", r"\d"] + list(set(punctuationChars) - set(allowedPunctuation))
-    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
-    nondelimeterRegex= r"[^%s]" % "".join(tokenDelimeters)
+    whitespaceChars = [ ' ', '\t', '\r', '\n', '\f']
+    tokenDelimeters  = [ r"\d"] + list(set(punctuationChars + whitespaceChars) - set(allowedPunctuation)) #delimeter characters incl space
+    tokenDelimetersNoSpace  = [ r"\d"] + list(set(punctuationChars + whitespaceChars) - set(allowedPunctuation + [' '])) #delimeter characters excl space
+    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters) 
+    nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters) 
+    nondelimeterAndSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
@@ -172,9 +180,8 @@ class SanitationUtils:
         return unicode_return
 
     @staticmethod
-    def safePrint(thing):
-        utf8_thing = SanitationUtils.coerceBytes(thing)
-        print utf8_thing
+    def safePrint(*args):
+        print " ".join([SanitationUtils.coerceBytes(arg) for arg in args ])
 
     @staticmethod
     def normalizeVal(thing):
@@ -473,8 +480,6 @@ class SanitationUtils:
     def decodeBase64(b64_str):
         return base64.urlsafe_b64decode(b64_str)
 
-
-
 def testSanitationUtils():
     # pass
 
@@ -536,35 +541,14 @@ def testSanitationUtils():
     a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
     SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
 
-class ValidationUtils:
-    @staticmethod
-    def isNotNone(arg):
-        return arg is not None
-
-    @staticmethod
-    def isContainedIn(l):
-        return lambda v: v in l
-
-class PHPUtils:
-    @staticmethod
-    def uniqid(prefix="", more_entropy=False):
-        return uniqid(prefix, more_entropy)
-
-    @staticmethod
-    def ruleset_uniqid():
-        return PHPUtils.uniqid("set_")
-
-    @staticmethod
-    def serialize(thing):
-        return dumps(thing)
-
-    @staticmethod
-    def unserialize(string):
-        return loads(string)
-
-
 class NameUtils:
-    nameRegex        = r"({0}+)".format(SanitationUtils.nondelimeterRegex)  
+    singleNameRegex       = r"({0}+)".format(
+        format(SanitationUtils.nondelimeterRegex)
+    )
+    multiNameRegex  = r"({0}{1}+{0})".format(
+        format(SanitationUtils.nondelimeterRegex),
+        format(SanitationUtils.nondelimeterAndSpaceRegex)
+    )
 
     titleAbbreviations = OrderedDict([
         ('DR', ['DOCTOR', 'DR.']),
@@ -579,19 +563,22 @@ class NameUtils:
     positionAbbreviations = OrderedDict([
         ('OWNER', []),
         ('ACCOUNTANT', ['ACCTS']),
+        ('SALES MANAGER', []),
         ('MANAGER', []),
         ('BEAUTICIAN', []),
         ('DIRECTOR', []),
         ('HAIRDRESSER', []),
         ('STYLIST', []),
+        ('CEO',     []),
+        ('FINANCE DEPT', ['FINANCE DEPARTMENT'])
     ])
 
     noteAbbreviations = OrderedDict([
         ("C/O", []),
-        (" - ", []),
-        (", ", []),
-        (" & ", []),
-        ('AND', []),
+        ("- ", []),
+        (",", []),
+        ("&", []),
+        ('AND', ['&AMP']),
         ('SPOKE WITH', ['SPIKE WITH', 'SPOKE W', "SPOKE TO"]),
         ('CLOSED', ['CLOSED DOWN']),
         ('PRONOUNCED', []),
@@ -611,6 +598,20 @@ class NameUtils:
         ("OPEN BY APPT ONLY", []),
         ('CUSTOMER', []),
 
+    ])
+
+    careOfAbbreviations = OrderedDict([
+        ('C/O',     ['C/-']),
+        ('ATTN',   ['ATTN.', 'ATTENTION'])
+    ])
+
+    organizationTypeAbbreviations = OrderedDict([
+        ('CO',      ['COMPANY']),
+        ('INC',     ['INCORPORATED', 'INC.']),
+        ('LTD',     ['LIMITED']),
+        ('NL',      ['NO LIABILITY']),
+        ('PTY',     ['PROPRIETARY']),
+        ('PTY LTD', ['PROPRIETARY LIMITED'])
     ])
 
     nameSuffixAbbreviations = OrderedDict([
@@ -634,13 +635,23 @@ class NameUtils:
         SanitationUtils.compileAbbrvRegex(positionAbbreviations)
     )
 
-    noteRegex = r"\(?(?P<name_notes>((%s)|(\s+%s)))\)?" % (
-        SanitationUtils.compileAbbrvRegex(noteAbbreviations),
-        nameRegex
+    noteRegex = r"\(?(?P<name_notes>(?:(?P<notes>{notes})|(?:\s+{names})))\)?".format(
+        notes=SanitationUtils.compileAbbrvRegex(noteAbbreviations),
+        names=multiNameRegex
     )
 
     nameSuffixRegex = r"\(?(?P<name_suffix>%s)\)?" % (
         SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
+    )
+
+    careOfRegex = r"\(?(?P<careof>%s )%s\)?" % (
+        SanitationUtils.compileAbbrvRegex(careOfAbbreviations),
+        multiNameRegex,
+    )
+
+    organizationRegex = r"%s\s(?P<organization_type>%s)" % (
+        multiNameRegex,
+        SanitationUtils.compileAbbrvRegex(organizationTypeAbbreviations)
     )
 
     nameTokenRegex = r"(%s)" % "|".join([
@@ -648,12 +659,14 @@ class NameUtils:
         SanitationUtils.wrapClearRegex( positionRegex),
         SanitationUtils.wrapClearRegex( nameSuffixRegex),
         SanitationUtils.wrapClearRegex( noteRegex),
-        nameRegex
+        SanitationUtils.wrapClearRegex( careOfRegex),
+        SanitationUtils.wrapClearRegex( organizationRegex),
+        SanitationUtils.wrapClearRegex( singleNameRegex )
     ])
 
     @staticmethod
     def identifyName(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.nameRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.multiNameRegex, string)
 
     @staticmethod
     def identifyTitle(string):
@@ -672,14 +685,22 @@ class NameUtils:
         return SanitationUtils.identifyAbbreviation(NameUtils.nameSuffixRegex, string)
 
     @staticmethod
+    def identifyCareOf(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.careOfRegex, string)
+
+    @staticmethod
+    def identifyOrganization(string):
+        return SanitationUtils.identifyAbbreviation(NameUtils.organizationRegex, string)
+
+    @staticmethod
     def sanitizeNameToken(string):
         return SanitationUtils.normalizeVal(string)
 
     @staticmethod
-    def getName(token):
+    def getSingleName(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
-                NameUtils.nameRegex
+                NameUtils.singleNameRegex
             ),
             token
         )
@@ -687,7 +708,37 @@ class NameUtils:
         if(matchGrps):
             # name = " ".join(matchGrps)
             name = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND NAME ", repr(name)
+            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
+            return name
+
+    @staticmethod
+    def getSingleNames(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.singleNameRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # name = " ".join(matchGrps)
+            names = matchGrps
+            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAMES " + repr(names))
+            return names
+
+    @staticmethod
+    def getMultiName(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.multiNameRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # name = " ".join(matchGrps)
+            name = matchGrps[0]
+            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
             return name
 
     @staticmethod
@@ -702,7 +753,7 @@ class NameUtils:
         if(matchGrps):
             # title = " ".join(matchGrps)
             title = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND TITLE ", repr(title)
+            if DEBUG_NAME: print "FOUND TITLE ", repr(title)
             return title
 
     @staticmethod
@@ -717,8 +768,23 @@ class NameUtils:
         if(matchGrps):
             # position = " ".join(matchGrps)
             position = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND POSITION ", repr(position)
+            if DEBUG_NAME: print "FOUND POSITION ", repr(position)
             return position
+
+    @staticmethod
+    def getNameSuffix(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.nameSuffixRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # position = " ".join(matchGrps)
+            suffix = matchGrps[0]
+            if DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
+            return suffix
 
     @staticmethod
     def getNote(token):
@@ -732,8 +798,38 @@ class NameUtils:
         if(matchGrps):
             # note = " ".join(matchGrps)
             note = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND NOTE ", repr(note)
+            if DEBUG_NAME: print "FOUND NOTE ", repr(note)
             return note
+
+    @staticmethod
+    def getCareOf(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.careOfRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # note = " ".join(matchGrps)
+            careof = matchGrps[0]
+            if DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
+            return careof
+
+    @staticmethod
+    def getOrganization (token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.organizationRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # note = " ".join(matchGrps)
+            organization = matchGrps[0]
+            if DEBUG_NAME: print "FOUND ORGANIZATION ", repr(organization)
+            return organization
 
 
     @staticmethod
@@ -747,6 +843,11 @@ class NameUtils:
             lambda match: NameUtils.sanitizeNameToken(match[0]),
             matches    
         )
+
+def testNameUtils():
+    print repr(SanitationUtils.nondelimeterAndSpaceRegex)
+    print repr(SanitationUtils.nondelimeterRegex)
+
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
@@ -780,7 +881,7 @@ class AddressUtils:
         # ('RESV',    ['RESERVE']),
         ('ROOM',    ['RM']),
         ('SHED',    []),
-        ('SHOP',    ['SH', 'SP']),
+        ('SHOP',    ['SH', 'SP', 'SHP']),
         ('SHRM',    ['SHOWROOM']),
         # ('SIGN',    []),
         ('SITE',    []),
@@ -808,14 +909,15 @@ class AddressUtils:
         ('NT',      ['NORTHERN TERRITORY']),
         ('QLD',     ['QUEENSLAND']),
         ('SA',      ['SOUTH AUSTRALIA']),
-        ('TAS',     ['TASMAIA'])
+        ('TAS',     ['TASMAIA']),
+        ('VIC',     ['VICTORIA'])
     ])
 
     floorAbbreviations = OrderedDict([
         ('B',       ['BASEMENT']),
         ('G',       ['GROUND FLOOR', 'GROUND']),
         ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
-        ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND']),
+        ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND', 'UPPER LEVEL']),
         ('FL',      ['FLOOR', 'FLR']),
         ('LVL',       ['LEVEL', 'L']),
         ('M',       ['MEZZANINE', 'MEZ'])
@@ -844,14 +946,14 @@ class AddressUtils:
         ('CSWY',     ['CAUSEWAY']),
         ('CTR',      ['CENTRE']),
         ('CH',       ['CHASE']),
-        ('CIR',      ['CIRCLE']),
+        ('CIR',      ['CIRCLE', 'CCLE']),
         ('CCT',      ['CIRCUIT']),
         ('CRCS',     ['CIRCUS']),
         ('CL',       ['CLOSE']),
         ('CON',      ['CONCOURSE']),
         ('CPS',      ['COPSE']),
         ('CNR',      ['CORNER']),
-        ('CT',       ['COURT']),
+        ('CT',       ['COURT', 'CRT']),
         ('CTYD',     ['COURTYARD']),
         ('COVE',     []),
         ('CRES',     ['CRESCENT', 'CR', 'CRESENT']),
@@ -876,7 +978,7 @@ class AddressUtils:
         ('FWY',      ['FREEWAY']),
         ('FRTG',     ['FRONTAGE']),
         ('GAP',      []),
-        ('GDNS',     ['GARDENS']),
+        ('GDNS',     ['GARDENS', 'GARDEN']),
         ('GTE',      ['GATE']),
         ('GLDE',     ['GLADE']),
         ('GLEN',     []),
@@ -885,7 +987,7 @@ class AddressUtils:
         ('GR',       ['GROVE']),
         ('HTS',      ['HEIGHTS']),
         ('HIRD',     ['HIGHROAD']),
-        ('HWY',      ['HIGHWAY']),
+        ('HWY',      ['HIGHWAY', 'HGWY', 'HWAY']),
         ('HILL',     []),
         ('INTG',     ['INTERCHANGE']),
         ('JNC',      ['JUNCTION']),
@@ -903,6 +1005,7 @@ class AddressUtils:
         ('NOOK',     []),
         ('OTLK',     ['OUTLOOK']),
         ('PDE',      ['PARADE']),
+        ('PARK',     []),
         ('PWY',      ['PARKWAY']),
         ('PASS',     []),
         ('PSGE',     ['PASSAGE']),
@@ -932,6 +1035,7 @@ class AddressUtils:
         ('SPUR',     []),
         ('SQ',       ['SQUARE']),
         ('ST',       ['STREET']),
+        ('STRAIGHT', []),
         ('SBWY',     ['SUBWAY']),
         ('TARN',     []),
         ('TCE',      ['TERRACE']),
@@ -975,14 +1079,15 @@ class AddressUtils:
         ('ARCADE',          []),
         ('MALL',            []),
         ('BUILDING',        ['BLDG']),
-        ('FORUM',           [])
+        ('FORUM',           []),
+        ('HOUSE',           []),
     ])
 
     deliveryTypeAbbreviations = OrderedDict([
         ('CARE PO',     []),
         ('GPO BOX',     []),
         ('LOCKED BAG',  []),
-        ('PO BOX',      []),
+        ('PO BOX',      ["P.O. BOX"]),
         ('RMB',         [])
     ])
 
@@ -1238,9 +1343,9 @@ class AddressUtils:
 
     numberRangeRegex = r"(\d+) ?- ?(\d+)"
     numberAlphaRegex = r"(\d+) ?([A-Z])"
+    numberRegex      = r"(\d+)"
     numberSlashRegex = r"(\d+)/(\d+)"
     alphaNumberRegex = r"[A-Z](\d+)"
-    numberRegex      = r"(\d+)"
     slashAbbrvRegex  = r"[A-Z]/[A-Z]+"
     multiNumberRegex = "|".join([
         numberAlphaRegex,
@@ -1249,7 +1354,7 @@ class AddressUtils:
         numberRegex
     ])
     
-    floorLevelRegex = r"((?P<floor_prefix>FLOOR|LEVEL|LVL) )?(?P<floor_type>%s) ?(?P<floor_number>%s)" % (
+    floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
         numberRegex,
     )
@@ -1258,7 +1363,7 @@ class AddressUtils:
         '|'.join([multiNumberRegex, alphaNumberRegex]),
     )
     stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
-    thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)" % (
+    thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)\.?" % (
         SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
     )
     thoroughfareSuffixRegex = r"(?P<thoroughfare_suffix>%s)" % (
@@ -1266,15 +1371,15 @@ class AddressUtils:
     )
     thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
         multiNumberRegex,
-        NameUtils.nameRegex,
+        NameUtils.multiNameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
     )
     buildingTypeRegex = r"(?P<building_type>%s)" % (
         SanitationUtils.compileAbbrvRegex(buildingTypeAbbreviations)
     )
-    buildingRegex = r"(?P<building_name>%s)\s+%s" % (
-        NameUtils.nameRegex,
+    buildingRegex = r"(?P<building_name>{0})\s+{1}".format(
+        NameUtils.multiNameRegex,
         buildingTypeRegex
     )
     weakThoroughfareTypeRegex = r"(?P<weak_thoroughfare_type>%s)" % (
@@ -1284,7 +1389,7 @@ class AddressUtils:
         SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
     weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
-        NameUtils.nameRegex,
+        NameUtils.multiNameRegex,
         weakThoroughfareTypeRegex,
         weakThoroughfareSuffixRegex
     )
@@ -1304,9 +1409,11 @@ class AddressUtils:
         SanitationUtils.wrapClearRegex( subunitRegex),
         SanitationUtils.wrapClearRegex( thoroughfareRegex),
         SanitationUtils.wrapClearRegex( buildingRegex),
-        # clearStartRegex + weakThoroughfareRegex + clearFinishRegex,
-        SanitationUtils.wrapClearRegex( stateRegex),
-        SanitationUtils.wrapClearRegex( NameUtils.nameRegex),
+        SanitationUtils.wrapClearRegex( weakThoroughfareRegex),
+        # SanitationUtils.wrapClearRegex( stateRegex),
+        SanitationUtils.wrapClearRegex( NameUtils.singleNameRegex),
+        SanitationUtils.wrapClearRegex( NameUtils.careOfRegex ),
+        SanitationUtils.wrapClearRegex( NameUtils.organizationRegex ),
         SanitationUtils.wrapClearRegex( numberRangeRegex),
         # clearStartRegex + numberSlashRegex + clearFinishRegex,
         SanitationUtils.wrapClearRegex( numberAlphaRegex),
@@ -1515,11 +1622,15 @@ class AddressUtils:
 
     @staticmethod
     def tokenizeAddress(string):
+        # if DEBUG_ADDRESS: 
+        #     SanitationUtils.safePrint("in tokenizeAddress")
         matches =  re.findall(
             AddressUtils.addressTokenRegex, 
             string.upper()
         )
-        if DEBUG: print repr(matches)
+        # if DEBUG_ADDRESS: 
+        #     for match in matches:
+        #         print repr(match)
         return map(
             lambda match: AddressUtils.sanitizeAddressToken(match[0]),
             matches    
@@ -1547,7 +1658,8 @@ class AddressUtils:
         return None, address
 
 def testAddressUtils():
-    pass
+    print repr(AddressUtils.addressTokenRegex)
+
     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
 
     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
@@ -1783,6 +1895,9 @@ class HtmlReporter(object):
     """docstring for htmlReporter"""
 
     class Section:
+        data_heading_fmt = "<h3>%s</h3>"
+        data_separater = "<hr>"
+
         def __init__(self, classname, title = None, description = "", data = "", length = None):
             if title is None: title = classname.title()
             self.title = title
@@ -2074,6 +2189,35 @@ class Registrar:
             registerName = 'messages'
         )
 
+
+class ValidationUtils:
+    @staticmethod
+    def isNotNone(arg):
+        return arg is not None
+
+    @staticmethod
+    def isContainedIn(l):
+        return lambda v: v in l
+
+class PHPUtils:
+    @staticmethod
+    def uniqid(prefix="", more_entropy=False):
+        return uniqid(prefix, more_entropy)
+
+    @staticmethod
+    def ruleset_uniqid():
+        return PHPUtils.uniqid("set_")
+
+    @staticmethod
+    def serialize(thing):
+        return dumps(thing)
+
+    @staticmethod
+    def unserialize(string):
+        return loads(string)
+
+
+
 # class UTF8Recoder:
 #     """
 #     Iterator that reads an encoded stream and reencodes the input to UTF-8
@@ -2189,6 +2333,7 @@ class Registrar:
 if __name__ == '__main__':
     # testHTMLReporter()
     # testTimeUtils()
-    testSanitationUtils()
+    # testSanitationUtils()
     # testUnicodeWriter()
-    # testAddressUtils()
+    testAddressUtils()
+    # testNameUtils()
