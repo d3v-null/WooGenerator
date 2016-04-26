@@ -257,12 +257,12 @@ class ContactAddress(ContactObject):
                 congruentNumbers = []
                 lastNumberToken = -1
                 for j, token in enumerate(tokens):
-                    if congruentNames and j != lastNameToken + 1:
-                        self.addName(" ".join(congruentNames))
-                        congruentNames = []
                     if congruentNumbers and j != lastNumberToken + 1:
                         self.addNumber(" ".join(congruentNumbers))
                         congruentNumbers = []
+                    if congruentNames and j != lastNameToken + 1:
+                        self.addName(" ".join(congruentNames))
+                        congruentNames = []
                     if DEBUG_ADDRESS: SanitationUtils.safePrint( u"-> token[%d]: %s" % (j, token) )
                     delivery = AddressUtils.getDelivery(token)
                     if(delivery):
@@ -292,24 +292,24 @@ class ContactAddress(ContactObject):
                         elif not (self.properties['buildings']): # and (self.properties['subunits'] or self.properties['floors'] or self.properties['deliveries']):
                             weak_thoroughfare = None
                         else:
-                            self.invalidate("Ambiguous thoroughfare or building: %s" % repr(token))
-                    if(weak_thoroughfare and not self.properties['weak_thoroughfares']):
+                            self.invalidate("Ambiguous thoroughfare or building (multiple buildings detected): %s" % repr(token))
+                    if(weak_thoroughfare):
                         # weak_thoroughfare_name, weak_thoroughfare_type, weak_thoroughfare_suffix = weak_thoroughfare
                         if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND WEAK THOROUGHFARE: ", weak_thoroughfare)
-
-                        if congruentNumbers or self.properties['numbers'] or self.properties['coerced_subunits']:
-                            if congruentNumbers:
-                                number = AddressUtils.getNumber(" ".join(congruentNumbers))
-                                congruentNumbers = []
-                            elif self.properties['numbers']:
-                                number = self.properties['numbers'].pop()
-                            elif self.properties['coerced_subunits']:
-                                subunit_type, number = self.properties['coerced_subunits'].pop()
-                            # token = " ".join(names)
-                            self.coerceThoroughfare(number, weak_thoroughfare)
+                        if not self.properties['weak_thoroughfares']:
+                            if congruentNumbers or self.properties['numbers'] or self.properties['coerced_subunits']:
+                                if congruentNumbers:
+                                    number = AddressUtils.getNumber(" ".join(congruentNumbers))
+                                    congruentNumbers = []
+                                elif self.properties['numbers']:
+                                    number = self.properties['numbers'].pop()
+                                elif self.properties['coerced_subunits']:
+                                    subunit_type, number = self.properties['coerced_subunits'].pop()
+                                # token = " ".join(names)
+                                self.coerceThoroughfare(number, weak_thoroughfare)
+                                continue
+                            self.properties['weak_thoroughfares'] += [weak_thoroughfare]
                             continue
-                        self.properties['weak_thoroughfares'] += [weak_thoroughfare]
-                        continue
                     if(building and self.properties['buildings']):
                         self.addBuilding(building)
                         continue
@@ -380,12 +380,12 @@ class ContactAddress(ContactObject):
                     self.properties['unknowns'] += [token]
                     self.invalidate("There are some unknown tokens: " + repr(self.properties['unknowns']))
                     # break
-                if congruentNames:
-                    if DEBUG_ADDRESS: SanitationUtils.safePrint( "CONGRUENT NAMES AT END OF CYCLE:", congruentNames)
-                    self.addName(" ".join(congruentNames))
                 if congruentNumbers:
                     if DEBUG_ADDRESS: SanitationUtils.safePrint( "CONGRUENT NUMBERS AT END OF CYCLE:", congruentNumbers)
                     self.addNumber(" ".join(congruentNumbers))
+                if congruentNames:
+                    if DEBUG_ADDRESS: SanitationUtils.safePrint( "CONGRUENT NAMES AT END OF CYCLE:", congruentNames)
+                    self.addName(" ".join(congruentNames))
                 # if DEBUG_ADDRESS: SanitationUtils.safePrint( "FINISHED CYCLE, NAMES: ", self.properties['names'])
                 continue
 
@@ -398,6 +398,11 @@ class ContactAddress(ContactObject):
                     self.properties['unknowns'] += [number]
                     self.invalidate("Too many numbers to match to thoroughfare or subunit: %s" % repr(number))
                     break
+
+            while self.properties['incomplete_subunits']:
+                incomplete_subunit = self.properties['incomplete_subunits'].pop()
+                self.completeSubunit(incomplete_subunit)
+                
             #if any unknowns match number, then add them as a blank subunit
 
             # if(schema in ['act']):
@@ -417,11 +422,13 @@ class ContactAddress(ContactObject):
         if self.properties['incomplete_subunits']:
             subunit_type, subunit_number = self.properties['incomplete_subunits'].pop()
             try:
-                assert int(AddressUtils.getSingleNumber(subunit_number)) > int(AddressUtils.getSingleNumber(number))
+                assert AddressUtils.getSingleNumber(number)
+                assert int(AddressUtils.findSingleNumber(subunit_number)) > int(AddressUtils.findSingleNumber(number))
+                subunit_number += number
+                self.addSubunit( (subunit_type, subunit_number) )
             except:
-                self.invalidate("invalid number token: %s" % repr(number))
-            subunit = (subunit_type, subunit_number + number)
-            self.addSubunit( subunit )
+                self.completeSubunit( (subunit_type, subunit_number) )
+                self.addNumber( number )
         elif not self.properties['subunits']:
             self.coerceSubunit(number)
         else:
@@ -432,6 +439,7 @@ class ContactAddress(ContactObject):
     # SUBUNIT or FLOORS or DELIVERIES -> BUILDING 
 
     def addName(self, name):
+        name = NameUtils.getMultiName(name)
         if not name:
             return
         # if DEBUG_ADDRESS: SanitationUtils.safePrint( "PROCESSING NAME", name)
@@ -462,19 +470,27 @@ class ContactAddress(ContactObject):
             self.properties['names'] += [name]
 
     def addSubunit(self, subunit):
-        if DEBUG_ADDRESS: SanitationUtils.safePrint( "ADDING SUBUNIT: ", subunit)
         subunit_type, subunit_number = subunit
         if subunit_type in ['SHOP', 'SUITE', 'KIOSK', 'SHRM', 'STORE']:
             self.isShop = True
         if subunit_number[-1] == '/':
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "ADDING INCOMPLETE SUBUNIT: ", subunit)
             self.properties['incomplete_subunits'] += [subunit]
         else:
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "ADDING SUBUNIT: ", subunit)
             self.properties['subunits'] += [subunit]
 
     def coerceSubunit(self, number):
         subunit = (None, number)
         if DEBUG_ADDRESS:  SanitationUtils.safePrint("COERCED SUBUNIT:", subunit)
         self.properties['coerced_subunits'] += [subunit]
+
+    def completeSubunit(self, incomplete_subunit):
+        subunit_type, subunit_number = incomplete_subunit
+        if subunit_number[-1] == '/':
+            subunit_number = subunit_number[:-1]
+        complete_subunit = subunit_type, subunit_number
+        self.addSubunit( complete_subunit )
 
     def addBuilding(self, building):
         if DEBUG_ADDRESS: SanitationUtils.safePrint( "ADDING BUILDING: ", building)
@@ -502,6 +518,9 @@ class ContactAddress(ContactObject):
         if DEBUG_NAME:
             SanitationUtils.safePrint( "COERCED THOROUGHFARE", SanitationUtils.coerceUnicode(thoroughfare))
         self.addThoroughfare(thoroughfare)
+
+    def addWeakThoroughfare( self, weak_thoroughfare):
+        pass
 
 
     @property
@@ -622,7 +641,58 @@ def testContactAddress():
     
     # DOESN'T GET
 
+    print ContactAddress(
+        line1 = 'BROADWAY FAIR SHOPPING CTR',
+        line2 = 'SHOP 16, 88 BROADWAY'
+    ).__str__(out_schema="flat")
 
+    print ContactAddress(
+        line1 = 'SHOP 6-7, 13-15 KINGSWAY',
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'UNIT 25/39 ASTLEY CRS',
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'SHOP 3 81-83',
+    ).__str__(out_schema="flat")
+
+
+    print ContactAddress(
+        line1 = 'UNIT 4/ 12-14 COMENARA CRS',
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'SHOP 2/3 103 MARINE TERRACE',
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'UNIT 6/7, 38 GRAND BOULEVARD',
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = "SHOP 10, 575/577",
+        line2 = "CANNING HIGHWAY"
+    ).__str__(out_schema="flat")
+
+    return
+    #GETS
+    
+    print ContactAddress(
+        line1 = 'SHOP 1, 292 MAITLAND'
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'SUITE 3/ LEVEL 8',
+        line2 = '187 MACQUARIE STREET'
+    ).__str__(out_schema="flat")
+
+    print ContactAddress(
+        line1 = 'TOWNHOUSE 4/115 - 121',
+        line2 = 'CARINGBAH ROAD'
+    ).__str__(out_schema="flat")
+    
     print ContactAddress(
         line1 = 'LEVEL 2, SHOP 202 / 8B "WAX IT"',
         line2 = "ROBINA TOWN CENTRE"
@@ -640,21 +710,11 @@ def testContactAddress():
         line1 = "SHOP 5&6, 39 MURRAY ST"
     ).__str__(out_schema="flat")
 
-    print ContactAddress(
-        line1 = "SHOP 10, 575/577",
-        line2 = "CANNING HIGHWAY"
-    ).__str__(out_schema="flat")
-
 
     print ContactAddress(
         line1 = "C/O COCO BEACH",
         line2 = "SHOP 3, 17/21 PROGRESS RD"
     ).__str__(out_schema="flat")
-
-
-
-    return
-    #GETS
 
     print ContactAddress(
         line1 = "6/208 MCDONALD STREET",
@@ -1116,6 +1176,19 @@ def testContactName():
         ).tabulate(tablefmt="simple")
     )
 
+
+    SanitationUtils.safePrint( 
+        ContactName(
+            contact = "KAITLYN - FINALIST",
+        ).tabulate(tablefmt="simple")
+    )
+
+    SanitationUtils.safePrint( 
+        ContactName(
+            contact = "SPOKE WITH MICHELLE (RECEPTION)",
+        ).tabulate(tablefmt="simple")
+    )
+
 if __name__ == '__main__':
-    testContactAddress()
+    # testContactAddress()
     testContactName()

@@ -578,23 +578,22 @@ class NameUtils:
         ('HAIRDRESSER', []),
         ('STYLIST', []),
         ('CEO',     []),
-        ('FINANCE DEPT', ['FINANCE DEPARTMENT'])
+        ('FINANCE DEPT', ['FINANCE DEPARTMENT']),
+        ('RECEPTION', ['RECEPTION']),
     ])
 
     noteAbbreviations = OrderedDict([
-        # ("C/O", []),
         ("- ", []),
-        # (",", []),
-        ("&", []),
+        (r"&", []),
+        (r"\?",   []),
         ('AND', ['&AMP']),
         ('SPOKE WITH', ['SPIKE WITH', 'SPOKE W', "SPOKE TO"]),
-        ('CLOSED', ['CLOSED DOWN']),
+        ('CLOSED', ['CLOSED DOWN', 'CLOSED BUSINESS']),
         ('PRONOUNCED', []),
         ('OR', []),
         ('ARCHIVE', []),
-        ('STOCK ACCOUNT', ['STOCK ACCT', 'STOCK ACCNT']),
+        ('STOCK', ['STOCK ACCOUNT', 'STOCK ACCT', 'STOCK ACCNT']),
         ('STAFF', []),
-        ('RECEPTION', []),
         ('FINALIST', []),
         ('BOOK A TAN CUSTOMER', []),
         ('SOLD EQUIPMENT', []),
@@ -607,7 +606,7 @@ class NameUtils:
         ('CUSTOMER', []),
         ('NOTE', []),
         ("N/A", []),
-
+        ('UNSUBSCRIBED', ["UNSUBSCRIBE"]),
     ])
 
     careOfAbbreviations = OrderedDict([
@@ -662,12 +661,16 @@ class NameUtils:
     # NOTE_ONLY
     # OTHERS?
     noteRegex = (r"(?:"+\
-                    r"(?P<note_open_paren>\() ?(?:"+ \
-                        r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?|"+\
-                        r"(?P<names_before_note_middle>{names})? ?(?P<note_middle>{note})\.? ?(?P<names_after_note_middle>{names})?|"+\
-                        r"(?P<note_names_only>{names})"+\
-                    r") ?(?P<note_close_paren>\))|"+\
-                    r"(?P<note_only>{note})"+\
+                    r"|".join([
+                        r"(?P<note_open_paren>\() ?(?:"+ \
+                        r"|".join([
+                            r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?",
+                            r"(?P<names_before_note_middle>{names})? ?(?P<note_middle>{note})\.? ?(?P<names_after_note_middle>{names})?",
+                            r"(?P<note_names_only>{names})"    
+                        ]),
+                        r") ?(?P<note_close_paren>\))",
+                        r"(?P<note_only>{note})",
+                    ]) +\
                 r")").format(
         note=SanitationUtils.compileAbbrvRegex(noteAbbreviations),
         names=multiNameRegex
@@ -697,7 +700,7 @@ class NameUtils:
         SanitationUtils.wrapClearRegex( familyNameRegex),
         SanitationUtils.wrapClearRegex( ordinalNumberRegex),
         SanitationUtils.wrapClearRegex( singleNameRegex ),
-        SanitationUtils.disallowedPunctuationRegex,
+        SanitationUtils.disallowedPunctuationRegex
     ])
 
     @staticmethod
@@ -872,7 +875,7 @@ class NameUtils:
                     names_before_note = matchDict.get('note_names_only')
                     note = None
             else:
-                note = NameUtils.identifyNote("note_only")
+                note = NameUtils.identifyNote(matchDict.get('note_only'))
 
             note_tuple = (note_open_paren, names_before_note, note, names_after_note, note_close_paren)
             if DEBUG_NAME: print "FOUND NOTE ", repr(note_tuple)
@@ -938,9 +941,10 @@ class NameUtils:
 
     @staticmethod
     def tokenizeName(string):
+        string = string.upper()
         matches =  re.findall(
             NameUtils.nameTokenRegex, 
-            string.upper()
+            string
         )
         # if DEBUG_NAME: print repr(matches)
         return map(
@@ -949,8 +953,8 @@ class NameUtils:
         )
 
 def testNameUtils():
-    print repr(NameUtils.noteRegex)
-    print NameUtils.getNote( NameUtils.tokenizeName('DERWENT (ACCT)')[1])
+    print SanitationUtils.compileAbbrvRegex(NameUtils.noteAbbreviations)
+    print NameUtils.tokenizeName('DERWENT (ACCT)')
 
 
 class AddressUtils:
@@ -1184,7 +1188,7 @@ class AddressUtils:
     ])
 
     buildingTypeAbbreviations = OrderedDict([
-        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING CENTRE", "SHOPPING", "SHOP. CENTRE"]),
+        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING CENTRE", "SHOPPING CTR", "SHOPPING", "SHOP. CENTRE", ]),
         ('PLAZA',           ['PLZA']),
         ('ARCADE',          ["ARC"]),
         ('MALL',            []),
@@ -1464,7 +1468,7 @@ class AddressUtils:
 
     numberRegex      = r"(\d+(?:,\d+)*)"
     alphaRegex       = r"[A-Z]"
-    numberRangeRegex = r"{0} ?[-&] ?{0}".format(
+    numberRangeRegex = r"{0} ?(?:[-&]|TO) ?{0}".format(
         numberRegex
     )
     numberAlphaRegex = r"{0} ?({1})".format(
@@ -1481,28 +1485,28 @@ class AddressUtils:
     slashAbbrvRegex  = r"{0}/{0}+".format(
         alphaRegex
     )
-    singleNumberRegex= "|".join([
+    singleNumberRegex= r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRegex
     ])
-    multiNumberRegex = "|".join([
+    multiNumberRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
         numberRegex
     ])
-    multiNumberSlashRegex = "|".join([
+    multiNumberSlashRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
         numberSlashRegex,
         numberRegex
     ])
-    multiNumberAlphaRegex = "|".join([
+    multiNumberAlphaRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
         numberRegex,
         alphaNumberRegex,
     ])
-    multiNumberAllRegex = "|".join([
+    multiNumberAllRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
         numberSlashRegex,
@@ -1512,7 +1516,7 @@ class AddressUtils:
     
     floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
-        '|'.join([numberRegex, alphaRegex]),
+        singleNumberRegex,
     )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>(?:%s)/?)" % (
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
@@ -1554,7 +1558,7 @@ class AddressUtils:
     )
     deliveryRegex = r"%s(?:\s*(?P<delivery_number>%s))?" % (
         deliveryTypeRegex,
-        "|".join([numberRegex, alphaNumberRegex])
+        singleNumberRegex
     )
     countryRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(countryAbbreviations)
 
@@ -1750,7 +1754,7 @@ class AddressUtils:
     def getNumber(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
-                "(" + AddressUtils.multiNumberAllRegex + ")"
+                AddressUtils.multiNumberAllRegex
             ),
             token
         )
@@ -1764,6 +1768,20 @@ class AddressUtils:
     @staticmethod
     def getSingleNumber(token):
         match = re.match(
+                "(" + AddressUtils.numberRegex + ")"
+            ,
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            number = matchGrps[0]
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
+            number = SanitationUtils.stripAllWhitespace( number )
+            return number
+
+    @staticmethod
+    def findSingleNumber(token):
+        match = re.find(
                 "(" + AddressUtils.numberRegex + ")"
             ,
             token
@@ -1831,6 +1849,8 @@ class AddressUtils:
         return None, address
 
 def testAddressUtils():
+    SanitationUtils.clearStartRegex = "<START>"
+    SanitationUtils.clearFinishRegex = "<FINISH>"
     print repr(AddressUtils.addressTokenRegex)
 
     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
