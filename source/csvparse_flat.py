@@ -358,6 +358,7 @@ class CSVParse_User(CSVParse_Flat):
         )
 
     def registerBadAddress(self, objectData, address):
+        print "registering bad address"
         self.registerAnything(
             address,
             self.badAddress,

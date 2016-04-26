@@ -21,6 +21,7 @@ DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
 DEBUG_ADDRESS = False
+# DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
 DEBUG_NAME = False
 
@@ -38,12 +39,14 @@ class SanitationUtils:
     allowedPunctuation = [
         '\\-', '.', '\''
     ]
+    disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
     whitespaceChars = [ ' ', '\t', '\r', '\n', '\f']
-    tokenDelimeters  = [ r"\d"] + list(set(punctuationChars + whitespaceChars) - set(allowedPunctuation)) #delimeter characters incl space
-    tokenDelimetersNoSpace  = [ r"\d"] + list(set(punctuationChars + whitespaceChars) - set(allowedPunctuation + [' '])) #delimeter characters excl space
+    tokenDelimeters  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
+    tokenDelimetersNoSpace  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars) - set([' '])) #delimeter characters excl space
     delimeterRegex   = r"[%s]" % "".join(tokenDelimeters) 
     nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters) 
     nondelimeterAndSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
+    disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
@@ -445,6 +448,10 @@ class SanitationUtils:
         return True if(re.search(SanitationUtils.delimeterRegex, string)) else False
 
     @staticmethod
+    def stringContainsDisallowedPunctuation(string):
+        return True if(re.search(SanitationUtils.disallowedPunctuationRegex, string)) else False
+
+    @staticmethod
     def truishStringToBool(string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
             if DEBUG: print "truishStringToBool", repr(string), 'FALSE'
@@ -542,10 +549,11 @@ def testSanitationUtils():
     SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
 
 class NameUtils:
+    ordinalNumberRegex = r"(\d+)(?:ST|ND|RD|TH)"
     singleNameRegex       = r"({0}+)".format(
         format(SanitationUtils.nondelimeterRegex)
     )
-    multiNameRegex  = r"({0}{1}+{0})".format(
+    multiNameRegex  = r"({0}({1}*{0})?)".format(
         format(SanitationUtils.nondelimeterRegex),
         format(SanitationUtils.nondelimeterAndSpaceRegex)
     )
@@ -574,9 +582,9 @@ class NameUtils:
     ])
 
     noteAbbreviations = OrderedDict([
-        ("C/O", []),
+        # ("C/O", []),
         ("- ", []),
-        (",", []),
+        # (",", []),
         ("&", []),
         ('AND', ['&AMP']),
         ('SPOKE WITH', ['SPIKE WITH', 'SPOKE W', "SPOKE TO"]),
@@ -597,17 +605,19 @@ class NameUtils:
         ("TRAINING", []),
         ("OPEN BY APPT ONLY", []),
         ('CUSTOMER', []),
+        ('NOTE', []),
+        ("N/A", []),
 
     ])
 
     careOfAbbreviations = OrderedDict([
-        ('C/O',     ['C/-']),
-        ('ATTN',   ['ATTN.', 'ATTENTION'])
+        ('C/O',     ['C/-', 'CARE OF']),
+        ('ATTN',   ['ATTENTION'])
     ])
 
     organizationTypeAbbreviations = OrderedDict([
         ('CO',      ['COMPANY']),
-        ('INC',     ['INCORPORATED', 'INC.']),
+        ('INC',     ['INCORPORATED']),
         ('LTD',     ['LIMITED']),
         ('NL',      ['NO LIABILITY']),
         ('PTY',     ['PROPRIETARY']),
@@ -619,37 +629,60 @@ class NameUtils:
         ('JR', ['JUNIOR', 'DR.'])
     ])
 
-    familyNamePrefixes = [
-        'MC',
-        'MAC',
-        'VAN',
-        'DER',
-        'VAN DER',
-    ]
+    familyNamePrefixAbbreviations = OrderedDict([
+        ('MC',      []),
+        ('MAC',     []),
+        ('VAN DER', []),
+        ('VAN',     []),
+        ('DER',     []),
+    ])
 
-    titleRegex = r"(?P<name_title>%s)" % (
+    titleRegex = r"(?P<name_title>%s)\.?" % (
         SanitationUtils.compileAbbrvRegex(titleAbbreviations)
     )
 
-    positionRegex = r"(?P<name_position>%s)" % (
+    positionRegex = r"(?P<name_position>%s)\.?" % (
         SanitationUtils.compileAbbrvRegex(positionAbbreviations)
     )
 
-    noteRegex = r"\(?(?P<name_notes>(?:(?P<notes>{notes})|(?:\s+{names})))\)?".format(
-        notes=SanitationUtils.compileAbbrvRegex(noteAbbreviations),
+    familyNamePrefixRegex = r"%s" % (
+        SanitationUtils.compileAbbrvRegex(familyNamePrefixAbbreviations)
+    )
+
+    familyNameRegex = r"(?:(?P<family_name_prefix>%s) )?(?P<family_name>%s)" % (
+        familyNamePrefixRegex,
+        singleNameRegex
+    )
+
+
+    # valid notes
+    # (NOTE_BEFORE names_after_note?)
+    # (names_before_note_MIDDLE? NOTE_MIDDLE names_after_note_MIDDLE?)
+    # (note_names_only)
+    # NOTE_ONLY
+    # OTHERS?
+    noteRegex = (r"(?:"+\
+                    r"(?P<note_open_paren>\() ?(?:"+ \
+                        r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?|"+\
+                        r"(?P<names_before_note_middle>{names})? ?(?P<note_middle>{note})\.? ?(?P<names_after_note_middle>{names})?|"+\
+                        r"(?P<note_names_only>{names})"+\
+                    r") ?(?P<note_close_paren>\))|"+\
+                    r"(?P<note_only>{note})"+\
+                r")").format(
+        note=SanitationUtils.compileAbbrvRegex(noteAbbreviations),
         names=multiNameRegex
     )
 
-    nameSuffixRegex = r"\(?(?P<name_suffix>%s)\)?" % (
-        SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
-    )
-
-    careOfRegex = r"\(?(?P<careof>%s )%s\)?" % (
+    careOfRegex = r"(?P<careof>%s)[\.:]? ?(?P<careof_names>%s)" % (
         SanitationUtils.compileAbbrvRegex(careOfAbbreviations),
         multiNameRegex,
     )
 
-    organizationRegex = r"%s\s(?P<organization_type>%s)" % (
+    nameSuffixRegex = r"\(?(?P<name_suffix>%s)\.?\)?" % (
+        SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
+    )
+
+    organizationRegex = r"(?P<organization_name>%s) ?(?P<organization_type>%s)\.?" % (
         multiNameRegex,
         SanitationUtils.compileAbbrvRegex(organizationTypeAbbreviations)
     )
@@ -658,39 +691,38 @@ class NameUtils:
         SanitationUtils.wrapClearRegex( titleRegex),
         SanitationUtils.wrapClearRegex( positionRegex),
         SanitationUtils.wrapClearRegex( nameSuffixRegex),
-        SanitationUtils.wrapClearRegex( noteRegex),
         SanitationUtils.wrapClearRegex( careOfRegex),
         SanitationUtils.wrapClearRegex( organizationRegex),
-        SanitationUtils.wrapClearRegex( singleNameRegex )
+        SanitationUtils.wrapClearRegex( noteRegex),
+        SanitationUtils.wrapClearRegex( familyNameRegex),
+        SanitationUtils.wrapClearRegex( ordinalNumberRegex),
+        SanitationUtils.wrapClearRegex( singleNameRegex ),
+        SanitationUtils.disallowedPunctuationRegex,
     ])
 
     @staticmethod
-    def identifyName(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.multiNameRegex, string)
-
-    @staticmethod
     def identifyTitle(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.titleRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.titleAbbreviations, string)
 
     @staticmethod
     def identifyNote(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.noteRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.noteAbbreviations, string)
 
     @staticmethod
     def identifyPosition(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.positionRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.positionAbbreviations, string)
 
     @staticmethod
     def identifyNameSuffix(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.nameSuffixRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.nameSuffixAbbreviations, string)
 
     @staticmethod
     def identifyCareOf(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.careOfRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.careOfAbbreviations, string)
 
     @staticmethod
     def identifyOrganization(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.organizationRegex, string)
+        return SanitationUtils.identifyAbbreviation(NameUtils.organizationTypeAbbreviations, string)
 
     @staticmethod
     def sanitizeNameToken(string):
@@ -713,18 +745,17 @@ class NameUtils:
 
     @staticmethod
     def getSingleNames(token):
-        match = re.match(
+        matches = re.findall(
             SanitationUtils.wrapClearRegex(
                 NameUtils.singleNameRegex
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # name = " ".join(matchGrps)
-            names = matchGrps
+        names = filter(None, matches)
+        if names:
             if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAMES " + repr(names))
             return names
+
 
     @staticmethod
     def getMultiName(token):
@@ -749,12 +780,17 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # title = " ".join(matchGrps)
-            title = matchGrps[0]
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('name_title'):
+            title = NameUtils.identifyTitle(matchDict['name_title'])
             if DEBUG_NAME: print "FOUND TITLE ", repr(title)
             return title
+        # matchGrps = match.groups() if match else None
+        # if(matchGrps):
+        #     # title = " ".join(matchGrps)
+        #     title = matchGrps[0]
+        #     if DEBUG_NAME: print "FOUND TITLE ", repr(title)
+        #     return title
 
     @staticmethod
     def getPosition(token):
@@ -764,12 +800,31 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # position = " ".join(matchGrps)
-            position = matchGrps[0]
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('name_position'):
+            position = NameUtils.identifyPosition(matchDict['name_position'])
             if DEBUG_NAME: print "FOUND POSITION ", repr(position)
             return position
+        # matchGrps = match.groups() if match else None
+        # if(matchGrps):
+        #     # position = " ".join(matchGrps)
+        #     position = matchGrps[0]
+        #     if DEBUG_NAME: print "FOUND POSITION ", repr(position)
+        #     return position
+
+    @staticmethod
+    def getOrdinal(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.ordinalNumberRegex
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if matchGrps:
+            ordinal = matchGrps[0]
+            if DEBUG_NAME: SanitationUtils.safePrint("FOUND ORDINAL", ordinal)
+            return ordinal
 
     @staticmethod
     def getNameSuffix(token):
@@ -779,12 +834,17 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # position = " ".join(matchGrps)
-            suffix = matchGrps[0]
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('name_suffix'):
+            suffix = NameUtils.identifyNameSuffix(matchDict['name_suffix'])
             if DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
             return suffix
+        # matchGrps = match.groups() if match else None
+        # if(matchGrps):
+        #     # position = " ".join(matchGrps)
+        #     suffix = matchGrps[0]
+        #     if DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
+        #     return suffix
 
     @staticmethod
     def getNote(token):
@@ -794,12 +854,49 @@ class NameUtils:
             ),
             token
         )
+        matchDict = match.groupdict() if match else None
+        if matchDict and (matchDict.get('note_open_paren') or matchDict.get('note_only')):
+            note_open_paren = matchDict.get('note_open_paren')
+            note_close_paren = matchDict.get('note_close_paren')
+            names_before_note = None
+            names_after_note = None
+            if note_open_paren:
+                if matchDict.get('note_before'):
+                    note = NameUtils.identifyNote(matchDict.get('note_only'))
+                    names_after_note = matchDict.get('names_after_note')
+                elif matchDict.get('note_middle'):
+                    names_before_note = matchDict.get('names_before_note_middle')
+                    note = NameUtils.identifyNote(matchDict.get('note_middle'))
+                    names_after_note = matchDict.get('names_after_note_middle')
+                else:
+                    names_before_note = matchDict.get('note_names_only')
+                    note = None
+            else:
+                note = NameUtils.identifyNote("note_only")
+
+            note_tuple = (note_open_paren, names_before_note, note, names_after_note, note_close_paren)
+            if DEBUG_NAME: print "FOUND NOTE ", repr(note_tuple)
+            return note_tuple
+        # matchGrps = match.groups() if match else None
+        # if(matchGrps):
+        #     # note = " ".join(matchGrps)
+        #     note = matchGrps[0]
+        #     return note
+
+    @staticmethod
+    def getFamilyName(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                NameUtils.familyNameRegex
+            ),
+            token
+        )
         matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # note = " ".join(matchGrps)
-            note = matchGrps[0]
-            if DEBUG_NAME: print "FOUND NOTE ", repr(note)
-            return note
+        if matchGrps:
+            family_name = matchGrps[0]
+            if DEBUG_NAME: SanitationUtils.safePrint("FOUND FAMILY NAME", family_name)
+            return family_name
+
 
     @staticmethod
     def getCareOf(token):
@@ -809,12 +906,19 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # note = " ".join(matchGrps)
-            careof = matchGrps[0]
-            if DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
-            return careof
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('careof'):
+            careof = NameUtils.identifyCareOf(matchDict.get('careof'))
+            names = matchDict.get('careof_names')
+            careof_tuple = (careof, names)
+            if DEBUG_NAME: print "FOUND CAREOF ", repr(careof_tuple)
+            return careof_tuple
+        # matchGrps = match.groups() if match else None
+        # if(matchGrps):
+        #     # note = " ".join(matchGrps)
+        #     careof = matchGrps[0]
+        #     if DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
+        #     return careof
 
     @staticmethod
     def getOrganization (token):
@@ -824,13 +928,13 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # note = " ".join(matchGrps)
-            organization = matchGrps[0]
+        matchDict = match.groupdict() if match else None
+        if matchDict and (matchDict.get('organization_name') and matchDict.get('organization_type')):
+            organization_name = matchDict.get('organization_name')
+            organization_type = matchDict.get('organization_type')
+            organization = (organization_name, organization_type)
             if DEBUG_NAME: print "FOUND ORGANIZATION ", repr(organization)
             return organization
-
 
     @staticmethod
     def tokenizeName(string):
@@ -845,39 +949,41 @@ class NameUtils:
         )
 
 def testNameUtils():
-    print repr(SanitationUtils.nondelimeterAndSpaceRegex)
-    print repr(SanitationUtils.nondelimeterRegex)
+    print repr(NameUtils.noteRegex)
+    print NameUtils.getNote( NameUtils.tokenizeName('DERWENT (ACCT)')[1])
 
 
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
         # ('ANT',     ['ANTENNA']),
-        ('APT',     ['APARTMENT', 'A']),
+        ('APARTMENT',     ['APT', 'A']),
         # ('ATM',     ['AUTOMATED TELLER MACHINE']),
         ('BBQ',     ['BARBECUE']),
         # ('BTSD',    ['BOATSHED']),
-        ('BLDG',    ['BUILDING']),
+        ('BUILDING', ['BLDG']),
         # ('BNGW',    ['BUNGALOW']),
         # ('CAGE',    []),
         # ('CARP',    ['CARPARK']),
         # ('CARS',    ['CARSPACE']),
         # ('CLUB',    []),
         # ('COOL',    ['COOLROOM']),
-        # ('CTGE',    ['COTTAGE']),
-        ('DUPL',    ['DUPLEX']),
-        ('FCTY',    ['FACTORY', 'FY']),
+        ('COTTAGE',    ['CTGE']),
+        ('DUPLEX',     ['DUP', 'DUPL']),
+        ('FACTORY', ['FCTY', 'FY']),
         ('FLAT',    ['FLT','FL','F']),
-        ('GRGE',    ['GARAGE']),
+        ('GARAGE',    ['GRGE']),
         ('HALL',    []),
-        ('HSE',     ['HOUSE']),
-        ('KSK',     ['KIOSK']),
-        ('LSE',     ['LEASE']),
-        ('LBBY',    ['LOBBY']),
+        ('HOUSE',     ['HSE']),
+        ('KIOSK',     ['KSK']),
+        ('LEASE',     ['LSE']),
+        ('LOBBY',    ['LBBY']),
         ('LOFT',    []),
         ('LOT',     []),
-        # ('MSNT',    ['MAISONETTE']),
-        # ('MBTH',    ['MARINE BERTH', 'MB']),
-        ('OFFC',    ['OFFICE', 'OFF']),
+        ('MAISONETTE',    ['MSNT']),
+        ('MBTH',    ['MARINE BERTH', 'MB']),
+        ('OFFICE',    ['OFFC', 'OFF']),
+        ('PENTHOUSE',  ['PTHS']),
+        ('REAR',       ['R']),
         # ('RESV',    ['RESERVE']),
         ('ROOM',    ['RM']),
         ('SHED',    []),
@@ -885,32 +991,33 @@ class AddressUtils:
         ('SHRM',    ['SHOWROOM']),
         # ('SIGN',    []),
         ('SITE',    []),
-        ('STLL',    ['STALL', 'SL']),
-        ('STOR',    ['STORE']),
+        ('STALL',    ['STLL', 'SL']),
+        ('STORE',    ['STOR']),
         ('STR',     ['STRATA UNIT']),
-        ('STU',     ['STUDIO', 'STUDIO APARTMENT']),
+        ('STUDIO',     ['STU', 'STUDIO APARTMENT']),
         ('SUBS',    ['SUBSTATION']),
-        ('SE',      ['SUITE']),
+        ('SUITE',      ['SE']),
         ('TNCY',    ['TENANCY']),
         ('TWR',     ['TOWER']),
-        ('TNHS',    ['TOWNHOUSE']),
+        ('TOWNHOUSE',    ['TNHS']),
         ('UNIT',    ['U']),
         ('VLT',     ['VAULT']),
-        ('VLLA',    ['VILLA']),
+        ('VILLA',    ['VLLA']),
         ('WARD',    []),
-        ('WHSE',    ['WAREHOUSE', 'WE']),
+        ('WAREHOUSE',    ['WHSE', 'WE']),
         ('WKSH',    ['WORKSHOP'])
     ])
 
     stateAbbreviations = OrderedDict([
-        ('WA',      ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
+        ('AAT',     ['AUSTRALIAN ANTARCTIC TERRITORY']),
         ('ACT',     ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
         ('NSW',     ['NEW SOUTH WALES']),
         ('NT',      ['NORTHERN TERRITORY']),
         ('QLD',     ['QUEENSLAND']),
         ('SA',      ['SOUTH AUSTRALIA']),
         ('TAS',     ['TASMAIA']),
-        ('VIC',     ['VICTORIA'])
+        ('VIC',     ['VICTORIA']),
+        ('WA',      ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
     ])
 
     floorAbbreviations = OrderedDict([
@@ -928,12 +1035,15 @@ class AddressUtils:
         ('ALLY',     ['ALLEY']),
         ('ALWY',     ['ALLEYWAY']),
         ('AMBL',     ['AMBLE']),
+        ('ANCG',     ['ANCHORAGE']),
         ('APP',      ['APPROACH']),
         ('ARC',      ['ARCADE']),
         ('ARTL',     ['ARTERIAL']),
-        ('ARTY',     ['ARTERY']),
+        ('ARTY',     ['ARTERY', 'ART']),
         ('AVE',      ['AVENUE','AV']),
+        ('BASN',     ['BASIN']),
         ('BA',       ['BANAN']),
+        ('BCH',      ['BEACH']),
         ('BEND',     []),
         ('BWLK',     ['BOARDWALK']),
         ('BLVD',      ['BOULEVARD', 'BLVD']),
@@ -996,7 +1106,7 @@ class AddressUtils:
         ('LNWY',     ['LANEWAY']),
         ('LINE',     []),
         ('LINK',     []),
-        ('LKT',      ['LOOKOUT']),
+        ('LKT',      ['LOOKOUT', 'LOOK OUT']),
         ('LOOP',     []),
         ('MALL',     []),
         ('MNDR',     ['MEANDER']),
@@ -1075,20 +1185,31 @@ class AddressUtils:
 
     buildingTypeAbbreviations = OrderedDict([
         ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING CENTRE", "SHOPPING", "SHOP. CENTRE"]),
-        ('PLAZA',           []),
-        ('ARCADE',          []),
+        ('PLAZA',           ['PLZA']),
+        ('ARCADE',          ["ARC"]),
         ('MALL',            []),
         ('BUILDING',        ['BLDG']),
         ('FORUM',           []),
         ('HOUSE',           []),
+        ('CENTER',          []),
+        ('CENTRE',          []),
+        ('FORUM',           []),
     ])
 
     deliveryTypeAbbreviations = OrderedDict([
         ('CARE PO',     []),
-        ('GPO BOX',     []),
+        ('CMA',         []),
+        ('CMB',         []),
+        ('CPA',         []),
+        ('GPO BOX',     ["G.P.O. BOX", "G.P.O BOX", "GENERAL POST OFFICE BOX"]),
         ('LOCKED BAG',  []),
         ('PO BOX',      ["P.O. BOX"]),
-        ('RMB',         [])
+        ('PO',          []),
+        ('RMB',         []),
+        ('RMS',         []),
+        ('MS',          []),
+        ('PRIVATE BAG', []),
+        ('PARCEL LOCKER',[]),
     ])
 
     countryAbbreviations = OrderedDict([
@@ -1341,37 +1462,83 @@ class AddressUtils:
         ('AX', ['ALAND ISLANDS'])
     ])
 
-    numberRangeRegex = r"(\d+) ?- ?(\d+)"
-    numberAlphaRegex = r"(\d+) ?([A-Z])"
-    numberRegex      = r"(\d+)"
-    numberSlashRegex = r"(\d+)/(\d+)"
-    alphaNumberRegex = r"[A-Z](\d+)"
-    slashAbbrvRegex  = r"[A-Z]/[A-Z]+"
+    numberRegex      = r"(\d+(?:,\d+)*)"
+    alphaRegex       = r"[A-Z]"
+    numberRangeRegex = r"{0} ?[-&] ?{0}".format(
+        numberRegex
+    )
+    numberAlphaRegex = r"{0} ?({1})".format(
+        numberRegex,
+        alphaRegex
+    )
+    numberSlashRegex = r"{0} ?/ ?{0}".format(
+        numberRegex
+    )
+    alphaNumberRegex = r"{1}{0}".format(
+        numberRegex,
+        alphaRegex
+    )
+    slashAbbrvRegex  = r"{0}/{0}+".format(
+        alphaRegex
+    )
+    singleNumberRegex= "|".join([
+        numberAlphaRegex,
+        numberRegex
+    ])
     multiNumberRegex = "|".join([
         numberAlphaRegex,
         numberRangeRegex,
-        # numberSlashRegex,
         numberRegex
+    ])
+    multiNumberSlashRegex = "|".join([
+        numberAlphaRegex,
+        numberRangeRegex,
+        numberSlashRegex,
+        numberRegex
+    ])
+    multiNumberAlphaRegex = "|".join([
+        numberAlphaRegex,
+        numberRangeRegex,
+        numberRegex,
+        alphaNumberRegex,
+    ])
+    multiNumberAllRegex = "|".join([
+        numberAlphaRegex,
+        numberRangeRegex,
+        numberSlashRegex,
+        numberRegex,
+        alphaNumberRegex,
     ])
     
     floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
-        numberRegex,
+        '|'.join([numberRegex, alphaRegex]),
     )
-    subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>%s)" % (
+    subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>(?:%s)/?)" % (
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
-        '|'.join([multiNumberRegex, alphaNumberRegex]),
+        multiNumberAlphaRegex,
     )
     stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
-    thoroughfareTypeRegex = r"(?P<thoroughfare_type>%s)\.?" % (
+    thoroughfareNameRegex = r"%s" % (
+        "|".join([
+            NameUtils.multiNameRegex,
+            NameUtils.ordinalNumberRegex,
+        ])
+    )
+    thoroughfareTypeRegex = r"%s" % (
         SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
     )
-    thoroughfareSuffixRegex = r"(?P<thoroughfare_suffix>%s)" % (
+    thoroughfareSuffixRegex = r"%s" % (
         SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
-    thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
-        multiNumberRegex,
-        NameUtils.multiNameRegex,
+    thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+(?P<thoroughfare_type>%s)\.?(?:\s+(?P<thoroughfare_suffix>%s))?" % (
+        multiNumberSlashRegex,
+        thoroughfareNameRegex,
+        thoroughfareTypeRegex,
+        thoroughfareSuffixRegex
+    )
+    weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+(?P<weak_thoroughfare_type>%s)\.?(?:\s+(?P<weak_thoroughfare_suffix>%s))?" % (
+        thoroughfareNameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
     )
@@ -1381,17 +1548,6 @@ class AddressUtils:
     buildingRegex = r"(?P<building_name>{0})\s+{1}".format(
         NameUtils.multiNameRegex,
         buildingTypeRegex
-    )
-    weakThoroughfareTypeRegex = r"(?P<weak_thoroughfare_type>%s)" % (
-        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
-    )
-    weakThoroughfareSuffixRegex = r"(?P<weak_thoroughfare_suffix>%s)" % (
-        SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
-    )
-    weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+%s(?:\s+%s)?" % (
-        NameUtils.multiNameRegex,
-        weakThoroughfareTypeRegex,
-        weakThoroughfareSuffixRegex
     )
     deliveryTypeRegex = r"(?P<delivery_type>%s)" % (
         SanitationUtils.compileAbbrvRegex(deliveryTypeAbbreviations),
@@ -1411,14 +1567,12 @@ class AddressUtils:
         SanitationUtils.wrapClearRegex( buildingRegex),
         SanitationUtils.wrapClearRegex( weakThoroughfareRegex),
         # SanitationUtils.wrapClearRegex( stateRegex),
-        SanitationUtils.wrapClearRegex( NameUtils.singleNameRegex),
         SanitationUtils.wrapClearRegex( NameUtils.careOfRegex ),
         SanitationUtils.wrapClearRegex( NameUtils.organizationRegex ),
-        SanitationUtils.wrapClearRegex( numberRangeRegex),
-        # clearStartRegex + numberSlashRegex + clearFinishRegex,
-        SanitationUtils.wrapClearRegex( numberAlphaRegex),
-        SanitationUtils.wrapClearRegex( numberRegex),
-        SanitationUtils.wrapClearRegex( slashAbbrvRegex)
+        SanitationUtils.wrapClearRegex( NameUtils.singleNameRegex),
+        SanitationUtils.wrapClearRegex( multiNumberAllRegex),
+        SanitationUtils.wrapClearRegex( slashAbbrvRegex),
+        SanitationUtils.disallowedPunctuationRegex,
 
     ])
 
@@ -1466,8 +1620,9 @@ class AddressUtils:
         if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')): 
             subunit_type = AddressUtils.identifySubunit(matchDict.get('subunit_type'))
             subunit_number = matchDict.get('subunit_number')
-            if DEBUG_ADDRESS: print "FOUND SUBUNIT %s %s" % (subunit_type, subunit_number)
-            return subunit_type, subunit_number
+            subunit = (subunit_type, subunit_number)
+            if DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND SUBUNIT", subunit)
+            return subunit
         return None
 
     @staticmethod
@@ -1482,7 +1637,7 @@ class AddressUtils:
         if(matchDict): 
             floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
             floor_number = matchDict.get('floor_number')
-            if DEBUG_ADDRESS: print "FOUND FLOOR %s %s" % (floor_type, floor_number)
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
             return floor_type, floor_number
         return None
 
@@ -1504,7 +1659,8 @@ class AddressUtils:
                 matchDict.get('thoroughfare_suffix') 
             )
             thoroughfare_number = matchDict.get('thoroughfare_number')
-            if DEBUG_ADDRESS: print "FOUND THOROUGHFARE (%s) %s | %s (%s)" % (
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( 
+                "FOUND THOROUGHFARE", 
                 thoroughfare_number,
                 thoroughfare_name,
                 thoroughfare_type,
@@ -1527,7 +1683,8 @@ class AddressUtils:
             building_type = AddressUtils.identifyBuildingType(
                 matchDict.get('building_type')
             )
-            if DEBUG_ADDRESS: print "FOUND BUILDING %s %s" % (
+            if DEBUG_ADDRESS: SanitationUtils.safePrint(
+                "FOUND BUILDING",
                 building_name, 
                 building_type
             )
@@ -1545,14 +1702,15 @@ class AddressUtils:
         if(matchDict and matchDict.get('weak_thoroughfare_name') and matchDict.get('weak_thoroughfare_type')):
             # print matchDict
             weak_thoroughfare_name = matchDict.get('weak_thoroughfare_name')
-            weak_thoroughfare_type = AddressUtils.identifyThoroughfareType( 
-                matchDict.get('weak_thoroughfare_type')
-            )
+            weak_thoroughfare_type = matchDict.get('weak_thoroughfare_type')
+            # weak_thoroughfare_type = AddressUtils.identifyThoroughfareType( 
+            #     matchDict.get('weak_thoroughfare_type')
+            # )
             weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(  
                 matchDict.get('weak_thoroughfare_suffix')
             )
 
-            if DEBUG_ADDRESS: print "FOUND WEAK THOROUGHFARE (%s) %s | %s (%s)" % (
+            if DEBUG_ADDRESS: print "FOUND WEAK THOROUGHFARE %s | %s (%s)" % (
                 weak_thoroughfare_name,
                 weak_thoroughfare_type,
                 weak_thoroughfare_suffix
@@ -1570,7 +1728,7 @@ class AddressUtils:
         matchDict = match.groupdict() if match else None
         if(matchDict and matchDict.get('state_name')):
             state_name = matchDict.get('state_name')
-            if DEBUG_ADDRESS: print "FOUND SATE ", state_name
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND STATE ", state_name)
             return state_name
 
     @staticmethod
@@ -1585,21 +1743,36 @@ class AddressUtils:
         if(matchDict):
             delivery_type = AddressUtils.identifyDeliveryType(matchDict.get('delivery_type'))
             delivery_number = matchDict.get('delivery_number')
-            if DEBUG_ADDRESS: print "FOUND DELIVERY ", delivery_type, delivery_number
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND DELIVERY ", delivery_type, delivery_number)
             return delivery_type, delivery_number
 
     @staticmethod
     def getNumber(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
-                "(" + AddressUtils.multiNumberRegex + ")"
+                "(" + AddressUtils.multiNumberAllRegex + ")"
             ),
             token
         )
         matchGrps = match.groups() if match else None
         if(matchGrps):
             number = matchGrps[0]
-            if DEBUG_ADDRESS: print "FOUND NUMBER ", repr(number)
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND NUMBER ", repr(number))
+            number = SanitationUtils.stripAllWhitespace( number )
+            return number
+
+    @staticmethod
+    def getSingleNumber(token):
+        match = re.match(
+                "(" + AddressUtils.numberRegex + ")"
+            ,
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            number = matchGrps[0]
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
+            number = SanitationUtils.stripAllWhitespace( number )
             return number
 
     @staticmethod
@@ -1617,7 +1790,7 @@ class AddressUtils:
         string = SanitationUtils.stripExtraWhitespace(string)
         string = re.sub(AddressUtils.numberAlphaRegex + SanitationUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
-        if DEBUG: print "sanitizeAddressToken", SanitationUtils.coerceBytes( string)
+        if DEBUG: SanitationUtils.safePrint( "sanitizeAddressToken", string)
         return string
 
     @staticmethod
@@ -2335,5 +2508,5 @@ if __name__ == '__main__':
     # testTimeUtils()
     # testSanitationUtils()
     # testUnicodeWriter()
-    testAddressUtils()
-    # testNameUtils()
+    # testAddressUtils()
+    testNameUtils()
