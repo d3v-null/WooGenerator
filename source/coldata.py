@@ -728,6 +728,20 @@ class ColData_Woo(ColData_Base):
 class ColData_User(ColData_Base):
 
     data = OrderedDict([
+        ('MYOB Card ID',{
+            'wp': {
+                'meta': True, 
+                'key': 'myob_card_id'
+            },
+            # 'label':'myob_card_id',
+            'import':True,
+            'user':True,
+            'report':True,
+            'sync':'master_override',
+            'warn':True,
+            'static':True,
+            'basic':True
+        }),
         ('E-mail', {
             'wp': {
                 'meta': False, 
@@ -739,6 +753,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn':True,
             'static':True,
+            'basic':True,
         }),
         ('Wordpress Username',{
             # 'label':'Username',
@@ -753,6 +768,7 @@ class ColData_User(ColData_Base):
             'sync':'slave_override',
             'warn':True,
             'static':True,
+            # 'basic':True,
         }),
         ('Wordpress ID',{
             # 'label':'Username',
@@ -760,19 +776,6 @@ class ColData_User(ColData_Base):
                 'meta': False, 
                 'key': 'ID',
                 'final': True
-            },
-            'user':True,
-            'report': True,
-            'import':True,
-            'sync':'slave_override',
-            'warn':True,
-            'static':True,
-        }),
-        ('Wordpress Username',{
-            # 'label':'Username',
-            'wp': {
-                'meta': False, 
-                'key': 'user_login'
             },
             'user':True,
             'report': True,
@@ -794,18 +797,12 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
         }),
-        ('MYOB Card ID',{
-            'wp': {
-                'meta': True, 
-                'key': 'myob_card_id'
-            },
-            # 'label':'myob_card_id',
-            'import':True,
+        ('Name', {
             'user':True,
-            'report':True,
-            'sync':'master_override',
-            'warn':True,
+            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo'],
+            'sync':True,
             'static':True,
+            'basic':True,
         }),
         ('Contact',{
             'import':True,
@@ -814,13 +811,11 @@ class ColData_User(ColData_Base):
                 'key': 'nickname'
             },
             # 'label':'contact_name',
-            'warn': True,
-            'user':True,
-            'sync':True,
-            "static": True,
-            'repor':True,
-            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
-
+            # 'warn': True,
+            # 'user':True,
+            # 'sync':True,
+            # "static": True,
+            # 'report':True,
         }),
         ('First Name', {
             'wp': {
@@ -829,7 +824,7 @@ class ColData_User(ColData_Base):
             },
             # 'label':'first_name',
             'import':True,
-            'user':True,
+            # 'user':True,
             # 'report': True,
             # 'sync':True,
             # 'warn': True,
@@ -842,7 +837,7 @@ class ColData_User(ColData_Base):
             },
             # 'label':'last_name',
             'import': True,
-            'user':True,
+            # 'user':True,
             # 'report': True,
             # 'sync':True,
             # 'warn': True,
@@ -854,7 +849,7 @@ class ColData_User(ColData_Base):
                 'key': 'middle_name'
             },
             'import': True,
-            'user': True,    
+            # 'user': True,    
         }),
         ('Name Suffix', {
             'wp': {
@@ -862,7 +857,7 @@ class ColData_User(ColData_Base):
                 'key': 'name_suffix'
             },
             'import': True,
-            'user': True,    
+            # 'user': True,    
         }),
         ('Name Prefix', {
             'wp': {
@@ -870,7 +865,14 @@ class ColData_User(ColData_Base):
                 'key': 'name_prefix'
             },
             'import': True,
-            'user': True,    
+            # 'user': True,    
+        }),
+        ('Memo', {
+            'wp': {
+                'meta': True,
+                'key': 'name_notes'
+            },
+            'import': True,    
         }),
         ('Company',{
             'wp': {
@@ -880,10 +882,11 @@ class ColData_User(ColData_Base):
             # 'label':'billing_company',
             'import':True,
             'user':True,
-            # 'report': True,
-            # 'sync':True,
-            # 'warn': True,
-            # 'static':True,
+            'basic':True,
+            'report': True,
+            'sync':True,
+            'warn': True,
+            'static':True,
         }),
         ('Mobile Phone',{
             'wp': {
@@ -983,13 +986,15 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'sync':True,
-            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country']
+            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
+            'basic':True,
         }),
         ('Home Address',{
             'report':True,
             'warn':True,
             'static':True,
             'sync':True,
+            'basic':True,
             'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country']
         }),
         ('Address 1',{
@@ -1235,21 +1240,24 @@ class ColData_User(ColData_Base):
         #     # 'user':True,
         #     'report':True,
         # }),
-        # ('Editedt Date', {
-        #     'import': True,
-        #     'report': True
-        # }),
+        ('Create Date', {
+            'import': True,
+            'report': True,
+            'basic':True
+        }),
         ('Edited in Act', {
             'wp': {
                 'meta': True, 
                 'key': 'edited_in_act'
             },
             'import': True,
-            'report': True
+            'report': True,
+            'basic':True,
         }),
         ('Edited in Wordpress', {
             'import':True,
-            'report':True
+            'report':True,
+            # 'basic':True
         }),
         ('Last Sale', {
             'wp': {
@@ -1282,6 +1290,9 @@ class ColData_User(ColData_Base):
 
     def getAliasCols(self):
         return self.getExportCols('aliases')
+
+    def getBasicCols(self):
+        return self.getExportCols('basic')
 
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"

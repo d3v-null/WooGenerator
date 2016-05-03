@@ -30,6 +30,7 @@ def timediff():
 DEBUG = False
 testMode = False
 # testMode = True
+skip_sync = True
 
 ### DEFAULT CONFIG ###
 
@@ -109,10 +110,12 @@ if(testMode):
 assert store_url, "store url must not be blank"
 xmlrpc_uri = store_url + 'xmlrpc.php'
 
-fileSuffix = "_test" if testMode else ""
+fileSuffix = "_test" if testMode else "_a"
 
 moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
+WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
+ACTresCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
@@ -298,29 +301,29 @@ except Exception as e:
 #             return False
 #     return True
 
-capitalCols = colData.getCapitalCols()
+# capitalCols = colData.getCapitalCols()
 
-#assumes record has at least one of all capitalized cols
-def recordActLike(obj):
-    recordEmpty = True
-    actLike = True
-    for col in capitalCols.keys():
-        val = obj.get(col) or ""
-        if(val): 
-            recordEmpty = False
-        else:
-            if(not SanitationUtils.fieldActLike(val)):
-                actLike = False
-    if(actLike and not recordEmpty):
-        return True
-    else:
-        return False
+# #assumes record has at least one of all capitalized cols
+# def recordActLike(obj):
+#     recordEmpty = True
+#     actLike = True
+#     for col in capitalCols.keys():
+#         val = obj.get(col) or ""
+#         if(val): 
+#             recordEmpty = False
+#         else:
+#             if(not SanitationUtils.fieldActLike(val)):
+#                 actLike = False
+#     if(actLike and not recordEmpty):
+#         return True
+#     else:
+#         return False
 
-def contactActLike(obj):
-    recordEmpty = not any(filter(None, map(lambda key: key in obj.keys(), ['First Name', 'Surname', 'Contact', 'Middle Name'])))
-    names = map( lambda key: obj.get(key) or "", ['First Name', 'Middle Name', 'Surname'])
-    nameSum = " ".join(filter(None, names))
-    return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
+# def contactActLike(obj):
+#     recordEmpty = not any(filter(None, map(lambda key: key in obj.keys(), ['First Name', 'Surname', 'Contact', 'Middle Name'])))
+#     names = map( lambda key: obj.get(key) or "", ['First Name', 'Middle Name', 'Surname'])
+#     nameSum = " ".join(filter(None, names))
+#     return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
 
 def printBasicColumns(users):
     # print len(users)
@@ -329,22 +332,23 @@ def printBasicColumns(users):
         usrList.addObject(user)
         # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
 
+    cols = colData.getBasicCols()
+
     SanitationUtils.safePrint( usrList.tabulate(
-        OrderedDict([
-            ('E-mail', {}),
-            ('MYOB Card ID', {}),
-            ('Name', {}),
-            ('Address', {}),
-            ('Home Address', {}),
-            ('Edited in Wordpress', {})
-        ]),
+        cols,
         tablefmt = 'simple'
     ))
+
+def hashify(in_str):
+    out_str = "#" * (len(in_str) + 4) + "\n"
+    out_str += "# " + in_str + " #\n"
+    out_str += "#" * (len(in_str) + 4) + "\n"
+    return out_str
 
 # print "WHAT THE FUCK"
 # print len(maParser.emails.values())
 
-printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
+# printBasicColumns( list(chain( *maParser.companies.values()[:100] )) )
 # printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
 
 # first = list(chain(*saParser.emails.values()))[0]
@@ -831,116 +835,109 @@ def denyAnomalousParselist(parselistType, anomalousParselist):
         # print "could not deny anomalous parse list", parselistType, e
         anomalousParselists[parselistType] = anomalousParselist
 
-# for every username in slave, check that it exists in master
     
-print "processing usernames"
+if not skip_sync:
+    # for every username in slave, check that it exists in master
+    print "processing usernames"
+    denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
 
-denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
+    usernameMatcher = UsernameMatcher();
+    usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
 
-usernameMatcher = UsernameMatcher();
-usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
+    denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
+    denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
+    globalMatches.addMatches( usernameMatcher.pureMatches)
 
-denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
-denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
-globalMatches.addMatches( usernameMatcher.pureMatches)
+    # debug stuff
+    # if(DEBUG):
+    #     print "all username matches"
+    #     print usernameMatcher.matasdadches.tabulate(tablefmt="simple");
 
-# debug stuff
-# if(DEBUG):
-#     print "all username matches"
-#     print usernameMatcher.matasdadches.tabulate(tablefmt="simple");
+    print "processing cards"
 
-print "processing cards"
+    #for every card in slave not already matched, check that it exists in master
 
-#for every card in slave not already matched, check that it exists in master
+    denyAnomalousParselist( 'maParser.nocards', maParser.nocards )
 
-denyAnomalousParselist( 'maParser.nocards', maParser.nocards )
+    cardMatcher = CardMatcher( globalMatches.sIndices, globalMatches.mIndices )
+    cardMatcher.processRegisters( saParser.cards, maParser.cards )
 
-cardMatcher = CardMatcher( globalMatches.sIndices, globalMatches.mIndices )
-cardMatcher.processRegisters( saParser.cards, maParser.cards )
+    denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatches)
+    denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
 
-denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatches)
-denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
+    globalMatches.addMatches( cardMatcher.pureMatches)
 
-globalMatches.addMatches( cardMatcher.pureMatches)
+    # if(DEBUG):
+    #     print "all card matches"
+    #     print cardMatcher.matches.tabulate(tablefmt="simple");
 
-# if(DEBUG):
-#     print "all card matches"
-#     print cardMatcher.matches.tabulate(tablefmt="simple");
+    # #for every email in slave, check that it exists in master
 
-# #for every email in slave, check that it exists in master
+    print "processing emails"
 
-print "processing emails"
+    denyAnomalousParselist( "saParser.noemails", saParser.noemails )
 
-denyAnomalousParselist( "saParser.noemails", saParser.noemails )
+    emailMatcher = NocardEmailMatcher( globalMatches.sIndices, globalMatches.mIndices )
+    emailMatcher.processRegisters( saParser.nocards, maParser.emails)
 
-emailMatcher = NocardEmailMatcher( globalMatches.sIndices, globalMatches.mIndices )
-emailMatcher.processRegisters( saParser.nocards, maParser.emails)
+    newMasters.addMatches(emailMatcher.masterlessMatches)
 
-newMasters.addMatches(emailMatcher.masterlessMatches)
+    newSlaves.addMatches(emailMatcher.slavelessMatches)
 
-newSlaves.addMatches(emailMatcher.slavelessMatches)
-
-globalMatches.addMatches(emailMatcher.pureMatches)
-
-
-# TODO: further sort emailMatcher
-
-def hashify(in_str):
-    out_str = "#" * (len(in_str) + 4) + "\n"
-    out_str += "# " + in_str + " #\n"
-    out_str += "#" * (len(in_str) + 4) + "\n"
-    return out_str
+    globalMatches.addMatches(emailMatcher.pureMatches)
 
 
-print hashify("BEGINNING MERGE")
-print timediff()
+    # TODO: further sort emailMatcher
+
+    print hashify("BEGINNING MERGE")
+    print timediff()
 
 
-syncCols = colData.getSyncCols()
+    syncCols = colData.getSyncCols()
 
-for match in globalMatches:
-    # print hashify( "MATCH NUMBER %d" % i )
+    for match in globalMatches:
+        # print hashify( "MATCH NUMBER %d" % i )
 
-    # print "-> INITIAL VALUES:"
-    # print match.tabulate()
+        # print "-> INITIAL VALUES:"
+        # print match.tabulate()
 
-    mObject = match.mObjects[0]
-    sObject = match.sObjects[0]
+        mObject = match.mObjects[0]
+        sObject = match.sObjects[0]
 
-    syncUpdate = SyncUpdate(mObject, sObject)
-    syncUpdate.update(syncCols, merge_mode)
+        syncUpdate = SyncUpdate(mObject, sObject)
+        syncUpdate.update(syncCols, merge_mode)
 
-    if(not syncUpdate.importantStatic):
-        if(syncUpdate.mUpdated and syncUpdate.sUpdated):
-            if(syncUpdate.sMod):
-                insort(problematicUpdates, syncUpdate)
-            else:
-                insort(masterUpdates, syncUpdate)
-                insort(slaveUpdates, syncUpdate)
-
-        if(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
-            insort(nonstaticMUpdates, syncUpdate)
-            if(syncUpdate.sMod):
-                insort(problematicUpdates, syncUpdate)
-            else:
-                insort(masterUpdates, syncUpdate)
-        # if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-        #     insort(nonstaticSUpdates, syncUpdate)
-    else:
-        if(syncUpdate.sUpdated or syncUpdate.mUpdated):
+        if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
-                insort(masterUpdates, syncUpdate)
-                insort(slaveUpdates, syncUpdate)
-                # insort(staticUpdates, syncUpdate)
-            if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
-                insort(masterUpdates, syncUpdate)
-                # insort(staticMUpdates, syncUpdate)
-            if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-                insort(slaveUpdates, syncUpdate)
-                # insort(staticSUpdates, syncUpdate)
-    
-print hashify("COMPLETED MERGE")
-print timediff()
+                if(syncUpdate.sMod):
+                    insort(problematicUpdates, syncUpdate)
+                else:
+                    insort(masterUpdates, syncUpdate)
+                    insort(slaveUpdates, syncUpdate)
+
+            if(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
+                insort(nonstaticMUpdates, syncUpdate)
+                if(syncUpdate.sMod):
+                    insort(problematicUpdates, syncUpdate)
+                else:
+                    insort(masterUpdates, syncUpdate)
+            # if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+            #     insort(nonstaticSUpdates, syncUpdate)
+        else:
+            if(syncUpdate.sUpdated or syncUpdate.mUpdated):
+                if(syncUpdate.mUpdated and syncUpdate.sUpdated):
+                    insort(masterUpdates, syncUpdate)
+                    insort(slaveUpdates, syncUpdate)
+                    # insort(staticUpdates, syncUpdate)
+                if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
+                    insort(masterUpdates, syncUpdate)
+                    # insort(staticMUpdates, syncUpdate)
+                if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+                    insort(slaveUpdates, syncUpdate)
+                    # insort(staticSUpdates, syncUpdate)
+        
+    print hashify("COMPLETED MERGE")
+    print timediff()
 
 #########################################
 # Write Report
@@ -949,197 +946,216 @@ print timediff()
 print hashify("Write Report")
 print timediff()
 
-with io.open(resPath, 'w+', encoding='utf8') as resFile:
+with \
+  io.open(resPath, 'w+', encoding='utf8') as resFile: 
     reporter = HtmlReporter()
 
+    basic_cols = colData.getBasicCols()
+    address_cols = OrderedDict(basic_cols.items() + [('address_reason', {})])
+    name_cols = OrderedDict(basic_cols.items() + [('name_reason', {})])
+    csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [('address_reason', {}), ('name_reason', {})]) )
+    # print repr(basic_colnames)
+    unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values() )
+    # print repr(unicode_colnames)
+    # WPCsvWriter = DictWriter(WPresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
+    # WPCsvWriter.writeheader()
+    # ACTCsvWriter = DictWriter(ACTresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
+    # ACTCsvWriter.writeheader()
+
     sanitizingGroup = HtmlReporter.Group('sanitizing', 'Sanitizing Results')
+
+    # s_bad_addresses_usrlist = UsrObjList(saParser.badAddress.values())
+
+    # for user in saParser.badAddress.values():
+    #     # user['address_reason'] = ''.join([address.reason for address in addresses])
+    #     s_bad_addresses_usrlist.addObject(user)
+
     sanitizingGroup.addSection(
         HtmlReporter.Section(
-            's_bad_addresses',
-            title = "Bad %s Addresses" % SLAVE_NAME.title(),
+            's_bad_addresses_list',
+            title = 'Bad %s Address List' % SLAVE_NAME.title(),
             description = '%s records that have badly formatted addresses' % SLAVE_NAME,
-            data = "".join([
-                "".join([
-                    HtmlReporter.Section.data_heading_fmt % heading,
-                    "".join([
-                        address.tabulate(tablefmt='html') for address in addresses
-                    ]),
-                    HtmlReporter.Section.data_separater 
-                ]) for heading, addresses in saParser.badAddress.items()
-            ]),
+            data = UsrObjList(saParser.badAddress.values()).tabulate(
+                cols = address_cols,
+                tablefmt='html',
+            ),
             length = len(saParser.badAddress)
         )
     )
 
+    # for row in saParser.badAddress.values():
+    #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
+
     sanitizingGroup.addSection(
         HtmlReporter.Section(
-            's_bad_names',
-            title = "Bad %s Names" % SLAVE_NAME.title(),
+            's_bad_names_list',
+            title = 'Bad %s Names List' % SLAVE_NAME.title(),
             description = '%s records that have badly formatted names' % SLAVE_NAME,
-            data = "".join([
-                "".join([
-                    HtmlReporter.Section.data_heading_fmt % heading,
-                    "".join([
-                        name.tabulate(tablefmt='html') for name in names
-                    ]),
-                    HtmlReporter.Section.data_separater 
-                ]) for heading, names in saParser.badName.items()
-            ]),
+            data = UsrObjList(saParser.badName.values()).tabulate(
+                cols = name_cols,
+                tablefmt='html',
+            ),
             length = len(saParser.badName)
         )
     )
 
+    UsrObjList(saParser.badName.values() + maParser.badAddress.values()).exportItems(WPresCsvPath, csv_colnames)
+
+    # for row in saParser.badName.values():
+    #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
+
     sanitizingGroup.addSection(
         HtmlReporter.Section(
-            'm_bad_addresses',
-            title = "Bad %s Addresses" % MASTER_NAME.title(),
+            'm_bad_addresses_list',
+            title = 'Bad %s Address List' % MASTER_NAME.title(),
             description = '%s records that have badly formatted addresses' % MASTER_NAME,
-            data = "".join([
-                "".join([
-                    HtmlReporter.Section.data_heading_fmt % heading,
-                    "".join([
-                        address.tabulate(tablefmt='html') for address in addresses
-                    ]),
-                    HtmlReporter.Section.data_separater 
-                ]) for heading, addresses in maParser.badAddress.items()
-            ]),
+            data = UsrObjList(maParser.badAddress.values()).tabulate(
+                cols = address_cols,
+                tablefmt='html',
+            ),
             length = len(maParser.badAddress)
         )
     )
 
+    # for row in maParser.badAddress.values():
+    #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
+
     sanitizingGroup.addSection(
         HtmlReporter.Section(
-            'm_bad_names',
-            title = "Bad %s Names" % MASTER_NAME.title(),
+            'm_bad_names_list',
+            title = 'Bad %s Names List' % MASTER_NAME.title(),
             description = '%s records that have badly formatted names' % MASTER_NAME,
-            data = "".join([
-                "".join([
-                    HtmlReporter.Section.data_heading_fmt % heading,
-                    "".join([
-                        name.tabulate(tablefmt='html') for name in names
-                    ]),
-                    HtmlReporter.Section.data_separater 
-                ]) for heading, names in maParser.badName.items()
-            ]),
+            data = UsrObjList(maParser.badName.values()).tabulate(
+                cols = name_cols,
+                tablefmt='html',
+            ),
             length = len(maParser.badName)
         )
     )
 
+    # for row in maParser.badName.values():
+    #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
+
+    UsrObjList(maParser.badName.values() + maParser.badAddress.values()).exportItems(ACTresCsvPath, csv_colnames)
+
     reporter.addGroup(sanitizingGroup)
 
-    matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
-    matchingGroup.addSection(
-        HtmlReporter.Section(
-            'perfect_matches', 
-            **{
-                'title': 'Perfect Matches',
-                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                'data': globalMatches.tabulate(tablefmt="html"),
-                'length': len(globalMatches)
-            }
-        )
-    )
-    matchingGroup.addSection(
-        HtmlReporter.Section(
-            'email_duplicates', 
-            **{
-                'title': 'Email Duplicates',
-                'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
-                'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
-                'length': len(emailMatcher.duplicateMatches)
-            }
-        )
-    )
+    report_matching = not skip_sync
+    if report_matching:
 
-    matchListInstructions = {
-        'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
-        'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
-        'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
-        'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
-    }
-
-    for matchlistType, matchList in anomalousMatchLists.items():
-        if not matchList:
-            continue
-        description = matchListInstructions.get(matchlistType, matchlistType)
-        if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
-            data = matchList.merge().tabulate(tablefmt="html")
-        else:
-            data = matchList.tabulate(tablefmt="html")
+        matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
         matchingGroup.addSection(
             HtmlReporter.Section(
-                matchlistType,
+                'perfect_matches', 
                 **{
-                    # 'title': matchlistType.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(matchList)
+                    'title': 'Perfect Matches',
+                    'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                    'data': globalMatches.tabulate(tablefmt="html"),
+                    'length': len(globalMatches)
                 }
-            )   
+            )
         )
-        
-    # print hashify("anomalous ParseLists: ")
-
-    parseListInstructions = {
-        "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
-        "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
-        "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
-        "saParser.nousernames": "%s records have no username" % SLAVE_NAME
-    }
-
-    for parselistType, parseList in anomalousParselists.items():
-        description = matchListInstructions.get(parselistType, parselistType)
-        usrList  = UsrObjList()
-        for obj in parseList.values():
-            usrList.addObject(obj)
-
-        data = usrList.tabulate(tablefmt="html")
-        
         matchingGroup.addSection(
             HtmlReporter.Section(
-                parselistType,
+                'email_duplicates', 
                 **{
-                    # 'title': matchlistType.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(parseList)
+                    'title': 'Email Duplicates',
+                    'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
+                    'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
+                    'length': len(emailMatcher.duplicateMatches)
                 }
             )
         )
 
-    reporter.addGroup(matchingGroup)
+        matchListInstructions = {
+            'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
+            'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
+            'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
+            'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+        }
 
-    syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+        for matchlistType, matchList in anomalousMatchLists.items():
+            if not matchList:
+                continue
+            description = matchListInstructions.get(matchlistType, matchlistType)
+            if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
+                data = matchList.merge().tabulate(tablefmt="html")
+            else:
+                data = matchList.tabulate(tablefmt="html")
+            matchingGroup.addSection(
+                HtmlReporter.Section(
+                    matchlistType,
+                    **{
+                        # 'title': matchlistType.title(),
+                        'description': description,
+                        'data': data,
+                        'length': len(matchList)
+                    }
+                )   
+            )
+            
+        # print hashify("anomalous ParseLists: ")
 
-    syncingGroup.addSection(
-        HtmlReporter.Section(
-            (MASTER_NAME + "_updates"),
-            description = MASTER_NAME + " items will be updated",
-            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
-            length = len(masterUpdates)
-        )
-    )
+        parseListInstructions = {
+            "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
+            "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
+            "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
+            "saParser.nousernames": "%s records have no username" % SLAVE_NAME
+        }
 
-    syncingGroup.addSection(
-        HtmlReporter.Section(
-            (SLAVE_NAME + "_updates"),
-            description = SLAVE_NAME + " items will be updated",
-            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-            length = len(masterUpdates)
-        )
-    )
+        for parselistType, parseList in anomalousParselists.items():
+            description = matchListInstructions.get(parselistType, parselistType)
+            usrList  = UsrObjList()
+            for obj in parseList.values():
+                usrList.addObject(obj)
 
-    syncingGroup.addSection(
-        HtmlReporter.Section(
-            "problematic_updates",
-            description = "items can't be merged because they are too dissimilar",
-            data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
-            length = len(problematicUpdates)
-        )
-    )
+            data = usrList.tabulate(tablefmt="html")
+            
+            matchingGroup.addSection(
+                HtmlReporter.Section(
+                    parselistType,
+                    **{
+                        # 'title': matchlistType.title(),
+                        'description': description,
+                        'data': data,
+                        'length': len(parseList)
+                    }
+                )
+            )
 
-    report_sync = False
+        reporter.addGroup(matchingGroup)
+
+    report_sync = not skip_sync
     if report_sync:
+        syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                (MASTER_NAME + "_updates"),
+                description = MASTER_NAME + " items will be updated",
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
+                length = len(masterUpdates)
+            )
+        )
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                (SLAVE_NAME + "_updates"),
+                description = SLAVE_NAME + " items will be updated",
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
+                length = len(masterUpdates)
+            )
+        )
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                "problematic_updates",
+                description = "items can't be merged because they are too dissimilar",
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+                length = len(problematicUpdates)
+            )
+        )
+
         reporter.addGroup(syncingGroup)
 
     resFile.write( reporter.getDocumentUnicode() )

@@ -24,9 +24,11 @@ DEBUG_ADDRESS = False
 # DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
 DEBUG_NAME = False
+# DEBUG_NAME = True
 
 class SanitationUtils:
-    email_regex = r"^[\w.+-]+@[\w-]+\.[\w.-]+$"
+    email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
+    cell_email_regex = r"^%s$" % email_regex
     myobid_regex = r"C\d+"
     punctuationChars = [
         '!', '"', '#', '$', '%', 
@@ -41,10 +43,13 @@ class SanitationUtils:
     ]
     disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
     whitespaceChars = [ ' ', '\t', '\r', '\n', '\f']
-    tokenDelimeters  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
+    tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
+    tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
     tokenDelimetersNoSpace  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars) - set([' '])) #delimeter characters excl space
+    punctuationRegex = r"[%s]" % "".join(punctuationChars) 
     delimeterRegex   = r"[%s]" % "".join(tokenDelimeters) 
     nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters) 
+    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters) 
     nondelimeterAndSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
@@ -341,6 +346,13 @@ class SanitationUtils:
         )(string)
 
     @staticmethod
+    def similarNoPunctuationComparison(string):
+        return SanitationUtils.compose(
+            SanitationUtils.normalizeVal,
+            SanitationUtils.stripPunctuation,
+        )(string)
+
+    @staticmethod
     def similarPhoneComparison(string):
         return SanitationUtils.compose(
             SanitationUtils.stripNonNumbers,
@@ -452,6 +464,10 @@ class SanitationUtils:
         return True if(re.search(SanitationUtils.disallowedPunctuationRegex, string)) else False
 
     @staticmethod
+    def stringContainsPunctuation(string):
+        return True if(re.search(SanitationUtils.punctuationRegex, string)) else False
+
+    @staticmethod
     def truishStringToBool(string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
             if DEBUG: print "truishStringToBool", repr(string), 'FALSE'
@@ -550,12 +566,22 @@ def testSanitationUtils():
 
 class NameUtils:
     ordinalNumberRegex = r"(\d+)(?:ST|ND|RD|TH)"
-    singleNameRegex       = r"({0}+)".format(
-        format(SanitationUtils.nondelimeterRegex)
+    singleNameRegex       = r"({ndp}|{nd}+{ndp}|{ord})".format(
+        nd = SanitationUtils.nondelimeterRegex,
+        ndp = SanitationUtils.nondelimeterPunctuationRegex,
+        ord = ordinalNumberRegex
     )
-    multiNameRegex  = r"({0}({1}*{0})?)".format(
-        format(SanitationUtils.nondelimeterRegex),
-        format(SanitationUtils.nondelimeterAndSpaceRegex)
+    multiNameRegex  = r"({ndp}|{nd}+{ndp}|{ord})({nds}*{ord})?({nds}*{nd}{ndp})?)".format(
+        nd = SanitationUtils.nondelimeterRegex,
+        ndp = SanitationUtils.nondelimeterPunctuationRegex,
+        nds = SanitationUtils.nondelimeterAndSpaceRegex,
+        ord = ordinalNumberRegex
+    )
+
+    multiNameRegex  = r"(({2}|{0}{1}*{2})?({1}*{0})?)".format(
+        SanitationUtils.nondelimeterRegex,
+        SanitationUtils.nondelimeterAndSpaceRegex,
+        ordinalNumberRegex
     )
 
     titleAbbreviations = OrderedDict([
@@ -583,16 +609,13 @@ class NameUtils:
     ])
 
     noteAbbreviations = OrderedDict([
-        ("- ", []),
-        (r"&", []),
-        (r"\?",   []),
-        ('AND', ['&AMP']),
         ('SPOKE WITH', ['SPIKE WITH', 'SPOKE W', "SPOKE TO"]),
         ('CLOSED', ['CLOSED DOWN', 'CLOSED BUSINESS']),
         ('PRONOUNCED', []),
-        ('OR', []),
         ('ARCHIVE', []),
         ('STOCK', ['STOCK ACCOUNT', 'STOCK ACCT', 'STOCK ACCNT']),
+        ('ACCOUNT', []),
+        ('RETAIL ACCOUNT', []),
         ('STAFF', []),
         ('FINALIST', []),
         ('BOOK A TAN CUSTOMER', []),
@@ -607,6 +630,15 @@ class NameUtils:
         ('NOTE', []),
         ("N/A", []),
         ('UNSUBSCRIBED', ["UNSUBSCRIBE"]),
+    ])
+
+    noteDelimeters = OrderedDict([
+        ("-", []),
+        (r"&", []),
+        (r"\?",   []),
+        (r"@",     []),
+        ('AND', ['&AMP']),
+        ('OR', []),
     ])
 
     careOfAbbreviations = OrderedDict([
@@ -631,7 +663,9 @@ class NameUtils:
     familyNamePrefixAbbreviations = OrderedDict([
         ('MC',      []),
         ('MAC',     []),
+        ('VAN DE', []),
         ('VAN DER', []),
+        ('VAN DEN', []),
         ('VAN',     []),
         ('DER',     []),
     ])
@@ -662,7 +696,7 @@ class NameUtils:
     # OTHERS?
     noteRegex = (r"(?:"+\
                     r"|".join([
-                        r"(?P<note_open_paren>\() ?(?:"+ \
+                        r"(?P<name_before_note_paren>{name})?(?P<note_open_paren>\() ?(?:"+ \
                         r"|".join([
                             r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?",
                             r"(?P<names_before_note_middle>{names})? ?(?P<note_middle>{note})\.? ?(?P<names_after_note_middle>{names})?",
@@ -670,10 +704,13 @@ class NameUtils:
                         ]),
                         r") ?(?P<note_close_paren>\))",
                         r"(?P<note_only>{note})",
+                        r"(?P<note_delimeter>{noted}) (?P<names_after_note_delimeter>{names})?"
                     ]) +\
                 r")").format(
-        note=SanitationUtils.compileAbbrvRegex(noteAbbreviations),
-        names=multiNameRegex
+        note=SanitationUtils.wrapClearRegex(SanitationUtils.compileAbbrvRegex(noteAbbreviations)),
+        noted = SanitationUtils.wrapClearRegex(SanitationUtils.compileAbbrvRegex(noteDelimeters)),
+        names=multiNameRegex,
+        name=singleNameRegex,
     )
 
     careOfRegex = r"(?P<careof>%s)[\.:]? ?(?P<careof_names>%s)" % (
@@ -685,7 +722,7 @@ class NameUtils:
         SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
     )
 
-    organizationRegex = r"(?P<organization_name>%s) ?(?P<organization_type>%s)\.?" % (
+    organizationRegex = r"(?P<organization_name>%s) (?P<organization_type>%s)\.?" % (
         multiNameRegex,
         SanitationUtils.compileAbbrvRegex(organizationTypeAbbreviations)
     )
@@ -696,6 +733,7 @@ class NameUtils:
         SanitationUtils.wrapClearRegex( nameSuffixRegex),
         SanitationUtils.wrapClearRegex( careOfRegex),
         SanitationUtils.wrapClearRegex( organizationRegex),
+        SanitationUtils.wrapClearRegex( SanitationUtils.email_regex ),
         SanitationUtils.wrapClearRegex( noteRegex),
         SanitationUtils.wrapClearRegex( familyNameRegex),
         SanitationUtils.wrapClearRegex( ordinalNumberRegex),
@@ -754,11 +792,10 @@ class NameUtils:
             ),
             token
         )
-        names = filter(None, matches)
+        names = [match[0] for match in filter(None, matches)]
         if names:
             if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAMES " + repr(names))
             return names
-
 
     @staticmethod
     def getMultiName(token):
@@ -774,6 +811,23 @@ class NameUtils:
             name = matchGrps[0]
             if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
             return name
+
+    @staticmethod
+    def getEmail(token):
+        # if DEBUG_NAME: SanitationUtils.safePrint("checking email", token)
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                "({})".format(SanitationUtils.email_regex)
+            ),
+            token
+        )
+        matchGrps = match.groups() if match else None
+        if(matchGrps):
+            # if DEBUG_NAME: SanitationUtils.safePrint("email matches", repr(matchGrps))
+            # name = " ".join(matchGrps)
+            email = matchGrps[0]
+            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND EMAIL " + repr(email))
+            return email
 
     @staticmethod
     def getTitle(token):
@@ -858,7 +912,7 @@ class NameUtils:
             token
         )
         matchDict = match.groupdict() if match else None
-        if matchDict and (matchDict.get('note_open_paren') or matchDict.get('note_only')):
+        if matchDict and (matchDict.get('note_open_paren') or matchDict.get('note_only') or matchDict.get('note_delimeter')):
             note_open_paren = matchDict.get('note_open_paren')
             note_close_paren = matchDict.get('note_close_paren')
             names_before_note = None
@@ -874,8 +928,14 @@ class NameUtils:
                 else:
                     names_before_note = matchDict.get('note_names_only')
                     note = None
-            else:
+                name_before_note_paren = matchDict.get('name_before_note_paren')
+                if name_before_note_paren:
+                    names_before_note = " ".join(filter(None, [name_before_note_paren, names_before_note]))
+            elif matchDict.get('note_only'):
                 note = NameUtils.identifyNote(matchDict.get('note_only'))
+            elif matchDict.get('note_delimeter'):
+                note = matchDict.get('note_delimeter')
+                names_after_note = matchDict.get('names_after_note_delimeter')
 
             note_tuple = (note_open_paren, names_before_note, note, names_after_note, note_close_paren)
             if DEBUG_NAME: print "FOUND NOTE ", repr(note_tuple)
@@ -953,8 +1013,16 @@ class NameUtils:
         )
 
 def testNameUtils():
-    print SanitationUtils.compileAbbrvRegex(NameUtils.noteAbbreviations)
-    print NameUtils.tokenizeName('DERWENT (ACCT)')
+    # print SanitationUtils.compileAbbrvRegex(NameUtils.noteAbbreviations)
+    # print NameUtils.tokenizeName('DERWENT (ACCT)')
+    # print NameUtils.getEmail('KYLIESWEET@GMAIL.COM')
+    def testNotes(line):
+        for token in NameUtils.tokenizeName(line):
+            print token, NameUtils.getNote(token)
+
+    testNotes("DERWENT - FINALIST")
+    testNotes("JAGGERS HAIR - DO NOT WANT TO BE CALLED!!!!")
+        
 
 
 class AddressUtils:
@@ -1030,7 +1098,7 @@ class AddressUtils:
         ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
         ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND', 'UPPER LEVEL']),
         ('FL',      ['FLOOR', 'FLR']),
-        ('LVL',       ['LEVEL', 'L']),
+        ('LEVEL',   ['LVL', 'L']),
         ('M',       ['MEZZANINE', 'MEZ'])
     ])
 
@@ -1070,7 +1138,7 @@ class AddressUtils:
         ('CT',       ['COURT', 'CRT']),
         ('CTYD',     ['COURTYARD']),
         ('COVE',     []),
-        ('CRES',     ['CRESCENT', 'CR', 'CRESENT']),
+        ('CRES',     ['CRESCENT', 'CR', 'CRESENT', 'CRS']),
         ('CRST',     ['CREST']),
         ('CRSS',     ['CROSS']),
         ('CSAC',     ['CUL-DE-SAC']),
@@ -1205,9 +1273,9 @@ class AddressUtils:
         ('CMA',         []),
         ('CMB',         []),
         ('CPA',         []),
-        ('GPO BOX',     ["G.P.O. BOX", "G.P.O BOX", "GENERAL POST OFFICE BOX"]),
+        ('GPO BOX',     [r"G\.?P\.?O(\.| )BOX", "GENERAL POST OFFICE BOX"]),
         ('LOCKED BAG',  []),
-        ('PO BOX',      ["P.O. BOX"]),
+        ('PO BOX',      [r"P\.?O\.? ?BOX"]),
         ('PO',          []),
         ('RMB',         []),
         ('RMS',         []),
@@ -1522,6 +1590,10 @@ class AddressUtils:
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
         multiNumberAlphaRegex,
     )
+    weakSubunitRegex = r"(?P<weak_subunit_type>%s) ?(?P<weak_subunit_number>(?:%s)/?)" % (
+        NameUtils.singleNameRegex,
+        multiNumberAlphaRegex,
+    )
     stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
     thoroughfareNameRegex = r"%s" % (
         "|".join([
@@ -1570,6 +1642,7 @@ class AddressUtils:
         SanitationUtils.wrapClearRegex( thoroughfareRegex),
         SanitationUtils.wrapClearRegex( buildingRegex),
         SanitationUtils.wrapClearRegex( weakThoroughfareRegex),
+        SanitationUtils.wrapClearRegex( weakSubunitRegex),
         # SanitationUtils.wrapClearRegex( stateRegex),
         SanitationUtils.wrapClearRegex( NameUtils.careOfRegex ),
         SanitationUtils.wrapClearRegex( NameUtils.organizationRegex ),
@@ -1613,6 +1686,22 @@ class AddressUtils:
         return SanitationUtils.identifyAbbreviation(AddressUtils.countryAbbreviations, string)
 
     @staticmethod
+    def getFloor(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                AddressUtils.floorLevelRegex
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if(matchDict): 
+            floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
+            floor_number = matchDict.get('floor_number')
+            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
+            return floor_type, floor_number
+        return None
+
+    @staticmethod
     def getSubunit(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
@@ -1630,19 +1719,20 @@ class AddressUtils:
         return None
 
     @staticmethod
-    def getFloor(token):
+    def getWeakSubunit(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
-                AddressUtils.floorLevelRegex
+                AddressUtils.weakSubunitRegex
             ),
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict): 
-            floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
-            floor_number = matchDict.get('floor_number')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
-            return floor_type, floor_number
+        if(matchDict and matchDict.get('weak_subunit_type') and matchDict.get('weak_subunit_number')): 
+            subunit_type = AddressUtils.identifySubunit(matchDict.get('weak_subunit_type'))
+            subunit_number = matchDict.get('weak_subunit_number')
+            subunit = (subunit_type, subunit_number)
+            if DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
+            return subunit
         return None
 
     @staticmethod
@@ -1781,7 +1871,7 @@ class AddressUtils:
 
     @staticmethod
     def findSingleNumber(token):
-        match = re.find(
+        match = re.search(
                 "(" + AddressUtils.numberRegex + ")"
             ,
             token
@@ -2108,7 +2198,7 @@ class HtmlReporter(object):
             out += '<div class="collapse" id="' + sectionID + '">'
             out += '<p class="description">' + (str(self.length) if self.length else "No") + ' ' + self.description + '</p>'
             out += '<p class="data">'
-            out += re.sub("<table>","<table class=\"table table-striped\">",self.data)
+            out += re.sub("<table>","<table class=\"table table-striped\">",SanitationUtils.coerceUnicode(self.data))
             out += '</p>'
             out += '</div>'
             out = SanitationUtils.coerceUnicode( out )
@@ -2408,120 +2498,6 @@ class PHPUtils:
     @staticmethod
     def unserialize(string):
         return loads(string)
-
-
-
-# class UTF8Recoder:
-#     """
-#     Iterator that reads an encoded stream and reencodes the input to UTF-8
-#     """
-#     def __init__(self, f, encoding):
-#         self.encoding = encoding
-#         try:
-#             bom = codecs.BOM_UTF8
-#             # print "bom: ", repr(bom)
-#             bomtest = f.read(len(bom))
-#             # print "bomtest: ", repr(bomtest)
-#             if(bomtest == bom):
-#                 pass
-#                 # print "starts with BOM_UTF8"
-#             else:
-#                 raise Exception("does not start w/ BOM_UTF8")
-#         except Exception as e:
-#             if(e): pass
-#             # print "could not remove bom, ",e
-#             f.seek(0)
-#         self.reader = codecs.getreader(encoding)(f)
-
-#     def __iter__(self):
-#         return self
-
-#     def next(self):
-#         reader_next = self.reader.next()
-#         print "READER NEXT: ", repr(reader_next)
-#         return reader_next.encode('utf-8')
-
-# class UnicodeReader:
-#     """
-#     A CSV reader which will iterate over lines in the CSV file "f",
-#     which is encoded in the given encoding.
-#     """
-
-#     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-#         f = UTF8Recoder(f, encoding)
-#         self.reader = csv.reader(f, dialect=dialect, **kwds)
-#         self.lastRow = None
-
-#     def next(self):
-#         try:
-#             row = self.reader.next()
-#         except Exception as e:
-#             print "could not get next row, previous row: ", repr(e), SanitationUtils.coerceBytes(self.lastRow)
-#             raise e
-#         self.lastRow = row
-#         return [SanitationUtils.coerceUnicode(s) for s in row]
-
-#     def __iter__(self):
-#         return self
-
-# class UnicodeWriter:
-#     """
-#     A CSV writer which will write rows to CSV file "f",
-#     which is encoded in the given encoding.
-#     """
-
-#     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-#         # Redirect output to a queue
-#         self.queue = cStringIO.StringIO()
-#         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-#         self.stream = f
-#         self.encoder = codecs.getincrementalencoder(encoding)()
-
-#     def writerow(self, row):
-#         row = map(
-#             lambda x: "" if x is None else x,
-#             row
-#         )
-#         assert 'None' not in row
-#         self.writer.writerow([s.encode("utf-8") for s in row])
-#         # Fetch UTF-8 output from the queue ...
-#         data = self.queue.getvalue()
-#         if data is None: data = ""
-#         data = data.decode("utf-8")
-#         # ... and reencode it into the target encoding
-#         data = self.encoder.encode(data)
-#         # write to the target stream
-#         self.stream.write(data)
-#         # empty queue
-#         self.queue.truncate(0)
-
-#     def writerows(self, rows):
-#         for row in rows:
-#             self.writerow(row)
-
-# class UnicodeDictWriter(UnicodeWriter):
-#     def __init__(self, f, fieldnames, dialect=csv.excel, encoding="utf-8", **kwds):
-#         UnicodeWriter.__init__(self, f, dialect, encoding, **kwds)
-#         self.fieldnames = fieldnames
-
-#     def writerow(self, rowDict):
-#         row = [SanitationUtils.coerceUnicode(rowDict.get(fieldname, "")) for fieldname in self.fieldnames]
-#         UnicodeWriter.writerow(self, row)
-
-#     def writeheader(self):
-#         UnicodeWriter.writerow(self, self.fieldnames)
-    
-# def testUnicodeWriter():
-#     pass
-#     # testpath = "../output/UnicodeDictWriterTest.csv"
-#     # with open(testpath, 'w+') as testfile:
-#     #     writer = UnicodeDictWriter(testfile, ['a', 'b', 'c'])
-#     #     writer.writeheader()
-#     #     writer.writerow( {'a':1, 'b':2, 'c':u"\u00C3"})
-
-#     # with open(testpath, 'r') as testfile:
-#     #     for line in testfile.readlines():
-#     #         print line[:-1]
     
 if __name__ == '__main__':
     # testHTMLReporter()

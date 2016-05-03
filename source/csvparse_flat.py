@@ -89,7 +89,7 @@ class ImportUser(ImportFlat):
     aliasMapping = {
         'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
         'Home Address': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
-        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Name Notes']
+        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Memo']
     }
 
     @property
@@ -120,46 +120,73 @@ class ImportUser(ImportFlat):
             if(DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
         if(DEBUG_FLAT): self.registerMessage("data:" + repr(data))
 
-        kwargs = OrderedDict(filter(None,[
-            (('line1',    data.get('Address 1') ) if data.get('Address 1') else None),
-            (('line2',    data.get('Address 2') ) if data.get('Address 2') else None),
-            (('city',     data.get('City')      ) if data.get('City')      else None),
-            (('postcode', data.get('Postcode')  ) if data.get('Postcode')  else None),
-            (('state',    data.get('State')     ) if data.get('State')     else None),
-            (('country',  data.get('Country')   ) if data.get('Country')   else None)
+        kwargs = OrderedDict(filter(None,[\
+            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+            {
+                'first_name'    : 'First Name',
+                'middle_name'   : 'Middle Name',
+                'family_name'   : 'Surname',
+                'name_prefix'   : 'Name Prefix',
+                'name_suffix'   : 'Name Suffix',
+                'contact'       : 'Contact',
+                'company'       : 'Company',
+                'city'          : 'City',
+                'country'       : 'Country',
+                'state'         : 'State',
+            }.items()
         ]))
 
-        # print kwargs
+        self['Name'] = ContactName(
+            self.contact_schema,  
+            **kwargs
+        )
 
+        kwargs = OrderedDict(filter(None,[\
+            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+            {
+                'line1'     : 'Address 1',
+                'line2'     : 'Address 2',
+                'city'      : 'City',
+                'postcode'  : 'Postcode',
+                'state'     : 'State',
+                'country'   : 'Country',
+                'company'       : 'Company',
+            }.items()
+        ]))
 
         self['Address'] = ContactAddress(
             self.contact_schema,  
             **kwargs
         )
 
+        kwargs = OrderedDict(filter(None,[\
+            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+            {
+                'line1'     : 'Home Address 1',
+                'line2'     : 'Home Address 2',
+                'city'      : 'Home City',
+                'postcode'  : 'Home Postcode',
+                'state'     : 'Home State',
+                'country'   : 'Home Country',
+                'company'   : 'Company',
+            }.items()
+        ]))
+
         self['Home Address'] = ContactAddress(
             self.contact_schema,  
-            line1       = data.get('Home Address 1', ''),
-            line2       = data.get('Home Address 2', ''),
-            city        = data.get('Home City', ''),
-            postcode    = data.get('Home Postcode', ''),
-            state       = data.get('Home State', ''),
-            country     = data.get('Home Country', '')
+            **kwargs
         )
 
-        self['Name'] = ContactName(
-            self.contact_schema,  
-            first_name  = data.get('First Name', ''),
-            middle_name = data.get('Middle Name', ''),
-            family_name = data.get('Surname', ''),
-            name_prefix = data.get('Name Prefix', ''),
-            name_suffix = data.get('Name Suffix', ''),
-            contact     = data.get('Contact', ''),
-            company     = data.get('Company', ''),
-            city        = data.get('City', ''),
-            country     = data.get('Country', ''),
-            state       = data.get('State', '')
-        )
+        if not self['Address'].valid or not self['Home Address'].valid:
+            self['address_reason'] = '\n'.join(filter(None, [
+                'ADDRESS: ' + self['Address'].reason if not self['Address'].valid else None,
+                'HOME ADDRESS: ' + self['Home Address'].reason if not self['Home Address'].valid else None
+            ]))   
+
+        if not self['Name'].valid:
+            self['name_reason'] = '\n'.join(filter(None, [
+                self['Name'].reason if not self['Name'].valid else None,
+            ])) 
 
     def __getitem__(self, key):
         for alias, keys in self.aliasMapping.items():
@@ -269,6 +296,7 @@ class CSVParse_User(CSVParse_Flat):
         self.nocards = OrderedDict()
         self.usernames = OrderedDict()
         self.nousernames = OrderedDict()
+        # self.companies = OrderedDict()
         self.filtered = OrderedDict()
         self.badName = OrderedDict()
         self.badAddress = OrderedDict()
@@ -348,6 +376,15 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'nousernames'
         )
 
+    # def registerCompany(self, objectData, company):
+    #     self.registerAnything(
+    #         objectData,
+    #         self.companies,
+    #         company,
+    #         singular = False,
+    #         registerName = 'companies'
+    #     )
+
     def registerFiltered(self, objectData):
         self.registerAnything(
             objectData,
@@ -358,22 +395,20 @@ class CSVParse_User(CSVParse_Flat):
         )
 
     def registerBadAddress(self, objectData, address):
-        print "registering bad address"
         self.registerAnything(
-            address,
+            objectData,
             self.badAddress,
-            objectData.__repr__(),
-            singular = False,
+            objectData.index,
+            singular = True,
             registerName = 'badaddress'
         )
 
     def registerBadName(self, objectData, name):
-        print "registering bad name"
         self.registerAnything(
-            name,
+            objectData,
             self.badName,
-            objectData.__repr__(),
-            singular = False,
+            objectData.index,
+            singular = True,
             registerName = 'badname'
         )
 
@@ -428,6 +463,11 @@ class CSVParse_User(CSVParse_Flat):
         else:
             if(DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
             self.registerNoUsername(objectData)
+
+        # company = objectData['Company']
+        # # if DEBUG_FLAT: SanitationUtils.safePrint(repr(objectData), company)
+        # if company:
+        #     self.registerCompany(objectData, company)
 
         addresses = [objectData.billing_address, objectData.shipping_address]
         for address in filter(None, addresses):

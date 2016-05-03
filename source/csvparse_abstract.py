@@ -164,16 +164,15 @@ class ObjList(list):
         assert colNames, "needs colNames"
         assert self.objects, "meeds items"
         with open(filePath, 'w+') as outFile:
-            unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            dictwriter = unicodecsv.dictWriter(
+            # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            dictwriter = unicodecsv.DictWriter(
                 outFile,
-                dialect = 'act_out',
+                dialect = 'excel',
                 fieldnames = colNames.keys(),
-                encoding = encoding
-
-                # extrasaction = 'ignore',
+                encoding = encoding,
+                extrasaction = 'ignore',
             )
-            dictwriter.writerow(colNames)
+            dictwriter.writeheader()
             dictwriter.writerows(self.objects)
         print "WROTE FILE: ", filePath
 
