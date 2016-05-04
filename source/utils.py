@@ -2109,7 +2109,9 @@ def testAddressUtils():
 
 class TimeUtils:
 
+    dateFormat = "%Y-%m-%d"
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
+    msTimeFormat = "%Y-%m-%d_%H-%M-%S"
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
     gDriveTimeFormat = "%Y-%m-%d %H:%M:%S"
 
@@ -2154,6 +2156,20 @@ class TimeUtils:
     @staticmethod
     def serverToLocalTime(t, timezoneOffset = time.timezone):
         return int(t + timezoneOffset)
+
+    @staticmethod
+    def getDateStamp():
+        return time.strftime(TimeUtils.dateFormat)
+
+    @staticmethod
+    def getMsTimeStamp():
+        return time.strftime(TimeUtils.msTimeFormat)
+
+    @staticmethod
+    def getTimeStamp():
+        return time.strftime(TimeUtils.wpTimeFormat)
+
+
 
 def testTimeUtils():
     gTime = TimeUtils.gDriveStrpTime("14/02/2016")
@@ -2364,6 +2380,13 @@ class debugUtils:
     @staticmethod
     def getCallerProcedure():
         return inspect.stack()[2][3]   
+
+    @staticmethod
+    def hashify(in_str):
+        out_str = "#" * (len(in_str) + 4) + "\n"
+        out_str += "# " + in_str + " #\n"
+        out_str += "#" * (len(in_str) + 4) + "\n"
+        return out_str
 
 class Registrar:
     messages = OrderedDict()

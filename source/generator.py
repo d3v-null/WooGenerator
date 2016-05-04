@@ -6,7 +6,7 @@ from PIL import Image
 import time
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils
+from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
 from csvparse_myo import CSVParse_MYO
@@ -42,7 +42,7 @@ yamlPath = "generator_config.yaml"
 
 thumbsize = 1920, 1200
 
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
+importName = TimeUtils.getMsTimeStamp()
 
 ### Process YAML file ###
 

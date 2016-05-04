@@ -1079,7 +1079,7 @@ class ContactName(ContactObject):
                     full_name_components = None
                 else:
                     reverse_name_components = SanitationUtils.similarNoPunctuationComparison(" ".join(filter(None,[kwargs.get('family_name'), kwargs.get('first_name'), kwargs.get('middle_name')])))
-                    print reverse_name_components, no_punctuation_contact
+                    # print reverse_name_components, no_punctuation_contact
                     if reverse_name_components == no_punctuation_contact:
                         if DEBUG_NAME: SanitationUtils.safePrint("DETECTED REVERSE NAME: ", full_name_contact)
                         # self.enforceStrict("Ambiguous if format is family_name, first_name middle_name or just stray comma")

@@ -733,6 +733,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'myob_card_id'
             },
+            'act':True,
             # 'label':'myob_card_id',
             'import':True,
             'user':True,
@@ -747,6 +748,7 @@ class ColData_User(ColData_Base):
                 'meta': False, 
                 'key': 'user_email'
             },
+            'act':True,
             'import': True,
             'user':True,
             'report': True,
@@ -762,6 +764,7 @@ class ColData_User(ColData_Base):
                 'key': 'user_login',
                 'final': True
             },
+            'act':True,
             'user':True,
             'report': True,
             'import':True,
@@ -777,12 +780,14 @@ class ColData_User(ColData_Base):
                 'key': 'ID',
                 'final': True
             },
+            'act':False,
             'user':True,
             'report': True,
             'import':True,
-            'sync':'slave_override',
+            # 'sync':'slave_override',
             'warn':True,
             'static':True,
+            'basic':True,
         }),
         ('Role', {
             'wp': {
@@ -790,6 +795,7 @@ class ColData_User(ColData_Base):
                 'key': 'act_role'
             },
             # 'label': 'act_role',
+            'act':True,
             'import':True,
             'user':True,
             'report': True,
@@ -797,12 +803,16 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
         }),
+
+
+
         ('Name', {
             'user':True,
-            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo'],
+            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo', 'Spouse', 'Salutation', 'Search Text', 'HO Contact'],
             'sync':True,
             'static':True,
             'basic':True,
+            'report':True,
         }),
         ('Contact',{
             'import':True,
@@ -810,6 +820,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'nickname'
             },
+            'act': True,
             # 'label':'contact_name',
             # 'warn': True,
             # 'user':True,
@@ -822,6 +833,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'first_name'
             },
+            'act': True,
             # 'label':'first_name',
             'import':True,
             # 'user':True,
@@ -835,6 +847,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'last_name'
             },
+            'act': True,
             # 'label':'last_name',
             'import': True,
             # 'user':True,
@@ -848,6 +861,7 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'middle_name'
             },
+            'act': True,
             'import': True,
             # 'user': True,    
         }),
@@ -856,6 +870,7 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'name_suffix'
             },
+            'act': True,
             'import': True,
             # 'user': True,    
         }),
@@ -864,6 +879,7 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'name_prefix'
             },
+            'act': True,
             'import': True,
             # 'user': True,    
         }),
@@ -872,13 +888,32 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'name_notes'
             },
+            'act': True,
             'import': True,    
         }),
+        ('Spouse', {
+            'wp': {
+                'meta': True,
+                'key': 'spouse'
+            },
+            'act': True,
+            'import': True,    
+        }),
+        ('Salutation', {
+            'wp': {
+                'meta': True,
+                'key': 'salutation'
+            },
+            'act': True,
+            'import': True,    
+        }),
+
         ('Company',{
             'wp': {
                 'meta': True, 
                 'key': 'billing_company'
             },
+            'act': True,
             # 'label':'billing_company',
             'import':True,
             'user':True,
@@ -888,11 +923,26 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
         }),
+        ('Birth Date',{
+            'wp': {
+                'meta': True, 
+                'key': 'birth_date'
+            },
+            # 'label':'birth_date',
+            'act': True,
+            'import':True,
+            'user':True,
+            'sync':True,
+        }),
+
+
+        
         ('Mobile Phone',{
             'wp': {
                 'meta': True, 
                 'key': 'mobile_number'
             },
+            'act': True,
             # 'label':'mobile_number',
             'import':True,
             'user':True,
@@ -906,6 +956,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_phone'
             },
+            'act':True,
             # 'label':'billing_phone',
             'import':True,
             'user':True,
@@ -914,82 +965,54 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
         }),
-        ('Birth Date',{
-            'wp': {
-                'meta': True, 
-                'key': 'birth_date'
-            },
-            # 'label':'birth_date',
-            'import':True,
-            'user':True,
-            'sync':True,
-        }),
         ('Fax',{
             'wp': {
                 'meta': True, 
                 'key': 'fax_number'
             },
+            'act':True,
             # 'label':'fax_number',
             'import':True,
             'user':True,
             'sync':True,
         }),
-        ('MYOB Customer Card ID',{
-            # 'label':'myob_customer_card_id',
+        ('Mobile Phone Preferred',{
             'wp': {
                 'meta': True, 
-                'key': 'myob_customer_card_id'
+                'key': 'pref_mob'
             },
+            'act':True,
+            # 'label':'pref_mob',
             'import':True,
-            # 'report':True,
             'user':True,
-            'sync':'master_override',
-            'warn':True,
+            'sync':True,
         }),
-        ('Client Grade',{
+        ('Phone Preferred',{
+            'wp': {
+                'meta': True, 
+                'key': 'pref_tel'
+            },
+            'act':True,
+            # 'label':'pref_tel',
             'import':True,
-            'wp': {
-                'meta': True, 
-                'key': 'client_grade'
-            },
-            # 'label':'client_grade',
             'user':True,
-            # 'report':True,
-            'sync':'master_override',
-            'warn':True,
+            'sync':True,
         }),
-        ('Direct Brand', {
-            'import':True,
-            'wp': {
-                'meta': True, 
-                'key': 'direct_brand'
-            },
-            # 'label':'direct_brand',
-            'user':True,
-            # 'report': True,
-            'sync':'master_override',
-            'warn':True,
-        }),
-        ('Agent', {
-            'wp': {
-                'meta': True, 
-                'key': 'agent'
-            },
-            # 'label':'agent',
-            'import':'true',
-            'user':True,
-            'sync':'master_override',
-            'warn':True,
-        }),
+
+
         ('Address',{
+            'act':False,
+            'wp':False,
             'report':True,
             'warn':True,
             'static':True,
             'sync':True,
-            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
+            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country', 'Shire'],
             'basic':True,
         }),
         ('Home Address',{
+            'act':False,
+            'wp':False,
             'report':True,
             'warn':True,
             'static':True,
@@ -1002,6 +1025,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_address_1'
             },
+            'act':True,
             # 'label':'billing_address_1',
             'import':True,
             'user':True,
@@ -1015,6 +1039,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_address_2'
             },
+            'act':True,
             # 'label':'billing_address_2',
             'import':True,
             'user':True,
@@ -1028,6 +1053,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_city'
             },
+            'act':True,
             # 'label':'billing_city',
             'import':True,
             'user':True,
@@ -1042,6 +1068,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_postcode'
             },
+            'act':True,
             # 'label':'billing_postcode',
             'import':True,
             'user':True,
@@ -1055,6 +1082,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_state'
             },
+            'act':True,
             # 'label':'billing_state',
             'import':True,
             'user':True,
@@ -1069,6 +1097,17 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'billing_country'
             },
+            'act':True,
+            # 'label':'billing_country',
+            'import':True,
+            'user':True,
+            'warn':True,
+            'static':True,
+            'capitalized':True
+        }),
+        ('Shire', {
+            'wp': False,
+            'act': True,
             # 'label':'billing_country',
             'import':True,
             'user':True,
@@ -1081,6 +1120,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_address_1'
             },
+            'act':True,
             # 'label':'shipping_address_1',
             'import':True,
             'user':True,
@@ -1093,6 +1133,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_address_2'
             },
+            'act':True,
             # 'label':'shipping_address_2',
             'import':True,
             'user':True,
@@ -1105,6 +1146,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_city'
             },
+            'act':True,
             # 'label':'shipping_city',
             'import':True,
             'user':True,
@@ -1117,6 +1159,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_postcode'
             },
+            'act':True,
             # 'label':'shipping_postcode',
             'import':True,
             'user':True,
@@ -1128,6 +1171,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_country'
             },
+            'act':True,
             # 'label':'shipping_country',
             'import':True,
             'user':True,
@@ -1140,6 +1184,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'shipping_state'
             },
+            'act':True,
             # 'label':'shipping_state',
             'import':True,
             'user':True,
@@ -1147,11 +1192,68 @@ class ColData_User(ColData_Base):
             'static':True,
             'capitalized':True,
         }),
+
+
+
+        ('MYOB Customer Card ID',{
+            # 'label':'myob_customer_card_id',
+            'wp': {
+                'meta': True, 
+                'key': 'myob_customer_card_id'
+            },
+            'act':True,
+            'import':True,
+            # 'report':True,
+            'user':True,
+            'sync':'master_override',
+            'warn':True,
+        }),
+        ('Client Grade',{
+            'import':True,
+            'wp': {
+                'meta': True, 
+                'key': 'client_grade'
+            },
+            'act':True,
+            # 'label':'client_grade',
+            'user':True,
+            # 'report':True,
+            'sync':'master_override',
+            'warn':True,
+        }),
+        ('Direct Brand', {
+            'import':True,
+            'wp': {
+                'meta': True, 
+                'key': 'direct_brand'
+            },
+            'act':True,
+            # 'label':'direct_brand',
+            'user':True,
+            # 'report': True,
+            'sync':'master_override',
+            'warn':True,
+        }),
+        ('Agent', {
+            'wp': {
+                'meta': True, 
+                'key': 'agent'
+            },
+            'act':True,
+            # 'label':'agent',
+            'import':'true',
+            'user':True,
+            'sync':'master_override',
+            'warn':True,
+        }),
+
+
         ('Web Site',{
             'wp': {
                 'meta': False, 
                 'key': 'user_url'
             },
+            'act':True,
             'label': 'user_url',
             'import':True,
             'user':True,
@@ -1162,6 +1264,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'abn'
             },
+            'act':True,
             # 'label':'abn',
             'import':True,
             'user':True,   
@@ -1173,6 +1276,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'business_type'
             },
+            'act':True,
             # 'label':'business_type',
             'import':True,
             'user':True,    
@@ -1183,6 +1287,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'how_hear_about'
             },
+            'act':True,
             # 'label':'how_hear_about',
             'import':True,
             'user':True,    
@@ -1193,27 +1298,8 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'referred_by'
             },
+            'act':True,
             # 'label':'referred_by',
-            'import':True,
-            'user':True,
-            'sync':True,
-        }),
-        ('Mobile Phone Preferred',{
-            'wp': {
-                'meta': True, 
-                'key': 'pref_mob'
-            },
-            # 'label':'pref_mob',
-            'import':True,
-            'user':True,
-            'sync':True,
-        }),
-        ('Phone Preferred',{
-            'wp': {
-                'meta': True, 
-                'key': 'pref_tel'
-            },
-            # 'label':'pref_tel',
             'import':True,
             'user':True,
             'sync':True,
@@ -1223,6 +1309,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'personal_email'
             },
+            'act':True,
             # 'label':'personal_email',
             'import':True,
             'user':True,
@@ -1242,19 +1329,36 @@ class ColData_User(ColData_Base):
         # }),
         ('Create Date', {
             'import': True,
+            'act':True,
+            'wp':False,
             'report': True,
-            'basic':True
+            # 'basic':True
+        }),
+        ('Wordpress Start Date', {
+            'import': True,
+            'wp': {
+                'meta': False, 
+                'key': 'user_registered'
+            },
+            'act':True,
+            # 'report': True,
+            # 'basic':True
         }),
         ('Edited in Act', {
             'wp': {
                 'meta': True, 
                 'key': 'edited_in_act'
             },
+            'act':True,
             'import': True,
             'report': True,
             'basic':True,
         }),
         ('Edited in Wordpress', {
+            'wp': {
+                'generated':True,
+            },
+            'act':True,
             'import':True,
             'report':True,
             # 'basic':True
@@ -1264,6 +1368,7 @@ class ColData_User(ColData_Base):
                 'meta': True, 
                 'key': 'act_last_sale'
             },
+            'act':True,
             'import': True,
             # 'report': True
         })
@@ -1287,6 +1392,9 @@ class ColData_User(ColData_Base):
 
     def getWPCols(self):
         return self.getExportCols('wp')
+
+    def getACTCols(self):
+        return self.getExportCols('act')
 
     def getAliasCols(self):
         return self.getExportCols('aliases')

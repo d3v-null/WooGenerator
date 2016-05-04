@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils, Registrar
+from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils, Registrar, debugUtils
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
@@ -18,19 +18,31 @@ import re
 import time
 import yaml
 import MySQLdb
-from sshtunnel import SSHTunnelForwarder
+import paramiko
+from sshtunnel import SSHTunnelForwarder, check_address
 import io
 import wordpress_xmlrpc
 
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
+importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
 def timediff():
     return time.time() - start_time
 
 DEBUG = False
 testMode = False
-# testMode = True
-skip_sync = True
+testMode = True
+skip_sync = False
+
+
+# sql_run = True
+# sql_run = not testMode
+sql_run = True
+
+sftp_run = True
+
+do_xmlrpc = True
+
+do_ftp = True
 
 ### DEFAULT CONFIG ###
 
@@ -39,6 +51,7 @@ outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source/"
 pklFolder = "../pickles/"
+remoteExportFolder = "act_usr_exp/"
 
 yamlPath = "merger_config.yaml"
 
@@ -65,11 +78,21 @@ with open(yamlPath) as stream:
     ssh_pass = config.get(optionNamePrefix+'ssh_pass')
     ssh_host = config.get(optionNamePrefix+'ssh_host')
     ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
+    m_ssh_user = config.get(optionNamePrefix+'m_ssh_user')
+    m_ssh_pass = config.get(optionNamePrefix+'m_ssh_pass')
+    m_ssh_host = config.get(optionNamePrefix+'m_ssh_host')
+    m_ssh_port = config.get(optionNamePrefix+'m_ssh_port', 22)
     remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
     remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
     db_user = config.get(optionNamePrefix+'db_user')
     db_pass = config.get(optionNamePrefix+'db_pass')
     db_name = config.get(optionNamePrefix+'db_name')
+    m_db_user = config.get(optionNamePrefix+'m_db_user')
+    m_db_pass = config.get(optionNamePrefix+'m_db_pass')
+    m_db_name = config.get(optionNamePrefix+'m_db_name')
+    m_db_host = config.get(optionNamePrefix+'m_db_host')
+    m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
+    m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
     tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
     wp_user = config.get(optionNamePrefix+'wp_user', '')
     wp_pass = config.get(optionNamePrefix+'wp_pass', '')
@@ -95,24 +118,28 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
     if not os.path.exists(path):
         os.mkdir(path)
 
+fileSuffix = "_test" if testMode else ""
 # maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
-maPath = os.path.join(inFolder, "ACT Report_Entire Database_06.04.16.csv")
-maEncoding = "latin-1"
+m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
+m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
+remoteExportPath = os.path.join(remoteExportFolder, m_x_filename)
+maPath = os.path.join(inFolder, m_x_filename)
+maEncoding = "utf-8"
+
 saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
 saEncoding = "utf8"
 
 if(testMode):
-    maPath = os.path.join(inFolder, "500-act-records.csv")
-    maEncoding = "utf8"
+    # maPath = os.path.join(inFolder, "500-act-records.csv")
+    # maEncoding = "utf8"
     saPath = os.path.join(inFolder, "500-wp-records.csv")
     saEncoding = "utf8"
 
 assert store_url, "store url must not be blank"
 xmlrpc_uri = store_url + 'xmlrpc.php'
 
-fileSuffix = "_test" if testMode else "_a"
 
-moPath = os.path.join(outFolder, "act_import%s.csv" % fileSuffix)
+moPath = os.path.join(outFolder, m_i_filename)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
 ACTresCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
@@ -120,9 +147,13 @@ sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 
+colData = ColData_User()
+
 #########################################
 # Prepare Filter Data
 #########################################
+
+print debugUtils.hashify("PREPARE FILTER DATA"), timediff()
 
 filterFiles = {
     'users': userFile, 
@@ -151,49 +182,57 @@ filterItems = None
 # Download / Generate Slave Parser Object
 #########################################
 
-colData = ColData_User()
+print debugUtils.hashify("Download / Generate Slave Parser Object"), timediff()
 
 saRows = []
 
-sql_run = True
-sql_run = not testMode
-sql_run = False
-
-SSHTunnelForwarderParams = {
-    'ssh_address_or_host':(ssh_host, ssh_port),
-    'ssh_password':ssh_pass,
-    'ssh_username':ssh_user,
-    'remote_bind_address':(remote_bind_host, remote_bind_port)
-}
-MySQLdbConnectParams = {
-    'host':'127.0.0.1',
-    'user':db_user,
-    'passwd':db_pass,
-    'db':db_name
-}
-
 if sql_run: 
+    SSHTunnelForwarderAddress = (ssh_host, ssh_port)
+    SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
+    for host in ['SSHTunnelForwarderAddress', 'SSHTunnelForwarderBindAddress']:
+        try:
+            check_address(eval(host))
+        except Exception, e:
+            assert not e, "Host must be valid: %s [%s = %s]" % (str(e), host, repr(eval(host)))
+    SSHTunnelForwarderParams = {
+        'ssh_address_or_host':SSHTunnelForwarderAddress,
+        'ssh_password':ssh_pass,
+        'ssh_username':ssh_user,
+        'remote_bind_address': SSHTunnelForwarderBindAddress,
+    }
+
+
+    print SSHTunnelForwarderParams
+
+    MySQLdbConnectParams = {
+        'host':'127.0.0.1',
+        'user':db_user,
+        'passwd':db_pass,
+        'db':db_name
+    }
+
+
     with \
-        SSHTunnelForwarder(**SSHTunnelForwarderParams) as server, \
-        open(sqlPath) as sqlFile:
+      SSHTunnelForwarder(**SSHTunnelForwarderParams) as server, \
+      open(sqlPath) as sqlFile:
         # server.start()
         print server.local_bind_address
 
         MySQLdbConnectParams['port'] = server.local_bind_port
+        print MySQLdbConnectParams
         conn = MySQLdb.connect( **MySQLdbConnectParams )
 
-        wpCols = colData.getWPCols()
+        wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), colData.getWPCols().items()))
 
         assert all([
             'Wordpress ID' in wpCols.keys(),
             wpCols['Wordpress ID'].get('wp', {}).get('key') == 'ID',
             wpCols['Wordpress ID'].get('wp', {}).get('final')
         ]), 'ColData should be configured correctly'
-        userdata_select = ",\n\t\t\t".join([
-            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp']['meta'] else "u.%s as `%s`") % (data['wp']['key'], col)\
+        userdata_select = ",\n\t\t\t".join(filter(None,[
+            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'].get('meta') else "u.%s as `%s`") % (data['wp']['key'], col)\
             for col, data in wpCols.items()
-        ])
-
+        ]))
 
         print sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix)
         sqlFile.seek(0)
@@ -205,13 +244,22 @@ if sql_run:
         # print headers
         saRows = [headers]
         if testMode:
-             for row in cursor[:100]:
+            print "loading data"
+            for i, row in enumerate(cursor):
+                if i>100: break
                 saRows += [map(SanitationUtils.coerceUnicode, row)]
+                print row
         else:
              for row in cursor:
                 saRows += [map(SanitationUtils.coerceUnicode, row)] 
 
 # print tabulate(saRows, tablefmt="simple")
+
+#########################################
+# Import Slave Info From Spreadsheets
+#########################################
+
+print debugUtils.hashify("Import Slave Info From Spreadsheets"), timediff()
 
 saParser = CSVParse_User(
     cols = colData.getImportCols(),
@@ -226,20 +274,93 @@ else:
     saParser.analyseFile(saPath, saEncoding)
 print "analysed %d slave objects" % len(saParser.objects), timediff()
 
+def printBasicColumns(users):
+    # print len(users)
+    usrList = UsrObjList()
+    for user in users:
+        usrList.addObject(user)
+        # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
+
+    cols = colData.getBasicCols()
+
+    SanitationUtils.safePrint( usrList.tabulate(
+        cols,
+        tablefmt = 'simple'
+    ))
+
+printBasicColumns( list(chain( *saParser.emails.values()[:100] )) )
+
 #########################################
 # Generate ACT CSV files using shell
 #########################################
 
+print debugUtils.hashify("Generate ACT CSV files using shell"), timediff()
+
 # TODO: This
+
+if sftp_run:
+
+    actCols = colData.getACTCols()
+    fields = ";".join(actCols.keys())
+
+    for thing in ['m_x_cmd', 'remoteExportFolder', 'fields']:
+        assert eval(thing), "missing mandatory command component '%s'" % thing 
+
+    command = " ".join(filter(None,[
+        'cd {wd};'.format(
+            wd      = remoteExportFolder,
+        ) if remoteExportFolder else None,
+        '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
+            cmd     = m_x_cmd,
+            db_name = m_db_name,
+            db_host = m_db_host,
+            db_user = m_db_user,
+            db_pass = m_db_pass,
+        ),
+        '-s"%s"' % "1970-01-01",
+        # '-all',
+        '"-c%s"' % fields,
+        ('"%s"' % m_x_filename) if m_x_filename else None
+
+    ]))
+
+    # print command
+
+    paramikoSSHParams = {
+        'hostname':    m_ssh_host,
+        'port':        m_ssh_port,
+        'username':    m_ssh_user,
+        'password':    m_ssh_pass,
+    }
+
+    sshClient = paramiko.SSHClient()
+    sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try: 
+        sshClient.connect(**paramikoSSHParams)
+        stdin, stdout, stderr = sshClient.exec_command(command)
+        possible_errors = stdout.readlines() + stdout.readlines()
+        assert not possible_errors, "command returned errors: " + possible_errors
+        try:
+            sftpClient = sshClient.open_sftp()    
+            sftpClient.chdir(remoteExportFolder)
+            fstat = sftpClient.stat(m_x_filename)
+            if fstat:
+                sftpClient.get(m_x_filename, maPath)
+        except Exception, e:
+            SanitationUtils.safePrint("ERROR IN SFTP: " + repr(e) + " " + str(e))
+        finally:
+            sftpClient.close()
+
+    except Exception, e:
+        SanitationUtils.safePrint("ERROR IN SSH: " + repr(e) + " " + str(e))
+    finally:
+        sshClient.close()
 
 #########################################
 # Import Master Info From Spreadsheets
 #########################################
 
-
-print "importing data"
-
-
+print debugUtils.hashify("Import Master Info From Spreadsheets"), timediff()
 
 clear_pkl = False
 # clear_pkl = True
@@ -325,30 +446,10 @@ except Exception as e:
 #     nameSum = " ".join(filter(None, names))
 #     return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
 
-def printBasicColumns(users):
-    # print len(users)
-    usrList = UsrObjList()
-    for user in users:
-        usrList.addObject(user)
-        # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
-
-    cols = colData.getBasicCols()
-
-    SanitationUtils.safePrint( usrList.tabulate(
-        cols,
-        tablefmt = 'simple'
-    ))
-
-def hashify(in_str):
-    out_str = "#" * (len(in_str) + 4) + "\n"
-    out_str += "# " + in_str + " #\n"
-    out_str += "#" * (len(in_str) + 4) + "\n"
-    return out_str
-
 # print "WHAT THE FUCK"
 # print len(maParser.emails.values())
 
-# printBasicColumns( list(chain( *maParser.companies.values()[:100] )) )
+printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
 # printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
 
 # first = list(chain(*saParser.emails.values()))[0]
@@ -889,14 +990,14 @@ if not skip_sync:
 
     # TODO: further sort emailMatcher
 
-    print hashify("BEGINNING MERGE")
+    print debugUtils.hashify("BEGINNING MERGE")
     print timediff()
 
 
     syncCols = colData.getSyncCols()
 
     for match in globalMatches:
-        # print hashify( "MATCH NUMBER %d" % i )
+        # print debugUtils.hashify( "MATCH NUMBER %d" % i )
 
         # print "-> INITIAL VALUES:"
         # print match.tabulate()
@@ -936,14 +1037,14 @@ if not skip_sync:
                     insort(slaveUpdates, syncUpdate)
                     # insort(staticSUpdates, syncUpdate)
         
-    print hashify("COMPLETED MERGE")
+    print debugUtils.hashify("COMPLETED MERGE")
     print timediff()
 
 #########################################
 # Write Report
 #########################################
 
-print hashify("Write Report")
+print debugUtils.hashify("Write Report")
 print timediff()
 
 with \
@@ -998,8 +1099,8 @@ with \
             length = len(saParser.badName)
         )
     )
-
-    UsrObjList(saParser.badName.values() + maParser.badAddress.values()).exportItems(WPresCsvPath, csv_colnames)
+    if saParser.badName or saParser.badAddress:
+        UsrObjList(saParser.badName.values() + maParser.badAddress.values()).exportItems(WPresCsvPath, csv_colnames)
 
     # for row in saParser.badName.values():
     #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
@@ -1035,8 +1136,8 @@ with \
 
     # for row in maParser.badName.values():
     #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
-
-    UsrObjList(maParser.badName.values() + maParser.badAddress.values()).exportItems(ACTresCsvPath, csv_colnames)
+    if maParser.badName or maParser.badAddress:
+        UsrObjList(maParser.badName.values() + maParser.badAddress.values()).exportItems(ACTresCsvPath, csv_colnames)
 
     reporter.addGroup(sanitizingGroup)
 
@@ -1094,7 +1195,7 @@ with \
                 )   
             )
             
-        # print hashify("anomalous ParseLists: ")
+        # print debugUtils.hashify("anomalous ParseLists: ")
 
         parseListInstructions = {
             "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
@@ -1164,7 +1265,7 @@ with \
 # Update database
 #########################################
 
-print hashify("Update database")
+print debugUtils.hashify("Update database")
 print timediff()
 
 class UpdateUser( wordpress_xmlrpc.AuthenticatedMethod ):
@@ -1174,8 +1275,6 @@ class UpdateUser( wordpress_xmlrpc.AuthenticatedMethod ):
 # print repr(xmlrpc_uri)
 # print repr(wp_user)
 # print repr(wp_pass)
-
-do_xmlrpc = False
 
 if do_xmlrpc:
 
@@ -1199,20 +1298,74 @@ if do_xmlrpc:
 
                 print "XMLRPC OUT: ", xmlrpc_out
 
+importUsers = UsrObjList()
 
+for update in masterUpdates:
+    importUsers.addObject(update.newMObject)
 
-# importUsers = UsrObjList()
+print debugUtils.hashify("IMPORT USERS (%d)" % len(importUsers))
 
-# for update in masterUpdates:
-#     importUsers.addObject(update.newMObject)
+SanitationUtils.safePrint( importUsers.tabulate())
+if importUsers:
+    importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getACTCols().keys()))
 
-# print hashify("IMPORT USERS (%d)" % len(importUsers))
+    if do_ftp:
 
-# print importUsers.tabulate()
+        for thing in ['m_i_cmd', 'remoteExportFolder']:
+            assert eval(thing), "missing mandatory command component '%s'" % thing 
 
-# importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getUserCols().keys()))
+        command = " ".join(filter(None,[
+            'cd {wd};'.format(
+                wd      = remoteExportFolder,
+            ) if remoteExportFolder else None,
+            '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
+                cmd     = m_i_cmd,
+                db_name = m_db_name,
+                db_host = m_db_host,
+                db_user = m_db_user,
+                db_pass = m_db_pass,
+            ),
+            ('"%s"' % m_i_filename) if m_i_filename else None
 
-# with open(moPath) as outFile:
-#     for line in outFile.readlines():
-#         print line[:-1]
+        ]))
+
+        print command
+
+        paramikoSSHParams = {
+            'hostname':    m_ssh_host,
+            'port':        m_ssh_port,
+            'username':    m_ssh_user,
+            'password':    m_ssh_pass,
+        }
+
+        sshClient = paramiko.SSHClient()
+        sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try: 
+            sshClient.connect(**paramikoSSHParams)
+            run_import = False
+            try:
+                sftpClient = sshClient.open_sftp()    
+                sftpClient.chdir(remoteExportFolder)
+                sftpClient.put(moPath, m_i_filename)
+                fstat = sftpClient.stat(m_i_filename)
+                if fstat:
+                    run_import = True
+            except Exception, e:
+                SanitationUtils.safePrint("ERROR IN SFTP: " + str(e))
+            finally:
+                sftpClient.close()
+            if run_import:
+                stdin, stdout, stderr = sshClient.exec_command(command)
+                possible_errors = stdout.readlines() + stdout.readlines()
+                assert not possible_errors, "command returned errors: " + possible_errors
+            else: 
+                print "COULD NOT STAT IMPORT FILE"
+
+        except Exception, e:
+            SanitationUtils.safePrint("ERROR IN SSH: " + str(e))
+        finally:
+            sshClient.close()
+
+        print "Completed ACT update"
+
 
