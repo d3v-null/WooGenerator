@@ -11,6 +11,7 @@ from itertools import chain
 # from pprint import pprint
 # import sys
 from copy import deepcopy
+import unicodecsv
 # import pickle
 import dill as pickle
 from bisect import insort
@@ -37,12 +38,10 @@ skip_sync = False
 # sql_run = True
 # sql_run = not testMode
 sql_run = True
-
 sftp_run = True
-
-do_xmlrpc = True
-
-do_ftp = True
+update_slave = False
+update_master = True
+do_problematic = True
 
 ### DEFAULT CONFIG ###
 
@@ -51,7 +50,7 @@ outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source/"
 pklFolder = "../pickles/"
-remoteExportFolder = "act_usr_exp/"
+remoteExportFolder = "act_usr_exp"
 
 yamlPath = "merger_config.yaml"
 
@@ -119,7 +118,6 @@ for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
         os.mkdir(path)
 
 fileSuffix = "_test" if testMode else ""
-# maPath = os.path.join(inFolder, "actdata_all_2016-03-11.csv")
 m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
 m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
 remoteExportPath = os.path.join(remoteExportFolder, m_x_filename)
@@ -129,9 +127,11 @@ maEncoding = "utf-8"
 saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
 saEncoding = "utf8"
 
-if(testMode):
+if not sftp_run:
+    maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
     # maPath = os.path.join(inFolder, "500-act-records.csv")
-    # maEncoding = "utf8"
+    maEncoding = "utf8"
+if not sql_run:
     saPath = os.path.join(inFolder, "500-wp-records.csv")
     saEncoding = "utf8"
 
@@ -201,7 +201,6 @@ if sql_run:
         'remote_bind_address': SSHTunnelForwarderBindAddress,
     }
 
-
     print SSHTunnelForwarderParams
 
     MySQLdbConnectParams = {
@@ -248,7 +247,7 @@ if sql_run:
             for i, row in enumerate(cursor):
                 if i>100: break
                 saRows += [map(SanitationUtils.coerceUnicode, row)]
-                print row
+                # print row
         else:
              for row in cursor:
                 saRows += [map(SanitationUtils.coerceUnicode, row)] 
@@ -307,9 +306,7 @@ if sftp_run:
         assert eval(thing), "missing mandatory command component '%s'" % thing 
 
     command = " ".join(filter(None,[
-        'cd {wd};'.format(
-            wd      = remoteExportFolder,
-        ) if remoteExportFolder else None,
+        'cd ' + remoteExportFolder + ';',
         '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
             cmd     = m_x_cmd,
             db_name = m_db_name,
@@ -346,6 +343,7 @@ if sftp_run:
             fstat = sftpClient.stat(m_x_filename)
             if fstat:
                 sftpClient.get(m_x_filename, maPath)
+                sftpClient.remove(m_x_filename)
         except Exception, e:
             SanitationUtils.safePrint("ERROR IN SFTP: " + repr(e) + " " + str(e))
         finally:
@@ -474,6 +472,13 @@ printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
 # quit()
 
 class SyncUpdate(Registrar):
+    xmlrpc_client = None
+    sftp_client = None
+
+    class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
+        method_name = 'tansync.update_user_fields'
+        method_args = ('user_id', 'fields_json_base64')
+
     def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
 
@@ -540,6 +545,11 @@ class SyncUpdate(Registrar):
     @property
     def WPID(self):
         return self.getSValue("Wordpress ID")
+
+    @property
+    def MYOBID(self):
+        return self.getMValue('MYOB Card ID')
+    
     # @property
     # def winner(self): return self.winner
     
@@ -816,16 +826,15 @@ class SyncUpdate(Registrar):
 
         return out_str
 
-    def getWPUpdatesRecursive(self, col):
-        all_updates = OrderedDict()
+    def getSlaveUpdatesRecursive(self, col, updates={}):
         if col in ColData_User.data.keys():
             data = ColData_User.data[col]
             if data.get('wp'):
                 data_wp = data.get('wp',{})
                 if data_wp.get('meta'):
-                    all_updates[data_wp.get('key')] = self.newSObject.get(col)
+                    updates[data_wp.get('key')] = self.newSObject.get(col)
                 elif not data_wp.get('final'):
-                    all_updates[data_wp.get('key')] = self.newSObject.get(col)
+                    updates[data_wp.get('key')] = self.newSObject.get(col)
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
@@ -834,16 +843,40 @@ class SyncUpdate(Registrar):
                         SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
                         continue
                     #if the new value is not the same as the old value
-                    all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(alias))
-            return all_updates
+                    updates = listUtils.combineOrderedDicts(updates, self.getSlaveUpdatesRecursive(alias))
+        return updates
 
-    def getWPUpdates(self):
-        all_updates = {}
+    def getSlaveUpdates(self):
+        updates = {}
         for col, warnings in self.syncWarnings.items():
             for subject, reason, oldVal, newVal, data in warnings:  
                 if subject == self.opposite_src(SLAVE_NAME):
-                    all_updates = listUtils.combineOrderedDicts(all_updates, self.getWPUpdatesRecursive(col))
-        return all_updates
+                    updates = self.getSlaveUpdatesRecursive(col, updates)
+        return updates
+
+    def getMasterUpdatesRecursive(self, col, updates={}):
+        if col in ColData_User.data.keys():
+            data = ColData_User.data[col]
+            if data.get('act'):
+                updates[col] = self.newMObject.get(col)
+            if data.get('aliases'):
+                data_aliases = data['aliases']
+                for alias in data_aliases:
+                    if \
+                        SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
+                        SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
+                        continue
+                    #if the new value is not the same as the old value
+                    updates = listUtils.combineOrderedDicts(updates, self.getMasterUpdatesRecursive(alias))
+        return updates
+
+    def getMasterUpdates(self):
+        updates = {}
+        for col, warnings in self.syncWarnings.items():
+            for subject, reason, oldVal, newVal, data in warnings:
+                if subject == self.opposite_src(MASTER_NAME):
+                    updates = self.getMasterUpdatesRecursive(col, updates)
+        return updates
 
     def displayChangesForXMLRPC(self, tablefmt=None):
         if self.syncWarnings:
@@ -863,21 +896,21 @@ class SyncUpdate(Registrar):
                 user_pkey = None
                 return info_delimeter.join(print_elements)
 
-            all_updates = self.getWPUpdates()
+            updates = self.getSlaveUpdates()
             additional_updates = OrderedDict()
             if user_pkey:
                 additional_updates['ID'] = user_pkey
 
-            if all_updates:
-                updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + all_updates.items()])
+            if updates:
+                updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + updates.items()])
                 print_elements.append(
                     info_delimeter.join([
                         subtitle_fmt % "all updates" ,
                         tabulate(updates_table, headers="keys", tablefmt=tablefmt)
                     ])
                 )
-                all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-                print_elements.append(all_updates_json_base64)
+                updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+                print_elements.append(updates_json_base64)
                 # return (user_pkey, all_updates_json_base64)
             else:
                 print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")     
@@ -898,6 +931,112 @@ class SyncUpdate(Registrar):
             return info_delimeter.join(print_elements)
         return ""
 
+    def slaveConnectionReady(self, client):
+        return client
+
+    def masterConnectionReady(self, client):
+        return client and client._transport and client._transport.active
+
+    def masterPut(self, client, localPath, remotePath):
+        assert self.masterConnectionReady(client), "master connection must be ready"
+        exception = None
+        remoteDir, remoteFileName = os.path.split(remotePath)
+
+        try:
+            sftpClient = client.open_sftp()    
+            if remoteDir:
+                try:
+                    sftpClient.stat(remoteDir)
+                except:
+                    sftpClient.mkdir(remoteDir)
+            sftpClient.put(localPath, remotePath)
+            fstat = sftpClient.stat(remotePath)
+            if not fstat:
+                exception = Exception("could not stat remote file")
+        except Exception, e:
+            exception = e
+        finally:
+            sftpClient.close()
+        if exception:
+            raise exception
+
+    def updateMaster(self, client):
+        assert self.masterConnectionReady(client)
+        updates = self.getMasterUpdates()
+        if not updates:
+            return
+
+        user_pkey = self.MYOBID
+        updates['MYOB Card ID'] = user_pkey
+
+        miFileRoot, miFileExt = os.path.splitext(m_i_filename)
+        miFileRoot += '_' + user_pkey 
+        miFileName = os.path.join(miFileRoot + miFileExt)
+        miFilePath = os.path.join(outFolder, miFileName)
+        miRemoteDir = os.path.join(remoteExportFolder, '')
+        miRemoteFilePath = os.path.join(miRemoteDir, miFileName)
+
+        print miRemoteFilePath
+
+        with open(miFilePath, 'w+') as outFile:
+            unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            dictwriter = unicodecsv.DictWriter(
+                outFile,
+                dialect = 'act_out',
+                fieldnames = updates.keys(),
+                encoding = 'utf8',
+                extrasaction = 'ignore',
+            )
+            dictwriter.writeheader()
+            dictwriter.writerow(updates)
+
+        self.masterPut(client, miFilePath, miRemoteFilePath)            
+
+        for thing in ['m_i_cmd', 'miRemoteDir', 'miFileName']:
+            assert eval(thing), "missing mandatory command component '%s'" % thing 
+
+        command = " ".join(filter(None,[
+            'cd ' + remoteExportFolder + ';',
+            '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
+                cmd     = m_i_cmd,
+                db_name = m_db_name,
+                db_host = m_db_host,
+                db_user = m_db_user,
+                db_pass = m_db_pass,
+            ),
+            ('"%s"' % miFileName) if miFileName else None
+        ]))
+
+        print command
+
+        stdin, stdout, stderr = client.exec_command(command)
+        possible_errors = stdout.readlines() + stderr.readlines()
+        assert not possible_errors, "sync command returned errors: " + str(possible_errors)
+
+        importedFile = os.path.join(miRemoteDir, miFileRoot + '.imported')
+
+        stdin, stdout, stderr = client.exec_command('stat "%s"' % importedFile)
+        possible_errors = stderr.readlines()
+        assert not possible_errors, "stat importfile command returned errors, import didn't complete: " + str(possible_errors)
+
+        client.exec_command('rm "%s"' % importedFile)
+
+        #todo: Determine if file imported correctly and delete file
+
+    def updateSlave(self, client):
+        assert self.slaveConnectionReady(client)
+        if DEBUG:
+            SanitationUtils.safePrint(  self.displayChangesForXMLRPC() )
+        updates = self.getSlaveUpdates()
+
+        if updates:
+            all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+            WPID = self.WPID
+            # SanitationUtils.safePrint((WPID, all_updates_json_base64))
+            xmlrpc_out = client.call(self.UpdateUserXMLRPC(WPID, all_updates_json_base64))
+        
+
+
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
         # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
@@ -914,8 +1053,8 @@ nonstaticUpdates = []
 nonstaticSUpdates = []
 nonstaticMUpdates = []
 staticUpdates = []
-staticSUpdates = []
-staticMUpdates = []
+# staticSUpdates = []
+# staticMUpdates = []
 problematicUpdates = []
 masterUpdates = []
 slaveUpdates = []
@@ -1026,16 +1165,14 @@ if not skip_sync:
             #     insort(nonstaticSUpdates, syncUpdate)
         else:
             if(syncUpdate.sUpdated or syncUpdate.mUpdated):
+                insort(staticUpdates, syncUpdate)
                 if(syncUpdate.mUpdated and syncUpdate.sUpdated):
                     insort(masterUpdates, syncUpdate)
                     insort(slaveUpdates, syncUpdate)
-                    # insort(staticUpdates, syncUpdate)
                 if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
                     insort(masterUpdates, syncUpdate)
-                    # insort(staticMUpdates, syncUpdate)
                 if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
                     insort(slaveUpdates, syncUpdate)
-                    # insort(staticSUpdates, syncUpdate)
         
     print debugUtils.hashify("COMPLETED MERGE")
     print timediff()
@@ -1047,8 +1184,7 @@ if not skip_sync:
 print debugUtils.hashify("Write Report")
 print timediff()
 
-with \
-  io.open(resPath, 'w+', encoding='utf8') as resFile: 
+with io.open(resPath, 'w+', encoding='utf8') as resFile: 
     reporter = HtmlReporter()
 
     basic_cols = colData.getBasicCols()
@@ -1244,7 +1380,7 @@ with \
                 (SLAVE_NAME + "_updates"),
                 description = SLAVE_NAME + " items will be updated",
                 data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-                length = len(masterUpdates)
+                length = len(slaveUpdates)
             )
         )
 
@@ -1262,110 +1398,117 @@ with \
     resFile.write( reporter.getDocumentUnicode() )
 
 #########################################
-# Update database
+# Update databases
 #########################################
 
-print debugUtils.hashify("Update database")
-print timediff()
+allUpdates = staticUpdates
+if do_problematic:
+    allUpdates += problematicUpdates
 
-class UpdateUser( wordpress_xmlrpc.AuthenticatedMethod ):
-    method_name = 'tansync.update_user_fields'
-    method_args = ('user_id', 'fields_json_base64')
+print debugUtils.hashify("Update databases (%d)" % len(allUpdates))
+print timediff()
 
 # print repr(xmlrpc_uri)
 # print repr(wp_user)
 # print repr(wp_pass)
 
-if do_xmlrpc:
+if allUpdates:
+    try:
+        if update_slave:
+            xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
+        else:
+            xmlrpc_client = None
 
-    xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
+        if update_master:    
+            paramikoSSHParams = {
+                'hostname':    m_ssh_host,
+                'port':        m_ssh_port,
+                'username':    m_ssh_user,
+                'password':    m_ssh_pass,
+            }
 
-    importProblematicWordpress = True
-    if importProblematicWordpress:
-        for update in problematicUpdates:
-            print u"UPDATE START"
-            SanitationUtils.safePrint(  update.tabulate(tablefmt="simple") )
-            # SanitationUtils.safePrint( update.displayChangesForXMLRPC())
-            print "UPDATE END"
-            all_updates = update.getWPUpdates()
-
-            if all_updates:
-                all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-                WPID = update.WPID
-
-                # SanitationUtils.safePrint((WPID, all_updates_json_base64))
-                xmlrpc_out = xmlrpc_client.call(UpdateUser(WPID, all_updates_json_base64))
-
-                print "XMLRPC OUT: ", xmlrpc_out
-
-importUsers = UsrObjList()
-
-for update in masterUpdates:
-    importUsers.addObject(update.newMObject)
-
-print debugUtils.hashify("IMPORT USERS (%d)" % len(importUsers))
-
-SanitationUtils.safePrint( importUsers.tabulate())
-if importUsers:
-    importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getACTCols().keys()))
-
-    if do_ftp:
-
-        for thing in ['m_i_cmd', 'remoteExportFolder']:
-            assert eval(thing), "missing mandatory command component '%s'" % thing 
-
-        command = " ".join(filter(None,[
-            'cd {wd};'.format(
-                wd      = remoteExportFolder,
-            ) if remoteExportFolder else None,
-            '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-                cmd     = m_i_cmd,
-                db_name = m_db_name,
-                db_host = m_db_host,
-                db_user = m_db_user,
-                db_pass = m_db_pass,
-            ),
-            ('"%s"' % m_i_filename) if m_i_filename else None
-
-        ]))
-
-        print command
-
-        paramikoSSHParams = {
-            'hostname':    m_ssh_host,
-            'port':        m_ssh_port,
-            'username':    m_ssh_user,
-            'password':    m_ssh_pass,
-        }
-
-        sshClient = paramiko.SSHClient()
-        sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try: 
+            sshClient = paramiko.SSHClient()
+            sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             sshClient.connect(**paramikoSSHParams)
-            run_import = False
-            try:
-                sftpClient = sshClient.open_sftp()    
-                sftpClient.chdir(remoteExportFolder)
-                sftpClient.put(moPath, m_i_filename)
-                fstat = sftpClient.stat(m_i_filename)
-                if fstat:
-                    run_import = True
-            except Exception, e:
-                SanitationUtils.safePrint("ERROR IN SFTP: " + str(e))
-            finally:
-                sftpClient.close()
-            if run_import:
-                stdin, stdout, stderr = sshClient.exec_command(command)
-                possible_errors = stdout.readlines() + stdout.readlines()
-                assert not possible_errors, "command returned errors: " + possible_errors
-            else: 
-                print "COULD NOT STAT IMPORT FILE"
+        else:
+            sshClient = None
 
-        except Exception, e:
-            SanitationUtils.safePrint("ERROR IN SSH: " + str(e))
-        finally:
+        for update in allUpdates:
+            if update_master and update.mUpdated :
+                try:
+                    update.updateMaster(sshClient)
+                except Exception, e:
+                    raise Exception("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
+            if update_slave and update.sUpdated :
+                try:
+                    update.updateSlave(xmlrpc_client)
+                except Exception, e:
+                    raise Exception("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
+
+    except Exception, e:
+        SanitationUtils.safePrint("ERROR IN UPDATING DATABASES: " + str(e))
+    finally:
+        if update_slave:
+            xmlrpc_client.close()
+        if update_master:
             sshClient.close()
 
-        print "Completed ACT update"
+
+# if do_xmlrpc:
+
+#     importProblematicWordpress = True
+#     if importProblematicWordpress:
+#         for update in problematicUpdates:
+#             update.updateSlave()
+
+# importUsers = UsrObjList()
+
+# for update in masterUpdates:
+#     importUsers.addObject(update.newMObject)
 
 
+
+# SanitationUtils.safePrint( importUsers.tabulate())
+# if importUsers:
+#     importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getACTCols().keys()))
+
+#     if do_ftp:
+
+#         for thing in ['m_i_cmd', 'remoteExportFolder']:
+#             assert eval(thing), "missing mandatory command component '%s'" % thing 
+
+#         command = " ".join(filter(None,[
+#             'cd {wd};'.format(
+#                 wd      = remoteExportFolder,
+#             ) if remoteExportFolder else None,
+#             '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
+#                 cmd     = m_i_cmd,
+#                 db_name = m_db_name,
+#                 db_host = m_db_host,
+#                 db_user = m_db_user,
+#                 db_pass = m_db_pass,
+#             ),
+#             ('"%s"' % m_i_filename) if m_i_filename else None
+
+#         ]))
+
+#         print command
+
+#         paramikoSSHParams = {
+#             'hostname':    m_ssh_host,
+#             'port':        m_ssh_port,
+#             'username':    m_ssh_user,
+#             'password':    m_ssh_pass,
+#         }
+
+#         sshClient = paramiko.SSHClient()
+#         sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#         try: 
+
+
+#         except Exception, e:
+#             SanitationUtils.safePrint("ERROR IN SSH: " + str(e))
+#         finally:
+#             sshClient.close()
+
+print "Completed all updates"
