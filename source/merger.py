@@ -19,10 +19,13 @@ import re
 import time
 import yaml
 import MySQLdb
+import pymysql
 import paramiko
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
 import wordpress_xmlrpc
+from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT
+from SyncUpdate import SyncUpdate
 
 importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
@@ -38,7 +41,7 @@ skip_sync = False
 # sql_run = True
 # sql_run = not testMode
 sql_run = True
-sftp_run = True
+sftp_run = False
 update_slave = False
 update_master = True
 do_problematic = True
@@ -108,6 +111,7 @@ with open(yamlPath) as stream:
     if 'sinceS' in config.keys():
         sinceS = config.get('sinceS')
 
+SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
 #########################################
 # Set up directories
@@ -149,6 +153,19 @@ pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 
 colData = ColData_User()
 
+actCols = colData.getACTCols()
+actFields = ";".join(actCols.keys())
+
+xmlConnectParams = {
+    'xmlrpc_uri': xmlrpc_uri,
+    'wp_user': wp_user,
+    'wp_pass': wp_pass
+}
+
+sqlConnectParams = {
+    
+}
+
 #########################################
 # Prepare Filter Data
 #########################################
@@ -188,7 +205,8 @@ saRows = []
 
 if sql_run: 
     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
-    SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
+    SSHTunnelForwarderBindAddress = ('127.0.0.1', remote_bind_port)
+    # SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
     for host in ['SSHTunnelForwarderAddress', 'SSHTunnelForwarderBindAddress']:
         try:
             check_address(eval(host))
@@ -210,6 +228,13 @@ if sql_run:
         'db':db_name
     }
 
+    PyMySqlConnectParams = {
+        'host' : 'localhost',
+        'user' : db_user,
+        'password': db_pass,
+        'db'   : db_name
+    }
+
 
     with \
       SSHTunnelForwarder(**SSHTunnelForwarderParams) as server, \
@@ -218,8 +243,10 @@ if sql_run:
         print server.local_bind_address
 
         MySQLdbConnectParams['port'] = server.local_bind_port
-        print MySQLdbConnectParams
-        conn = MySQLdb.connect( **MySQLdbConnectParams )
+        PyMySqlConnectParams['port'] = server.local_bind_port
+        print PyMySqlConnectParams
+        # conn = MySQLdb.connect( **MySQLdbConnectParams )
+        conn = pymysql.connect( **PyMySqlConnectParams )
 
         wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), colData.getWPCols().items()))
 
@@ -242,17 +269,11 @@ if sql_run:
         headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
         # print headers
         saRows = [headers]
-        if testMode:
-            print "loading data"
-            for i, row in enumerate(cursor):
-                if i>100: break
-                saRows += [map(SanitationUtils.coerceUnicode, row)]
-                # print row
-        else:
-             for row in cursor:
-                saRows += [map(SanitationUtils.coerceUnicode, row)] 
-
-# print tabulate(saRows, tablefmt="simple")
+        
+        for i, row in enumerate(cursor):
+            if testMode and i>500: 
+                break
+            saRows += [map(SanitationUtils.coerceUnicode, row)]
 
 #########################################
 # Import Slave Info From Spreadsheets
@@ -290,757 +311,52 @@ def printBasicColumns(users):
 printBasicColumns( list(chain( *saParser.emails.values()[:100] )) )
 
 #########################################
-# Generate ACT CSV files using shell
+# Generate and Analyse ACT CSV files using shell
 #########################################
 
-print debugUtils.hashify("Generate ACT CSV files using shell"), timediff()
+actConnectParams = {
+    'hostname':    m_ssh_host,
+    'port':        m_ssh_port,
+    'username':    m_ssh_user,
+    'password':    m_ssh_pass,
+}
 
-# TODO: This
+for thing in ['m_x_cmd', 'm_i_cmd', 'remoteExportFolder', 'actFields']:
+    assert eval(thing), "missing mandatory command component '%s'" % thing 
+
+actDbParams = {
+    'db_x_exe':m_x_cmd,
+    'db_i_exe':m_i_cmd,
+    'db_name': m_db_name,
+    'db_host': m_db_host,
+    'db_user': m_db_user,
+    'db_pass': m_db_pass,
+    'fields' : actFields
+}
+
+fsParams = {
+    'importName': importName,
+    'remoteExportFolder': remoteExportFolder,
+    'inFolder': inFolder,
+    'outFolder': outFolder
+}
+
+maParser = CSVParse_User(
+    cols = colData.getImportCols(),
+    defaults = colData.getDefaults(),
+    contact_schema = 'act',
+    filterItems = filterItems
+)
+
+print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
 
 if sftp_run:
-
-    actCols = colData.getACTCols()
-    fields = ";".join(actCols.keys())
-
-    for thing in ['m_x_cmd', 'remoteExportFolder', 'fields']:
-        assert eval(thing), "missing mandatory command component '%s'" % thing 
-
-    command = " ".join(filter(None,[
-        'cd ' + remoteExportFolder + ';',
-        '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-            cmd     = m_x_cmd,
-            db_name = m_db_name,
-            db_host = m_db_host,
-            db_user = m_db_user,
-            db_pass = m_db_pass,
-        ),
-        '-s"%s"' % "1970-01-01",
-        # '-all',
-        '"-c%s"' % fields,
-        ('"%s"' % m_x_filename) if m_x_filename else None
-
-    ]))
-
-    # print command
-
-    paramikoSSHParams = {
-        'hostname':    m_ssh_host,
-        'port':        m_ssh_port,
-        'username':    m_ssh_user,
-        'password':    m_ssh_pass,
-    }
-
-    sshClient = paramiko.SSHClient()
-    sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try: 
-        sshClient.connect(**paramikoSSHParams)
-        stdin, stdout, stderr = sshClient.exec_command(command)
-        possible_errors = stdout.readlines() + stdout.readlines()
-        assert not possible_errors, "command returned errors: " + possible_errors
-        try:
-            sftpClient = sshClient.open_sftp()    
-            sftpClient.chdir(remoteExportFolder)
-            fstat = sftpClient.stat(m_x_filename)
-            if fstat:
-                sftpClient.get(m_x_filename, maPath)
-                sftpClient.remove(m_x_filename)
-        except Exception, e:
-            SanitationUtils.safePrint("ERROR IN SFTP: " + repr(e) + " " + str(e))
-        finally:
-            sftpClient.close()
-
-    except Exception, e:
-        SanitationUtils.safePrint("ERROR IN SSH: " + repr(e) + " " + str(e))
-    finally:
-        sshClient.close()
-
-#########################################
-# Import Master Info From Spreadsheets
-#########################################
-
-print debugUtils.hashify("Import Master Info From Spreadsheets"), timediff()
-
-clear_pkl = False
-# clear_pkl = True
-# try_pkl = not testMode
-# try_pkl = True
-try_pkl = False
-
-if(clear_pkl): 
-    try:
-        os.remove(pklPath)
-    except:
-        pass
-
-try:
-    if try_pkl:
-        print "loading master pickle", timediff()
-        pkl_file = open(pklPath, 'rb')
-        maParser = pickle.load(pkl_file)
-        print "loaded master pickle", timediff()
-    else:
-        raise Exception("not trying to load pickle")
-except Exception as e:
-    if(e): pass
-    maParser = CSVParse_User(
-        cols = colData.getImportCols(),
-        defaults = colData.getDefaults(),
-        contact_schema = 'act',
-        filterItems = filterItems
-    )
-
-    maParser.analyseFile(maPath, maEncoding)
-    print "imported %d master objects" % len(maParser.objects), timediff()
-
-
-    if try_pkl:
-        pkl_file = open(pklPath, 'wb')
-        print "dumping pickle", timediff()
-        pickle.dump(maParser, pkl_file)
-
-#requirements for new account in wordpress:
-# email valid and direct customer TechnoTan
-#no requirements for new account in act, everything goes in, but probably need email
-
-# def fieldActLike(field):
-    # if(SanitationUtils.unicodeToAscii(field) == SanitationUtils.unicodeToAscii(field).upper() ):
-    #     return True
-    # else:
-    #     return False
-
-# def addressActLike(obj):
-#     for col in ['Address 1', 'Address 2', 'City', 'Home Address 1', 'Home Address 2', 'Home City', 'Home Country']:
-#         if(not SanitationUtils.fieldActLike(obj.get(col) or "")):
-#             return False
-#     return True
-
-# def nameActLike(obj):
-#     for col in ['First Name']:
-#         if(not SanitationUtils.fieldActLike(obj.get(col)) or ""):
-#             return False
-#     return True
-
-# capitalCols = colData.getCapitalCols()
-
-# #assumes record has at least one of all capitalized cols
-# def recordActLike(obj):
-#     recordEmpty = True
-#     actLike = True
-#     for col in capitalCols.keys():
-#         val = obj.get(col) or ""
-#         if(val): 
-#             recordEmpty = False
-#         else:
-#             if(not SanitationUtils.fieldActLike(val)):
-#                 actLike = False
-#     if(actLike and not recordEmpty):
-#         return True
-#     else:
-#         return False
-
-# def contactActLike(obj):
-#     recordEmpty = not any(filter(None, map(lambda key: key in obj.keys(), ['First Name', 'Surname', 'Contact', 'Middle Name'])))
-#     names = map( lambda key: obj.get(key) or "", ['First Name', 'Middle Name', 'Surname'])
-#     nameSum = " ".join(filter(None, names))
-#     return (not recordEmpty and nameSum.upper() == obj.get('Contact', '').upper() )
-
-# print "WHAT THE FUCK"
-# print len(maParser.emails.values())
+    with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
+        masterClient.analyseRemote(maParser)
+else:
+    maParser.analyseFile(maPath)
 
 printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
-# printBasicColumns( list(chain( *saParser.emails.values() ))[:2] )
-
-# first = list(chain(*saParser.emails.values()))[0]
-# print first.__repr__()
-# print first['Edited in Wordpress']
-# print TimeUtils.wpStrptime(first['Edited in Wordpress'])
-# print first.wp_modtime
-
-# # for email, users in maParser.emails.items():
-# #     for user in users:
-# #         actlike = contactActLike(user)
-# #         if not actlike:
-# #             print "-> ", repr(user)
-# #             usrList = UsrObjList()
-# #             usrList.addObject(user)
-# #             print usrList.tabulate(OrderedDict([
-# #                 ('First Name',{}),
-# #                 ('Middle Name', {}),
-# #                 ('Surname',{}),
-# #                 ('Contact', {})    
-# #             ]))
-# quit()
-
-class SyncUpdate(Registrar):
-    xmlrpc_client = None
-    sftp_client = None
-
-    class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
-        method_name = 'tansync.update_user_fields'
-        method_args = ('user_id', 'fields_json_base64')
-
-    def __init__(self, oldMObject, oldSObject, lastSync = DEFAULT_LAST_SYNC):
-        # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
-
-        self.oldMObject = oldMObject
-        self.oldSObject = oldSObject
-        self.tTime = TimeUtils.wpStrptime( lastSync )
-        self.mTime = self.oldMObject.act_modtime
-        self.sTime = self.oldSObject.wp_modtime
-        self.bTime = self.oldMObject.last_sale
-
-#         print """\
-# creating SyncUpdate object
-#  -> %s
-#  -> %s
-#  -> %s
-#  -> %s""" % (
-#     oldMObject.__repr__(),
-#     oldSObject.__repr__(),
-#     self.mTime,
-#     self.sTime
-# )
-
-        self.winner = SLAVE_NAME if(self.sTime >= self.mTime) else MASTER_NAME
-        
-        self.newSObject = False
-        self.newMObject = False
-        self.static = True
-        self.importantStatic = True
-        self.syncWarnings = OrderedDict()
-        self.syncPasses = OrderedDict()
-        self.updates = 0
-        self.importantUpdates = 0
-        # self.problematic = False
-
-        #extra heuristics for merge mode:
-        if(merge_mode == 'merge' and not self.sMod):
-            might_be_sEdited = False
-            if not oldSObject.addressesActLike():
-                might_be_sEdited = True
-            elif( oldSObject.get('Home Country') == 'AU' ):
-                might_be_sEdited = True
-            elif oldSObject.usernameActLike():
-                might_be_sEdited = True
-            if(might_be_sEdited):
-                # print repr(oldSObject), "might be edited"
-                self.sTime = self.tTime
-                if(self.mMod):
-                    self.static = False
-                    # self.importantStatic = False
-# 
-    @property
-    def sUpdated(self): return self.newSObject
-    @property
-    def mUpdated(self): return self.newMObject
-    @property
-    def lTime(self): return max(self.mTime, self.sTime)
-    @property
-    def mMod(self): return (self.mTime >= self.tTime)
-    @property
-    def sMod(self): return (self.sTime >= self.tTime)
-
-
-
-    @property
-    def WPID(self):
-        return self.getSValue("Wordpress ID")
-
-    @property
-    def MYOBID(self):
-        return self.getMValue('MYOB Card ID')
-    
-    # @property
-    # def winner(self): return self.winner
-    
-    # def colBlank(self, col):
-    #     mValue = (mObject.get(col) or "")
-    #     sValue = (sObject.get(col) or "")
-    #     return (not mValue and not sValue)
-
-    def getWinnerKey(self, key):
-        # if self.syncWarnings and key in self.syncWarnings.keys():
-        #     # print "key in warnings"
-        #     keySyncWarnings = self.syncWarnings[key]
-        #     assert len(keySyncWarnings) < 2
-        #     subject, reason, oldVal, newVal, data = keySyncWarnings[0]
-        #     return newVal
-        # if self.syncPasses and key in self.syncPasses.keys():
-        #     # print "key in passes"
-        #     keySyncPasses = self.syncPasses[key]
-        #     assert len(keySyncPasses) < 2
-        #     reason, val, data = keySyncPasses[0]
-        #     return val
-        # else:
-        if self.winner == SLAVE_NAME and self.newSObject:
-            return self.newSObject.get(key)
-        if self.winner == MASTER_NAME and self.newMObject:
-            return self.newMObject.get(key)
-        self.registerError( "could not find any value for key {}".format(key) )
-        return None
-
-    def sanitizeValue(self, col, value):
-        # print "sanitizing", col, repr(value)
-        if('phone' in col.lower()):
-            if('preferred' in col.lower()):
-                if(value and len(SanitationUtils.stripNonNumbers(value)) > 1):
-                    # print "value nullified", value
-                    return ""
-        return value
-
-    def getMValue(self, col):
-        return self.sanitizeValue(col, self.oldMObject.get(col) or "")
-
-    def getSValue(self, col):
-        return self.sanitizeValue(col, self.oldSObject.get(col) or "")
-
-    def colIdentical(self, col):
-        mValue = self.getMValue(col)
-        # print "-> mValue", mValue
-        sValue = self.getSValue(col)
-        # print "-> sValue", sValue
-        return (mValue == sValue)
-
-    def colSimilar(self, col):
-        # print "-> comparing ", col
-        mValue = self.getMValue(col)
-        sValue = self.getSValue(col)
-        if not (mValue or sValue):
-            return True
-        elif not ( mValue and sValue ):
-            return False
-        #check if they are similar
-        if( "phone" in col.lower() ):
-            if( "preferred" in col.lower() ):
-                mPreferred = SanitationUtils.similarTruStrComparison(mValue)
-                sPreferred = SanitationUtils.similarTruStrComparison(sValue)
-                # print repr(mValue), " -> ", mPreferred
-                # print repr(sValue), " -> ", sPreferred
-                if(mPreferred == sPreferred):
-                    return True
-            else:
-                mPhone = SanitationUtils.similarPhoneComparison(mValue)
-                sPhone = SanitationUtils.similarPhoneComparison(sValue)
-                plen = min(len(mPhone), len(sPhone))
-                if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
-                    return True
-        elif( "role" in col.lower() ):
-            mRole = SanitationUtils.similarComparison(mValue)
-            sRole = SanitationUtils.similarComparison(sValue)
-            if (mRole == 'rn'): 
-                mRole = ''
-            if (sRole == 'rn'): 
-                sRole = ''
-            if( mRole == sRole ): 
-                return True
-        elif( "address" in col.lower() and isinstance(mValue, ContactAddress)):
-            if( mValue != sValue ):
-                pass
-                # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
-            return mValue.similar(sValue)
-        else:
-            if( SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue) ):
-                return True
-
-        return False
-
-    def addSyncWarning(self, col, subject, reason, oldVal =  "", newVal = "", data = {}):
-        if( col not in self.syncWarnings.keys()):
-            self.syncWarnings[col] = []
-        self.syncWarnings[col].append((subject, reason, oldVal, newVal, data))
-
-    def addSyncPass(self, col, reason, val="", data={}):
-        if( col not in self.syncPasses.keys()):
-            self.syncPasses[col] = []
-        self.syncPasses[col].append((reason, val, data))
-
-    def displaySyncWarnings(self, tablefmt=None):
-        if self.syncWarnings:
-            delimeter = "<br/>" if tablefmt=="html" else "\n"
-            subject_fmt = "<h4>%s</h4>" if tablefmt=="html" else "%s"
-            header = ["Column", "Reason", "Old", "New"]
-            subjects = {}
-            for col, warnings in self.syncWarnings.items():
-                for subject, reason, oldVal, newVal, data in warnings:    
-                    if subject not in subjects.keys():
-                        subjects[subject] = []
-                    subjects[subject] += [map( 
-                        lambda x: SanitationUtils.coerceUnicode(x)[:64], 
-                        [col, reason, oldVal, newVal] 
-                    )]
-            tables = []
-            for subject, subjList in subjects.items():
-                subjList = [map(SanitationUtils.sanitizeForTable, subj ) for subj in subjList ]
-                tables += [delimeter.join([(subject_fmt % self.opposite_src(subject)), tabulate(subjList, headers=header, tablefmt=tablefmt)])]
-            return delimeter.join(tables)
-        else:
-            return ""
-
-    # def getOldLoserObject(self, winner=None):
-    #     if not winner: winner = self.winner
-    #     if(winner == MASTER_NAME):
-    #         oldLoserObject = self.oldSObject
-
-    def opposite_src(self, subject):
-        if subject == MASTER_NAME:
-            return SLAVE_NAME
-        else:
-            return MASTER_NAME
-
-    def loserUpdate(self, winner, col, reason = "", data={}):
-        if(winner == MASTER_NAME):
-            # oldLoserObject = self.oldSObject
-            oldLoserValue = self.getSValue(col)
-            # oldWinnerObject = self.oldMObject
-            oldWinnerValue = self.getMValue(col)
-            if(not self.newSObject): self.newSObject = deepcopy(sObject)
-            newLoserObject = self.newSObject
-        elif(winner == SLAVE_NAME):
-            # oldLoserObject = self.oldMObject
-            oldLoserValue = self.getMValue(col)
-            # oldWinnerObject = self.oldSObject
-            oldWinnerValue = self.getSValue(col)
-            if(not self.newMObject): self.newMObject = deepcopy(mObject)
-            newLoserObject = self.newMObject
-        # if data.get('warn'): 
-        self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data)
-        newLoserObject[col] = oldWinnerValue
-        self.updates += 1
-        if data.get('static'): 
-            self.static = False
-        if(reason in ['updating', 'deleting']):
-            self.importantUpdates += 1
-            if data.get('static'): self.importantStatic = False
-
-    def tieUpdate(self, col, reason, data={}):
-        if self.oldSObject:
-            self.addSyncPass(col, reason, self.oldSObject.get(col))
-        elif self.oldMObject:
-            self.addSyncPass(col, reason, self.oldMObject.get(col))
-        else:
-            self.addSyncPass(col, reason)        
-
-    # def mUpdate(self, col, value, warn = False, reason = "", static=False):
-    #     if(not self.newMObject): self.newMObject = ImportUser(mObject, mObject.rowcount, mObject.row)
-    #     if static: self.static = False
-    #     self.newMObject[col] = value
-
-    # def sUpdate(self, col, value, warn = False, reason = "", static=False):
-    #     if(not self.newSObject): self.newSObject = ImportUser(sObject, sObject.rowcount, sObject.row)
-    #     if warn: self.addSyncWarning(col, SLAVE_NAME, reason, self.oldSObject[col], )
-    #     if static: self.static = False
-    #     self.newSObject[col] = value
-        
-    def updateCol(self, col, data={}):
-        # print "sync ", col
-
-        try:
-            sync_mode = data['sync']
-        except:
-            return
-        # sync_warn = data.get('warn')
-        # syncstatic = data.get('static')
-        
-        # if(self.colBlank(col)): continue
-        if(self.colIdentical(col)): 
-            # print "-> cols identical"
-            self.tieUpdate(col, "identical", data)
-            return
-        else:
-            # print "-> cols not identical"
-            pass
-
-        mValue = self.getMValue(col)
-        sValue = self.getSValue(col)
-
-        winner = self.winner
-        reason = 'updating' if mValue and sValue else 'inserting'
-            
-        if( 'override' in str(sync_mode).lower() ):
-            # reason = 'overriding'
-            if( 'master' in str(sync_mode).lower() ):
-                winner = MASTER_NAME
-            elif( 'slave' in str(sync_mode).lower() ):
-                winner = SLAVE_NAME
-        else:
-            if(self.colSimilar(col)): 
-                self.tieUpdate(col, "identical", data)
-                return 
-
-            if not (mValue and sValue):
-                if(merge_mode == 'merge'):
-                    if(winner == SLAVE_NAME and not sValue):
-                        winner = MASTER_NAME
-                        reason = 'merging'
-                    elif(winner == MASTER_NAME and not mValue):
-                        winner = SLAVE_NAME
-                        reason = 'merging'
-                else:
-                    if(winner == SLAVE_NAME and not sValue):
-                        reason = 'deleting'
-                    elif(winner == MASTER_NAME and not mValue):
-                        reason = 'deleting'
-
-        self.loserUpdate(winner, col, reason, data)
-
-    def update(self, syncCols, merge_mode):
-        for col, data in syncCols.items():
-            self.updateCol(col, data)
-
-    def tabulate(self, tablefmt=None):
-        subtitle_fmt = "%s"
-        info_delimeter = "\n"
-        info_fmt = "%s: %s"
-        if(tablefmt == "html"):
-            subtitle_fmt = "<h3>%s</h3>" 
-            info_delimeter = "<br/>"
-            info_fmt = "<strong>%s:</strong> %s"
-        oldMatch = Match([self.oldMObject], [self.oldSObject])
-        out_str =  ""
-        out_str += info_delimeter.join([
-            subtitle_fmt % "OLD",
-            oldMatch.tabulate(tablefmt)
-        ])
-        out_str += info_delimeter
-        out_str += info_delimeter.join(filter(None,[
-            subtitle_fmt % "INFO",
-            (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self.bTime))) if self.bTime else "No Last Sale",
-            (info_fmt % ("%s Mod Time" % MASTER_NAME, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % MASTER_NAME,
-            (info_fmt % ("%s Mod Time" % SLAVE_NAME, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % SLAVE_NAME,
-            (info_fmt % ("static", "yes" if self.static else "no")),
-            (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
-        ]))
-        out_str += info_delimeter
-        out_str += info_delimeter.join([
-            subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates),
-            self.displaySyncWarnings(tablefmt),
-            subtitle_fmt % 'XMLRPC CHANGES',
-            self.displayChangesForXMLRPC(tablefmt)        
-        ])
-        newMatch = Match([self.newMObject], [self.newSObject])
-        out_str += info_delimeter
-        out_str += info_delimeter.join([
-            subtitle_fmt % 'NEW',
-            newMatch.tabulate(tablefmt)
-        ])
-
-        return out_str
-
-    def getSlaveUpdatesRecursive(self, col, updates={}):
-        if col in ColData_User.data.keys():
-            data = ColData_User.data[col]
-            if data.get('wp'):
-                data_wp = data.get('wp',{})
-                if data_wp.get('meta'):
-                    updates[data_wp.get('key')] = self.newSObject.get(col)
-                elif not data_wp.get('final'):
-                    updates[data_wp.get('key')] = self.newSObject.get(col)
-            if data.get('aliases'):
-                data_aliases = data.get('aliases')
-                for alias in data_aliases:
-                    if \
-                        SanitationUtils.coerceUnicode(self.newSObject.get(alias)) == \
-                        SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
-                        continue
-                    #if the new value is not the same as the old value
-                    updates = listUtils.combineOrderedDicts(updates, self.getSlaveUpdatesRecursive(alias))
-        return updates
-
-    def getSlaveUpdates(self):
-        updates = {}
-        for col, warnings in self.syncWarnings.items():
-            for subject, reason, oldVal, newVal, data in warnings:  
-                if subject == self.opposite_src(SLAVE_NAME):
-                    updates = self.getSlaveUpdatesRecursive(col, updates)
-        return updates
-
-    def getMasterUpdatesRecursive(self, col, updates={}):
-        if col in ColData_User.data.keys():
-            data = ColData_User.data[col]
-            if data.get('act'):
-                updates[col] = self.newMObject.get(col)
-            if data.get('aliases'):
-                data_aliases = data['aliases']
-                for alias in data_aliases:
-                    if \
-                        SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
-                        SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
-                        continue
-                    #if the new value is not the same as the old value
-                    updates = listUtils.combineOrderedDicts(updates, self.getMasterUpdatesRecursive(alias))
-        return updates
-
-    def getMasterUpdates(self):
-        updates = {}
-        for col, warnings in self.syncWarnings.items():
-            for subject, reason, oldVal, newVal, data in warnings:
-                if subject == self.opposite_src(MASTER_NAME):
-                    updates = self.getMasterUpdatesRecursive(col, updates)
-        return updates
-
-    def displayChangesForXMLRPC(self, tablefmt=None):
-        if self.syncWarnings:
-            info_delimeter = "\n"
-            subtitle_fmt = "%s"
-            if(tablefmt == "html"):
-                info_delimeter = "<br/>"
-                subtitle_fmt = "<h4>%s</h4>" 
-
-            print_elements = []
-
-            try:
-                user_pkey = self.WPID
-                assert user_pkey, "primary key must be valid, %s" % repr(user_pkey)
-            except Exception as e:
-                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
-                user_pkey = None
-                return info_delimeter.join(print_elements)
-
-            updates = self.getSlaveUpdates()
-            additional_updates = OrderedDict()
-            if user_pkey:
-                additional_updates['ID'] = user_pkey
-
-            if updates:
-                updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + updates.items()])
-                print_elements.append(
-                    info_delimeter.join([
-                        subtitle_fmt % "all updates" ,
-                        tabulate(updates_table, headers="keys", tablefmt=tablefmt)
-                    ])
-                )
-                updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
-                print_elements.append(updates_json_base64)
-                # return (user_pkey, all_updates_json_base64)
-            else:
-                print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")     
-
-            # if user_pkey:
-            #     if user_updates or meta_updates :
-            #         all_updates = listUtils.combineOrderedDicts(user_updates , meta_updates )
-            #         #all_updates is in table format: k => [v]. change to k => v
-            #         for key, value in all_updates.items():
-            #             all_updates[key] = value[0]
-            #         all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(all_updates))
-            #         print_elements.append(all_updates_json_base64)
-            #         # return (user_pkey, all_updates_json_base64)
-            #     else:
-            #         print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")    
-            # else:
-            #     print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(user_pkey))    
-            return info_delimeter.join(print_elements)
-        return ""
-
-    def slaveConnectionReady(self, client):
-        return client
-
-    def masterConnectionReady(self, client):
-        return client and client._transport and client._transport.active
-
-    def masterPut(self, client, localPath, remotePath):
-        assert self.masterConnectionReady(client), "master connection must be ready"
-        exception = None
-        remoteDir, remoteFileName = os.path.split(remotePath)
-
-        try:
-            sftpClient = client.open_sftp()    
-            if remoteDir:
-                try:
-                    sftpClient.stat(remoteDir)
-                except:
-                    sftpClient.mkdir(remoteDir)
-            sftpClient.put(localPath, remotePath)
-            fstat = sftpClient.stat(remotePath)
-            if not fstat:
-                exception = Exception("could not stat remote file")
-        except Exception, e:
-            exception = e
-        finally:
-            sftpClient.close()
-        if exception:
-            raise exception
-
-    def updateMaster(self, client):
-        assert self.masterConnectionReady(client)
-        updates = self.getMasterUpdates()
-        if not updates:
-            return
-
-        user_pkey = self.MYOBID
-        updates['MYOB Card ID'] = user_pkey
-
-        miFileRoot, miFileExt = os.path.splitext(m_i_filename)
-        miFileRoot += '_' + user_pkey 
-        miFileName = os.path.join(miFileRoot + miFileExt)
-        miFilePath = os.path.join(outFolder, miFileName)
-        miRemoteDir = os.path.join(remoteExportFolder, '')
-        miRemoteFilePath = os.path.join(miRemoteDir, miFileName)
-
-        print miRemoteFilePath
-
-        with open(miFilePath, 'w+') as outFile:
-            unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            dictwriter = unicodecsv.DictWriter(
-                outFile,
-                dialect = 'act_out',
-                fieldnames = updates.keys(),
-                encoding = 'utf8',
-                extrasaction = 'ignore',
-            )
-            dictwriter.writeheader()
-            dictwriter.writerow(updates)
-
-        self.masterPut(client, miFilePath, miRemoteFilePath)            
-
-        for thing in ['m_i_cmd', 'miRemoteDir', 'miFileName']:
-            assert eval(thing), "missing mandatory command component '%s'" % thing 
-
-        command = " ".join(filter(None,[
-            'cd ' + remoteExportFolder + ';',
-            '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-                cmd     = m_i_cmd,
-                db_name = m_db_name,
-                db_host = m_db_host,
-                db_user = m_db_user,
-                db_pass = m_db_pass,
-            ),
-            ('"%s"' % miFileName) if miFileName else None
-        ]))
-
-        print command
-
-        stdin, stdout, stderr = client.exec_command(command)
-        possible_errors = stdout.readlines() + stderr.readlines()
-        assert not possible_errors, "sync command returned errors: " + str(possible_errors)
-
-        importedFile = os.path.join(miRemoteDir, miFileRoot + '.imported')
-
-        stdin, stdout, stderr = client.exec_command('stat "%s"' % importedFile)
-        possible_errors = stderr.readlines()
-        assert not possible_errors, "stat importfile command returned errors, import didn't complete: " + str(possible_errors)
-
-        client.exec_command('rm "%s"' % importedFile)
-
-        #todo: Determine if file imported correctly and delete file
-
-    def updateSlave(self, client):
-        assert self.slaveConnectionReady(client)
-        if DEBUG:
-            SanitationUtils.safePrint(  self.displayChangesForXMLRPC() )
-        updates = self.getSlaveUpdates()
-
-        if updates:
-            all_updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
-            WPID = self.WPID
-            # SanitationUtils.safePrint((WPID, all_updates_json_base64))
-            xmlrpc_out = client.call(self.UpdateUserXMLRPC(WPID, all_updates_json_base64))
-        
-
-
-    def __cmp__(self, other):
-        return -cmp(self.bTime, other.bTime)
-        # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
-
 
 # get matches
 
@@ -1129,7 +445,7 @@ if not skip_sync:
 
     # TODO: further sort emailMatcher
 
-    print debugUtils.hashify("BEGINNING MERGE")
+    print debugUtils.hashify("BEGINNING MERGE (%d)" % len(globalMatches))
     print timediff()
 
 
@@ -1145,7 +461,7 @@ if not skip_sync:
         sObject = match.sObjects[0]
 
         syncUpdate = SyncUpdate(mObject, sObject)
-        syncUpdate.update(syncCols, merge_mode)
+        syncUpdate.update(syncCols)
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
@@ -1408,107 +724,20 @@ if do_problematic:
 print debugUtils.hashify("Update databases (%d)" % len(allUpdates))
 print timediff()
 
-# print repr(xmlrpc_uri)
-# print repr(wp_user)
-# print repr(wp_pass)
-
 if allUpdates:
-    try:
-        if update_slave:
-            xmlrpc_client = wordpress_xmlrpc.Client(xmlrpc_uri, wp_user, wp_pass)
-        else:
-            xmlrpc_client = None
 
-        if update_master:    
-            paramikoSSHParams = {
-                'hostname':    m_ssh_host,
-                'port':        m_ssh_port,
-                'username':    m_ssh_user,
-                'password':    m_ssh_pass,
-            }
-
-            sshClient = paramiko.SSHClient()
-            sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            sshClient.connect(**paramikoSSHParams)
-        else:
-            sshClient = None
+    with \
+        UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient, \
+        UsrSyncClient_XMLRPC(xmlConnectParams) as slaveClient:
 
         for update in allUpdates:
             if update_master and update.mUpdated :
                 try:
-                    update.updateMaster(sshClient)
+                    update.updateMaster(masterClient)
                 except Exception, e:
                     raise Exception("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
             if update_slave and update.sUpdated :
                 try:
-                    update.updateSlave(xmlrpc_client)
+                    update.updateSlave(slaveClient)
                 except Exception, e:
                     raise Exception("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
-
-    except Exception, e:
-        SanitationUtils.safePrint("ERROR IN UPDATING DATABASES: " + str(e))
-    finally:
-        if update_slave:
-            xmlrpc_client.close()
-        if update_master:
-            sshClient.close()
-
-
-# if do_xmlrpc:
-
-#     importProblematicWordpress = True
-#     if importProblematicWordpress:
-#         for update in problematicUpdates:
-#             update.updateSlave()
-
-# importUsers = UsrObjList()
-
-# for update in masterUpdates:
-#     importUsers.addObject(update.newMObject)
-
-
-
-# SanitationUtils.safePrint( importUsers.tabulate())
-# if importUsers:
-#     importUsers.exportItems(moPath, OrderedDict((col, col) for col in colData.getACTCols().keys()))
-
-#     if do_ftp:
-
-#         for thing in ['m_i_cmd', 'remoteExportFolder']:
-#             assert eval(thing), "missing mandatory command component '%s'" % thing 
-
-#         command = " ".join(filter(None,[
-#             'cd {wd};'.format(
-#                 wd      = remoteExportFolder,
-#             ) if remoteExportFolder else None,
-#             '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-#                 cmd     = m_i_cmd,
-#                 db_name = m_db_name,
-#                 db_host = m_db_host,
-#                 db_user = m_db_user,
-#                 db_pass = m_db_pass,
-#             ),
-#             ('"%s"' % m_i_filename) if m_i_filename else None
-
-#         ]))
-
-#         print command
-
-#         paramikoSSHParams = {
-#             'hostname':    m_ssh_host,
-#             'port':        m_ssh_port,
-#             'username':    m_ssh_user,
-#             'password':    m_ssh_pass,
-#         }
-
-#         sshClient = paramiko.SSHClient()
-#         sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#         try: 
-
-
-#         except Exception, e:
-#             SanitationUtils.safePrint("ERROR IN SSH: " + str(e))
-#         finally:
-#             sshClient.close()
-
-print "Completed all updates"
