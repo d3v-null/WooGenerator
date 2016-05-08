@@ -1,6 +1,7 @@
 from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from csvparse_woo import ImportWooProduct
+from copy import deepcopy
 from collections import OrderedDict
 from coldata import ColData_User, ColData_Woo
 from contact_objects import ContactAddress, ContactName
@@ -81,7 +82,7 @@ class ImportUser(ImportFlat):
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
-    contact_schema = descriptorUtils.safeKeyProperty('contact_schema')
+    # contact_schema = descriptorUtils.safeKeyProperty('contact_schema')
     billing_address = descriptorUtils.safeKeyProperty('Address')
     shipping_address = descriptorUtils.safeKeyProperty('Home Address')
     name = descriptorUtils.safeKeyProperty('Name')
@@ -89,16 +90,18 @@ class ImportUser(ImportFlat):
     aliasMapping = {
         'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
         'Home Address': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
-        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Memo']
+        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Memo', 'Contact']
     }
 
     @property
     def act_modtime(self):
+        print "returning act modtime: %s -> %s " % (self.get('Edited in Act', 0), TimeUtils.wpTimeToString(TimeUtils.actStrptime(self.get('Edited in Act', 0))))
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
 
     @property
     def wp_modtime(self):
-        return TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) )
+        print "returning wp modtime: %s -> %s " % (self.get('Edited in Wordpress', 0), TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))))
+        return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))
 
     @property
     def last_sale(self):
@@ -119,7 +122,9 @@ class ImportUser(ImportFlat):
                 self[key] = ""
             if(DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
         if(DEBUG_FLAT): self.registerMessage("data:" + repr(data))
+        self.initContactObjects(data)
 
+    def initContactObjects(self, data):
         kwargs = OrderedDict(filter(None,[\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
             {
@@ -137,9 +142,11 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Name'] = ContactName(
-            self.contact_schema,  
+            # self.contact_schema,  
             **kwargs
         )
+
+        assert self['Name'] is not None
 
         kwargs = OrderedDict(filter(None,[\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
@@ -155,9 +162,11 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Address'] = ContactAddress(
-            self.contact_schema,  
+            # self.contact_schema,  
             **kwargs
         )
+
+        # print "ADDRESS: ", self['Address']
 
         kwargs = OrderedDict(filter(None,[\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
@@ -173,9 +182,11 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Home Address'] = ContactAddress(
-            self.contact_schema,  
+            # self.contact_schema,  
             **kwargs
         )
+
+        # print "HOME ADDRESS: ", self['Home Address']
 
         if not self['Address'].valid or not self['Home Address'].valid:
             self['address_reason'] = '\n'.join(filter(None, [
@@ -188,23 +199,31 @@ class ImportUser(ImportFlat):
                 self['Name'].reason if not self['Name'].valid else None,
             ])) 
 
+    def refreshContactObjects(self):
+        pass
+        # self.initContactObjects(self.__getstate__())
+
     def __getitem__(self, key):
         for alias, keys in self.aliasMapping.items():
-            if key in keys:
+            if key in keys and alias in self:
                 return self[alias][key]
-        try:
-            return super(ImportUser, self).__getitem__(key)
-        except:
-            return None
+        return super(ImportUser, self).__getitem__(key)
 
+    def __setitem__(self, key, val):
+        # print "setting obj %s to %s " % (key, repr(val))
+        for alias, keys in self.aliasMapping.items():
+            if key in keys and alias in self:
+                self[alias][key] = val
+                return
+        # if key is 'Name': print "setting Name to ", val
+        super(ImportUser, self).__setitem__(key, val)
+        # if key is 'Name':
+            # print self.__getitem__(key)
 
     def get(self, key, default = None):
         for alias, keys in self.aliasMapping.items():
-            if key in keys:
-                try:
-                    return self[alias][key]
-                except:
-                    break
+            if key in keys and self[alias]:
+                return self[alias][key]
         try:
             return super(ImportUser, self).get(key, default)
         except:
@@ -637,10 +656,71 @@ def testUsrParser(inFolder, outFolder):
     #             usrs.values()[u:u+usrs_per_file]
     #         )
 
+def testRefreshUsrContactObj():
+    usr1 = ImportUser(
+        {
+            'First Name': 'Derwent',
+            'Surname': 'Smith'
+        },
+        0,
+        [],
+    )
+
+    print usr1['Name']
+
+    usr2 = ImportUser(
+        {
+            'First Name': 'Abe',
+            'Surname': 'Jackson'
+        },
+        0,
+        [],
+    )
+    print usr2['Name']
+
+    usr1['Name'] = usr2['Name']
+
+    print usr1['Name']
+
+def testCopyUsrContactObj():
+    usr1 = ImportUser(
+        {
+            'First Name': 'Derwent',
+            'Surname': 'Smith'
+        },
+        0,
+        [],
+    )
+
+
+    usr2 = deepcopy(usr1)
+
+    print ("USR1: ",usr1.name, usr1.name.kwargs)
+    print ("USR2: ",usr2.name, usr2.name.kwargs)
+
+    usr2['First Name'] = 'Johnny'
+
+    print ("USR1: ",usr1.name, usr1.name.kwargs)    
+    print ("USR2: ",usr2.name, usr2.name.kwargs)
+
+    name2 = usr2['Name']
+
+    print('NAME2:', name2, repr(name2))
+
+    usr1['Name'] = name2
+
+    print ("USR1: ",usr1.name, usr1.name.kwargs)
+    print ("USR2: ",usr2.name, usr2.name.kwargs)
+
+
 if __name__ == '__main__':
     inFolder = "../input/"
     
     outFolder = "../output/"
 
+    # testRefreshUsrContactObj()
+    testCopyUsrContactObj()
+
     # testUsrParser(inFolder, outFolder)
-    testSqlParser(inFolder, outFolder)
+    # testSqlParser(inFolder, outFolder)
+

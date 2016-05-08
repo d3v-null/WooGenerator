@@ -24,11 +24,13 @@ import paramiko
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
 import wordpress_xmlrpc
-from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT
+from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT, UsrSyncClient_JSON
 from SyncUpdate import SyncUpdate
 
 importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
+
+
 def timediff():
     return time.time() - start_time
 
@@ -37,12 +39,13 @@ testMode = False
 testMode = True
 skip_sync = False
 
-
-# sql_run = True
-# sql_run = not testMode
-sql_run = True
+sql_run = False
 sftp_run = False
 update_slave = False
+update_master = False
+sql_run = True
+sftp_run = True
+update_slave = True
 update_master = True
 do_problematic = True
 
@@ -89,6 +92,8 @@ with open(yamlPath) as stream:
     db_user = config.get(optionNamePrefix+'db_user')
     db_pass = config.get(optionNamePrefix+'db_pass')
     db_name = config.get(optionNamePrefix+'db_name')
+    db_charset = config.get(optionNamePrefix+'db_charset')
+    wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
     m_db_user = config.get(optionNamePrefix+'m_db_user')
     m_db_pass = config.get(optionNamePrefix+'m_db_pass')
     m_db_name = config.get(optionNamePrefix+'m_db_name')
@@ -141,7 +146,9 @@ if not sql_run:
 
 assert store_url, "store url must not be blank"
 xmlrpc_uri = store_url + 'xmlrpc.php'
+json_uri = store_url + 'wp-json/wp/v2'
 
+TimeUtils.setWpSrvOffset(wp_srv_offset)
 
 moPath = os.path.join(outFolder, m_i_filename)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
@@ -158,6 +165,12 @@ actFields = ";".join(actCols.keys())
 
 xmlConnectParams = {
     'xmlrpc_uri': xmlrpc_uri,
+    'wp_user': wp_user,
+    'wp_pass': wp_pass
+}
+
+jsonConnectParams = {
+    'json_uri': json_uri,
     'wp_user': wp_user,
     'wp_pass': wp_pass
 }
@@ -232,7 +245,9 @@ if sql_run:
         'host' : 'localhost',
         'user' : db_user,
         'password': db_pass,
-        'db'   : db_name
+        'db'   : db_name,
+        'charset': db_charset,
+        'use_unicode': True
     }
 
 
@@ -463,32 +478,33 @@ if not skip_sync:
         syncUpdate = SyncUpdate(mObject, sObject)
         syncUpdate.update(syncCols)
 
+        SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
                 if(syncUpdate.sMod):
                     insort(problematicUpdates, syncUpdate)
-                else:
-                    insort(masterUpdates, syncUpdate)
-                    insort(slaveUpdates, syncUpdate)
-
-            if(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
+                    continue
+            elif(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
                 insort(nonstaticMUpdates, syncUpdate)
                 if(syncUpdate.sMod):
                     insort(problematicUpdates, syncUpdate)
-                else:
-                    insort(masterUpdates, syncUpdate)
-            # if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-            #     insort(nonstaticSUpdates, syncUpdate)
-        else:
-            if(syncUpdate.sUpdated or syncUpdate.mUpdated):
-                insort(staticUpdates, syncUpdate)
-                if(syncUpdate.mUpdated and syncUpdate.sUpdated):
-                    insort(masterUpdates, syncUpdate)
-                    insort(slaveUpdates, syncUpdate)
-                if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
-                    insort(masterUpdates, syncUpdate)
-                if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-                    insort(slaveUpdates, syncUpdate)
+                    continue
+            elif(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+                insort(nonstaticSUpdates, syncUpdate)
+                if(syncUpdate.sMod):
+                    insort(problematicUpdates, syncUpdate)
+                    continue
+
+        if(syncUpdate.sUpdated or syncUpdate.mUpdated):
+            insort(staticUpdates, syncUpdate)
+            if(syncUpdate.mUpdated and syncUpdate.sUpdated):
+                insort(masterUpdates, syncUpdate)
+                insort(slaveUpdates, syncUpdate)
+            if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
+                insort(masterUpdates, syncUpdate)
+            if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
+                insort(slaveUpdates, syncUpdate)
         
     print debugUtils.hashify("COMPLETED MERGE")
     print timediff()
@@ -728,7 +744,7 @@ if allUpdates:
 
     with \
         UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient, \
-        UsrSyncClient_XMLRPC(xmlConnectParams) as slaveClient:
+        UsrSyncClient_JSON(jsonConnectParams) as slaveClient:
 
         for update in allUpdates:
             if update_master and update.mUpdated :

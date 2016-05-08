@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from collections import OrderedDict
 import os
 # import shutil
@@ -21,6 +22,7 @@ import paramiko
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
 import wordpress_xmlrpc
+from wordpress_json import WordpressJsonWrapper
 import pymysql
 
 class UsrSyncClient_Abstract(object):
@@ -43,6 +45,32 @@ class UsrSyncClient_Abstract(object):
     def uploadChanges(self, user_pkey, updates=None):
         assert user_pkey, "must have a valid primary key"
         assert self.connectionReady, "connection should be ready"
+
+class UsrSyncClient_JSON(UsrSyncClient_Abstract):
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def __init__(self, connectParams):
+        mandatory_params = ['json_uri', 'wp_user', 'wp_pass']
+        json_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
+        for param in mandatory_params:
+            assert eval(param), "missing mandatory param: " + param
+        self.client = WordpressJsonWrapper(*map(eval, mandatory_params))
+        
+    # @property
+    # def connectionReady(self):
+    #     return self.client
+
+    def uploadChanges(self, user_pkey, updates=None):
+        super(type(self), self).uploadChanges(user_pkey)
+        updates_json = SanitationUtils.encodeJSON(updates)
+        # print "UPDATES:", updates
+        updates_json_base64 = SanitationUtils.encodeBase64(updates_json)
+        # print updates_json_base64
+        json_out = self.client.update_user(user_id=user_pkey, data={'tansync_updated_fields': updates_json_base64})
+        # print json_out
+        return json_out
 
 class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
     class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
@@ -68,7 +96,7 @@ class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
         updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
         xmlrpc_out = self.client.call(self.UpdateUserXMLRPC(user_pkey, updates_json_base64))
         #TODO: process xmlrpc_out and determine if update was successful
-        print xmlrpc_out
+        SanitationUtils.safePrint( xmlrpc_out)
         return xmlrpc_out
 
 class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
@@ -140,6 +168,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def uploadChanges(self, user_pkey, updates=None):
         if not updates:
             return
+        # print "UPDATES:", updates
         assert self.connectionReady    
         updates['MYOB Card ID'] = user_pkey
 
@@ -257,5 +286,65 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         #     tbl_um = tbl_prefix+'usermeta'
         # )
         
+def testXMLRPC():
+    # store_url = 'http://technotea.com.au/'
+    # username = 'Neil'
+    # password = 'Stretch@6164'
+    store_url = 'http://minimac.ddns.me:11182/'
+    username = 'neil'
+    password = 'Stretch6164'
+    xmlrpc_uri = store_url + 'xmlrpc.php'
+
+    xmlConnectParams = {
+        'xmlrpc_uri': xmlrpc_uri,
+        'wp_user': username,
+        'wp_pass': password
+    }
+
+    client = UsrSyncClient_XMLRPC(xmlConnectParams)
+
+    fields = {
+        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+        'user_url': "http://www.laserphile.com/",
+        'user_login': "admin"
+    }
+
+    client.uploadChanges(1, fields)
+
+def testJSON():
+    store_url = 'http://technotea.com.au/'
+    username = 'Neil'
+    password = 'Stretch@6164'
+    # store_url = 'http://minimac.ddns.me:11182/'
+    # username = 'neil'
+    # password = 'Stretch6164'
+    json_uri = store_url + 'wp-json/wp/v2'
+
+    jsonConnectParams = {
+        'json_uri': json_uri,
+        'wp_user': username,
+        'wp_pass': password
+    }
+
+    client = UsrSyncClient_JSON(jsonConnectParams)
+
+    fields = {
+        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+        'user_url': "http://www.laserphile.com/asd",
+        # 'first_name': 'noodle',
+        'user_login': "admin"
+    }
+
+    # 
+
+    client.uploadChanges(1, fields)
+
+if __name__ == '__main__':
+    # testXMLRPC()
+    testJSON()
+
+
+
+
 
 

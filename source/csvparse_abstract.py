@@ -157,7 +157,7 @@ class ObjList(list):
         else:
             if DEBUG:
                 print "there are no objects"
-            return None
+            return ""
 
     def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
         assert filePath, "needs a filepath"

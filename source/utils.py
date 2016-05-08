@@ -497,31 +497,48 @@ class SanitationUtils:
     @staticmethod
     def encodeBase64(str):
         utf8_str = SanitationUtils.coerceBytes(str)
-        return base64.urlsafe_b64encode(utf8_str)
+        return base64.standard_b64encode(utf8_str)
 
     @staticmethod
     def decodeBase64(b64_str):
-        return base64.urlsafe_b64decode(b64_str)
+        return base64.standard_b64decode(b64_str)
 
 def testSanitationUtils():
     # pass
 
-    obj = {
-        'key': SanitationUtils.coerceBytes(" 👌 ashdfk"),
-        'list': [
-            "🐸",
-            u"\u2014"
-        ]
+    # obj = {
+    #     'key': SanitationUtils.coerceBytes(" 👌 ashdfk"),
+    #     'list': [
+    #         "🐸",
+    #         u"\u2014"
+    #     ]
+    # }
+    # print obj, repr(obj)
+    # obj_json = SanitationUtils.encodeJSON(obj)
+    # SanitationUtils.safePrint(obj_json, repr(obj_json) )
+    # obj_json_base64 = SanitationUtils.encodeBase64(obj_json)
+    # print obj_json_base64
+    # obj_json_decoded = SanitationUtils.decodeBase64(obj_json_base64)
+    # print obj_json_decoded
+    # obj_decoded = SanitationUtils.decodeJSON(obj_json_decoded)
+    # print obj_decoded
+
+    fields = {
+        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+        'user_url': "http://www.laserphile.com/asd",
+        # 'first_name': 'noodle',
+        'user_login': "admin"
     }
-    print obj, repr(obj)
-    obj_json = SanitationUtils.encodeJSON(obj)
-    SanitationUtils.safePrint(obj_json), repr(obj_json)
-    obj_json_base64 = SanitationUtils.encodeBase64(obj_json)
-    print obj_json_base64
-    obj_json_decoded = SanitationUtils.decodeBase64(obj_json_base64)
-    print obj_json_decoded
-    obj_decoded = SanitationUtils.decodeJSON(obj_json_decoded)
-    print obj_decoded
+
+    SanitationUtils.safePrint( fields, repr(fields) )
+    fields_json = SanitationUtils.encodeJSON(fields)
+    SanitationUtils.safePrint( fields_json, repr(fields_json) )
+    fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
+    SanitationUtils.safePrint( fields_json_base64, repr(fields_json_base64) )
+
+
+    # should be   eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm/wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
+    # is actually eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
 
     # n1 = u"D\u00C8RWENT"
     # n2 = u"d\u00E8rwent"
@@ -561,8 +578,8 @@ def testSanitationUtils():
     # print SanitationUtils.makeSafeOutput(None)
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
-    a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
-    SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
+    # a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
+    # SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
 
 class NameUtils:
     ordinalNumberRegex = r"(\d+)(?:ST|ND|RD|TH)"
@@ -2108,6 +2125,7 @@ def testAddressUtils():
 
 
 class TimeUtils:
+    wpSrvOffset = 0
 
     dateFormat = "%Y-%m-%d"
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
@@ -2125,7 +2143,11 @@ class TimeUtils:
                     return time.mktime(tstruct)
             except:
                 pass
-        return 0        
+        return 0   
+
+    @classmethod
+    def setWpSrvOffset(_class, offset):     
+        _class.wpSrvOffset = offset
 
     @staticmethod
     def actStrptime(string):
@@ -2158,6 +2180,10 @@ class TimeUtils:
         return int(t + timezoneOffset)
 
     @staticmethod
+    def wpServerToLocalTime(t):
+        return TimeUtils.serverToLocalTime(t, TimeUtils.wpSrvOffset)
+
+    @staticmethod
     def getDateStamp():
         return time.strftime(TimeUtils.dateFormat)
 
@@ -2172,23 +2198,29 @@ class TimeUtils:
 
 
 def testTimeUtils():
-    gTime = TimeUtils.gDriveStrpTime("14/02/2016")
-    print "gTime", gTime
-    sTime = TimeUtils.localToServerTime(gTime)
-    print "sTime", sTime
+    TimeUtils.setWpSrvOffset(-7200)
+    inTime = "2016-05-06 16:07:00"
+    print TimeUtils.wpStrptime(inTime)
+    print TimeUtils.wpTimeToString(TimeUtils.wpStrptime(inTime))
+    print TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(inTime)))
 
-    print TimeUtils.wpTimeToString(1455379200)
+    # gTime = TimeUtils.gDriveStrpTime("14/02/2016")
+    # print "gTime", gTime
+    # sTime = TimeUtils.localToServerTime(gTime)
+    # print "sTime", sTime
 
-    t1 = TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
-    t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
-    t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
-    t4 = TimeUtils.wpStrptime("2015-12-18 16:03:37")
-    print [
-        (t1, TimeUtils.wpTimeToString(t1)), 
-        (t2, TimeUtils.wpTimeToString(t2)), 
-        (t3, TimeUtils.wpTimeToString(t3)), 
-        (t4, TimeUtils.wpTimeToString(t4))
-    ]
+    # print TimeUtils.wpTimeToString(1455379200)
+
+    # t1 = TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
+    # t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
+    # t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
+    # t4 = TimeUtils.wpStrptime("2015-12-18 16:03:37")
+    # print [
+    #     (t1, TimeUtils.wpTimeToString(t1)), 
+    #     (t2, TimeUtils.wpTimeToString(t2)), 
+    #     (t3, TimeUtils.wpTimeToString(t3)), 
+    #     (t4, TimeUtils.wpTimeToString(t4))
+    # ]
 
 class HtmlReporter(object):
     """docstring for htmlReporter"""
@@ -2330,6 +2362,23 @@ class descriptorUtils:
             assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(key, type(value))
             self[key] = value
 
+        return property(getter, setter)
+
+    @staticmethod
+    def kwargAliasProperty(key, handler):
+        def getter(self):
+            if self.properties_override:
+                retval = handler(self)
+            else:
+                retval = self.kwargs.get(key)
+            # print "getting ", key, "->", retval
+            return retval
+
+        def setter(self, value):
+            # print "setting ", key, '<-', value
+            self.kwargs[key] = value
+            self.processKwargs()
+        
         return property(getter, setter)
 
 class listUtils:
@@ -2524,8 +2573,8 @@ class PHPUtils:
     
 if __name__ == '__main__':
     # testHTMLReporter()
-    # testTimeUtils()
+    testTimeUtils()
     # testSanitationUtils()
     # testUnicodeWriter()
     # testAddressUtils()
-    testNameUtils()
+    # testNameUtils()

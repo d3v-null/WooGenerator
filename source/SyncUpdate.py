@@ -173,11 +173,14 @@ class SyncUpdate(Registrar):
         if( col not in self.syncWarnings.keys()):
             self.syncWarnings[col] = []
         self.syncWarnings[col].append((subject, reason, oldVal, newVal, data))
+        # print "SYNC WARNING: ", self.syncWarnings[col][-1]
 
     def addSyncPass(self, col, reason, val="", data={}):
         if( col not in self.syncPasses.keys()):
             self.syncPasses[col] = []
         self.syncPasses[col].append((reason, val, data))
+        # print "SYNC PASS: ", self.syncPasses[col][-1]
+
 
     def displaySyncWarnings(self, tablefmt=None):
         if self.syncWarnings:
@@ -213,6 +216,7 @@ class SyncUpdate(Registrar):
             return self.master_name
 
     def loserUpdate(self, winner, col, reason = "", data={}):
+        # SanitationUtils.safePrint("loserUpdate ", winner, col, reason)
         if(winner == self.master_name):
             # oldLoserObject = self.oldSObject
             oldLoserValue = self.getSValue(col)
@@ -229,7 +233,11 @@ class SyncUpdate(Registrar):
             newLoserObject = self.newMObject
         # if data.get('warn'): 
         self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data)
+        # SanitationUtils.safePrint("loser %s was %s" % (col, repr(newLoserObject[col])))
+        # SanitationUtils.safePrint("updating to ", oldWinnerValue)
         newLoserObject[col] = oldWinnerValue
+        # SanitationUtils.safePrint( "loser %s is now %s" % (col, repr(newLoserObject[col])))
+        # SanitationUtils.safePrint( "loser Name is now ", newLoserObject['Name'])
         self.updates += 1
         if data.get('static'): 
             self.static = False
@@ -238,6 +246,7 @@ class SyncUpdate(Registrar):
             if data.get('static'): self.importantStatic = False
 
     def tieUpdate(self, col, reason, data={}):
+        # print "tieUpdate ", col, reason
         if self.oldSObject:
             self.addSyncPass(col, reason, self.oldSObject.get(col))
         elif self.oldMObject:
@@ -300,6 +309,10 @@ class SyncUpdate(Registrar):
     def update(self, syncCols):
         for col, data in syncCols.items():
             self.updateCol(col, data)
+        # if self.mUpdated:
+        #     self.newMObject.refreshContactObjects()
+        # if self.sUpdated:
+        #     self.newSObject.refreshContactObjects()
 
     def tabulate(self, tablefmt=None):
         subtitle_fmt = "%s"
@@ -325,12 +338,14 @@ class SyncUpdate(Registrar):
             (info_fmt % ("importantStatic", "yes" if self.importantStatic else "no"))
         ]))
         out_str += info_delimeter
-        out_str += info_delimeter.join([
+        out_str += info_delimeter.join(filter(None,[
             subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.importantUpdates),
             self.displaySyncWarnings(tablefmt),
-            subtitle_fmt % 'XMLRPC CHANGES',
-            self.displayChangesForXMLRPC(tablefmt)        
-        ])
+            subtitle_fmt % '%s CHANGES' % self.master_name,
+            self.displayMasterChanges(tablefmt),        
+            subtitle_fmt % '%s CHANGES' % self.slave_name,
+            self.displaySlaveChanges(tablefmt),        
+        ]))
         newMatch = Match([self.newMObject], [self.newSObject])
         out_str += info_delimeter
         out_str += info_delimeter.join([
@@ -340,7 +355,9 @@ class SyncUpdate(Registrar):
 
         return out_str
 
-    def getSlaveUpdatesRecursive(self, col, updates={}):
+    def getSlaveUpdatesRecursive(self, col, updates=None):
+        if updates == None: updates = {}
+        # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
         if col in ColData_User.data.keys():
             data = ColData_User.data[col]
             if data.get('wp'):
@@ -353,11 +370,17 @@ class SyncUpdate(Registrar):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
                     if \
-                        SanitationUtils.coerceUnicode(self.newSObject.get(alias)) == \
-                        SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
+                      SanitationUtils.coerceUnicode(self.newSObject.get(alias)) == \
+                      SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % ( col, alias, self.newSObject.get(alias), self.oldSObject.get(alias)) )
                         continue
+                    # else:
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % ( col, alias, self.newSObject.get(alias), self.oldSObject.get(alias)) )
                     #if the new value is not the same as the old value
-                    updates = listUtils.combineOrderedDicts(updates, self.getSlaveUpdatesRecursive(alias))
+                    # SanitationUtils.safePrint("pre:", updates)
+                    updates = self.getSlaveUpdatesRecursive(alias, updates)
+                    # SanitationUtils.safePrint("post:", updates)
+        # SanitationUtils.safePrint("returning updates for col %s : %s" % (col, str(updates)))
         return updates
 
     def getSlaveUpdates(self):
@@ -368,8 +391,9 @@ class SyncUpdate(Registrar):
                     updates = self.getSlaveUpdatesRecursive(col, updates)
         return updates
 
-    def getMasterUpdatesRecursive(self, col, updates={}):
-        if col in ColData_User.data.keys():
+    def getMasterUpdatesRecursive(self, col, updates=None):
+        if updates == None: updates = {}
+        if col in ColData_User.data:
             data = ColData_User.data[col]
             if data.get('act'):
                 updates[col] = self.newMObject.get(col)
@@ -377,11 +401,16 @@ class SyncUpdate(Registrar):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
                     if \
-                        SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
-                        SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
+                      SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
+                      SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
                         continue
+                    # else:
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
+
                     #if the new value is not the same as the old value
-                    updates = listUtils.combineOrderedDicts(updates, self.getMasterUpdatesRecursive(alias))
+                    updates = self.getMasterUpdatesRecursive(alias, updates)
+                    # SanitationUtils.safePrint(updates)
         return updates
 
     def getMasterUpdates(self):
@@ -392,13 +421,13 @@ class SyncUpdate(Registrar):
                     updates = self.getMasterUpdatesRecursive(col, updates)
         return updates
 
-    def displayChangesForXMLRPC(self, tablefmt=None):
+    def displaySlaveChanges(self, tablefmt=None):
         if self.syncWarnings:
             info_delimeter = "\n"
-            subtitle_fmt = "%s"
+            # subtitle_fmt = "%s"
             if(tablefmt == "html"):
                 info_delimeter = "<br/>"
-                subtitle_fmt = "<h4>%s</h4>" 
+                # subtitle_fmt = "<h4>%s</h4>" 
 
             print_elements = []
 
@@ -406,7 +435,7 @@ class SyncUpdate(Registrar):
                 user_pkey = self.WPID
                 assert user_pkey, "primary key must be valid, %s" % repr(user_pkey)
             except Exception as e:
-                print_elements.append("NO XMLRPC CHANGES: must have a primary key to update user data: "+repr(e)) 
+                print_elements.append("NO %s CHANGES: must have a primary key to update user data: " % self.slave_name +repr(e)) 
                 user_pkey = None
                 return info_delimeter.join(print_elements)
 
@@ -419,15 +448,55 @@ class SyncUpdate(Registrar):
                 updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + updates.items()])
                 print_elements.append(
                     info_delimeter.join([
-                        subtitle_fmt % "all updates" ,
+                        # subtitle_fmt % "all updates" ,
                         tabulate(updates_table, headers="keys", tablefmt=tablefmt)
                     ])
                 )
-                updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
-                print_elements.append(updates_json_base64)
+                # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+                # print_elements.append(updates_json_base64)
                 # return (user_pkey, all_updates_json_base64)
             else:
-                print_elements.append("NO XMLRPC CHANGES: no user_updates or meta_updates")     
+                print_elements.append("NO %s CHANGES: no user_updates or meta_updates" % self.slave_name)     
+  
+            return info_delimeter.join(print_elements)
+        return ""
+
+    def displayMasterChanges(self, tablefmt=None):
+        if self.syncWarnings:
+            info_delimeter = "\n"
+            # subtitle_fmt = "%s"
+            if(tablefmt == "html"):
+                info_delimeter = "<br/>"
+                # subtitle_fmt = "<h4>%s</h4>" 
+
+            print_elements = []
+
+            try:
+                user_pkey = self.WPID
+                assert user_pkey, "primary key must be valid, %s" % repr(user_pkey)
+            except Exception as e:
+                print_elements.append("NO %s CHANGES: must have a primary key to update user data: " % self.master_name+repr(e)) 
+                user_pkey = None
+                return info_delimeter.join(print_elements)
+
+            updates = self.getMasterUpdates()
+            additional_updates = OrderedDict()
+            if user_pkey:
+                additional_updates['ID'] = user_pkey
+
+            if updates:
+                updates_table = OrderedDict([(key, [value]) for key, value in additional_updates.items() + updates.items()])
+                print_elements.append(
+                    info_delimeter.join([
+                        # subtitle_fmt % "changes" ,
+                        tabulate(updates_table, headers="keys", tablefmt=tablefmt)
+                    ])
+                )
+                # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+                # print_elements.append(updates_json_base64)
+                # return (user_pkey, all_updates_json_base64)
+            else:
+                print_elements.append("NO %s CHANGES: no user_updates or meta_updates" %self.master_name)     
   
             return info_delimeter.join(print_elements)
         return ""
@@ -443,7 +512,7 @@ class SyncUpdate(Registrar):
         #todo: Determine if file imported correctly and delete file
 
     def updateSlave(self, client):
-            # SanitationUtils.safePrint(  self.displayChangesForXMLRPC() )
+            # SanitationUtils.safePrint(  self.displaySlaveChanges() )
         updates = self.getSlaveUpdates()
         if not updates:
             return

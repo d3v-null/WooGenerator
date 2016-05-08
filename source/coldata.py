@@ -808,7 +808,7 @@ class ColData_User(ColData_Base):
 
         ('Name', {
             'user':True,
-            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo', 'Spouse', 'Salutation', 'Search Text', 'HO Contact'],
+            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo', 'Spouse', 'Salutation', 'Search Text', 'HO Contact', 'Contact'],
             'sync':True,
             'static':True,
             'basic':True,
@@ -1401,6 +1401,39 @@ class ColData_User(ColData_Base):
 
     def getBasicCols(self):
         return self.getExportCols('basic')
+
+    def getTansyncDefaultsRecursive(self, col, exportCols=None, data={}):
+        if exportCols is None: 
+            exportCols = OrderedDict()
+
+        if data.get('wp'):
+            wp_data = data['wp']
+            assert wp_data['key']
+            key = wp_data['key']
+            sync_label = col
+            label = data['label'] if label in data else sync_label
+            exportCols[wp_data['key']] = 
+
+        for col, data in self.data.items():
+            if data.get('sync'):
+            if data.get('wp'):
+                wp_data = data.get('wp')
+
+
+
+    def getTansyncDefaults(self):
+        exportCols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('sync'):
+                exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
+
+            if data.get('wp'):
+                wp_data = data.get('wp')
+                exportCols['key'] = 
+                exportCols[col] = data
+
+        return exportCols
+
 
 if __name__ == '__main__':
     print "Testing ColData_MYO Class:"
