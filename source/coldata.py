@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from utils import listUtils
+import json
 
 class ColData_Base(object):
 
@@ -741,7 +742,7 @@ class ColData_User(ColData_Base):
             'sync':'master_override',
             'warn':True,
             'static':True,
-            'basic':True
+            'basic':True,
         }),
         ('E-mail', {
             'wp': {
@@ -821,6 +822,8 @@ class ColData_User(ColData_Base):
                 'key': 'nickname'
             },
             'act': True,
+            'mutable':True,
+            'visible':True,
             # 'label':'contact_name',
             # 'warn': True,
             # 'user':True,
@@ -834,6 +837,8 @@ class ColData_User(ColData_Base):
                 'key': 'first_name'
             },
             'act': True,
+            'mutable':True,
+            'visible':True,
             # 'label':'first_name',
             'import':True,
             # 'user':True,
@@ -848,8 +853,10 @@ class ColData_User(ColData_Base):
                 'key': 'last_name'
             },
             'act': True,
+            'mutable':True,
             # 'label':'last_name',
             'import': True,
+            'visible':True,
             # 'user':True,
             # 'report': True,
             # 'sync':True,
@@ -863,6 +870,8 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
+            'mutable':True,
+            'visible':True,
             # 'user': True,    
         }),
         ('Name Suffix', {
@@ -872,7 +881,9 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
+            'visible':True,
             # 'user': True,    
+            'mutable':True,
         }),
         ('Name Prefix', {
             'wp': {
@@ -881,7 +892,9 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
+            'visible':True,
             # 'user': True,    
+            'mutable':True,
         }),
         ('Memo', {
             'wp': {
@@ -922,6 +935,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
+            # 'visible':True,
         }),
         ('Birth Date',{
             'wp': {
@@ -933,6 +947,8 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'visible':True,
+            'mutable':True,
         }),
 
 
@@ -950,6 +966,8 @@ class ColData_User(ColData_Base):
             'report':True,
             'warn': True,
             'static':True,
+            # 'visible':True,
+            'contact':True,
         }),
         ('Phone',{
             'wp': {
@@ -964,6 +982,8 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
+            # 'visible':True,
+            # 'contact':True,
         }),
         ('Fax',{
             'wp': {
@@ -975,6 +995,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'contact':True,
+            'visible':True,
+            'mutable':True,
         }),
         ('Mobile Phone Preferred',{
             'wp': {
@@ -986,6 +1009,8 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'visible':True,
+            'mutable':True,
         }),
         ('Phone Preferred',{
             'wp': {
@@ -997,6 +1022,8 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'visible':True,
+            'mutable':True,
         }),
 
 
@@ -1030,9 +1057,10 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'warn': True,
-            'static':True,
-            'capitalized':True,
+            # 'warn': True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Address 2',{
             'wp': {
@@ -1044,9 +1072,10 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'warn': True,
-            'static':True,
-            'capitalized':True,
+            # 'warn': True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('City',{
             'wp': {
@@ -1058,10 +1087,11 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'warn': True,
-            'static':True,
+            # 'warn': True,
+            # 'static':True,
             # 'report': True,
-            'capitalized':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Postcode',{
             'wp': {
@@ -1073,8 +1103,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'warn': True,
-            'static':True,
+            # 'warn': True,
+            # 'static':True,
+            # 'visible':True,
             # 'report': True,
         }),
         ('State',{
@@ -1087,10 +1118,11 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'warn': True,
-            'static':True,
+            # 'warn': True,
+            # 'static':True,
             # 'report':True,
-            'capitalized':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Country', {
             'wp': {
@@ -1101,9 +1133,10 @@ class ColData_User(ColData_Base):
             # 'label':'billing_country',
             'import':True,
             'user':True,
-            'warn':True,
-            'static':True,
-            'capitalized':True
+            # 'warn':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Shire', {
             'wp': False,
@@ -1111,9 +1144,10 @@ class ColData_User(ColData_Base):
             # 'label':'billing_country',
             'import':True,
             'user':True,
-            'warn':True,
-            'static':True,
-            'capitalized':True
+            # 'warn':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Home Address 1',{
             'wp': {
@@ -1125,8 +1159,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
-            'capitalized':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Home Address 2',{
             'wp': {
@@ -1138,8 +1173,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
-            'capitalized':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Home City',{
             'wp': {
@@ -1151,8 +1187,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
-            'capitalized':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Home Postcode',{
             'wp': {
@@ -1164,7 +1201,8 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
+            # 'static':True,
+            # 'visible':True,
         }),
         ('Home Country',{
             'wp': {
@@ -1176,8 +1214,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
-            'capitalized':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
         ('Home State',{
             'wp': {
@@ -1189,8 +1228,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             # 'sync':True,
-            'static':True,
-            'capitalized':True,
+            # 'static':True,
+            # 'capitalized':True,
+            # 'visible':True,
         }),
 
 
@@ -1220,6 +1260,7 @@ class ColData_User(ColData_Base):
             # 'report':True,
             'sync':'master_override',
             'warn':True,
+            'visible':True,
         }),
         ('Direct Brand', {
             'import':True,
@@ -1245,6 +1286,7 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':'master_override',
             'warn':True,
+            'visible':True,
         }),
 
 
@@ -1269,7 +1311,9 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,   
             'sync':True,   
-            'warn': True,      
+            'warn': True,     
+            'visible':True,
+            'mutable':True,
         }),
         ('Business Type',{
             'wp': {
@@ -1281,6 +1325,8 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,    
             'sync':True,
+            'visible':True,
+            # 'mutable':True
         }),
         ('Lead Source',{
             'wp': {
@@ -1292,6 +1338,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,    
             'sync':True,
+            # 'visible':True,
         }),
         ('Referred By',{
             'wp': {
@@ -1315,18 +1362,6 @@ class ColData_User(ColData_Base):
             'user':True,
             # 'report':True,
         }),
-        # ('Nick Name', {
-        #     'wp': {
-        #         'meta': True, 
-        #         'key': 'nickname'
-        #     },
-        #     # 'label': 'nickname'
-        # }),
-        # ('rowcount', {
-        #     # 'import':True,
-        #     # 'user':True,
-        #     'report':True,
-        # }),
         ('Create Date', {
             'import': True,
             'act':True,
@@ -1371,7 +1406,62 @@ class ColData_User(ColData_Base):
             'act':True,
             'import': True,
             # 'report': True
+        }),
+        ("Facebook Username",{
+            'wp': {
+                'key': "facebook",
+                'meta': True
+            },
+            'mutable':True,
+            'visible':True,
+            'contact':True,
+            'sync':True,
+            # 'import':True
+        }),
+        ("Twitter Username",{
+            'wp': {
+                'key': "twitter",
+                'meta': True
+            },
+            'contact':True,
+            'mutable':True,
+            'visible':True,
+            'sync':True,
+            # 'import':True
+        }),
+        ("Google+ Username",{
+            'wp': {
+                'key': "gplus",
+                'meta': True
+            },
+            'contact':True,
+            'mutable':True,
+            'visible':True,
+            'sync':True,
+            # 'import':True
+        }),
+        ("Instagram",{
+            'wp': {
+                'key': "instagram",
+                'meta': True
+            },
+            'sync':True,
+            'contact':True,
+            'mutable':True,
+            'visible':True,
+            # 'import':True
+        }),
+        ("Added to mailing list",{
+            'wp': {
+                'key': 'mailing_list'
+            },
+            'sync':True,
         })
+        # ('rowcount', {
+        #     # 'import':True,
+        #     # 'user':True,
+        #     'report':True,
+        # }),
     ])
 
     def __init__(self, data=None):
@@ -1406,50 +1496,65 @@ class ColData_User(ColData_Base):
         if exportCols is None: 
             exportCols = OrderedDict()
 
-        if data.get('wp'):
+        # print "getting sync data: ", col, data
+
+        new_data = {}
+        if data.get('sync'):
+            sync_data = data.get('sync')
+            if sync_data == 'master_override':
+                new_data['sync_ingress'] = 1
+                new_data['sync_egress'] = 0
+            elif sync_data == 'slave_override':
+                new_data['sync_ingress'] = 0
+                new_data['sync_egress'] = 1
+            else:
+                new_data['sync_egress'] = 1
+                new_data['sync_ingress'] = 1
+            new_data['sync_label'] = col
+
+        if data.get('visible'): new_data['profile_display'] = 1
+        if data.get('mutable'): new_data['profile_modify'] = 1
+        if data.get('contact'): new_data['contact_method'] = 1
+
+
+        if new_data and data.get('wp'):
             wp_data = data['wp']
-            assert wp_data['key']
-            key = wp_data['key']
-            sync_label = col
-            label = data['label'] if label in data else sync_label
-            exportCols[wp_data['key']] = 
+            if not wp_data.get('meta'):
+                new_data['core'] = 1
+            if not wp_data.get('generated'):
+                assert wp_data.get('key'), "column %s must have key" % col
+                key = wp_data['key']
+                exportCols[key] = new_data
 
-        for col, data in self.data.items():
-            if data.get('sync'):
-            if data.get('wp'):
-                wp_data = data.get('wp')
+        if data.get('aliases'):
+            for alias in data['aliases']:
+                alias_data = self.data.get(alias, {})
+                alias_data['sync'] = data.get('sync')
+                exportCols = self.getTansyncDefaultsRecursive(alias, exportCols, alias_data)
 
-
+        return exportCols
 
     def getTansyncDefaults(self):
         exportCols = OrderedDict()
         for col, data in self.data.items():
-            if data.get('sync'):
-                exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
-
-            if data.get('wp'):
-                wp_data = data.get('wp')
-                exportCols['key'] = 
-                exportCols[col] = data
-
+            exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
         return exportCols
 
-
-if __name__ == '__main__':
+def testColDataMyo():
     print "Testing ColData_MYO Class:"
     colData = ColData_MYO()
     print colData.getImportCols()
     print colData.getDefaults()
     print colData.getProductCols()
 
-    print ""
+def testColDataWoo():
     print "Testing ColData_Woo class:"
     colData = ColData_Woo()
     print colData.getImportCols()
     print colData.getDefaults()
     print colData.getProductCols()
-
-    print ""
+    
+def testColDataUser():
     print "Testing ColData_User class:"
     colData = ColData_User()
     print "importCols", colData.getImportCols()
@@ -1458,5 +1563,19 @@ if __name__ == '__main__':
     print "capitalCols", colData.getCapitalCols().keys()
     print "syncCols", colData.getSyncCols().keys()
     print "wpcols", colData.getWPCols().keys()
+    
+def testTansyncDefaults():
+    colData = ColData_User()
+    print '{'
+    for col, data in colData.getTansyncDefaults().items():
+        print '"%s": %s,' % (col, json.dumps(data))
+    print '}'
+
+if __name__ == '__main__':
+    # testColDataMyo()
+    # testColDataWoo()
+    # testColDataUser()
+    testTansyncDefaults()
+
 
     
