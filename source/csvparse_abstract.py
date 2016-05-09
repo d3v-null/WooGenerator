@@ -9,6 +9,8 @@ from time import time
 
 DEBUG = False
 DEBUG_PARSER = False
+# DEBUG = True
+# DEBUG_PARSER = True
 DEBUG_PROGRESS = True
 
 import os
@@ -223,6 +225,7 @@ class CSVParse_Base(object, Registrar):
             else:
                 self.registerError('Could not find index of '+str(col) )
             if DEBUG: print "indices [%s] = %s" % (col, self.indices.get(col))
+        if DEBUG: print "finished analysing header"
 
     def retrieveColFromRow(self, col, row):
         # if DEBUG_PARSER: print "retrieveColFromRow | col: ", col
@@ -286,9 +289,15 @@ class CSVParse_Base(object, Registrar):
 
     def analyseRows(self, unicode_rows):
         if DEBUG_PROGRESS:
-            unicode_rows = list(unicode_rows)
-            rowlen = len(unicode_rows)
             last_print = time()
+            rows = []
+            try:
+                for row in unicode_rows:
+                    rows.append(row)
+            except Exception, e:
+                raise Exception("could not append row %d, %s: \n\t%s" % (len(rows), str(e), rows[-1]))
+            rowlen = len(rows)
+            unicode_rows = rows
 
         for rowcount, unicode_row in enumerate(unicode_rows):
             if DEBUG_PROGRESS:
@@ -297,7 +306,7 @@ class CSVParse_Base(object, Registrar):
                     last_print = now
                     print "%d of %d rows processed" % (rowcount, rowlen)
 
-
+                
             if unicode_row: 
                 non_unicode = filter(
                     lambda unicode_cell: not isinstance(unicode_cell, unicode) if unicode_cell else False,
@@ -315,7 +324,6 @@ class CSVParse_Base(object, Registrar):
                 continue
             else:
                 if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
-                pass
             try:
                 self.processObject(objectData) 
                 if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
@@ -337,7 +345,7 @@ class CSVParse_Base(object, Registrar):
         if encoding is None:
             encoding = "utf8"
         self.registerMessage("Analysing file: {0}, encoding: {1}".format(fileName, encoding))
-        with open(fileName, 'rb') as byte_file_obj:
+        with open(fileName, 'rbU') as byte_file_obj:
             # I can't imagine this having any problems
             byte_sample = byte_file_obj.read(1000)
             byte_file_obj.seek(0)

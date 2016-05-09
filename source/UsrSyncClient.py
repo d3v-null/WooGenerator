@@ -240,37 +240,134 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
 class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     """docstring for UsrSyncClient_SQL_WP"""
-    def __init__(self, connectParams, dbParams, fsParams):
+    def __init__(self, connectParams, dbParams):
         super(UsrSyncClient_SQL_WP, self).__init__()
         self.connectParams = connectParams
         self.dbParams = dbParams
-        self.fsParams = fsParams
+        # self.fsParams = fsParams
         self.client = SSHTunnelForwarder( **connectParams )
 
-    def analyseRemote(self, parser, since=None):
+    def __enter__(self):
+        self.client.start()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.client.close()
+
+    def analyseRemote(self, parser, since=None, limit=None):
         tbl_prefix = self.dbParams.pop('tbl_prefix','')
+        # srv_offset = self.dbParams.pop('srv_offset','')
         self.dbParams['port'] = self.client.local_bind_address[-1]
         cursor = pymysql.connect( **self.dbParams ).cursor()
+
+        if since:
+            since_t = TimeUtils.wpServerToLocalTime( TimeUtils.wpStrptime(since))
+            assert since_t, "Time should be valid format, got %s" % since
+            since_s = TimeUtils.wpTimeToString(since_t)
+
+            where_clause = "WHERE tu.`time` > '%s'" % since_s
+        else:
+            where_clause = ""
 
         sql_select_modtime = """\
     SELECT
         tu.`user_id` as `user_id`,
         MAX(tu.`time`) as `Edited in Wordpress`
     FROM
-        {tbl_tu} tu
+        {tbl_tu} tu 
+    {where_clause}
     GROUP BY 
         tu.`user_id`""".format(
-            tbl_tu=tbl_prefix+'tansync_updates'
+            tbl_tu=tbl_prefix+'tansync_updates',
+            where_clause = where_clause
+        )
+        # print sql_select_modtime
+
+        if since:
+            cursor.execute(sql_select_modtime)
+            results = list(cursor)
+            if len(results) == 0:
+                #nothing to analyse
+                return
+            else:
+                # n rows to analyse
+                print "THERE ARE %d ITEMS" % len(results)
+
+        wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
+
+        assert all([
+            'Wordpress ID' in wpCols.keys(),
+            wpCols['Wordpress ID'].get('wp', {}).get('key') == 'ID',
+            wpCols['Wordpress ID'].get('wp', {}).get('final')
+        ]), 'ColData should be configured correctly'
+
+        userdata_cols = ",\n\t\t".join(filter(None,[
+            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'].get('meta') else "u.%s as `%s`") % (data['wp']['key'], col)\
+            for col, data in wpCols.items()
+        ]))
+
+        # print userdata_cols
+
+        sql_select_user = """
+    SELECT  
+        {usr_cols}
+    FROM
+        {tbl_u} u
+        LEFT JOIN {tbl_um} um
+        ON ( um.`user_id` = u.`ID`)
+    GROUP BY
+        u.`ID`""".format(
+            tbl_u = tbl_prefix+'users', 
+            tbl_um = tbl_prefix+'usermeta',
+            usr_cols = userdata_cols,
         )
 
-        cursor.execute(sql_select_modtime)
+        # print sql_select_user
 
-        print cursor.description
+        sql_select_user_modtime = """
+SELECT *
+FROM
+( 
+    {sql_ud} 
+) as ud
+{join_type} JOIN 
+(
+    {sql_mt}
+) as lu
+ON (ud.`Wordpress ID` = lu.`user_id`)
+{limit_clause};""".format(
+            sql_ud = sql_select_user,
+            sql_mt = sql_select_modtime,
+            join_type = "INNER" if where_clause else "LEFT",
+            limit_clause = "LIMIT %d" % limit if limit else ""
+        )
 
-        print "-" * len(cursor.description)
+        # print sql_select_user_modtime
 
-        for row in cursor:
-            print row
+        cursor.execute(sql_select_user_modtime)
+
+        headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
+
+        results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
+
+        rows = [headers] + results
+
+        # print rows
+
+        if results:
+            print "there are %d results" % len(results)
+            parser.analyseRows(rows)
+
+        # for row in cursor:
+            # print row
+
+        # saRows = []
+
+        # for i, row in enumerate(cursor):
+        #     saRows += [map(SanitationUtils.coerceUnicode, row)]
+
+        # if saRows:
+        #     parser.analyseRows(saRows)
 
         # sql_select_user = """\
         # SELECT  
@@ -339,12 +436,82 @@ def testJSON():
 
     client.uploadChanges(1, fields)
 
+def testSQLWP():
+    # srcFolder = "../source/"
+    # inFolder = "../input/"
+    yamlPath = "merger_config.yaml"
+    # importName = time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+    with open(yamlPath) as stream:
+        optionNamePrefix = 'test_'
+
+        config = yaml.load(stream)
+
+        # if 'inFolder' in config.keys():
+        #     inFolder = config['inFolder']
+        # if 'outFolder' in config.keys():
+        #     outFolder = config['outFolder']
+        # if 'logFolder' in config.keys():
+        #     logFolder = config['logFolder']
+
+        #mandatory
+        # merge_mode = config.get('merge_mode', 'sync')
+        ssh_user = config.get(optionNamePrefix+'ssh_user')
+        ssh_pass = config.get(optionNamePrefix+'ssh_pass')
+        ssh_host = config.get(optionNamePrefix+'ssh_host')
+        ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
+        remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
+        remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
+        db_user = config.get(optionNamePrefix+'db_user')
+        db_pass = config.get(optionNamePrefix+'db_pass')
+        db_name = config.get(optionNamePrefix+'db_name')
+        db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
+        wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
+        tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
+
+    TimeUtils.setWpSrvOffset(wp_srv_offset)
+
+    SSHTunnelForwarderAddress = (ssh_host, ssh_port)
+    SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
+
+    SSHTunnelForwarderParams = {
+        'ssh_address_or_host':SSHTunnelForwarderAddress,
+        'ssh_password':ssh_pass,
+        'ssh_username':ssh_user,
+        'remote_bind_address': SSHTunnelForwarderBindAddress,
+    }
+
+    PyMySqlConnectParams = {
+        'host' : 'localhost',
+        'user' : db_user,
+        'password': db_pass,
+        'db'   : db_name,
+        'charset': db_charset,
+        'use_unicode': True,
+        'tbl_prefix': tbl_prefix,
+        # 'srv_offset': wp_srv_offset,
+    }
+
+    fsParams = {
+
+    }
+
+    sqlClient = UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams, fsParams)
+
+    colData = ColData_User()
+
+    saParser = CSVParse_User(
+        cols = colData.getImportCols(),
+        defaults = colData.getDefaults()
+    )
+
+    sqlClient.analyseRemote(saParser, since='2016-03-01 00:00:00')
+
+    CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+
+
 if __name__ == '__main__':
     # testXMLRPC()
-    testJSON()
-
-
-
-
-
-
+    # testJSON()
+    testSQLWP()

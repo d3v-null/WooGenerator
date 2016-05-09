@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from utils import listUtils
+from utils import listUtils, debugUtils
 import json
 
 class ColData_Base(object):
@@ -9,6 +9,7 @@ class ColData_Base(object):
         assert issubclass(type(data), dict), "Data should be a dictionary subclass"
         self.data = data
         
+    @classmethod
     def getImportCols(self):
         imports = []
         for col, data in self.data.items():
@@ -16,6 +17,7 @@ class ColData_Base(object):
                 imports.append(col)
         return imports
 
+    @classmethod
     def getDefaults(self):
         defaults = {}
         for col, data in self.data.items():
@@ -24,6 +26,7 @@ class ColData_Base(object):
                     defaults[col] = data.get('default')
         return defaults
 
+    @classmethod
     def getExportCols(self, schema=None):
         if not schema: return None
         exportCols = OrderedDict()
@@ -32,6 +35,7 @@ class ColData_Base(object):
                 exportCols[col] = data
         return exportCols
 
+    @classmethod
     def getColNames(self, cols):
         colNames = OrderedDict()
         for col, data in cols.items():
@@ -112,6 +116,7 @@ class ColData_MYO(ColData_Base):
         if not data: data = self.data
         super(ColData_MYO, self).__init__(data)
 
+    @classmethod
     def getProductCols(self):
         return self.getExportCols('product')
 
@@ -680,27 +685,35 @@ class ColData_Woo(ColData_Base):
         if not data: data = self.data
         super(ColData_Woo, self).__init__( data )
 
+    @classmethod
     def getProductCols(self):
         return self.getExportCols('product')
 
+    @classmethod
     def getVariationCols(self):
         return self.getExportCols('variation')
 
+    @classmethod
     def getCategoryCols(self):
         return self.getExportCols('category')
 
+    @classmethod
     def getPricingCols(self):
         return self.getExportCols('pricing')
 
+    @classmethod
     def getShippingCols(self):
         return self.getExportCols('shipping')
 
+    @classmethod
     def getInventoryCols(self):
         return self.getExportCols('inventory')
 
+    @classmethod
     def getWPCols(self):
         return self.getExportCols('wp')
 
+    @classmethod
     def getAttributeCols(self, attributes, vattributes):
         attributeCols = OrderedDict()
         all_attrs = listUtils.combineLists(attributes.keys(), vattributes.keys())
@@ -717,6 +730,7 @@ class ColData_Woo(ColData_Base):
                 }
         return attributeCols
 
+    @classmethod
     def getAttributeMetaCols(self, vattributes):
         atttributeMetaCols = OrderedDict()
         for attr in vattributes.keys():
@@ -1453,7 +1467,8 @@ class ColData_User(ColData_Base):
         }),
         ("Added to mailing list",{
             'wp': {
-                'key': 'mailing_list'
+                'key': 'mailing_list',
+                'meta':True,
             },
             'sync':True,
         })
@@ -1468,30 +1483,39 @@ class ColData_User(ColData_Base):
         if not data: data = self.data
         super(ColData_User, self).__init__(data)
 
+    @classmethod
     def getUserCols(self):
         return self.getExportCols('user')
 
+    @classmethod
     def getReportCols(self):
         return self.getExportCols('report')
 
+    @classmethod
     def getSyncCols(self):
         return self.getExportCols('sync')
 
+    @classmethod
     def getCapitalCols(self):
         return self.getExportCols('capitalized')
 
+    @classmethod
     def getWPCols(self):
         return self.getExportCols('wp')
 
+    @classmethod
     def getACTCols(self):
         return self.getExportCols('act')
 
+    @classmethod
     def getAliasCols(self):
         return self.getExportCols('aliases')
 
+    @classmethod
     def getBasicCols(self):
         return self.getExportCols('basic')
 
+    @classmethod
     def getTansyncDefaultsRecursive(self, col, exportCols=None, data={}):
         if exportCols is None: 
             exportCols = OrderedDict()
@@ -1534,6 +1558,7 @@ class ColData_User(ColData_Base):
 
         return exportCols
 
+    @classmethod
     def getTansyncDefaults(self):
         exportCols = OrderedDict()
         for col, data in self.data.items():

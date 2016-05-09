@@ -95,12 +95,12 @@ class ImportUser(ImportFlat):
 
     @property
     def act_modtime(self):
-        print "returning act modtime: %s -> %s " % (self.get('Edited in Act', 0), TimeUtils.wpTimeToString(TimeUtils.actStrptime(self.get('Edited in Act', 0))))
+        # print "returning act modtime: %s -> %s " % (self.get('Edited in Act', 0), TimeUtils.wpTimeToString(TimeUtils.actStrptime(self.get('Edited in Act', 0))))
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
 
     @property
     def wp_modtime(self):
-        print "returning wp modtime: %s -> %s " % (self.get('Edited in Wordpress', 0), TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))))
+        # print "returning wp modtime: %s -> %s " % (self.get('Edited in Wordpress', 0), TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))))
         return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))
 
     @property
@@ -530,6 +530,19 @@ class CSVParse_User(CSVParse_Flat):
     # def analyzeRow(self, row, objectData):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
     #     return objectData
+
+    @staticmethod
+    def printBasicColumns(users):
+        usrList = UsrObjList()
+        for user in users:
+            usrList.addObject(user)
+
+        cols = ColData_User.getBasicCols()
+
+        SanitationUtils.safePrint( usrList.tabulate(
+            cols,
+            tablefmt = 'simple'
+        ))
 
 
 class ImportSqlProduct(ImportFlat):

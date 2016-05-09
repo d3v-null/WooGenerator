@@ -23,6 +23,11 @@ DEBUG = False
 DEBUG_ADDRESS = False
 # DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
+# DEBUG_MESSAGE = True
+DEBUG_ERROR = False
+# DEBUG_ERROR = True
+DEBUG_WARN = False
+# DEBUG_WARN = True
 DEBUG_NAME = False
 # DEBUG_NAME = True
 
@@ -2511,7 +2516,7 @@ class Registrar:
         else:
             index = debugUtils.getCallerProcedure()
         error_string = str(error)
-        if DEBUG: Registrar.printAnything(index, error, '!')
+        if DEBUG_ERROR: Registrar.printAnything(index, error, '!')
         self.registerAnything(
             error_string, 
             self.errors, 
@@ -2523,7 +2528,7 @@ class Registrar:
     def registerWarning(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
-        if DEBUG: Registrar.printAnything(source, message, ' ')
+        if DEBUG_WARN: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
             self.warnings,
