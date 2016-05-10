@@ -269,42 +269,78 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         else:
             where_clause = ""
 
+        modtime_cols = [
+            "tu.`user_id` as `user_id`",
+            "MAX(tu.`time`) as `Edited in Wordpress`"
+        ]
+
+        for tracking_name, aliases in ColData_User.getWPTrackedCols().items():
+            # MAX( CASE WHEN LOCATE('E-mail', tu.`changed`) > 0 OR LOCATE('derp', tu.`changed`) > 0 THEN tu.`time` ELSE "" END) as `E-mail Edited`
+            case_clauses = []
+            for alias in aliases:
+                case_clauses.append("LOCATE('\"%s\"', tu.`changed`) > 0" % alias)
+            modtime_cols.append("MAX(CASE WHEN {case_clauses} THEN tu.`time` ELSE \"\" END) as `{tracking_name}`".format(
+                case_clauses = " OR ".join(case_clauses),
+                tracking_name = tracking_name
+            ))
+
         sql_select_modtime = """\
     SELECT
-        tu.`user_id` as `user_id`,
-        MAX(tu.`time`) as `Edited in Wordpress`
+        {modtime_cols}
     FROM
         {tbl_tu} tu 
     {where_clause}
     GROUP BY 
         tu.`user_id`""".format(
+            modtime_cols = ",\n\t\t".join(modtime_cols),
             tbl_tu=tbl_prefix+'tansync_updates',
-            where_clause = where_clause
+            where_clause = where_clause,
         )
-        # print sql_select_modtime
+        print sql_select_modtime
 
         if since:
             cursor.execute(sql_select_modtime)
-            results = list(cursor)
-            if len(results) == 0:
-                #nothing to analyse
-                return
-            else:
-                # n rows to analyse
-                print "THERE ARE %d ITEMS" % len(results)
+            headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
+            results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
+            table = [headers] + results
+            print tabulate(table, headers='firstrow')
+            # results = list(cursor)
+            # if len(results) == 0:
+            #     #nothing to analyse
+            #     return
+            # else:
+            #     # n rows to analyse
+            #     print "THERE ARE %d ITEMS" % len(results)
 
-        wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
+        wpDbMetaCols = ColData_User.getWPDBCols(meta=True)
+        wpDbCoreCols = ColData_User.getWPDBCols(meta=False)
 
-        assert all([
-            'Wordpress ID' in wpCols.keys(),
-            wpCols['Wordpress ID'].get('wp', {}).get('key') == 'ID',
-            wpCols['Wordpress ID'].get('wp', {}).get('final')
-        ]), 'ColData should be configured correctly'
+        userdata_cols = ",\n\t\t".join(filter(None,
+            [
+                "u.%s as `%s`" % (key, name)\
+                    for key, name in wpDbCoreCols.items() 
+            ] + [
+                "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (key, name) \
+                    for key, name in wpDbMetaCols.items() 
+            ]
+        ))
 
-        userdata_cols = ",\n\t\t".join(filter(None,[
-            ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'].get('meta') else "u.%s as `%s`") % (data['wp']['key'], col)\
-            for col, data in wpCols.items()
-        ]))
+
+        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
+
+        # assert all([
+        #     'Wordpress ID' in wpCols.keys(),
+        #     wpCols['Wordpress ID'].get('wp', {}).get('key') == 'ID',
+        #     wpCols['Wordpress ID'].get('wp', {}).get('final')
+        # ]), 'ColData should be configured correctly'
+
+        # userdata_cols2 = ",\n\t\t".join(filter(None,[
+        #     ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'].get('meta') else "u.%s as `%s`") % (data['wp']['key'], col)\
+        #     for col, data in wpCols.items()
+        # ]))
+
+        # print " -> COLS1: ", userdata_cols
+        # print " -> COLS2: ", userdata_cols2
 
         # print userdata_cols
 
@@ -493,11 +529,6 @@ def testSQLWP():
         # 'srv_offset': wp_srv_offset,
     }
 
-    fsParams = {
-
-    }
-
-    sqlClient = UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams, fsParams)
 
     colData = ColData_User()
 
@@ -505,8 +536,8 @@ def testSQLWP():
         cols = colData.getImportCols(),
         defaults = colData.getDefaults()
     )
-
-    sqlClient.analyseRemote(saParser, since='2016-03-01 00:00:00')
+    with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
+        sqlClient.analyseRemote(saParser, since='2016-03-01 00:00:00')
 
     CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 

@@ -741,6 +741,8 @@ class ColData_Woo(ColData_Base):
         return atttributeMetaCols
 
 class ColData_User(ColData_Base):
+    modTimeSuffix = ' Modified'
+    wpdbPKey = 'Wordpress ID'
 
     data = OrderedDict([
         ('MYOB Card ID',{
@@ -757,6 +759,7 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
+            'tracked':True,
         }),
         ('E-mail', {
             'wp': {
@@ -771,6 +774,7 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
+            'tracked':True,
         }),
         ('Wordpress Username',{
             # 'label':'Username',
@@ -786,6 +790,7 @@ class ColData_User(ColData_Base):
             'sync':'slave_override',
             'warn':True,
             'static':True,
+            'tracked':True,
             # 'basic':True,
         }),
         ('Wordpress ID',{
@@ -803,6 +808,7 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
+            'tracked':True,
         }),
         ('Role', {
             'wp': {
@@ -817,6 +823,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
+            'tracked':True,
         }),
 
 
@@ -828,6 +835,7 @@ class ColData_User(ColData_Base):
             'static':True,
             'basic':True,
             'report':True,
+            'tracked':True,
         }),
         ('Contact',{
             'import':True,
@@ -950,6 +958,7 @@ class ColData_User(ColData_Base):
             'warn': True,
             'static':True,
             # 'visible':True,
+            'tracked':True,
         }),
         ('Birth Date',{
             'wp': {
@@ -982,6 +991,7 @@ class ColData_User(ColData_Base):
             'static':True,
             # 'visible':True,
             'contact':True,
+            'tracked':True,
         }),
         ('Phone',{
             'wp': {
@@ -998,6 +1008,7 @@ class ColData_User(ColData_Base):
             'static':True,
             # 'visible':True,
             # 'contact':True,
+            'tracked':True,
         }),
         ('Fax',{
             'wp': {
@@ -1050,6 +1061,7 @@ class ColData_User(ColData_Base):
             'sync':True,
             'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country', 'Shire'],
             'basic':True,
+            'tracked':True,
         }),
         ('Home Address',{
             'act':False,
@@ -1059,7 +1071,8 @@ class ColData_User(ColData_Base):
             'static':True,
             'sync':True,
             'basic':True,
-            'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country']
+            'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
+            'tracked':True,
         }),
         ('Address 1',{
             'wp': {
@@ -1516,6 +1529,82 @@ class ColData_User(ColData_Base):
         return self.getExportCols('basic')
 
     @classmethod
+    def getWPImportCols(self):
+        cols = []
+        for col, data in self.data.items():
+            if data.get('wp') and data.get('import'):
+                cols.append(col)
+            if data.get('tracked'):
+                cols.append(col+self.modTimeSuffix)
+        return cols
+
+    @classmethod
+    def getWPDBCols(self, meta=None):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('wp'):
+                wp_data = data['wp']
+                if hasattr(wp_data, '__getitem__'):
+                    if wp_data.get('generated')\
+                      or (meta and not wp_data.get('meta'))\
+                      or (not meta and wp_data.get('meta')):
+                        continue
+                    if wp_data.get('key'):
+                        key = wp_data['key']
+                        if key:
+                            cols[key] = col
+        if not meta:
+            assert self.wpdbPKey in cols.values()
+        return cols
+
+    # @classmethod
+    # def getWPTrackedColsRecursive(self, col, cols = None, data={}):
+    #     if cols is None:
+    #         cols = OrderedDict()
+    #     if data.get('wp'):
+    #         wp_data = data.get('wp')
+    #         if hasattr(wp_data, '__getitem__'):
+    #             if wp_data.get('key'):
+    #                 key = wp_data.get('key')
+    #                 if key:
+    #                     cols[col] = cols.get(col, []) + [key]
+    #     if data.get('tracked'):
+    #         for alias in data.get('aliases', []):
+    #             alias_data = self.data.get(alias, {})
+    #             cols = self.getWPTrackedColsRecursive(alias, cols, alias_data)
+
+    #     return cols
+
+
+    @classmethod
+    def getWPTrackedCols(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('tracked'):
+                tracking_name = col + self.modTimeSuffix
+                for alias in data.get('aliases', []) + [col]:
+                    alias_data = self.data.get(alias, {})
+                    if alias_data.get('wp'):
+                        cols[tracking_name] = cols.get(tracking_name, []) + [alias]
+                        # wp_data = alias_data.get('wp')
+
+                        # if hasattr(wp_data, '__getitem__') and wp_data.get('key'):
+                        #     key = wp_data.get('key')
+                        #     if key and not key in cols.get(tracking_name, []):
+                        #         cols[tracking_name] = cols.get(tracking_name, []) + [key]
+        return cols
+
+    @classmethod
+    def getACTImportCols(self):
+        cols = []
+        for col, data in self.data.items():
+            if data.get('act') and data.get('import'):
+                cols.append(col)
+            if data.get('tracked'):
+                cols.append(col+self.modTimeSuffix)
+        return cols
+
+    @classmethod
     def getTansyncDefaultsRecursive(self, col, exportCols=None, data={}):
         if exportCols is None: 
             exportCols = OrderedDict()
@@ -1587,7 +1676,9 @@ def testColDataUser():
     print "reportCols", colData.getReportCols().keys()
     print "capitalCols", colData.getCapitalCols().keys()
     print "syncCols", colData.getSyncCols().keys()
+    print "actCols", colData.getACTCols().keys()
     print "wpcols", colData.getWPCols().keys()
+    print "getWPTrackedCols", colData.getWPTrackedCols()
     
 def testTansyncDefaults():
     colData = ColData_User()
@@ -1599,8 +1690,8 @@ def testTansyncDefaults():
 if __name__ == '__main__':
     # testColDataMyo()
     # testColDataWoo()
-    # testColDataUser()
-    testTansyncDefaults()
+    testColDataUser()
+    # testTansyncDefaults()
 
 
     

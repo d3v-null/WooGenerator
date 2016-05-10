@@ -36,7 +36,7 @@ def timediff():
 
 DEBUG = False
 testMode = False
-# testMode = True
+testMode = True
 skip_sync = False
 
 sql_run = False
@@ -219,7 +219,7 @@ if not do_filter:
 print debugUtils.hashify("Download / Generate Slave Parser Object"), timediff()
 
 saParser = CSVParse_User(
-    cols = colData.getImportCols(),
+    cols = colData.getWPImportCols(),
     defaults = colData.getDefaults(),
     filterItems = filterItems
 )
