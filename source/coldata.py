@@ -790,7 +790,7 @@ class ColData_User(ColData_Base):
             'sync':'slave_override',
             'warn':True,
             'static':True,
-            'tracked':True,
+            # 'tracked':True,
             # 'basic':True,
         }),
         ('Wordpress ID',{
@@ -808,7 +808,7 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
-            'tracked':True,
+            # 'tracked':True,
         }),
         ('Role', {
             'wp': {

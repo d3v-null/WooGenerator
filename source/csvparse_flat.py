@@ -673,7 +673,8 @@ def testRefreshUsrContactObj():
     usr1 = ImportUser(
         {
             'First Name': 'Derwent',
-            'Surname': 'Smith'
+            'Surname': 'Smith',
+            'Name Modified': '2015-11-11 12:55:00'
         },
         0,
         [],
@@ -684,7 +685,8 @@ def testRefreshUsrContactObj():
     usr2 = ImportUser(
         {
             'First Name': 'Abe',
-            'Surname': 'Jackson'
+            'Surname': 'Jackson',
+            'Name Modified': '2015-11-11 12:45:03'
         },
         0,
         [],

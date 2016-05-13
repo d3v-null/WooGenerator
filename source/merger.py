@@ -505,7 +505,7 @@ if not skip_sync:
     print timediff()
 
 
-    syncCols = colData.getSyncCols()
+    syncCols = ColData_User.getSyncCols()
 
     for match in globalMatches:
         # print debugUtils.hashify( "MATCH NUMBER %d" % i )

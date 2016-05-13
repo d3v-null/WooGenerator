@@ -2131,6 +2131,7 @@ def testAddressUtils():
 
 class TimeUtils:
     wpSrvOffset = 0
+    actSrvOffset = 0
 
     dateFormat = "%Y-%m-%d"
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
@@ -2187,6 +2188,10 @@ class TimeUtils:
     @staticmethod
     def wpServerToLocalTime(t):
         return TimeUtils.serverToLocalTime(t, TimeUtils.wpSrvOffset)
+
+    @staticmethod
+    def actServerToLocalTime(t):
+        return TimeUtils.serverToLocalTime(t, TimeUtils.actSrvOffset)
 
     @staticmethod
     def getDateStamp():

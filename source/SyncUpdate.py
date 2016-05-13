@@ -5,6 +5,8 @@ from coldata import ColData_User
 from tabulate import tabulate
 from copy import deepcopy
 from matching import Match
+from csvparse_flat import ImportUser
+import yaml
 
 class SyncUpdate(Registrar):
 
@@ -26,7 +28,7 @@ class SyncUpdate(Registrar):
         self.sTime = self.oldSObject.wp_modtime
         self.bTime = self.oldMObject.last_sale
 
-        self.winner = self.slave_name if(self.sTime >= self.mTime) else self.master_name
+        self.winner = self.getWinnerName(self.mTime, self.sTime)
         
         self.newSObject = False
         self.newMObject = False
@@ -83,26 +85,30 @@ class SyncUpdate(Registrar):
     #     sValue = (sObject.get(col) or "")
     #     return (not mValue and not sValue)
 
-    def getWinnerKey(self, key):
-        # if self.syncWarnings and key in self.syncWarnings.keys():
-        #     # print "key in warnings"
-        #     keySyncWarnings = self.syncWarnings[key]
-        #     assert len(keySyncWarnings) < 2
-        #     subject, reason, oldVal, newVal, data = keySyncWarnings[0]
-        #     return newVal
-        # if self.syncPasses and key in self.syncPasses.keys():
-        #     # print "key in passes"
-        #     keySyncPasses = self.syncPasses[key]
-        #     assert len(keySyncPasses) < 2
-        #     reason, val, data = keySyncPasses[0]
-        #     return val
-        # else:
-        if self.winner == self.slave_name and self.newSObject:
-            return self.newSObject.get(key)
-        if self.winner == self.master_name and self.newMObject:
-            return self.newMObject.get(key)
-        self.registerError( "could not find any value for key {}".format(key) )
-        return None
+    def getWinnerName(self, mTime, sTime):
+        print "determining winnner: ", mTime, sTime
+        return self.slave_name if(sTime >= mTime) else self.master_name
+
+    # def getWinnerKey(self, key):
+    #     # if self.syncWarnings and key in self.syncWarnings.keys():
+    #     #     # print "key in warnings"
+    #     #     keySyncWarnings = self.syncWarnings[key]
+    #     #     assert len(keySyncWarnings) < 2
+    #     #     subject, reason, oldVal, newVal, data = keySyncWarnings[0]
+    #     #     return newVal
+    #     # if self.syncPasses and key in self.syncPasses.keys():
+    #     #     # print "key in passes"
+    #     #     keySyncPasses = self.syncPasses[key]
+    #     #     assert len(keySyncPasses) < 2
+    #     #     reason, val, data = keySyncPasses[0]
+    #     #     return val
+    #     # else:
+    #     if self.winner == self.slave_name and self.newSObject:
+    #         return self.newSObject.get(key)
+    #     if self.winner == self.master_name and self.newMObject:
+    #         return self.newMObject.get(key)
+    #     self.registerError( "could not find any value for key {}".format(key) )
+    #     return None
 
     def sanitizeValue(self, col, value):
         # print "sanitizing", col, repr(value)
@@ -276,7 +282,22 @@ class SyncUpdate(Registrar):
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
 
-        winner = self.winner
+        if data.get('tracked'):
+            mTimeRaw =  self.oldMObject.get(col+ColData_User.modTimeSuffix)
+            print "mTimeRaw:",mTimeRaw
+            mTime = TimeUtils.actServerToLocalTime( TimeUtils.actStrptime(mTimeRaw) )
+            print "mTimeRaw:",mTime
+            if not mTime: mTime = self.mTime
+
+            sTimeRaw = self.oldSObject.get(col+ColData_User.modTimeSuffix)
+            print "sTimeRaw:",sTimeRaw
+            sTime = TimeUtils.wpServerToLocalTime( TimeUtils.wpStrptime(sTimeRaw) )
+            print "sTime:",sTime
+            if not sTime: sTime = self.sTime
+
+            winner = self.getWinnerName(mTime, sTime)
+        else:
+            winner = self.winner
         reason = 'updating' if mValue and sValue else 'inserting'
             
         if( 'override' in str(sync_mode).lower() ):
@@ -524,3 +545,98 @@ class SyncUpdate(Registrar):
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
         # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
+
+def testSyncUpdate1():
+
+
+    usr1 = ImportUser(
+        {
+            'MYOB Card ID': 'C00002',
+            'Wordpress ID': 7,
+            'Wordpress Username': 'derewnt',
+            'First Name': 'Derwent',
+            'Surname': 'Smith',
+            'Name Modified': '2015-11-10 12:55:00',
+            'Edited in Act': '11/11/2015 6:45:00 AM',
+        },
+        1,
+        [],
+    )
+
+    usr2 = ImportUser(
+        {
+            'MYOB Card ID': 'C00002',
+            'Wordpress ID': 7,
+            'Wordpress Username': 'derewnt',
+            'First Name': 'Abe',
+            'Surname': 'Jackson',
+            'Name Modified': '2015-11-10 12:45:03',
+            'Edited in Wordpress': '2015-11-11 6:55:00',
+        },
+        2,
+        [],
+    )
+
+    syncUpdate = SyncUpdate(usr1, usr2)
+
+    syncCols = ColData_User.getSyncCols()
+
+    syncUpdate.update(syncCols)
+
+    SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+
+def testSyncUpdate2():
+
+    usr1 = ImportUser(
+        {
+            'MYOB Card ID': 'C00002',
+            'Wordpress ID': 7,
+            'Wordpress Username': 'derewnt',
+            'First Name': 'Derwent',
+            'Surname': 'Smith',
+            'Name Modified': '10/11/2015 12:45:00 PM',
+            'Edited in Act': '11/11/2015 6:55:00 AM',
+        },
+        1,
+        [],
+    )
+
+    usr2 = ImportUser(
+        {
+            'MYOB Card ID': 'C00002',
+            'Wordpress ID': 7,
+            'Wordpress Username': 'derewnt',
+            'First Name': 'Abe',
+            'Surname': 'Jackson',
+            'Name Modified': '2015-11-10 12:55:03',
+            'Edited in Wordpress': '2015-11-11 6:45:00',
+        },
+        2,
+        [],
+    )
+
+    syncUpdate = SyncUpdate(usr1, usr2)
+
+    syncCols = ColData_User.getSyncCols()
+
+    syncUpdate.update(syncCols)
+
+    SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+
+if __name__ == '__main__':
+    yamlPath = "merger_config.yaml"
+
+    with open(yamlPath) as stream:
+        config = yaml.load(stream)
+        merge_mode = config.get('merge_mode', 'sync')
+        MASTER_NAME = config.get('master_name', 'MASTER')
+        SLAVE_NAME = config.get('slave_name', 'SLAVE')
+        DEFAULT_LAST_SYNC = config.get('default_last_sync')
+
+    SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+    testSyncUpdate1()
+    testSyncUpdate2()
+
+
+
+

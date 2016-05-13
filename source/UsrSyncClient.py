@@ -472,15 +472,28 @@ def testJSON():
 
     client.uploadChanges(1, fields)
 
-def testSQLWP():
+def testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams):
+
+
+
+    saParser = CSVParse_User(
+        cols = ColData_User.getImportCols(),
+        defaults = ColData_User.getDefaults()
+    )
+    with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
+        sqlClient.analyseRemote(saParser, since='2016-01-01 00:00:00')
+
+    CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+
+if __name__ == '__main__':
     # srcFolder = "../source/"
     # inFolder = "../input/"
     yamlPath = "merger_config.yaml"
     # importName = time.strftime("%Y-%m-%d %H:%M:%S")
 
-
     with open(yamlPath) as stream:
-        optionNamePrefix = 'test_'
+        # optionNamePrefix = 'test_'
+        optionNamePrefix = ''
 
         config = yaml.load(stream)
 
@@ -528,21 +541,6 @@ def testSQLWP():
         'tbl_prefix': tbl_prefix,
         # 'srv_offset': wp_srv_offset,
     }
-
-
-    colData = ColData_User()
-
-    saParser = CSVParse_User(
-        cols = colData.getImportCols(),
-        defaults = colData.getDefaults()
-    )
-    with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
-        sqlClient.analyseRemote(saParser, since='2016-03-01 00:00:00')
-
-    CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
-
-
-if __name__ == '__main__':
     # testXMLRPC()
     # testJSON()
-    testSQLWP()
+    testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams)
