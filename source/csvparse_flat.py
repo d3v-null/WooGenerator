@@ -1,15 +1,15 @@
-from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
-from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
-from csvparse_woo import ImportWooProduct
+# from csvparse_woo import ImportWooProduct
 from copy import deepcopy
 from collections import OrderedDict
 from coldata import ColData_User, ColData_Woo
-from contact_objects import ContactAddress, ContactName
+from contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
+from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
+from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
 import os
-import time
-from pprint import pprint
-import operator
-import re
+# import time
+# from pprint import pprint
+# import operator
+# import re
 
 usrs_per_file = 1000
 
@@ -36,7 +36,7 @@ class ImportSpecial(ImportFlat):
     # @property
     # def end_time_iso(self): return TimeUtils.isoTimeToString(self.end_time)
 
-    def __init__(self,  data, rowcount, row):
+    def __init__(self, data, rowcount, row):
         super(ImportSpecial, self).__init__(data, rowcount, row)
         try:
             self.ID
@@ -53,9 +53,13 @@ class CSVParse_Special(CSVParse_Flat):
 
     objectContainer = ImportSpecial
 
-    def __init__(self, cols=[], defaults={}):
+    def __init__(self, cols=None, defaults=None):
+        if cols is None:
+            cols = []
+        if defaults is None:
+            defaults = {}
         extra_cols = [
-            "ID", 
+            "ID",
             "FROM",
             "TO",
             "RNS",
@@ -72,8 +76,9 @@ class CSVParse_Special(CSVParse_Flat):
         super(CSVParse_Special, self).__init__(cols, defaults)
         self.objectIndexer = self.getObjectID
 
+    @classmethod
     def getObjectID(self, objectData):
-        return objectData.ID     
+        return objectData.ID
 
 class ImportUser(ImportFlat):
 
@@ -88,19 +93,23 @@ class ImportUser(ImportFlat):
     name = descriptorUtils.safeKeyProperty('Name')
 
     aliasMapping = {
-        'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
-        'Home Address': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
-        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Company', 'Memo', 'Contact']
+        'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State',
+                    'Country'],
+        'Home Address': ['Home Address 1', 'Home Address 2', 'Home City',
+                         'Home Postcode', 'Home State', 'Home Country'],
+        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname',
+                 'Name Suffix', 'Company', 'Memo', 'Contact'],
+        'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
+        'Social Media': ['Facebook Username', 'Twitter Username',
+                         'GooglePlus Username', 'Instagram Username'],
     }
 
     @property
     def act_modtime(self):
-        # print "returning act modtime: %s -> %s " % (self.get('Edited in Act', 0), TimeUtils.wpTimeToString(TimeUtils.actStrptime(self.get('Edited in Act', 0))))
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
 
     @property
     def wp_modtime(self):
-        # print "returning wp modtime: %s -> %s " % (self.get('Edited in Wordpress', 0), TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))))
         return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))
 
     @property
@@ -110,7 +119,7 @@ class ImportUser(ImportFlat):
     @property
     def last_modtime(self):
         times = [self.act_modtime, self.wp_modtime]
-        return max(times)    
+        return max(times)
 
     def __init__(self, data, rowcount=None, row=None, **kwargs):
         super(ImportUser, self).__init__(data, rowcount, row)
@@ -125,7 +134,7 @@ class ImportUser(ImportFlat):
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
-        kwargs = OrderedDict(filter(None,[\
+        name_kwargs = OrderedDict(filter(None, [\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
             {
                 'first_name'    : 'First Name',
@@ -142,14 +151,15 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Name'] = ContactName(
-            # self.contact_schema,  
-            **kwargs
+            **name_kwargs
         )
 
-        assert self['Name'] is not None
+        assert self['Name'] is not None, \
+               'contact is missing mandatory fields: something went wrong'
 
-        kwargs = OrderedDict(filter(None,[\
-            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        address_kwargs = OrderedDict(filter(None, [\
+            ((key, data.get(value)) if data.get(value) else None) \
+            for key, value in\
             {
                 'line1'     : 'Address 1',
                 'line2'     : 'Address 2',
@@ -162,13 +172,12 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Address'] = ContactAddress(
-            # self.contact_schema,  
-            **kwargs
+            **address_kwargs
         )
 
         # print "ADDRESS: ", self['Address']
 
-        kwargs = OrderedDict(filter(None,[\
+        alt_address_kwargs = OrderedDict(filter(None, [\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
             {
                 'line1'     : 'Home Address 1',
@@ -182,22 +191,55 @@ class ImportUser(ImportFlat):
         ]))
 
         self['Home Address'] = ContactAddress(
-            # self.contact_schema,  
-            **kwargs
+            **alt_address_kwargs
         )
 
         # print "HOME ADDRESS: ", self['Home Address']
+
+        phone_kwargs = OrderedDict(filter(None, [\
+            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+            {
+                'mob_number': 'Mobile Phone',
+                'tel_number': 'Phone',
+                'fax_number': 'Fax',
+                'mob_pref'  : 'Mobile Phone Preferred',
+                'tel_pref'  : 'Phone Preferred',
+            }.items()
+        ]))
+
+        self['Phone Numbers'] = ContactPhones(
+            **phone_kwargs
+        )
+
+        social_media_kwargs = OrderedDict(filter(None, [\
+            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+            {
+                'facebook': 'Facebook Username',
+                'twitter': 'Twitter Username',
+                'gplus': 'GooglePlus Username',
+                'instagram': 'Instagram Username'
+            }.items()
+        ]))
+
+        self['Social Media'] = SocialMediaFields(
+            **social_media_kwargs
+        )
 
         if not self['Address'].valid or not self['Home Address'].valid:
             self['address_reason'] = '\n'.join(filter(None, [
                 'ADDRESS: ' + self['Address'].reason if not self['Address'].valid else None,
                 'HOME ADDRESS: ' + self['Home Address'].reason if not self['Home Address'].valid else None
-            ]))   
+            ]))
 
         if not self['Name'].valid:
             self['name_reason'] = '\n'.join(filter(None, [
-                self['Name'].reason if not self['Name'].valid else None,
-            ])) 
+                self['Name'].reason,
+            ]))
+
+        if not self['Phone Numbers'].valid:
+            self['phone_reason'] = '\n'.join(filter(None, [
+                self['Phone Numbers'].reason,
+            ]))
 
     def refreshContactObjects(self):
         pass
@@ -276,8 +318,8 @@ class CSVParse_User(CSVParse_Flat):
     objectContainer = ImportUser
 
     def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None):
-        extra_cols = [  
-            # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date', 
+        extra_cols = [
+            # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date',
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
             # 'post_status'
         ]
@@ -433,13 +475,13 @@ class CSVParse_User(CSVParse_Flat):
 
     def validateFilters(self, objectData):
         if self.filterItems:
-            if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']: 
+            if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']:
                 self.registerWarning("could not register object %s because did not match role" % objectData.__repr__() )
                 return False
             if 'sinceM' in self.filterItems.keys() and objectData.act_modtime < self.filterItems['sinceM']:
                 self.registerWarning("could not register object %s because did not meet sinceM condition" % objectData.__repr__() )
                 return False
-            if 'sinceS' in self.filterItems.keys() and objectData.wp_modtime < self.filterItems['sinceS']: 
+            if 'sinceS' in self.filterItems.keys() and objectData.wp_modtime < self.filterItems['sinceS']:
                 self.registerWarning("could not register object %s because did not meet sinceS condition" % objectData.__repr__() )
                 return False
             if objectData.username in self.filterItems.get('users', []): return True
@@ -462,7 +504,7 @@ class CSVParse_User(CSVParse_Flat):
         else:
             if(DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
             self.registerNoEmail(objectData)
-        
+
         role = objectData.role
         if role:
             self.registerRole(objectData, role)
@@ -494,7 +536,7 @@ class CSVParse_User(CSVParse_Flat):
                 reason = address.reason
                 assert reason, "there must be a reason that this address is invalid: " + address
                 self.registerBadAddress(objectData, address)
-            
+
         name = objectData.name
         # print "NAME OF %s IS %s" % (repr(objectData), name.__str__(out_schema="flat"))
         if not name.valid:
@@ -525,7 +567,7 @@ class CSVParse_User(CSVParse_Flat):
     # def processObject(self, objectData):
     #     # objectData.username = self.getMYOBID(objectData)
     #     super(CSVParse_Flat, self).processObject(objectData)
-    #     self.processRoles(objectData) 
+    #     self.processRoles(objectData)
 
     # def analyzeRow(self, row, objectData):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
@@ -566,7 +608,7 @@ def testSqlParser(inFolder, outFolder):
     prodData = ColData_Woo()
 
     sqlRows = [
-        ['ID', 'codesum', 'itemsum', 'title_1', 'title_2', 'pricing_rules', 'price', 'sale_price', 'sale_price_dates_from', 'sale_price_dates_to', 'RNR', 'RNS', 'RNF', 'RNT', 'RPR', 'RPS', 'RPF', 'RPT', 'WNR', 'WNS', 'WNF', 'WNT', 'WPR', 'WPS', 'WPF', 'WPT', 'DNR', 'DNS', 'DNF', 'DNT', 'DPR', 'DPS', 'DPF', 'DPT', 'CVC', 'weight', 'length', 'width', 'height', 'stock', 'stock_status', 'manage_stock'], 
+        ['ID', 'codesum', 'itemsum', 'title_1', 'title_2', 'pricing_rules', 'price', 'sale_price', 'sale_price_dates_from', 'sale_price_dates_to', 'RNR', 'RNS', 'RNF', 'RNT', 'RPR', 'RPS', 'RPF', 'RPT', 'WNR', 'WNS', 'WNF', 'WNT', 'WPR', 'WPS', 'WPF', 'WPT', 'DNR', 'DNS', 'DNF', 'DNT', 'DPR', 'DPS', 'DPF', 'DPT', 'CVC', 'weight', 'length', 'width', 'height', 'stock', 'stock_status', 'manage_stock'],
         (4481L, 'CTMITT-REM', 'Tan Removal Mitt', 'Tan Removal Mitt', '', 'Tan Removal Mitt', '14.90', '11.175', '', '', '14.90', '11.175', '1479744000', '1482336000', '12.90', '', '', '', '8.90', '6.675000000000001', '1479744000', '1482336000', '8.01', '', '', '', '5.34', '', '', '', '5.12', '', '', '', '1', '0.04', '147', '6', '232', '', 'instock', 'no'), (4482L, 'CTMITT-APP', 'Tan Application Mitt', 'Tan Application Mitt', '', 'Tan Application Mitt', '9.90', '7.425000000000001', '', '', '9.90', '7.425000000000001', '1479744000', '1482336000', '8.40', '', '', '', '5.90', '4.425000000000001', '1479744000', '1482336000', '5.31', '', '', '', '3.54', '', '', '', '3.39', '', '', '', '1', '0.04', '147', '3', '232', '', 'instock', 'no'),
         (4498L, 'CTTC-250', 'Tan in a Can - 250ml', 'Tan in a Can', '250ml', 'Tan in a Can - 250ml', '39.90', '29.924999999999997', '', '', '39.90', '29.924999999999997', '1479744000', '1482336000', '35.90', '', '', '', '24.90', '18.674999999999997', '1479744000', '1482336000', '22.41', '', '', '', '17.43', '', '', '', '16.18', '', '', '', '1', '0.33', '50', '50', '210', '', 'instock', 'no'),
         (4506L, 'ACS-FBLK', 'Female C-String \xe2\x80\x94 Black', '', '', 'Female C-String \xe2\x80\x94 Black', '8.4', '', '', '', '9.9', '7.425000000000001', '1440000000', '1440950400', '8.4', '', '', '', '5.4', '4.050000000000001', '1440000000', '1440950400', '4.59', '', '', '', '3.27', '', '', '', '3.11', '', '', '', '1', '0.01', '80', '120', '75', '', 'instock', 'no'),
@@ -638,9 +680,7 @@ def testUsrParser(inFolder, outFolder):
 
     usrList = UsrObjList()
 
-    from copy import deepcopy
-
-    for usr in usrParser.objects.values()[:3]:    
+    for usr in usrParser.objects.values()[:3]:
         usrList.addObject(usr)
         clone = deepcopy(usr)
         usr['Wordpress Username'] = 'jonno'
@@ -715,7 +755,7 @@ def testCopyUsrContactObj():
 
     usr2['First Name'] = 'Johnny'
 
-    print ("USR1: ",usr1.name, usr1.name.kwargs)    
+    print ("USR1: ",usr1.name, usr1.name.kwargs)
     print ("USR2: ",usr2.name, usr2.name.kwargs)
 
     name2 = usr2['Name']
@@ -730,7 +770,7 @@ def testCopyUsrContactObj():
 
 if __name__ == '__main__':
     inFolder = "../input/"
-    
+
     outFolder = "../output/"
 
     # testRefreshUsrContactObj()
@@ -738,4 +778,3 @@ if __name__ == '__main__':
 
     # testUsrParser(inFolder, outFolder)
     # testSqlParser(inFolder, outFolder)
-

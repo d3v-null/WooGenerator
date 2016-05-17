@@ -1,14 +1,16 @@
+from __future__ import absolute_import
 from collections import OrderedDict
-from utils import listUtils, debugUtils
+from utils import listUtils #, debugUtils
 import json
 
 class ColData_Base(object):
+    data = OrderedDict()
 
     def __init__(self, data):
         super(ColData_Base, self).__init__()
         assert issubclass(type(data), dict), "Data should be a dictionary subclass"
         self.data = data
-        
+
     @classmethod
     def getImportCols(self):
         imports = []
@@ -21,9 +23,8 @@ class ColData_Base(object):
     def getDefaults(self):
         defaults = {}
         for col, data in self.data.items():
-            # if data.get('import') and data.get('default'):
             if data.get('default'):
-                    defaults[col] = data.get('default')
+                defaults[col] = data.get('default')
         return defaults
 
     @classmethod
@@ -60,13 +61,13 @@ class ColData_MYO(ColData_Base):
             'product': True,
             'pricing': True,
         }),
-        ('RNR',{
+        ('RNR', {
             'label': 'Price Level B, Qty Break 1',
             'import': True,
             'product': True,
             'pricing': True,
         }),
-        ('DNR',{
+        ('DNR', {
             'label': 'Price Level C, Qty Break 1',
             'import': True,
             'product': True,
@@ -82,7 +83,7 @@ class ColData_MYO(ColData_Base):
             'label': 'Description',
             'product': True,
         }),
-        ('HTML Description',{
+        ('HTML Description', {
             'import': True,
         }),
         ('Sell', {
@@ -129,10 +130,10 @@ class ColData_Woo(ColData_Base):
                 'meta': False
             }
         }),
-        ('parent_SKU',{
+        ('parent_SKU', {
             'variation':True,
         }),
-        ('codesum',{
+        ('codesum', {
             'label':'SKU',
             'tag':'SKU',
             'product': True,
@@ -146,7 +147,7 @@ class ColData_Woo(ColData_Base):
         ('itemsum', {
             'tag':'Title',
             'label':'post_title',
-            'product':True, 
+            'product':True,
             'variation': True,
             'wp':{
                 'key':'post_title',
@@ -169,7 +170,7 @@ class ColData_Woo(ColData_Base):
                 'meta':True
             }
         }),
-        ('taxosum',{
+        ('taxosum', {
             'label':'category_title',
             'category':True,
         }),
@@ -177,7 +178,7 @@ class ColData_Woo(ColData_Base):
             'label':'tax:product_type',
             'product':True,
         }),
-        ('catsum',{
+        ('catsum', {
             'label':'tax:product_cat',
             'product':True,
         }),
@@ -187,7 +188,7 @@ class ColData_Woo(ColData_Base):
             'product': True,
             'category': True,
         }),
-        ('imgsum',{
+        ('imgsum', {
             'label':'Images',
             'product': True,
             'variation': True,
@@ -212,7 +213,7 @@ class ColData_Woo(ColData_Base):
             'variation': True,
             'shipping': True,
         }),
-        ('E',{
+        ('E', {
             'import': True,
         }),
         ('DYNCAT', {
@@ -232,7 +233,7 @@ class ColData_Woo(ColData_Base):
         }),
         ('catalog_visibility', {
             'product':True,
-            'default':'visible'    
+            'default':'visible'
         }),
         ('SCHEDULE', {
             'import':True,
@@ -251,7 +252,7 @@ class ColData_Woo(ColData_Base):
             'label': 'meta:dynamic_category_rulesets',
             # 'pricing': True,
             # 'product': True,
-            # 'category': True  
+            # 'category': True
         }),
         ('dprplist', {
             'label': 'meta:dynamic_product_rulesets',
@@ -263,7 +264,7 @@ class ColData_Woo(ColData_Base):
             'label': 'meta:dynamic_category_ruleset_IDs',
             'pricing': True,
             'product': True,
-            # 'category': True  
+            # 'category': True
         }),
         ('dprpIDlist', {
             'label': 'meta:dynamic_product_ruleset_IDs',
@@ -273,15 +274,15 @@ class ColData_Woo(ColData_Base):
         }),
         ('dprcsum', {
             'label': 'meta:DPRC_Table',
-            'product': True,   
+            'product': True,
             'pricing': True,
         }),
         ('dprpsum', {
             'label': 'meta:DPRP_Table',
-            'product': True,   
+            'product': True,
             'pricing': True,
         }),
-        ('pricing_rules',{
+        ('pricing_rules', {
             'label': 'meta:_pricing_rules',
             'pricing':True,
             'wp':{
@@ -341,7 +342,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rn_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
@@ -351,7 +352,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rn_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
@@ -361,7 +362,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rn_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('RNT', {
             'label': 'meta:lc_rn_sale_price_dates_to',
@@ -371,7 +372,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rn_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('RPR', {
             'label': 'meta:lc_rp_regular_price',
@@ -382,7 +383,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rp_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
@@ -392,7 +393,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rp_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
@@ -402,7 +403,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rp_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('RPT', {
             'label': 'meta:lc_rp_sale_price_dates_to',
@@ -412,7 +413,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_rp_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('WNR', {
             'label': 'meta:lc_wn_regular_price',
@@ -423,7 +424,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wn_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
@@ -433,7 +434,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wn_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
@@ -443,7 +444,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wn_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('WNT', {
             'label': 'meta:lc_wn_sale_price_dates_to',
@@ -453,7 +454,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wn_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('WPR', {
             'label': 'meta:lc_wp_regular_price',
@@ -464,7 +465,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wp_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
@@ -474,7 +475,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wp_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
@@ -484,7 +485,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wp_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('WPT', {
             'label': 'meta:lc_wp_sale_price_dates_to',
@@ -494,7 +495,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_wp_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('DNR', {
             'label': 'meta:lc_dn_regular_price',
@@ -505,7 +506,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dn_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
@@ -515,7 +516,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dn_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
@@ -525,7 +526,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dn_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('DNT', {
             'label': 'meta:lc_dn_sale_price_dates_to',
@@ -535,7 +536,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dn_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('DPR', {
             'label': 'meta:lc_dp_regular_price',
@@ -546,7 +547,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dp_regular_price',
                 'meta':True
-            },        
+            },
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
@@ -556,7 +557,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dp_sale_price',
                 'meta':True
-            },        
+            },
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',
@@ -566,7 +567,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dp_sale_price_dates_from',
                 'meta':True
-            },        
+            },
         }),
         ('DPT', {
             'label': 'meta:lc_dp_sale_price_dates_to',
@@ -576,7 +577,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'lc_dp_sale_price_dates_to',
                 'meta':True
-            },        
+            },
         }),
         ('CVC', {
             'label': 'meta:commissionable_value',
@@ -588,7 +589,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'commissionable_value',
                 'meta':True
-            },     
+            },
         }),
         ('weight', {
             'import': True,
@@ -598,7 +599,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_weight',
                 'meta':True
-            },     
+            },
         }),
         ('length', {
             'import': True,
@@ -608,7 +609,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_length',
                 'meta':True
-            },     
+            },
         }),
         ('width', {
             'import': True,
@@ -618,7 +619,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_width',
                 'meta':True
-            },     
+            },
         }),
         ('height', {
             'import': True,
@@ -628,7 +629,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_height',
                 'meta':True
-            },     
+            },
         }),
         ('stock', {
             'import': True,
@@ -638,7 +639,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_stock',
                 'meta':True
-            },     
+            },
         }),
         ('stock_status', {
             'import': True,
@@ -648,7 +649,7 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_stock_status',
                 'meta':True
-            },     
+            },
         }),
         ('manage_stock', {
             'product': True,
@@ -657,20 +658,20 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_manage_stock',
                 'meta':True
-            },     
+            },
         }),
-        ('Images',{
+        ('Images', {
             'import': True,
             'default': ''
         }),
         ('HTML Description', {
             'import': True,
         }),
-        ('last_import',{
+        ('last_import', {
             'label':'meta:last_import',
             'product': True,
         }),
-        ('Updated',{
+        ('Updated', {
             'import': True,
             'product':True
         }),
@@ -741,13 +742,24 @@ class ColData_Woo(ColData_Base):
         return atttributeMetaCols
 
 class ColData_User(ColData_Base):
-    modTimeSuffix = ' Modified'
+    # modTimeSuffix = ' Modified'
+
+    modMapping = {
+        'Home Address': 'Alt Address',
+    }
+
+    @classmethod
+    def modTimeCol(self, col):
+        if col in self.modMapping:
+            col = self.modMapping[col]
+        return 'Edited ' + col
+
     wpdbPKey = 'Wordpress ID'
 
     data = OrderedDict([
-        ('MYOB Card ID',{
+        ('MYOB Card ID', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'myob_card_id'
             },
             'act':True,
@@ -759,11 +771,10 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
-            'tracked':True,
         }),
         ('E-mail', {
             'wp': {
-                'meta': False, 
+                'meta': False,
                 'key': 'user_email'
             },
             'act':True,
@@ -776,10 +787,10 @@ class ColData_User(ColData_Base):
             'basic':True,
             'tracked':True,
         }),
-        ('Wordpress Username',{
+        ('Wordpress Username', {
             # 'label':'Username',
             'wp': {
-                'meta': False, 
+                'meta': False,
                 'key': 'user_login',
                 'final': True
             },
@@ -793,10 +804,10 @@ class ColData_User(ColData_Base):
             # 'tracked':True,
             # 'basic':True,
         }),
-        ('Wordpress ID',{
+        ('Wordpress ID', {
             # 'label':'Username',
             'wp': {
-                'meta': False, 
+                'meta': False,
                 'key': 'ID',
                 'final': True
             },
@@ -812,7 +823,7 @@ class ColData_User(ColData_Base):
         }),
         ('Role', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'act_role'
             },
             # 'label': 'act_role',
@@ -823,24 +834,34 @@ class ColData_User(ColData_Base):
             'sync':True,
             'warn': True,
             'static':True,
-            'tracked':True,
+            # 'tracked':'future',
         }),
-
-
 
         ('Name', {
             'user':True,
-            'aliases': ['Name Prefix', 'First Name', 'Middle Name', 'Surname', 'Name Suffix', 'Memo', 'Spouse', 'Salutation', 'Search Text', 'HO Contact', 'Contact'],
+            'aliases': [
+                'Name Prefix',
+                'First Name',
+                'Middle Name',
+                'Surname',
+                'Name Suffix',
+                'Memo',
+                'Spouse',
+                'Salutation',
+                'Search Text',
+                'HO Contact',
+                'Contact'
+            ],
             'sync':True,
             'static':True,
             'basic':True,
             'report':True,
             'tracked':True,
         }),
-        ('Contact',{
+        ('Contact', {
             'import':True,
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'nickname'
             },
             'act': True,
@@ -855,7 +876,7 @@ class ColData_User(ColData_Base):
         }),
         ('First Name', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'first_name'
             },
             'act': True,
@@ -871,7 +892,7 @@ class ColData_User(ColData_Base):
         }),
         ('Surname', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'last_name'
             },
             'act': True,
@@ -894,7 +915,7 @@ class ColData_User(ColData_Base):
             'import': True,
             'mutable':True,
             'visible':True,
-            # 'user': True,    
+            # 'user': True,
         }),
         ('Name Suffix', {
             'wp': {
@@ -904,7 +925,7 @@ class ColData_User(ColData_Base):
             'act': True,
             'import': True,
             'visible':True,
-            # 'user': True,    
+            # 'user': True,
             'mutable':True,
         }),
         ('Name Prefix', {
@@ -915,7 +936,7 @@ class ColData_User(ColData_Base):
             'act': True,
             'import': True,
             'visible':True,
-            # 'user': True,    
+            # 'user': True,
             'mutable':True,
         }),
         ('Memo', {
@@ -924,7 +945,8 @@ class ColData_User(ColData_Base):
                 'key': 'name_notes'
             },
             'act': True,
-            'import': True,    
+            'import': True,
+            'tracked':True,
         }),
         ('Spouse', {
             'wp': {
@@ -932,7 +954,8 @@ class ColData_User(ColData_Base):
                 'key': 'spouse'
             },
             'act': True,
-            'import': True,    
+            'import': True,
+            'tracked': 'future',
         }),
         ('Salutation', {
             'wp': {
@@ -940,12 +963,12 @@ class ColData_User(ColData_Base):
                 'key': 'salutation'
             },
             'act': True,
-            'import': True,    
+            'import': True,
         }),
 
-        ('Company',{
+        ('Company', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_company'
             },
             'act': True,
@@ -960,25 +983,19 @@ class ColData_User(ColData_Base):
             # 'visible':True,
             'tracked':True,
         }),
-        ('Birth Date',{
-            'wp': {
-                'meta': True, 
-                'key': 'birth_date'
-            },
-            # 'label':'birth_date',
-            'act': True,
-            'import':True,
-            'user':True,
-            'sync':True,
-            'visible':True,
-            'mutable':True,
+
+
+        ('Phone Numbers', {
+            'tracked':'future',
+            'aliases':[ 'Mobile Phone', 'Phone', 'Fax'],
+                        # 'Mobile Phone Preferred', 'Phone Preferred', ]
+            'basic':True,
+            'report':True,
         }),
 
-
-        
-        ('Mobile Phone',{
+        ('Mobile Phone', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'mobile_number'
             },
             'act': True,
@@ -986,33 +1003,29 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
-            'report':True,
             'warn': True,
             'static':True,
             # 'visible':True,
             'contact':True,
-            'tracked':True,
         }),
-        ('Phone',{
+        ('Phone', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_phone'
             },
             'act':True,
             # 'label':'billing_phone',
             'import':True,
             'user':True,
-            'report': True,
+            # 'report': True,
             'sync':True,
             'warn': True,
             'static':True,
             # 'visible':True,
-            # 'contact':True,
-            'tracked':True,
         }),
-        ('Fax',{
+        ('Fax', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'fax_number'
             },
             'act':True,
@@ -1024,9 +1037,9 @@ class ColData_User(ColData_Base):
             'visible':True,
             'mutable':True,
         }),
-        ('Mobile Phone Preferred',{
+        ('Mobile Phone Preferred', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'pref_mob'
             },
             'act':True,
@@ -1037,9 +1050,9 @@ class ColData_User(ColData_Base):
             'visible':True,
             'mutable':True,
         }),
-        ('Phone Preferred',{
+        ('Phone Preferred', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'pref_tel'
             },
             'act':True,
@@ -1052,7 +1065,7 @@ class ColData_User(ColData_Base):
         }),
 
 
-        ('Address',{
+        ('Address', {
             'act':False,
             'wp':False,
             'report':True,
@@ -1063,7 +1076,7 @@ class ColData_User(ColData_Base):
             'basic':True,
             'tracked':True,
         }),
-        ('Home Address',{
+        ('Home Address', {
             'act':False,
             'wp':False,
             'report':True,
@@ -1072,11 +1085,11 @@ class ColData_User(ColData_Base):
             'sync':True,
             'basic':True,
             'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
-            'tracked':True,
+            'tracked':'future',
         }),
-        ('Address 1',{
+        ('Address 1', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_address_1'
             },
             'act':True,
@@ -1089,9 +1102,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Address 2',{
+        ('Address 2', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_address_2'
             },
             'act':True,
@@ -1104,9 +1117,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('City',{
+        ('City', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_city'
             },
             'act':True,
@@ -1120,9 +1133,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Postcode',{
+        ('Postcode', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_postcode'
             },
             'act':True,
@@ -1135,9 +1148,9 @@ class ColData_User(ColData_Base):
             # 'visible':True,
             # 'report': True,
         }),
-        ('State',{
+        ('State', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_state'
             },
             'act':True,
@@ -1153,7 +1166,7 @@ class ColData_User(ColData_Base):
         }),
         ('Country', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'billing_country'
             },
             'act':True,
@@ -1176,9 +1189,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Home Address 1',{
+        ('Home Address 1', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_address_1'
             },
             'act':True,
@@ -1190,9 +1203,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Home Address 2',{
+        ('Home Address 2', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_address_2'
             },
             'act':True,
@@ -1204,9 +1217,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Home City',{
+        ('Home City', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_city'
             },
             'act':True,
@@ -1218,9 +1231,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Home Postcode',{
+        ('Home Postcode', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_postcode'
             },
             'act':True,
@@ -1231,9 +1244,9 @@ class ColData_User(ColData_Base):
             # 'static':True,
             # 'visible':True,
         }),
-        ('Home Country',{
+        ('Home Country', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_country'
             },
             'act':True,
@@ -1245,9 +1258,9 @@ class ColData_User(ColData_Base):
             # 'capitalized':True,
             # 'visible':True,
         }),
-        ('Home State',{
+        ('Home State', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'shipping_state'
             },
             'act':True,
@@ -1262,10 +1275,10 @@ class ColData_User(ColData_Base):
 
 
 
-        ('MYOB Customer Card ID',{
+        ('MYOB Customer Card ID', {
             # 'label':'myob_customer_card_id',
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'myob_customer_card_id'
             },
             'act':True,
@@ -1275,10 +1288,10 @@ class ColData_User(ColData_Base):
             'sync':'master_override',
             'warn':True,
         }),
-        ('Client Grade',{
+        ('Client Grade', {
             'import':True,
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'client_grade'
             },
             'act':True,
@@ -1292,7 +1305,7 @@ class ColData_User(ColData_Base):
         ('Direct Brand', {
             'import':True,
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'direct_brand'
             },
             'act':True,
@@ -1304,7 +1317,7 @@ class ColData_User(ColData_Base):
         }),
         ('Agent', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'agent'
             },
             'act':True,
@@ -1317,9 +1330,9 @@ class ColData_User(ColData_Base):
         }),
 
 
-        ('Web Site',{
+        ('Web Site', {
             'wp': {
-                'meta': False, 
+                'meta': False,
                 'key': 'user_url'
             },
             'act':True,
@@ -1327,49 +1340,50 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True,
+            'tracked':True,
         }),
-        ('ABN',{
+        ('ABN', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'abn'
             },
             'act':True,
             # 'label':'abn',
             'import':True,
-            'user':True,   
-            'sync':True,   
-            'warn': True,     
+            'user':True,
+            'sync':True,
+            'warn': True,
             'visible':True,
             'mutable':True,
         }),
-        ('Business Type',{
+        ('Business Type', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'business_type'
             },
             'act':True,
             # 'label':'business_type',
             'import':True,
-            'user':True,    
+            'user':True,
             'sync':True,
             'visible':True,
             # 'mutable':True
         }),
-        ('Lead Source',{
+        ('Lead Source', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'how_hear_about'
             },
             'act':True,
             # 'label':'how_hear_about',
             'import':True,
-            'user':True,    
+            'user':True,
             'sync':True,
             # 'visible':True,
         }),
-        ('Referred By',{
+        ('Referred By', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'referred_by'
             },
             'act':True,
@@ -1380,26 +1394,27 @@ class ColData_User(ColData_Base):
         }),
         ('Personal E-mail', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'personal_email'
             },
             'act':True,
             # 'label':'personal_email',
             'import':True,
             'user':True,
+            'tracked':'future',
             # 'report':True,
         }),
         ('Create Date', {
             'import': True,
             'act':True,
             'wp':False,
-            'report': True,
+            # 'report': True,
             # 'basic':True
         }),
         ('Wordpress Start Date', {
             'import': True,
             'wp': {
-                'meta': False, 
+                'meta': False,
                 'key': 'user_registered'
             },
             'act':True,
@@ -1408,7 +1423,7 @@ class ColData_User(ColData_Base):
         }),
         ('Edited in Act', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'edited_in_act'
             },
             'act':True,
@@ -1423,18 +1438,26 @@ class ColData_User(ColData_Base):
             'act':True,
             'import':True,
             'report':True,
-            # 'basic':True
+            'basic':True
         }),
         ('Last Sale', {
             'wp': {
-                'meta': True, 
+                'meta': True,
                 'key': 'act_last_sale'
             },
             'act':True,
             'import': True,
             # 'report': True
         }),
-        ("Facebook Username",{
+
+        ('Social Media', {
+            'sync':True,
+            'aliases':['Facebook Username', 'Twitter Username',
+                       'GooglePlus Username', 'Instagram Username'],
+            'tracked':True,
+        }),
+
+        ("Facebook Username", {
             'wp': {
                 'key': "facebook",
                 'meta': True
@@ -1442,10 +1465,10 @@ class ColData_User(ColData_Base):
             'mutable':True,
             'visible':True,
             'contact':True,
-            'sync':True,
-            # 'import':True
+            'import':True,
+            'act':True,
         }),
-        ("Twitter Username",{
+        ("Twitter Username", {
             'wp': {
                 'key': "twitter",
                 'meta': True
@@ -1453,10 +1476,10 @@ class ColData_User(ColData_Base):
             'contact':True,
             'mutable':True,
             'visible':True,
-            'sync':True,
-            # 'import':True
+            'import':True,
+            'act':True,
         }),
-        ("Google+ Username",{
+        ("GooglePlus Username", {
             'wp': {
                 'key': "gplus",
                 'meta': True
@@ -1464,26 +1487,28 @@ class ColData_User(ColData_Base):
             'contact':True,
             'mutable':True,
             'visible':True,
-            'sync':True,
-            # 'import':True
+            'import':True,
+            'act':True,
         }),
-        ("Instagram",{
+        ("Instagram Username", {
             'wp': {
                 'key': "instagram",
                 'meta': True
             },
-            'sync':True,
             'contact':True,
             'mutable':True,
             'visible':True,
-            # 'import':True
+            'import':True,
+            'act':True,
         }),
-        ("Added to mailing list",{
+        ("Added to mailing list", {
             'wp': {
                 'key': 'mailing_list',
                 'meta':True,
             },
             'sync':True,
+            'import':True,
+            'tracked':True
         })
         # ('rowcount', {
         #     # 'import':True,
@@ -1535,7 +1560,7 @@ class ColData_User(ColData_Base):
             if data.get('wp') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(col+self.modTimeSuffix)
+                cols.append(self.modTimeCol(col))
         return cols
 
     @classmethod
@@ -1556,6 +1581,8 @@ class ColData_User(ColData_Base):
         if not meta:
             assert self.wpdbPKey in cols.values()
         return cols
+
+
 
     # @classmethod
     # def getWPTrackedColsRecursive(self, col, cols = None, data={}):
@@ -1581,11 +1608,14 @@ class ColData_User(ColData_Base):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('tracked'):
-                tracking_name = col + self.modTimeSuffix
+                tracking_name = self.modTimeCol(col)
                 for alias in data.get('aliases', []) + [col]:
                     alias_data = self.data.get(alias, {})
                     if alias_data.get('wp'):
-                        cols[tracking_name] = cols.get(tracking_name, []) + [alias]
+                        this_tracking_name = tracking_name
+                        if alias_data.get('tracked'):
+                            this_tracking_name = self.modTimeCol(alias)
+                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
                         # wp_data = alias_data.get('wp')
 
                         # if hasattr(wp_data, '__getitem__') and wp_data.get('key'):
@@ -1595,18 +1625,50 @@ class ColData_User(ColData_Base):
         return cols
 
     @classmethod
+    def getACTTrackedCols(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('tracked'):
+                tracking_name = self.modTimeCol(col)
+                for alias in data.get('aliases', []) + [col]:
+                    alias_data = self.data.get(alias, {})
+                    if alias_data.get('act'):
+                        this_tracking_name = tracking_name
+                        if alias_data.get('tracked'):
+                            this_tracking_name = self.modTimeCol(alias)
+                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
+        return cols
+
+    @classmethod
+    def getACTFutureTrackedCols(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('tracked') and data.get('tracked') == 'future':
+                tracking_name = self.modTimeCol(col)
+                for alias in data.get('aliases', []) + [col]:
+                    alias_data = self.data.get(alias, {})
+                    if alias_data.get('act'):
+                        this_tracking_name = tracking_name
+                        if alias_data.get('tracked'):
+                            this_tracking_name = self.modTimeCol(alias)
+                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
+        return cols
+
+    @classmethod
     def getACTImportCols(self):
         cols = []
         for col, data in self.data.items():
             if data.get('act') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(col+self.modTimeSuffix)
+                cols.append(self.modTimeCol(col))
         return cols
 
     @classmethod
-    def getTansyncDefaultsRecursive(self, col, exportCols=None, data={}):
-        if exportCols is None: 
+    def getTansyncDefaultsRecursive(self, col, exportCols=None, data=None):
+        if data is None:
+            data = {}
+        if exportCols is None:
             exportCols = OrderedDict()
 
         # print "getting sync data: ", col, data
@@ -1667,19 +1729,21 @@ def testColDataWoo():
     print colData.getImportCols()
     print colData.getDefaults()
     print colData.getProductCols()
-    
+
 def testColDataUser():
     print "Testing ColData_User class:"
     colData = ColData_User()
-    print "importCols", colData.getImportCols()
-    print "userCols", colData.getUserCols().keys()
-    print "reportCols", colData.getReportCols().keys()
-    print "capitalCols", colData.getCapitalCols().keys()
-    print "syncCols", colData.getSyncCols().keys()
-    print "actCols", colData.getACTCols().keys()
-    print "wpcols", colData.getWPCols().keys()
+    # print "importCols", colData.getImportCols()
+    # print "userCols", colData.getUserCols().keys()
+    # print "reportCols", colData.getReportCols().keys()
+    # print "capitalCols", colData.getCapitalCols().keys()
+    # print "syncCols", colData.getSyncCols().keys()
+    # print "actCols", colData.getACTCols().keys()
+    # print "wpcols", colData.getWPCols().keys()
     print "getWPTrackedCols", colData.getWPTrackedCols()
-    
+    print "getACTTrackedCols", colData.getACTTrackedCols()
+    print "getACTFutureTrackedCols", colData.getACTFutureTrackedCols()
+
 def testTansyncDefaults():
     colData = ColData_User()
     print '{'
@@ -1692,6 +1756,3 @@ if __name__ == '__main__':
     # testColDataWoo()
     testColDataUser()
     # testTansyncDefaults()
-
-
-    

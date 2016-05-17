@@ -4,26 +4,26 @@ import os
 from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils, Registrar, debugUtils
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
-from contact_objects import ContactAddress
+# from contact_objects import ContactAddress
 from coldata import ColData_User
-from tabulate import tabulate
+# from tabulate import tabulate
 from itertools import chain
 # from pprint import pprint
 # import sys
-from copy import deepcopy
-import unicodecsv
+# from copy import deepcopy
+# import unicodecsv
 # import pickle
-import dill as pickle
+# import dill as pickle
 from bisect import insort
 import re
 import time
 import yaml
-import MySQLdb
-import pymysql
-import paramiko
+# import MySQLdb
+# import pymysql
+# import paramiko
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
-import wordpress_xmlrpc
+# import wordpress_xmlrpc
 from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
 from SyncUpdate import SyncUpdate
 
@@ -36,7 +36,7 @@ def timediff():
 
 DEBUG = False
 testMode = False
-testMode = True
+# testMode = True
 skip_sync = False
 
 sql_run = False
@@ -45,7 +45,7 @@ update_slave = False
 update_master = False
 sql_run = True
 sftp_run = True
-update_slave = True
+# update_slave = True
 # update_master = True
 do_problematic = True
 do_filter = False
@@ -59,6 +59,8 @@ logFolder = "../logs/"
 srcFolder = "../source/"
 pklFolder = "../pickles/"
 remoteExportFolder = "act_usr_exp"
+
+os.chdir('source')
 
 yamlPath = "merger_config.yaml"
 
@@ -163,8 +165,7 @@ pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 
 colData = ColData_User()
 
-actCols = colData.getACTCols()
-actFields = ";".join(actCols.keys())
+actFields = ";".join(colData.getACTImportCols())
 
 xmlConnectParams = {
     'xmlrpc_uri': xmlrpc_uri,
@@ -179,7 +180,32 @@ jsonConnectParams = {
 }
 
 sqlConnectParams = {
-    
+
+}
+
+actConnectParams = {
+    'hostname':    m_ssh_host,
+    'port':        m_ssh_port,
+    'username':    m_ssh_user,
+    'password':    m_ssh_pass,
+}
+
+actDbParams = {
+    'db_x_exe':m_x_cmd,
+    'db_i_exe':m_i_cmd,
+    'db_name': m_db_name,
+    'db_host': m_db_host,
+    'db_user': m_db_user,
+    'db_pass': m_db_pass,
+    'fields' : actFields,
+}
+if sinceM: actDbParams['since'] = sinceM
+
+fsParams = {
+    'importName': importName,
+    'remoteExportFolder': remoteExportFolder,
+    'inFolder': inFolder,
+    'outFolder': outFolder
 }
 
 #########################################
@@ -189,8 +215,8 @@ sqlConnectParams = {
 print debugUtils.hashify("PREPARE FILTER DATA"), timediff()
 
 filterFiles = {
-    'users': userFile, 
-    'emails': emailFile, 
+    'users': userFile,
+    'emails': emailFile,
     'cards': cardFile,
 }
 filterItems = {}
@@ -255,114 +281,6 @@ if sql_run:
 else:
     saParser.analyseFile(saPath, saEncoding)
 
-# saRows = []
-
-# if sql_run: 
-#     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
-#     SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
-#     # SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
-#     for host in ['SSHTunnelForwarderAddress', 'SSHTunnelForwarderBindAddress']:
-#         try:
-#             check_address(eval(host))
-#         except Exception, e:
-#             assert not e, "Host must be valid: %s [%s = %s]" % (str(e), host, repr(eval(host)))
-#     SSHTunnelForwarderParams = {
-#         'ssh_address_or_host':SSHTunnelForwarderAddress,
-#         'ssh_password':ssh_pass,
-#         'ssh_username':ssh_user,
-#         'remote_bind_address': SSHTunnelForwarderBindAddress,
-#     }
-
-#     print SSHTunnelForwarderParams
-
-#     MySQLdbConnectParams = {
-#         'host':'127.0.0.1',
-#         'user':db_user,
-#         'passwd':db_pass,
-#         'db':db_name
-#     }
-
-#     PyMySqlConnectParams = {
-#         'host' : 'localhost',
-#         'user' : db_user,
-#         'password': db_pass,
-#         'db'   : db_name,
-#         'charset': db_charset,
-#         'use_unicode': True
-#     }
-
-
-#     with \
-#       SSHTunnelForwarder(**SSHTunnelForwarderParams) as server, \
-#       open(sqlPath) as sqlFile:
-#         # server.start()
-#         print server.local_bind_address
-
-#         MySQLdbConnectParams['port'] = server.local_bind_port
-#         PyMySqlConnectParams['port'] = server.local_bind_port
-#         print PyMySqlConnectParams
-#         # conn = MySQLdb.connect( **MySQLdbConnectParams )
-#         conn = pymysql.connect( **PyMySqlConnectParams )
-
-#         wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), colData.getWPCols().items()))
-
-#         assert all([
-#             'Wordpress ID' in wpCols.keys(),
-#             wpCols['Wordpress ID'].get('wp', {}).get('key') == 'ID',
-#             wpCols['Wordpress ID'].get('wp', {}).get('final')
-#         ]), 'ColData should be configured correctly'
-#         userdata_select = ",\n\t\t\t".join(filter(None,[
-#             ("MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" if data['wp'].get('meta') else "u.%s as `%s`") % (data['wp']['key'], col)\
-#             for col, data in wpCols.items()
-#         ]))
-
-#         print sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix)
-#         sqlFile.seek(0)
-
-#         cursor = conn.cursor()
-#         cursor.execute(sqlFile.read() % (userdata_select, '%susers'%tbl_prefix,'%susermeta'%tbl_prefix,'%stansync_updates'%tbl_prefix))
-#         # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
-#         headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
-#         # print headers
-#         saRows = [headers]
-        
-#         for i, row in enumerate(cursor):
-#             if testMode and i>500: 
-#                 break
-#             saRows += [map(SanitationUtils.coerceUnicode, row)]
-
-# #########################################
-# # Import Slave Info From Spreadsheets
-# #########################################
-
-# print debugUtils.hashify("Import Slave Info From Spreadsheets"), timediff()
-
-# saParser = CSVParse_User(
-#     cols = colData.getImportCols(),
-#     defaults = colData.getDefaults(),
-#     filterItems = filterItems
-# )
-# if saRows:
-#     print "analysing slave rows", timediff()
-#     saParser.analyseRows(saRows)
-# else:
-#     print "generating slave", timediff()
-#     saParser.analyseFile(saPath, saEncoding)
-# print "analysed %d slave objects" % len(saParser.objects), timediff()
-
-# def printBasicColumns(users):
-#     # print len(users)
-#     usrList = UsrObjList()
-#     for user in users:
-#         usrList.addObject(user)
-#         # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
-
-#     cols = colData.getBasicCols()
-
-#     SanitationUtils.safePrint( usrList.tabulate(
-#         cols,
-#         tablefmt = 'simple'
-#     ))
 
 CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 
@@ -372,7 +290,7 @@ CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 
 
 maParser = CSVParse_User(
-    cols = colData.getImportCols(),
+    cols = colData.getACTImportCols(),
     defaults = colData.getDefaults(),
     contact_schema = 'act',
     filterItems = filterItems
@@ -381,32 +299,10 @@ maParser = CSVParse_User(
 print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
 
 if sftp_run:
-    actConnectParams = {
-        'hostname':    m_ssh_host,
-        'port':        m_ssh_port,
-        'username':    m_ssh_user,
-        'password':    m_ssh_pass,
-    }
 
     for thing in ['m_x_cmd', 'm_i_cmd', 'remoteExportFolder', 'actFields']:
-        assert eval(thing), "missing mandatory command component '%s'" % thing 
+        assert eval(thing), "missing mandatory command component '%s'" % thing
 
-    actDbParams = {
-        'db_x_exe':m_x_cmd,
-        'db_i_exe':m_i_cmd,
-        'db_name': m_db_name,
-        'db_host': m_db_host,
-        'db_user': m_db_user,
-        'db_pass': m_db_pass,
-        'fields' : actFields
-    }
-
-    fsParams = {
-        'importName': importName,
-        'remoteExportFolder': remoteExportFolder,
-        'inFolder': inFolder,
-        'outFolder': outFolder
-    }
     with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
         masterClient.analyseRemote(maParser)
 else:
@@ -447,13 +343,13 @@ def denyAnomalousParselist(parselistType, anomalousParselist):
         # print "could not deny anomalous parse list", parselistType, e
         anomalousParselists[parselistType] = anomalousParselist
 
-    
+
 if not skip_sync:
     # for every username in slave, check that it exists in master
     print "processing usernames"
     denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
 
-    usernameMatcher = UsernameMatcher();
+    usernameMatcher = UsernameMatcher()
     usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
 
     denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
@@ -546,7 +442,7 @@ if not skip_sync:
                 insort(masterUpdates, syncUpdate)
             if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
                 insort(slaveUpdates, syncUpdate)
-        
+
     print debugUtils.hashify("COMPLETED MERGE")
     print timediff()
 
@@ -557,7 +453,7 @@ if not skip_sync:
 print debugUtils.hashify("Write Report")
 print timediff()
 
-with io.open(resPath, 'w+', encoding='utf8') as resFile: 
+with io.open(resPath, 'w+', encoding='utf8') as resFile:
     reporter = HtmlReporter()
 
     basic_cols = colData.getBasicCols()
@@ -656,7 +552,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'perfect_matches', 
+                'perfect_matches',
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
@@ -667,7 +563,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
         )
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'email_duplicates', 
+                'email_duplicates',
                 **{
                     'title': 'Email Duplicates',
                     'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
@@ -701,9 +597,9 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
                         'data': data,
                         'length': len(matchList)
                     }
-                )   
+                )
             )
-            
+
         # print debugUtils.hashify("anomalous ParseLists: ")
 
         parseListInstructions = {
@@ -720,7 +616,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
                 usrList.addObject(obj)
 
             data = usrList.tabulate(tablefmt="html")
-            
+
             matchingGroup.addSection(
                 HtmlReporter.Section(
                     parselistType,

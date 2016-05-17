@@ -38,7 +38,7 @@ class UsrSyncClient_Abstract(object):
     @property
     def connectionReady(self):
         return self.client
-        
+
     def analyseRemote(self, parser, since=None):
         raise NotImplementedError()
 
@@ -57,7 +57,7 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
         for param in mandatory_params:
             assert eval(param), "missing mandatory param: " + param
         self.client = WordpressJsonWrapper(*map(eval, mandatory_params))
-        
+
     # @property
     # def connectionReady(self):
     #     return self.client
@@ -86,7 +86,7 @@ class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
         for param in mandatory_params:
             assert eval(param), "missing mandatory param: " + param
         self.client = wordpress_xmlrpc.Client(*map(eval, mandatory_params))
-        
+
     # @property
     # def connectionReady(self):
     #     return self.client
@@ -123,7 +123,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
         exception = None
         try:
-            sftpClient = self.client.open_sftp()    
+            sftpClient = self.client.open_sftp()
             if remoteDir:
                 try:
                     sftpClient.stat(remoteDir)
@@ -151,7 +151,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         self.assertRemoteFileExists(remotePath)
         exception = None
         try:
-            sftpClient = self.client.open_sftp()    
+            sftpClient = self.client.open_sftp()
             sftpClient.get(remotePath, localPath)
             sftpClient.remove(remotePath)
         except Exception, e:
@@ -169,7 +169,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         if not updates:
             return
         # print "UPDATES:", updates
-        assert self.connectionReady    
+        assert self.connectionReady
         updates['MYOB Card ID'] = user_pkey
 
         importName = self.fsParams['importName']
@@ -193,7 +193,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
             dictwriter.writeheader()
             dictwriter.writerow(updates)
 
-        self.putFile( localPath, remotePath)            
+        self.putFile( localPath, remotePath)
 
         command = " ".join(filter(None,[
             'cd ' + remoteExportFolder + ';',
@@ -209,7 +209,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
             self.removeRemoteFile(importedFile)
         except:
             raise Exception("import didn't produce a .imported file")
-        
+
     def analyseRemote(self, parser, since=None):
         if not since:
             since = '1970-01-01'
@@ -288,22 +288,22 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     SELECT
         {modtime_cols}
     FROM
-        {tbl_tu} tu 
+        {tbl_tu} tu
     {where_clause}
-    GROUP BY 
+    GROUP BY
         tu.`user_id`""".format(
             modtime_cols = ",\n\t\t".join(modtime_cols),
             tbl_tu=tbl_prefix+'tansync_updates',
             where_clause = where_clause,
         )
-        print sql_select_modtime
+        # print sql_select_modtime
 
         if since:
             cursor.execute(sql_select_modtime)
             headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
             results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
             table = [headers] + results
-            print tabulate(table, headers='firstrow')
+            # print tabulate(table, headers='firstrow')
             # results = list(cursor)
             # if len(results) == 0:
             #     #nothing to analyse
@@ -318,10 +318,10 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         userdata_cols = ",\n\t\t".join(filter(None,
             [
                 "u.%s as `%s`" % (key, name)\
-                    for key, name in wpDbCoreCols.items() 
+                    for key, name in wpDbCoreCols.items()
             ] + [
                 "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (key, name) \
-                    for key, name in wpDbMetaCols.items() 
+                    for key, name in wpDbMetaCols.items()
             ]
         ))
 
@@ -345,7 +345,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         # print userdata_cols
 
         sql_select_user = """
-    SELECT  
+    SELECT
         {usr_cols}
     FROM
         {tbl_u} u
@@ -353,7 +353,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         ON ( um.`user_id` = u.`ID`)
     GROUP BY
         u.`ID`""".format(
-            tbl_u = tbl_prefix+'users', 
+            tbl_u = tbl_prefix+'users',
             tbl_um = tbl_prefix+'usermeta',
             usr_cols = userdata_cols,
         )
@@ -363,10 +363,10 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         sql_select_user_modtime = """
 SELECT *
 FROM
-( 
-    {sql_ud} 
+(
+    {sql_ud}
 ) as ud
-{join_type} JOIN 
+{join_type} JOIN
 (
     {sql_mt}
 ) as lu
@@ -406,7 +406,7 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
         #     parser.analyseRows(saRows)
 
         # sql_select_user = """\
-        # SELECT  
+        # SELECT
         #     {usr_cols}
         # FROM
         #     {tbl_u} u
@@ -415,10 +415,10 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
         # GROUP BY
         #     u.`ID`
         # """.format(
-        #     tbl_u = tbl_prefix+'users', 
+        #     tbl_u = tbl_prefix+'users',
         #     tbl_um = tbl_prefix+'usermeta'
         # )
-        
+
 def testXMLRPC():
     # store_url = 'http://technotea.com.au/'
     # username = 'Neil'
@@ -468,7 +468,7 @@ def testJSON():
         'user_login': "admin"
     }
 
-    # 
+    #
 
     client.uploadChanges(1, fields)
 

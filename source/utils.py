@@ -36,11 +36,11 @@ class SanitationUtils:
     cell_email_regex = r"^%s$" % email_regex
     myobid_regex = r"C\d+"
     punctuationChars = [
-        '!', '"', '#', '$', '%', 
-        '&', '\'', '(', ')', '*', 
-        '+', ',', '\-', '.', '/', 
-        ':', ';', '<', '=', '>', 
-        '?', '@', '[', '\\\\', '\\]', 
+        '!', '"', '#', '$', '%',
+        '&', '\'', '(', ')', '*',
+        '+', ',', '\-', '.', '/',
+        ':', ';', '<', '=', '>',
+        '?', '@', '[', '\\\\', '\\]',
         '^', '_', '`', '{', '|', '}', '~'
     ]
     allowedPunctuation = [
@@ -51,10 +51,10 @@ class SanitationUtils:
     tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
     tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
     tokenDelimetersNoSpace  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars) - set([' '])) #delimeter characters excl space
-    punctuationRegex = r"[%s]" % "".join(punctuationChars) 
-    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters) 
-    nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters) 
-    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters) 
+    punctuationRegex = r"[%s]" % "".join(punctuationChars)
+    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
+    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
     nondelimeterAndSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
@@ -69,7 +69,7 @@ class SanitationUtils:
         for abbrvKey, abbrvs in abbrvDict.items():
             if( string in [abbrvKey] + abbrvs):
                 return abbrvKey
-        return string        
+        return string
 
     @staticmethod
     def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
@@ -172,7 +172,11 @@ class SanitationUtils:
         return byte_return
 
     @staticmethod
-    def sanitizeForTable(thing):
+    def sanitizeForTable(thing, tablefmt=None):
+        if hasattr(thing, '_supports_tablefmt'):
+            thing = thing.__unicode__(tablefmt)
+        if isinstance(thing, (str, unicode)) and tablefmt == 'simple':
+            thing = thing[:64] + '...'
         unicode_return = SanitationUtils.compose(
             SanitationUtils.coerceUnicode,
             SanitationUtils.escapeNewlines,
@@ -235,7 +239,7 @@ class SanitationUtils:
 
     @staticmethod
     def removeLoneWhiteSpace(string):
-        str_out = re.sub(r'^\s*$','', string)    
+        str_out = re.sub(r'^\s*$','', string)
         if DEBUG: print "removeLoneWhiteSpace", repr(string), repr(str_out)
         return str_out
 
@@ -330,12 +334,12 @@ class SanitationUtils:
             SanitationUtils.removeThousandsSeparator,
             SanitationUtils.removeLoneWhiteSpace,
             SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripTailingWhitespace,            
+            SanitationUtils.stripTailingWhitespace,
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.stripTailingNewline,
             SanitationUtils.removeNULL,
             SanitationUtils.coerceUnicode
-        )(cell)   
+        )(cell)
 
     @staticmethod
     def sanitizeClass(string):
@@ -393,7 +397,7 @@ class SanitationUtils:
                 lambda mo: subs[mo.string[mo.start():mo.end()]],
                 str_in
             )
-        # if DEBUG_GEN: 
+        # if DEBUG_GEN:
         #     print " | str_o: ",str_out
         return str_out
 
@@ -485,7 +489,7 @@ class SanitationUtils:
     def datetotimestamp(datestring):
         raise DeprecationWarning()
         # assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
-        # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))    
+        # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))
 
     @staticmethod
     def decodeJSON(json_str):
@@ -722,7 +726,7 @@ class NameUtils:
                         r"|".join([
                             r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?",
                             r"(?P<names_before_note_middle>{names})? ?(?P<note_middle>{note})\.? ?(?P<names_after_note_middle>{names})?",
-                            r"(?P<note_names_only>{names})"    
+                            r"(?P<note_names_only>{names})"
                         ]),
                         r") ?(?P<note_close_paren>\))",
                         r"(?P<note_only>{note})",
@@ -1025,13 +1029,13 @@ class NameUtils:
     def tokenizeName(string):
         string = string.upper()
         matches =  re.findall(
-            NameUtils.nameTokenRegex, 
+            NameUtils.nameTokenRegex,
             string
         )
         # if DEBUG_NAME: print repr(matches)
         return map(
             lambda match: NameUtils.sanitizeNameToken(match[0]),
-            matches    
+            matches
         )
 
 def testNameUtils():
@@ -1044,7 +1048,7 @@ def testNameUtils():
 
     testNotes("DERWENT - FINALIST")
     testNotes("JAGGERS HAIR - DO NOT WANT TO BE CALLED!!!!")
-        
+
 
 
 class AddressUtils:
@@ -1603,7 +1607,7 @@ class AddressUtils:
         numberRegex,
         alphaNumberRegex,
     ])
-    
+
     floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
         singleNumberRegex,
@@ -1716,7 +1720,7 @@ class AddressUtils:
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict): 
+        if(matchDict):
             floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
             floor_number = matchDict.get('floor_number')
             if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
@@ -1732,7 +1736,7 @@ class AddressUtils:
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')): 
+        if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')):
             subunit_type = AddressUtils.identifySubunit(matchDict.get('subunit_type'))
             subunit_number = matchDict.get('subunit_number')
             subunit = (subunit_type, subunit_number)
@@ -1749,7 +1753,7 @@ class AddressUtils:
             token
         )
         matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('weak_subunit_type') and matchDict.get('weak_subunit_number')): 
+        if(matchDict and matchDict.get('weak_subunit_type') and matchDict.get('weak_subunit_number')):
             subunit_type = AddressUtils.identifySubunit(matchDict.get('weak_subunit_type'))
             subunit_number = matchDict.get('weak_subunit_number')
             subunit = (subunit_type, subunit_number)
@@ -1768,15 +1772,15 @@ class AddressUtils:
         matchDict = match.groupdict() if match else None
         if(matchDict and matchDict.get('thoroughfare_name') and matchDict.get('thoroughfare_type')):
             thoroughfare_name = matchDict.get('thoroughfare_name')
-            thoroughfare_type = AddressUtils.identifyThoroughfareType( 
-                matchDict.get('thoroughfare_type') 
+            thoroughfare_type = AddressUtils.identifyThoroughfareType(
+                matchDict.get('thoroughfare_type')
             )
-            thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(  
-                matchDict.get('thoroughfare_suffix') 
+            thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
+                matchDict.get('thoroughfare_suffix')
             )
             thoroughfare_number = matchDict.get('thoroughfare_number')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( 
-                "FOUND THOROUGHFARE", 
+            if DEBUG_ADDRESS: SanitationUtils.safePrint(
+                "FOUND THOROUGHFARE",
                 thoroughfare_number,
                 thoroughfare_name,
                 thoroughfare_type,
@@ -1801,7 +1805,7 @@ class AddressUtils:
             )
             if DEBUG_ADDRESS: SanitationUtils.safePrint(
                 "FOUND BUILDING",
-                building_name, 
+                building_name,
                 building_type
             )
             return building_name, building_type
@@ -1819,10 +1823,10 @@ class AddressUtils:
             # print matchDict
             weak_thoroughfare_name = matchDict.get('weak_thoroughfare_name')
             weak_thoroughfare_type = matchDict.get('weak_thoroughfare_type')
-            # weak_thoroughfare_type = AddressUtils.identifyThoroughfareType( 
+            # weak_thoroughfare_type = AddressUtils.identifyThoroughfareType(
             #     matchDict.get('weak_thoroughfare_type')
             # )
-            weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(  
+            weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
                 matchDict.get('weak_thoroughfare_suffix')
             )
 
@@ -1910,7 +1914,7 @@ class AddressUtils:
         return SanitationUtils.compose(
             SanitationUtils.stripLeadingWhitespace,
             SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.stripExtraWhitespace,   
+            SanitationUtils.stripExtraWhitespace,
             SanitationUtils.stripPunctuation,
             SanitationUtils.toUpper
         )(string)
@@ -1925,18 +1929,18 @@ class AddressUtils:
 
     @staticmethod
     def tokenizeAddress(string):
-        # if DEBUG_ADDRESS: 
+        # if DEBUG_ADDRESS:
         #     SanitationUtils.safePrint("in tokenizeAddress")
         matches =  re.findall(
-            AddressUtils.addressTokenRegex, 
+            AddressUtils.addressTokenRegex,
             string.upper()
         )
-        # if DEBUG_ADDRESS: 
+        # if DEBUG_ADDRESS:
         #     for match in matches:
         #         print repr(match)
         return map(
             lambda match: AddressUtils.sanitizeAddressToken(match[0]),
-            matches    
+            matches
         )
 
     @staticmethod
@@ -1954,7 +1958,7 @@ class AddressUtils:
         match = re.match(AddressUtils.shopRegex, address)
         matchDict = match.groupdict()
         if(matchDict):
-            number = matchDict.get('number', None) 
+            number = matchDict.get('number', None)
             rest = matchDict.get('rest', None)
             if(number):
                 return number, rest
@@ -2149,10 +2153,10 @@ class TimeUtils:
                     return time.mktime(tstruct)
             except:
                 pass
-        return 0   
+        return 0
 
     @classmethod
-    def setWpSrvOffset(_class, offset):     
+    def setWpSrvOffset(_class, offset):
         _class.wpSrvOffset = offset
 
     @staticmethod
@@ -2226,9 +2230,9 @@ def testTimeUtils():
     # t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
     # t4 = TimeUtils.wpStrptime("2015-12-18 16:03:37")
     # print [
-    #     (t1, TimeUtils.wpTimeToString(t1)), 
-    #     (t2, TimeUtils.wpTimeToString(t2)), 
-    #     (t3, TimeUtils.wpTimeToString(t3)), 
+    #     (t1, TimeUtils.wpTimeToString(t1)),
+    #     (t2, TimeUtils.wpTimeToString(t2)),
+    #     (t3, TimeUtils.wpTimeToString(t3)),
     #     (t4, TimeUtils.wpTimeToString(t4))
     # ]
 
@@ -2313,7 +2317,7 @@ class HtmlReporter(object):
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </body>
-"""     
+"""
         out = SanitationUtils.coerceUnicode( out )
         return out
 
@@ -2330,9 +2334,9 @@ class HtmlReporter(object):
         out = SanitationUtils.coerceUnicode( out )
         return out
 
-    def getDocumentUnicode(self): 
+    def getDocumentUnicode(self):
         return SanitationUtils.coerceUnicode( self.getDocument() )
-        
+
 def testHTMLReporter():
     with\
              open('../output/htmlReporterTest.html', 'w+') as resFile,\
@@ -2343,7 +2347,7 @@ def testHTMLReporter():
 
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'perfect_matches', 
+                'perfect_matches',
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % ("WP", "ACT"),
@@ -2388,7 +2392,7 @@ class descriptorUtils:
             # print "setting ", key, '<-', value
             self.kwargs[key] = value
             self.processKwargs()
-        
+
         return property(getter, setter)
 
 class listUtils:
@@ -2438,7 +2442,7 @@ class debugUtils:
 
     @staticmethod
     def getCallerProcedure():
-        return inspect.stack()[2][3]   
+        return inspect.stack()[2][3]
 
     @staticmethod
     def hashify(in_str):
@@ -2492,7 +2496,7 @@ class Registrar:
         try:
             if callable(indexer):
                 index = indexer(thing)
-            else: 
+            else:
                 index = indexer
             assert index.__hash__, "Index must be hashable"
             assert index == index, "index must support eq"
@@ -2523,9 +2527,9 @@ class Registrar:
         error_string = str(error)
         if DEBUG_ERROR: Registrar.printAnything(index, error, '!')
         self.registerAnything(
-            error_string, 
-            self.errors, 
-            index, 
+            error_string,
+            self.errors,
+            index,
             singular = False,
             registerName = 'errors'
         )
@@ -2580,7 +2584,7 @@ class PHPUtils:
     @staticmethod
     def unserialize(string):
         return loads(string)
-    
+
 if __name__ == '__main__':
     # testHTMLReporter()
     testTimeUtils()
