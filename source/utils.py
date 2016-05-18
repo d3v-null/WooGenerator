@@ -21,7 +21,7 @@ DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
 DEBUG_ADDRESS = False
-# DEBUG_ADDRESS = True
+DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
 # DEBUG_MESSAGE = True
 DEBUG_ERROR = False
@@ -36,26 +36,28 @@ class SanitationUtils:
     cell_email_regex = r"^%s$" % email_regex
     myobid_regex = r"C\d+"
     punctuationChars = [
-        '!', '"', '#', '$', '%',
-        '&', '\'', '(', ')', '*',
-        '+', ',', '\-', '.', '/',
-        ':', ';', '<', '=', '>',
-        '?', '@', '[', '\\\\', '\\]',
-        '^', '_', '`', '{', '|', '}', '~'
+        r'!', r'"', r'\#', r'\$', r'%',
+        r'&', r'\'', r'(', r')', r'\*',
+        r'\+', r',', r'\-', r'\.', r'/',
+        r':', r';', r'<', r'=', r'>',
+        r'\?', r'@', r'\[', r'\\', r'\]',
+        r'\^', r'_', r'`', r'\{', r'\|', r'\}', r'~'
     ]
     allowedPunctuation = [
-        '\\-', '.', '\''
+        r'\-', r'\.', '\''
     ]
     disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
     whitespaceChars = [ ' ', '\t', '\r', '\n', '\f']
+    disallowedPunctuationOrSpace = list(set(disallowedPunctuation + whitespaceChars))
     tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
     tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
-    tokenDelimetersNoSpace  = [ r"\d"] + list(set(disallowedPunctuation + whitespaceChars) - set([' '])) #delimeter characters excl space
+    tokenDelimetersNoSpace  = list(set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' '])) #delimeter characters excl space
     punctuationRegex = r"[%s]" % "".join(punctuationChars)
     delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
     nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
     nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
-    nondelimeterAndSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
+    nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
@@ -70,6 +72,17 @@ class SanitationUtils:
             if( string in [abbrvKey] + abbrvs):
                 return abbrvKey
         return string
+
+    @staticmethod
+    def identifyAbbreviations(abbrvDict, string):
+        matches = re.findall(
+            '('+SanitationUtils.compileAbbrvRegex(abbrvDict)+')',
+            string
+        )
+
+        for candidate in [match for match in filter(None, matches)]:
+            identified = SanitationUtils.identifyAbbreviation(abbrvDict, candidate)
+            if identified: yield identified
 
     @staticmethod
     def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
@@ -535,7 +548,7 @@ def testSanitationUtils():
     fields = {
         u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
         'user_url': "http://www.laserphile.com/asd",
-        # 'first_name': 'noodle',
+        'first_name': 'noo-dle',
         'user_login': "admin"
     }
 
@@ -597,17 +610,42 @@ class NameUtils:
         ndp = SanitationUtils.nondelimeterPunctuationRegex,
         ord = ordinalNumberRegex
     )
-    multiNameRegex  = r"({ndp}|{nd}+{ndp}|{ord})({nds}*{ord})?({nds}*{nd}{ndp})?)".format(
+    # lazyMultiNameRegex  = r"(({ndp}|{nd}+{ndp}|{ord})({nds}*{ord})?({nds}*{nd}{ndp})?))".format(
+    #     nd = SanitationUtils.nondelimeterRegex,
+    #     ndp = SanitationUtils.nondelimeterPunctuationRegex,
+    #     nds = SanitationUtils.nondelimeterOrSpaceRegex,
+    #     ord = ordinalNumberRegex
+    # )
+    #
+    # lazyMultiNameRegex  =  r"(" + "|".join([
+    #         "{ord}",
+    #         "{nd}{nds}+?{ord}"
+    #     ]) + ")?({nds}*?{nd})?".format(
+    #     nd = SanitationUtils.nondelimeterRegex,
+    #     nds = SanitationUtils.nondelimeterOrSpaceRegex,
+    #     ord = ordinalNumberRegex
+    # )
+
+    LazyMultiNameNoOrdRegex = "(?!{Ds}+.*)(?:{nd}(?:{nds}*?{nd})?)".format(
+        Ds = SanitationUtils.disallowedPunctuationOrSpaceRegex,
         nd = SanitationUtils.nondelimeterRegex,
-        ndp = SanitationUtils.nondelimeterPunctuationRegex,
-        nds = SanitationUtils.nondelimeterAndSpaceRegex,
+        nds = SanitationUtils.nondelimeterOrSpaceRegex
+    )
+
+    greedyMultiNameNoOrdRegex = "(?!{Ds}+.*)(?:{nd}(?:{nds}*{nd})?)".format(
+        Ds = SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        nd = SanitationUtils.nondelimeterRegex,
+        nds = SanitationUtils.nondelimeterOrSpaceRegex
+    )
+
+    lazyMultiNameRegex  = "((?:{ord} )?{mnr}(?: {ord}(?: {mnr})?)?)".format(
+        mnr = LazyMultiNameNoOrdRegex,
         ord = ordinalNumberRegex
     )
 
-    multiNameRegex  = r"(({2}|{0}{1}*{2})?({1}*{0})?)".format(
-        SanitationUtils.nondelimeterRegex,
-        SanitationUtils.nondelimeterAndSpaceRegex,
-        ordinalNumberRegex
+    greedyMultiNameRegex = "((?:{ord} )?{mnr}(?: {ord}(?: {mnr})?)?)".format(
+        mnr = greedyMultiNameNoOrdRegex,
+        ord = ordinalNumberRegex
     )
 
     titleAbbreviations = OrderedDict([
@@ -735,13 +773,13 @@ class NameUtils:
                 r")").format(
         note=SanitationUtils.wrapClearRegex(SanitationUtils.compileAbbrvRegex(noteAbbreviations)),
         noted = SanitationUtils.wrapClearRegex(SanitationUtils.compileAbbrvRegex(noteDelimeters)),
-        names=multiNameRegex,
+        names=lazyMultiNameRegex,
         name=singleNameRegex,
     )
 
     careOfRegex = r"(?P<careof>%s)[\.:]? ?(?P<careof_names>%s)" % (
         SanitationUtils.compileAbbrvRegex(careOfAbbreviations),
-        multiNameRegex,
+        greedyMultiNameRegex,
     )
 
     nameSuffixRegex = r"\(?(?P<name_suffix>%s)\.?\)?" % (
@@ -749,7 +787,7 @@ class NameUtils:
     )
 
     organizationRegex = r"(?P<organization_name>%s) (?P<organization_type>%s)\.?" % (
-        multiNameRegex,
+        greedyMultiNameRegex,
         SanitationUtils.compileAbbrvRegex(organizationTypeAbbreviations)
     )
 
@@ -827,7 +865,7 @@ class NameUtils:
     def getMultiName(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
-                NameUtils.multiNameRegex
+                NameUtils.greedyMultiNameRegex
             ),
             token
         )
@@ -1046,8 +1084,8 @@ def testNameUtils():
         for token in NameUtils.tokenizeName(line):
             print token, NameUtils.getNote(token)
 
-    testNotes("DERWENT - FINALIST")
-    testNotes("JAGGERS HAIR - DO NOT WANT TO BE CALLED!!!!")
+    testNotes("DE-RWENT- FINALIST")
+    testNotes("JAGGERS HAIR- DO NOT WANT TO BE CALLED!!!!")
 
 
 
@@ -1282,7 +1320,10 @@ class AddressUtils:
     ])
 
     buildingTypeAbbreviations = OrderedDict([
-        ('SHOPPING CENTRE', ["S/C", "SHOPNG CNTR", "SHOPPING CENTER", "SHOPPING CENTRE", "SHOPPING CTR", "SHOPPING", "SHOP. CENTRE", ]),
+        ('SHOPPING CENTRE', ["S/C", "SHOP. CENTRE", "SHOPNG CENTRE" ]),
+        ('SHOPPING CENTER', ["SHOP. CENTER", "SHOPNG CENTER"  ]),
+        ('SHOPPING CTR',    ["SHOP. CTR", "SHOPNG CTR" ]),
+        ("SHOPPING CTNR",   ["SHOP. CTR", "SHOPNG CTNR" ]),
         ('PLAZA',           ['PLZA']),
         ('ARCADE',          ["ARC"]),
         ('MALL',            []),
@@ -1292,6 +1333,7 @@ class AddressUtils:
         ('CENTER',          []),
         ('CENTRE',          []),
         ('FORUM',           []),
+        ('CTR',             ["CNTR"]),
     ])
 
     deliveryTypeAbbreviations = OrderedDict([
@@ -1612,6 +1654,9 @@ class AddressUtils:
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
         singleNumberRegex,
     )
+    subunitTypeRegexNamed = "(?P<subunit_type>%s)" % (
+        SanitationUtils.compileAbbrvRegex(subunitAbbreviations)
+    )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>(?:%s)/?)" % (
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
         multiNumberAlphaRegex,
@@ -1623,32 +1668,35 @@ class AddressUtils:
     stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
     thoroughfareNameRegex = r"%s" % (
         "|".join([
-            NameUtils.multiNameRegex,
+            NameUtils.greedyMultiNameRegex,
             NameUtils.ordinalNumberRegex,
         ])
     )
     thoroughfareTypeRegex = r"%s" % (
         SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
     )
+    thoroughfareTypeRegexNamed = r"(?P<thoroughfare_type>%s)" % (
+        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
+    )
     thoroughfareSuffixRegex = r"%s" % (
         SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
     )
-    thoroughfareRegex = r"(?P<thoroughfare_number>%s)\s+(?P<thoroughfare_name>%s)\s+(?P<thoroughfare_type>%s)\.?(?:\s+(?P<thoroughfare_suffix>%s))?" % (
+    thoroughfareRegex = r"(?P<thoroughfare_number>{0})\s+(?P<thoroughfare_name>{1})\s+(?P<thoroughfare_type>{2})\.?(?:\s+(?P<thoroughfare_suffix>{3}))?".format(
         multiNumberSlashRegex,
         thoroughfareNameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
     )
-    weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>%s)\s+(?P<weak_thoroughfare_type>%s)\.?(?:\s+(?P<weak_thoroughfare_suffix>%s))?" % (
+    weakThoroughfareRegex = r"(?P<weak_thoroughfare_name>{0})\s+(?P<weak_thoroughfare_type>{1})\.?(?:\s+(?P<weak_thoroughfare_suffix>{2}))?".format(
         thoroughfareNameRegex,
         thoroughfareTypeRegex,
         thoroughfareSuffixRegex
     )
-    buildingTypeRegex = r"(?P<building_type>%s)" % (
+    buildingTypeRegex = r"(?P<building_type>{0}(\s{0})*)".format(
         SanitationUtils.compileAbbrvRegex(buildingTypeAbbreviations)
     )
     buildingRegex = r"(?P<building_name>{0})\s+{1}".format(
-        NameUtils.multiNameRegex,
+        NameUtils.lazyMultiNameRegex,
         buildingTypeRegex
     )
     deliveryTypeRegex = r"(?P<delivery_type>%s)" % (
@@ -1704,6 +1752,10 @@ class AddressUtils:
         return SanitationUtils.identifyAbbreviation(AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
+    def identifyBuildingTypes(string):
+        return SanitationUtils.identifyAbbreviations(AddressUtils.buildingTypeAbbreviations, string)
+
+    @staticmethod
     def identifyDeliveryType(string):
         return SanitationUtils.identifyAbbreviation(AddressUtils.deliveryTypeAbbreviations, string)
 
@@ -1726,6 +1778,21 @@ class AddressUtils:
             if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
             return floor_type, floor_number
         return None
+
+    @staticmethod
+    def getSubunitType(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                AddressUtils.subunitTypeTypeRegexNamed
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('subunit_type'):
+            subunit_type = AddressUtils.identifySubunitType(
+                matchDict.get('subunit_type')
+            )
+            return subunit_type
 
     @staticmethod
     def getSubunit(token):
@@ -1760,6 +1827,21 @@ class AddressUtils:
             if DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
             return subunit
         return None
+
+    @staticmethod
+    def getThoroughfareType(token):
+        match = re.match(
+            SanitationUtils.wrapClearRegex(
+                AddressUtils.thoroughfareTypeRegexNamed
+            ),
+            token
+        )
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('thoroughfare_type'):
+            thoroughfare_type = AddressUtils.identifyThoroughfareType(
+                matchDict.get('thoroughfare_type')
+            )
+            return thoroughfare_type
 
     @staticmethod
     def getThoroughfare(token):
@@ -1799,10 +1881,11 @@ class AddressUtils:
         )
         matchDict = match.groupdict() if match else None
         if(matchDict):
+            print matchDict
             building_name = matchDict.get('building_name')
-            building_type = AddressUtils.identifyBuildingType(
+            building_type = ''.join(AddressUtils.identifyBuildingTypes(
                 matchDict.get('building_type')
-            )
+            ))
             if DEBUG_ADDRESS: SanitationUtils.safePrint(
                 "FOUND BUILDING",
                 building_name,
@@ -1965,9 +2048,9 @@ class AddressUtils:
         return None, address
 
 def testAddressUtils():
-    SanitationUtils.clearStartRegex = "<START>"
-    SanitationUtils.clearFinishRegex = "<FINISH>"
-    print repr(AddressUtils.addressTokenRegex)
+    # SanitationUtils.clearStartRegex = "<START>"
+    # SanitationUtils.clearFinishRegex = "<FINISH>"
+    # print repr(AddressUtils.addressTokenRegex)
 
     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
 
@@ -1982,155 +2065,12 @@ def testAddressUtils():
 
     # print AddressUtils.getSubunit("SHOP 4 A")
     # print AddressUtils.getFloor("LEVEL 8")
+    print AddressUtils.tokenizeAddress("BROADWAY FAIR SHOPPING CTR")
+    print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING CTR")
+    print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING")
+    print NameUtils.getMultiName("BROADWAY")
 
-    # for line in [
-    #     "8/5-7 KILVINGTON DRIVE EAST",
-    #     "SH20 SANCTUARY LAKES SHOPPING CENTRE",
-    #     "2 HIGH ST EAST BAYSWATER",
-    #     "FLOREAT FORUM",
-    #     "ANN LYONS",
-    #     "SHOP 5, 370 VICTORIA AVE",
-    #     "SHOP 34 ADELAIDE ARCADE",
-    #     "SHOP 5/562 PENNANT HILLS RD",
-    #     "MT OMMANEY SHOPPING",
-    #     "BUCKLAND STREET",
-    #     "6/7 118 RODWAY ARCADE",
-    #     "INGLE FARM SHOPPING CENTRE",
-    #     "EASTLAND SHOPPING CENTRE",
-    #     "SHOP 3044 WESTFEILD",
-    #     "303 HAWTHORN RD",
-    #     "7 KALBARRI ST,  WA",
-    #     "229 FORREST HILL CHASE",
-    #     "THE VILLAGE SHOP 5",
-    #     "GARDEN CITY SHOPPING CENTRE",
-    #     "SHOP 2 EAST MALL",
-    #     "SAMANTHA PALMER",
-    #     "134 THE GLEN SHOPPING CENTRE",
-    #     "SHOP 3 A, 24 TEDDER AVE",
-    #     "SHOP 205, DANDENONG PLAZA",
-    #     "SHOP 5 / 20 -21 OLD TOWN PLAZA",
-    #     "18A BORONIA RD",
-    #     "SHOP 426 LEVEL 4",
-    #     "WATERFORD PLAZA",
-    #     "BEAUDESERT RD",
-    #     "173 GLENAYR AVE",
-    #     "SHOP 14-16 ALBANY PLAZA S/C",
-    #     "861 ALBANY HIGHWAY",
-    #     "4/479 SYDNEY RD",
-    #     "90 WINSTON AVE",
-    #     "SHOP 2004 - LEVEL LG1",
-    #     "142 THE PARADE",
-    #     "46 MARKET STREET",
-    #     "AUSTRALIA FAIR",
-    #     "538 MAINS RD",
-    #     "SHOP 28 GRENFELL ST",
-    #     "309 MAIN ST",
-    #     "60 TOMPSON ROAD",
-    #     "SHOP 10 2-28 EVAN ST",
-    #     "VENESSA MILETO",
-    #     "BOX RD",
-    #     "34 RAILWAY PARADE",
-    #     "SHOP 14A WOODLAKE VILLAGE S/C",
-    #     "17 ROKEBY RD",
-    #     "AUSTRALIA FAIR SHOPPING",
-    #     "SHOP 1, 18-26 ANDERSON ST",
-    #     "INDOOROOPILLY SHOPPINGTOWN",
-    #     "17 CASUARINA RD",
-    #     "WHITFORDS WESTFIELD",
-    #     "4, 175 LABOUCHERE RD",
-    #     "2 PEEL STREET",
-    #     "SHOP 71 THE ENTRANCE RD",
-    #     "SHOP 2014 LEVEL 2",
-    #     "PLAZA ARCADE",
-    #     "SHOP 27 ADELAIDE ARCADE",
-    #     "152 WENTWORTH RD",
-    #     "92 PROSPECT RD",
-    #     "31 REITA AVE",
-    #     "33 NEW ENGLAND HWY",
-    #     "46 HUNTER ST",
-    #     "1/34-36 MCPHERSON ST",
-    #     "SHOP 358",
-    #     "147 SOUTH TCE",
-    #     "SHOP 1003 L1",
-    #     "357 CAMBRIDGE STREET",
-    #     "495 BURWOOD HWY",
-    #     "CAROUSAL MALL",
-    #     "SHOP 22 BAYSIDE VILLAGE",
-    #     "1/64 GYMEA BAY RD",
-    #     "1/15 RAILWAY RD",
-    #     "SOUTHLANDS BOULEVARD",
-    #     "83A COMMERCIAL RD",
-    #     u"456 ROCKY PT R\u010E",
-    #     "95 ROCKEBY RD",
-    #     "4/13-17 WARBURTON ST",
-    #     "1/18 ADDISON SY",
-    #     "SUNNYPARK",
-    #     "SHOP 4,81 PROSPECT",
-    #     "WESTFIELD",
-    #     "15 - 16 KEVLAR CLOSE",
-    #     "31",
-    #     "3/71 DORE ST",
-    #     "SHOP 11 RIVERSTONE PDE",
-    #     "SOUTHERN RIVER SHOPPING CENTRE RANFORD ROAD",
-    #     "6 RODINGA CLOSE",
-    #     "SHOP 2013 WESTFIELDS",
-    #     "SHOP 524 THE GLEN SHOPPING CENTRE",
-    #     "JOONDALUP SHOPPING CENTRE",
-    #     "48/14 JAMES PLACE",
-    #     "3/66 TENTH AVE",
-    #     "SHOP 23 GORDON VILLAGE ARCADE",
-    #     "HORNSBY WESTFIELD",
-    #     "SHOP 81",
-    #     "215/152 BUNNERONG RD",
-    #     "SP 1032 KNOX CITY SHOPPING CENTRE",
-    #     "SHOP 152 RUNDLE MALL",
-    #     "37 BURWOOD RD",
-    #     "SHOP 52 LEVEL 3",
-    #     "ALBANY PLAZA SHOPPING CENTRE",
-    #     "LEVEL 3 SHOP 3094",
-    #     "SHOP 19 B LAKE MACQUARIE",
-    #     "18/70 HURTLE",
-    #     "309 GEORGE ST",
-    #     "76 EDWARDES",
-    #     "SUNNYBANK PLAZA",
-    #     "1/134 HIGH ST",
-    #     "CARRUM DOWNS SHOPPING CENTER",
-    #     "SHOP 13 1 WENTWORTH ST",
-    #     "234 BROADWAY",
-    #     "288 STATION ST",
-    #     "KMART PLAZA",
-    #     "15 FLINTLOCK CT",
-    #     "17 O'CONNELL ST",
-    #     "JILL STREET SHOPPING CENTRE",
-    #     "SHOP 3, 2-10 WILLIAM THWAITES BLVD",
-    #     "170 CLOVELLY RD",
-    #     "SHOP 11 451 SYDNEY RD",
-    #     "PRINCES HIGHWAY ULLADULLA",
-    #     "WESTFIELD DONCASTER SHOPPING CENTRE",
-    #     "153 BREBNER SR",
-    #     "HELENSVALE TOWN CENTRE",
-    #     "SHOP 7 A KENWICK SHOPNG CNTR 1 - 3 BELMONT RD EAST, KENWICK WA (",
-    #     "3/3 HOWARD AVA",
-    #     "8/2 RIDER BLVD",
-    #     "ROBINA PARKWAY",
-    #     "VICTORIA PT SHOPPING",
-    #     "ROBINSON ROAD",
-    #     "3/3 BEASLEY RD,",
-    #     "39 HAWKESBURY RETREAT",
-    #     "171 MORAYFIELD ROAD",
-    #     "149 ST JOHN STREET",
-    #     "49 GEORGE ST,  WA",
-    #     "UNIT 1",
-    #     "A8/90 MOUNT STREET",
-    #     "114 / 23 CORUNNA RD",
-    #     "43 GINGHAM STREET",
-    #     "5 KERRY CRESCENT, WESTERN AUSTRALIA",
-    #     "UNIT 2/33 MARTINDALE STREET",
-    #     "207/67 WATT ST",
-    #     "LEVEL 8, BLIGH"
-    # ]:
-    #     pass
-        # print SanitationUtils.unicodeToByte("%64s %64s %s" % (line, AddressUtils.tokenizeAddress(line), AddressUtils.getThoroughfare(line)))
+
 
 
 class TimeUtils:
@@ -2451,14 +2391,21 @@ class debugUtils:
         out_str += "#" * (len(in_str) + 4) + "\n"
         return out_str
 
-class Registrar:
+class Registrar(object):
     messages = OrderedDict()
     errors = OrderedDict()
     warnings = OrderedDict()
+    objectIndexer = id
+    DEBUG_ERROR = True
+    DEBUG_WARN = False
+    DEBUG_MESSAGE = False
 
     def __init__(self):
-        self.objectIndexer = id
+        # self.objectIndexer = id
         self.conflictResolver = self.passiveResolver
+        # self.DEBUG_ERROR = True
+        # self.DEBUG_WARN = False
+        # self.DEBUG_MESSAGE = False
 
     def resolveConflict(self, new, old, index, registerName = ''):
         self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
@@ -2491,7 +2438,7 @@ class Registrar:
 
     def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
         if resolver is None: resolver = self.conflictResolver
-        if indexer is None: indexer = self.Indexer
+        if indexer is None: indexer = self.objectIndexer
         index = None
         try:
             if callable(indexer):
@@ -2501,7 +2448,8 @@ class Registrar:
             assert index.__hash__, "Index must be hashable"
             assert index == index, "index must support eq"
         except AssertionError as e:
-            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (indexer.__name__, repr(index), str(e)))
+            name = thing.__name__ if hasattr(thing, '__name__') else 'UNKN'
+            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (name, repr(index), str(e)))
         else:
             # if not register:
             #     register = OrderedDict()
@@ -2525,7 +2473,7 @@ class Registrar:
         else:
             index = debugUtils.getCallerProcedure()
         error_string = str(error)
-        if DEBUG_ERROR: Registrar.printAnything(index, error, '!')
+        if self.DEBUG_ERROR: Registrar.printAnything(index, error, '!')
         self.registerAnything(
             error_string,
             self.errors,
@@ -2537,7 +2485,7 @@ class Registrar:
     def registerWarning(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
-        if DEBUG_WARN: Registrar.printAnything(source, message, ' ')
+        if self.DEBUG_WARN: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
             self.warnings,
@@ -2549,7 +2497,7 @@ class Registrar:
     def registerMessage(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
-        if DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
+        if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
             self.messages,
@@ -2587,8 +2535,8 @@ class PHPUtils:
 
 if __name__ == '__main__':
     # testHTMLReporter()
-    testTimeUtils()
+    # testTimeUtils()
     # testSanitationUtils()
     # testUnicodeWriter()
-    # testAddressUtils()
+    testAddressUtils()
     # testNameUtils()

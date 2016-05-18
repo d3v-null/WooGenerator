@@ -34,17 +34,17 @@ class ImportObject(OrderedDict, Registrar):
     def row(self): return self._row
 
     @property
-    def rowcount(self): return self['rowcount']    
+    def rowcount(self): return self['rowcount']
 
     @property
-    def index(self): return self.rowcount   
+    def index(self): return self.rowcount
 
     @staticmethod
     def getContainer():
         return ObjList
 
     def getTypeName(self):
-        return type(self).__name__ 
+        return type(self).__name__
 
     def getIdentifierDelimeter(self):
         return ""
@@ -67,10 +67,13 @@ class ImportObject(OrderedDict, Registrar):
         if other == None:
             return -1
         if not isinstance(other, ImportObject):
-            return -1  
+            return -1
         return cmp(self.rowcount, other.rowcount)
 
 class ObjList(list):
+
+    _supports_tablefmt = True
+
     def __init__(self, objects=None, indexer=None):
         super(ObjList, self).__init__()
         self._indexer = indexer if indexer else (lambda x: x.index)
@@ -91,7 +94,7 @@ class ObjList(list):
     @property
     def indices(self):
         return self._indices
-    
+
 
     # def __len__(self):
     #     return len(self.objects)
@@ -131,7 +134,7 @@ class ObjList(list):
         # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
         if(objs):
             # print "there are objects"
-            if not cols: cols = self.getReportCols()                
+            if not cols: cols = self.getReportCols()
             header = [self.objList_type]
             for col, data in cols.items():
                 header += [col]
@@ -208,8 +211,8 @@ class CSVParse_Base(object, Registrar):
 
     def registerObject(self, objectData):
         self.registerAnything(
-            objectData, 
-            self.objects, 
+            objectData,
+            self.objects,
             self.objectIndexer,
             singular = True,
             registerName = 'objects'
@@ -243,13 +246,13 @@ class CSVParse_Base(object, Registrar):
             return None
 
     def sanitizeCell(self, cell):
-        return cell   
-             
+        return cell
+
     def getRowData(self, row):
         rowData = OrderedDict()
         for col in self.cols:
             retrieved = self.retrieveColFromRow(col, row)
-            if retrieved is not None and retrieved is not '': 
+            if retrieved is not None and retrieved is not '':
                 rowData[col] = self.sanitizeCell(retrieved)
         return rowData
 
@@ -268,11 +271,11 @@ class CSVParse_Base(object, Registrar):
         allData = listUtils.combineOrderedDicts(rowData, defaultData)
         if(DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
-        # self.registerMessage("container: {}".format(container.__name__))                
+        # self.registerMessage("container: {}".format(container.__name__))
         kwargs = self.getKwargs(allData, container, **kwargs)
-        # self.registerMessage("kwargs: {}".format(kwargs))                
+        # self.registerMessage("kwargs: {}".format(kwargs))
         objectData = container(allData, rowcount, row, **kwargs)
-        # self.registerMessage("mro: {}".format(container.mro()))                
+        # self.registerMessage("mro: {}".format(container.mro()))
         return objectData
 
     def initializeObject(self, objectData):
@@ -306,14 +309,14 @@ class CSVParse_Base(object, Registrar):
                     last_print = now
                     print "%d of %d rows processed" % (rowcount, rowlen)
 
-                
-            if unicode_row: 
+
+            if unicode_row:
                 non_unicode = filter(
                     lambda unicode_cell: not isinstance(unicode_cell, unicode) if unicode_cell else False,
                     unicode_row
                 )
                 assert not non_unicode, "non-empty cells must be unicode objects, {}".format(repr(non_unicode))
-                    
+
             if not self.indices :
                 self.analyseHeader(unicode_row)
                 continue
@@ -325,21 +328,21 @@ class CSVParse_Base(object, Registrar):
             else:
                 if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
             try:
-                self.processObject(objectData) 
+                self.processObject(objectData)
                 if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
             except UserWarning as e:
                 self.registerError("could not process new object: {}".format(e), objectData)
                 continue
             try:
                 self.registerObject(objectData)
-                if (DEBUG_PARSER): 
+                if (DEBUG_PARSER):
                     self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
                     self.registerMessage("%s" % objectData.__repr__())
 
             except UserWarning as e:
                 self.registerError("could not register new object: {}".format(e), objectData)
                 continue
-        self.registerMessage("Completed analysis") 
+        self.registerMessage("Completed analysis")
 
     def analyseFile(self, fileName, encoding=None):
         if encoding is None:
@@ -357,7 +360,7 @@ class CSVParse_Base(object, Registrar):
                 "QUC ", repr(csvdialect.quotechar)  , \
                 "QUT ", repr(csvdialect.quoting)    , \
                 "SWS ", repr(csvdialect.skipinitialspace)
-            
+
             unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
             return self.analyseRows(unicodecsvreader)
         return None
@@ -365,9 +368,13 @@ class CSVParse_Base(object, Registrar):
     def getObjects(self):
         return self.objects
 
-    def tabulate(self, cols=None, tablefmt=None):
+    def getObjList(self):
         listClass = self.objectContainer.getContainer()
         objlist = listClass(self.objects.values())
+        return objlist
+
+    def tabulate(self, cols=None, tablefmt=None):
+        objlist = self.getObjList()
         return SanitationUtils.coerceBytes(objlist.tabulate(cols, tablefmt))
 
 if __name__ == '__main__':
@@ -392,8 +399,5 @@ if __name__ == '__main__':
     SanitationUtils.safePrint( usrParser.tabulate(cols = usrData.getReportCols()))
     print ( usrParser.tabulate(cols = usrData.getReportCols()))
 
-    for usr in usrParser.objects.values()[:3]:    
+    for usr in usrParser.objects.values()[:3]:
         pprint(OrderedDict(usr))
-
-
-

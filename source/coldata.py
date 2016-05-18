@@ -1563,6 +1563,18 @@ class ColData_User(ColData_Base):
                 cols.append(self.modTimeCol(col))
         return cols
 
+
+    @classmethod
+    def getWPImportColNames(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('wp') and data.get('import'):
+                cols[col] = col
+            if data.get('tracked'):
+                modCol = self.modTimeCol(col)
+                cols[modCol] = modCol
+        return cols
+
     @classmethod
     def getWPDBCols(self, meta=None):
         cols = OrderedDict()
@@ -1662,6 +1674,17 @@ class ColData_User(ColData_Base):
                 cols.append(col)
             if data.get('tracked'):
                 cols.append(self.modTimeCol(col))
+        return cols
+
+    @classmethod
+    def getACTImportColNames(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('act') and data.get('import'):
+                cols[col] = col
+            if data.get('tracked'):
+                modCol = self.modTimeCol(col)
+                cols[modCol] = modCol
         return cols
 
     @classmethod

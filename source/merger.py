@@ -36,20 +36,20 @@ def timediff():
 
 DEBUG = False
 testMode = False
-# testMode = True
+testMode = True
 skip_sync = False
 
 sql_run = False
 sftp_run = False
 update_slave = False
 update_master = False
-sql_run = True
-sftp_run = True
+# sql_run = True
+# sftp_run = True
 # update_slave = True
 # update_master = True
 do_problematic = True
 do_filter = False
-do_filter = True
+# do_filter = True
 
 ### DEFAULT CONFIG ###
 
@@ -134,19 +134,21 @@ fileSuffix = "_test" if testMode else ""
 fileSuffix += "_filter" if do_filter else ""
 m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
 m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
+s_x_filename = "wp_x"+fileSuffix+"_"+importName+".csv"
 remoteExportPath = os.path.join(remoteExportFolder, m_x_filename)
 maPath = os.path.join(inFolder, m_x_filename)
 maEncoding = "utf-8"
 
-saPath = os.path.join(inFolder, "wordpress_export_users_all_2016-03-11.csv")
+saPath = os.path.join(inFolder, s_x_filename)
 saEncoding = "utf8"
 
 if not sftp_run:
-    maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
+    # maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
+    maPath = os.path.join(inFolder, "500-act-records-edited.csv")
     # maPath = os.path.join(inFolder, "500-act-records.csv")
     maEncoding = "utf8"
 if not sql_run:
-    saPath = os.path.join(inFolder, "500-wp-records.csv")
+    saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
     saEncoding = "utf8"
 
 assert store_url, "store url must not be blank"
@@ -166,12 +168,12 @@ pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 colData = ColData_User()
 
 actFields = ";".join(colData.getACTImportCols())
-
-xmlConnectParams = {
-    'xmlrpc_uri': xmlrpc_uri,
-    'wp_user': wp_user,
-    'wp_pass': wp_pass
-}
+#
+# xmlConnectParams = {
+#     'xmlrpc_uri': xmlrpc_uri,
+#     'wp_user': wp_user,
+#     'wp_pass': wp_pass
+# }
 
 jsonConnectParams = {
     'json_uri': json_uri,
@@ -277,6 +279,9 @@ if sql_run:
             client.analyseRemote(saParser, limit=1000)
         else:
             client.analyseRemote(saParser)
+
+        saParser.getObjList().exportItems(os.path.join(inFolder, s_x_filename),
+                                          ColData_User.getWPImportColNames())
 
 else:
     saParser.analyseFile(saPath, saEncoding)
@@ -677,6 +682,9 @@ if do_problematic:
 print debugUtils.hashify("Update databases (%d)" % len(allUpdates))
 print timediff()
 
+masterFailures = []
+slaveFailures = []
+
 if allUpdates:
 
     with \
@@ -688,9 +696,18 @@ if allUpdates:
                 try:
                     update.updateMaster(masterClient)
                 except Exception, e:
+                    masterFailures.append({
+                        'update':update,
+                        'exception':e
+                    })
                     raise Exception("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
+                    # continue
             if update_slave and update.sUpdated :
                 try:
                     update.updateSlave(slaveClient)
                 except Exception, e:
+                    slaveFailures.append({
+                        'update':update,
+                        'exception':e
+                    })
                     raise Exception("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
