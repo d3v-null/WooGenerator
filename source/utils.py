@@ -21,7 +21,7 @@ DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
 DEBUG_ADDRESS = False
-DEBUG_ADDRESS = True
+# DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
 # DEBUG_MESSAGE = True
 DEBUG_ERROR = False
@@ -44,21 +44,31 @@ class SanitationUtils:
         r'\^', r'_', r'`', r'\{', r'\|', r'\}', r'~'
     ]
     allowedPunctuation = [
-        r'\-', r'\.', '\''
+        r'\-', r'\.', r'\''
     ]
     disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
-    whitespaceChars = [ ' ', '\t', '\r', '\n', '\f']
+    whitespaceChars = [ r' ', r'\t', r'\r', r'\n', 'r\f']
+    #disallowed punctuation and whitespace
     disallowedPunctuationOrSpace = list(set(disallowedPunctuation + whitespaceChars))
-    tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars)) #delimeter characters incl space
+    #delimeter characters incl whitespace and disallowed punc
+    tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars))
+    #delimeter characters including all punctuation and whitespace
     tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
-    tokenDelimetersNoSpace  = list(set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' '])) #delimeter characters excl space
+    #delimeter characters excl space
+    tokenDelimetersNoSpace  = list(set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' ']))
     punctuationRegex = r"[%s]" % "".join(punctuationChars)
+    #delimeter characters incl space and disallowed punc
     delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    #disallowed punctuation and whitespace
     disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
-    nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
-    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
-    nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
+    #disallowed punctuation
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
+    #not a delimeter (no whitespace or disallowed punc)
+    nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
+    #not a delimeter or punctuation (no punctuation or whitespace)
+    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
+    #not a delimeter except space (no whitespace except space, no disallowed punc)
+    nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
@@ -605,30 +615,44 @@ def testSanitationUtils():
 
 class NameUtils:
     ordinalNumberRegex = r"(\d+)(?:ST|ND|RD|TH)"
-    singleNameRegex       = r"({ndp}|{nd}+{ndp}|{ord})".format(
+
+    # #disallowed punctuation and whitespace
+    # disallowedPunctuationOrSpace = list(set(disallowedPunctuation + whitespaceChars))
+    # #delimeter characters incl whitespace and disallowed punc
+    # tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars))
+    # #delimeter characters including all punctuation and whitespace
+    # tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
+    # #delimeter characters excl space
+    # tokenDelimetersNoSpace  = list(set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' ']))
+    # punctuationRegex = r"[%s]" % "".join(punctuationChars)
+    # #delimeter characters incl space and disallowed punc
+    # delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
+    # #disallowed punctuation and whitespace
+    # disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
+    # #disallowed punctuation
+    # disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
+    # #not a delimeter (no whitespace or disallowed punc)
+    # nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
+    # #not a delimeter or punctuation (no punctuation or whitespace)
+    # nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
+    # #not a delimeter except space (no whitespace except space, no disallowed punc)
+
+    singleNameRegex       = r"(?!{Ds}+.*)({ndp}(?:{nd}*{ndp})?|{ord})".format(
+        #disallowed punctuation and whitespace
+        Ds = SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        #not a delimeter (no whitespace or disallowed punc)
         nd = SanitationUtils.nondelimeterRegex,
+        #not a delimeter or punctuation (no punctuation or whitespace)
         ndp = SanitationUtils.nondelimeterPunctuationRegex,
         ord = ordinalNumberRegex
     )
-    # lazyMultiNameRegex  = r"(({ndp}|{nd}+{ndp}|{ord})({nds}*{ord})?({nds}*{nd}{ndp})?))".format(
-    #     nd = SanitationUtils.nondelimeterRegex,
-    #     ndp = SanitationUtils.nondelimeterPunctuationRegex,
-    #     nds = SanitationUtils.nondelimeterOrSpaceRegex,
-    #     ord = ordinalNumberRegex
-    # )
-    #
-    # lazyMultiNameRegex  =  r"(" + "|".join([
-    #         "{ord}",
-    #         "{nd}{nds}+?{ord}"
-    #     ]) + ")?({nds}*?{nd})?".format(
-    #     nd = SanitationUtils.nondelimeterRegex,
-    #     nds = SanitationUtils.nondelimeterOrSpaceRegex,
-    #     ord = ordinalNumberRegex
-    # )
 
     LazyMultiNameNoOrdRegex = "(?!{Ds}+.*)(?:{nd}(?:{nds}*?{nd})?)".format(
+        #disallowed punctuation and whitespace
         Ds = SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        #not a delimeter (no whitespace or disallowed punc)
         nd = SanitationUtils.nondelimeterRegex,
+        #not a delimeter except space (no whitespace except space, no disallowed punc)
         nds = SanitationUtils.nondelimeterOrSpaceRegex
     )
 
@@ -732,6 +756,9 @@ class NameUtils:
         ('VAN DEN', []),
         ('VAN',     []),
         ('DER',     []),
+        ('DI',      []),
+        ('O',       []),
+        ('O',       []),
     ])
 
     titleRegex = r"(?P<name_title>%s)\.?" % (
@@ -800,8 +827,8 @@ class NameUtils:
         SanitationUtils.wrapClearRegex( SanitationUtils.email_regex ),
         SanitationUtils.wrapClearRegex( noteRegex),
         SanitationUtils.wrapClearRegex( familyNameRegex),
-        SanitationUtils.wrapClearRegex( ordinalNumberRegex),
         SanitationUtils.wrapClearRegex( singleNameRegex ),
+        SanitationUtils.wrapClearRegex( ordinalNumberRegex),
         SanitationUtils.disallowedPunctuationRegex
     ])
 
@@ -1018,11 +1045,15 @@ class NameUtils:
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if matchGrps:
-            family_name = matchGrps[0]
-            if DEBUG_NAME: SanitationUtils.safePrint("FOUND FAMILY NAME", family_name)
-            return family_name
+        matchDict = match.groupdict() if match else None
+        if matchDict and matchDict.get('family_name'):
+            family_name = matchDict['family_name']
+            family_name_prefix = matchDict.get('family_name_prefix')
+            for component in [family_name_prefix, family_name]:
+                if DEBUG_NAME: print "name component", repr(component)
+            combined_family_name = " ".join(filter(None, [family_name_prefix, family_name]))
+            if DEBUG_NAME: SanitationUtils.safePrint("FOUND FAMILY NAME", combined_family_name)
+            return combined_family_name
 
 
     @staticmethod
@@ -1077,15 +1108,42 @@ class NameUtils:
         )
 
 def testNameUtils():
+    pass
     # print SanitationUtils.compileAbbrvRegex(NameUtils.noteAbbreviations)
     # print NameUtils.tokenizeName('DERWENT (ACCT)')
     # print NameUtils.getEmail('KYLIESWEET@GMAIL.COM')
-    def testNotes(line):
-        for token in NameUtils.tokenizeName(line):
-            print token, NameUtils.getNote(token)
 
-    testNotes("DE-RWENT- FINALIST")
-    testNotes("JAGGERS HAIR- DO NOT WANT TO BE CALLED!!!!")
+    # assert r'\'' in SanitationUtils.allowedPunctuation
+    # assert r'\'' not in SanitationUtils.disallowedPunctuation
+    # assert r'\'' not in SanitationUtils.tokenDelimeters
+    #
+    # print SanitationUtils.tokenDelimeters
+    #
+    # match = re.match(
+    #     '(' + SanitationUtils.nondelimeterRegex + ')',
+    #     '\''
+    # )
+    # if match: print "nondelimeterRegex", [match_item for match_item in match.groups()]
+    #
+    # match = re.match(
+    #     '(' + SanitationUtils.delimeterRegex + ')',
+    #     '\''
+    # )
+    # if match: print "delimeterRegex", [match_item for match_item in match.groups()]
+    #
+    # match = re.match(
+    #     NameUtils.singleNameRegex,
+    #     'OCAL\'LAGHAN'
+    # )
+    # if match: print [match_item for match_item in match.groups()]
+
+    # print "singlename", repr( NameUtils.getSingleName('O\'CALLAGHAN' ))
+    # def testNotes(line):
+    #     for token in NameUtils.tokenizeName(line):
+    #         print token, NameUtils.getNote(token)
+    #
+    # testNotes("DE-RWENT- FINALIST")
+    # testNotes("JAGGERS HAIR- DO NOT WANT TO BE CALLED!!!!")
 
 
 
@@ -1233,7 +1291,7 @@ class AddressUtils:
         ('GR',       ['GROVE']),
         ('HTS',      ['HEIGHTS']),
         ('HIRD',     ['HIGHROAD']),
-        ('HWY',      ['HIGHWAY', 'HGWY', 'HWAY']),
+        ('HWY',      ['HIGHWAY', 'HGWY', 'HWAY', 'H\'WAY']),
         ('HILL',     []),
         ('INTG',     ['INTERCHANGE']),
         ('JNC',      ['JUNCTION']),
@@ -1320,10 +1378,10 @@ class AddressUtils:
     ])
 
     buildingTypeAbbreviations = OrderedDict([
-        ('SHOPPING CENTRE', ["S/C", "SHOP. CENTRE", "SHOPNG CENTRE" ]),
-        ('SHOPPING CENTER', ["SHOP. CENTER", "SHOPNG CENTER"  ]),
-        ('SHOPPING CTR',    ["SHOP. CTR", "SHOPNG CTR" ]),
-        ("SHOPPING CTNR",   ["SHOP. CTR", "SHOPNG CTNR" ]),
+        ('SHOPPING CENTRE', ["S/C", r"SHOP.? CENTRE", "SHOPNG CENTRE" ]),
+        ('SHOPPING CENTER', [r"SHOP.? CENTER", "SHOPNG CENTER"  ]),
+        ('SHOPPING CTR',    [r"SHOP.? CTR", "SHOPNG CTR" ]),
+        ("SHOPPING CTNR",   [r"SHOP.? CTR", "SHOPNG CTNR" ]),
         ('PLAZA',           ['PLZA']),
         ('ARCADE',          ["ARC"]),
         ('MALL',            []),
@@ -1625,6 +1683,11 @@ class AddressUtils:
         numberAlphaRegex,
         numberRegex
     ])
+    singleAlphaNumberRegex = r"(%s)" % "|".join([
+        numberAlphaRegex,
+        numberRegex,
+        alphaRegex
+    ])
     multiNumberRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
@@ -1652,7 +1715,7 @@ class AddressUtils:
 
     floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
         SanitationUtils.compileAbbrvRegex(floorAbbreviations),
-        singleNumberRegex,
+        singleAlphaNumberRegex,
     )
     subunitTypeRegexNamed = "(?P<subunit_type>%s)" % (
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations)
@@ -1881,7 +1944,7 @@ class AddressUtils:
         )
         matchDict = match.groupdict() if match else None
         if(matchDict):
-            print matchDict
+            # print matchDict
             building_name = matchDict.get('building_name')
             building_type = ''.join(AddressUtils.identifyBuildingTypes(
                 matchDict.get('building_type')
@@ -2472,8 +2535,8 @@ class Registrar(object):
                 index = data
         else:
             index = debugUtils.getCallerProcedure()
-        error_string = str(error)
-        if self.DEBUG_ERROR: Registrar.printAnything(index, error, '!')
+        error_string = SanitationUtils.coerceUnicode(error)
+        if self.DEBUG_ERROR: Registrar.printAnything(index, error_string, '!')
         self.registerAnything(
             error_string,
             self.errors,
@@ -2538,5 +2601,5 @@ if __name__ == '__main__':
     # testTimeUtils()
     # testSanitationUtils()
     # testUnicodeWriter()
-    testAddressUtils()
-    # testNameUtils()
+    # testAddressUtils()
+    testNameUtils()

@@ -232,10 +232,11 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
             '"%s"' % fileName
         ]))
 
+        print "executing export command..."
         self.execSilentCommandAssert(command)
-
+        print "donloading file..."
         self.getDeleteFile(remotePath, localPath)
-
+        print "analysing file..."
         parser.analyseFile(localPath)
 
 class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):

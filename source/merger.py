@@ -26,6 +26,7 @@ import io
 # import wordpress_xmlrpc
 from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
 from SyncUpdate import SyncUpdate
+from contact_objects import FieldGroup
 
 importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
@@ -36,20 +37,25 @@ def timediff():
 
 DEBUG = False
 testMode = False
-testMode = True
-skip_sync = False
+# testMode = True
+skip_sync = True
 
 sql_run = False
 sftp_run = False
 update_slave = False
 update_master = False
 # sql_run = True
-# sftp_run = True
+sftp_run = True
 # update_slave = True
 # update_master = True
 do_problematic = True
 do_filter = False
 # do_filter = True
+FieldGroup.performPost = True
+FieldGroup.DEBUG_WARN = False
+FieldGroup.DEBUG_MESSAGE = False
+FieldGroup.DEBUG_ERROR = False
+
 
 ### DEFAULT CONFIG ###
 
@@ -462,9 +468,22 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
     reporter = HtmlReporter()
 
     basic_cols = colData.getBasicCols()
-    address_cols = OrderedDict(basic_cols.items() + [('address_reason', {})])
-    name_cols = OrderedDict(basic_cols.items() + [('name_reason', {})])
-    csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [('address_reason', {}), ('name_reason', {})]) )
+    address_cols = OrderedDict(basic_cols.items() + [
+        ('address_reason', {}),
+        ('Edited Address', {}),
+        ('Edited Alt Address', {}),
+    ])
+    name_cols = OrderedDict(basic_cols.items() + [
+        ('name_reason', {}),
+        ('Edited Name', {}),
+    ])
+    csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [
+        ('address_reason', {}),
+        ('name_reason', {}),
+        ('Edited Name', {}),
+        ('Edited Address', {}),
+        ('Edited Alt Address', {}),
+    ]))
     # print repr(basic_colnames)
     unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values() )
     # print repr(unicode_colnames)

@@ -1447,6 +1447,7 @@ class ColData_User(ColData_Base):
             },
             'act':True,
             'import': True,
+            'basic':True,
             # 'report': True
         }),
 

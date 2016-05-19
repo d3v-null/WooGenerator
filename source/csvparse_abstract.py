@@ -187,7 +187,7 @@ class ObjList(list):
                     ('index',{})
                 ])
 
-class CSVParse_Base(object, Registrar):
+class CSVParse_Base(Registrar):
     objectContainer = ImportObject
 
     def __init__(self, cols, defaults):
