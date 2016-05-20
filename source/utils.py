@@ -1665,7 +1665,7 @@ class AddressUtils:
     numberRangeRegex = r"{0} ?(?:[-&]|TO) ?{0}".format(
         numberRegex
     )
-    numberAlphaRegex = r"{0} ?({1})".format(
+    numberAlphaRegex = r"{0} ?(?:{1})".format(
         numberRegex,
         alphaRegex
     )
@@ -1673,6 +1673,10 @@ class AddressUtils:
         numberRegex
     )
     alphaNumberRegex = r"{1}{0}".format(
+        numberRegex,
+        alphaRegex
+    )
+    alphaNumberAlphaRegex = r"{1}{0}{1}".format(
         numberRegex,
         alphaRegex
     )
@@ -1686,6 +1690,12 @@ class AddressUtils:
     singleAlphaNumberRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRegex,
+        alphaRegex
+    ])
+    singleAlphaNumberAlphaRegex = r"(%s)" % "|".join([
+        numberAlphaRegex,
+        numberRegex,
+        alphaNumberAlphaRegex,
         alphaRegex
     ])
     multiNumberRegex = r"(%s)" % "|".join([
@@ -1705,6 +1715,13 @@ class AddressUtils:
         numberRegex,
         alphaNumberRegex,
     ])
+    multiAlphaNumberAlphaRegex = r"(%s)" % "|".join([
+        numberAlphaRegex,
+        numberRangeRegex,
+        numberRegex,
+        alphaNumberRegex,
+        alphaNumberAlphaRegex,
+    ])
     multiNumberAllRegex = r"(%s)" % "|".join([
         numberAlphaRegex,
         numberRangeRegex,
@@ -1722,11 +1739,11 @@ class AddressUtils:
     )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>(?:%s)/?)" % (
         SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
-        multiNumberAlphaRegex,
+        multiAlphaNumberAlphaRegex,
     )
     weakSubunitRegex = r"(?P<weak_subunit_type>%s) ?(?P<weak_subunit_number>(?:%s)/?)" % (
         NameUtils.singleNameRegex,
-        multiNumberAlphaRegex,
+        multiAlphaNumberAlphaRegex,
     )
     stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(stateAbbreviations)
     thoroughfareNameRegex = r"%s" % (

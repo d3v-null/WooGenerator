@@ -147,6 +147,9 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
 
+    # TODO: def printFileProgress(self, completed, total):
+    #
+
     def getDeleteFile(self, remotePath, localPath):
         self.assertRemoteFileExists(remotePath)
         exception = None

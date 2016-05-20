@@ -38,14 +38,14 @@ def timediff():
 DEBUG = False
 testMode = False
 # testMode = True
-skip_sync = True
+# skip_sync = True
 
 sql_run = False
 sftp_run = False
 update_slave = False
 update_master = False
 # sql_run = True
-sftp_run = True
+# sftp_run = True
 # update_slave = True
 # update_master = True
 do_problematic = True
@@ -337,6 +337,7 @@ staticUpdates = []
 problematicUpdates = []
 masterUpdates = []
 slaveUpdates = []
+mDeltaUpdates = []
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -427,6 +428,9 @@ if not skip_sync:
         syncUpdate.update(syncCols)
 
         SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+
+        if syncUpdate.mDeltas(ColData_User.getActDeltaCols()):
+            insort(mDeltaUpdates, syncUpdate)
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):

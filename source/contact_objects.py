@@ -1463,11 +1463,9 @@ if __name__ == '__main__':
     FieldGroup.DEBUG_WARN = True
     FieldGroup.DEBUG_MESSAGE = True
 
-    name = ContactName(
-        contact = "C ARCHIVE STEPHANIDIS"
+    address = ContactAddress(
+        line1 = "SHOP G33Q, BAYSIDE SHOPPING CENTRE"
     )
-
-    print name
 
     # self.assertTrue(address.valid)
 

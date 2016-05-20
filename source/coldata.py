@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+# from __future__ import absolute_import
 from collections import OrderedDict
 from utils import listUtils #, debugUtils
 import json
@@ -754,6 +754,10 @@ class ColData_User(ColData_Base):
             col = self.modMapping[col]
         return 'Edited ' + col
 
+    @classmethod
+    def deltaCol(self, col):
+        return 'Delta ' + col
+
     wpdbPKey = 'Wordpress ID'
 
     data = OrderedDict([
@@ -827,7 +831,9 @@ class ColData_User(ColData_Base):
                 'key': 'act_role'
             },
             # 'label': 'act_role',
-            'act':True,
+            'act':{
+                'delta':True,
+            },
             'import':True,
             'user':True,
             'report': True,
@@ -1678,6 +1684,16 @@ class ColData_User(ColData_Base):
         return cols
 
     @classmethod
+    def getACTDeltaCols(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('act'):
+                act_data = data.get('act')
+                if hasattr(act_data,'__getitem__') and act_data.get('delta'):
+                    cols[col] = self.deltaCol(col)
+        return cols
+
+    @classmethod
     def getACTImportColNames(self):
         cols = OrderedDict()
         for col, data in self.data.items():
@@ -1762,7 +1778,7 @@ def testColDataUser():
     # print "reportCols", colData.getReportCols().keys()
     # print "capitalCols", colData.getCapitalCols().keys()
     # print "syncCols", colData.getSyncCols().keys()
-    # print "actCols", colData.getACTCols().keys()
+    print "actCols", colData.getACTCols().keys()
     # print "wpcols", colData.getWPCols().keys()
     print "getWPTrackedCols", colData.getWPTrackedCols()
     print "getACTTrackedCols", colData.getACTTrackedCols()

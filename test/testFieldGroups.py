@@ -318,6 +318,12 @@ class testContactAddress(testFieldGroups):
         self.assertItemsEqual(address.properties['buildings'], [('BROADMEADOWS', 'SHOP. CENTRE')])
         self.assertItemsEqual(address.properties['thoroughfares'], [('104', 'PEARCEDALE', 'PDE', None)])
 
+    def test_alphaNumberAlphaSubunit(self):
+        address = ContactAddress(
+            line1 = "SHOP G33Q, BAYSIDE SHOPPING CENTRE"
+        )
+        self.assertTrue(address.valid)
+
     def test_abbreviatedSubunit(self):
         address = ContactAddress(
             line1 = "A8/90 MOUNT STREET"
@@ -416,7 +422,6 @@ class testContactAddress(testFieldGroups):
         address = ContactAddress(
             line1 = "CANBERRA OLYMPIC POOL COMPLEX",
             line2 = "CR ALLARA ST & CONSTITUTION WAY"
-
         )
 
     def testAlphaLevel(self):
@@ -463,6 +468,8 @@ class testContactAddress(testFieldGroups):
         self.assertEqual(M, O)
         self.assertNotEqual(M, N)
         self.assertNotEqual(M, P)
+
+    #todo: "1st floor"    
 
 class testContactName(testFieldGroups):
     def test_basicName(self):
