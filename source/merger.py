@@ -38,14 +38,15 @@ def timediff():
 DEBUG = False
 testMode = False
 # testMode = True
+skip_sync = False
 # skip_sync = True
 
 sql_run = False
 sftp_run = False
 update_slave = False
 update_master = False
-# sql_run = True
-# sftp_run = True
+sql_run = True
+sftp_run = True
 # update_slave = True
 # update_master = True
 do_problematic = True
@@ -167,6 +168,8 @@ moPath = os.path.join(outFolder, m_i_filename)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
 WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
 ACTresCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
+ACTDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
+WPDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
@@ -338,6 +341,7 @@ problematicUpdates = []
 masterUpdates = []
 slaveUpdates = []
 mDeltaUpdates = []
+sDeltaUpdates = []
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -427,10 +431,13 @@ if not skip_sync:
         syncUpdate = SyncUpdate(mObject, sObject)
         syncUpdate.update(syncCols)
 
-        SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+        # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
-        if syncUpdate.mDeltas(ColData_User.getActDeltaCols()):
+        if syncUpdate.mUpdated and syncUpdate.mDeltas:
             insort(mDeltaUpdates, syncUpdate)
+
+        if syncUpdate.sUpdated and syncUpdate.sDeltas:
+            insort(sDeltaUpdates, syncUpdate)
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
@@ -481,13 +488,21 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
         ('name_reason', {}),
         ('Edited Name', {}),
     ])
-    csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [
-        ('address_reason', {}),
-        ('name_reason', {}),
-        ('Edited Name', {}),
-        ('Edited Address', {}),
-        ('Edited Alt Address', {}),
-    ]))
+    csv_colnames = colData.getColNames(
+        OrderedDict(basic_cols.items() + ColData_User.nameCols([
+            'address_reason',
+            'name_reason',
+            'Edited Name',
+            'Edited Address',
+            'Edited Alt Address',
+        ]).items()))
+    # csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [
+    #     ('address_reason', {}),
+    #     ('name_reason', {}),
+    #     ('Edited Name', {}),
+    #     ('Edited Address', {}),
+    #     ('Edited Alt Address', {}),
+    # ]))
     # print repr(basic_colnames)
     unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values() )
     # print repr(unicode_colnames)
@@ -570,9 +585,59 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
     # for row in maParser.badName.values():
     #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
     if maParser.badName or maParser.badAddress:
-        UsrObjList(maParser.badName.values() + maParser.badAddress.values()).exportItems(ACTresCsvPath, csv_colnames)
+        UsrObjList(maParser.badName.values() + maParser.badAddress.values())\
+            .exportItems(ACTresCsvPath, csv_colnames)
 
     reporter.addGroup(sanitizingGroup)
+
+    report_deltas = not skip_sync
+    if report_deltas:
+
+        deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
+
+        mDeltaList = UsrObjList(filter(None,
+                            [syncUpdate.newMObject for syncUpdate in mDeltaUpdates]))
+
+        sDeltaList = UsrObjList(filter(None,
+                            [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
+
+        deltaCols = ColData_User.getDeltaCols()
+
+        allDeltaCols = OrderedDict(
+            ColData_User.getBasicCols().items() +
+            ColData_User.nameCols(deltaCols.keys()+deltaCols.values()).items()
+        )
+
+        deltaGroup.addSection(
+            HtmlReporter.Section(
+                'm_deltas',
+                title = '%s Changes List' % MASTER_NAME.title(),
+                description = '%s records that have changed important fields' % MASTER_NAME,
+                data = mDeltaList.tabulate(
+                    cols=allDeltaCols,
+                    tablefmt='html'),
+                length = len(mDeltaList)
+            )
+        )
+
+        deltaGroup.addSection(
+            HtmlReporter.Section(
+                's_deltas',
+                title = '%s Changes List' % SLAVE_NAME.title(),
+                description = '%s records that have changed important fields' % SLAVE_NAME,
+                data = sDeltaList.tabulate(
+                    cols=allDeltaCols,
+                    tablefmt='html'),
+                length = len(sDeltaList)
+            )
+        )
+
+        reporter.addGroup(deltaGroup)
+        if mDeltaList:
+            mDeltaList.exportItems(ACTDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
+        if sDeltaList:
+            sDeltaList.exportItems(WPDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
+
 
     report_matching = not skip_sync
     if report_matching:

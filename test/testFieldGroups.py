@@ -469,7 +469,7 @@ class testContactAddress(testFieldGroups):
         self.assertNotEqual(M, N)
         self.assertNotEqual(M, P)
 
-    #todo: "1st floor"    
+    #todo: "1st floor"
 
 class testContactName(testFieldGroups):
     def test_basicName(self):
@@ -528,14 +528,6 @@ class testContactName(testFieldGroups):
         self.assertEqual(name.first_name, "THI THU")
         self.assertEqual(name.middle_name, "THAO")
         self.assertEqual(name.family_name, "NGUYENL")
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

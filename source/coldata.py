@@ -44,6 +44,12 @@ class ColData_Base(object):
             colNames[col] = label if label else col
         return colNames
 
+    @classmethod
+    def nameCols(self, cols):
+        return OrderedDict(
+            [(col, {}) for col in cols]
+        )
+
 class ColData_MYO(ColData_Base):
 
     data = OrderedDict([
@@ -831,9 +837,8 @@ class ColData_User(ColData_Base):
                 'key': 'act_role'
             },
             # 'label': 'act_role',
-            'act':{
-                'delta':True,
-            },
+            'act':True,
+            'delta':True,
             'import':True,
             'user':True,
             'report': True,
@@ -1601,6 +1606,13 @@ class ColData_User(ColData_Base):
             assert self.wpdbPKey in cols.values()
         return cols
 
+    @classmethod
+    def getAllWPDBCols(self):
+        return listUtils.combineOrderedDicts(
+            self.getWPDBCols(True),
+            self.getWPDBCols(False)
+        )
+
 
 
     # @classmethod
@@ -1684,13 +1696,11 @@ class ColData_User(ColData_Base):
         return cols
 
     @classmethod
-    def getACTDeltaCols(self):
+    def getDeltaCols(self):
         cols = OrderedDict()
         for col, data in self.data.items():
-            if data.get('act'):
-                act_data = data.get('act')
-                if hasattr(act_data,'__getitem__') and act_data.get('delta'):
-                    cols[col] = self.deltaCol(col)
+            if data.get('delta'):
+                cols[col] = self.deltaCol(col)
         return cols
 
     @classmethod
@@ -1755,6 +1765,8 @@ class ColData_User(ColData_Base):
         for col, data in self.data.items():
             exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
         return exportCols
+
+
 
 def testColDataMyo():
     print "Testing ColData_MYO Class:"

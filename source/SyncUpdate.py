@@ -40,6 +40,8 @@ class SyncUpdate(Registrar):
         self.updates = 0
         self.importantUpdates = 0
         self.importantCols = []
+        self.mDeltas = False
+        self.sDeltas = False
         # self.problematic = False
 
         #extra heuristics for merge mode:
@@ -293,6 +295,9 @@ class SyncUpdate(Registrar):
             updateParams['oldWinnerValue'] = self.getMValue(col)
             if not self.newSObject: self.newSObject = deepcopy(self.oldSObject)
             newLoserObject = self.newSObject
+            if data.get('delta') and reason in ['updating', 'deleting']:
+                # print "setting sDeltas"
+                self.sDeltas = True
         elif(winner == self.slave_name):
             # oldLoserObject = self.oldMObject
             updateParams['oldLoserValue'] = self.getMValue(col)
@@ -300,12 +305,21 @@ class SyncUpdate(Registrar):
             updateParams['oldWinnerValue'] = self.getSValue(col)
             if not self.newMObject: self.newMObject = deepcopy(self.oldMObject)
             newLoserObject = self.newMObject
+            if data.get('delta') and reason in ['updating', 'deleting']:
+                # print "setting mDeltas"
+                self.mDeltas = True
         # if data.get('warn'):
 
         self.addSyncWarning(**updateParams)
         # self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data, sTime, mTime)
         # SanitationUtils.safePrint("loser %s was %s" % (col, repr(newLoserObject[col])))
         # SanitationUtils.safePrint("updating to ", oldWinnerValue)
+        if data.get('delta'):
+            # print "delta true for ", col, \
+            # "loser", updateParams['oldLoserValue'], \
+            # "winner", updateParams['oldWinnerValue']
+            newLoserObject[ColData_User.deltaCol(col)] = updateParams['oldLoserValue']
+
         newLoserObject[col] = updateParams['oldWinnerValue']
         # SanitationUtils.safePrint( "loser %s is now %s" % (col, repr(newLoserObject[col])))
         # SanitationUtils.safePrint( "loser Name is now ", newLoserObject['Name'])
@@ -593,6 +607,33 @@ class SyncUpdate(Registrar):
                 if subject == self.opposite_src(self.master_name):
                     updates = self.getMasterUpdatesRecursive(col, updates)
         return updates
+
+    def mDeltas(self, deltaCols):
+        deltas = []
+        # print "doing deltas: ", deltaCols
+        for col, update in self.getMasterUpdates().items():
+            # print "M",col
+            if col in deltaCols:
+                deltas += [col]
+                deltaCol = deltaCols.get(col)
+                oldLoserValue = self.oldMObject.get(col)
+                # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
+                self.newMObject[deltaCol] = oldLoserValue
+        return deltas
+
+    def sDeltas(self, deltaCols):
+        deltas = []
+        dbCols = ColData_User.getAllWPDBCols()
+        # print "doing deltas: ", deltaCols
+        for col, update in self.getSlaveUpdates().items():
+            # print "S",col
+            if col in dbCols and dbCols.get(col) in deltaCols:
+                deltas += [dbCols.get(col)]
+                deltaCol = deltaCols.get(dbCols.get(col))
+                oldLoserValue = self.oldSObject.get(dbCols.get(col))
+                # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
+                self.newSObject[deltaCol] = oldLoserValue
+        return deltas
 
     def displaySlaveChanges(self, tablefmt=None):
         if self.syncWarnings:
