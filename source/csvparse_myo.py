@@ -1,4 +1,5 @@
-from csvparse_gen import CSVParse_Gen, ImportGenProduct
+from csvparse_gen import CSVParse_Gen, ImportGenProduct, GenProdList
+from csvparse_abstract import ObjList
 from utils import listUtils, SanitationUtils
 from collections import OrderedDict
 from coldata import ColData_MYO
@@ -53,7 +54,7 @@ class CSVParse_MYO(CSVParse_Gen):
 
             ('TechnoTan', 'TT'),
             ('VuTan', 'VT'),
-            ('EzeBreathe', 'EZB'), 
+            ('EzeBreathe', 'EZB'),
             ('Sticky Soul', 'SS'),
             ('My Tan', 'MT'),
             ('TanSense', 'TS'),
@@ -213,8 +214,8 @@ class CSVParse_MYO(CSVParse_Gen):
             (' Bottle with Flip Cap', ''),
             (' (jar)', ''),
             (' (tube)', ''),
-            (' (spray)', ''), 
-    
+            (' (spray)', ''),
+
             (' \xe2\x80\x94 ', ' '),
 
         ])
@@ -223,12 +224,14 @@ class CSVParse_MYO(CSVParse_Gen):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
-        if not schema: schema = "MY"        
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
+        if not schema: schema = "MY"
 
         super(CSVParse_MYO, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
         if DEBUG_MYO: print "csvparse initialized with cols:",str(extra_cols)
+
+
 
     # def joinDescs(self, descs, fullnames):
     #     return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
@@ -237,11 +240,18 @@ class CSVParse_MYO(CSVParse_Gen):
     #     if itemData['itemtype'] == 'Y':
     #         itemData['item_name'] = itemData['itemsum'][:32]
     #         # itemData['description'] = itemData['descsum'][:]
-    #         self.registerProduct(itemData)        
+    #         self.registerProduct(itemData)
+
+class MYOProdList(GenProdList):
+    def getReportCols(self):
+        return ColData_MYO.getProductCols()
+
 
 if __name__ == '__main__':
     print "Testing MYO script..."
     inFolder = "../input/"
+    os.chdir('source')
+
     genPath = os.path.join(inFolder, 'generator.csv')
 
 
@@ -251,9 +261,11 @@ if __name__ == '__main__':
         defaults = colData.getDefaults(),
     )
     productParser.analyseFile(genPath)
-    products = productParser.getProducts()
+    products = productParser.getProducts().values()
 
     print "products:"
-    for product in products:
-        print "%15s | %32s | %s" % (product.get('codesum', ''), product.get('item_name',''), product.get('descsum', ''))
-        # print "\t%128s\n" % product.get('descsum', '')          
+    prodList = MYOProdList(products)
+    print prodList.tabulate(tablefmt = 'simple')
+    # for product in products:
+        # print "%15s | %32s | %s" % (product.get('codesum', ''), product.get('item_name',''), product.get('descsum', ''))
+        # print "\t%128s\n" % product.get('descsum', '')

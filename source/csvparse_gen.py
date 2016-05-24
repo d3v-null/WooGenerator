@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from utils import descriptorUtils, SanitationUtils, listUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
+from csvparse_abstract import ObjList
 
 DEBUG_GEN = True
 
@@ -76,7 +77,7 @@ class ImportGenObject(ImportTreeObject):
 
     def joinCodes(self, ancestors):
         codeAncestors = [ancestor for ancestor in ancestors + [self] if ancestor.code ]
-        if not codeAncestors: 
+        if not codeAncestors:
             return ""
         prev = codeAncestors.pop(0)
         codesum = prev.code
@@ -87,7 +88,7 @@ class ImportGenObject(ImportTreeObject):
         return codesum
 
     def joinDescs(self, ancestors):
-        if self.description: 
+        if self.description:
             return self.description
         fullnames = [self.fullname]
         for ancestor in reversed(ancestors):
@@ -95,7 +96,7 @@ class ImportGenObject(ImportTreeObject):
             if ancestorDescription:
                 return ancestorDescription
             ancestorFullname = ancestor.fullname
-            if ancestorFullname: 
+            if ancestorFullname:
                 fullnames.insert(0, ancestorFullname)
         if fullnames:
             return " - ".join(reversed(fullnames))
@@ -109,13 +110,13 @@ class ImportGenObject(ImportTreeObject):
         ancestorsSelf = ancestors + [self]
         names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestorsSelf))
         nameDelimeter = self.getNameDelimeter()
-        return nameDelimeter.join ( names )     
+        return nameDelimeter.join ( names )
 
     def joinFullnames(self, ancestors):
         ancestorsSelf = ancestors + [self]
         names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
         nameDelimeter = self.getNameDelimeter()
-        return nameDelimeter.join ( names )      
+        return nameDelimeter.join ( names )
 
     def changeName(self, name):
         return SanitationUtils.shorten(self.regex, self.subs, name)
@@ -124,15 +125,15 @@ class ImportGenObject(ImportTreeObject):
 
         meta = self.getMeta()
         try:
-            self.fullname =  meta[0] 
+            self.fullname =  meta[0]
         except:
-            self.fullname =  "" 
+            self.fullname =  ""
         # self.registerMessage("fullname: {}".format(self.fullname ) )
 
         try:
-            self.code = meta[1] 
+            self.code = meta[1]
         except:
-            self.code = "" 
+            self.code = ""
         # self.registerMessage("code: {}".format(self.code ) )
 
         ancestors = self.getAncestors()
@@ -143,7 +144,7 @@ class ImportGenObject(ImportTreeObject):
 
         descsum = self.joinDescs(ancestors)
         self.registerMessage(u"descsum: {}".format( descsum ) )
-        self.descsum = descsum   
+        self.descsum = descsum
 
         name = self.changeName(self.fullname)
         self.registerMessage(u"name: {}".format( name ) )
@@ -153,11 +154,11 @@ class ImportGenObject(ImportTreeObject):
 
         namesum = self.joinNames(nameAncestors)
         self.registerMessage(u"namesum: {}".format( namesum) )
-        self.namesum = namesum  
+        self.namesum = namesum
 
         fullnamesum = self.joinFullnames(nameAncestors)
         self.registerMessage(u"fullnamesum: {}".format( fullnamesum) )
-        self.fullnamesum = fullnamesum  
+        self.fullnamesum = fullnamesum
 
 
 class ImportGenItem(ImportGenObject, ImportTreeItem):
@@ -186,12 +187,20 @@ class ImportGenProduct(ImportGenItem):
             ancestorsSelf = nameAncestors + [self]
             names = listUtils.filterUniqueTrue(map(lambda x: x.name, ancestorsSelf))
             if len(names) < 2:
-                line1 = names[0];
+                line1 = names[0]
                 nameDelimeter = self.getNameDelimeter()
                 line2 = nameDelimeter.join(names[1:])
         self['title_1'] = line1
         self['title_2'] = line2
 
+class GenProdList(ObjList):
+    def addObject(self, objectData):
+        assert issubclass(objectData.__class__, ImportGenProduct), \
+        "object must be subclass of ImportGenProduct not %s : %s" % (
+            SanitationUtils.coerceUnicode(objectData.__class__),
+            SanitationUtils.coerceUnicode(objectData)
+        )
+        return super(GenProdList, self).addObject(objectData)
 
 class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
 
@@ -200,6 +209,15 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
 
     def getNameDelimeter(self):
         return ' > '
+
+class GenTaxoList(ObjList):
+    def addObject(self, objectData):
+        assert issubclass(objectData.__class__, ImportGenTaxo), \
+        "object must be subclass of ImportGenTaxo not %s : %s" % (
+            SanitationUtils.coerceUnicode(objectData.__class__),
+            SanitationUtils.coerceUnicode(objectData)
+        )
+        return super(GenTaxoList, self).addObject(objectData)
 
 class CSVParse_Gen(CSVParse_Tree):
 
@@ -211,10 +229,10 @@ class CSVParse_Gen(CSVParse_Tree):
                     taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2):
         assert metaWidth >= 2, "metaWidth must be greater than 2 for a GEN subclass"
         extra_defaults = OrderedDict([
-            ('CVC', '0'),   
+            ('CVC', '0'),
             ('code', ''),
             ('name', ''),
-            ('fullname', ''),   
+            ('fullname', ''),
             ('description', ''),
             ('HTML Description', ''),
             ('imglist', [])
@@ -230,7 +248,7 @@ class CSVParse_Gen(CSVParse_Tree):
             ('Silken Chocolate', 'Bronze'),
             ('Moon Marvel (Silver)', 'Silver'),
             ('Dusty Gold', 'Gold'),
-            
+
             ('Screen Printed', ''),
             ('Embroidered', ''),
         ])
@@ -242,7 +260,7 @@ class CSVParse_Gen(CSVParse_Tree):
 
         self.schema     = schema
         self.taxoSubs   = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )   
+        self.itemSubs   = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
         self.taxoRegex  = SanitationUtils.compileRegex(self.taxoSubs)
         self.itemRegex  = SanitationUtils.compileRegex(self.itemSubs)
         self.productIndexer = self.getGenCodesum
@@ -256,12 +274,12 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def clearTransients(self):
         super(CSVParse_Gen, self).clearTransients()
-        self.products   = OrderedDict() 
+        self.products   = OrderedDict()
 
     def registerProduct(self, prodData):
         assert prodData.isProduct
         self.registerAnything(
-            prodData, 
+            prodData,
             self.products,
             indexer = self.productIndexer,
             singular = True,
@@ -283,14 +301,14 @@ class CSVParse_Gen(CSVParse_Tree):
 
     def depth(self, row):
         for i, cell in enumerate(row):
-            if cell: 
+            if cell:
                 return i
-            if i >= self.maxDepth: 
+            if i >= self.maxDepth:
                 return -1
         return -1
 
     def sanitizeCell(self, cell):
-        return SanitationUtils.sanitizeCell(cell)  
+        return SanitationUtils.sanitizeCell(cell)
 
     def getGenCodesum(self, genData):
         assert isinstance(genData, ImportGenObject)

@@ -1,6 +1,7 @@
 from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils
 from csvparse_abstract import ObjList
-from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, ImportGenTaxo, ImportGenObject
+from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, \
+                         ImportGenTaxo, ImportGenObject, GenProdList, GenTaxoList
 from collections import OrderedDict
 import bisect
 import time
@@ -23,8 +24,8 @@ class ImportWooObject(ImportGenObject):
 
     @property
     def isVariable(self): return self._isVariable
-    
-    @property 
+
+    @property
     def isVariation(self): return self._isVariation
 
     def registerImage(self, image):
@@ -76,7 +77,7 @@ class ImportWooObject(ImportGenObject):
         return self.getAncestors()
 
     def inheritKey(self, key):
-        if not self.get(key):        
+        if not self.get(key):
             inheritence = filter(None, map(
                 lambda x: x.get(key),
                 self.getInheritanceAncestors()
@@ -123,7 +124,7 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
         return ' - '
 
     def getInheritanceAncestors(self):
-        return listUtils.filterUniqueTrue( 
+        return listUtils.filterUniqueTrue(
             self.getCategories().values() + super(ImportWooProduct, self).getInheritanceAncestors()
         )
 
@@ -171,7 +172,7 @@ class ImportWooVariation(ImportWooProduct):
     def getParentProduct(self):
         return self.parentProduct
 
-    def isVariation(self): return True;        
+    def isVariation(self): return True;
 
 class ImportWooCompositeProduct(ImportWooProduct):
     product_type = 'composite'
@@ -187,7 +188,7 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
     productsKey = 'products'
 
     def __init__(self, *args, **kwargs):
-        super(ImportWooCategory, self).__init__(*args, **kwargs) 
+        super(ImportWooCategory, self).__init__(*args, **kwargs)
         self.members = OrderedDict()
 
     def registerMember(self, itemData):
@@ -215,6 +216,19 @@ class ImportWooCategory(ImportWooObject, ImportGenTaxo):
                         return result
         return None
 
+class WooProdList(GenProdList):
+    def getReportCols(self):
+        return ColData_Woo.getProductCols()
+
+class WooVarList(ObjList):
+    def getReportCols(self):
+        return ColData_Woo.getCategoryCols()
+
+class WooCatList(GenTaxoList):
+    def getReportCols(self):
+        return ColData_Woo.getVariationCols()
+
+
 class WooObjList(ObjList):
     def __init__(self, fileName, objects=None):
         self._fileName = fileName
@@ -228,8 +242,8 @@ class WooObjList(ObjList):
 
     @property
     def objects(self):
-        return self.products + self.items + self.taxos 
-    
+        return self.products + self.items + self.taxos
+
     @property
     def name(self):
         return Exception("deprecated name")
@@ -238,7 +252,7 @@ class WooObjList(ObjList):
     def title(self):
         return self.getKey('fullnamesum')
 
-    @property    
+    @property
     def description(self):
         description = self.getKey('HTML Description')
         if not description:
@@ -253,7 +267,7 @@ class WooObjList(ObjList):
 
     @property
     def fileName(self):
-        return self._fileName    
+        return self._fileName
 
     def addObject(self, objectData):
         assert isinstance(objectData, ImportWooObject)
@@ -271,7 +285,7 @@ class WooObjList(ObjList):
 
     def invalidate(self):
         self._isValid = False;
-    
+
 
 class CSVParse_Woo(CSVParse_Gen):
 
@@ -291,10 +305,10 @@ class CSVParse_Woo(CSVParse_Gen):
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
                 dprcRules={}, dprpRules={}, specials={}, catMapping={}):
-        
+
         print ("catMapping woo pre: %s" % str(catMapping))
 
-        extra_cols = [ 'PA', 'VA', 'weight', 'length', 'width', 'height', 
+        extra_cols = [ 'PA', 'VA', 'weight', 'length', 'width', 'height',
                     'stock', 'stock_status', 'Images', 'HTML Description',
                     'post_status']
 
@@ -310,7 +324,7 @@ class CSVParse_Woo(CSVParse_Gen):
             ('Shimmerz for Hair', 'Shimmerz for Hair'),
             ('Sqiffy Accessories', 'Sqiffy'),
             ('Sticky Soul Accessories', 'Sticky Soul'),
-            ('Tanning Advantage ', ''),   
+            ('Tanning Advantage ', ''),
             ('Assorted ', ''),
             ('My Tan Apparel', 'My Tan Dress'),
             # ('Shimmerz for Hair', 'Tanning Accessories > Shimmerz for Hair'),
@@ -318,7 +332,7 @@ class CSVParse_Woo(CSVParse_Gen):
             # ('EzeBreathe', 'Tanning Accessories > EzeBreathe'),
             # ('My Tan', 'Tanning Accessories > My Tan'),
             # ('Tan Sleeper', 'Tanning Accessories > Tan Sleeper'),
-            # ('Tanning Advantage Application Equipment', 'Equipment > Application Equipment'),   
+            # ('Tanning Advantage Application Equipment', 'Equipment > Application Equipment'),
             # ('Generic Application Equipment', 'Equipment > Application Equipment'),
             # ('Generic Tanning Booths', 'Equipment > Tanning Booths'),
         ])
@@ -331,7 +345,7 @@ class CSVParse_Woo(CSVParse_Gen):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
         catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
         if not schema: schema = "TT"
         super(CSVParse_Woo, self).__init__( cols, defaults, schema, \
@@ -358,11 +372,11 @@ class CSVParse_Woo(CSVParse_Gen):
         self.attributes = OrderedDict()
         self.vattributes= OrderedDict()
         self.variations = OrderedDict()
-        self.images     = OrderedDict()        
+        self.images     = OrderedDict()
 
     def registerImage(self, image, objectData):
-        assert isinstance(image,(str,unicode)) 
-        assert image is not "" 
+        assert isinstance(image,(str,unicode))
+        assert image is not ""
         if image not in self.images.keys():
             self.images[image] = WooObjList(image)
         self.images[image].addObject(objectData)
@@ -370,8 +384,8 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def registerCategory(self, catData, itemData):
         self.registerAnything(
-            catData, 
-            self.categories, 
+            catData,
+            self.categories,
             # indexer = self.getSum,
             indexer = self.categoryIndexer,
             resolver = self.passiveResolver,
@@ -410,13 +424,13 @@ class CSVParse_Woo(CSVParse_Gen):
     def registerVariation(self, parentData, varData):
         assert parentData.isVariable
         assert varData.isVariation
-        self.registerAnything( 
-            varData, 
-            self.variations, 
+        self.registerAnything(
+            varData,
+            self.variations,
             indexer = self.productIndexer,
             singular = True,
             resolver = self.exceptionResolver,
-            registerName = 'variations' 
+            registerName = 'variations'
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
         varData.joinVariable(parentData)
@@ -507,7 +521,7 @@ class CSVParse_Woo(CSVParse_Gen):
         palist = listUtils.filterUniqueTrue( map(
             lambda ancestor: ancestor.get('PA'),
             ancestors
-        )) 
+        ))
 
         self.registerMessage("palist: %s" % palist)
 
@@ -525,8 +539,8 @@ class CSVParse_Woo(CSVParse_Gen):
             vattrs = SanitationUtils.decodeJSON(objectData.get('VA'))
             assert vattrs
             for attr, val in vattrs.items():
-                self.registerAttribute(parentData, attr, val, True)   
-                self.registerAttribute(objectData, attr, val, True)   
+                self.registerAttribute(parentData, attr, val, True)
+                self.registerAttribute(objectData, attr, val, True)
 
     def processSpecials(self, objectData):
         schedule = objectData.get('SCHEDULE')
@@ -557,7 +571,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
     def addDynRules(self, itemData, dynType, ruleIDs):
         rules = {
-            'dprc':self.dprcRules, 
+            'dprc':self.dprcRules,
             'dprp':self.dprpRules
         }[dynType]
         dynListIndex = dynType+'list'
@@ -571,7 +585,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 itemData[dynIDListIndex] = ruleID
             # print "adding %s to %s" % (ruleID, itemData['codesum'])
             rule = rules.get(ruleID)
-            if rule: 
+            if rule:
                 if rule not in itemData[dynListIndex]:
                     itemData[dynListIndex].append(rule)
             else:
@@ -598,7 +612,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
             if(objectData.get( 'dprclist','')):
                 objectData['dprcsum'] = '<br/>'.join(
-                    filter( 
+                    filter(
                         None,
                         map(
                             lambda x: x.toHTML(),
@@ -610,7 +624,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
             if(objectData.get('dprplist','')):
                 objectData['dprpsum'] = '<br/>'.join(
-                    filter( 
+                    filter(
                         None,
                         map(
                             lambda x: x.toHTML(),
@@ -654,7 +668,7 @@ class CSVParse_Woo(CSVParse_Gen):
     def postProcessImages(self, objectData):
         # self.registerMessage(objectData.index)
         objectData['imgsum'] = '|'.join(filter(
-            None, 
+            None,
             objectData.getImages()
         ))
 
@@ -734,7 +748,7 @@ class CSVParse_Woo(CSVParse_Gen):
                             specialfromString = TimeUtils.wpTimeToString(specialfrom)
                             specialtoString = TimeUtils.wpTimeToString(specialto)
                             self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
-                
+
                         for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                             discount = specialparams.get(tier)
                             if discount:
@@ -749,8 +763,8 @@ class CSVParse_Woo(CSVParse_Gen):
                                     # print "regular_price_string", regular_price_string
                                     if regular_price_string:
                                         regular_price = float(regular_price_string)
-                                        special_price = regular_price * coefficient  
-                                else:    
+                                        special_price = regular_price * coefficient
+                                else:
                                     dollars = SanitationUtils.findallDollars(discount)
                                     if dollars:
                                         dollar = float(self.sanitizeCell( dollars[0]) )
@@ -772,11 +786,11 @@ class CSVParse_Woo(CSVParse_Gen):
                                     # objectData[tier_key] = special_price
                                     # objectData[tier_from_key] = specialfrom
                                     # objectData[tier_to_key] = specialto
-                    break 
-                    #only applies first special                                
+                    break
+                    #only applies first special
 
                 else:
-                    self.registerError("special %s does not exist " % special, objectData) 
+                    self.registerError("special %s does not exist " % special, objectData)
 
             for key, value in {
                 'price': objectData.get('RNR'),
@@ -820,11 +834,11 @@ class CSVParse_Woo(CSVParse_Gen):
                 objectData['catalog_visibility'] = "hidden"
 
     def analyseFile(self, fileName, encoding=None):
-        objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding)  
+        objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding)
         #post processing
         # for itemData in self.taxos.values() + self.items.values():
             # print 'POST analysing product', itemData.codesum, itemData.namesum
-        
+
         for index, objectData in self.getObjects().items():
             print '%s POST' % objectData.getIdentifier()
             self.postProcessDyns(objectData)
@@ -868,7 +882,7 @@ class CSVParse_TT(CSVParse_Woo):
             # ('TechnoTan Tanning Booths', 'Equipment > Tanning Booths'),
             ('TechnoTan Literature', 'Marketing > Literature'),
             ('TechnoTan Signage', 'Marketing > Signage'),
-            ('TechnoTan Spray Tanning Packages', 'Packages'),  
+            ('TechnoTan Spray Tanning Packages', 'Packages'),
             # ('TechnoTan Solution', 'Solution'),
             # ('TechnoTan After Care', 'After Care'),
             # ('TechnoTan Pre Tan', 'Pre Tan'),
@@ -890,13 +904,13 @@ class CSVParse_TT(CSVParse_Woo):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
         catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
 
 
         super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials, catMapping) 
+                dprcRules, dprpRules, specials, catMapping)
 
         self.registerMessage("catMapping: %s" % str(catMapping))
         # if DEBUG_WOO:
@@ -925,7 +939,7 @@ class CSVParse_VT(CSVParse_Woo):
             # ('VuTan Tanning Booths', 'Equipment > Tanning Booths'),
             ('VuTan Literature', 'Marketing > Literature'),
             ('VuTan Signage', 'Marketing > Signage'),
-            ('VuTan Spray Tanning Packages', 'Packages'),  
+            ('VuTan Spray Tanning Packages', 'Packages'),
             # ('VuTan Solution', 'Solution'),
             # ('VuTan After Care', 'After Care'),
             # ('VuTan Pre Tan', 'Pre Tan'),
@@ -945,14 +959,14 @@ class CSVParse_VT(CSVParse_Woo):
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs ) 
+        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
         catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
 
         self.registerMessage("catMapping: %s" % str(catMapping))
 
         super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials, catMapping) 
+                dprcRules, dprpRules, specials, catMapping)
 
 
 if __name__ == '__main__':
@@ -960,6 +974,9 @@ if __name__ == '__main__':
     colData = ColData_Woo()
 
     print "Testing script..."
+    import os
+    os.chdir('source')
+
     inFolder = "../input/"
     genPath = inFolder + "generator.csv"
 
@@ -968,13 +985,16 @@ if __name__ == '__main__':
 
     importName = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    # WooParser = CSVParse_TT(
-    #     cols = colData.getImportCols(),
-    #     defaults = colData.getDefaults(),
-    #     importName = importName,
-    #     taxoDepth = 3,
-    # )
-    # WooParser.analyseFile(genPath)
+    WooParser = CSVParse_TT(
+        cols = colData.getImportCols(),
+        defaults = colData.getDefaults(),
+        importName = importName,
+        taxoDepth = 3,
+    )
+    WooParser.analyseFile(genPath)
+
+    prodList = WooProdList(WooParser.products.values())
+    print prodList.tabulate(tablefmt='simple')
 
     # with open(prodPath, 'w+') as outFile:
     #     cols = ['rowcount', 'codesum', 'itemsum', 'descsum', 'attributes']
@@ -1004,7 +1024,3 @@ if __name__ == '__main__':
     #         print "%s " % img
     #         for item in items:
     #             print " -> (%4d) %15s " % (item['rowcount'], item['codesum'])
-
-
-
-

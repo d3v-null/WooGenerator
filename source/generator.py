@@ -9,6 +9,7 @@ from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
+from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_myo import CSVParse_MYO
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
@@ -37,6 +38,8 @@ inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source"
+
+os.chdir('source')
 
 yamlPath = "generator_config.yaml"
 
@@ -548,18 +551,18 @@ if schema in woo_schemas and not skip_images:
 # def joinOrderedDicts(a, b):
 #     return OrderedDict(a.items() + b.items())
 
-def exportItemsCSV(filePath, colNames, items):
-    assert filePath, "needs a filepath"
-    assert colNames, "needs colNames"
-    assert items, "meeds items"
-    with open(filePath, 'w+') as outFile:
-        dictwriter = UnicodeDictWriter(
-            outFile,
-            fieldnames = colNames.keys(),
-        )
-        dictwriter.writerow(colNames)
-        dictwriter.writerows(items)
-    print "WROTE FILE: ", filePath
+# def exportItemsCSV(filePath, colNames, items):
+#     assert filePath, "needs a filepath"
+#     assert colNames, "needs colNames"
+#     assert items, "meeds items"
+#     with open(filePath, 'w+') as outFile:
+#         dictwriter = UnicodeDictWriter(
+#             outFile,
+#             fieldnames = colNames.keys(),
+#         )
+#         dictwriter.writerow(colNames)
+#         dictwriter.writerows(items)
+#     print "WROTE FILE: ", filePath
 
 def addSubElement(parentElement, tag, attrib=None, value=None):
     if attrib==None:
@@ -746,11 +749,14 @@ if skip_images:
 
 if schema in myo_schemas:
     #products
-    exportItemsCSV(
-        myoPath,
-        colData.getColNames(productCols),
-        products.values()
-    )
+    # todo: export using MYO OBJ LIST
+    productList = MYOProdList(products.values())
+    productList.exportItems(myoPath, colData.getColNames(productCols))
+    # exportItemsCSV(
+    #     myoPath,
+    #     colData.getColNames(productCols),
+    #     products.values()
+    # )
 elif schema in woo_schemas:
 
     #products
@@ -760,11 +766,14 @@ elif schema in woo_schemas:
     productColnames = colData.getColNames( listUtils.combineOrderedDicts( productCols, attributeCols))
     # print 'productColnames: ', productColnames
 
-    exportItemsCSV(
-        flaPath,
-        productColnames,
-        products.values()
-    )
+    productList = WooProdList(products.values())
+    productList.exportItems(flaPath, productColnames)
+
+    # exportItemsCSV(
+    #     flaPath,
+    #     productColnames,
+    #     products.values()
+    # )
 
     #variations
 
@@ -779,25 +788,38 @@ elif schema in woo_schemas:
     # print 'attributeMetaCols:', attributeMetaCols
 
     if variations:
-
-        exportItemsCSV(
+        variationList = WooVarList(variations.values())
+        variationList.exportItems(
             flvPath,
             colData.getColNames(
                 listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
-            ),
-            variations.values()
+            )
         )
 
-    #categories
-    categoryCols = colData.getCategoryCols()
+        # exportItemsCSV(
+        #     flvPath,
+        #     colData.getColNames(
+        #         listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
+        #     ),
+        #     variations.values()
+        # )
 
-    exportItemsCSV(
-        catPath,
-        colData.getColNames(categoryCols),
-        categories.values()
-    )
 
-    print 'categoryCols: ', categoryCols.keys()
+    if categories:
+        #categories
+        categoryCols = colData.getCategoryCols()
+
+        categoryList = WooCatList(categories.values())
+        categoryList.exportItems(catPath, colData.getColNames(categoryCols))
+
+        # exportItemsCSV(
+        #     catPath,
+        #     colData.getColNames(categoryCols),
+        #     categories.values()
+        # )
+
+        # print 'categoryCols: ', categoryCols.keys()
+
 
     #specials
     try:
@@ -808,14 +830,25 @@ elif schema in woo_schemas:
         )
         if specialProducts:
             flaName, flaExt = os.path.splitext(flaPath)
-            fldPath = os.path.join(outFolder , flaName+"-destroy-"+currentSpecial+flaExt)
-            exportItemsCSV(
-                    fldPath,
-                    colData.getColNames(
-                        listUtils.combineOrderedDicts( productCols, attributeCols)
-                    ),
-                    specialProducts
-                )
+            flCols = colData.getColNames(
+                listUtils.combineOrderedDicts( productCols, attributeCols)
+            )
+            # fldPath = os.path.join(outFolder , flaName+"-destroy-"+currentSpecial+flaExt)
+            #
+            # specialProductList = WooProdList(specialProducts)
+            # specialProductList.exportItems(
+            #     fldPath,
+            #     colData.getColNames(
+            #         listUtils.combineOrderedDicts( productCols, attributeCols)
+            #     ))
+
+            # exportItemsCSV(
+            #         fldPath,
+            #         colData.getColNames(
+            #             listUtils.combineOrderedDicts( productCols, attributeCols)
+            #         ),
+            #         specialProducts
+            #     )
             for specialProduct in specialProducts:
                 specialProduct['catsum'] = "|".join(
                     filter(None,[
@@ -826,13 +859,21 @@ elif schema in woo_schemas:
                 )
             flaName, flaExt = os.path.splitext(flaPath)
             flsPath = os.path.join(outFolder , flaName+"-"+currentSpecial+flaExt)
-            exportItemsCSV(
-                    flsPath,
-                    colData.getColNames(
-                        listUtils.combineOrderedDicts( productCols, attributeCols)
-                    ),
-                    specialProducts
-                )
+            specialProductList = WooProdList(specialProducts)
+            specialProductList.exportItems(
+                flsPath,
+                flCols
+            )
+
+
+
+            # exportItemsCSV(
+            #         flsPath,
+            #         colData.getColNames(
+            #             listUtils.combineOrderedDicts( productCols, attributeCols)
+            #         ),
+            #         specialProducts
+            #     )
         else:
             print "no products match special"
         specialVariations = filter(
@@ -842,13 +883,22 @@ elif schema in woo_schemas:
         if specialVariations:
             flvName, flvExt = os.path.splitext(flvPath)
             flvsPath = os.path.join(outFolder , flvName+"-"+currentSpecial+flvExt)
-            exportItemsCSV(
+
+            spVariationList = WooVarList(specialVariations)
+            spVariationList.exportItems(
                 flvsPath,
                 colData.getColNames(
                     listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
-                ),
-                specialVariations
+                )
             )
+
+            # exportItemsCSV(
+            #     flvsPath,
+            #     colData.getColNames(
+            #         listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
+            #     ),
+            #     specialVariations
+            # )
         else:
             print "no variations match special"
     except Exception as e:
@@ -863,13 +913,22 @@ elif schema in woo_schemas:
     if updatedProducts:
         flaName, flaExt = os.path.splitext(flaPath)
         fluPath = os.path.join(outFolder , flaName+"-Updated"+flaExt)
-        exportItemsCSV(
+
+        updatedProductList = WooProdList(updatedProducts)
+        updatedProductList.exportItems(
             fluPath,
             colData.getColNames(
                 listUtils.combineOrderedDicts(productCols, attributeCols)
-            ),
-            updatedProducts
+            )
         )
+
+        # exportItemsCSV(
+        #     fluPath,
+        #     colData.getColNames(
+        #         listUtils.combineOrderedDicts(productCols, attributeCols)
+        #     ),
+        #     updatedProducts
+        # )
 
     #updatedVariations
     updatedVariations = filter(
@@ -879,52 +938,61 @@ elif schema in woo_schemas:
     if updatedVariations:
         flvName, flvExt = os.path.splitext(flvPath)
         flvuPath = os.path.join(outFolder , flvName+"-Updated"+flvExt)
-        exportItemsCSV(
+
+        updatedVariationsList = WooVarList(updatedVariations)
+        updatedVariationsList.exportItems(
             flvuPath,
             colData.getColNames(
                 listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
-            ),
-            updatedVariations
+            )
         )
+
+        # exportItemsCSV(
+        #     flvuPath,
+        #     colData.getColNames(
+        #         listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
+        #     ),
+        #     updatedVariations
+        # )
 
     #pricingRule
-    pricingRuleProducts = filter(
-        hasPricingRule,
-        products.values()[:]
-    )
-    if pricingRuleProducts:
-        flaName, flaExt = os.path.splitext(flaPath)
-        flpPath = os.path.join(outFolder , flaName+"-pricing_rules"+flaExt)
-        exportItemsCSV(
-            flpPath,
-            colData.getColNames(
-                listUtils.combineOrderedDicts(productCols, attributeCols)
-            ),
-            pricingRuleProducts
-        )
-
-    pricingCols = colData.getPricingCols()
-    print 'pricingCols: ', pricingCols.keys()
-    shippingCols = colData.getShippingCols()
-    print 'shippingCols: ', shippingCols.keys()
-    inventoryCols = colData.getInventoryCols()
-    print 'inventoryCols: ', inventoryCols.keys()
-    print 'categoryCols: ', categoryCols.keys()
-
-    #export items XML
-    exportProductsXML(
-        [xmlPath, objPath],
-        products,
-        productCols,
-        variationCols = variationCols,
-        categoryCols = categoryCols,
-        attributeCols = attributeCols,
-        attributeMetaCols = attributeMetaCols,
-        pricingCols = pricingCols,
-        shippingCols = shippingCols,
-        inventoryCols = inventoryCols,
-        imageData = images
-    )
+    # pricingRuleProducts = filter(
+    #     hasPricingRule,
+    #     products.values()[:]
+    # )
+    # if pricingRuleProducts:
+    #     flaName, flaExt = os.path.splitext(flaPath)
+    #     flpPath = os.path.join(outFolder , flaName+"-pricing_rules"+flaExt)
+    #     exportItemsCSV(
+    #         flpPath,
+    #         colData.getColNames(
+    #             listUtils.combineOrderedDicts(productCols, attributeCols)
+    #         ),
+    #         pricingRuleProducts
+    #     )
+    #
+    # pricingCols = colData.getPricingCols()
+    # print 'pricingCols: ', pricingCols.keys()
+    # shippingCols = colData.getShippingCols()
+    # print 'shippingCols: ', shippingCols.keys()
+    # inventoryCols = colData.getInventoryCols()
+    # print 'inventoryCols: ', inventoryCols.keys()
+    # print 'categoryCols: ', categoryCols.keys()
+    #
+    # #export items XML
+    # exportProductsXML(
+    #     [xmlPath, objPath],
+    #     products,
+    #     productCols,
+    #     variationCols = variationCols,
+    #     categoryCols = categoryCols,
+    #     attributeCols = attributeCols,
+    #     attributeMetaCols = attributeMetaCols,
+    #     pricingCols = pricingCols,
+    #     shippingCols = shippingCols,
+    #     inventoryCols = inventoryCols,
+    #     imageData = images
+    # )
 
     with open(spoPath, 'w+') as spoFile:
         def writeSection(title, description, data, length = 0, html_class="results_section"):

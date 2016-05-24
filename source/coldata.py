@@ -50,6 +50,11 @@ class ColData_Base(object):
             [(col, {}) for col in cols]
         )
 
+
+    @classmethod
+    def getReportCols(self):
+        return self.getExportCols('report')
+
 class ColData_MYO(ColData_Base):
 
     data = OrderedDict([
@@ -60,6 +65,7 @@ class ColData_MYO(ColData_Base):
         ('itemsum', {
             'label': 'Item Name',
             'product':True,
+            'report':True,
         }),
         ('WNR', {
             'label': 'Selling Price',
@@ -88,6 +94,7 @@ class ColData_MYO(ColData_Base):
         ('descsum', {
             'label': 'Description',
             'product': True,
+            'report':True,
         }),
         ('HTML Description', {
             'import': True,
@@ -1536,10 +1543,6 @@ class ColData_User(ColData_Base):
     @classmethod
     def getUserCols(self):
         return self.getExportCols('user')
-
-    @classmethod
-    def getReportCols(self):
-        return self.getExportCols('report')
 
     @classmethod
     def getSyncCols(self):

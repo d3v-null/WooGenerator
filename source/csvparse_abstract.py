@@ -101,7 +101,8 @@ class ObjList(list):
 
     def addObject(self, objectData):
         try:
-            assert issubclass(objectData.__class__, ImportObject), "object must be subclass of ImportObject not %s" % str(objectData.__class__)
+            assert issubclass(objectData.__class__, ImportObject), \
+            "object must be subclass of ImportObject not %s" % str(objectData.__class__)
         except Exception as e:
             pprint( objectData)
             raise e
@@ -177,7 +178,7 @@ class ObjList(list):
                 encoding = encoding,
                 extrasaction = 'ignore',
             )
-            dictwriter.writeheader()
+            dictwriter.writerow(colNames)
             dictwriter.writerows(self.objects)
         print "WROTE FILE: ", filePath
 
