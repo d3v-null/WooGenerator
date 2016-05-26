@@ -2612,7 +2612,8 @@ class ValidationUtils:
 class PHPUtils:
     @staticmethod
     def uniqid(prefix="", more_entropy=False):
-        return uniqid(prefix, more_entropy)
+        raise DeprecationWarning('uniqid deprecated')
+        # return uniqid(prefix, more_entropy)
 
     @staticmethod
     def ruleset_uniqid():
