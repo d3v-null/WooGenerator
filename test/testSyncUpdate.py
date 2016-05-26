@@ -196,7 +196,7 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'neil',
                 'Role': 'WN',
                 'Edited Name': '18/02/2016 12:13:00 PM',
-
+                'Web Site': 'www.technotan.com.au',
                 'Contact': 'NEIL',
                 'First Name': '',
                 'Surname': 'NEIL',
@@ -214,6 +214,7 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'neil',
                 'Role': 'ADMIN',
                 'Edited Name': '2016-05-05 19:15:27',
+                'Web Site': 'http://www.technotan.com.au',
                 'Contact': 'NEIL CUNLIFFE-WILLIAMS',
                 'First Name': 'NEIL',
                 'Surname': 'CUNLIFFE-WILLIAMS',
@@ -334,13 +335,24 @@ class testSyncUpdate(TestCase):
         print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
         print syncUpdate.tabulate(tablefmt='simple')
 
+    def test_similarURL(self):
+        syncUpdate = SyncUpdate(self.usrMD4, self.usrSD4)
+        syncUpdate.update(ColData_User.getSyncCols())
+        # print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Web Site']
+        # print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Web Site']
+        # print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Web Site']
+        # print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Web Site']
+
+        self.assertIn('Web Site', syncUpdate.syncPasses)
+        # print syncUpdate.tabulate(tablefmt='simple')
+
 
 
 
 if __name__ == '__main__':
     # main()
     doubleNameTestSuite = unittest.TestSuite()
-    doubleNameTestSuite.addTest(testSyncUpdate('test_doubleNames'))
+    doubleNameTestSuite.addTest(testSyncUpdate('test_similarURL'))
     unittest.TextTestRunner().run(doubleNameTestSuite)
     # result = unittest.TestResult()
     # result = doubleNameTestSuite.run(result)

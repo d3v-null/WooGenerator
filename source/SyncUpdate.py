@@ -180,11 +180,14 @@ class SyncUpdate(Registrar):
                 sRole = ''
             if mRole == sRole:
                 return True
-        elif( "address" in col.lower() and isinstance(mValue, ContactAddress)):
+        elif "address" in col.lower() and isinstance(mValue, ContactAddress):
             if( mValue != sValue ):
                 pass
                 # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
             return mValue.similar(sValue)
+        elif "web site" in col.lower():
+            if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
+                return True
         else:
             if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
                 return True

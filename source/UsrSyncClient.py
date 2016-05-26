@@ -3,6 +3,7 @@ from collections import OrderedDict
 import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
+from utils import ProgressCounter
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
@@ -158,15 +159,18 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
 
-    # TODO: def printFileProgress(self, completed, total):
-    #
+    @classmethod
+    def printFileProgress(self, completed, total):
+        if not hasattr(self, 'progressCounter'):
+            self.progressCounter = ProgressCounter(total)
+        self.progressCounter.maybePrintUpdate(completed)
 
     def getDeleteFile(self, remotePath, localPath):
         self.assertRemoteFileExists(remotePath)
         exception = None
         try:
             sftpClient = self.client.open_sftp()
-            sftpClient.get(remotePath, localPath)
+            sftpClient.get(remotePath, localPath, self.printFileProgress)
             sftpClient.remove(remotePath)
         except Exception, e:
             exception = e

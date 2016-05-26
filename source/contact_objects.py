@@ -1347,17 +1347,23 @@ class ContactPhones(FieldGroup):
 
     mob_number = descriptorUtils.kwargAliasProperty(
         'mob_number',
-        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('mob_number'))
+        lambda self: \
+            SanitationUtils.stripNonNumbers(self.properties.get('mob_number')) \
+            if 'mob_number' in self.properties else ""
     )
 
     tel_number = descriptorUtils.kwargAliasProperty(
         'tel_number',
-        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('tel_number'))
+        lambda self: \
+            SanitationUtils.stripNonNumbers(self.properties.get('tel_number')) \
+            if 'tel_number' in self.properties else ""
     )
 
     fax_number = descriptorUtils.kwargAliasProperty(
         'fax_number',
-        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('fax_number'))
+        lambda self: \
+            SanitationUtils.stripNonNumbers(self.properties.get('fax_number')) \
+            if 'fax_number' in self.properties else ""
     )
 
     mob_pref = descriptorUtils.kwargAliasProperty(

@@ -322,6 +322,12 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
+    def stripURLProtocol(string):
+        str_out = re.sub("^\w+://", "", string)
+        if DEBUG: print "stripURLProtocol", repr(string), repr(str_out)
+        return str_out
+
+    @staticmethod
     def toLower(string):
         str_out = string.lower()
         if DEBUG: print "toLower", repr(string), repr(str_out)
@@ -397,6 +403,13 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.truishStringToBool,
             SanitationUtils.similarComparison
+        )(string)
+
+    @staticmethod
+    def similarURLComparison(string):
+        return SanitationUtils.compose(
+            SanitationUtils.stripURLProtocol,
+            SanitationUtils.coerceUnicode
         )(string)
 
     @staticmethod
@@ -2623,8 +2636,12 @@ class ProgressCounter(object):
         now = time.time()
         if now - self.last_print > 1:
             self.last_print = now
-            print "%d of %d items processed" % (count, self.total)
-
+            percentage = 0
+            if self.total > 0:
+                percentage = 100 * count / self.total
+            SanitationUtils.safePrint(
+                "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
+            )
 
 
 if __name__ == '__main__':

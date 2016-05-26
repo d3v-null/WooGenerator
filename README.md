@@ -13,15 +13,15 @@ pip install --upgrade google-api-python-client
 
 https://developers.google.com/drive/web/quickstart/python
 
-MySQL DB
---------
+SSHTunnel
+---------
 
-install mysql client on your local machine using  and then install mysql-python using pip
+ssh tunnel requres extra dependencies on cygwin. you need to install the mingw toolchain for your system, and openssl-dev
 
-pip install --upgrade mysql-python
+apt-cyg install libffi-devel
 
 
 Other dependencies
 ------------------
 
-pip install --upgrade tabulate dill pyyaml sshtunnel phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv
+pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json

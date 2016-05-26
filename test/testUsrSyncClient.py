@@ -150,6 +150,10 @@ class testUsrSyncClient(TestCase):
 
         print response
 
+    def test_SSH_download(self):
+        with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
+            response = client.getDeleteFile('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
+
     def test_SSH_Upload(self):
         fields = {
             "Phone": "0413 300 930",
@@ -167,5 +171,5 @@ class testUsrSyncClient(TestCase):
 if __name__ == '__main__':
     # main()
     sshTestSuite = unittest.TestSuite()
-    sshTestSuite.addTest(testUsrSyncClient('test_SSH_Upload'))
+    sshTestSuite.addTest(testUsrSyncClient('test_SSH_download'))
     unittest.TextTestRunner().run(sshTestSuite)

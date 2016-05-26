@@ -131,7 +131,9 @@ with open(yamlPath) as stream:
     update_slave = config.get('update_slave')
     update_master = config.get('update_master')
     do_filter = config.get('do_filter')
+    do_problematic = config.get('do_problematic')
     performPost = config.get('performPost')
+    skip_sync = config.get('skip_sync')
 
 global_limit = None
 FieldGroup.performPost = performPost
@@ -800,9 +802,9 @@ if allUpdates:
         for count, update in enumerate(allUpdates):
             if DEBUG_PROGRESS:
                 updateProgressCounter.maybePrintUpdate(count)
-            # if update.WPID != '13759':
-            #     print repr(update.WPID)
-            #     continue
+            if update.WPID == '1':
+                print repr(update.WPID)
+                continue
             if update_master and update.mUpdated :
                 try:
                     update.updateMaster(masterClient)
@@ -844,9 +846,7 @@ def outputFailures(failures, filePath):
 outputFailures(masterFailures, mFailPath)
 outputFailures(slaveFailures, sFailPath)
 
-
-
-
-
+# if __name__ == '__main__':
+#     main()
 
 #
