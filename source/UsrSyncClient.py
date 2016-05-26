@@ -22,7 +22,7 @@ import yaml
 import paramiko
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
-import wordpress_xmlrpc
+# import wordpress_xmlrpc
 from wordpress_json import WordpressJsonWrapper
 import pymysql
 
