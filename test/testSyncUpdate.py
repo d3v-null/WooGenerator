@@ -1,11 +1,17 @@
+import os
 from os import sys, path
+from unittest import TestCase, main, skip
+import unittest
+import StringIO
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from unittest import TestCase, main, skip
 from source.SyncUpdate import *
+from source import coldata
 from source.coldata import ColData_User
-from source.csvparse_flat import ImportUser
+from source.csvparse_flat import ImportUser, CSVParse_User
+from source.contact_objects import FieldGroup
+
 
 class testSyncUpdate(TestCase):
     def setUp(self):
@@ -19,6 +25,14 @@ class testSyncUpdate(TestCase):
             DEFAULT_LAST_SYNC = config.get('default_last_sync')
 
         SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+
+        FieldGroup.performPost = True
+        FieldGroup.DEBUG_WARN = True
+        FieldGroup.DEBUG_MESSAGE = True
+        FieldGroup.DEBUG_ERROR = True
+        SyncUpdate.DEBUG_WARN = True
+        SyncUpdate.DEBUG_MESSAGE = True
+        SyncUpdate.DEBUG_ERROR = True
 
         self.usrMN1 = ImportUser(
             {
@@ -174,6 +188,43 @@ class testSyncUpdate(TestCase):
             [],
         )
 
+        self.usrMD4 = ImportUser(
+            {
+                'MYOB Card ID': 'C00001',
+                'E-mail': 'neil@technotan.com.au',
+                'Wordpress ID': 1,
+                'Wordpress Username': 'neil',
+                'Role': 'WN',
+                'Edited Name': '18/02/2016 12:13:00 PM',
+
+                'Contact': 'NEIL',
+                'First Name': '',
+                'Surname': 'NEIL',
+                'Edited in Act': '16/05/2016 11:20:22 AM',
+            },
+            2,
+            [],
+        )
+
+        self.usrSD4 = ImportUser(
+            {
+                'MYOB Card ID': 'C00001',
+                'E-mail': 'neil@technotan.com.au',
+                'Wordpress ID': 1,
+                'Wordpress Username': 'neil',
+                'Role': 'ADMIN',
+                'Edited Name': '2016-05-05 19:15:27',
+                'Contact': 'NEIL CUNLIFFE-WILLIAMS',
+                'First Name': 'NEIL',
+                'Surname': 'CUNLIFFE-WILLIAMS',
+                'Edited in Wordpress': '2016-05-10 16:36:30',
+            },
+            2,
+            [],
+        )
+
+        print "set up complete"
+
     def test_mNameColUpdate(self):
         syncUpdate = SyncUpdate(self.usrMN1, self.usrSN1)
         syncUpdate.update(ColData_User.getSyncCols())
@@ -239,6 +290,58 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newSObject.get('Role'), 'WN')
         self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), '')
 
+    def test_doubleNames(self):
+        syncUpdate = SyncUpdate(self.usrMD4, self.usrSD4)
+        syncUpdate.update(ColData_User.getSyncCols())
+        print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
+        print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
+        print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
+        print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
+        print syncUpdate.tabulate(tablefmt='simple')
+
+    def test_doubleNames2(self):
+
+        inFolder = "input/"
+
+        master_file = "act_test_dual_names.csv"
+        slave_file = "wp_test_dual_names.csv"
+        maPath = os.path.join(inFolder, master_file)
+        saPath = os.path.join(inFolder, slave_file)
+
+        saParser = CSVParse_User(
+            cols = ColData_User.getWPImportCols(),
+            defaults = ColData_User.getDefaults(),
+        )
+
+        saParser.analyseFile(saPath)
+
+        sUsr = saParser.emails['neil@technotan.com.au'][0]
+
+        maParser = CSVParse_User(
+            cols = ColData_User.getACTImportCols(),
+            defaults = ColData_User.getDefaults(),
+        )
+
+        maParser.analyseFile(maPath)
+
+        mUsr = maParser.emails['neil@technotan.com.au'][0]
+
+        syncUpdate = SyncUpdate(mUsr, sUsr)
+        syncUpdate.update(ColData_User.getSyncCols())
+        print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
+        print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
+        print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
+        print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
+        print syncUpdate.tabulate(tablefmt='simple')
+
+
+
 
 if __name__ == '__main__':
-    main()
+    # main()
+    doubleNameTestSuite = unittest.TestSuite()
+    doubleNameTestSuite.addTest(testSyncUpdate('test_doubleNames'))
+    unittest.TextTestRunner().run(doubleNameTestSuite)
+    # result = unittest.TestResult()
+    # result = doubleNameTestSuite.run(result)
+    # print repr(result)

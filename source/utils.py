@@ -2613,6 +2613,20 @@ class PHPUtils:
     def unserialize(string):
         return loads(string)
 
+class ProgressCounter(object):
+    def __init__(self, total, printThreshold=1):
+        self.total = total
+        self.printThreshold = printThreshold
+        self.last_print = time.time()
+
+    def maybePrintUpdate(self, count):
+        now = time.time()
+        if now - self.last_print > 1:
+            self.last_print = now
+            print "%d of %d items processed" % (count, self.total)
+
+
+
 if __name__ == '__main__':
     # testHTMLReporter()
     # testTimeUtils()

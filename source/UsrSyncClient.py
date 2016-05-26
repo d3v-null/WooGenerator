@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, listUtils, debugUtils
+from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
@@ -25,7 +25,7 @@ import wordpress_xmlrpc
 from wordpress_json import WordpressJsonWrapper
 import pymysql
 
-class UsrSyncClient_Abstract(object):
+class UsrSyncClient_Abstract(Registrar):
 
     def __enter__(self):
         return self
@@ -52,6 +52,7 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
         pass
 
     def __init__(self, connectParams):
+        super(UsrSyncClient_JSON, self).__init__()
         mandatory_params = ['json_uri', 'wp_user', 'wp_pass']
         json_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
         for param in mandatory_params:
@@ -70,37 +71,40 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
         # print updates_json_base64
         json_out = self.client.update_user(user_id=user_pkey, data={'tansync_updated_fields': updates_json_base64})
         # print json_out
+        if json_out is None:
+            raise Exception("No response from json api")
         return json_out
 
-class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
-    class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
-        method_name = 'tansync.update_user_fields'
-        method_args = ('user_id', 'fields_json_base64')
-
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def __init__(self, connectParams):
-        mandatory_params = ['xmlrpc_uri', 'wp_user', 'wp_pass']
-        xmlrpc_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
-        for param in mandatory_params:
-            assert eval(param), "missing mandatory param: " + param
-        self.client = wordpress_xmlrpc.Client(*map(eval, mandatory_params))
-
-    # @property
-    # def connectionReady(self):
-    #     return self.client
-
-    def uploadChanges(self, user_pkey, updates=None):
-        super(type(self), self).uploadChanges(user_pkey)
-        updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
-        xmlrpc_out = self.client.call(self.UpdateUserXMLRPC(user_pkey, updates_json_base64))
-        #TODO: process xmlrpc_out and determine if update was successful
-        SanitationUtils.safePrint( xmlrpc_out)
-        return xmlrpc_out
+# class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
+#     class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
+#         method_name = 'tansync.update_user_fields'
+#         method_args = ('user_id', 'fields_json_base64')
+#
+#     def __exit__(self, type, value, traceback):
+#         pass
+#
+#     def __init__(self, connectParams):
+#         mandatory_params = ['xmlrpc_uri', 'wp_user', 'wp_pass']
+#         xmlrpc_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
+#         for param in mandatory_params:
+#             assert eval(param), "missing mandatory param: " + param
+#         self.client = wordpress_xmlrpc.Client(*map(eval, mandatory_params))
+#
+#     # @property
+#     # def connectionReady(self):
+#     #     return self.client
+#
+#     def uploadChanges(self, user_pkey, updates=None):
+#         super(type(self), self).uploadChanges(user_pkey)
+#         updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+#         xmlrpc_out = self.client.call(self.UpdateUserXMLRPC(user_pkey, updates_json_base64))
+#         #TODO: process xmlrpc_out and determine if update was successful
+#         SanitationUtils.safePrint( xmlrpc_out)
+#         return xmlrpc_out
 
 class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def __init__(self, connectParams, dbParams, fsParams):
+        super(UsrSyncClient_SSH_ACT, self).__init__()
         self.client = paramiko.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(**connectParams)
@@ -115,7 +119,14 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         assert self.connectionReady, "master connection must be ready"
         stdin, stdout, stderr = self.client.exec_command(command)
         possible_errors = stdout.readlines() + stderr.readlines()
-        assert not possible_errors, "command returned errors: " + str(possible_errors)
+        for error in possible_errors:
+            if re.match("^Countries.*", error):
+                print error
+                continue
+            assert not error, "command <%s> returned errors: %s" % (
+                SanitationUtils.coerceUnicode(command),
+                SanitationUtils.coerceUnicode(error)
+            )
 
     def putFile(self, localPath, remotePath):
         assert self.connectionReady, "master connection must be ready"
@@ -422,129 +433,129 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
         #     tbl_u = tbl_prefix+'users',
         #     tbl_um = tbl_prefix+'usermeta'
         # )
-
-def testXMLRPC():
-    # store_url = 'http://technotea.com.au/'
-    # username = 'Neil'
-    # password = 'Stretch@6164'
-    store_url = 'http://minimac.ddns.me:11182/'
-    username = 'neil'
-    password = 'Stretch6164'
-    xmlrpc_uri = store_url + 'xmlrpc.php'
-
-    xmlConnectParams = {
-        'xmlrpc_uri': xmlrpc_uri,
-        'wp_user': username,
-        'wp_pass': password
-    }
-
-    client = UsrSyncClient_XMLRPC(xmlConnectParams)
-
-    fields = {
-        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
-        'user_url': "http://www.laserphile.com/",
-        'user_login': "admin"
-    }
-
-    client.uploadChanges(1, fields)
-
-def testJSON():
-    store_url = 'http://technotea.com.au/'
-    username = 'Neil'
-    password = 'Stretch@6164'
-    # store_url = 'http://minimac.ddns.me:11182/'
-    # username = 'neil'
-    # password = 'Stretch6164'
-    json_uri = store_url + 'wp-json/wp/v2'
-
-    jsonConnectParams = {
-        'json_uri': json_uri,
-        'wp_user': username,
-        'wp_pass': password
-    }
-
-    client = UsrSyncClient_JSON(jsonConnectParams)
-
-    fields = {
-        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
-        'user_url': "http://www.laserphile.com/asd",
-        # 'first_name': 'noodle',
-        'user_login': "admin"
-    }
-
-    #
-
-    client.uploadChanges(1, fields)
-
-def testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams):
-
-
-
-    saParser = CSVParse_User(
-        cols = ColData_User.getImportCols(),
-        defaults = ColData_User.getDefaults()
-    )
-    with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
-        sqlClient.analyseRemote(saParser, since='2016-01-01 00:00:00')
-
-    CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
-
-if __name__ == '__main__':
-    # srcFolder = "../source/"
-    # inFolder = "../input/"
-    yamlPath = "merger_config.yaml"
-    # importName = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    with open(yamlPath) as stream:
-        # optionNamePrefix = 'test_'
-        optionNamePrefix = ''
-
-        config = yaml.load(stream)
-
-        # if 'inFolder' in config.keys():
-        #     inFolder = config['inFolder']
-        # if 'outFolder' in config.keys():
-        #     outFolder = config['outFolder']
-        # if 'logFolder' in config.keys():
-        #     logFolder = config['logFolder']
-
-        #mandatory
-        # merge_mode = config.get('merge_mode', 'sync')
-        ssh_user = config.get(optionNamePrefix+'ssh_user')
-        ssh_pass = config.get(optionNamePrefix+'ssh_pass')
-        ssh_host = config.get(optionNamePrefix+'ssh_host')
-        ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
-        remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
-        remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
-        db_user = config.get(optionNamePrefix+'db_user')
-        db_pass = config.get(optionNamePrefix+'db_pass')
-        db_name = config.get(optionNamePrefix+'db_name')
-        db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
-        wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-        tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
-
-    TimeUtils.setWpSrvOffset(wp_srv_offset)
-
-    SSHTunnelForwarderAddress = (ssh_host, ssh_port)
-    SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
-
-    SSHTunnelForwarderParams = {
-        'ssh_address_or_host':SSHTunnelForwarderAddress,
-        'ssh_password':ssh_pass,
-        'ssh_username':ssh_user,
-        'remote_bind_address': SSHTunnelForwarderBindAddress,
-    }
-
-    PyMySqlConnectParams = {
-        'host' : 'localhost',
-        'user' : db_user,
-        'password': db_pass,
-        'db'   : db_name,
-        'charset': db_charset,
-        'use_unicode': True,
-        'tbl_prefix': tbl_prefix,
-        # 'srv_offset': wp_srv_offset,
-    }
-    # testXMLRPC()
-    # testJSON()
-    testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams)
+#
+# def testXMLRPC():
+#     # store_url = 'http://technotea.com.au/'
+#     # username = 'Neil'
+#     # password = 'Stretch@6164'
+#     store_url = 'http://minimac.ddns.me:11182/'
+#     username = 'neil'
+#     password = 'Stretch6164'
+#     xmlrpc_uri = store_url + 'xmlrpc.php'
+#
+#     xmlConnectParams = {
+#         'xmlrpc_uri': xmlrpc_uri,
+#         'wp_user': username,
+#         'wp_pass': password
+#     }
+#
+#     client = UsrSyncClient_XMLRPC(xmlConnectParams)
+#
+#     fields = {
+#         u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+#         'user_url': "http://www.laserphile.com/",
+#         'user_login': "admin"
+#     }
+#
+#     client.uploadChanges(1, fields)
+#
+# def testJSON():
+#     store_url = 'http://technotea.com.au/'
+#     username = 'Neil'
+#     password = 'Stretch@6164'
+#     # store_url = 'http://minimac.ddns.me:11182/'
+#     # username = 'neil'
+#     # password = 'Stretch6164'
+#     json_uri = store_url + 'wp-json/wp/v2'
+#
+#     jsonConnectParams = {
+#         'json_uri': json_uri,
+#         'wp_user': username,
+#         'wp_pass': password
+#     }
+#
+#     client = UsrSyncClient_JSON(jsonConnectParams)
+#
+#     fields = {
+#         u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+#         'user_url': "http://www.laserphile.com/asd",
+#         # 'first_name': 'noodle',
+#         'user_login': "admin"
+#     }
+#
+#     #
+#
+#     client.uploadChanges(1, fields)
+#
+# def testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams):
+#
+#
+#
+#     saParser = CSVParse_User(
+#         cols = ColData_User.getImportCols(),
+#         defaults = ColData_User.getDefaults()
+#     )
+#     with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
+#         sqlClient.analyseRemote(saParser, since='2016-01-01 00:00:00')
+#
+#     CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+#
+# if __name__ == '__main__':
+#     # srcFolder = "../source/"
+#     # inFolder = "../input/"
+#     yamlPath = "merger_config.yaml"
+#     # importName = time.strftime("%Y-%m-%d %H:%M:%S")
+#
+#     with open(yamlPath) as stream:
+#         # optionNamePrefix = 'test_'
+#         optionNamePrefix = ''
+#
+#         config = yaml.load(stream)
+#
+#         # if 'inFolder' in config.keys():
+#         #     inFolder = config['inFolder']
+#         # if 'outFolder' in config.keys():
+#         #     outFolder = config['outFolder']
+#         # if 'logFolder' in config.keys():
+#         #     logFolder = config['logFolder']
+#
+#         #mandatory
+#         # merge_mode = config.get('merge_mode', 'sync')
+#         ssh_user = config.get(optionNamePrefix+'ssh_user')
+#         ssh_pass = config.get(optionNamePrefix+'ssh_pass')
+#         ssh_host = config.get(optionNamePrefix+'ssh_host')
+#         ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
+#         remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
+#         remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
+#         db_user = config.get(optionNamePrefix+'db_user')
+#         db_pass = config.get(optionNamePrefix+'db_pass')
+#         db_name = config.get(optionNamePrefix+'db_name')
+#         db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
+#         wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
+#         tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
+#
+#     TimeUtils.setWpSrvOffset(wp_srv_offset)
+#
+#     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
+#     SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
+#
+#     SSHTunnelForwarderParams = {
+#         'ssh_address_or_host':SSHTunnelForwarderAddress,
+#         'ssh_password':ssh_pass,
+#         'ssh_username':ssh_user,
+#         'remote_bind_address': SSHTunnelForwarderBindAddress,
+#     }
+#
+#     PyMySqlConnectParams = {
+#         'host' : 'localhost',
+#         'user' : db_user,
+#         'password': db_pass,
+#         'db'   : db_name,
+#         'charset': db_charset,
+#         'use_unicode': True,
+#         'tbl_prefix': tbl_prefix,
+#         # 'srv_offset': wp_srv_offset,
+#     }
+#     # testXMLRPC()
+#     # testJSON()
+#     testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams)

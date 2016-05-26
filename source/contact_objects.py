@@ -934,7 +934,7 @@ class ContactName(ContactObject):
                                 SanitationUtils.coerceUnicode(full_names))
 
             for i, full_name in enumerate(full_names):
-                self.registerMessage( "ANALYSING NAME %d: %s" % (i, repr(full_name)))
+                self.registerMessage( "ANALYSING FULL NAME %d: %s" % (i, repr(full_name)))
                 tokens = NameUtils.tokenizeName(full_name)
                 self.registerMessage( "TOKENS: %s" % repr(tokens))
                 self.nameCombo.reset()
@@ -1347,17 +1347,17 @@ class ContactPhones(FieldGroup):
 
     mob_number = descriptorUtils.kwargAliasProperty(
         'mob_number',
-        lambda self: self.properties.get('mob_number')
+        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('mob_number'))
     )
 
     tel_number = descriptorUtils.kwargAliasProperty(
         'tel_number',
-        lambda self: self.properties.get('tel_number')
+        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('tel_number'))
     )
 
     fax_number = descriptorUtils.kwargAliasProperty(
         'fax_number',
-        lambda self: self.properties.get('fax_number')
+        lambda self: SanitationUtils.stripNonNumbers(self.properties.get('fax_number'))
     )
 
     mob_pref = descriptorUtils.kwargAliasProperty(

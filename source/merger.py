@@ -1,7 +1,9 @@
 from collections import OrderedDict
 import os
+import unicodecsv
 # import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils, Registrar, debugUtils
+from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
+from utils import Registrar, debugUtils, ProgressCounter
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 # from contact_objects import ContactAddress
@@ -24,7 +26,7 @@ import yaml
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
 # import wordpress_xmlrpc
-from UsrSyncClient import UsrSyncClient_XMLRPC, UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
+from UsrSyncClient import UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
 from SyncUpdate import SyncUpdate
 from contact_objects import FieldGroup
 
@@ -36,26 +38,28 @@ def timediff():
     return time.time() - start_time
 
 DEBUG = False
+DEBUG_PROGRESS = True
 testMode = False
-# testMode = True
-skip_sync = False
+testMode = True
+# skip_sync = False
 # skip_sync = True
 
-sql_run = False
-sftp_run = False
-update_slave = False
-update_master = False
-sql_run = True
-sftp_run = True
+# sql_run = False
+# sftp_run = False
+# update_slave = False
+# update_master = False
+# sql_run = True
+# sftp_run = True
 # update_slave = True
 # update_master = True
-do_problematic = True
-do_filter = False
+# do_problematic = False
+# do_problematic = True
+# do_filter = False
 # do_filter = True
-FieldGroup.performPost = True
-FieldGroup.DEBUG_WARN = False
-FieldGroup.DEBUG_MESSAGE = False
-FieldGroup.DEBUG_ERROR = False
+# FieldGroup.performPost = False
+# FieldGroup.DEBUG_WARN = True
+# FieldGroup.DEBUG_MESSAGE = True
+# FieldGroup.DEBUG_ERROR = True
 
 
 ### DEFAULT CONFIG ###
@@ -115,18 +119,22 @@ with open(yamlPath) as stream:
     wp_user = config.get(optionNamePrefix+'wp_user', '')
     wp_pass = config.get(optionNamePrefix+'wp_pass', '')
     store_url = config.get(optionNamePrefix+'store_url', '')
+    master_file = config.get('master_file', '')
+    slave_file = config.get('slave_file', '')
+    userFile = config.get('userFile')
+    cardFile = config.get('cardFile')
+    emailFile = config.get('emailFile')
+    sinceM = config.get('sinceM')
+    sinceS = config.get('sinceS')
+    sql_run = config.get('sql_run')
+    sftp_run = config.get('sftp_run')
+    update_slave = config.get('update_slave')
+    update_master = config.get('update_master')
+    do_filter = config.get('do_filter')
+    performPost = config.get('performPost')
 
-    if 'userFile' in config.keys():
-        userFile = config.get('userFile')
-    if 'cardFile' in config.keys():
-        cardFile = config.get('cardFile')
-    if 'emailFile' in config.keys():
-        emailFile = config.get('emailFile')
-    if 'sinceM' in config.keys():
-        sinceM = config.get('sinceM')
-    if 'sinceS' in config.keys():
-        sinceS = config.get('sinceS')
-
+global_limit = None
+FieldGroup.performPost = performPost
 SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
 #########################################
@@ -151,11 +159,13 @@ saEncoding = "utf8"
 
 if not sftp_run:
     # maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
-    maPath = os.path.join(inFolder, "500-act-records-edited.csv")
+    maPath = os.path.join(inFolder, master_file)
+    # maPath = os.path.join(inFolder, "500-act-records-edited.csv")
     # maPath = os.path.join(inFolder, "500-act-records.csv")
     maEncoding = "utf8"
 if not sql_run:
-    saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
+    saPath = os.path.join(inFolder, slave_file)
+    # saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
     saEncoding = "utf8"
 
 assert store_url, "store url must not be blank"
@@ -170,13 +180,15 @@ WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
 ACTresCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
 ACTDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
 WPDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
+mFailPath = os.path.join(outFolder, "act_fails%s.csv" % fileSuffix)
+sFailPath = os.path.join(outFolder, "wp_fails%s.csv" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 
-colData = ColData_User()
+# colData = ColData_User()
 
-actFields = ";".join(colData.getACTImportCols())
+actFields = ";".join(ColData_User.getACTImportCols())
 #
 # xmlConnectParams = {
 #     'xmlrpc_uri': xmlrpc_uri,
@@ -256,9 +268,10 @@ if not do_filter:
 print debugUtils.hashify("Download / Generate Slave Parser Object"), timediff()
 
 saParser = CSVParse_User(
-    cols = colData.getWPImportCols(),
-    defaults = colData.getDefaults(),
-    filterItems = filterItems
+    cols = ColData_User.getWPImportCols(),
+    defaults = ColData_User.getDefaults(),
+    filterItems = filterItems,
+    limit = global_limit
 )
 if sql_run:
     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
@@ -284,10 +297,12 @@ if sql_run:
         'tbl_prefix': tbl_prefix,
     }
     with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
-        if testMode:
-            client.analyseRemote(saParser, limit=1000)
-        else:
-            client.analyseRemote(saParser)
+        client.analyseRemote(saParser)
+        #
+        # if testMode:
+        #     client.analyseRemote(saParser, limit=1000)
+        # else:
+        #     client.analyseRemote(saParser)
 
         saParser.getObjList().exportItems(os.path.join(inFolder, s_x_filename),
                                           ColData_User.getWPImportColNames())
@@ -302,12 +317,12 @@ CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 # Generate and Analyse ACT CSV files using shell
 #########################################
 
-
 maParser = CSVParse_User(
-    cols = colData.getACTImportCols(),
-    defaults = colData.getDefaults(),
+    cols = ColData_User.getACTImportCols(),
+    defaults = ColData_User.getDefaults(),
     contact_schema = 'act',
-    filterItems = filterItems
+    filterItems = filterItems,
+    limit = global_limit
 )
 
 print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
@@ -399,10 +414,10 @@ if not skip_sync:
 
     print "processing emails"
 
-    denyAnomalousParselist( "saParser.noemails", saParser.noemails )
+    denyAnomalousParselist("saParser.noemails", saParser.noemails)
 
-    emailMatcher = NocardEmailMatcher( globalMatches.sIndices, globalMatches.mIndices )
-    emailMatcher.processRegisters( saParser.nocards, maParser.emails)
+    emailMatcher = NocardEmailMatcher(globalMatches.sIndices, globalMatches.mIndices)
+    emailMatcher.processRegisters(saParser.nocards, maParser.emails)
 
     newMasters.addMatches(emailMatcher.masterlessMatches)
 
@@ -419,11 +434,12 @@ if not skip_sync:
 
     syncCols = ColData_User.getSyncCols()
 
-    for match in globalMatches:
-        # print debugUtils.hashify( "MATCH NUMBER %d" % i )
+    if DEBUG_PROGRESS:
+        syncProgressCounter = ProgressCounter(len(globalMatches))
 
-        # print "-> INITIAL VALUES:"
-        # print match.tabulate()
+    for count, match in enumerate(globalMatches):
+        if DEBUG_PROGRESS:
+            syncProgressCounter.maybePrintUpdate(count)
 
         mObject = match.mObjects[0]
         sObject = match.sObjects[0]
@@ -478,7 +494,7 @@ print timediff()
 with io.open(resPath, 'w+', encoding='utf8') as resFile:
     reporter = HtmlReporter()
 
-    basic_cols = colData.getBasicCols()
+    basic_cols = ColData_User.getBasicCols()
     address_cols = OrderedDict(basic_cols.items() + [
         ('address_reason', {}),
         ('Edited Address', {}),
@@ -488,7 +504,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
         ('name_reason', {}),
         ('Edited Name', {}),
     ])
-    csv_colnames = colData.getColNames(
+    csv_colnames = ColData_User.getColNames(
         OrderedDict(basic_cols.items() + ColData_User.nameCols([
             'address_reason',
             'name_reason',
@@ -774,21 +790,32 @@ masterFailures = []
 slaveFailures = []
 
 if allUpdates:
+    if DEBUG_PROGRESS:
+        updateProgressCounter = ProgressCounter(len(allUpdates))
 
     with \
         UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient, \
         UsrSyncClient_JSON(jsonConnectParams) as slaveClient:
 
-        for update in allUpdates:
+        for count, update in enumerate(allUpdates):
+            if DEBUG_PROGRESS:
+                updateProgressCounter.maybePrintUpdate(count)
+            # if update.WPID != '13759':
+            #     print repr(update.WPID)
+            #     continue
             if update_master and update.mUpdated :
                 try:
                     update.updateMaster(masterClient)
                 except Exception, e:
                     masterFailures.append({
                         'update':update,
-                        'exception':e
+                        'master':SanitationUtils.coerceUnicode(update.newMObject),
+                        'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                        'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
+                        'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                        'exception':repr(e)
                     })
-                    raise Exception("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
+                    SanitationUtils.safePrint("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
                     # continue
             if update_slave and update.sUpdated :
                 try:
@@ -796,6 +823,30 @@ if allUpdates:
                 except Exception, e:
                     slaveFailures.append({
                         'update':update,
-                        'exception':e
+                        'master':SanitationUtils.coerceUnicode(update.newMObject),
+                        'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                        'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
+                        'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                        'exception':repr(e)
                     })
-                    raise Exception("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
+                    SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
+
+def outputFailures(failures, filePath):
+    with open(filePath, 'w+') as outFile:
+        dictwriter = unicodecsv.DictWriter(
+            outFile,
+            fieldnames = ['update', 'master', 'slave', 'mchanges', 'schanges', 'exception'],
+            extrasaction = 'ignore',
+        )
+        dictwriter.writerows(failures)
+        print "WROTE FILE: ", filePath
+
+outputFailures(masterFailures, mFailPath)
+outputFailures(slaveFailures, sFailPath)
+
+
+
+
+
+
+#

@@ -1,3 +1,4 @@
+import yaml
 from collections import OrderedDict
 from utils import SanitationUtils, TimeUtils, Registrar
 from contact_objects import ContactAddress
@@ -6,7 +7,6 @@ from tabulate import tabulate
 from copy import deepcopy
 from matching import Match
 from csvparse_flat import ImportUser
-import yaml
 
 class SyncUpdate(Registrar):
 
@@ -18,12 +18,13 @@ class SyncUpdate(Registrar):
         _class.default_lastSync = default_lastSync
 
     def __init__(self, oldMObject, oldSObject, lastSync=None):
+        super(SyncUpdate, self).__init__()
         if not lastSync:
             lastSync = self.default_lastSync
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
         self.oldMObject = oldMObject
         self.oldSObject = oldSObject
-        self.tTime = TimeUtils.wpStrptime( lastSync )
+        self.tTime = TimeUtils.wpStrptime(lastSync)
         self.mTime = self.oldMObject.act_modtime
         self.sTime = self.oldSObject.wp_modtime
         self.bTime = self.oldMObject.last_sale
@@ -45,18 +46,18 @@ class SyncUpdate(Registrar):
         # self.problematic = False
 
         #extra heuristics for merge mode:
-        if(self.merge_mode == 'merge' and not self.sMod):
+        if self.merge_mode == 'merge' and not self.sMod:
             might_be_sEdited = False
             if not oldSObject.addressesActLike():
                 might_be_sEdited = True
-            elif( oldSObject.get('Home Country') == 'AU' ):
+            elif oldSObject.get('Home Country') == 'AU':
                 might_be_sEdited = True
             elif oldSObject.usernameActLike():
                 might_be_sEdited = True
-            if(might_be_sEdited):
+            if might_be_sEdited:
                 # print repr(oldSObject), "might be edited"
                 self.sTime = self.tTime
-                if(self.mMod):
+                if self.mMod:
                     self.static = False
                     # self.importantStatic = False
 #
@@ -67,9 +68,9 @@ class SyncUpdate(Registrar):
     @property
     def lTime(self): return max(self.mTime, self.sTime)
     @property
-    def mMod(self): return (self.mTime >= self.tTime)
+    def mMod(self): return self.mTime >= self.tTime
     @property
-    def sMod(self): return (self.sTime >= self.tTime)
+    def sMod(self): return self.sTime >= self.tTime
 
 
 
@@ -127,9 +128,9 @@ class SyncUpdate(Registrar):
 
     def sanitizeValue(self, col, value):
         # print "sanitizing", col, repr(value)
-        if('phone' in col.lower()):
-            if('preferred' in col.lower()):
-                if(value and len(SanitationUtils.stripNonNumbers(value)) > 1):
+        if 'phone' in col.lower():
+            if 'preferred' in col.lower():
+                if value and len(SanitationUtils.stripNonNumbers(value)) > 1:
                     # print "value nullified", value
                     return ""
         return value
@@ -145,7 +146,7 @@ class SyncUpdate(Registrar):
         # print "-> mValue", mValue
         sValue = self.getSValue(col)
         # print "-> sValue", sValue
-        return (mValue == sValue)
+        return mValue == sValue
 
     def colSimilar(self, col):
         # print "-> comparing ", col
@@ -153,31 +154,31 @@ class SyncUpdate(Registrar):
         sValue = self.getSValue(col)
         if not (mValue or sValue):
             return True
-        elif not ( mValue and sValue ):
+        elif not (mValue and sValue):
             return False
         #check if they are similar
-        if( "phone" in col.lower() ):
-            if( "preferred" in col.lower() ):
+        if "phone" in col.lower():
+            if "preferred" in col.lower():
                 mPreferred = SanitationUtils.similarTruStrComparison(mValue)
                 sPreferred = SanitationUtils.similarTruStrComparison(sValue)
                 # print repr(mValue), " -> ", mPreferred
                 # print repr(sValue), " -> ", sPreferred
-                if(mPreferred == sPreferred):
+                if mPreferred == sPreferred:
                     return True
             else:
                 mPhone = SanitationUtils.similarPhoneComparison(mValue)
                 sPhone = SanitationUtils.similarPhoneComparison(sValue)
                 plen = min(len(mPhone), len(sPhone))
-                if(plen > 7 and mPhone[-plen] == sPhone[-plen]):
+                if plen > 7 and mPhone[-plen] == sPhone[-plen]:
                     return True
-        elif( "role" in col.lower() ):
+        elif "role" in col.lower():
             mRole = SanitationUtils.similarComparison(mValue)
             sRole = SanitationUtils.similarComparison(sValue)
-            if (mRole == 'rn'):
+            if mRole == 'rn':
                 mRole = ''
-            if (sRole == 'rn'):
+            if sRole == 'rn':
                 sRole = ''
-            if( mRole == sRole ):
+            if mRole == sRole:
                 return True
         elif( "address" in col.lower() and isinstance(mValue, ContactAddress)):
             if( mValue != sValue ):
@@ -185,7 +186,7 @@ class SyncUpdate(Registrar):
                 # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
             return mValue.similar(sValue)
         else:
-            if( SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue) ):
+            if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
                 return True
 
         return False
@@ -197,6 +198,7 @@ class SyncUpdate(Registrar):
         if col not in self.syncProblematics.keys():
             self.syncProblematics[col] = []
         self.syncProblematics[col].append(updateParams)
+        self.registerWarning("SYNC PROB: %s" % SanitationUtils.coerceUnicode(updateParams))
 
     def addSyncWarning(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
@@ -205,6 +207,7 @@ class SyncUpdate(Registrar):
         if col not in self.syncWarnings.keys():
             self.syncWarnings[col] = []
         self.syncWarnings[col].append(updateParams)
+        self.registerWarning("SYNC WARNING: %s" % SanitationUtils.coerceUnicode(updateParams))
         # print "SYNC WARNING: ", self.syncWarnings[col][-1]
 
     def addSyncPass(self, **updateParams):
@@ -214,6 +217,8 @@ class SyncUpdate(Registrar):
         if col not in self.syncPasses.keys():
             self.syncPasses[col] = []
         self.syncPasses[col].append(updateParams)
+        self.registerMessage("SYNC PASS: %s" % SanitationUtils.coerceUnicode(updateParams))
+
 
     def displayUpdateList(self, updateList, tablefmt=None):
         if updateList:
@@ -244,9 +249,8 @@ class SyncUpdate(Registrar):
                             rawTime = int(warning[key])
                             if rawTime:
                                 warning_fmtd[key] = TimeUtils.wpTimeToString(rawTime)
-                        except:
+                        except Exception, e:
                             pass
-                    warning_fmtd
                     subjects[subject].append(warning_fmtd)
             tables = []
             for subject, warnings in subjects.items():
@@ -287,7 +291,7 @@ class SyncUpdate(Registrar):
         data = updateParams.get('data', {})
 
 
-        # SanitationUtils.safePrint("loserUpdate ", winner, col, reason)
+        self.registerMessage("loserUpdate " + SanitationUtils.coerceUnicode([winner, col, reason]))
         if(winner == self.master_name):
             # oldLoserObject = self.oldSObject
             updateParams['oldLoserValue'] = self.getSValue(col)
@@ -608,32 +612,32 @@ class SyncUpdate(Registrar):
                     updates = self.getMasterUpdatesRecursive(col, updates)
         return updates
 
-    def mDeltas(self, deltaCols):
-        deltas = []
-        # print "doing deltas: ", deltaCols
-        for col, update in self.getMasterUpdates().items():
-            # print "M",col
-            if col in deltaCols:
-                deltas += [col]
-                deltaCol = deltaCols.get(col)
-                oldLoserValue = self.oldMObject.get(col)
-                # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
-                self.newMObject[deltaCol] = oldLoserValue
-        return deltas
-
-    def sDeltas(self, deltaCols):
-        deltas = []
-        dbCols = ColData_User.getAllWPDBCols()
-        # print "doing deltas: ", deltaCols
-        for col, update in self.getSlaveUpdates().items():
-            # print "S",col
-            if col in dbCols and dbCols.get(col) in deltaCols:
-                deltas += [dbCols.get(col)]
-                deltaCol = deltaCols.get(dbCols.get(col))
-                oldLoserValue = self.oldSObject.get(dbCols.get(col))
-                # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
-                self.newSObject[deltaCol] = oldLoserValue
-        return deltas
+    # def mDeltas(self, deltaCols):
+    #     deltas = []
+    #     # print "doing deltas: ", deltaCols
+    #     for col, update in self.getMasterUpdates().items():
+    #         # print "M",col
+    #         if col in deltaCols:
+    #             deltas += [col]
+    #             deltaCol = deltaCols.get(col)
+    #             oldLoserValue = self.oldMObject.get(col)
+    #             # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
+    #             self.newMObject[deltaCol] = oldLoserValue
+    #     return deltas
+    #
+    # def sDeltas(self, deltaCols):
+    #     deltas = []
+    #     dbCols = ColData_User.getAllWPDBCols()
+    #     # print "doing deltas: ", deltaCols
+    #     for col, update in self.getSlaveUpdates().items():
+    #         # print "S",col
+    #         if col in dbCols and dbCols.get(col) in deltaCols:
+    #             deltas += [dbCols.get(col)]
+    #             deltaCol = deltaCols.get(dbCols.get(col))
+    #             oldLoserValue = self.oldSObject.get(dbCols.get(col))
+    #             # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
+    #             self.newSObject[deltaCol] = oldLoserValue
+    #     return deltas
 
     def displaySlaveChanges(self, tablefmt=None):
         if self.syncWarnings:
@@ -739,93 +743,93 @@ class SyncUpdate(Registrar):
         return -cmp(self.bTime, other.bTime)
         # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
 
-def testSyncUpdate1():
-
-
-    usr1 = ImportUser(
-        {
-            'MYOB Card ID': 'C00002',
-            'Wordpress ID': 7,
-            'Wordpress Username': 'derewnt',
-            'First Name': 'Derwent',
-            'Surname': 'Smith',
-            'Name Modified': '2015-11-10 12:55:00',
-            'Edited in Act': '11/11/2015 6:45:00 AM',
-        },
-        1,
-        [],
-    )
-
-    usr2 = ImportUser(
-        {
-            'MYOB Card ID': 'C00002',
-            'Wordpress ID': 7,
-            'Wordpress Username': 'derewnt',
-            'First Name': 'Abe',
-            'Surname': 'Jackson',
-            'Name Modified': '2015-11-10 12:45:03',
-            'Edited in Wordpress': '2015-11-11 6:55:00',
-        },
-        2,
-        [],
-    )
-
-    syncUpdate = SyncUpdate(usr1, usr2)
-
-    syncCols = ColData_User.getSyncCols()
-
-    syncUpdate.update(syncCols)
-
-    SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
-
-def testSyncUpdate2():
-
-    usr1 = ImportUser(
-        {
-            'MYOB Card ID': 'C00002',
-            'Wordpress ID': 7,
-            'Wordpress Username': 'derewnt',
-            'First Name': 'Derwent',
-            'Surname': 'Smith',
-            'Edited Name': '10/11/2015 12:45:00 PM',
-            'Edited in Act': '11/11/2015 6:55:00 AM',
-        },
-        1,
-        [],
-    )
-
-    usr2 = ImportUser(
-        {
-            'MYOB Card ID': 'C00002',
-            'Wordpress ID': 7,
-            'Wordpress Username': 'derewnt',
-            'First Name': 'Abe',
-            'Surname': 'Jackson',
-            'Edited Name': '2015-11-10 12:55:03',
-            'Edited in Wordpress': '2015-11-11 6:45:00',
-        },
-        2,
-        [],
-    )
-
-    syncUpdate = SyncUpdate(usr1, usr2)
-
-    syncCols = ColData_User.getSyncCols()
-
-    syncUpdate.update(syncCols)
-
-    # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
-
-if __name__ == '__main__':
-    yamlPath = "source/merger_config.yaml"
-
-    with open(yamlPath) as stream:
-        config = yaml.load(stream)
-        merge_mode = config.get('merge_mode', 'sync')
-        MASTER_NAME = config.get('master_name', 'MASTER')
-        SLAVE_NAME = config.get('slave_name', 'SLAVE')
-        DEFAULT_LAST_SYNC = config.get('default_last_sync')
-
-    SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
-    testSyncUpdate1()
-    testSyncUpdate2()
+# def testSyncUpdate1():
+#
+#
+#     usr1 = ImportUser(
+#         {
+#             'MYOB Card ID': 'C00002',
+#             'Wordpress ID': 7,
+#             'Wordpress Username': 'derewnt',
+#             'First Name': 'Derwent',
+#             'Surname': 'Smith',
+#             'Name Modified': '2015-11-10 12:55:00',
+#             'Edited in Act': '11/11/2015 6:45:00 AM',
+#         },
+#         1,
+#         [],
+#     )
+#
+#     usr2 = ImportUser(
+#         {
+#             'MYOB Card ID': 'C00002',
+#             'Wordpress ID': 7,
+#             'Wordpress Username': 'derewnt',
+#             'First Name': 'Abe',
+#             'Surname': 'Jackson',
+#             'Name Modified': '2015-11-10 12:45:03',
+#             'Edited in Wordpress': '2015-11-11 6:55:00',
+#         },
+#         2,
+#         [],
+#     )
+#
+#     syncUpdate = SyncUpdate(usr1, usr2)
+#
+#     syncCols = ColData_User.getSyncCols()
+#
+#     syncUpdate.update(syncCols)
+#
+#     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+#
+# def testSyncUpdate2():
+#
+#     usr1 = ImportUser(
+#         {
+#             'MYOB Card ID': 'C00002',
+#             'Wordpress ID': 7,
+#             'Wordpress Username': 'derewnt',
+#             'First Name': 'Derwent',
+#             'Surname': 'Smith',
+#             'Edited Name': '10/11/2015 12:45:00 PM',
+#             'Edited in Act': '11/11/2015 6:55:00 AM',
+#         },
+#         1,
+#         [],
+#     )
+#
+#     usr2 = ImportUser(
+#         {
+#             'MYOB Card ID': 'C00002',
+#             'Wordpress ID': 7,
+#             'Wordpress Username': 'derewnt',
+#             'First Name': 'Abe',
+#             'Surname': 'Jackson',
+#             'Edited Name': '2015-11-10 12:55:03',
+#             'Edited in Wordpress': '2015-11-11 6:45:00',
+#         },
+#         2,
+#         [],
+#     )
+#
+#     syncUpdate = SyncUpdate(usr1, usr2)
+#
+#     syncCols = ColData_User.getSyncCols()
+#
+#     syncUpdate.update(syncCols)
+#
+#     # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+#
+# if __name__ == '__main__':
+#     yamlPath = "source/merger_config.yaml"
+#
+#     with open(yamlPath) as stream:
+#         config = yaml.load(stream)
+#         merge_mode = config.get('merge_mode', 'sync')
+#         MASTER_NAME = config.get('master_name', 'MASTER')
+#         SLAVE_NAME = config.get('slave_name', 'SLAVE')
+#         DEFAULT_LAST_SYNC = config.get('default_last_sync')
+#
+#     SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+#     testSyncUpdate1()
+#     testSyncUpdate2()

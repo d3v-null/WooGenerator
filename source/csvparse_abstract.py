@@ -1,6 +1,6 @@
 from pprint import pprint
 from collections import OrderedDict
-from utils import listUtils, SanitationUtils, Registrar
+from utils import listUtils, SanitationUtils, Registrar, ProgressCounter
 from tabulate import tabulate
 import unicodecsv
 from coldata import ColData_User
@@ -191,13 +191,14 @@ class ObjList(list):
 class CSVParse_Base(Registrar):
     objectContainer = ImportObject
 
-    def __init__(self, cols, defaults):
+    def __init__(self, cols, defaults, limit=None):
         super(CSVParse_Base, self).__init__()
         Registrar.__init__(self)
 
         extra_cols = []
         extra_defaults = OrderedDict()
 
+        self.limit = limit
         self.cols = listUtils.combineLists( cols, extra_cols )
         self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         self.objectIndexer = self.getObjectRowcount
@@ -292,8 +293,14 @@ class CSVParse_Base(Registrar):
         # self.registerObject(objectData)
 
     def analyseRows(self, unicode_rows):
+        limit = None
+        if hasattr(self, 'limit'):
+            limit = self.limit
+        if limit and isinstance(limit, int):
+            unicode_rows = list(unicode_rows)[:limit]
         if DEBUG_PROGRESS:
-            last_print = time()
+
+            # last_print = time()
             rows = []
             try:
                 for row in unicode_rows:
@@ -301,15 +308,16 @@ class CSVParse_Base(Registrar):
             except Exception, e:
                 raise Exception("could not append row %d, %s: \n\t%s" % (len(rows), str(e), rows[-1]))
             rowlen = len(rows)
+            self.progressCounter = ProgressCounter(rowlen)
             unicode_rows = rows
 
         for rowcount, unicode_row in enumerate(unicode_rows):
             if DEBUG_PROGRESS:
-                now = time()
-                if now - last_print > 1:
-                    last_print = now
-                    print "%d of %d rows processed" % (rowcount, rowlen)
-
+                self.progressCounter.maybePrintUpdate(rowcount)
+                # now = time()
+                # if now - last_print > 1:
+                #     last_print = now
+                #     print "%d of %d rows processed" % (rowcount, rowlen)
 
             if unicode_row:
                 non_unicode = filter(

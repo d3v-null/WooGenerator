@@ -529,6 +529,14 @@ class testContactName(testFieldGroups):
         self.assertEqual(name.middle_name, "THAO")
         self.assertEqual(name.family_name, "NGUYENL")
 
+    def test_doubleNames(self):
+        name = ContactName(
+            contact = 'NEIL CUNLIFFE-WILLIAMS',
+            first_name = 'NEIL',
+            family_name = 'CUNLIFFE-WILLIAMS'
+        )
+
+        print name.__deepcopy__()
 
 if __name__ == '__main__':
     main()

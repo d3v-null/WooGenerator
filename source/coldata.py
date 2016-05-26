@@ -803,6 +803,7 @@ class ColData_User(ColData_Base):
             'static':True,
             'basic':True,
             'tracked':True,
+            'delta':True,
         }),
         ('Wordpress Username', {
             # 'label':'Username',

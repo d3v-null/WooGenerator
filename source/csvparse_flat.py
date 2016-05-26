@@ -105,6 +105,9 @@ class ImportUser(ImportFlat):
     }
 
     @property
+    def index(self): return "%s | %s" % (self.WPID, self.MYOBID)
+
+    @property
     def act_modtime(self):
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
 
@@ -317,7 +320,7 @@ class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
 
-    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None):
+    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None, limit=None):
         extra_cols = [
             # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date',
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
@@ -329,7 +332,7 @@ class CSVParse_User(CSVParse_Flat):
         ])
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        super(CSVParse_User, self).__init__(cols, defaults)
+        super(CSVParse_User, self).__init__(cols, defaults, limit)
         self.contact_schema = contact_schema
         self.filterItems = filterItems
         # self.itemIndexer = self.getUsername
