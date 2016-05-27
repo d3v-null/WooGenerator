@@ -1,6 +1,6 @@
-from pprint import pprint
+# from pprint import pprint
 from collections import OrderedDict
-from utils import listUtils, SanitationUtils, Registrar, ProgressCounter
+from utils import listUtils, SanitationUtils, Registrar, ProgressCounter, Registrar
 from tabulate import tabulate
 import unicodecsv
 from coldata import ColData_User
@@ -104,7 +104,6 @@ class ObjList(list):
             assert issubclass(objectData.__class__, ImportObject), \
             "object must be subclass of ImportObject not %s" % str(objectData.__class__)
         except Exception as e:
-            pprint( objectData)
             raise e
         index = self._indexer(objectData)
         if(index not in self._indices):
@@ -147,9 +146,9 @@ class ObjList(list):
                     #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
                     row += [ sanitizer(obj.get(col) )or ""]
                     try:
-                        unicode(row[-1])
+                        SanitationUtils.coerceUnicode(row[-1])
                     except:
-                        print "can't turn row into unicode:", repr(row), SanitationUtils.coerceBytes(row)
+                        Registrar.registerMessage("can't turn row into unicode: %s" % SanitationUtils.coerceUnicode(row))
 
                 table += [row]
                 # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
@@ -161,8 +160,7 @@ class ObjList(list):
             # print repr(table.encode('utf8'))
             # return table.encode('utf8')
         else:
-            if DEBUG:
-                print "there are no objects"
+            Registrar.registerMessage("cannot tabulate Objlist: there are no objects")
             return ""
 
     def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
@@ -180,7 +178,7 @@ class ObjList(list):
             )
             dictwriter.writerow(colNames)
             dictwriter.writerows(self.objects)
-        print "WROTE FILE: ", filePath
+        Registrar.registerMessage("WROTE FILE: %s" % filePath)
 
     def getReportCols(self):
         return OrderedDict([
@@ -221,7 +219,6 @@ class CSVParse_Base(Registrar):
         )
 
     def analyseHeader(self, row):
-        if(DEBUG_PARSER): print row
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
@@ -229,8 +226,7 @@ class CSVParse_Base(Registrar):
             #     self.indices[col] = row.index('\xef\xbb\xbf'+col)
             else:
                 self.registerError('Could not find index of '+str(col) )
-            if DEBUG: print "indices [%s] = %s" % (col, self.indices.get(col))
-        if DEBUG: print "finished analysing header"
+            if DEBUG: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
 
     def retrieveColFromRow(self, col, row):
         # if DEBUG_PARSER: print "retrieveColFromRow | col: ", col
@@ -362,13 +358,13 @@ class CSVParse_Base(Registrar):
             byte_sample = byte_file_obj.read(1000)
             byte_file_obj.seek(0)
             csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
-            if DEBUG_PARSER: print "CSV Dialect:",    \
-                "DEL ", repr(csvdialect.delimiter)  , \
-                "DBL ", repr(csvdialect.doublequote), \
-                "ESC ", repr(csvdialect.escapechar) , \
-                "QUC ", repr(csvdialect.quotechar)  , \
-                "QUT ", repr(csvdialect.quoting)    , \
-                "SWS ", repr(csvdialect.skipinitialspace)
+            # if DEBUG_PARSER: print "CSV Dialect:",    \
+            #     "DEL ", repr(csvdialect.delimiter)  , \
+            #     "DBL ", repr(csvdialect.doublequote), \
+            #     "ESC ", repr(csvdialect.escapechar) , \
+            #     "QUC ", repr(csvdialect.quotechar)  , \
+            #     "QUT ", repr(csvdialect.quoting)    , \
+            #     "SWS ", repr(csvdialect.skipinitialspace)
 
             unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
             return self.analyseRows(unicodecsvreader)
@@ -385,28 +381,28 @@ class CSVParse_Base(Registrar):
     def tabulate(self, cols=None, tablefmt=None):
         objlist = self.getObjList()
         return SanitationUtils.coerceBytes(objlist.tabulate(cols, tablefmt))
-
-if __name__ == '__main__':
-    inFolder = "../input/"
-    # actPath = os.path.join(inFolder, 'partial act records.csv')
-    actPath = os.path.join(inFolder, "500-act-records.csv")
-    outFolder = "../output/"
-    usrPath = os.path.join(outFolder, 'users.csv')
-
-    usrData = ColData_User()
-
-    # print "import cols", usrData.getImportCols()
-    # print "defaults", usrData.getDefaults()
-
-    usrParser = CSVParse_Base(
-        cols = usrData.getImportCols(),
-        defaults = usrData.getDefaults()
-    )
-
-    usrParser.analyseFile(actPath)
-
-    SanitationUtils.safePrint( usrParser.tabulate(cols = usrData.getReportCols()))
-    print ( usrParser.tabulate(cols = usrData.getReportCols()))
-
-    for usr in usrParser.objects.values()[:3]:
-        pprint(OrderedDict(usr))
+#
+# if __name__ == '__main__':
+#     inFolder = "../input/"
+#     # actPath = os.path.join(inFolder, 'partial act records.csv')
+#     actPath = os.path.join(inFolder, "500-act-records.csv")
+#     outFolder = "../output/"
+#     usrPath = os.path.join(outFolder, 'users.csv')
+#
+#     usrData = ColData_User()
+#
+#     # print "import cols", usrData.getImportCols()
+#     # print "defaults", usrData.getDefaults()
+#
+#     usrParser = CSVParse_Base(
+#         cols = usrData.getImportCols(),
+#         defaults = usrData.getDefaults()
+#     )
+#
+#     usrParser.analyseFile(actPath)
+#
+#     SanitationUtils.safePrint( usrParser.tabulate(cols = usrData.getReportCols()))
+#     print ( usrParser.tabulate(cols = usrData.getReportCols()))
+#
+#     for usr in usrParser.objects.values()[:3]:
+#         pprint(OrderedDict(usr))

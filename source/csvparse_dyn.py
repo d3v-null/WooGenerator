@@ -28,7 +28,7 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
     discount_type = descriptorUtils.safeKeyProperty('Discount Type')
 
     def __init__(self, *args, **kwargs):
-        super(ImportDynRuleLine, self).__init__(*args, **kwargs)    
+        super(ImportDynRuleLine, self).__init__(*args, **kwargs)
 
         if all([
             self.get('Min ( Buy )') is None,
@@ -51,14 +51,14 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
     @property
     def pricing_rule_to(self):
         return self.get('Max ( Receive )', '')
-    
+
 
 class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     validations = {
-        'ID':ValidationUtils.isNotNone, 
-        'Qty. Base': ValidationUtils.isContainedIn(['PROD', 'VAR', 'CAT']) , 
-        'Rule Mode': ValidationUtils.isContainedIn(['BULK', 'SPECIAL']), 
+        'ID':ValidationUtils.isNotNone,
+        'Qty. Base': ValidationUtils.isContainedIn(['PROD', 'VAR', 'CAT']) ,
+        'Rule Mode': ValidationUtils.isContainedIn(['BULK', 'SPECIAL']),
         'Roles': ValidationUtils.isNotNone
     }
 
@@ -96,7 +96,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 'type':'apply_to'
             }
         }
-    
+
 
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
@@ -121,10 +121,10 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         ruleMode = self.get('Rule Mode', 'BULK')
         if ruleMode == 'BULK' or not ruleMode:
             return OrderedDict([
-                ('Min ( Buy )', 'From'), 
-                ('Max ( Receive )', 'To'), 
-                ('Discount' , 'Discount'), 
-                ('Meaning', 'Meaning') 
+                ('Min ( Buy )', 'From'),
+                ('Max ( Receive )', 'To'),
+                ('Discount' , 'Discount'),
+                ('Meaning', 'Meaning')
             ])
         else:
             return OrderedDict([
@@ -132,16 +132,16 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 ('Max ( Receive )', 'Receive'),
                 ('Discount' , 'Discount'),
                 ('Meaning', 'Meaning)')
-            ])       
+            ])
 
     def __repr__(self):
-        rep = "<ImportDynRule | " 
-        rep += ', '.join( 
+        rep = "<ImportDynRule | "
+        rep += ', '.join(
             map(
                 lambda x: str( (x, self.get(x,'')) ),
                 ['Qty. Base', 'Rule Mode', 'Roles']
             )
-        ) 
+        )
         if self.getRuleLines():
             rep += ' | '
             rep += ', '.join([line.get('Meaning', '') for line in self.getRuleLines()])
@@ -266,7 +266,7 @@ class CSVParse_Dyn(CSVParse_Tree):
     #     assert ruleID, 'ruleID must exist to register rule'
     #     if not ruleID in self.rules.keys():
     #         self.rules[ruleID] = ImportDynRule(itemData)
-    #     return self.rules[ruleID]        
+    #     return self.rules[ruleID]
 
     # def registerRuleLine(self, parentData, itemData):
     #     ruleData = self.getRuleData(parentData)
@@ -274,13 +274,13 @@ class CSVParse_Dyn(CSVParse_Tree):
 
     # def registerRule(self, itemData):
     #     ruleData = self.getRuleData(itemData)
-    #     ruleData.addRuleData(itemData)  
-    #     print "registering rule ", itemData  
+    #     ruleData.addRuleData(itemData)
+    #     print "registering rule ", itemData
 
     def depth(self, row):
         for i,cell in enumerate(row):
             if cell:
-                if i < 4: 
+                if i < 4:
                     return 0
                 else:
                     return 1
@@ -343,13 +343,13 @@ if __name__ == '__main__':
             rule['html'] = rule.toHTML()
             rule['_pricing_rule'] = rule.to_pricing_rule()
 
-        print '\n'.join(map(str , dynParser.taxos.values()))
+        # print '\n'.join(map(str , dynParser.taxos.values()))
         dynList = ObjList(dynParser.taxos.values() )
-        
+
         writeSection(
-            "Dynamic Pricing Rules", 
+            "Dynamic Pricing Rules",
             "all products and their dynaimc pricing rules",
-            re.sub("<table>","<table class=\"table table-striped\">", 
+            re.sub("<table>","<table class=\"table table-striped\">",
                 dynList.tabulate(cols=OrderedDict([
                     ('html', {}),
                     ('_pricing_rule', {}),
@@ -365,4 +365,3 @@ if __name__ == '__main__':
     """)
         outFile.write('</body>')
         outFile.write('</html>')
-        

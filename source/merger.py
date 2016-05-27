@@ -1,6 +1,8 @@
+from pprint import pprint
 from collections import OrderedDict
 import os
 import unicodecsv
+import argparse
 # import shutil
 from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
 from utils import Registrar, debugUtils, ProgressCounter
@@ -33,7 +35,6 @@ from contact_objects import FieldGroup
 importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
 
-
 def timediff():
     return time.time() - start_time
 
@@ -41,22 +42,20 @@ DEBUG = False
 DEBUG_PROGRESS = True
 testMode = False
 testMode = True
-# skip_sync = False
-# skip_sync = True
 
-# sql_run = False
-# sftp_run = False
+# download_slave = False
+# download_master = False
 # update_slave = False
 # update_master = False
-# sql_run = True
-# sftp_run = True
+# download_slave = True
+# download_master = True
 # update_slave = True
 # update_master = True
 # do_problematic = False
 # do_problematic = True
 # do_filter = False
 # do_filter = True
-# FieldGroup.performPost = False
+# FieldGroup.do_post = False
 # FieldGroup.DEBUG_WARN = True
 # FieldGroup.DEBUG_MESSAGE = True
 # FieldGroup.DEBUG_ERROR = True
@@ -76,6 +75,8 @@ os.chdir('source')
 yamlPath = "merger_config.yaml"
 
 userFile = cardFile = emailFile = sinceM = sinceS = False
+
+### OVERRIDE CONFIG WITH YAML FILE ###
 
 with open(yamlPath) as stream:
     optionNamePrefix = 'test_' if testMode else ''
@@ -126,22 +127,121 @@ with open(yamlPath) as stream:
     emailFile = config.get('emailFile')
     sinceM = config.get('sinceM')
     sinceS = config.get('sinceS')
-    sql_run = config.get('sql_run')
-    sftp_run = config.get('sftp_run')
+    download_slave = config.get('download_slave')
+    download_master = config.get('download_master')
     update_slave = config.get('update_slave')
     update_master = config.get('update_master')
     do_filter = config.get('do_filter')
     do_problematic = config.get('do_problematic')
-    performPost = config.get('performPost')
-    skip_sync = config.get('skip_sync')
+    do_post = config.get('do_post')
+    do_sync = config.get('do_sync')
+
+### OVERRIDE CONFIG WITH ARGPARSE ###
+
+parser = argparse.ArgumentParser(description = 'Merge contact records between two databases')
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-v", "--verbosity", action="count",
+                    help="increase output verbosity")
+group.add_argument("-q", "--quiet", action="store_true")
+parser.add_argument('--testmode', help='Run in test mode with test servers',
+                    action='store_true')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--download-master', help='download the master data',
+                   action="store_true", default=None)
+group.add_argument('--skip-download-master', help='use the local master file instead\
+    of downloading the master data', action="store_false", dest='download_master')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--download-slave', help='download the slave data',
+                   action="store_true", default=None)
+group.add_argument('--skip-download-slave', help='use the local slave file instead\
+    of downloading the slave data', action="store_false", dest='download_slave')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--update-master', help='update the master database',
+                   action="store_true", default=None)
+group.add_argument('--skip-update-master', help='don\'t update the master database',
+                   action="store_false", dest='update_master')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--update-slave', help='update the slave database',
+                   action="store_true", default=None)
+group.add_argument('--skip-update-slave', help='don\'t update the slave database',
+                   action="store_false", dest='update_slave')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-filter', help='filter the databases',
+                   action="store_true", default=None)
+group.add_argument('--skip-filter', help='don\'t filter the databases',
+                   action="store_false", dest='do_filter')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-sync', help='sync the databases',
+                   action="store_true", default=None)
+group.add_argument('--skip-sync', help='don\'t sync the databases',
+                   action="store_false", dest='do_sync')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-post', help='post process the contacts',
+                   action="store_true", default=None)
+group.add_argument('--skip-post', help='don\'t post process the contacts',
+                   action="store_false", dest='do_post')
+
+parser.add_argument('--m-ssh-host', help='location of master ssh server')
+parser.add_argument('--m-ssh-port', type=int, help='location of master ssh port')
+args = parser.parse_args()
+if args:
+    print args
+    if args.verbosity > 0:
+        DEBUG_PROGRESS = True
+        DEBUG_ERROR = True
+    if args.verbosity > 1:
+        DEBUG = True
+    testMode = args.testmode
+    if args.download_slave is not None:
+        download_slave = args.download_slave
+    if args.download_master is not None:
+        download_master = args.download_master
+    if args.update_slave is not None:
+        update_slave = args.update_slave
+    if args.update_master is not None:
+        update_master = args.update_master
+    if args.do_filter is not None:
+        do_filter = args.do_filter
+    if args.do_sync is not None:
+        do_sync = args.do_sync
+    if args.do_post is not None:
+        do_post = args.do_post
+    if args.m_ssh_port:
+        m_ssh_port = args.m_ssh_port
+    if args.m_ssh_host:
+        m_ssh_host = args.m_ssh_host
+
+
+
+### DISPLAY CONFIG ###
+if DEBUG:
+    if testMode:
+        print "testMode enabled"
+    if not download_slave:
+        print "no download_slave"
+    if not download_master:
+        print "no download_master"
+    if not update_master:
+        print "not updating maseter"
+    if not update_slave:
+        print "not updating slave"
+    if not do_filter:
+        print "not doing filter"
+    if not do_sync:
+        print "not doing sync"
+    if not do_post:
+        print "not doing post"
+    print "master ssh host", m_ssh_host
+    print "master ssh port", m_ssh_port
+
+### PROCESS CLASS PARAMS ###
 
 global_limit = None
-FieldGroup.performPost = performPost
+FieldGroup.do_post = do_post
 SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+TimeUtils.setWpSrvOffset(wp_srv_offset)
 
-#########################################
-# Set up directories
-#########################################
+### SET UP DIRECTORIES ###
 
 for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
     if not os.path.exists(path):
@@ -159,22 +259,16 @@ maEncoding = "utf-8"
 saPath = os.path.join(inFolder, s_x_filename)
 saEncoding = "utf8"
 
-if not sftp_run:
+if not download_master:
     # maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
     maPath = os.path.join(inFolder, master_file)
     # maPath = os.path.join(inFolder, "500-act-records-edited.csv")
     # maPath = os.path.join(inFolder, "500-act-records.csv")
     maEncoding = "utf8"
-if not sql_run:
+if not download_slave:
     saPath = os.path.join(inFolder, slave_file)
     # saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
     saEncoding = "utf8"
-
-assert store_url, "store url must not be blank"
-xmlrpc_uri = store_url + 'xmlrpc.php'
-json_uri = store_url + 'wp-json/wp/v2'
-
-TimeUtils.setWpSrvOffset(wp_srv_offset)
 
 moPath = os.path.join(outFolder, m_i_filename)
 resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
@@ -187,16 +281,15 @@ sFailPath = os.path.join(outFolder, "wp_fails%s.csv" % fileSuffix)
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
+logPath = os.path.join(logFolder, "log_%s.txt" % importName)
 
-# colData = ColData_User()
+### PROCESS OTHER CONFIG ###
+
+assert store_url, "store url must not be blank"
+xmlrpc_uri = store_url + 'xmlrpc.php'
+json_uri = store_url + 'wp-json/wp/v2'
 
 actFields = ";".join(ColData_User.getACTImportCols())
-#
-# xmlConnectParams = {
-#     'xmlrpc_uri': xmlrpc_uri,
-#     'wp_user': wp_user,
-#     'wp_pass': wp_pass
-# }
 
 jsonConnectParams = {
     'json_uri': json_uri,
@@ -239,28 +332,33 @@ fsParams = {
 
 print debugUtils.hashify("PREPARE FILTER DATA"), timediff()
 
-filterFiles = {
-    'users': userFile,
-    'emails': emailFile,
-    'cards': cardFile,
-}
-filterItems = {}
-if any(filterFiles) :
-    for key, filterFile in filterFiles.items():
-        if filterFile:
-            with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
-                filterItems[key] = [\
-                    re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)\
-                    for line in filterFileObj\
-                ]
-
-                # print "filterItems[%s] = %s" % (key, filterItems[key])
-if sinceM:
-    filterItems['sinceM'] = TimeUtils.wpStrptime(sinceM)
-if sinceS:
-    filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
-
-if not do_filter:
+if do_filter:
+    filterFiles = {
+        'users': userFile,
+        'emails': emailFile,
+        'cards': cardFile,
+    }
+    filterItems = {}
+    if any(filterFiles) :
+        for key, filterFile in filterFiles.items():
+            try:
+                with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
+                    filterItems[key] = [\
+                        re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)\
+                        for line in filterFileObj\
+                    ]
+            except IOError, e:
+                SanitationUtils.safePrint("could not open %s file [%s] from %s" % (
+                    key,
+                    filterFile,
+                    unicode(os.getcwd())
+                ))
+                raise e
+    if sinceM:
+        filterItems['sinceM'] = TimeUtils.wpStrptime(sinceM)
+    if sinceS:
+        filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
+else:
     filterItems = None
 
 #########################################
@@ -275,7 +373,7 @@ saParser = CSVParse_User(
     filterItems = filterItems,
     limit = global_limit
 )
-if sql_run:
+if download_slave:
     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
     SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
     for host in ['SSHTunnelForwarderAddress', 'SSHTunnelForwarderBindAddress']:
@@ -313,7 +411,7 @@ else:
     saParser.analyseFile(saPath, saEncoding)
 
 
-CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+# CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 
 #########################################
 # Generate and Analyse ACT CSV files using shell
@@ -329,7 +427,7 @@ maParser = CSVParse_User(
 
 print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
 
-if sftp_run:
+if download_master:
 
     for thing in ['m_x_cmd', 'm_i_cmd', 'remoteExportFolder', 'actFields']:
         assert eval(thing), "missing mandatory command component '%s'" % thing
@@ -339,7 +437,7 @@ if sftp_run:
 else:
     maParser.analyseFile(maPath)
 
-CSVParse_User.printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
+# CSVParse_User.printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
 
 # get matches
 
@@ -377,7 +475,7 @@ def denyAnomalousParselist(parselistType, anomalousParselist):
         anomalousParselists[parselistType] = anomalousParselist
 
 
-if not skip_sync:
+if do_sync:
     # for every username in slave, check that it exists in master
     print "processing usernames"
     denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
@@ -608,7 +706,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
     reporter.addGroup(sanitizingGroup)
 
-    report_deltas = not skip_sync
+    report_deltas = do_sync
     if report_deltas:
 
         deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
@@ -657,7 +755,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
             sDeltaList.exportItems(WPDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
 
 
-    report_matching = not skip_sync
+    report_matching = do_sync
     if report_matching:
 
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
@@ -742,7 +840,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
 
         reporter.addGroup(matchingGroup)
 
-    report_sync = not skip_sync
+    report_sync = do_sync
     if report_sync:
         syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
 
@@ -845,6 +943,11 @@ def outputFailures(failures, filePath):
 
 outputFailures(masterFailures, mFailPath)
 outputFailures(slaveFailures, sFailPath)
+
+for source, messages in Registrar.getMessageItems(None, 1).items():
+    print source
+    for message in messages:
+        pprint( message, indent=4, width=80, depth=2)
 
 # if __name__ == '__main__':
 #     main()

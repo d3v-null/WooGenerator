@@ -1,17 +1,17 @@
 from csvparse_abstract import ImportObject
 from csvparse_flat import UsrObjList #, ImportUser
-from utils import SanitationUtils
+from utils import SanitationUtils, Registrar
 
 
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
-        self._mObjects = filter(None, mObjects) or [] 
+        self._mObjects = filter(None, mObjects) or []
         self._sObjects = filter(None, sObjects) or []
 
     @property
     def mObjects(self):
         return self._mObjects
-    
+
     @property
     def sObjects(self):
         return self._sObjects
@@ -42,7 +42,7 @@ class Match(object):
                 return 'pure'
         else:
             return 'duplicate'
-    
+
 
     def addSObject(self, sObject):
         if sObject not in self.sObjects: self.sObjects.append(sObject)
@@ -54,7 +54,7 @@ class Match(object):
         kMatches = {}
         for sObject in self.sObjects:
             value = keyFn(sObject)
-            if not value in kMatches.keys(): 
+            if not value in kMatches.keys():
                 kMatches[value] = Match()
             kMatches[value].addSObject(sObject)
             # for mObject in self.mObjects:
@@ -66,13 +66,13 @@ class Match(object):
                 kMatches[value] = Match()
             kMatches[value].addMObject(mObject)
         return kMatches
-    
+
     def WooObjListRepr(self, objs):
         length = len(objs)
         return "({0}) [{1:^200s}]".format(len(objs), ",".join(map(lambda obj: obj.__repr__()[:200/length], objs)))
 
     def __repr__(self):
-        return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] ) 
+        return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] )
 
     def tabulate(self, tablefmt=None):
         out  = ""
@@ -95,14 +95,14 @@ class Match(object):
         users = UsrObjList()
         if(m_len > 0):
             objs = self.mObjects
-            if(print_headings): 
+            if(print_headings):
                 heading = ImportObject({}, 'M')
                 objs = [heading] + objs
             for obj in objs :
                 users.addObject(obj)
         if(s_len > 0):
             objs = self.sObjects
-            if(print_headings): 
+            if(print_headings):
                 heading = ImportObject({}, 'S')
                 objs = [heading] + objs
             for obj in objs:
@@ -135,7 +135,7 @@ class MatchList(list):
     @property
     def sIndices(self):
         return self._sIndices
-    
+
     @property
     def mIndices(self):
         return self._mIndices
@@ -177,13 +177,14 @@ class MatchList(list):
             return prefix + delimeter.join(
                 [SanitationUtils.coerceBytes(match.tabulate(tablefmt=tablefmt)) for match in self if match]
             ) + suffix
-        else: 
+        else:
             return ""
 
 
 
-class AbstractMatcher(object):
+class AbstractMatcher(Registrar):
     def __init__(self, keyFn = None):
+        super(Registrar, self).__init__()
         # print "entering AbstractMatcher __init__"
         if(keyFn):
             # print "-> keyFn"
@@ -217,7 +218,7 @@ class AbstractMatcher(object):
     @property
     def slavelessMatches(self):
         return self._matches['slaveless']
-    
+
     @property
     def masterlessMatches(self):
         return self._matches['masterless']
@@ -231,7 +232,7 @@ class AbstractMatcher(object):
         # print "processing nonsingular register"
         for regKey, regValue in saRegister.items():
             maObjects = self.retrieveObjects(maRegister, regKey)
-            self.processMatch(maObjects, regValue)            
+            self.processMatch(maObjects, regValue)
 
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
@@ -259,20 +260,25 @@ class AbstractMatcher(object):
         try:
             self._matches[match_type].addMatch(match)
         except Exception as e:
-            print "could not add match to " + match_type + " matches ", e
+            self.registerWarning( "could not add match to %s matches %s" % (
+                match_type,
+                SanitationUtils.coerceUnicode(e)
+            ))
         try:
             self._matches['all'].addMatch(match)
         except Exception as e:
-            print "could not add match to matches ", e
+            self.registerWarning( "could not add match to matches %s" % (
+                SanitationUtils.coerceUnicode(e)
+            ))
 
     def mFilter(self, objects):
-        if(self.mFilterFn):
+        if self.mFilterFn:
             return filter(self.mFilterFn, objects)
         else:
             return objects
 
     def sFilter(self, objects):
-        if(self.fFilterFn):
+        if self.fFilterFn:
             return filter(self.fFilterFn, objects)
         else:
             return objects
@@ -290,16 +296,16 @@ class AbstractMatcher(object):
         repr_str = ""
         repr_str += "pure matches:\n"
         for match in self.pureMatches:
-             repr_str += " -> " + repr(match) + "\n"
+            repr_str += " -> " + repr(match) + "\n"
         repr_str += "masterless matches:\n"
         for match in self.masterlessMatches:
-             repr_str += " -> " + repr(match) + "\n"
+            repr_str += " -> " + repr(match) + "\n"
         repr_str += "slaveless matches:\n"
         for match in self.slavelessMatches:
-             repr_str += " -> " + repr(match) + "\n"
+            repr_str += " -> " + repr(match) + "\n"
         repr_str += "duplicate matches:\n"
         for match in self.duplicateMatches:
-             repr_str += " -> " + repr(match) + "\n"
+            repr_str += " -> " + repr(match) + "\n"
         return repr_str
 
 class UsernameMatcher(AbstractMatcher):
@@ -324,7 +330,7 @@ class EmailMatcher(FilteringMatcher):
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering EmailMatcher __init__"
         super(EmailMatcher, self).__init__( lambda x: x.email.lower(), sMatchIndices, mMatchIndices )
-        
+
 class NocardEmailMatcher(EmailMatcher):
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering NocardEmailMatcher __init__"

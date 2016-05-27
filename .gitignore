@@ -102,3 +102,5 @@ source/test_wp_api.py
 output test merge
 
 scripttest.py
+
+.remote-sync.json

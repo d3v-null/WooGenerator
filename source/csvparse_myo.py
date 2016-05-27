@@ -229,7 +229,9 @@ class CSVParse_MYO(CSVParse_Gen):
 
         super(CSVParse_MYO, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
-        if DEBUG_MYO: print "csvparse initialized with cols:",str(extra_cols)
+        if DEBUG_MYO:
+            self.registerMessage( "csvparse initialized with cols: %s" %
+                                 SanitationUtils.coerceUnicode(extra_cols))
 
 
 
@@ -247,25 +249,25 @@ class MYOProdList(GenProdList):
         return ColData_MYO.getProductCols()
 
 
-if __name__ == '__main__':
-    print "Testing MYO script..."
-    inFolder = "../input/"
-    os.chdir('source')
-
-    genPath = os.path.join(inFolder, 'generator.csv')
-
-
-    colData = ColData_MYO()
-    productParser = CSVParse_MYO(
-        cols = colData.getImportCols(),
-        defaults = colData.getDefaults(),
-    )
-    productParser.analyseFile(genPath)
-    products = productParser.getProducts().values()
-
-    print "products:"
-    prodList = MYOProdList(products)
-    print prodList.tabulate(tablefmt = 'simple')
-    # for product in products:
-        # print "%15s | %32s | %s" % (product.get('codesum', ''), product.get('item_name',''), product.get('descsum', ''))
-        # print "\t%128s\n" % product.get('descsum', '')
+# if __name__ == '__main__':
+#     print "Testing MYO script..."
+#     inFolder = "../input/"
+#     os.chdir('source')
+#
+#     genPath = os.path.join(inFolder, 'generator.csv')
+#
+#
+#     colData = ColData_MYO()
+#     productParser = CSVParse_MYO(
+#         cols = colData.getImportCols(),
+#         defaults = colData.getDefaults(),
+#     )
+#     productParser.analyseFile(genPath)
+#     products = productParser.getProducts().values()
+#
+#     print "products:"
+#     prodList = MYOProdList(products)
+#     print prodList.tabulate(tablefmt = 'simple')
+#     # for product in products:
+#         # print "%15s | %32s | %s" % (product.get('codesum', ''), product.get('item_name',''), product.get('descsum', ''))
+#         # print "\t%128s\n" % product.get('descsum', '')

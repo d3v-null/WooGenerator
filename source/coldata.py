@@ -1770,45 +1770,45 @@ class ColData_User(ColData_Base):
             exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
         return exportCols
 
-
-
-def testColDataMyo():
-    print "Testing ColData_MYO Class:"
-    colData = ColData_MYO()
-    print colData.getImportCols()
-    print colData.getDefaults()
-    print colData.getProductCols()
-
-def testColDataWoo():
-    print "Testing ColData_Woo class:"
-    colData = ColData_Woo()
-    print colData.getImportCols()
-    print colData.getDefaults()
-    print colData.getProductCols()
-
-def testColDataUser():
-    print "Testing ColData_User class:"
-    colData = ColData_User()
-    # print "importCols", colData.getImportCols()
-    # print "userCols", colData.getUserCols().keys()
-    # print "reportCols", colData.getReportCols().keys()
-    # print "capitalCols", colData.getCapitalCols().keys()
-    # print "syncCols", colData.getSyncCols().keys()
-    print "actCols", colData.getACTCols().keys()
-    # print "wpcols", colData.getWPCols().keys()
-    print "getWPTrackedCols", colData.getWPTrackedCols()
-    print "getACTTrackedCols", colData.getACTTrackedCols()
-    print "getACTFutureTrackedCols", colData.getACTFutureTrackedCols()
-
-def testTansyncDefaults():
-    colData = ColData_User()
-    print '{'
-    for col, data in colData.getTansyncDefaults().items():
-        print '"%s": %s,' % (col, json.dumps(data))
-    print '}'
-
-if __name__ == '__main__':
-    # testColDataMyo()
-    # testColDataWoo()
-    testColDataUser()
-    # testTansyncDefaults()
+# 
+#
+# def testColDataMyo():
+#     print "Testing ColData_MYO Class:"
+#     colData = ColData_MYO()
+#     print colData.getImportCols()
+#     print colData.getDefaults()
+#     print colData.getProductCols()
+#
+# def testColDataWoo():
+#     print "Testing ColData_Woo class:"
+#     colData = ColData_Woo()
+#     print colData.getImportCols()
+#     print colData.getDefaults()
+#     print colData.getProductCols()
+#
+# def testColDataUser():
+#     print "Testing ColData_User class:"
+#     colData = ColData_User()
+#     # print "importCols", colData.getImportCols()
+#     # print "userCols", colData.getUserCols().keys()
+#     # print "reportCols", colData.getReportCols().keys()
+#     # print "capitalCols", colData.getCapitalCols().keys()
+#     # print "syncCols", colData.getSyncCols().keys()
+#     print "actCols", colData.getACTCols().keys()
+#     # print "wpcols", colData.getWPCols().keys()
+#     print "getWPTrackedCols", colData.getWPTrackedCols()
+#     print "getACTTrackedCols", colData.getACTTrackedCols()
+#     print "getACTFutureTrackedCols", colData.getACTFutureTrackedCols()
+#
+# def testTansyncDefaults():
+#     colData = ColData_User()
+#     print '{'
+#     for col, data in colData.getTansyncDefaults().items():
+#         print '"%s": %s,' % (col, json.dumps(data))
+#     print '}'
+#
+# if __name__ == '__main__':
+#     # testColDataMyo()
+#     # testColDataWoo()
+#     testColDataUser()
+#     # testTansyncDefaults()

@@ -172,7 +172,7 @@ class ImportWooVariation(ImportWooProduct):
     def getParentProduct(self):
         return self.parentProduct
 
-    def isVariation(self): return True;
+    def isVariation(self): return True
 
 class ImportWooCompositeProduct(ImportWooProduct):
     product_type = 'composite'
@@ -306,7 +306,7 @@ class CSVParse_Woo(CSVParse_Gen):
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
                 dprcRules={}, dprpRules={}, specials={}, catMapping={}):
 
-        print ("catMapping woo pre: %s" % str(catMapping))
+        # print ("catMapping woo pre: %s" % str(catMapping))
 
         extra_cols = [ 'PA', 'VA', 'weight', 'length', 'width', 'height',
                     'stock', 'stock_status', 'Images', 'HTML Description',
@@ -752,7 +752,7 @@ class CSVParse_Woo(CSVParse_Gen):
                         for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                             discount = specialparams.get(tier)
                             if discount:
-                                print "discount is ", discount
+                                # print "discount is ", discount
                                 special_price = None
 
                                 percentages = SanitationUtils.findallPercent(discount)
@@ -840,7 +840,7 @@ class CSVParse_Woo(CSVParse_Gen):
             # print 'POST analysing product', itemData.codesum, itemData.namesum
 
         for index, objectData in self.getObjects().items():
-            print '%s POST' % objectData.getIdentifier()
+            # print '%s POST' % objectData.getIdentifier()
             self.postProcessDyns(objectData)
             self.postProcessCategories(objectData)
             self.postProcessImages(objectData)
@@ -968,59 +968,59 @@ class CSVParse_VT(CSVParse_Woo):
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials, catMapping)
 
-
-if __name__ == '__main__':
-    from coldata import ColData_Woo
-    colData = ColData_Woo()
-
-    print "Testing script..."
-    import os
-    os.chdir('source')
-
-    inFolder = "../input/"
-    genPath = inFolder + "generator.csv"
-
-    outFolder = "../output/"
-    prodPath = outFolder + 'products.csv'
-
-    importName = time.strftime("%Y-%m-%d %H:%M:%S")
-
-    WooParser = CSVParse_TT(
-        cols = colData.getImportCols(),
-        defaults = colData.getDefaults(),
-        importName = importName,
-        taxoDepth = 3,
-    )
-    WooParser.analyseFile(genPath)
-
-    prodList = WooProdList(WooParser.products.values())
-    print prodList.tabulate(tablefmt='simple')
-
-    # with open(prodPath, 'w+') as outFile:
-    #     cols = ['rowcount', 'codesum', 'itemsum', 'descsum', 'attributes']
-    #     dictwriter = csv.DictWriter(outFile, fieldnames=cols, extrasaction='ignore' )
-    #     dictwriter.writeheader()
-    #     dictwriter.writerows(WooParser.products.values())
-
-    # sort_keys = lambda (ka, va), (kb, vb): cmp(ka, kb)
-
-    # print "Categories:"
-    # for key, category in sorted(WooParser.categories.items(), sort_keys):
-    #     print "%15s | %s" % (category.get('codesum', ''), category.get('taxosum', ''))
-
-    # print "Products:"
-    # for product in WooParser.getProducts():
-    #     print "%15s | %s" % (product.get('codesum', ''), product.get('itemsum', '')), product.get('dprplist')
-
-    # print "Variations:"
-    # for sku, variation in WooParser.variations.items():
-    #     print "%15s | %s" % (sku, variation.get('itemsum', ''))
-
-    # print "Attributes"
-    # for attr, vals in WooParser.attributes.items():
-    #     print "%15s | %s" % (attr[:15], "|".join(map(str,vals)))
-
-    # for img, items in WooParser.images.items():
-    #         print "%s " % img
-    #         for item in items:
-    #             print " -> (%4d) %15s " % (item['rowcount'], item['codesum'])
+#
+# if __name__ == '__main__':
+#     from coldata import ColData_Woo
+#     colData = ColData_Woo()
+#
+#     print "Testing script..."
+#     import os
+#     os.chdir('source')
+#
+#     inFolder = "../input/"
+#     genPath = inFolder + "generator.csv"
+#
+#     outFolder = "../output/"
+#     prodPath = outFolder + 'products.csv'
+#
+#     importName = time.strftime("%Y-%m-%d %H:%M:%S")
+#
+#     WooParser = CSVParse_TT(
+#         cols = colData.getImportCols(),
+#         defaults = colData.getDefaults(),
+#         importName = importName,
+#         taxoDepth = 3,
+#     )
+#     WooParser.analyseFile(genPath)
+#
+#     prodList = WooProdList(WooParser.products.values())
+#     print prodList.tabulate(tablefmt='simple')
+#
+#     # with open(prodPath, 'w+') as outFile:
+#     #     cols = ['rowcount', 'codesum', 'itemsum', 'descsum', 'attributes']
+#     #     dictwriter = csv.DictWriter(outFile, fieldnames=cols, extrasaction='ignore' )
+#     #     dictwriter.writeheader()
+#     #     dictwriter.writerows(WooParser.products.values())
+#
+#     # sort_keys = lambda (ka, va), (kb, vb): cmp(ka, kb)
+#
+#     # print "Categories:"
+#     # for key, category in sorted(WooParser.categories.items(), sort_keys):
+#     #     print "%15s | %s" % (category.get('codesum', ''), category.get('taxosum', ''))
+#
+#     # print "Products:"
+#     # for product in WooParser.getProducts():
+#     #     print "%15s | %s" % (product.get('codesum', ''), product.get('itemsum', '')), product.get('dprplist')
+#
+#     # print "Variations:"
+#     # for sku, variation in WooParser.variations.items():
+#     #     print "%15s | %s" % (sku, variation.get('itemsum', ''))
+#
+#     # print "Attributes"
+#     # for attr, vals in WooParser.attributes.items():
+#     #     print "%15s | %s" % (attr[:15], "|".join(map(str,vals)))
+#
+#     # for img, items in WooParser.images.items():
+#     #         print "%s " % img
+#     #         for item in items:
+#     #             print " -> (%4d) %15s " % (item['rowcount'], item['codesum'])

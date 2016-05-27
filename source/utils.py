@@ -2493,12 +2493,16 @@ class Registrar(object):
     DEBUG_WARN = False
     DEBUG_MESSAGE = False
 
-    def __init__(self):
+    # def __init__(self):
         # self.objectIndexer = id
-        self.conflictResolver = self.passiveResolver
+        # self.conflictResolver = self.passiveResolver
         # self.DEBUG_ERROR = True
         # self.DEBUG_WARN = False
         # self.DEBUG_MESSAGE = False
+
+    @classmethod
+    def conflictResolver(self, *args):
+        pass
 
     def resolveConflict(self, new, old, index, registerName = ''):
         self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
@@ -2529,6 +2533,7 @@ class Registrar(object):
     def printAnything(self, index, thing, delimeter):
         print Registrar.stringAnything(index, thing, delimeter)
 
+    @classmethod
     def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
         if resolver is None: resolver = self.conflictResolver
         if indexer is None: indexer = self.objectIndexer
@@ -2557,6 +2562,7 @@ class Registrar(object):
                 register[index].append(thing)
         # print "registered", thing
 
+    @classmethod
     def registerError(self, error, data = None):
         if data:
             try:
@@ -2569,36 +2575,46 @@ class Registrar(object):
         if self.DEBUG_ERROR: Registrar.printAnything(index, error_string, '!')
         self.registerAnything(
             error_string,
-            self.errors,
+            Registrar.errors,
             index,
             singular = False,
             registerName = 'errors'
         )
 
+    @classmethod
     def registerWarning(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
         if self.DEBUG_WARN: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
-            self.warnings,
+            Registrar.warnings,
             source,
             singular = False,
             registerName = 'warnings'
         )
 
+    @classmethod
     def registerMessage(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
         if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
         self.registerAnything(
             message,
-            self.messages,
+            Registrar.messages,
             source,
             singular = False,
             registerName = 'messages'
         )
 
+    @classmethod
+    def getMessageItems(self, outPath, verbosity=0):
+        items = self.errors
+        if verbosity > 0:
+            items = listUtils.combineOrderedDicts(items, self.warnings)
+        if verbosity > 1:
+            items = listUtils.combineOrderedDicts(items, self.messages)
+        return items
 
 class ValidationUtils:
     @staticmethod
