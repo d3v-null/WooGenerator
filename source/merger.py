@@ -191,7 +191,8 @@ if args:
         DEBUG_ERROR = True
     if args.verbosity > 1:
         DEBUG = True
-    testMode = args.testmode
+    if args.testmode is not None:
+        testMode = args.testmode
     if args.download_slave is not None:
         download_slave = args.download_slave
     if args.download_master is not None:
@@ -933,6 +934,8 @@ if allUpdates:
 
 def outputFailures(failures, filePath):
     with open(filePath, 'w+') as outFile:
+        for failure in failures:
+            Registrar.registerError(failure)
         dictwriter = unicodecsv.DictWriter(
             outFile,
             fieldnames = ['update', 'master', 'slave', 'mchanges', 'schanges', 'exception'],
@@ -944,10 +947,17 @@ def outputFailures(failures, filePath):
 outputFailures(masterFailures, mFailPath)
 outputFailures(slaveFailures, sFailPath)
 
-for source, messages in Registrar.getMessageItems(None, 1).items():
-    print source
-    for message in messages:
-        pprint( message, indent=4, width=80, depth=2)
+# Registrar.registerError('testing errors')
+
+with io.open(logPath, 'w+', encoding='utf8') as logFile:
+    for source, messages in Registrar.getMessageItems(None, 2).items():
+        print source
+        logFile.writeline(SanitationUtils.coerceUnicode(source))
+        logFile.writelines(
+            [SanitationUtils.coerceUnicode(message) for message in messages]
+        )
+        for message in messages:
+            pprint( message, indent=4, width=80, depth=2)
 
 # if __name__ == '__main__':
 #     main()

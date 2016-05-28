@@ -26,7 +26,7 @@ class testSyncUpdate(TestCase):
 
         SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
-        FieldGroup.performPost = True
+        # FieldGroup.performPost = True
         FieldGroup.DEBUG_WARN = True
         FieldGroup.DEBUG_MESSAGE = True
         FieldGroup.DEBUG_ERROR = True
@@ -334,6 +334,7 @@ class testSyncUpdate(TestCase):
         print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
         print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
         print syncUpdate.tabulate(tablefmt='simple')
+        print syncUpdate.getMasterUpdates()
 
     def test_similarURL(self):
         syncUpdate = SyncUpdate(self.usrMD4, self.usrSD4)
@@ -352,7 +353,7 @@ class testSyncUpdate(TestCase):
 if __name__ == '__main__':
     # main()
     doubleNameTestSuite = unittest.TestSuite()
-    doubleNameTestSuite.addTest(testSyncUpdate('test_similarURL'))
+    doubleNameTestSuite.addTest(testSyncUpdate('test_doubleNames2'))
     unittest.TextTestRunner().run(doubleNameTestSuite)
     # result = unittest.TestResult()
     # result = doubleNameTestSuite.run(result)
