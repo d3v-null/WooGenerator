@@ -880,8 +880,8 @@ class ColData_User(ColData_Base):
         ('Contact', {
             'import':True,
             'wp': {
-                'meta': True,
-                'key': 'nickname'
+                'meta': False,
+                'key': 'display_name'
             },
             'act': True,
             'mutable':True,
@@ -979,7 +979,7 @@ class ColData_User(ColData_Base):
         ('Salutation', {
             'wp': {
                 'meta': True,
-                'key': 'salutation'
+                'key': 'nickname'
             },
             'act': True,
             'import': True,
@@ -1770,7 +1770,7 @@ class ColData_User(ColData_Base):
             exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
         return exportCols
 
-# 
+#
 #
 # def testColDataMyo():
 #     print "Testing ColData_MYO Class:"

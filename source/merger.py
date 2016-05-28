@@ -183,6 +183,7 @@ group.add_argument('--skip-post', help='don\'t post process the contacts',
 
 parser.add_argument('--m-ssh-host', help='location of master ssh server')
 parser.add_argument('--m-ssh-port', type=int, help='location of master ssh port')
+parser.add_argument('--limit', type=int, help='global limit of objects to process')
 args = parser.parse_args()
 if args:
     print args
@@ -211,6 +212,7 @@ if args:
         m_ssh_port = args.m_ssh_port
     if args.m_ssh_host:
         m_ssh_host = args.m_ssh_host
+    global_limit = args.limit
 
 
 
@@ -237,7 +239,6 @@ if DEBUG:
 
 ### PROCESS CLASS PARAMS ###
 
-global_limit = None
 FieldGroup.do_post = do_post
 SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 TimeUtils.setWpSrvOffset(wp_srv_offset)
@@ -458,6 +459,7 @@ masterUpdates = []
 slaveUpdates = []
 mDeltaUpdates = []
 sDeltaUpdates = []
+emailConflictMatches = MatchList()
 
 def denyAnomalousMatchList(matchListType, anomalousMatchList):
     try:
@@ -550,11 +552,25 @@ if do_sync:
 
         # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
-        if syncUpdate.mUpdated and syncUpdate.mDeltas:
-            insort(mDeltaUpdates, syncUpdate)
+        # if syncUpdate.mUpdated and syncUpdate.mDeltas:
+        #     insort(mDeltaUpdates, syncUpdate)
+        #
+        # if syncUpdate.sUpdated and syncUpdate.sDeltas:
+        #     insort(sDeltaUpdates, syncUpdate)
 
-        if syncUpdate.sUpdated and syncUpdate.sDeltas:
-            insort(sDeltaUpdates, syncUpdate)
+        if not syncUpdate:
+            continue
+
+        if syncUpdate.sUpdated:
+            syncSlaveUpdates = syncUpdate.getSlaveUpdates()
+            if 'E-mail' in syncSlaveUpdates:
+                newEmail = syncSlaveUpdates['E-mail']
+                if newEmail in saParser.emails:
+                    mObjects = [mObject]
+                    sObjects = [sObject] + saParser.emails[newEmail]
+                    print "duplicate emails", mObjects, sObjects
+                    emailConflictMatches.addMatch(Match(mObjects, sObjects))
+
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
@@ -810,6 +826,19 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
                 )
             )
 
+        data = emailConflictMatches.tabulate(tablefmt="html")
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                "email conflicts",
+                **{
+                    # 'title': matchlistType.title(),
+                    'description': "email conflicts",
+                    'data': data,
+                    'length': len(emailConflictMatches)
+                }
+            )
+        )
+
         # print debugUtils.hashify("anomalous ParseLists: ")
 
         parseListInstructions = {
@@ -952,7 +981,7 @@ outputFailures(slaveFailures, sFailPath)
 with io.open(logPath, 'w+', encoding='utf8') as logFile:
     for source, messages in Registrar.getMessageItems(None, 2).items():
         print source
-        logFile.writeline(SanitationUtils.coerceUnicode(source))
+        logFile.writelines([SanitationUtils.coerceUnicode(source)])
         logFile.writelines(
             [SanitationUtils.coerceUnicode(message) for message in messages]
         )
