@@ -562,22 +562,16 @@ if do_sync:
         if not syncUpdate:
             continue
 
-        if syncUpdate.MYOBID == 'C000007':
-            print "found C000007", syncUpdate.tabulate()
 
         if syncUpdate.sUpdated:
             syncSlaveUpdates = syncUpdate.getSlaveUpdates()
-            if syncUpdate.MYOBID == 'C000007':
-                print syncSlaveUpdates
             if 'E-mail' in syncSlaveUpdates:
                 newEmail = syncSlaveUpdates['E-mail']
-                print "updating slave email: ", newEmail
                 if newEmail in saParser.emails:
                     mObjects = [mObject]
                     sObjects = [sObject] + saParser.emails[newEmail]
-                    print "duplicate emails", mObjects, sObjects
+                    SanitationUtils.safePrint("duplicate emails", mObjects, sObjects)
                     emailConflictMatches.addMatch(Match(mObjects, sObjects))
-
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):
@@ -937,9 +931,9 @@ if allUpdates:
         for count, update in enumerate(allUpdates):
             if DEBUG_PROGRESS:
                 updateProgressCounter.maybePrintUpdate(count)
-            if update.WPID == '1':
-                print repr(update.WPID)
-                continue
+            # if update.WPID == '1':
+            #     print repr(update.WPID)
+            #     continue
             if update_master and update.mUpdated :
                 try:
                     update.updateMaster(masterClient)
