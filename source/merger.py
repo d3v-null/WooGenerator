@@ -70,6 +70,7 @@ srcFolder = "../source/"
 pklFolder = "../pickles/"
 remoteExportFolder = "act_usr_exp"
 
+#TODO: if last dir is not source and source is in cwd then chdir
 os.chdir('source')
 
 yamlPath = "merger_config.yaml"
@@ -561,10 +562,16 @@ if do_sync:
         if not syncUpdate:
             continue
 
+        if syncUpdate.MYOBID == 'C000007':
+            print "found C000007", syncUpdate.tabulate()
+
         if syncUpdate.sUpdated:
             syncSlaveUpdates = syncUpdate.getSlaveUpdates()
+            if syncUpdate.MYOBID == 'C000007':
+                print syncSlaveUpdates
             if 'E-mail' in syncSlaveUpdates:
                 newEmail = syncSlaveUpdates['E-mail']
+                print "updating slave email: ", newEmail
                 if newEmail in saParser.emails:
                     mObjects = [mObject]
                     sObjects = [sObject] + saParser.emails[newEmail]
@@ -637,7 +644,7 @@ with io.open(resPath, 'w+', encoding='utf8') as resFile:
     #     ('Edited Alt Address', {}),
     # ]))
     # print repr(basic_colnames)
-    unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values() )
+    unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
     # print repr(unicode_colnames)
     # WPCsvWriter = DictWriter(WPresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
     # WPCsvWriter.writeheader()
@@ -979,7 +986,7 @@ outputFailures(slaveFailures, sFailPath)
 # Registrar.registerError('testing errors')
 
 with io.open(logPath, 'w+', encoding='utf8') as logFile:
-    for source, messages in Registrar.getMessageItems(None, 2).items():
+    for source, messages in Registrar.getMessageItems(None, 1).items():
         print source
         logFile.writelines([SanitationUtils.coerceUnicode(source)])
         logFile.writelines(

@@ -18,9 +18,6 @@ class testUsrSyncClient(TestCase):
         importName = TimeUtils.getMsTimeStamp()
         inFolder = "../input/"
         outFolder = "../output/"
-        logFolder = "../logs/"
-        srcFolder = "../source/"
-        pklFolder = "../pickles/"
         remoteExportFolder = "act_usr_exp"
 
         with open(yamlPath) as stream:
@@ -171,5 +168,5 @@ class testUsrSyncClient(TestCase):
 if __name__ == '__main__':
     # main()
     sshTestSuite = unittest.TestSuite()
-    sshTestSuite.addTest(testUsrSyncClient('test_SSH_download'))
+    sshTestSuite.addTest(testUsrSyncClient('test_JSON_Upload_bad'))
     unittest.TextTestRunner().run(sshTestSuite)

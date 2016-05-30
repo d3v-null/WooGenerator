@@ -547,16 +547,14 @@ class SyncUpdate(Registrar):
 
         return out_str
 
-    def getSlaveUpdatesRecursive(self, col, updates=None):
+    def getSlaveUpdatesWPColRecursive(self, col, updates=None):
         if updates == None: updates = {}
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
         if col in ColData_User.data.keys():
             data = ColData_User.data[col]
             if data.get('wp'):
                 data_wp = data.get('wp',{})
-                if data_wp.get('meta'):
-                    updates[data_wp.get('key')] = self.newSObject.get(col)
-                elif not data_wp.get('final'):
+                if not data_wp.get('final') and data_wp.get('key'):
                     updates[data_wp.get('key')] = self.newSObject.get(col)
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
@@ -570,9 +568,42 @@ class SyncUpdate(Registrar):
                         # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % ( col, alias, self.newSObject.get(alias), self.oldSObject.get(alias)) )
                     #if the new value is not the same as the old value
                     # SanitationUtils.safePrint("pre:", updates)
-                    updates = self.getSlaveUpdatesRecursive(alias, updates)
+                    updates = self.getSlaveUpdatesWPColRecursive(alias, updates)
                     # SanitationUtils.safePrint("post:", updates)
         # SanitationUtils.safePrint("returning updates for col %s : %s" % (col, str(updates)))
+        return updates
+
+    def getSlaveUpdatesWPCol(self):
+        updates = {}
+        for col, warnings in self.syncWarnings.items():
+            for warning in warnings:
+                subject = warning['subject']
+                if subject == self.opposite_src(self.slave_name):
+                    updates = self.getSlaveUpdatesWPColRecursive(col, updates)
+        return updates
+
+    def getSlaveUpdatesRecursive(self, col, updates=None):
+        if updates == None: updates = {}
+        if col in ColData_User.data:
+            data = ColData_User.data[col]
+            if data.get('wp'):
+                data_wp = data.get('wp',{})
+                if not data_wp.get('final') and data_wp.get('key'):
+                    updates[col] = self.newMObject.get(col)
+            if data.get('aliases'):
+                data_aliases = data['aliases']
+                for alias in data_aliases:
+                    if \
+                      SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
+                      SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
+                        continue
+                    # else:
+                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
+
+                    #if the new value is not the same as the old value
+                    updates = self.getSlaveUpdatesRecursive(alias, updates)
+                    # SanitationUtils.safePrint(updates)
         return updates
 
     def getSlaveUpdates(self):
@@ -632,7 +663,7 @@ class SyncUpdate(Registrar):
     #     deltas = []
     #     dbCols = ColData_User.getAllWPDBCols()
     #     # print "doing deltas: ", deltaCols
-    #     for col, update in self.getSlaveUpdates().items():
+    #     for col, update in self.getSlaveUpdatesWPCol().items():
     #         # print "S",col
     #         if col in dbCols and dbCols.get(col) in deltaCols:
     #             deltas += [dbCols.get(col)]
@@ -660,7 +691,7 @@ class SyncUpdate(Registrar):
                 user_pkey = None
                 return info_delimeter.join(print_elements)
 
-            updates = self.getSlaveUpdates()
+            updates = self.getSlaveUpdatesWPCol()
             additional_updates = OrderedDict()
             if user_pkey:
                 additional_updates['ID'] = user_pkey
@@ -734,7 +765,7 @@ class SyncUpdate(Registrar):
 
     def updateSlave(self, client):
             # SanitationUtils.safePrint(  self.displaySlaveChanges() )
-        updates = self.getSlaveUpdates()
+        updates = self.getSlaveUpdatesWPCol()
         if not updates:
             return
 
