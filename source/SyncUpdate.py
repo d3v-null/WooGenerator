@@ -589,7 +589,7 @@ class SyncUpdate(Registrar):
             if data.get('wp'):
                 data_wp = data.get('wp',{})
                 if not data_wp.get('final') and data_wp.get('key'):
-                    updates[col] = self.newMObject.get(col)
+                    updates[col] = self.newSObject.get(col)
             if data.get('aliases'):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
