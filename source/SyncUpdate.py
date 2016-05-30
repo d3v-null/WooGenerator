@@ -141,17 +141,19 @@ class SyncUpdate(Registrar):
     def getSValue(self, col):
         return self.sanitizeValue(col, self.oldSObject.get(col) or "")
 
-    def colIdentical(self, col):
-        mValue = self.getMValue(col)
-        # print "-> mValue", mValue
-        sValue = self.getSValue(col)
-        # print "-> sValue", sValue
-        return mValue == sValue
+    def getNewMValue(self, col):
+        if self.newMObject:
+            return self.sanitizeValue(col, self.newMObject.get(col) or "")
+        else:
+            return self.getMValue(col)
 
-    def colSimilar(self, col):
-        # print "-> comparing ", col
-        mValue = self.getMValue(col)
-        sValue = self.getSValue(col)
+    def getNewSValue(self, col):
+        if self.newSObject:
+            return self.sanitizeValue(col, self.newSObject.get(col) or "")
+        else:
+            return self.getSValue(col)
+
+    def valuesSimilar(self, col, mValue, sValue):
         if not (mValue or sValue):
             return True
         elif not (mValue and sValue):
@@ -191,8 +193,22 @@ class SyncUpdate(Registrar):
         else:
             if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
                 return True
-
         return False
+
+    def colIdentical(self, col):
+        mValue = self.getMValue(col)
+        sValue = self.getSValue(col)
+        return mValue == sValue
+
+    def colSimilar(self, col):
+        mValue = self.getMValue(col)
+        sValue = self.getSValue(col)
+        return self.valuesSimilar(col, mValue, sValue)
+
+    def newColIdentical(self, col):
+        mValue = self.getNewMValue(col)
+        sValue = self.getNewSValue(col)
+        return mValue == sValue
 
     def addProblematicUpdate(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
@@ -559,18 +575,9 @@ class SyncUpdate(Registrar):
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
-                    if \
-                      SanitationUtils.coerceUnicode(self.newSObject.get(alias)) == \
-                      SanitationUtils.coerceUnicode(self.oldSObject.get(alias)):
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % ( col, alias, self.newSObject.get(alias), self.oldSObject.get(alias)) )
+                    if self.newColIdentical(alias):
                         continue
-                    # else:
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % ( col, alias, self.newSObject.get(alias), self.oldSObject.get(alias)) )
-                    #if the new value is not the same as the old value
-                    # SanitationUtils.safePrint("pre:", updates)
                     updates = self.getSlaveUpdatesWPColRecursive(alias, updates)
-                    # SanitationUtils.safePrint("post:", updates)
-        # SanitationUtils.safePrint("returning updates for col %s : %s" % (col, str(updates)))
         return updates
 
     def getSlaveUpdatesWPCol(self):
@@ -593,17 +600,9 @@ class SyncUpdate(Registrar):
             if data.get('aliases'):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
-                    if \
-                      SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
-                      SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
+                    if self.newColIdentical(alias):
                         continue
-                    # else:
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
-
-                    #if the new value is not the same as the old value
                     updates = self.getSlaveUpdatesRecursive(alias, updates)
-                    # SanitationUtils.safePrint(updates)
         return updates
 
     def getSlaveUpdates(self):
@@ -624,17 +623,9 @@ class SyncUpdate(Registrar):
             if data.get('aliases'):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
-                    if \
-                      SanitationUtils.coerceUnicode(self.newMObject.get(alias)) == \
-                      SanitationUtils.coerceUnicode(self.oldMObject.get(alias)):
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
+                    if self.newColIdentical(alias):
                         continue
-                    # else:
-                        # SanitationUtils.safePrint( "aliases [%s->%s] are not the same: %s | %s" % (col, alias, self.newMObject.get(alias), self.oldMObject.get(alias)) )
-
-                    #if the new value is not the same as the old value
                     updates = self.getMasterUpdatesRecursive(alias, updates)
-                    # SanitationUtils.safePrint(updates)
         return updates
 
     def getMasterUpdates(self):
@@ -645,33 +636,6 @@ class SyncUpdate(Registrar):
                 if subject == self.opposite_src(self.master_name):
                     updates = self.getMasterUpdatesRecursive(col, updates)
         return updates
-
-    # def mDeltas(self, deltaCols):
-    #     deltas = []
-    #     # print "doing deltas: ", deltaCols
-    #     for col, update in self.getMasterUpdates().items():
-    #         # print "M",col
-    #         if col in deltaCols:
-    #             deltas += [col]
-    #             deltaCol = deltaCols.get(col)
-    #             oldLoserValue = self.oldMObject.get(col)
-    #             # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
-    #             self.newMObject[deltaCol] = oldLoserValue
-    #     return deltas
-    #
-    # def sDeltas(self, deltaCols):
-    #     deltas = []
-    #     dbCols = ColData_User.getAllWPDBCols()
-    #     # print "doing deltas: ", deltaCols
-    #     for col, update in self.getSlaveUpdatesWPCol().items():
-    #         # print "S",col
-    #         if col in dbCols and dbCols.get(col) in deltaCols:
-    #             deltas += [dbCols.get(col)]
-    #             deltaCol = deltaCols.get(dbCols.get(col))
-    #             oldLoserValue = self.oldSObject.get(dbCols.get(col))
-    #             # print "newMObject[{0}] = {1}".format(deltaCol, oldLoserValue)
-    #             self.newSObject[deltaCol] = oldLoserValue
-    #     return deltas
 
     def displaySlaveChanges(self, tablefmt=None):
         if self.syncWarnings:
