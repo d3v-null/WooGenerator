@@ -246,13 +246,18 @@ class ImportUser(ImportFlat):
             **social_media_kwargs
         )
 
-        emails = SanitationUtils.findallEmails(data['E-mail'])
+        emails = []
+        if data.get('E-mail'):
+            emails = listUtils.combineLists(emails, SanitationUtils.findallEmails(data['E-mail']))
         if data.get('Personal E-mail'):
             emails = listUtils.combineLists(emails, SanitationUtils.findAllImages(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
         self['Personal E-mail'] = ', '.join(emails)
 
-        urls = SanitationUtils.findallURLs(data['Web Site'])
+        urls = []
+        if data.get('Web Site'):
+            urls = SanitationUtils.combineLists(urls,
+                                                SanitationUtils.findallURLs(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
