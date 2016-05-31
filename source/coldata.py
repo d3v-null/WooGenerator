@@ -789,6 +789,7 @@ class ColData_User(ColData_Base):
             'static':True,
             'basic':True,
         }),
+
         ('E-mail', {
             'wp': {
                 'meta': False,
@@ -1348,19 +1349,6 @@ class ColData_User(ColData_Base):
             'visible':True,
         }),
 
-
-        ('Web Site', {
-            'wp': {
-                'meta': False,
-                'key': 'user_url'
-            },
-            'act':True,
-            'label': 'user_url',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'tracked':True,
-        }),
         ('ABN', {
             'wp': {
                 'meta': True,
@@ -1411,6 +1399,10 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
         }),
+
+        # ('E-mails', {
+        #     'aliases': ['E-mail', 'Personal E-mail']
+        # }),
         ('Personal E-mail', {
             'wp': {
                 'meta': True,
@@ -1473,7 +1465,9 @@ class ColData_User(ColData_Base):
         ('Social Media', {
             'sync':True,
             'aliases':['Facebook Username', 'Twitter Username',
-                       'GooglePlus Username', 'Instagram Username'],
+                       'GooglePlus Username', 'Instagram Username',
+                       ],
+                    #    'Web Site'],
             'tracked':True,
         }),
 
@@ -1521,6 +1515,19 @@ class ColData_User(ColData_Base):
             'import':True,
             'act':True,
         }),
+        ('Web Site', {
+            'wp': {
+                'meta': False,
+                'key': 'user_url'
+            },
+            'act':True,
+            'label': 'user_url',
+            'import':True,
+            'user':True,
+            'sync':True,
+            'tracked':True,
+        }),
+
         ("Added to mailing list", {
             'wp': {
                 'key': 'mailing_list',

@@ -33,6 +33,7 @@ DEBUG_NAME = False
 
 class SanitationUtils:
     email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
+    url_regex = r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
     cell_email_regex = r"^%s$" % email_regex
     myobid_regex = r"C\d+"
     punctuationChars = [
@@ -45,6 +46,9 @@ class SanitationUtils:
     ]
     allowedPunctuation = [
         r'\-', r'\.', r'\''
+    ]
+    allowedPhonePunctuation = [
+        r'\-', r'\.', r'(', r')', r'\+'
     ]
     disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
     whitespaceChars = [ r' ', r'\t', r'\r', r'\n', 'r\f']
@@ -69,6 +73,7 @@ class SanitationUtils:
     nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
     #not a delimeter except space (no whitespace except space, no disallowed punc)
     nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
+    disallowedPhoneCharRegex = r"[^%s]" % "".join(allowedPhonePunctuation + [r'\d'])
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
@@ -305,25 +310,30 @@ class SanitationUtils:
 
     @staticmethod
     def stripNonNumbers(string):
-        str_out = re.sub('[^\d]', '', string)
+        str_out = re.sub(r'[^\d]', '', string)
         if DEBUG: print "stripNonNumbers", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
+    def stripNonPhoneCharacters(string):
+        str_out = re.sub(SanitationUtils.disallowedPhoneCharRegex, '', string)
+        return str_out
+
+    @staticmethod
     def stripPunctuation(string):
-        str_out = re.sub('[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
+        str_out = re.sub(r'[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
         if DEBUG: print "stripPunctuation", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAreaCode(string):
-        str_out = re.sub('\s*\+\d{2,3}\s*','', string)
+        str_out = re.sub(r'\s*\+\d{2,3}\s*','', string)
         if DEBUG: print "stripAreaCode", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripURLProtocol(string):
-        str_out = re.sub("^\w+://", "", string)
+        str_out = re.sub(r"^\w+://", "", string)
         if DEBUG: print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
@@ -395,6 +405,7 @@ class SanitationUtils:
         return SanitationUtils.compose(
             SanitationUtils.stripNonNumbers,
             SanitationUtils.stripAreaCode,
+            SanitationUtils.stripNonPhoneCharacters,
             SanitationUtils.coerceUnicode
         )(string)
 
@@ -439,31 +450,51 @@ class SanitationUtils:
 
     @staticmethod
     def findAllImages(instring):
-        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
-        if not isinstance(instring, unicode):
-            instring = instring.decode('utf-8')
+        # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        # if not isinstance(instring, unicode):
+            # instring = instring.decode('utf-8')
+        instring = SanitationUtils.coerceUnicode(instring)
         return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',instring)
 
     @staticmethod
     def findAllTokens(instring, delim = "|"):
-        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
-        if not isinstance(instring, unicode):
-            instring = instring.decode('utf-8')
+        # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        # if not isinstance(instring, unicode):
+            # instring = instring.decode('utf-8')
+        instring = SanitationUtils.coerceUnicode(instring)
         return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring )
 
     @staticmethod
     def findallDollars(instring):
-        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
-        if not isinstance(instring, unicode):
-            instring = instring.decode('utf-8')
+        # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        # if not isinstance(instring, unicode):
+            # instring = instring.decode('utf-8')
+        instring = SanitationUtils.coerceUnicode(instring)
         return re.findall(r"\s*\$([\d,]+\.?\d*)", instring)
 
     @staticmethod
     def findallPercent(instring):
-        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
-        if not isinstance(instring, unicode):
-            instring = instring.decode('utf-8')
+        # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        # if not isinstance(instring, unicode):
+            # instring = instring.decode('utf-8')
+        instring = SanitationUtils.coerceUnicode(instring)
         return re.findall(r"\s*(\d+\.?\d*)%", instring)
+
+    @staticmethod
+    def findallEmails(instring):
+        instring = SanitationUtils.coerceUnicode(instring)
+        return re.findall(
+            SanitationUtils.wrapClearRegex( SanitationUtils.email_regex ),
+            instring
+        )
+
+    @staticmethod
+    def findallURLs(instring):
+        instring = SanitationUtils.coerceUnicode(instring)
+        return re.findall(
+            '(' + SanitationUtils.url_regex + ')',
+            instring
+        )
 
     @staticmethod
     def titleSplitter(instring):

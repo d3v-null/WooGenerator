@@ -566,7 +566,6 @@ if do_sync:
         if not syncUpdate:
             continue
 
-
         if syncUpdate.sUpdated:
             syncSlaveUpdates = syncUpdate.getSlaveUpdates()
             if 'E-mail' in syncSlaveUpdates:

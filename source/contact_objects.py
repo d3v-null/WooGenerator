@@ -1343,7 +1343,11 @@ class ContactPhones(FieldGroup):
         'tel_pref'  : ['Phone Preferred'],
     }
 
-    #todo: test if pref number then number exist
+    def __init__(self, schema=None, **kwargs):
+        for key, value in kwargs.items():
+            if '_number' in key:
+                kwargs[key] = SanitationUtils.stripNonPhoneCharacters(value)
+        super(ContactPhones, self).__init__(**kwargs)
 
     mob_number = descriptorUtils.kwargAliasProperty(
         'mob_number',
@@ -1394,7 +1398,7 @@ class ContactPhones(FieldGroup):
 
     def __str__(self, tablefmt = None):
         return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
-# 
+#
 # def testContactNumber():
 #     numbers = ContactPhones(
 #         mob_number = '0416160912',
@@ -1408,14 +1412,25 @@ class ContactPhones(FieldGroup):
 
 class SocialMediaFields(FieldGroup):
     fieldGroupType = "SOCIALMEDIA"
-    equality_keys = ['facebook', 'twitter', 'instagram', 'gplus']
+    equality_keys = ['facebook', 'twitter', 'instagram', 'gplus']#, 'website']
     similarity_keys = equality_keys[:]
     key_mappings = {
         'facebook': ['Facebook Username'],
         'twitter': ['Twitter Username'],
         'gplus': ['GooglePlus Username'],
-        'instagram': ['Instagram Username']
+        'instagram': ['Instagram Username'],
+        # 'website': ['Web Site']
     }
+
+    def __init__(self, schema=None, **kwargs):
+        super(SocialMediaFields, self).__init__(**kwargs)
+        if self.performPost:
+            self.processKwargs()
+
+    def processKwargs(self):
+        if not self.empty:
+            for key, value in self.kwargs.items():
+                self.properties[key] = value
 
     #todo: test if pref number then number exist
 
@@ -1439,6 +1454,11 @@ class SocialMediaFields(FieldGroup):
         lambda self: self.properties.get('instagram')
     )
 
+    # website = descriptorUtils.kwargAliasProperty(
+    #     'website',
+    #     lambda self: self.properties.get('website')
+    # )
+
     def __unicode__(self, tablefmt=None):
         prefix = self.getPrefix() if self.debug else ""
         delimeter = "; "
@@ -1447,10 +1467,12 @@ class SocialMediaFields(FieldGroup):
             self.twitter,
             self.gplus,
             self.instagram,
+            # self.website,
         ])))
 
     def __str__(self, tablefmt = None):
         return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
+
 
 #
 # def testSocialMediaGroup():
@@ -1467,13 +1489,6 @@ class SocialMediaFields(FieldGroup):
 #     FieldGroup.performPost = True
 #     FieldGroup.DEBUG_WARN = True
 #     FieldGroup.DEBUG_MESSAGE = True
-#
-#     address = ContactAddress(
-#         line1 = "SHOP G33Q, BAYSIDE SHOPPING CENTRE"
-#     )
-
-    # self.assertTrue(address.valid)
-
     # testContactAddress()
     # testcontactNameEquality()
     # testContactNumber()

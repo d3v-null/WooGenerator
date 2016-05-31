@@ -1,8 +1,9 @@
 from os import sys, path
+import unittest
+from unittest import TestCase, main, skip
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from unittest import TestCase, main, skip
 from source.contact_objects import *
 
 class testFieldGroups(TestCase):
@@ -538,5 +539,25 @@ class testContactName(testFieldGroups):
 
         print name.__deepcopy__()
 
+class testSocialMediaGroup(testFieldGroups):
+    def test_print(self):
+        sm = SocialMediaFields(
+            facebook = 'facebook',
+            twitter = '@twitter',
+            gplus = '+gplus',
+            instagram = '@insta',
+            # website = 'http://www.google.com'
+        )
+
+        # self.assertEqual(sm['Web Site'], 'http://www.google.com')
+        self.assertEqual(sm['Facebook Username'], 'facebook')
+        self.assertEqual(sm['Twitter Username'], '@twitter')
+        self.assertEqual(sm['GooglePlus Username'], '+gplus')
+        self.assertEqual(sm['Instagram Username'], '@insta')
+
 if __name__ == '__main__':
-    main()
+    # main()
+
+    testSuite = unittest.TestSuite()
+    testSuite.addTest(testSocialMediaGroup('test_print'))
+    unittest.TextTestRunner().run(testSuite)

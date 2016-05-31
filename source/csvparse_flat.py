@@ -85,6 +85,7 @@ class ImportUser(ImportFlat):
 
     WPID = descriptorUtils.safeKeyProperty('Wordpress ID')
     email = descriptorUtils.safeKeyProperty('E-mail')
+    # emails = descriptorUtils.safeKeyProperty('E-mails')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
@@ -102,7 +103,10 @@ class ImportUser(ImportFlat):
                  'Name Suffix', 'Company', 'Memo', 'Contact'],
         'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
         'Social Media': ['Facebook Username', 'Twitter Username',
-                         'GooglePlus Username', 'Instagram Username'],
+                         'GooglePlus Username', 'Instagram Username',
+                         ],
+                        #  'Web Site'],
+        # 'E-mails': ['E-mail', 'Personal E-mail']
     }
 
     @property
@@ -138,6 +142,18 @@ class ImportUser(ImportFlat):
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
+        # emails_kwargs = OrderedDict(filter(None, [\
+        #     ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        #     {
+        #         'email'         : 'E-mail',
+        #         'personal_email': 'Personal E-mail',
+        #     }.items()
+        # ]))
+        #
+        # self['E-mails'] = EmailFields(
+        #     **emails_kwargs
+        # )
+
         name_kwargs = OrderedDict(filter(None, [\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
             {
@@ -221,13 +237,28 @@ class ImportUser(ImportFlat):
                 'facebook': 'Facebook Username',
                 'twitter': 'Twitter Username',
                 'gplus': 'GooglePlus Username',
-                'instagram': 'Instagram Username'
+                'instagram': 'Instagram Username',
+                'website': 'Web Site',
             }.items()
         ]))
 
         self['Social Media'] = SocialMediaFields(
             **social_media_kwargs
         )
+
+        emails = SanitationUtils.findallEmails(data['E-mail'])
+        if data.get('Personal E-mail'):
+            emails = listUtils.combineLists(emails, SanitationUtils.findAllImages(data.get('Personal E-mail')))
+        self['E-mail'] = emails.pop(0) if emails else None
+        self['Personal E-mail'] = ', '.join(emails)
+
+        urls = SanitationUtils.findallURLs(data['Web Site'])
+        self['Web Site'] = urls.pop()
+
+        # if not self['Emails'].valid:
+        #     self['emails_reason'] = '\n'.join(filter(None, [
+        #         self['Emails'].reason,
+        #     ]))
 
         if not self['Address'].valid or not self['Home Address'].valid:
             self['address_reason'] = '\n'.join(filter(None, [
@@ -243,6 +274,11 @@ class ImportUser(ImportFlat):
         if not self['Phone Numbers'].valid:
             self['phone_reason'] = '\n'.join(filter(None, [
                 self['Phone Numbers'].reason,
+            ]))
+
+        if not self['Social Media'].valid:
+            self['social_reason'] = '\n'.join(filter(None, [
+                self['Social Media'].reason,
             ]))
 
     def refreshContactObjects(self):
@@ -365,6 +401,7 @@ class CSVParse_User(CSVParse_Flat):
         self.filtered = OrderedDict()
         self.badName = OrderedDict()
         self.badAddress = OrderedDict()
+        self.badEmail = OrderedDict()
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)
@@ -477,6 +514,15 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'badname'
         )
 
+    def registerBadEmail(self, objectData, name):
+        self.registerAnything(
+            objectData,
+            self.badEmail,
+            objectData.index,
+            singular = True,
+            registerName = 'bademail'
+        )
+
     def validateFilters(self, objectData):
         if self.filterItems:
             if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']:
@@ -548,6 +594,11 @@ class CSVParse_User(CSVParse_Flat):
             assert reason, "there must be a reason that this name is invalid: " + name
             # print "registering bad name: ", SanitationUtils.coerceBytes(name)
             self.registerBadName(objectData, name)
+
+        emails = objectData.emails
+        if not emails.valid:
+            reason = emails.reason
+            self.registerBadEmail(objectData, emails)
 
         super(CSVParse_User, self).registerObject(objectData)
 

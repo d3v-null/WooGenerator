@@ -26,13 +26,22 @@ class testSanitationUtils(TestCase):
         self.assertEqual(SanitationUtils.similarURLComparison(url1), url2)
         self.assertEqual(SanitationUtils.similarURLComparison(url2), url2)
 
+    def test_findallEmails(self):
+        email1 = "derwentx@gmail.com archive"
+        self.assertItemsEqual( SanitationUtils.findallEmails(email1),
+                              [u'derwentx@gmail.com'])
+        email2 = "derwentx@gmail.com derwent@laserphile.com"
+        self.assertItemsEqual( SanitationUtils.findallEmails(email2),
+                              [u'derwentx@gmail.com', 'derwent@laserphile.com'])
+
+    def test_findUrl(self):
+        url1 = "http://www.laserphile.com/ lol"
+        self.assertItemsEqual(
+            SanitationUtils.findallURLs(url1),
+            ['http://www.laserphile.com/'])
 
 if __name__ == '__main__':
     main()
     # doubleNameTestSuite = unittest.TestSuite()
     # doubleNameTestSuite.addTest(testSyncUpdate('test_similarURL'))
     # unittest.TextTestRunner().run(doubleNameTestSuite)
-
-
-
-    #
