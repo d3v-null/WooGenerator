@@ -1,6 +1,7 @@
 from pprint import pprint
 from collections import OrderedDict
 import os
+import sys
 import unicodecsv
 import argparse
 # import shutil
@@ -63,15 +64,16 @@ testMode = True
 
 ### DEFAULT CONFIG ###
 
+# paths are relative to source file
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
 inFolder = "../input/"
 outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source/"
 pklFolder = "../pickles/"
 remoteExportFolder = "act_usr_exp"
-
-#TODO: if last dir is not source and source is in cwd then chdir
-os.chdir('source')
 
 yamlPath = "merger_config.yaml"
 
@@ -342,8 +344,8 @@ if do_filter:
         'cards': cardFile,
     }
     filterItems = {}
-    if any(filterFiles) :
-        for key, filterFile in filterFiles.items():
+    for key, filterFile in filterFiles.items():
+        if filterFile:
             try:
                 with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
                     filterItems[key] = [\
@@ -363,6 +365,8 @@ if do_filter:
         filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
 else:
     filterItems = None
+
+print filterItems
 
 #########################################
 # Download / Generate Slave Parser Object
@@ -572,6 +576,7 @@ if do_sync:
                     sObjects = [sObject] + saParser.emails[newEmail]
                     SanitationUtils.safePrint("duplicate emails", mObjects, sObjects)
                     emailConflictMatches.addMatch(Match(mObjects, sObjects))
+                    continue
 
         if(not syncUpdate.importantStatic):
             if(syncUpdate.mUpdated and syncUpdate.sUpdated):

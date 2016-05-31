@@ -14,6 +14,7 @@ import os
 usrs_per_file = 1000
 
 DEBUG_FLAT = False
+# DEBUG_FLAT = True
 
 class ImportFlat(ImportObject):
     pass
@@ -489,7 +490,7 @@ class CSVParse_User(CSVParse_Flat):
                 return False
             if objectData.username in self.filterItems.get('users', []): return True
             if objectData.MYOBID in self.filterItems.get('cards', []): return True
-            if objectData.email in self.filterItems.get('emails', []): return False
+            if objectData.email in self.filterItems.get('emails', []): return True
             self.registerMessage("could not register object %s because did not meet users, cards or emails conditions" % objectData.__repr__() )
             return False
         else:
