@@ -253,7 +253,7 @@ class ImportUser(ImportFlat):
         self['Personal E-mail'] = ', '.join(emails)
 
         urls = SanitationUtils.findallURLs(data['Web Site'])
-        self['Web Site'] = urls.pop()
+        self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
         #     self['emails_reason'] = '\n'.join(filter(None, [
@@ -401,7 +401,7 @@ class CSVParse_User(CSVParse_Flat):
         self.filtered = OrderedDict()
         self.badName = OrderedDict()
         self.badAddress = OrderedDict()
-        self.badEmail = OrderedDict()
+        # self.badEmail = OrderedDict()
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)
@@ -595,10 +595,10 @@ class CSVParse_User(CSVParse_Flat):
             # print "registering bad name: ", SanitationUtils.coerceBytes(name)
             self.registerBadName(objectData, name)
 
-        emails = objectData.emails
-        if not emails.valid:
-            reason = emails.reason
-            self.registerBadEmail(objectData, emails)
+        # emails = objectData.emails
+        # if not emails.valid:
+        #     reason = emails.reason
+        #     self.registerBadEmail(objectData, emails)
 
         super(CSVParse_User, self).registerObject(objectData)
 

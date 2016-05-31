@@ -73,7 +73,7 @@ class SanitationUtils:
     nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
     #not a delimeter except space (no whitespace except space, no disallowed punc)
     nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
-    disallowedPhoneCharRegex = r"[^%s]" % "".join(allowedPhonePunctuation + [r'\d'])
+    disallowedPhoneCharRegex = r"[^%s]" % "".join(allowedPhonePunctuation + [r'\d', r' '])
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
