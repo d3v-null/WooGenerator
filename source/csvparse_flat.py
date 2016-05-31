@@ -256,8 +256,7 @@ class ImportUser(ImportFlat):
 
         urls = []
         if data.get('Web Site'):
-            urls = SanitationUtils.combineLists(urls,
-                                                SanitationUtils.findallURLs(data['Web Site']))
+            urls = listUtils.combineLists(urls, SanitationUtils.findallURLs(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
