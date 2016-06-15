@@ -11,9 +11,10 @@ from collections import OrderedDict
 import codecs
 import unicodecsv
 import cStringIO
-from uniqid import uniqid
+# from uniqid import uniqid
 from phpserialize import dumps, loads
 from kitchen.text import converters
+import time, math, random
 import io
 import base64
 
@@ -2656,11 +2657,39 @@ class ValidationUtils:
     def isContainedIn(l):
         return lambda v: v in l
 
+def uniqid(prefix='', more_entropy=False):
+    """uniqid([prefix=''[, more_entropy=False]]) -> str
+    Gets a prefixed unique identifier based on the current
+    time in microseconds.
+    prefix
+        Can be useful, for instance, if you generate identifiers
+        simultaneously on several hosts that might happen to generate
+        the identifier at the same microsecond.
+        With an empty prefix, the returned string will be 13 characters
+        long. If more_entropy is True, it will be 23 characters.
+    more_entropy
+        If set to True, uniqid() will add additional entropy (using
+        the combined linear congruential generator) at the end of
+        the return value, which increases the likelihood that
+        the result will be unique.
+    Returns the unique identifier, as a string."""
+    m = time.time()
+    sec = math.floor(m)
+    usec = math.floor(1000000 * (m - sec))
+    if more_entropy:
+        lcg = random.random()
+        the_uniqid = "%08x%05x%.8F" % (sec, usec, lcg * 10)
+    else:
+        the_uniqid = '%8x%05x' % (sec, usec)
+
+    the_uniqid = prefix + the_uniqid
+    return the_uniqid
+
 class PHPUtils:
     @staticmethod
     def uniqid(prefix="", more_entropy=False):
-        raise DeprecationWarning('uniqid deprecated')
-        # return uniqid(prefix, more_entropy)
+        # raise DeprecationWarning('uniqid deprecated')
+        return uniqid(prefix, more_entropy)
 
     @staticmethod
     def ruleset_uniqid():
@@ -2690,6 +2719,13 @@ class ProgressCounter(object):
             SanitationUtils.safePrint(
                 "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
             )
+
+
+
+# port of uniqmodule.c to pure python by Derwentx,
+# inspired by http://gurukhalsa.me/2011/uniqid-in-python/
+
+
 
 
 if __name__ == '__main__':

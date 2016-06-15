@@ -826,7 +826,7 @@ elif schema in woo_schemas:
         assert currentSpecial, "currentSpecial should be set"
         specialProducts = filter(
             onCurrentSpecial,
-            products.values()[:]
+            products.values()
         )
         if specialProducts:
             flaName, flaExt = os.path.splitext(flaPath)

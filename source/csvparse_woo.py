@@ -353,7 +353,6 @@ class CSVParse_Woo(CSVParse_Gen):
         self.dprcRules = dprcRules
         self.dprpRules = dprpRules
         self.specials = specials
-        self.special_items = OrderedDict()
         self.categoryIndexer = self.getGenCodesum
         self.catMapping = catMapping
 
@@ -373,6 +372,8 @@ class CSVParse_Woo(CSVParse_Gen):
         self.vattributes= OrderedDict()
         self.variations = OrderedDict()
         self.images     = OrderedDict()
+        self.special_items = OrderedDict()
+        self.updated_items = OrderedDict()
 
     def registerImage(self, image, objectData):
         assert isinstance(image,(str,unicode))
@@ -455,6 +456,16 @@ class CSVParse_Woo(CSVParse_Gen):
         assert isinstance(objectData, ImportWooProduct)
         if not objectData.isVariation:
             super(CSVParse_Woo, self).registerProduct(objectData)
+
+    def registerUpdated(self, objectData):
+        assert \
+            isinstance(objectData, ImportWooProduct), \
+            "object should be product not %s" % str(type(objectData))
+        self.registerAnything(
+            objectData,
+            self.updated_items,
+            registerName = 'updated'
+        )
 
     def processImages(self, objectData):
         imglist = filter(None, SanitationUtils.findAllImages(objectData.get('Images','')))
@@ -810,6 +821,14 @@ class CSVParse_Woo(CSVParse_Gen):
             # objectData['sale_price_dates_from'] = objectData.get('RNF')
             # objectData['sale_price_dates_to'] = objectData.get('RNT')
 
+    def postProcessUpdated(self, objectData):
+        objectData.inheritKey('Updated')
+
+        if objectData.isProduct or objectData.isVariation:
+            updated = objectData.get('Updated')
+            if updated and SanitationUtils.normalizeVal(updated) == 'Y':
+                self.registerUpdated(objectData)
+
     def postProcessInventory(self, objectData):
         objectData.inheritKey('stock_status')
 
@@ -847,6 +866,7 @@ class CSVParse_Woo(CSVParse_Gen):
             self.postProcessAttributes(objectData)
             self.postProcessSpecials(objectData)
             self.postProcessInventory(objectData)
+            self.postProcessUpdated(objectData)
             self.postProcessVisibility(objectData)
 
         return objects

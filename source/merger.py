@@ -61,7 +61,6 @@ testMode = True
 # FieldGroup.DEBUG_MESSAGE = True
 # FieldGroup.DEBUG_ERROR = True
 
-
 ### DEFAULT CONFIG ###
 
 # paths are relative to source file
