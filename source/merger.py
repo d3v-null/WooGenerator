@@ -443,7 +443,11 @@ if download_master:
 else:
     maParser.analyseFile(maPath)
 
-# CSVParse_User.printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
+# CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
+#
+# exit()
+# quit()
+
 
 # get matches
 
