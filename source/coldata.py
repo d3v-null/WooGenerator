@@ -12,32 +12,32 @@ class ColData_Base(object):
         self.data = data
 
     @classmethod
-    def getImportCols(self):
+    def getImportCols(cls):
         imports = []
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('import', False):
                 imports.append(col)
         return imports
 
     @classmethod
-    def getDefaults(self):
+    def getDefaults(cls):
         defaults = {}
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('default'):
                 defaults[col] = data.get('default')
         return defaults
 
     @classmethod
-    def getExportCols(self, schema=None):
+    def getExportCols(cls, schema=None):
         if not schema: return None
         exportCols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get(schema, ''):
                 exportCols[col] = data
         return exportCols
 
     @classmethod
-    def getColNames(self, cols):
+    def getColNames(cls, cols):
         colNames = OrderedDict()
         for col, data in cols.items():
             label = data.get('label','')
@@ -45,15 +45,15 @@ class ColData_Base(object):
         return colNames
 
     @classmethod
-    def nameCols(self, cols):
+    def nameCols(cls, cols):
         return OrderedDict(
             [(col, {}) for col in cols]
         )
 
 
     @classmethod
-    def getReportCols(self):
-        return self.getExportCols('report')
+    def getReportCols(cls):
+        return cls.getExportCols('report')
 
 class ColData_MYO(ColData_Base):
 

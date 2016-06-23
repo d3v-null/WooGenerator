@@ -5,7 +5,7 @@ from unittest import TestCase, main, skip
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from source.UsrSyncClient import *
+from source.sync_client_user import *
 from source.coldata import ColData_User
 from source.csvparse_flat import ImportUser
 

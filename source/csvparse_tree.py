@@ -39,13 +39,13 @@ class ImportTreeObject(ImportObject):
 
     @property
     def isTaxo(self): return self._isTaxo
-    
+
     @property
     def isRoot(self): return self._isRoot
 
     @property
     def meta(self): return self._meta
-    
+
     @property
     def parent(self): return self._parent
 
@@ -69,7 +69,7 @@ class ImportTreeObject(ImportObject):
 
     def getTaxoAncestors(self):
         ancestors = self.getAncestors()
-        return filter( lambda x: x.isTaxo, ancestors)          
+        return filter( lambda x: x.isTaxo, ancestors)
 
     def getAncestorKey(self, key):
         ancestors = self.getAncestors()
@@ -78,7 +78,7 @@ class ImportTreeObject(ImportObject):
     def registerChild(self, childData):
         assert childData, "childData must be valid"
         self.registerAnything(
-            childData, 
+            childData,
             self.children,
             indexer = self.childIndexer,
             singular = True,
@@ -121,7 +121,7 @@ class ImportTreeItem(ImportTreeObject):
 
     def getItemAncestors(self):
         ancestors = self.getAncestors()
-        return filter( lambda x: x.isItem, ancestors)    
+        return filter( lambda x: x.isItem, ancestors)
 
 class ImportTreeTaxo(ImportTreeObject):
     _isTaxo = True
@@ -153,7 +153,7 @@ class ImportStack(list):
                 vals.append(layer[key])
             except (IndexError, KeyError):
                 vals.append('')
-        return vals  
+        return vals
 
     def getLeftSlice(self, index):
         return ImportStack(self[:index])
@@ -199,7 +199,7 @@ class CSVParse_Tree(CSVParse_Base):
         #     print "-> maxDepth: ", self.maxDepth
         #     print "-> metaWidth: ", self.metaWidth
 
-        
+
     def clearTransients(self):
         super(CSVParse_Tree, self).clearTransients()
         self.items = OrderedDict()
@@ -211,22 +211,22 @@ class CSVParse_Tree(CSVParse_Base):
         if not parentData: parentData = self.rootData
         parentData.registerChild(itemData)
         itemData.registerParent(parentData)
-    
+
     def registerItem(self, itemData):
         assert itemData.isItem
         self.registerAnything(
-            itemData, 
-            self.items, 
+            itemData,
+            self.items,
             indexer = self.itemIndexer,
             singular = True,
             registerName = 'items'
-        )    
+        )
 
     def registerTaxo(self, taxoData):
         assert taxoData.isTaxo
         self.registerAnything(
-            taxoData, 
-            self.taxos, 
+            taxoData,
+            self.taxos,
             indexer = self.taxoIndexer,
             singular = True,
             # resolver = self.passiveResolver,
@@ -258,7 +258,7 @@ class CSVParse_Tree(CSVParse_Base):
         return depth < self.taxoDepth and depth >= 0
 
     def isItemDepth(self, depth):
-        return depth >= self.taxoDepth and depth < self.maxDepth    
+        return depth >= self.taxoDepth and depth < self.maxDepth
 
     def getContainer(self, allData, **kwargs):
         depth = kwargs['depth']
@@ -308,7 +308,7 @@ class CSVParse_Tree(CSVParse_Base):
         if parent is None: parent = self.rootData
         self.registerMessage("parent: {}".format(parent))
         kwargs['parent'] = parent
-        
+
         return super(CSVParse_Tree, self).newObject(rowcount, row, **kwargs)
 
     def refreshStack(self, rowcount, row, thisDepth):
@@ -321,7 +321,7 @@ class CSVParse_Tree(CSVParse_Base):
             layer = self.newObject(rowcount, row, depth=depth)
             self.stack.append(layer)
             # self.initializeObject(layer)
-        assert len(self.stack) == thisDepth , "stack should have been properly refreshed"    
+        assert len(self.stack) == thisDepth , "stack should have been properly refreshed"
 
     def refreshStackFromObject(self, objectData):
         assert isinstance(objectData, ImportTreeObject)

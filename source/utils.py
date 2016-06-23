@@ -17,6 +17,7 @@ from kitchen.text import converters
 import time, math, random
 import io
 import base64
+from pympler import tracker
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -2522,7 +2523,7 @@ class Registrar(object):
     warnings = OrderedDict()
     objectIndexer = id
     DEBUG_ERROR = True
-    DEBUG_WARN = False
+    DEBUG_WARN = True
     DEBUG_MESSAGE = False
 
     # def __init__(self):
@@ -2575,7 +2576,7 @@ class Registrar(object):
                 index = indexer(thing)
             else:
                 index = indexer
-            assert index.__hash__, "Index must be hashable"
+            assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
         except AssertionError as e:
             name = thing.__name__ if hasattr(thing, '__name__') else 'UNKN'
@@ -2595,12 +2596,12 @@ class Registrar(object):
         # print "registered", thing
 
     @classmethod
-    def registerError(self, error, data = None):
-        if data:
+    def registerError(self, error, source=None):
+        if source:
             try:
-                index = data.index
+                index = source.index
             except:
-                index = data
+                index = source
         else:
             index = debugUtils.getCallerProcedure()
         error_string = SanitationUtils.coerceUnicode(error)
@@ -2615,13 +2616,19 @@ class Registrar(object):
 
     @classmethod
     def registerWarning(self, message, source=None):
-        if source is None:
-            source = debugUtils.getCallerProcedure()
-        if self.DEBUG_WARN: Registrar.printAnything(source, message, ' ')
+        if source:
+            try:
+                index = source.index
+            except:
+                index = source
+        else:
+            index = debugUtils.getCallerProcedure()
+        error_string = SanitationUtils.coerceUnicode(message)
+        if self.DEBUG_WARN: Registrar.printAnything(source, error_string, '|')
         self.registerAnything(
-            message,
+            error_string,
             Registrar.warnings,
-            source,
+            index,
             singular = False,
             registerName = 'warnings'
         )
@@ -2630,7 +2637,7 @@ class Registrar(object):
     def registerMessage(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedure()
-        if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, ' ')
+        if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, '~')
         self.registerAnything(
             message,
             Registrar.messages,
@@ -2640,13 +2647,20 @@ class Registrar(object):
         )
 
     @classmethod
-    def getMessageItems(self, outPath, verbosity=0):
+    def getMessageItems(self, verbosity=0):
         items = self.errors
         if verbosity > 0:
             items = listUtils.combineOrderedDicts(items, self.warnings)
         if verbosity > 1:
             items = listUtils.combineOrderedDicts(items, self.messages)
         return items
+
+    @classmethod
+    def print_message_dict(self, verbosity):
+        items = self.getMessageItems(verbosity)
+        for key, messages in items.items():
+            for message in messages:
+                 self.printAnything(key, message, '|')
 
 class ValidationUtils:
     @staticmethod
@@ -2704,14 +2718,16 @@ class PHPUtils:
         return loads(string)
 
 class ProgressCounter(object):
-    def __init__(self, total, printThreshold=1):
+    def __init__(self, total, printThreshold=5):
         self.total = total
         self.printThreshold = printThreshold
         self.last_print = time.time()
+        # self.memory_tracker = tracker.SummaryTracker()
 
     def maybePrintUpdate(self, count):
         now = time.time()
-        if now - self.last_print > 1:
+        if now - self.last_print > self.printThreshold:
+            # self.memory_tracker.print_diff()
             self.last_print = now
             percentage = 0
             if self.total > 0:

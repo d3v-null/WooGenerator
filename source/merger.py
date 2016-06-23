@@ -29,7 +29,7 @@ import yaml
 from sshtunnel import SSHTunnelForwarder, check_address
 import io
 # import wordpress_xmlrpc
-from UsrSyncClient import UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
+from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
 from SyncUpdate import SyncUpdate
 from contact_objects import FieldGroup
 
@@ -40,6 +40,7 @@ def timediff():
     return time.time() - start_time
 
 DEBUG = False
+DEBUG_ERROR = True
 DEBUG_PROGRESS = True
 testMode = False
 testMode = True
@@ -167,6 +168,10 @@ if args:
         DEBUG_ERROR = True
     if args.verbosity > 1:
         DEBUG = True
+    if args.quiet:
+        DEBUG_PROGRESS = False
+        DEBUG_ERROR = False
+        DEBUG = False
     if args.testmode is not None:
         testMode = args.testmode
     if args.download_slave is not None:
@@ -243,6 +248,14 @@ if DEBUG:
         print "not doing post"
     print "master ssh host", m_ssh_host
     print "master ssh port", m_ssh_port
+    Registrar.DEBUG_ERROR = DEBUG_ERROR
+    Registrar.DEBUG_WARN = True
+    Registrar.DEBUG_MESSAGE = True
+else:
+    Registrar.DEBUG_ERROR = DEBUG_ERROR
+    Registrar.DEBUG_WARN = False
+    Registrar.DEBUG_MESSAGE = False
+
 
 ### PROCESS CLASS PARAMS ###
 

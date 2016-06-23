@@ -2,6 +2,7 @@ from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils
 from csvparse_abstract import ObjList
 from csvparse_gen import CSVParse_Gen, ImportGenProduct, ImportGenItem, \
                          ImportGenTaxo, ImportGenObject, GenProdList, GenTaxoList
+from coldata import ColData_Woo
 from collections import OrderedDict
 import bisect
 import time
@@ -27,6 +28,26 @@ class ImportWooObject(ImportGenObject):
 
     @property
     def isVariation(self): return self._isVariation
+
+    @property
+    def isUpdated(self):
+        return "Y" == SanitationUtils.normalizeVal(self.get('Updated', ""))
+
+    @property
+    def splist(self):
+        schedule = self.get('SCHEDULE')
+        if schedule:
+            return filter(None, SanitationUtils.findAllTokens(schedule))
+        else:
+            return []
+
+    def has_special(self, special):
+        return special in map(SanitationUtils.normalizeVal, self.getSpecials())
+
+    def has_special_fuzzy(self, special):
+        for sp in map(SanitationUtils.normalizeVal, self.getSpecials()):
+            if special in sp:
+                return True
 
     def registerImage(self, image):
         assert isinstance(image, (str, unicode))
@@ -132,6 +153,9 @@ class ImportWooProduct(ImportWooItem, ImportGenProduct):
         ancestorsSelf = self.getTaxoAncestors() + [self]
         names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
         return "Specials > " + names[0] + " Specials"
+
+    def getTypeName(self):
+        return self.product_type
 
 class ImportWooSimpleProduct(ImportWooProduct):
     product_type = 'simple'
@@ -302,6 +326,10 @@ class CSVParse_Woo(CSVParse_Gen):
     productContainer   = ImportWooProduct
     taxoContainer      = ImportWooCategory
 
+    do_images = None
+    current_special = None
+    specialsCategory = None
+
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
                 dprcRules={}, dprpRules={}, specials={}, catMapping={}):
@@ -373,7 +401,10 @@ class CSVParse_Woo(CSVParse_Gen):
         self.variations = OrderedDict()
         self.images     = OrderedDict()
         self.special_items = OrderedDict()
-        self.updated_items = OrderedDict()
+        self.updated_products = OrderedDict()
+        self.updated_variations = OrderedDict()
+        self.onspecial_products = OrderedDict()
+        self.onspecial_variations = OrderedDict()
 
     def registerImage(self, image, objectData):
         assert isinstance(image,(str,unicode))
@@ -409,17 +440,17 @@ class CSVParse_Woo(CSVParse_Gen):
             self.registerAnything(
                 val,
                 self.attributes,
-                indexer = attr,
-                singular = False,
-                registerName = 'Attributes'
+                indexer=attr,
+                singular=False,
+                registerName='Attributes'
             )
             if var:
                 self.registerAnything(
                     val,
                     self.vattributes,
-                    indexer = attr,
-                    singular = False,
-                    registerName = 'Variable Attributes'
+                    indexer=attr,
+                    singular=False,
+                    registerName='Variable Attributes'
                 )
 
     def registerVariation(self, parentData, varData):
@@ -428,10 +459,10 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerAnything(
             varData,
             self.variations,
-            indexer = self.productIndexer,
-            singular = True,
-            resolver = self.exceptionResolver,
-            registerName = 'variations'
+            indexer=self.productIndexer,
+            singular=True,
+            resolver=self.exceptionResolver,
+            registerName='variations'
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
         varData.joinVariable(parentData)
@@ -446,9 +477,9 @@ class CSVParse_Woo(CSVParse_Gen):
         self.registerAnything(
             objectData,
             self.special_items,
-            indexer = special,
-            singular = False,
-            registerName = 'specials'
+            indexer=special,
+            singular=False,
+            registerName='specials'
         )
         objectData.registerSpecial(special)
 
@@ -457,14 +488,54 @@ class CSVParse_Woo(CSVParse_Gen):
         if not objectData.isVariation:
             super(CSVParse_Woo, self).registerProduct(objectData)
 
-    def registerUpdated(self, objectData):
+    def registerUpdatedProduct(self, objectData):
         assert \
             isinstance(objectData, ImportWooProduct), \
-            "object should be product not %s" % str(type(objectData))
+            "object should be ImportWooProduct not %s" % str(type(objectData))
+        assert \
+            not isinstance(objectData, ImportWooVariation), \
+            "object should not be ImportWooVariation"
         self.registerAnything(
             objectData,
-            self.updated_items,
-            registerName = 'updated'
+            self.updated_products,
+            registerName='updated_products',
+            singular=True
+        )
+
+    def registerUpdatedVariation(self, objectData):
+        assert \
+            isinstance(objectData, ImportWooVariation), \
+            "object should be ImportWooVariation not %s" % str(type(objectData))
+        self.registerAnything(
+            objectData,
+            self.updated_variations,
+            registerName='updated_variations',
+            singular=True
+        )
+
+    def registerCurrentSpecialProduct(self, objectData):
+        assert \
+            isinstance(objectData, ImportWooProduct), \
+            "object should be ImportWooProduct not %s" % str(type(objectData))
+        assert \
+            not isinstance(objectData, ImportWooVariation), \
+            "object should not be ImportWooVariation"
+        self.registerAnything(
+            objectData,
+            self.onspecial_products,
+            registerName='onspecial_products',
+            singular=True
+        )
+
+    def registerCurrentSpecialVariation(self, objectData):
+        assert \
+            isinstance(objectData, ImportWooVariation), \
+            "object should be ImportWooVariation not %s" % str(type(objectData))
+        self.registerAnything(
+            objectData,
+            self.onspecial_variations,
+            registerName='onspecial_variations',
+            singular=True
         )
 
     def processImages(self, objectData):
@@ -554,12 +625,8 @@ class CSVParse_Woo(CSVParse_Gen):
                 self.registerAttribute(objectData, attr, val, True)
 
     def processSpecials(self, objectData):
-        schedule = objectData.get('SCHEDULE')
-        if schedule:
-            if(DEBUG_WOO): self.registerMessage( "specials for %s: %s" % (objectData, schedule) )
-            splist = filter(None, SanitationUtils.findAllTokens(schedule))
-            for special in splist:
-                self.registerSpecial(objectData, special)
+        for special in objectData.splist:
+            self.registerSpecial(objectData, special)
 
     def processObject(self, objectData):
         self.registerMessage(objectData.index)
@@ -683,11 +750,11 @@ class CSVParse_Woo(CSVParse_Gen):
             objectData.getImages()
         ))
 
-        if objectData.isProduct :
+        if self.do_images and objectData.isProduct and not objectData.isVariation:
             try:
                 assert objectData['imgsum'], "All Products should have images"
             except AssertionError as e:
-                self.registerError(e, objectData)
+                self.registerWarning(e, objectData)
 
         self.registerMessage("imgsum of %s is %s"%(objectData.index, objectData.get('imgsum')))
 
@@ -824,10 +891,12 @@ class CSVParse_Woo(CSVParse_Gen):
     def postProcessUpdated(self, objectData):
         objectData.inheritKey('Updated')
 
-        if objectData.isProduct or objectData.isVariation:
-            updated = objectData.get('Updated')
-            if updated and SanitationUtils.normalizeVal(updated) == 'Y':
-                self.registerUpdated(objectData)
+        if objectData.isProduct:
+            if objectData.isUpdated:
+                if objectData.isVariation:
+                    self.registerUpdatedVariation(objectData)
+                else:
+                    self.registerUpdatedProduct(objectData)
 
     def postProcessInventory(self, objectData):
         objectData.inheritKey('stock_status')
@@ -852,6 +921,40 @@ class CSVParse_Woo(CSVParse_Gen):
             if visible is "hidden":
                 objectData['catalog_visibility'] = "hidden"
 
+    def postProcessCurrentSpecial(self, objectData):
+        if objectData.isProduct:
+            if objectData.has_special_fuzzy(self.current_special):
+                # print ("%s matches special %s"%(str(objectData), self.current_special))
+
+                objectData['catsum'] = "|".join(
+                    filter(None,[
+                        objectData.get('catsum', ""),
+                        self.specialsCategory,
+                        objectData.getExtraSpecialCategory()
+                    ])
+                )
+                if objectData.isVariation:
+                    self.registerCurrentSpecialVariation(objectData)
+                else:
+                    self.registerCurrentSpecialProduct(objectData)
+            # else:
+                # print ("%s does not match special %s | %s"%(str(objectData), self.current_special, str(objectData.splist)))
+
+    def postProcessShipping(self, objectData):
+        if objectData.isProduct and not objectData.isVariable:
+            for key in ['weight', 'length', 'height', 'width']:
+                if not objectData[key]:
+                    self.registerWarning("All products must have shipping: %s"%key, objectData)
+                    break
+
+    def postProcessPricing(self, objectData):
+        if objectData.isProduct and not objectData.isVariable:
+            for key in ['WNR']:
+                if not objectData[key]:
+                    self.registerWarning("All products must have pricing: %s"%key, objectData)
+                    break
+
+
     def analyseFile(self, fileName, encoding=None):
         objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding)
         #post processing
@@ -868,6 +971,9 @@ class CSVParse_Woo(CSVParse_Gen):
             self.postProcessInventory(objectData)
             self.postProcessUpdated(objectData)
             self.postProcessVisibility(objectData)
+            self.postProcessShipping(objectData)
+            if self.specialsCategory and self.current_special:
+                self.postProcessCurrentSpecial(objectData)
 
         return objects
 

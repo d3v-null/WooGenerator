@@ -240,7 +240,7 @@ class CSVParse_Base(Registrar):
             #this may break shit
             return row[index]
         except Exception as e:
-            self.registerError('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+str(e))
+            self.registerWarning('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+str(e))
             return None
 
     def sanitizeCell(self, cell):
@@ -345,7 +345,7 @@ class CSVParse_Base(Registrar):
                     self.registerMessage("%s" % objectData.__repr__())
 
             except UserWarning as e:
-                self.registerError("could not register new object: {}".format(e), objectData)
+                self.registerWarning("could not register new object: {}".format(e), objectData)
                 continue
         self.registerMessage("Completed analysis")
 

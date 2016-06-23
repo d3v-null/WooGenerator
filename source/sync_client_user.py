@@ -27,6 +27,7 @@ import io
 from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
+from sync_client import SyncClient_Abstract
 
 class TansyncWordpressJsonWrapper(WordpressJsonWrapper):
     def _request(self, method_name, **kw):
@@ -71,26 +72,12 @@ class TansyncWordpressJsonWrapper(WordpressJsonWrapper):
 
         return http_response_json
 
-class UsrSyncClient_Abstract(Registrar):
-
-    def __enter__(self):
-        return self
-
+class UsrSyncClient_Abstract(SyncClient_Abstract):
     def __exit__(self, type, value, traceback):
         self.client.close()
 
-    """docstring for UsrSyncClient_Abstract"""
-
-    @property
     def connectionReady(self):
         return self.client
-
-    def analyseRemote(self, parser, since=None):
-        raise NotImplementedError()
-
-    def uploadChanges(self, user_pkey, updates=None):
-        assert user_pkey, "must have a valid primary key"
-        assert self.connectionReady, "connection should be ready"
 
 class UsrSyncClient_JSON(UsrSyncClient_Abstract):
 
@@ -291,7 +278,6 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         inFolder = self.fsParams['inFolder']
         localPath = os.path.join(inFolder, fileName)
         remotePath = os.path.join(remoteExportFolder, fileName)
-
 
         command = " ".join(filter(None,[
             'cd ' + remoteExportFolder + ';',
