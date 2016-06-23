@@ -81,8 +81,6 @@ userFile = cardFile = emailFile = sinceM = sinceS = False
 ### OVERRIDE CONFIG WITH YAML FILE ###
 
 with open(yamlPath) as stream:
-    optionNamePrefix = 'test_' if testMode else ''
-
     config = yaml.load(stream)
 
     if 'inFolder' in config.keys():
@@ -97,31 +95,6 @@ with open(yamlPath) as stream:
     MASTER_NAME = config.get('master_name', 'MASTER')
     SLAVE_NAME = config.get('slave_name', 'SLAVE')
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
-    ssh_user = config.get(optionNamePrefix+'ssh_user')
-    ssh_pass = config.get(optionNamePrefix+'ssh_pass')
-    ssh_host = config.get(optionNamePrefix+'ssh_host')
-    ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
-    m_ssh_user = config.get(optionNamePrefix+'m_ssh_user')
-    m_ssh_pass = config.get(optionNamePrefix+'m_ssh_pass')
-    m_ssh_host = config.get(optionNamePrefix+'m_ssh_host')
-    m_ssh_port = config.get(optionNamePrefix+'m_ssh_port', 22)
-    remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
-    remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
-    db_user = config.get(optionNamePrefix+'db_user')
-    db_pass = config.get(optionNamePrefix+'db_pass')
-    db_name = config.get(optionNamePrefix+'db_name')
-    db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
-    wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-    m_db_user = config.get(optionNamePrefix+'m_db_user')
-    m_db_pass = config.get(optionNamePrefix+'m_db_pass')
-    m_db_name = config.get(optionNamePrefix+'m_db_name')
-    m_db_host = config.get(optionNamePrefix+'m_db_host')
-    m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
-    m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
-    tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
-    wp_user = config.get(optionNamePrefix+'wp_user', '')
-    wp_pass = config.get(optionNamePrefix+'wp_pass', '')
-    store_url = config.get(optionNamePrefix+'store_url', '')
     master_file = config.get('master_file', '')
     slave_file = config.get('slave_file', '')
     userFile = config.get('userFile')
@@ -216,12 +189,44 @@ if args:
         m_ssh_host = args.m_ssh_host
     global_limit = args.limit
 
+# api config
+
+with open(yamlPath) as stream:
+    optionNamePrefix = 'test_' if testMode else ''
+    config = yaml.load(stream)
+    ssh_user = config.get(optionNamePrefix+'ssh_user')
+    ssh_pass = config.get(optionNamePrefix+'ssh_pass')
+    ssh_host = config.get(optionNamePrefix+'ssh_host')
+    ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
+    m_ssh_user = config.get(optionNamePrefix+'m_ssh_user')
+    m_ssh_pass = config.get(optionNamePrefix+'m_ssh_pass')
+    m_ssh_host = config.get(optionNamePrefix+'m_ssh_host')
+    m_ssh_port = config.get(optionNamePrefix+'m_ssh_port', 22)
+    remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
+    remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
+    db_user = config.get(optionNamePrefix+'db_user')
+    db_pass = config.get(optionNamePrefix+'db_pass')
+    db_name = config.get(optionNamePrefix+'db_name')
+    db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
+    wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
+    m_db_user = config.get(optionNamePrefix+'m_db_user')
+    m_db_pass = config.get(optionNamePrefix+'m_db_pass')
+    m_db_name = config.get(optionNamePrefix+'m_db_name')
+    m_db_host = config.get(optionNamePrefix+'m_db_host')
+    m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
+    m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
+    tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
+    wp_user = config.get(optionNamePrefix+'wp_user', '')
+    wp_pass = config.get(optionNamePrefix+'wp_pass', '')
+    store_url = config.get(optionNamePrefix+'store_url', '')
 
 
 ### DISPLAY CONFIG ###
 if DEBUG:
     if testMode:
         print "testMode enabled"
+    else:
+        print "testMode disabled"
     if not download_slave:
         print "no download_slave"
     if not download_master:
@@ -402,6 +407,10 @@ if download_slave:
         'use_unicode': True,
         'tbl_prefix': tbl_prefix,
     }
+
+    print SSHTunnelForwarderParams
+    print PyMySqlConnectParams
+
     with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
         client.analyseRemote(saParser)
         #

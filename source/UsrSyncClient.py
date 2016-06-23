@@ -346,7 +346,6 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         ]
 
         for tracking_name, aliases in ColData_User.getWPTrackedCols().items():
-            # MAX( CASE WHEN LOCATE('E-mail', tu.`changed`) > 0 OR LOCATE('derp', tu.`changed`) > 0 THEN tu.`time` ELSE "" END) as `E-mail Edited`
             case_clauses = []
             for alias in aliases:
                 case_clauses.append("LOCATE('\"%s\"', tu.`changed`) > 0" % alias)
@@ -449,7 +448,9 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
             limit_clause = "LIMIT %d" % limit if limit else ""
         )
 
-        # print sql_select_user_modtime
+        Registrar.registerMessage(sql_select_user_modtime)
+
+        print sql_select_user_modtime
 
         cursor.execute(sql_select_user_modtime)
 

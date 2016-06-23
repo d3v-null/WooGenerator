@@ -23,6 +23,7 @@ class testUsrSyncClient(TestCase):
         with open(yamlPath) as stream:
             config = yaml.load(stream)
             optionNamePrefix = 'test_'
+            optionNamePrefix = ''
 
             if 'inFolder' in config.keys():
                 inFolder = config['inFolder']
@@ -114,6 +115,10 @@ class testUsrSyncClient(TestCase):
             'outFolder': outFolder
         }
 
+        for var in ['self.SSHTunnelForwarderParams', 'self.PyMySqlConnectParams',
+                    'self.jsonConnectParams', 'self.actConnectParams', 'self.actDbParams']:
+            print var, eval(var)
+
     def test_SQLWP_Analyse(self):
         saParser = CSVParse_User(
             cols = ColData_User.getImportCols(),
@@ -129,12 +134,19 @@ class testUsrSyncClient(TestCase):
         # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
 
+    def test_JSON_read(self):
+        response = ''
+        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+            response = client.client.get_posts()
+        print response
+        self.assertTrue(response)
+
     def test_JSON_Upload_bad(self):
         fields = {"user_email": "neil@technotan.com.au"}
 
         response = ''
         with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.uploadChanges(13759, fields)
+            response = client.uploadChanges(2, fields)
 
         print response
 
@@ -168,5 +180,5 @@ class testUsrSyncClient(TestCase):
 if __name__ == '__main__':
     # main()
     sshTestSuite = unittest.TestSuite()
-    sshTestSuite.addTest(testUsrSyncClient('test_JSON_Upload_bad'))
+    sshTestSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
     unittest.TextTestRunner().run(sshTestSuite)

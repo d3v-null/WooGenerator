@@ -104,3 +104,5 @@ output test merge
 scripttest.py
 
 .remote-sync.json
+
+ids that were deleted.txt
