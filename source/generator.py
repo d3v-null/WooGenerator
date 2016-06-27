@@ -114,6 +114,7 @@ sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
 schema = ""
 variant = ""
+# skip_google_download = True
 
 if __name__ == "__main__":
     if sys.argv and len(sys.argv) > 1 and sys.argv[1]:
@@ -184,16 +185,6 @@ if current_special:
 if skip_google_download:
     SyncClient_GDrive.skip_download = True
 
-gDriveParams = {
-    'scopes': gdrive_scopes,
-    'client_secret_file': gdrive_client_secret_file,
-    'app_name': gdrive_app_name,
-    'oauth_clientID': gdrive_oauth_clientID,
-    'oauth_clientSecret': gdrive_oauth_clientSecret,
-    'credentials_dir': gdrive_credentials_dir,
-    'credentials_file': gdrive_credentials_file,
-    'genFID': genFID,
-}
 #
 # gDriveFsParams = {
 #     'csvPaths': {
@@ -275,7 +266,7 @@ with SyncClient_GDrive(gDriveParams) as client:
             )
 
     Registrar.registerMessage("analysing products")
-    objects = productParser.analyseFile(genPath)
+    client.analyseRemote(productParser, None, genPath)
 
 products = productParser.getProducts()
 

@@ -179,6 +179,6 @@ class testUsrSyncClient(TestCase):
 
 if __name__ == '__main__':
     # main()
-    sshTestSuite = unittest.TestSuite()
-    sshTestSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
-    unittest.TextTestRunner().run(sshTestSuite)
+    testSuite = unittest.TestSuite()
+    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
+    unittest.TextTestRunner().run(testSuite)

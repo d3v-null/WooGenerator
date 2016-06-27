@@ -122,24 +122,33 @@ class SyncClient_GDrive(SyncClient_Abstract):
             return None
             # The file doesn't have any content stored on Drive.
 
+    def get_gm_modtime(self, gid=None):
+        modifiedDate = self.drive_file['modifiedDate']
+
+        return time.strptime(modifiedDate, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
     def analyseRemote(self, parser, gid=None, outPath=None):
         if not outPath:
             outPath = '/tmp/' + gid + '.csv'
         if not self.skip_download:
-            try:
-                assert os.path.isfile(outPath)
-                local_timestamp = os.path.getmtime(outPath)
-            except:
-                local_timestamp = 0
-            local_gmtime = time.gmtime(local_timestamp)
+            # try:
+            #     assert os.path.isfile(outPath)
+            #     local_timestamp = os.path.getmtime(outPath)
+            # except:
+            #     local_timestamp = 0
+            # local_gmtime = time.gmtime(local_timestamp)
+            #
+            # remote_gmtime = get_gm_modtime(gid)
+            #
+            # print "local / remote gmtime", local_gmtime, remote_gmtime
 
-            remote_gmtime = time.strptime(self.drive_file['modifiedDate'], '%Y-%m-%dT%H:%M:%S.%fZ')
-
-            if local_gmtime < remote_gmtime:
-                content = self.download_file_content_csv(gid)
-                if content:
-                    with open(outPath, 'w') as outFile:
-                        outFile.write(content)
+            # if local_gmtime < remote_gmtime:
+            content = self.download_file_content_csv(gid)
+            if content:
+                with open(outPath, 'w') as outFile:
+                    outFile.write(content)
+                    print "downloaded ", outFile
         parser.analyseFile(outPath)
 
 

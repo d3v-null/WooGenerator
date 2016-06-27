@@ -2600,6 +2600,7 @@ class Registrar(object):
         if source:
             try:
                 index = source.index
+                assert not callable(index)
             except:
                 index = source
         else:
@@ -2619,12 +2620,13 @@ class Registrar(object):
         if source:
             try:
                 index = source.index
+                assert not callable(index)
             except:
                 index = source
         else:
             index = debugUtils.getCallerProcedure()
         error_string = SanitationUtils.coerceUnicode(message)
-        if self.DEBUG_WARN: Registrar.printAnything(source, error_string, '|')
+        if self.DEBUG_WARN: Registrar.printAnything(index, error_string, '|')
         self.registerAnything(
             error_string,
             Registrar.warnings,

@@ -288,7 +288,7 @@ class CSVParse_Base(Registrar):
         # self.processObject(objectData)
         # self.registerObject(objectData)
 
-    def analyseRows(self, unicode_rows):
+    def analyseRows(self, unicode_rows, fileName="rows"):
         limit = None
         if hasattr(self, 'limit'):
             limit = self.limit
@@ -328,7 +328,7 @@ class CSVParse_Base(Registrar):
             try:
                 objectData = self.newObject( rowcount, unicode_row )
             except UserWarning as e:
-                self.registerWarning("could not create new object: {}".format(e), rowcount)
+                self.registerWarning("could not create new object: {}".format(e), "%s:%d" % (fileName, rowcount))
                 continue
             else:
                 if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
@@ -367,7 +367,7 @@ class CSVParse_Base(Registrar):
             #     "SWS ", repr(csvdialect.skipinitialspace)
 
             unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
-            return self.analyseRows(unicodecsvreader)
+            return self.analyseRows(unicodecsvreader, fileName)
         return None
 
     def getObjects(self):
