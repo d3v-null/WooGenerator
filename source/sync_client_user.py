@@ -231,12 +231,12 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
         importName = self.fsParams['importName']
         outFolder = self.fsParams['outFolder']
-        remoteExportFolder = self.fsParams['remoteExportFolder']
+        remote_export_folder = self.fsParams['remote_export_folder']
         fileRoot = 'act_i_' + importName + '_' + user_pkey
         fileName = fileRoot + '.csv'
         localPath = os.path.join(outFolder, fileName)
-        remotePath = os.path.join(remoteExportFolder, fileName)
-        importedFile = os.path.join(remoteExportFolder, fileRoot + '.imported')
+        remotePath = os.path.join(remote_export_folder, fileName)
+        importedFile = os.path.join(remote_export_folder, fileRoot + '.imported')
 
         with open(localPath, 'w+') as outFile:
             unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
@@ -253,7 +253,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         self.putFile( localPath, remotePath)
 
         command = " ".join(filter(None,[
-            'cd ' + remoteExportFolder + ';',
+            'cd ' + remote_export_folder + ';',
             '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
                 **self.dbParams
             ),
@@ -267,20 +267,20 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         except:
             raise Exception("import didn't produce a .imported file")
 
-    def analyseRemote(self, parser, since=None):
+    def analyseRemote(self, parser, since=None, limit=None):
         if not since:
             since = '1970-01-01'
 
         importName = self.fsParams['importName']
-        remoteExportFolder = self.fsParams['remoteExportFolder']
+        remote_export_folder = self.fsParams['remote_export_folder']
         fileRoot = 'act_x_' + importName
         fileName = fileRoot + '.csv'
         inFolder = self.fsParams['inFolder']
         localPath = os.path.join(inFolder, fileName)
-        remotePath = os.path.join(remoteExportFolder, fileName)
+        remotePath = os.path.join(remote_export_folder, fileName)
 
         command = " ".join(filter(None,[
-            'cd ' + remoteExportFolder + ';',
+            'cd ' + remote_export_folder + ';',
             '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
                 **self.dbParams
             ),
@@ -435,8 +435,6 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
         )
 
         Registrar.registerMessage(sql_select_user_modtime)
-
-        print sql_select_user_modtime
 
         cursor.execute(sql_select_user_modtime)
 

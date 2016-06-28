@@ -18,7 +18,6 @@ class testUsrSyncClient(TestCase):
         importName = TimeUtils.getMsTimeStamp()
         inFolder = "../input/"
         outFolder = "../output/"
-        remoteExportFolder = "act_usr_exp"
 
         with open(yamlPath) as stream:
             config = yaml.load(stream)
@@ -57,6 +56,7 @@ class testUsrSyncClient(TestCase):
             wp_user = config.get(optionNamePrefix+'wp_user', '')
             wp_pass = config.get(optionNamePrefix+'wp_pass', '')
             store_url = config.get(optionNamePrefix+'store_url', '')
+            remote_export_folder = config.get(optionNamePrefix+'remote_export_folder', '')
 
         TimeUtils.setWpSrvOffset(wp_srv_offset)
 
@@ -110,7 +110,7 @@ class testUsrSyncClient(TestCase):
 
         self.fsParams = {
             'importName': importName,
-            'remoteExportFolder': remoteExportFolder,
+            'remote_export_folder': remote_export_folder,
             'inFolder': inFolder,
             'outFolder': outFolder
         }
@@ -133,6 +133,16 @@ class testUsrSyncClient(TestCase):
 
         # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
+
+    def test_SQLWP_Upload(self):
+        fields = {
+            "ABN": "1",
+            "MYOB Card ID": "C000001",
+        }
+
+        with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
+            response = client.uploadChanges('C000001', fields)
+        print response
 
     def test_JSON_read(self):
         response = ''
@@ -163,22 +173,22 @@ class testUsrSyncClient(TestCase):
         with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
             response = client.getDeleteFile('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
 
-    def test_SSH_Upload(self):
-        fields = {
-            "Phone": "0413 300 930",
-            "MYOB Card ID": "C004897",
-        }
-
-        response = ''
-        with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
-            response = client.uploadChanges('C004897', fields)
-
-        print response
+    # def test_SSH_Upload(self):
+    #     fields = {
+    #         "Phone": "0413 300 930",
+    #         "MYOB Card ID": "C004897",
+    #     }
+    #
+    #     response = ''
+    #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
+    #         response = client.uploadChanges('C004897', fields)
+    #
+    #     print response
 
 
 
 if __name__ == '__main__':
     # main()
     testSuite = unittest.TestSuite()
-    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
+    testSuite.addTest(testUsrSyncClient('test_SQLWP_Upload'))
     unittest.TextTestRunner().run(testSuite)

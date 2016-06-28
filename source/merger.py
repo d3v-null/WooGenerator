@@ -73,7 +73,6 @@ outFolder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source/"
 pklFolder = "../pickles/"
-remoteExportFolder = "act_usr_exp"
 
 yamlPath = "merger_config.yaml"
 
@@ -224,6 +223,7 @@ with open(yamlPath) as stream:
     wp_user = config.get(optionNamePrefix+'wp_user', '')
     wp_pass = config.get(optionNamePrefix+'wp_pass', '')
     store_url = config.get(optionNamePrefix+'store_url', '')
+    remote_export_folder = config.get(optionNamePrefix+'remote_export_folder', '')
 
 
 ### DISPLAY CONFIG ###
@@ -246,8 +246,6 @@ if DEBUG:
         print "not doing sync"
     if not do_post:
         print "not doing post"
-    print "master ssh host", m_ssh_host
-    print "master ssh port", m_ssh_port
     Registrar.DEBUG_ERROR = DEBUG_ERROR
     Registrar.DEBUG_WARN = True
     Registrar.DEBUG_MESSAGE = True
@@ -274,7 +272,7 @@ fileSuffix += "_filter" if do_filter else ""
 m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
 m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
 s_x_filename = "wp_x"+fileSuffix+"_"+importName+".csv"
-remoteExportPath = os.path.join(remoteExportFolder, m_x_filename)
+remoteExportPath = os.path.join(remote_export_folder, m_x_filename)
 maPath = os.path.join(inFolder, m_x_filename)
 maEncoding = "utf-8"
 
@@ -343,7 +341,7 @@ if sinceM: actDbParams['since'] = sinceM
 
 fsParams = {
     'importName': importName,
-    'remoteExportFolder': remoteExportFolder,
+    'remote_export_folder': remote_export_folder,
     'inFolder': inFolder,
     'outFolder': outFolder
 }
@@ -425,7 +423,7 @@ if download_slave:
     print PyMySqlConnectParams
 
     with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
-        client.analyseRemote(saParser)
+        client.analyseRemote(saParser, limit=global_limit)
         #
         # if testMode:
         #     client.analyseRemote(saParser, limit=1000)
@@ -456,12 +454,11 @@ maParser = CSVParse_User(
 print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
 
 if download_master:
-
-    for thing in ['m_x_cmd', 'm_i_cmd', 'remoteExportFolder', 'actFields']:
+    for thing in ['m_x_cmd', 'm_i_cmd', 'remote_export_folder', 'actFields']:
         assert eval(thing), "missing mandatory command component '%s'" % thing
 
     with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
-        masterClient.analyseRemote(maParser)
+        masterClient.analyseRemote(maParser, limit=global_limit)
 else:
     maParser.analyseFile(maPath)
 
@@ -1009,7 +1006,7 @@ outputFailures(slaveFailures, sFailPath)
 # Registrar.registerError('testing errors')
 
 with io.open(logPath, 'w+', encoding='utf8') as logFile:
-    for source, messages in Registrar.getMessageItems(None, 1).items():
+    for source, messages in Registrar.getMessageItems(1).items():
         print source
         logFile.writelines([SanitationUtils.coerceUnicode(source)])
         logFile.writelines(
