@@ -28,7 +28,27 @@ from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
 from sync_client import SyncClient_Abstract
-
+from woocommerce import API as WCAPI
 
 class ProdSyncClient_Abstract(SyncClient_Abstract):
     pass
+
+class ProdSyncClient_WC(SyncClient_Abstract):
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def __init__(self, connectParams):
+        super(ProdSyncClient_WC, self).__init__()
+        mandatory_params = ['api_key', 'api_secret', 'url']
+        for param in mandatory_params:
+            assert param in connectParams, "missing mandatory param: %s" % param
+        self.client = WCAPI(
+            url=connectParams['url'],
+            consumer_key=connectParams['api_key'],
+            consumer_secret=connectParams['api_secret']
+        )
+
+    def uploadChanges(self, pkey, updates=None):
+        super(type(self), self).uploadChanges(pkey)
+        endpoint = 'products/%s' % pkey
+        response = self.client.put(endpoint, updates)
