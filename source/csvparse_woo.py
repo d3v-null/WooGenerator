@@ -329,6 +329,7 @@ class CSVParse_Woo(CSVParse_Gen):
     do_images = None
     current_special = None
     specialsCategory = None
+    add_special_categories = False
 
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
@@ -925,14 +926,14 @@ class CSVParse_Woo(CSVParse_Gen):
         if objectData.isProduct:
             if objectData.has_special_fuzzy(self.current_special):
                 # print ("%s matches special %s"%(str(objectData), self.current_special))
-
-                objectData['catsum'] = "|".join(
-                    filter(None,[
-                        objectData.get('catsum', ""),
-                        self.specialsCategory,
-                        objectData.getExtraSpecialCategory()
-                    ])
-                )
+                if self.add_special_categories:
+                    objectData['catsum'] = "|".join(
+                        filter(None,[
+                            objectData.get('catsum', ""),
+                            self.specialsCategory,
+                            objectData.getExtraSpecialCategory()
+                        ])
+                    )
                 if objectData.isVariation:
                     self.registerCurrentSpecialVariation(objectData)
                 else:

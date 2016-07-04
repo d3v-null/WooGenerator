@@ -96,6 +96,7 @@ with open(yamlPath) as stream:
     # assert isinstance(skip_images, bool), "%s %s" % tuple(map(str, [skip_images, skip_images.__class__] ))
 
     current_special = config.get('current_special')
+    add_special_categories = config.get('add_special_categories')
 
 #mandatory params
 assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
@@ -181,6 +182,7 @@ maxDepth = taxoDepth + itemDepth
 if current_special:
     CSVParse_Woo.specialsCategory = "Specials"
     CSVParse_Woo.current_special = current_special
+    CSVParse_Woo.add_special_categories = add_special_categories
 
 if skip_google_download:
     SyncClient_GDrive.skip_download = True
@@ -282,10 +284,8 @@ if Registrar.errors:
     Registrar.print_message_dict(0)
     quit()
 elif Registrar.warnings:
-    print "there were some warnings that need to be reviewed before sync can happen"
+    print "there were some warnings that should be reviewed"
     Registrar.print_message_dict(1)
-    quit()
-
 
 
 # #########################################
