@@ -22,6 +22,7 @@ from pympler import tracker
 DEFAULT_ENCODING = 'utf8'
 
 DEBUG = False
+# DEBUG = True
 DEBUG_ADDRESS = False
 # DEBUG_ADDRESS = True
 DEBUG_MESSAGE = False
@@ -286,6 +287,12 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
+    def stripLeadingNewline(string):
+        str_out = re.sub(r'^(\\n|\n)*', '', string)
+        if DEBUG: print "stripLeadingNewline", repr(string), repr(str_out)
+        return str_out
+
+    @staticmethod
     def stripTailingWhitespace(string):
         str_out = re.sub(r'\s*$', '', string)
         if DEBUG: print "stripTailingWhitespace", repr(string), repr(str_out)
@@ -293,13 +300,12 @@ class SanitationUtils:
 
     @staticmethod
     def stripTailingNewline(string):
-        str_out = re.sub(r'(\\n|\n)$', '', string)
+        str_out = re.sub(r'(\\n|\n)*$', '', string)
         if DEBUG: print "stripTailingNewline", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAllWhitespace(string):
-        if DEBUG: print "stripAllWhitespace", repr(string)
         str_out = re.sub(r'\s', '', string)
         if DEBUG: print "stripAllWhitespace", repr(string), repr(str_out)
         return str_out
@@ -378,6 +384,7 @@ class SanitationUtils:
             SanitationUtils.stripTailingWhitespace,
             SanitationUtils.sanitizeNewlines,
             SanitationUtils.stripTailingNewline,
+            SanitationUtils.stripLeadingNewline,
             SanitationUtils.removeNULL,
             SanitationUtils.coerceUnicode
         )(cell)

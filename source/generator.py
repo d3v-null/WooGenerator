@@ -5,6 +5,7 @@ import shutil
 from PIL import Image
 import time
 import datetime
+import argparse
 # from itertools import chain
 from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils
@@ -23,6 +24,12 @@ import yaml
 # import re
 # import MySQLdb
 # from sshtunnel import SSHTunnelForwarder
+
+DEBUG = False
+DEBUG_ERROR = True
+DEBUG_PROGRESS = True
+testMode = False
+testMode = True
 
 ### DEFAULT CONFIG ###
 
@@ -97,6 +104,7 @@ with open(yamlPath) as stream:
 
     current_special = config.get('current_special')
     add_special_categories = config.get('add_special_categories')
+    download_master = config.get('download_master')
 
 #mandatory params
 assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
@@ -117,26 +125,102 @@ schema = ""
 variant = ""
 # skip_google_download = True
 
-if __name__ == "__main__":
-    if sys.argv and len(sys.argv) > 1 and sys.argv[1]:
-        if sys.argv[1] in myo_schemas + woo_schemas :
-            schema = sys.argv[1]
-            if len(sys.argv) > 2 and sys.argv[2]:
-                variant = sys.argv[2]
-        else:
-            print "invalid schema"
+parser = argparse.ArgumentParser(description = 'Generate Import files from Google Drive')
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-v", "--verbosity", action="count",
+                    help="increase output verbosity")
+group.add_argument("-q", "--quiet", action="store_true")
+parser.add_argument('--testmode', help='Run in test mode with test servers',
+                    action='store_true')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--download-master', help='download the master data from google',
+                   action="store_true", default=None)
+group.add_argument('--skip-download-master', help='use the local master file instead\
+    of downloading the master data', action="store_false", dest='download_master')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--update-slave', help='update the slave database in WooCommerce',
+                   action="store_true", default=None)
+group.add_argument('--skip-update-slave', help='don\'t update the slave database',
+                   action="store_false", dest='update_slave')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-images', help='process images',
+                   action="store_true", default=None)
+group.add_argument('--skip-images', help='don\'t process images',
+                   action="store_false", dest='update_slave')
+parser.add_argument('--current-special', help='prefix of current special code')
+parser.add_argument('--add-special-categories', help='add special items to special category')
+parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
+parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
+parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
+parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
+args = parser.parse_args()
+if args:
+    print args
+    if args.verbosity > 0:
+        DEBUG_PROGRESS = True
+        DEBUG_ERROR = True
+    if args.verbosity > 1:
+        DEBUG = True
+    if args.quiet:
+        DEBUG_PROGRESS = False
+        DEBUG_ERROR = False
+        DEBUG = False
+    if args.testmode is not None:
+        testMode = args.testmode
+    if args.download_master is not None:
+        download_master = args.download_master
+    if args.update_slave is not None:
+        update_slave = args.update_slave
+    if args.current_special:
+        current_special = args.current_special
+    if args.add_special_categories:
+        add_special_categories = args.add_special_categories
+    if args.schema:
+        schema = args.schema
+    if args.variant:
+        variant = args.variant
+    if args.taxo_depth:
+        taxoDepth = args.taxo_depth
+    if args.item_depth:
+        itemDepth = args.item_depth
+
+### DISPLAY CONFIG ###
+if DEBUG:
+    if testMode:
+        print "testMode enabled"
     else:
-        print "no schema specified"
+        print "testMode disabled"
+    if not download_master:
+        print "no download_master"
+    if not update_slave:
+        print "not updating slave"
+    Registrar.DEBUG_WARN = True
+    Registrar.DEBUG_MESSAGE = True
+else:
+    Registrar.DEBUG_WARN = False
+    Registrar.DEBUG_MESSAGE = False
+Registrar.DEBUG_ERROR = DEBUG_ERROR
+
+# if __name__ == "__main__":
+#     if sys.argv and len(sys.argv) > 1 and sys.argv[1]:
+#         if sys.argv[1] in myo_schemas + woo_schemas :
+#             schema = sys.argv[1]
+#             if len(sys.argv) > 2 and sys.argv[2]:
+#                 variant = sys.argv[2]
+#         else:
+#             print "invalid schema"
+#     else:
+#         print "no schema specified"
 
     #todo: set current_special, imgFolder_glb, delete, remeta, resize, download from args
 
 ### FALLBACK SHELL ARGS ###
 
-if not schema:
-    assert fallback_schema
-    schema = fallback_schema
-if not variant and fallback_variant:
-    variant = fallback_variant
+# if not schema:
+#     assert fallback_schema
+#     schema = fallback_schema
+# if not variant and fallback_variant:
+#     variant = fallback_variant
 
 ### CONFIG OVERRIDE ###
 
@@ -200,7 +284,7 @@ if skip_google_download:
 # }
 
 ########################################
-# Download data from GDrive
+# Create Product Parser object
 ########################################
 
 gDriveParams = {
@@ -214,61 +298,79 @@ gDriveParams = {
     'genFID': genFID,
 }
 
-with SyncClient_GDrive(gDriveParams) as client:
-    if schema in myo_schemas:
-        productParser = CSVParse_MYO(
-            cols = ColData_MYO.getImportCols(),
-            defaults = ColData_MYO.getDefaults(),
-            importName = importName,
-            itemDepth = itemDepth,
-            taxoDepth = taxoDepth,
-        )
+productParserArgs = {
+    'importName': importName,
+    'itemDepth': itemDepth,
+    'taxoDepth': taxoDepth,
+}
+if schema in myo_schemas:
+    colDataClass = ColData_MYO
+elif schema in woo_schemas:
+    colDataClass = ColData_Woo
+else:
+    colDataClass = ColData_Base
+productParserArgs.update(**{
+    'cols': colDataClass.getImportCols(),
+    'defaults': colDataClass.getDefaults(),
+})
+if schema in myo_schemas:
+    productParserClass = CSVParse_MYO
+elif schema in woo_schemas:
+    if schema == "TT":
+        productParserClass = CSVParse_TT
+    elif schema == "VT":
+        productParserClass = CSVParse_VT
+    else:
+        productParserArgs['schema'] = schema
+        productParserClass = CSVParse_Woo
+if download_master:
+    with SyncClient_GDrive(gDriveParams) as client:
+        if schema in woo_schemas:
+            Registrar.registerMessage("analysing dprc rules")
+            dynParser = CSVParse_Dyn()
+            client.analyseRemote(dynParser, dprcGID, dprcPath)
+            dprcRules = dynParser.taxos
+            productParserArgs['dprcRules'] = dprcRules
 
-    elif schema in woo_schemas:
-        productParserArgs = {
-            'cols': ColData_Woo.getImportCols(),
-            'defaults': ColData_Woo.getDefaults(),
-            'importName': importName,
-            'itemDepth': itemDepth,
-            'taxoDepth': taxoDepth,
-        }
+            Registrar.registerMessage("analysing dprp rules")
+            dynParser.clearTransients()
+            client.analyseRemote(dynParser, dprpGID, dprpPath)
+            dprpRules = dynParser.taxos
+            productParserArgs['dprpRules'] = dprpRules
 
+            Registrar.registerMessage("analysing specials")
+            specialParser = CSVParse_Special()
+            client.analyseRemote(specialParser, specGID, specPath)
+            specials = specialParser.objects
+            productParserArgs['specials'] = specials
+
+        productParser = productParserClass(**productParserArgs)
+
+        Registrar.registerMessage("analysing products")
+        client.analyseRemote(productParser, None, genPath)
+else:
+    if schema in woo_schemas:
         Registrar.registerMessage("analysing dprc rules")
         dynParser = CSVParse_Dyn()
-        client.analyseRemote(dynParser, dprcGID, dprcPath)
+        dynParser.analyseFile(dprcPath)
         dprcRules = dynParser.taxos
         productParserArgs['dprcRules'] = dprcRules
 
         Registrar.registerMessage("analysing dprp rules")
         dynParser.clearTransients()
-        client.analyseRemote(dynParser, dprpGID, dprpPath)
+        dynParser.analyseFile(dprpPath)
         dprpRules = dynParser.taxos
         productParserArgs['dprpRules'] = dprpRules
 
         Registrar.registerMessage("analysing specials")
         specialParser = CSVParse_Special()
-        client.analyseRemote(specialParser, specGID, specPath)
+        specialParser.analyseFile(specPath)
         specials = specialParser.objects
         productParserArgs['specials'] = specials
 
-
-        if schema == "TT":
-            productParser = CSVParse_TT(
-                **productParserArgs
-            )
-        elif schema == "VT":
-            productParser = CSVParse_VT(
-                **productParserArgs
-            )
-        else:
-            productParserArgs['schema'] = schema
-
-            productParser = CSVParse_Woo(
-                **productParserArgs
-            )
-
+    productParser = productParserClass(**productParserArgs)
     Registrar.registerMessage("analysing products")
-    client.analyseRemote(productParser, None, genPath)
+    productParser.analyseFile(genPath)
 
 products = productParser.getProducts()
 
@@ -563,6 +665,11 @@ elif schema in woo_schemas:
     #     inventoryCols = inventoryCols,
     #     imageData = images
     # )
+
+
+#########################################
+# Report
+#########################################
 
     # with open(spoPath, 'w+') as spoFile:
     #     def writeSection(title, description, data, length = 0, html_class="results_section"):
