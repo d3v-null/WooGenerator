@@ -8,8 +8,8 @@ from copy import deepcopy, copy
 from time import time
 
 DEBUG = False
-DEBUG_PARSER = False
 # DEBUG = True
+DEBUG_PARSER = False
 # DEBUG_PARSER = True
 DEBUG_PROGRESS = True
 
@@ -236,11 +236,12 @@ class CSVParse_Base(Registrar):
             self.registerError('No such column'+str(col)+' | '+str(e))
             return None
         try:
-            # if DEBUG: print "row [%s] = %s" % (index, row[index])
+            if DEBUG: registerMessage(u"row [%s] = %s" % (index, row[index]))
             #this may break shit
             return row[index]
         except Exception as e:
-            self.registerWarning('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+str(e))
+            self.registerWarning('Could not retrieve '+str(col)+' from row['+str(index)+'] | '+\
+                                 str(e) +' | '+repr(row))
             return None
 
     def sanitizeCell(self, cell):
@@ -263,10 +264,11 @@ class CSVParse_Base(Registrar):
     def newObject(self, rowcount, row, **kwargs):
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
-        # self.registerMessage( "defaultData: {}".format(defaultData) )
+        self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
-        # self.registerMessage( "rowData: {}".format(rowData) )
-        allData = listUtils.combineOrderedDicts(rowData, defaultData)
+        self.registerMessage( "rowData: {}".format(rowData) )
+        # allData = listUtils.combineOrderedDicts(rowData, defaultData)
+        allData = listUtils.combineOrderedDicts(defaultData, rowData)
         if(DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
         # self.registerMessage("container: {}".format(container.__name__))

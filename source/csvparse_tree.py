@@ -2,7 +2,7 @@ from csvparse_abstract import CSVParse_Base, ImportObject
 from collections import OrderedDict
 
 DEBUG_TREE = False
-DEBUG_TREE = True
+# DEBUG_TREE = True
 
 class ImportTreeObject(ImportObject):
     _isRoot = False
@@ -278,6 +278,9 @@ class CSVParse_Tree(CSVParse_Base):
         return kwargs
 
     def newObject(self, rowcount, row, **kwargs):
+        # self.registerMessage(u"new tree object! rowcount: %d, row: %s, kwargs: %s"%\
+        #                      (rowcount, unicode(row), unicode(kwargs)))
+
         try:
             depth = kwargs['depth']
             assert depth is not None

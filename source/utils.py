@@ -2478,6 +2478,9 @@ class listUtils:
 
     @staticmethod
     def combineOrderedDicts(a, b):
+        """
+            Combines OrderedDict a with b by starting with A and overwriting with items from b
+        """
         if not a:
             return b if b else OrderedDict()
         if not b: return a

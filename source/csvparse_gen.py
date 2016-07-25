@@ -3,7 +3,8 @@ from utils import descriptorUtils, SanitationUtils, listUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 from csvparse_abstract import ObjList
 
-DEBUG_GEN = True
+DEBUG_GEN = False
+# DEBUG_GEN = True
 
 class ImportGenObject(ImportTreeObject):
 
@@ -88,6 +89,8 @@ class ImportGenObject(ImportTreeObject):
         return codesum
 
     def joinDescs(self, ancestors):
+        self.registerMessage(u"given description: {}".format( self.description) )
+        self.registerMessage(u"self: {}".format( self.items()) )
         if self.description:
             return self.description
         fullnames = [self.fullname]

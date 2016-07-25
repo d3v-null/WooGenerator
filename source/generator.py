@@ -148,7 +148,7 @@ group.add_argument('--do-images', help='process images',
 group.add_argument('--skip-images', help='don\'t process images',
                    action="store_false", dest='update_slave')
 parser.add_argument('--current-special', help='prefix of current special code')
-parser.add_argument('--add-special-categories', help='add special items to special category')
+parser.add_argument('--add-special-categories', help='add special items to special category', action="store_true", default=None)
 parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
 parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
 parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)

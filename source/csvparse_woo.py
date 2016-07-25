@@ -7,7 +7,8 @@ from collections import OrderedDict
 import bisect
 import time
 
-DEBUG_WOO = True
+DEBUG_WOO = False
+# DEBUG_WOO = True
 
 class ImportWooObject(ImportGenObject):
     _isCategory = False
