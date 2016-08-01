@@ -28,9 +28,11 @@ class testProgressCounter(TestCase):
 
         print "woo, another thing"
 
-        self.progressCounter.maybePrintUpdate(50)
-        sleep(1)
-        self.progressCounter.maybePrintUpdate(99)
+        for i in range(90, 100):
+            self.progressCounter.maybePrintUpdate(i)
+            sleep(1)
+
+        print "some stuff after"
 
 if __name__ == '__main__':
     # main()

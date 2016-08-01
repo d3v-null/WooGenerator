@@ -2750,8 +2750,10 @@ class ProgressCounter(object):
             line = "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
             if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print
-                time_remaining = time_elapsed * (self.total / count - 1)
-                line += " remaining: %d seconds" % int(time_remaining)
+                ratio = ((self.total) / (count) - 1.0)
+                time_remaining = float(time_elapsed) * ratio
+                line += " elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
+                line += " | remaining: %3d seconds" % int(time_remaining)
             if self.printCount > 0:
                 line = "\r%s\r" % line
             sys.stdout.write( line )
