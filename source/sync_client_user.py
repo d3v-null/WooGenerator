@@ -216,7 +216,8 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
         self.assertConnect()
 
-        del updates['MYOB Card ID']
+        if 'MYOB Card ID' in updates:
+            del updates['MYOB Card ID']
 
         updates = OrderedDict(
             [('MYOB Card ID', user_pkey)] \
