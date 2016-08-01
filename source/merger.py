@@ -23,6 +23,13 @@ from bisect import insort
 import re
 import time
 import yaml
+import smtplib
+import zipfile
+import tempfile
+from email import encoders
+from email.message import Message
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
 # import MySQLdb
 # import pymysql
 # import paramiko
@@ -32,6 +39,7 @@ import io
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
 from SyncUpdate import SyncUpdate
 from contact_objects import FieldGroup
+
 
 importName = TimeUtils.getMsTimeStamp()
 start_time = time.time()
@@ -45,22 +53,7 @@ DEBUG_PROGRESS = True
 testMode = False
 testMode = True
 
-# download_slave = False
-# download_master = False
-# update_slave = False
-# update_master = False
-# download_slave = True
-# download_master = True
-# update_slave = True
-# update_master = True
-# do_problematic = False
-# do_problematic = True
-# do_filter = False
-# do_filter = True
-# FieldGroup.do_post = False
-# FieldGroup.DEBUG_WARN = True
-# FieldGroup.DEBUG_MESSAGE = True
-# FieldGroup.DEBUG_ERROR = True
+# good command: python source/merger.py -vv --skip-download-master --skip-download-slave --skip-update-master --skip-update-slave --skip-filter --do-sync --skip-post --livemode --limit=9000 --master-file=act_x_2016-08-01_15-02-35.csv --slave-file=act_x_2016-08-01_15-02-35.csv
 
 ### DEFAULT CONFIG ###
 
@@ -118,8 +111,11 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument("-v", "--verbosity", action="count",
                     help="increase output verbosity")
 group.add_argument("-q", "--quiet", action="store_true")
-parser.add_argument('--testmode', help='Run in test mode with test servers',
-                    action='store_true')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--testmode', help='Run in test mode with test databases',
+                    action='store_true', default=testMode)
+group.add_argument('--livemode', help='Run the script on the live databases',
+                    action='store_false', dest='testmode')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--download-master', help='download the master data',
                    action="store_true", default=None)
@@ -151,6 +147,11 @@ group.add_argument('--do-sync', help='sync the databases',
 group.add_argument('--skip-sync', help='don\'t sync the databases',
                    action="store_false", dest='do_sync')
 group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-problematic', help='make problematic updates to the databases',
+                   action="store_true", default=None)
+group.add_argument('--skip-problematic', help='don\'t make problematic updates to the databases',
+                   action="store_false", dest='do_problematic')
+group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-post', help='post process the contacts',
                    action="store_true", default=None)
 group.add_argument('--skip-post', help='don\'t post process the contacts',
@@ -159,6 +160,8 @@ group.add_argument('--skip-post', help='don\'t post process the contacts',
 parser.add_argument('--m-ssh-host', help='location of master ssh server')
 parser.add_argument('--m-ssh-port', type=int, help='location of master ssh port')
 parser.add_argument('--limit', type=int, help='global limit of objects to process')
+parser.add_argument('--master-file', help='location of master file')
+parser.add_argument('--slave-file', help='location of slave file')
 args = parser.parse_args()
 if args:
     print args
@@ -185,12 +188,18 @@ if args:
         do_filter = args.do_filter
     if args.do_sync is not None:
         do_sync = args.do_sync
+    if args.do_problematic is not None:
+        do_problematic = args.do_problematic
     if args.do_post is not None:
         do_post = args.do_post
     if args.m_ssh_port:
         m_ssh_port = args.m_ssh_port
     if args.m_ssh_host:
         m_ssh_host = args.m_ssh_host
+    if args.master_file is not None:
+        master_file = args.master_file
+    if args.slave_file is not None:
+        slave_file = args.slave_file
     global_limit = args.limit
 
 # api config
@@ -273,19 +282,20 @@ m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
 m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
 s_x_filename = "wp_x"+fileSuffix+"_"+importName+".csv"
 remoteExportPath = os.path.join(remote_export_folder, m_x_filename)
-maPath = os.path.join(inFolder, m_x_filename)
-maEncoding = "utf-8"
 
-saPath = os.path.join(inFolder, s_x_filename)
-saEncoding = "utf8"
-
-if not download_master:
+if download_master:
+    maPath = os.path.join(inFolder, m_x_filename)
+    maEncoding = "utf-8"
+else:
     # maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
     maPath = os.path.join(inFolder, master_file)
     # maPath = os.path.join(inFolder, "500-act-records-edited.csv")
     # maPath = os.path.join(inFolder, "500-act-records.csv")
     maEncoding = "utf8"
-if not download_slave:
+if download_slave:
+    saPath = os.path.join(inFolder, s_x_filename)
+    saEncoding = "utf8"
+else:
     saPath = os.path.join(inFolder, slave_file)
     # saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
     saEncoding = "utf8"
@@ -302,6 +312,7 @@ sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
 pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
 logPath = os.path.join(logFolder, "log_%s.txt" % importName)
+zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
 
 ### PROCESS OTHER CONFIG ###
 
@@ -507,7 +518,9 @@ def denyAnomalousParselist(parselistType, anomalousParselist):
 
 if do_sync:
     # for every username in slave, check that it exists in master
-    print "processing usernames"
+    print debugUtils.hashify("processing usernames")
+    print timediff()
+
     denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
 
     usernameMatcher = UsernameMatcher()
@@ -519,10 +532,11 @@ if do_sync:
 
     # debug stuff
     # if(DEBUG):
-    #     print "all username matches"
-    #     print usernameMatcher.matasdadches.tabulate(tablefmt="simple");
+    #     print "all username matches (%d)" % len(usernameMatcher.matches)
+    #     print usernameMatcher.matches.tabulate(tablefmt="simple")
 
-    print "processing cards"
+    print debugUtils.hashify("processing cards")
+    print timediff()
 
     #for every card in slave not already matched, check that it exists in master
 
@@ -537,12 +551,13 @@ if do_sync:
     globalMatches.addMatches( cardMatcher.pureMatches)
 
     # if(DEBUG):
-    #     print "all card matches"
-    #     print cardMatcher.matches.tabulate(tablefmt="simple");
+    #     print "all card matches (%d)" % len(cardMatcher.matches)
+    #     print cardMatcher.matches.tabulate(tablefmt="simple")
 
     # #for every email in slave, check that it exists in master
 
-    print "processing emails"
+    print debugUtils.hashify("processing emails")
+    print timediff()
 
     denyAnomalousParselist("saParser.noemails", saParser.noemails)
 
@@ -1015,7 +1030,18 @@ with io.open(logPath, 'w+', encoding='utf8') as logFile:
         for message in messages:
             pprint( message, indent=4, width=80, depth=2)
 
+
+
+#########################################
+# email reports
+#########################################
+
+files_to_zip = [mFailPath, sFailPath, resPath]
+
+with zipfile.ZipFile(zipPath, 'w') as zipFile:
+    for file_to_zip in files_to_zip:
+        zipFile.write(file_to_zip)
+    Registrar.registerMessage('wrote file %s' % zipPath)
+
 # if __name__ == '__main__':
 #     main()
-
-#
