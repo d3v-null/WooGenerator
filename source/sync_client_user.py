@@ -226,7 +226,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         if not updates:
             return
         # print "UPDATES:", updates
-        assert self.connectionReady
+        assert self.connectionReady, "connection must be ready"
         updates['MYOB Card ID'] = user_pkey
 
         importName = self.fsParams['importName']
@@ -434,7 +434,7 @@ ON (ud.`Wordpress ID` = lu.`user_id`)
             limit_clause = "LIMIT %d" % limit if limit else ""
         )
 
-        Registrar.registerMessage(sql_select_user_modtime)
+        # Registrar.registerMessage(sql_select_user_modtime)
 
         cursor.execute(sql_select_user_modtime)
 

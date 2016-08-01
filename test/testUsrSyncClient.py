@@ -134,7 +134,7 @@ class testUsrSyncClient(TestCase):
         # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
 
-    def test_SQLWP_Upload(self):
+    def test_SSH_ACT_Upload(self):
         fields = {
             "ABN": "1",
             "MYOB Card ID": "C000001",
@@ -190,5 +190,5 @@ class testUsrSyncClient(TestCase):
 if __name__ == '__main__':
     # main()
     testSuite = unittest.TestSuite()
-    testSuite.addTest(testUsrSyncClient('test_SQLWP_Upload'))
+    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
     unittest.TextTestRunner().run(testSuite)
