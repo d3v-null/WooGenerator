@@ -233,10 +233,12 @@ class CSVParse_Base(Registrar):
         try:
             index = self.indices[col]
         except KeyError as e:
-            self.registerError('No such column'+str(col)+' | '+str(e))
+            if col in self.defaults:
+                return self.defaults[col]
+            self.registerError('No default for column '+str(col)+' | '+str(e) + ' ' + unicode(self.defaults))
             return None
         try:
-            if DEBUG: registerMessage(u"row [%s] = %s" % (index, row[index]))
+            if DEBUG: self.registerMessage(u"row [%s] = %s" % (index, row[index]))
             #this may break shit
             return row[index]
         except Exception as e:
@@ -264,9 +266,9 @@ class CSVParse_Base(Registrar):
     def newObject(self, rowcount, row, **kwargs):
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
-        self.registerMessage( "defaultData: {}".format(defaultData) )
+        if(DEBUG_PARSER): self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
-        self.registerMessage( "rowData: {}".format(rowData) )
+        if(DEBUG_PARSER): self.registerMessage( "rowData: {}".format(rowData) )
         # allData = listUtils.combineOrderedDicts(rowData, defaultData)
         allData = listUtils.combineOrderedDicts(defaultData, rowData)
         if(DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
