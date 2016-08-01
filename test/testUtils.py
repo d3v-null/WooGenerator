@@ -17,6 +17,17 @@ class testProgressCounter(TestCase):
         sleep(1)
         self.progressCounter.maybePrintUpdate(2)
         sleep(1)
+        self.progressCounter.maybePrintUpdate(3)
+        sleep(1)
+        print "woo something else\n"
+
+        self.progressCounter.maybePrintUpdate(3)
+        sleep(1)
+        self.progressCounter.maybePrintUpdate(4)
+        sleep(1)
+
+        print "woo, another thing"
+
         self.progressCounter.maybePrintUpdate(50)
         sleep(1)
         self.progressCounter.maybePrintUpdate(99)
