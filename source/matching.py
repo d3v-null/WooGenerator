@@ -7,6 +7,8 @@ class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
         self._mObjects = filter(None, mObjects) or []
         self._sObjects = filter(None, sObjects) or []
+        for _object in self._mObjects + self._sObjects:
+            assert isinstance(_object, ImportObject)
 
     @property
     def mObjects(self):
@@ -239,6 +241,11 @@ class AbstractMatcher(Registrar):
         # print "processing singular register"
         for regKey, regValue in saRegister.items():
             maObjects = self.retrieveObjects(maRegister, self.keyFn(regValue))
+            # try:
+            #     key = self.keyFn(regValue)
+            #     maObjects = self.retrieveObjects(maRegister, key)
+            # except:
+            #     return
             self.processMatch(maObjects, [regValue])
 
     def retrieveObjectsNonsingular(self, register, key):
@@ -285,7 +292,15 @@ class AbstractMatcher(Registrar):
 
     def processMatch(self, maObjects, saObjects):
         maObjects = self.mFilter(maObjects)
+        for maObject in maObjects:
+            assert \
+                isinstance(maObject, ImportObject), \
+                "maObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" % (type(maObject), maObjects, self.__repr__())
         saObjects = self.sFilter(saObjects)
+        for saObject in saObjects:
+            assert \
+                isinstance(saObject, ImportObject), \
+                "saObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" % (type(saObject), saObjects, self.__repr__())
         match = Match(maObjects, saObjects)
         match_type = self.get_match_type(match)
         if(match_type and match_type != 'empty'):
@@ -329,7 +344,9 @@ class CardMatcher(FilteringMatcher):
 class EmailMatcher(FilteringMatcher):
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering EmailMatcher __init__"
-        super(EmailMatcher, self).__init__( lambda x: x.email.lower(), sMatchIndices, mMatchIndices )
+        super(EmailMatcher, self).__init__(
+            lambda x: SanitationUtils.normalizeVal(x.email),
+            sMatchIndices, mMatchIndices )
 
 class NocardEmailMatcher(EmailMatcher):
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
