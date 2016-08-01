@@ -2731,7 +2731,7 @@ class PHPUtils:
         return loads(string)
 
 class ProgressCounter(object):
-    def __init__(self, total, printThreshold=5):
+    def __init__(self, total, printThreshold=1):
         self.total = total
         self.printThreshold = printThreshold
         self.last_print = time.time()
@@ -2748,15 +2748,17 @@ class ProgressCounter(object):
             if self.total > 0:
                 percentage = 100 * count / self.total
             line = "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
-            if percentage > 1:
+            if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print
-                time_remaining = time_elapsed * self.total / count
+                time_remaining = time_elapsed * (self.total / count - 1)
                 line += " remaining: %d seconds" % int(time_remaining)
             if self.printCount > 0:
                 line = "\r%s\r" % line
             sys.stdout.write( line )
             sys.stdout.flush()
             self.printCount += 1
+        if count == self.total:
+            print "\n"
 
 
 

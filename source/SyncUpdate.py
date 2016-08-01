@@ -225,7 +225,7 @@ class SyncUpdate(Registrar):
         if col not in self.syncProblematics.keys():
             self.syncProblematics[col] = []
         self.syncProblematics[col].append(updateParams)
-        self.registerWarning("SYNC PROB: %s" % SanitationUtils.coerceUnicode(updateParams))
+        self.registerWarning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
 
     def addSyncWarning(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
@@ -234,7 +234,7 @@ class SyncUpdate(Registrar):
         if col not in self.syncWarnings.keys():
             self.syncWarnings[col] = []
         self.syncWarnings[col].append(updateParams)
-        self.registerWarning("SYNC WARNING: %s" % SanitationUtils.coerceUnicode(updateParams))
+        self.registerWarning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
 
     def addSyncPass(self, **updateParams):
         for key in ['col']:
@@ -243,7 +243,7 @@ class SyncUpdate(Registrar):
         if col not in self.syncPasses.keys():
             self.syncPasses[col] = []
         self.syncPasses[col].append(updateParams)
-        if DEBUG_UPDATE: self.registerMessage("SYNC PASS: %s" % SanitationUtils.coerceUnicode(updateParams))
+        if DEBUG_UPDATE: self.registerMessage("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
 
 
     def displayUpdateList(self, updateList, tablefmt=None):
@@ -503,15 +503,17 @@ class SyncUpdate(Registrar):
         #     self.newSObject.refreshContactObjects()
 
     def tabulate(self, tablefmt=None):
-        subtitle_fmt = "%s"
+        subtitle_fmt = heading_fmt = "%s"
         info_delimeter = "\n"
         info_fmt = "%s: %s"
         if(tablefmt == "html"):
+            heading_fmt = "<h2>%s</h2>"
             subtitle_fmt = "<h3>%s</h3>"
             info_delimeter = "<br/>"
             info_fmt = "<strong>%s:</strong> %s"
         oldMatch = Match([self.oldMObject], [self.oldSObject])
         out_str =  ""
+        out_str += heading_fmt % self.__str__()
         out_str += info_delimeter.join([
             subtitle_fmt % "OLD",
             oldMatch.tabulate(tablefmt)
@@ -597,7 +599,7 @@ class SyncUpdate(Registrar):
         return updates
 
     def getSlaveUpdatesRecursive(self, col, updates=None):
-        if updates == None: updates = {}
+        if updates == None: updates = OrderedDict()
         # self.registerMessage( u"getSlaveUpdatesRecursive checking %s" % unicode(col) )
         if col in ColData_User.data:
             # self.registerMessage( u"getSlaveUpdatesRecursive col exists" )
@@ -624,7 +626,7 @@ class SyncUpdate(Registrar):
         return updates
 
     def getSlaveUpdates(self):
-        updates = {}
+        updates = OrderedDict()
         for col, warnings in self.syncWarnings.items():
             for warning in warnings:
                 subject = warning['subject']
@@ -634,7 +636,7 @@ class SyncUpdate(Registrar):
         return updates
 
     def getMasterUpdatesRecursive(self, col, updates=None):
-        if updates == None: updates = {}
+        if updates == None: updates = OrderedDict()
         if col in ColData_User.data:
             data = ColData_User.data[col]
             if data.get('act'):
@@ -649,7 +651,7 @@ class SyncUpdate(Registrar):
         return updates
 
     def getMasterUpdates(self):
-        updates = {}
+        updates = OrderedDict()
         for col, warnings in self.syncWarnings.items():
             for warning in warnings:
                 subject = warning['subject']
@@ -760,6 +762,9 @@ class SyncUpdate(Registrar):
     def __cmp__(self, other):
         return -cmp(self.bTime, other.bTime)
         # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
+
+    def __str__(self):
+        return "update < %s | %s >" % (self.MYOBID, self.WPID)
 
 # def testSyncUpdate1():
 #

@@ -79,6 +79,14 @@ class UsrSyncClient_Abstract(SyncClient_Abstract):
     def connectionReady(self):
         return self.client
 
+    def assertConnect(self):
+        if not self.connectionReady:
+            self.attemptConnect()
+        assert self.connectionReady, "connection must be ready"
+
+    def attemptConnect(self):
+        pass
+
 class UsrSyncClient_JSON(UsrSyncClient_Abstract):
 
     def __exit__(self, type, value, traceback):
@@ -86,15 +94,15 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
 
     def __init__(self, connectParams):
         super(UsrSyncClient_JSON, self).__init__()
-        mandatory_params = ['json_uri', 'wp_user', 'wp_pass']
-        json_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
-        for param in mandatory_params:
-            assert eval(param), "missing mandatory param: " + param
-        self.client = TansyncWordpressJsonWrapper(*map(eval, mandatory_params))
+        self.connectParams = []
+        for param in ['json_uri', 'wp_user', 'wp_pass']:
+            assert param in connectParams, "missing mandatory param: " + param
+            self.connectParams.append(connectParams.get(param))
+        self.attemptConnect()
 
-    # @property
-    # def connectionReady(self):
-    #     return self.client
+    def attemptConnect(self):
+        self.client = TansyncWordpressJsonWrapper(*self.connectParams)
+
 
     def uploadChanges(self, user_pkey, updates=None):
         super(type(self), self).uploadChanges(user_pkey)
@@ -115,48 +123,25 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
             raise Exception("No response from json api")
         return json_out
 
-# class UsrSyncClient_XMLRPC(UsrSyncClient_Abstract):
-#     class UpdateUserXMLRPC( wordpress_xmlrpc.AuthenticatedMethod ):
-#         method_name = 'tansync.update_user_fields'
-#         method_args = ('user_id', 'fields_json_base64')
-#
-#     def __exit__(self, type, value, traceback):
-#         pass
-#
-#     def __init__(self, connectParams):
-#         mandatory_params = ['xmlrpc_uri', 'wp_user', 'wp_pass']
-#         xmlrpc_uri, wp_user, wp_pass = map(lambda k: connectParams.get(k), mandatory_params)
-#         for param in mandatory_params:
-#             assert eval(param), "missing mandatory param: " + param
-#         self.client = wordpress_xmlrpc.Client(*map(eval, mandatory_params))
-#
-#     # @property
-#     # def connectionReady(self):
-#     #     return self.client
-#
-#     def uploadChanges(self, user_pkey, updates=None):
-#         super(type(self), self).uploadChanges(user_pkey)
-#         updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
-#         xmlrpc_out = self.client.call(self.UpdateUserXMLRPC(user_pkey, updates_json_base64))
-#         #TODO: process xmlrpc_out and determine if update was successful
-#         SanitationUtils.safePrint( xmlrpc_out)
-#         return xmlrpc_out
-
 class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def __init__(self, connectParams, dbParams, fsParams):
         super(UsrSyncClient_SSH_ACT, self).__init__()
-        self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.client.connect(**connectParams)
+        self.connectParams = connectParams
         self.dbParams = dbParams
         self.fsParams = fsParams
+        self.attemptConnect()
+
+    def attemptConnect(self):
+        self.client = paramiko.SSHClient()
+        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.client.connect(**self.connectParams)
 
     @property
     def connectionReady(self):
         return self.client and self.client._transport and self.client._transport.active
 
     def execSilentCommandAssert(self, command):
-        assert self.connectionReady, "master connection must be ready"
+        self.assertConnect()
         stdin, stdout, stderr = self.client.exec_command(command)
         possible_errors = stdout.readlines() + stderr.readlines()
         for error in possible_errors:
@@ -169,7 +154,8 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
             )
 
     def putFile(self, localPath, remotePath):
-        assert self.connectionReady, "master connection must be ready"
+        self.assertConnect()
+
         remoteDir, remoteFileName = os.path.split(remotePath)
 
         exception = None
@@ -193,7 +179,8 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
 
     def assertRemoteFileExists(self, remotePath, assertion = ""):
-        assert self.connectionReady, "master connection must be ready"
+        self.assertConnect()
+
         stdin, stdout, stderr = self.client.exec_command('stat "%s"' % remotePath)
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
@@ -226,8 +213,15 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         if not updates:
             return
         # print "UPDATES:", updates
-        assert self.connectionReady, "connection must be ready"
-        updates['MYOB Card ID'] = user_pkey
+
+        self.assertConnect()
+
+        del updates['MYOB Card ID']
+
+        updates = OrderedDict(
+            [('MYOB Card ID', user_pkey)] \
+            + updates.items()
+        )
 
         importName = self.fsParams['importName']
         outFolder = self.fsParams['outFolder']
@@ -301,8 +295,8 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         super(UsrSyncClient_SQL_WP, self).__init__()
         self.connectParams = connectParams
         self.dbParams = dbParams
+        self.attemptConnect()
         # self.fsParams = fsParams
-        self.client = SSHTunnelForwarder( **connectParams )
 
     def __enter__(self):
         self.client.start()
@@ -311,7 +305,13 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     def __exit__(self, type, value, traceback):
         self.client.close()
 
+    def attemptConnect(self):
+        self.client = SSHTunnelForwarder( **self.connectParams )
+
     def analyseRemote(self, parser, since=None, limit=None):
+
+        self.assertConnect()
+
         tbl_prefix = self.dbParams.pop('tbl_prefix','')
         # srv_offset = self.dbParams.pop('srv_offset','')
         self.dbParams['port'] = self.client.local_bind_address[-1]
