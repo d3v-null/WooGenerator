@@ -4,6 +4,7 @@ import itertools
 # from itertools import chain
 import re
 import time
+import sys
 # import datetime
 import inspect
 import json
@@ -2734,6 +2735,7 @@ class ProgressCounter(object):
         self.total = total
         self.printThreshold = printThreshold
         self.last_print = time.time()
+        self.printCount = 0
         # self.memory_tracker = tracker.SummaryTracker()
 
     def maybePrintUpdate(self, count):
@@ -2744,9 +2746,12 @@ class ProgressCounter(object):
             percentage = 0
             if self.total > 0:
                 percentage = 100 * count / self.total
-            SanitationUtils.safePrint(
-                "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
-            )
+            line = "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
+            if self.printCount > 0:
+                line = "\r" + line
+            sys.stdout.write( line )
+            sys.stdout.flush()
+            self.printCount += 1
 
 
 
