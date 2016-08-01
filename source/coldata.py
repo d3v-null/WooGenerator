@@ -1,6 +1,6 @@
 # from __future__ import absolute_import
 from collections import OrderedDict
-from utils import listUtils #, debugUtils
+from utils import listUtils, Registrar #, debugUtils
 import json
 
 class ColData_Base(object):
@@ -22,9 +22,15 @@ class ColData_Base(object):
     @classmethod
     def getDefaults(cls):
         defaults = {}
+        # Registrar.registerMessage('called with class: '+ unicode(cls) + ', data=' + unicode(cls.data))
         for col, data in cls.data.items():
-            if data.get('default'):
+            # Registrar.registerMessage('col is %s' % col)
+            if 'default' in data:
+                # Registrar.registerMessage('has default')
                 defaults[col] = data.get('default')
+            else:
+                pass
+                # Registrar.registerMessage('does not have default')
         return defaults
 
     @classmethod
@@ -838,6 +844,7 @@ class ColData_User(ColData_Base):
             'warn':True,
             'static':True,
             'basic':True,
+            'default':'',
             # 'tracked':True,
         }),
         ('Role', {
@@ -1535,7 +1542,8 @@ class ColData_User(ColData_Base):
             },
             'sync':True,
             'import':True,
-            'tracked':True
+            'tracked':True,
+            'default':'',
         })
         # ('rowcount', {
         #     # 'import':True,
