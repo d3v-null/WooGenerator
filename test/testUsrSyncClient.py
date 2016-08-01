@@ -11,7 +11,11 @@ from source.csvparse_flat import ImportUser
 
 class testUsrSyncClient(TestCase):
     def setUp(self):
-        os.chdir('source')
+        try:
+            os.stat('source')
+            os.chdir('source')
+        except:
+            pass
 
         yamlPath = "merger_config.yaml"
 
@@ -188,7 +192,7 @@ class testUsrSyncClient(TestCase):
 
 
 if __name__ == '__main__':
-    # main()
-    testSuite = unittest.TestSuite()
-    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
-    unittest.TextTestRunner().run(testSuite)
+    main()
+    # testSuite = unittest.TestSuite()
+    # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
+    # unittest.TextTestRunner().run(testSuite)
