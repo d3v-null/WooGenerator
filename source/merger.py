@@ -1036,6 +1036,8 @@ def main():
 if __name__ == '__main__':
     try:
         main()
+    except SystemExit:
+        exit()
     except:
         Registrar.registerError(traceback.format_exc())
 
