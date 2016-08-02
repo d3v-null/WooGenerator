@@ -250,7 +250,7 @@ class ImportUser(ImportFlat):
         if data.get('E-mail'):
             emails = listUtils.combineLists(emails, SanitationUtils.findallEmails(data['E-mail']))
         if data.get('Personal E-mail'):
-            emails = listUtils.combineLists(emails, SanitationUtils.findAllImages(data.get('Personal E-mail')))
+            emails = listUtils.combineLists(emails, SanitationUtils.findallEmails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
         self['Personal E-mail'] = ', '.join(emails)
 

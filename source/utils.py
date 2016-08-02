@@ -2472,15 +2472,23 @@ class descriptorUtils:
 class listUtils:
     @staticmethod
     def combineLists(a, b):
+        """
+            Combines lists a and b uniquely, attempting to preserve order
+        """
         if not a:
             return b if b else []
         if not b: return a
-        return list(set(a) | set(b))
+        c = []
+        for element in a + b:
+            if element not in c:
+                c.append(element)
+        return c
 
     @staticmethod
     def combineOrderedDicts(a, b):
         """
-            Combines OrderedDict a with b by starting with A and overwriting with items from b
+            Combines OrderedDict a with b by starting with A and overwriting with items from b.
+            Attempts to preserve order
         """
         if not a:
             return b if b else OrderedDict()
@@ -2750,9 +2758,9 @@ class ProgressCounter(object):
             line = "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
             if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print
-                ratio = ((self.total) / (count) - 1.0)
+                ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
-                line += " elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
+                line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
                 line += " | remaining: %3d seconds" % int(time_remaining)
             if self.printCount > 0:
                 line = "\r%s\r" % line
