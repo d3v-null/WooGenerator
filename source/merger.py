@@ -544,8 +544,8 @@ def main():
         globalMatches.addMatches( usernameMatcher.pureMatches)
 
         # debug stuff
-        # if(DEBUG):
-        #     print "all username matches (%d)" % len(usernameMatcher.matches)
+        if(DEBUG):
+            print "username matches (%d)" % len(usernameMatcher.matches)
         #     print usernameMatcher.matches.tabulate(tablefmt="simple")
 
         print debugUtils.hashify("processing cards")
@@ -563,8 +563,8 @@ def main():
 
         globalMatches.addMatches( cardMatcher.pureMatches)
 
-        # if(DEBUG):
-        #     print "all card matches (%d)" % len(cardMatcher.matches)
+        if(DEBUG):
+            print "card matches (%d)" % len(cardMatcher.matches)
         #     print cardMatcher.matches.tabulate(tablefmt="simple")
 
         # #for every email in slave, check that it exists in master
@@ -582,6 +582,10 @@ def main():
         newSlaves.addMatches(emailMatcher.slavelessMatches)
 
         globalMatches.addMatches(emailMatcher.pureMatches)
+
+        if(DEBUG):
+            print "email matches (%d)" % len(cardMatcher.matches)
+        #     print cardMatcher.matches.tabulate(tablefmt="simple")
 
 
         # TODO: further sort emailMatcher
@@ -607,11 +611,11 @@ def main():
 
             # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
-            # if syncUpdate.mUpdated and syncUpdate.mDeltas:
-            #     insort(mDeltaUpdates, syncUpdate)
-            #
-            # if syncUpdate.sUpdated and syncUpdate.sDeltas:
-            #     insort(sDeltaUpdates, syncUpdate)
+            if syncUpdate.mUpdated and syncUpdate.mDeltas:
+                insort(mDeltaUpdates, syncUpdate)
+
+            if syncUpdate.sUpdated and syncUpdate.sDeltas:
+                insort(sDeltaUpdates, syncUpdate)
 
             if not syncUpdate:
                 continue

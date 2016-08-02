@@ -2760,14 +2760,14 @@ class ProgressCounter(object):
                 time_elapsed = self.last_print - self.first_print
                 ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
-                line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
+                # line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
                 line += " | remaining: %3d seconds" % int(time_remaining)
             if self.printCount > 0:
                 line = "\r%s\r" % line
             sys.stdout.write( line )
             sys.stdout.flush()
             self.printCount += 1
-        if count == self.total:
+        if count == self.total - 1:
             print "\n"
 
 

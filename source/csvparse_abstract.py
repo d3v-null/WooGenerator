@@ -10,7 +10,7 @@ from time import time
 DEBUG = False
 # DEBUG = True
 DEBUG_PARSER = False
-DEBUG_PARSER = True
+# DEBUG_PARSER = True
 DEBUG_PROGRESS = True
 
 import os
