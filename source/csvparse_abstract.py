@@ -10,7 +10,7 @@ from time import time
 DEBUG = False
 # DEBUG = True
 DEBUG_PARSER = False
-# DEBUG_PARSER = True
+DEBUG_PARSER = True
 DEBUG_PROGRESS = True
 
 import os
@@ -219,6 +219,7 @@ class CSVParse_Base(Registrar):
         )
 
     def analyseHeader(self, row):
+        if DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
@@ -362,13 +363,18 @@ class CSVParse_Base(Registrar):
             byte_sample = byte_file_obj.read(1000)
             byte_file_obj.seek(0)
             csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
-            # if DEBUG_PARSER: print "CSV Dialect:",    \
-            #     "DEL ", repr(csvdialect.delimiter)  , \
-            #     "DBL ", repr(csvdialect.doublequote), \
-            #     "ESC ", repr(csvdialect.escapechar) , \
-            #     "QUC ", repr(csvdialect.quotechar)  , \
-            #     "QUT ", repr(csvdialect.quoting)    , \
-            #     "SWS ", repr(csvdialect.skipinitialspace)
+            if DEBUG_PARSER: print "CSV Dialect:",    \
+                "DEL ", repr(csvdialect.delimiter)  , \
+                "DBL ", repr(csvdialect.doublequote), \
+                "ESC ", repr(csvdialect.escapechar) , \
+                "QUC ", repr(csvdialect.quotechar)  , \
+                "QUT ", repr(csvdialect.quoting)    , \
+                "SWS ", repr(csvdialect.skipinitialspace)
+
+            try:
+                assert csvdialect.delimiter ==','
+            except AssertionError:
+                csvdialect.delimiter = ','
 
             unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
             return self.analyseRows(unicodecsvreader, fileName)
