@@ -1,6 +1,6 @@
 import yaml
 from collections import OrderedDict
-from utils import SanitationUtils, TimeUtils, Registrar
+from utils import SanitationUtils, TimeUtils, Registrar, UnicodeCsvDialectUtils
 from contact_objects import ContactAddress
 from coldata import ColData_User
 from tabulate import tabulate

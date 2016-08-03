@@ -3,7 +3,7 @@ from collections import OrderedDict
 import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
-from utils import ProgressCounter
+from utils import ProgressCounter, UnicodeCsvDialectUtils
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
