@@ -169,10 +169,13 @@ class ObjList(list):
         assert colNames, "needs colNames"
         assert self.objects, "meeds items"
         with open(filePath, 'w+') as outFile:
-            csvdialect = UnicodeCsvDialectUtils.act_out
+            if dialect is None:
+                csvdialect = UnicodeCsvDialectUtils.act_out
+            else:
+                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
             # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
             if DEBUG:
-                self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+                Registrar.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
             dictwriter = unicodecsv.DictWriter(
                 outFile,
                 dialect=csvdialect,

@@ -2774,13 +2774,14 @@ class UnicodeCsvDialectUtils(object):
     default_dialect = unicodecsv.excel
 
     class act_out(unicodecsv.Dialect):
-        delimeter = ','
+        delimiter = ','
         quoting = unicodecsv.QUOTE_ALL
         doublequote = True
         strict = False
         quotechar = "\""
         escapechar = None
         skipinitialspace = False
+        lineterminator = '\r\n'
 
     @classmethod
     def get_dialect_from_suggestion(cls, suggestion):
