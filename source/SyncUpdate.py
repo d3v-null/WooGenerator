@@ -10,7 +10,7 @@ from csvparse_flat import ImportUser
 from csvparse_abstract import ImportObject
 
 DEBUG_UPDATE = False
-# DEBUG_UPDATE = True
+DEBUG_UPDATE = True
 
 class SyncUpdate(Registrar):
 

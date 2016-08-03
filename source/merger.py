@@ -584,8 +584,8 @@ def main():
         globalMatches.addMatches(emailMatcher.pureMatches)
 
         if(DEBUG):
-            print "email matches (%d)" % len(cardMatcher.matches)
-        #     print cardMatcher.matches.tabulate(tablefmt="simple")
+            print "email matches (%d)" % len(emailMatcher.matches)
+        #     print emailMatcher.matches.tabulate(tablefmt="simple")
 
 
         # TODO: further sort emailMatcher
@@ -711,68 +711,72 @@ def main():
         #     # user['address_reason'] = ''.join([address.reason for address in addresses])
         #     s_bad_addresses_usrlist.addObject(user)
 
-        sanitizingGroup.addSection(
-            HtmlReporter.Section(
-                's_bad_addresses_list',
-                title = 'Bad %s Address List' % SLAVE_NAME.title(),
-                description = '%s records that have badly formatted addresses' % SLAVE_NAME,
-                data = UsrObjList(saParser.badAddress.values()).tabulate(
-                    cols = address_cols,
-                    tablefmt='html',
-                ),
-                length = len(saParser.badAddress)
+        if saParser.badAddress:
+            sanitizingGroup.addSection(
+                HtmlReporter.Section(
+                    's_bad_addresses_list',
+                    title = 'Bad %s Address List' % SLAVE_NAME.title(),
+                    description = '%s records that have badly formatted addresses' % SLAVE_NAME,
+                    data = UsrObjList(saParser.badAddress.values()).tabulate(
+                        cols = address_cols,
+                        tablefmt='html',
+                    ),
+                    length = len(saParser.badAddress)
+                )
             )
-        )
 
         # for row in saParser.badAddress.values():
         #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
 
-        sanitizingGroup.addSection(
-            HtmlReporter.Section(
-                's_bad_names_list',
-                title = 'Bad %s Names List' % SLAVE_NAME.title(),
-                description = '%s records that have badly formatted names' % SLAVE_NAME,
-                data = UsrObjList(saParser.badName.values()).tabulate(
-                    cols = name_cols,
-                    tablefmt='html',
-                ),
-                length = len(saParser.badName)
+        if saParser.badName:
+            sanitizingGroup.addSection(
+                HtmlReporter.Section(
+                    's_bad_names_list',
+                    title = 'Bad %s Names List' % SLAVE_NAME.title(),
+                    description = '%s records that have badly formatted names' % SLAVE_NAME,
+                    data = UsrObjList(saParser.badName.values()).tabulate(
+                        cols = name_cols,
+                        tablefmt='html',
+                    ),
+                    length = len(saParser.badName)
+                )
             )
-        )
         if saParser.badName or saParser.badAddress:
             UsrObjList(saParser.badName.values() + maParser.badAddress.values()).exportItems(WPresCsvPath, csv_colnames)
 
         # for row in saParser.badName.values():
         #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
 
-        sanitizingGroup.addSection(
-            HtmlReporter.Section(
-                'm_bad_addresses_list',
-                title = 'Bad %s Address List' % MASTER_NAME.title(),
-                description = '%s records that have badly formatted addresses' % MASTER_NAME,
-                data = UsrObjList(maParser.badAddress.values()).tabulate(
-                    cols = address_cols,
-                    tablefmt='html',
-                ),
-                length = len(maParser.badAddress)
+        if maParser.badAddress:
+            sanitizingGroup.addSection(
+                HtmlReporter.Section(
+                    'm_bad_addresses_list',
+                    title = 'Bad %s Address List' % MASTER_NAME.title(),
+                    description = '%s records that have badly formatted addresses' % MASTER_NAME,
+                    data = UsrObjList(maParser.badAddress.values()).tabulate(
+                        cols = address_cols,
+                        tablefmt='html',
+                    ),
+                    length = len(maParser.badAddress)
+                )
             )
-        )
 
         # for row in maParser.badAddress.values():
         #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
 
-        sanitizingGroup.addSection(
-            HtmlReporter.Section(
-                'm_bad_names_list',
-                title = 'Bad %s Names List' % MASTER_NAME.title(),
-                description = '%s records that have badly formatted names' % MASTER_NAME,
-                data = UsrObjList(maParser.badName.values()).tabulate(
-                    cols = name_cols,
-                    tablefmt='html',
-                ),
-                length = len(maParser.badName)
+        if maParser.badName:
+            sanitizingGroup.addSection(
+                HtmlReporter.Section(
+                    'm_bad_names_list',
+                    title = 'Bad %s Names List' % MASTER_NAME.title(),
+                    description = '%s records that have badly formatted names' % MASTER_NAME,
+                    data = UsrObjList(maParser.badName.values()).tabulate(
+                        cols = name_cols,
+                        tablefmt='html',
+                    ),
+                    length = len(maParser.badName)
+                )
             )
-        )
 
         # for row in maParser.badName.values():
         #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
@@ -782,8 +786,7 @@ def main():
 
         reporter.addGroup(sanitizingGroup)
 
-        report_deltas = do_sync
-        if report_deltas:
+        if do_sync and (mDeltaUpdates + sDeltaUpdates):
 
             deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -800,29 +803,31 @@ def main():
                 ColData_User.nameCols(deltaCols.keys()+deltaCols.values()).items()
             )
 
-            deltaGroup.addSection(
-                HtmlReporter.Section(
-                    'm_deltas',
-                    title = '%s Changes List' % MASTER_NAME.title(),
-                    description = '%s records that have changed important fields' % MASTER_NAME,
-                    data = mDeltaList.tabulate(
-                        cols=allDeltaCols,
-                        tablefmt='html'),
-                    length = len(mDeltaList)
+            if mDeltaList:
+                deltaGroup.addSection(
+                    HtmlReporter.Section(
+                        'm_deltas',
+                        title = '%s Changes List' % MASTER_NAME.title(),
+                        description = '%s records that have changed important fields' % MASTER_NAME,
+                        data = mDeltaList.tabulate(
+                            cols=allDeltaCols,
+                            tablefmt='html'),
+                        length = len(mDeltaList)
+                    )
                 )
-            )
 
-            deltaGroup.addSection(
-                HtmlReporter.Section(
-                    's_deltas',
-                    title = '%s Changes List' % SLAVE_NAME.title(),
-                    description = '%s records that have changed important fields' % SLAVE_NAME,
-                    data = sDeltaList.tabulate(
-                        cols=allDeltaCols,
-                        tablefmt='html'),
-                    length = len(sDeltaList)
+            if sDeltaList:
+                deltaGroup.addSection(
+                    HtmlReporter.Section(
+                        's_deltas',
+                        title = '%s Changes List' % SLAVE_NAME.title(),
+                        description = '%s records that have changed important fields' % SLAVE_NAME,
+                        data = sDeltaList.tabulate(
+                            cols=allDeltaCols,
+                            tablefmt='html'),
+                        length = len(sDeltaList)
+                    )
                 )
-            )
 
             reporter.addGroup(deltaGroup)
             if mDeltaList:
