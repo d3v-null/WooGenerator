@@ -10,7 +10,7 @@ from csvparse_flat import ImportUser
 from csvparse_abstract import ImportObject
 
 DEBUG_UPDATE = False
-DEBUG_UPDATE = True
+# DEBUG_UPDATE = True
 
 class SyncUpdate(Registrar):
 
@@ -230,6 +230,18 @@ class SyncUpdate(Registrar):
         nValue = self.getNewSValue(col)
         if DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), unicode(oValue), unicode(nValue)))
         return oValue == nValue
+
+    def mColSemiStatic(self, col):
+        oValue = self.getMValue(col)
+        nValue = self.getNewMValue(col)
+        if DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), unicode(oValue), unicode(nValue)))
+        return self.valuesSimilar(col, oValue, nValue)
+
+    def sColSemiStatic(self, col):
+        oValue = self.getSValue(col)
+        nValue = self.getNewSValue(col)
+        if DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), unicode(oValue), unicode(nValue)))
+        return self.valuesSimilar(col, oValue, nValue)
 
     def updateToStr(self, updateType, updateParams):
         assert isinstance(updateType, str)
@@ -618,7 +630,7 @@ class SyncUpdate(Registrar):
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
-                    if self.sColStatic(alias):
+                    if self.sColSemiStatic(alias):
                         continue
                     updates = self.getSlaveUpdatesWPColRecursive(alias, updates)
         return updates
@@ -644,12 +656,12 @@ class SyncUpdate(Registrar):
                 if not data_wp.get('final') and data_wp.get('key'):
                     newVal = self.newSObject.get(col)
                     updates[col] = newVal
-                    if DEBUG_UPDATE: self.registerMessage( u"newval: %s" % unicode(newVal) )
+                    if DEBUG_UPDATE: self.registerMessage( u"newval: %s" % repr(newVal) )
             if data.get('aliases'):
                 if DEBUG_UPDATE: self.registerMessage( u"has aliases" )
                 data_aliases = data['aliases']
                 for alias in data_aliases:
-                    if self.sColStatic(alias):
+                    if self.sColSemiStatic(alias):
                         if DEBUG_UPDATE: self.registerMessage( u"Alias Identical" )
                         continue
                     else:
@@ -679,12 +691,12 @@ class SyncUpdate(Registrar):
                 if DEBUG_UPDATE: self.registerMessage( u"wp exists" )
                 newVal = self.newMObject.get(col)
                 updates[col] = newVal
-                if DEBUG_UPDATE: self.registerMessage( u"newval: %s" % unicode(newVal) )
+                if DEBUG_UPDATE: self.registerMessage( u"newval: %s" % repr(newVal) )
             if data.get('aliases'):
                 if DEBUG_UPDATE: self.registerMessage( u"has aliases" )
                 data_aliases = data['aliases']
                 for alias in data_aliases:
-                    if self.mColStatic(alias):
+                    if self.mColSemiStatic(alias):
                         if DEBUG_UPDATE: self.registerMessage( u"Alias Identical" )
                         continue
                     else:
