@@ -234,13 +234,13 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         importedFile = os.path.join(remote_export_folder, fileRoot + '.imported')
 
         with open(localPath, 'w+') as outFile:
-            unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            csvdialect = UnicodeCsvDialectUtils.act_out
             dictwriter = unicodecsv.DictWriter(
                 outFile,
-                dialect = 'act_out',
-                fieldnames = updates.keys(),
-                encoding = 'utf8',
-                extrasaction = 'ignore',
+                dialect=csvdialect,
+                fieldnames=updates.keys(),
+                encoding='utf8',
+                extrasaction='ignore',
             )
             dictwriter.writeheader()
             dictwriter.writerow(updates)
@@ -288,7 +288,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         print "donloading file..."
         self.getDeleteFile(remotePath, localPath)
         print "analysing file..."
-        parser.analyseFile(localPath)
+        parser.analyseFile(localPath, dialect_suggestion='act_out')
 
 class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     """docstring for UsrSyncClient_SQL_WP"""
