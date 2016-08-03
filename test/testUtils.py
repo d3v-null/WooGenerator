@@ -34,9 +34,14 @@ class testProgressCounter(TestCase):
 
         print "some stuff after"
 
+class testUnicodeCsvDialectUtils(TestCase):
+    def test_get_act_dialect(self):
+        csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion('act_out')
+        print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
+
 if __name__ == '__main__':
     # main()
 
     testSuite = TestSuite()
-    testSuite.addTest(testProgressCounter('test_carriageReturn'))
+    testSuite.addTest(testUnicodeCsvDialectUtils('test_get_act_dialect'))
     TextTestRunner().run(testSuite)

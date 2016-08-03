@@ -484,7 +484,7 @@ def main():
         with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
             masterClient.analyseRemote(maParser, limit=global_limit)
     else:
-        maParser.analyseFile(maPath)
+        maParser.analyseFile(maPath, dialect_suggestion='act_out')
 
     # CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
     #

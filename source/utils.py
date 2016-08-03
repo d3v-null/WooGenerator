@@ -2770,11 +2770,37 @@ class ProgressCounter(object):
         if count == self.total - 1:
             print "\n"
 
+class UnicodeCsvDialectUtils(object):
+    default_dialect = unicodecsv.excel
 
+    class act_out(unicodecsv.Dialect):
+        delimeter = ','
+        quoting = unicodecsv.QUOTE_ALL
+        doublequote = True
+        strict = False
+        quotechar = "\""
+        escapechar = None
+        skipinitialspace = False
 
-# port of uniqmodule.c to pure python by Derwentx,
-# inspired by http://gurukhalsa.me/2011/uniqid-in-python/
+    @classmethod
+    def get_dialect_from_suggestion(cls, suggestion):
+        dialect = cls.default_dialect
+        if hasattr(cls, suggestion):
+            possible_dialect = getattr(cls, suggestion)
+            if isinstance(possible_dialect, unicodecsv.Dialect):
+                dialect = possible_dialect
+        return dialect
 
+    @classmethod
+    def dialect_to_str(cls, dialect):
+        out = "Dialect: %s" % dialect.__name__
+        out += " | DEL: %s" % repr(dialect.delimiter)
+        out += " | DBL: %s" % repr(dialect.doublequote)
+        out += " | ESC: %s" % repr(dialect.escapechar)
+        out += " | QUC: %s" % repr(dialect.quotechar)
+        out += " | QUT: %s" % repr(dialect.quoting)
+        out += " | SWS: %s" % repr(dialect.skipinitialspace)
+        return out
 
 
 
