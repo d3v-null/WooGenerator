@@ -1050,30 +1050,30 @@ if __name__ == '__main__':
     except:
         Registrar.registerError(traceback.format_exc())
 
-        with io.open(logPath, 'w+', encoding='utf8') as logFile:
-            for source, messages in Registrar.getMessageItems(1).items():
-                print source
-                logFile.writelines([SanitationUtils.coerceUnicode(source)])
-                logFile.writelines(
-                    [SanitationUtils.coerceUnicode(message) for message in messages]
-                )
-                for message in messages:
-                    pprint( message, indent=4, width=80, depth=2)
+    with io.open(logPath, 'w+', encoding='utf8') as logFile:
+        for source, messages in Registrar.getMessageItems(1).items():
+            print source
+            logFile.writelines([SanitationUtils.coerceUnicode(source)])
+            logFile.writelines(
+                [SanitationUtils.coerceUnicode(message) for message in messages]
+            )
+            for message in messages:
+                pprint( message, indent=4, width=80, depth=2)
 
 
 
-        #########################################
-        # email reports
-        #########################################
+    #########################################
+    # email reports
+    #########################################
 
-        files_to_zip = [mFailPath, sFailPath, resPath]
+    files_to_zip = [mFailPath, sFailPath, resPath]
 
-        with zipfile.ZipFile(zipPath, 'w') as zipFile:
-            for file_to_zip in files_to_zip:
-                try:
-                    os.stat(file_to_zip)
-                    zipFile.write(file_to_zip)
-                except Exception as e:
-                    if(e):
-                        pass
-            Registrar.registerMessage('wrote file %s' % zipPath)
+    with zipfile.ZipFile(zipPath, 'w') as zipFile:
+        for file_to_zip in files_to_zip:
+            try:
+                os.stat(file_to_zip)
+                zipFile.write(file_to_zip)
+            except Exception as e:
+                if(e):
+                    pass
+        Registrar.registerMessage('wrote file %s' % zipPath)
