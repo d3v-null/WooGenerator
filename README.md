@@ -24,4 +24,4 @@ apt-cyg install libffi-devel
 Other dependencies
 ------------------
 
-pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json
+pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json pympler httplib2

@@ -13,12 +13,6 @@ STRICT_ADDRESS = True
 STRICT_NAME = False
 STRICT_NAME = True
 
-DEBUG_ADDRESS = False
-# DEBUG_ADDRESS = True
-
-DEBUG_NAME = False
-# DEBUG_NAME = True
-
 class FieldGroup(Registrar):
     """Groups a series of fields together so that they are synced at the same
     time"""
@@ -303,7 +297,7 @@ class ContactAddress(ContactObject):
     def __init__(self, schema=None, **kwargs):
         super(ContactAddress, self).__init__(schema, **kwargs)
         self.strict = STRICT_ADDRESS
-        self.debug = DEBUG_ADDRESS
+        self.debug = Registrar.DEBUG_ADDRESS
         if self.performPost:
             self.properties['subunits'] = []
             self.properties['coerced_subunits'] = []
@@ -850,7 +844,7 @@ class ContactName(ContactObject):
 
     def __init__(self, schema=None, **kwargs):
         super(ContactName, self).__init__(schema, **kwargs)
-        self.debug = DEBUG_NAME
+        self.debug = Registrar.DEBUG_NAME
         if self.performPost:
             # self.valid = False
             self.problematic = False

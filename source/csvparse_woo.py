@@ -7,9 +7,6 @@ from collections import OrderedDict
 import bisect
 import time
 
-DEBUG_WOO = False
-# DEBUG_WOO = True
-
 class ImportWooObject(ImportGenObject):
     _isCategory = False
     _isVariable = False
@@ -388,7 +385,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
         self.registerMessage("catMapping woo post: %s" % str(catMapping))
 
-        # if DEBUG_WOO:
+        # if self.DEBUG_WOO:
         #     print "WOO initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
         #     print "-> itemDepth: ", self.itemDepth
@@ -637,16 +634,16 @@ class CSVParse_Woo(CSVParse_Gen):
         self.processCategories(objectData)
         if objectData.isProduct:
             catSKUs = map(lambda x: x.codesum, objectData.getCategories().values())
-            if(DEBUG_WOO): self.registerMessage("categories: {}".format(catSKUs))
+            if(self.DEBUG_WOO): self.registerMessage("categories: {}".format(catSKUs))
         if objectData.isVariation:
             self.processVariation(objectData)
-            if(DEBUG_WOO): self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
+            if(self.DEBUG_WOO): self.registerMessage("variation of: {}".format(objectData.get('parent_SKU')))
         self.processAttributes(objectData)
-        if(DEBUG_WOO): self.registerMessage("attributes: {}".format(objectData.getAttributes()))
+        if(self.DEBUG_WOO): self.registerMessage("attributes: {}".format(objectData.getAttributes()))
         self.processImages(objectData)
-        if(DEBUG_WOO): self.registerMessage("images: {}".format(objectData.getImages()))
+        if(self.DEBUG_WOO): self.registerMessage("images: {}".format(objectData.getImages()))
         self.processSpecials(objectData)
-        if(DEBUG_WOO): self.registerMessage("specials: {}".format(objectData.getSpecials()))
+        if(self.DEBUG_WOO): self.registerMessage("specials: {}".format(objectData.getSpecials()))
 
 
     def addDynRules(self, itemData, dynType, ruleIDs):
@@ -807,7 +804,7 @@ class CSVParse_Woo(CSVParse_Gen):
 
             specials = objectData.getSpecials()
             objectData['spsum'] = '|'.join(specials)
-            if(DEBUG_WOO): self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
+            if(self.DEBUG_WOO): self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
@@ -1041,7 +1038,7 @@ class CSVParse_TT(CSVParse_Woo):
                 dprcRules, dprpRules, specials, catMapping)
 
         self.registerMessage("catMapping: %s" % str(catMapping))
-        # if DEBUG_WOO:
+        # if self.DEBUG_WOO:
         #     print "WOO initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
         #     print "-> itemDepth: ", self.itemDepth

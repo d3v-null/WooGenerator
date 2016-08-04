@@ -8,11 +8,6 @@ from coldata import ColData_User
 from copy import deepcopy, copy
 from time import time
 
-DEBUG = False
-# DEBUG = True
-DEBUG_PARSER = False
-# DEBUG_PARSER = True
-DEBUG_PROGRESS = True
 
 import os
 
@@ -174,7 +169,7 @@ class ObjList(list):
             else:
                 csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
             # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            if DEBUG:
+            if Registrar.Registrar.DEBUG_ABSTRACT:
                 Registrar.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
             dictwriter = unicodecsv.DictWriter(
                 outFile,
@@ -226,7 +221,7 @@ class CSVParse_Base(Registrar):
         )
 
     def analyseHeader(self, row):
-        if DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
+        if self.DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
@@ -234,10 +229,10 @@ class CSVParse_Base(Registrar):
             #     self.indices[col] = row.index('\xef\xbb\xbf'+col)
             else:
                 self.registerError('Could not find index of '+str(col) )
-            if DEBUG: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
+            if self.DEBUG_ABSTRACT: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
 
     def retrieveColFromRow(self, col, row):
-        # if DEBUG_PARSER: print "retrieveColFromRow | col: ", col
+        # if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col
         try:
             index = self.indices[col]
         except KeyError as e:
@@ -246,7 +241,7 @@ class CSVParse_Base(Registrar):
             self.registerError('No default for column '+str(col)+' | '+str(e) + ' ' + unicode(self.defaults))
             return None
         try:
-            if DEBUG: self.registerMessage(u"row [%s] = %s" % (index, row[index]))
+            if self.DEBUG_ABSTRACT: self.registerMessage(u"row [%s] = %s" % (index, row[index]))
             #this may break shit
             return row[index]
         except Exception as e:
@@ -274,12 +269,12 @@ class CSVParse_Base(Registrar):
     def newObject(self, rowcount, row, **kwargs):
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
-        if(DEBUG_PARSER): self.registerMessage( "defaultData: {}".format(defaultData) )
+        if(self.DEBUG_PARSER): self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
-        if(DEBUG_PARSER): self.registerMessage( "rowData: {}".format(rowData) )
+        if(self.DEBUG_PARSER): self.registerMessage( "rowData: {}".format(rowData) )
         # allData = listUtils.combineOrderedDicts(rowData, defaultData)
         allData = listUtils.combineOrderedDicts(defaultData, rowData)
-        if(DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
+        if(self.DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
         container = self.getContainer(allData, **kwargs)
         # self.registerMessage("container: {}".format(container.__name__))
         kwargs = self.getKwargs(allData, container, **kwargs)
@@ -306,7 +301,7 @@ class CSVParse_Base(Registrar):
             limit = self.limit
         if limit and isinstance(limit, int):
             unicode_rows = list(unicode_rows)[:limit]
-        if DEBUG_PROGRESS:
+        if self.DEBUG_PROGRESS:
 
             # last_print = time()
             rows = []
@@ -320,7 +315,7 @@ class CSVParse_Base(Registrar):
             unicode_rows = rows
 
         for rowcount, unicode_row in enumerate(unicode_rows):
-            if DEBUG_PROGRESS:
+            if self.DEBUG_PROGRESS:
                 self.progressCounter.maybePrintUpdate(rowcount)
                 # now = time()
                 # if now - last_print > 1:
@@ -343,16 +338,16 @@ class CSVParse_Base(Registrar):
                 self.registerWarning("could not create new object: {}".format(e), "%s:%d" % (fileName, rowcount))
                 continue
             else:
-                if (DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
+                if (self.DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
             try:
                 self.processObject(objectData)
-                if (DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
+                if (self.DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
             except UserWarning as e:
                 self.registerError("could not process new object: {}".format(e), objectData)
                 continue
             try:
                 self.registerObject(objectData)
-                if (DEBUG_PARSER):
+                if (self.DEBUG_PARSER):
                     self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
                     self.registerMessage("%s" % objectData.__repr__())
 
@@ -379,7 +374,7 @@ class CSVParse_Base(Registrar):
                 except Exception:
                     csvdialect = UnicodeCsvDialectUtils.default_dialect
 
-            if DEBUG_PARSER:
+            if self.DEBUG_PARSER:
                 self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
 
             unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)

@@ -25,9 +25,6 @@ import yaml
 # import MySQLdb
 # from sshtunnel import SSHTunnelForwarder
 
-DEBUG = False
-DEBUG_ERROR = True
-DEBUG_PROGRESS = True
 testMode = False
 testMode = True
 
@@ -157,14 +154,14 @@ args = parser.parse_args()
 if args:
     print args
     if args.verbosity > 0:
-        DEBUG_PROGRESS = True
-        DEBUG_ERROR = True
+        Registrar.DEBUG_PROGRESS = True
+        Registrar.DEBUG_ERROR = True
     if args.verbosity > 1:
-        DEBUG = True
+        Registrar.DEBUG_MESSAGE = True
     if args.quiet:
-        DEBUG_PROGRESS = False
-        DEBUG_ERROR = False
-        DEBUG = False
+        Registrar.DEBUG_PROGRESS = False
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_MESSAGE = False
     if args.testmode is not None:
         testMode = args.testmode
     if args.download_master is not None:
@@ -184,8 +181,24 @@ if args:
     if args.item_depth:
         itemDepth = args.item_depth
 
+    if args.debug_abstract is not None:
+        Registrar.DEBUG_ABSTRACT = args.debug_abstract
+    if args.debug_parser is not None:
+        Registrar.DEBUG_PARSER = args.debug_parser
+    if args.debug_flat is not None:
+        Registrar.DEBUG_FLAT = args.debug_flat
+    if args.debug_gen is not None:
+        Registrar.DEBUG_GEN = args.debug_gen
+    if args.debug_myo is not None:
+        Registrar.DEBUG_MYO = args.debug_myo
+    if args.debug_tree is not None:
+        Registrar.DEBUG_TREE = args.debug_tree
+    if args.debug_woo is not None:
+        Registrar.DEBUG_WOO = args.debug_woo
+    if args.debug_name is not None:
+
 ### DISPLAY CONFIG ###
-if DEBUG:
+if Registrar.DEBUG_MESSAGE:
     if testMode:
         print "testMode enabled"
     else:
@@ -194,12 +207,6 @@ if DEBUG:
         print "no download_master"
     if not update_slave:
         print "not updating slave"
-    Registrar.DEBUG_WARN = True
-    Registrar.DEBUG_MESSAGE = True
-else:
-    Registrar.DEBUG_WARN = False
-    Registrar.DEBUG_MESSAGE = False
-Registrar.DEBUG_ERROR = DEBUG_ERROR
 
 # if __name__ == "__main__":
 #     if sys.argv and len(sys.argv) > 1 and sys.argv[1]:

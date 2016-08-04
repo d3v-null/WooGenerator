@@ -1,9 +1,6 @@
 from csvparse_abstract import CSVParse_Base, ImportObject
 from collections import OrderedDict
 
-DEBUG_TREE = False
-# DEBUG_TREE = True
-
 class ImportTreeObject(ImportObject):
     _isRoot = False
     _isItem = False
@@ -192,7 +189,7 @@ class CSVParse_Tree(CSVParse_Base):
         self.taxoIndexer = self.getObjectRowcount
         super(CSVParse_Tree, self).__init__(cols, defaults)
 
-        # if DEBUG_TREE:
+        # if self.DEBUG_TREE:
         #     print "TREE initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
         #     print "-> itemDepth: ", self.itemDepth

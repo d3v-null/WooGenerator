@@ -6,8 +6,6 @@ from coldata import ColData_MYO
 import time
 import os
 
-DEBUG_MYO = True
-
 class CSVParse_MYO(CSVParse_Gen):
 
     prod_containers = {
@@ -229,7 +227,7 @@ class CSVParse_MYO(CSVParse_Gen):
 
         super(CSVParse_MYO, self).__init__( cols, defaults, schema, \
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
-        if DEBUG_MYO:
+        if self.DEBUG_MYO:
             self.registerMessage( "csvparse initialized with cols: %s" %
                                  SanitationUtils.coerceUnicode(extra_cols))
 

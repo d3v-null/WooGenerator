@@ -13,9 +13,6 @@ import os
 
 usrs_per_file = 1000
 
-DEBUG_FLAT = False
-# DEBUG_FLAT = True
-
 class ImportFlat(ImportObject):
     pass
 
@@ -137,8 +134,8 @@ class ImportUser(ImportFlat):
                 self[key] = val
             elif(not self.get(key)):
                 self[key] = ""
-            if(DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
-        if(DEBUG_FLAT): self.registerMessage("data:" + repr(data))
+            if(self.DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
+        if(self.DEBUG_FLAT): self.registerMessage("data:" + repr(data))
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
@@ -556,7 +553,7 @@ class CSVParse_User(CSVParse_Flat):
         if email and SanitationUtils.stringIsEmail(email) :
             self.registerEmail(objectData, email)
         else:
-            if(DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
+            if(self.DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
             self.registerNoEmail(objectData)
 
         role = objectData.role
@@ -576,11 +573,11 @@ class CSVParse_User(CSVParse_Flat):
         if username:
             self.registerUsername(objectData, username)
         else:
-            if(DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
+            if(self.DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
             self.registerNoUsername(objectData)
 
         # company = objectData['Company']
-        # # if DEBUG_FLAT: SanitationUtils.safePrint(repr(objectData), company)
+        # # if self.DEBUG_FLAT: SanitationUtils.safePrint(repr(objectData), company)
         # if company:
         #     self.registerCompany(objectData, company)
 

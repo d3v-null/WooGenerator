@@ -2544,6 +2544,19 @@ class Registrar(object):
     DEBUG_ERROR = True
     DEBUG_WARN = True
     DEBUG_MESSAGE = False
+    DEBUG_PROGRESS = True
+    DEBUG_ABSTRACT = False
+    DEBUG_PARSER = False
+    DEBUG_UPDATE = False
+    DEBUG_FLAT = False
+    DEBUG_GEN = False
+    DEBUG_MYO = False
+    DEBUG_TREE = False
+    DEBUG_WOO = False
+    DEBUG_ADDRESS = False
+    DEBUG_NAME = False
+
+
 
     # def __init__(self):
         # self.objectIndexer = id

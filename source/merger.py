@@ -48,9 +48,6 @@ start_time = time.time()
 def timediff():
     return time.time() - start_time
 
-DEBUG = False
-DEBUG_ERROR = True
-DEBUG_PROGRESS = True
 testMode = False
 # testMode = True
 
@@ -79,8 +76,8 @@ logPath = os.path.join(logFolder, "log_%s.txt" % importName)
 zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
 
 def main():
-    global testMode, DEBUG, DEBUG_ERROR, DEBUG_PROGRESS, inFolder, outFolder, logFolder, \
-        srcFolder, pklFolder, yamlPath, resPath, mFailPath, sFailPath, logPath, zipPath
+    global testMode, inFolder, outFolder, logFolder, srcFolder, pklFolder, \
+        yamlPath, resPath, mFailPath, sFailPath, logPath, zipPath
 
     userFile = cardFile = emailFile = sinceM = sinceS = False
 
@@ -175,18 +172,32 @@ def main():
     parser.add_argument('--limit', type=int, help='global limit of objects to process')
     parser.add_argument('--master-file', help='location of master file')
     parser.add_argument('--slave-file', help='location of slave file')
+
+    group = parser.add_argument_group()
+    group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
+    group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
+    group.add_argument('--debug-update', action='store_true', dest='debug_update')
+    group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
+    group.add_argument('--debug-gen', action='store_true', dest='debug_gen')
+    group.add_argument('--debug-myo', action='store_true', dest='debug_myo')
+    group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
+    group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
+    group.add_argument('--debug-name', action='store_true', dest='debug_name')
+    group.add_argument('--debug-address', action='store_true', dest='debug_address')
+
     args = parser.parse_args()
+
     if args:
         print args
         if args.verbosity > 0:
-            DEBUG_PROGRESS = True
-            DEBUG_ERROR = True
+            Registrar.DEBUG_PROGRESS = True
+            Registrar.DEBUG_ERROR = True
         if args.verbosity > 1:
-            DEBUG = True
+            Registrar.DEBUG_MESSAGE = True
         if args.quiet:
-            DEBUG_PROGRESS = False
-            DEBUG_ERROR = False
-            DEBUG = False
+            Registrar.DEBUG_PROGRESS = False
+            Registrar.DEBUG_ERROR = False
+            Registrar.DEBUG_MESSAGE = False
         if args.testmode is not None:
             testMode = args.testmode
         if args.download_slave is not None:
@@ -210,9 +221,25 @@ def main():
         if args.m_ssh_host:
             m_ssh_host = args.m_ssh_host
         if args.master_file is not None:
+            download_master = False
             master_file = args.master_file
         if args.slave_file is not None:
+            download_slave = False
             slave_file = args.slave_file
+
+        if args.debug_abstract is not None:
+            Registrar.DEBUG_ABSTRACT = args.debug_abstract
+        if args.debug_parser is not None:
+            Registrar.DEBUG_PARSER = args.debug_parser
+        if args.debug_update is not None:
+            Registrar.DEBUG_UPDATE = args.debug_update
+        if args.debug_flat is not None:
+            Registrar.DEBUG_FLAT = args.debug_flat
+        if args.debug_gen is not None:
+            Registrar.DEBUG_NAME = args.debug_name
+        if args.debug_address is not None:
+            Registrar.DEBUG_ADDRESS = args.debug_address
+
         global_limit = args.limit
 
     # api config
@@ -249,7 +276,7 @@ def main():
 
 
     ### DISPLAY CONFIG ###
-    if DEBUG:
+    if Registrar.DEBUG_MESSAGE:
         if testMode:
             print "testMode enabled"
         else:
@@ -268,14 +295,6 @@ def main():
             print "not doing sync"
         if not do_post:
             print "not doing post"
-        Registrar.DEBUG_ERROR = DEBUG_ERROR
-        Registrar.DEBUG_WARN = True
-        Registrar.DEBUG_MESSAGE = True
-    else:
-        Registrar.DEBUG_ERROR = DEBUG_ERROR
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-
 
     ### PROCESS CLASS PARAMS ###
 
@@ -543,8 +562,7 @@ def main():
         denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
         globalMatches.addMatches( usernameMatcher.pureMatches)
 
-        # debug stuff
-        if(DEBUG):
+        if(Registrar.DEBUG_MESSAGE):
             print "username matches (%d)" % len(usernameMatcher.matches)
         #     print usernameMatcher.matches.tabulate(tablefmt="simple")
 
@@ -563,7 +581,7 @@ def main():
 
         globalMatches.addMatches( cardMatcher.pureMatches)
 
-        if(DEBUG):
+        if(Registrar.DEBUG_MESSAGE):
             print "card matches (%d)" % len(cardMatcher.matches)
         #     print cardMatcher.matches.tabulate(tablefmt="simple")
 
@@ -583,7 +601,7 @@ def main():
 
         globalMatches.addMatches(emailMatcher.pureMatches)
 
-        if(DEBUG):
+        if(Registrar.DEBUG_MESSAGE):
             print "email matches (%d)" % len(emailMatcher.matches)
         #     print emailMatcher.matches.tabulate(tablefmt="simple")
 
@@ -596,11 +614,11 @@ def main():
 
         syncCols = ColData_User.getSyncCols()
 
-        if DEBUG_PROGRESS:
+        if Registrar.DEBUG_PROGRESS:
             syncProgressCounter = ProgressCounter(len(globalMatches))
 
         for count, match in enumerate(globalMatches):
-            if DEBUG_PROGRESS:
+            if Registrar.DEBUG_PROGRESS:
                 syncProgressCounter.maybePrintUpdate(count)
 
             mObject = match.mObjects[0]
@@ -984,7 +1002,7 @@ def main():
     slaveFailures = []
 
     if allUpdates:
-        if DEBUG_PROGRESS:
+        if Registrar.DEBUG_PROGRESS:
             updateProgressCounter = ProgressCounter(len(allUpdates))
 
         with \
@@ -992,7 +1010,7 @@ def main():
             UsrSyncClient_JSON(jsonConnectParams) as slaveClient:
 
             for count, update in enumerate(allUpdates):
-                if DEBUG_PROGRESS:
+                if Registrar.DEBUG_PROGRESS:
                     updateProgressCounter.maybePrintUpdate(count)
                 # if update.WPID == '1':
                 #     print repr(update.WPID)

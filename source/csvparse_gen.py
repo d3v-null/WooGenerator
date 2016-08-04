@@ -3,9 +3,6 @@ from utils import descriptorUtils, SanitationUtils, listUtils
 from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 from csvparse_abstract import ObjList
 
-DEBUG_GEN = False
-# DEBUG_GEN = True
-
 class ImportGenObject(ImportTreeObject):
 
     _isProduct = False
