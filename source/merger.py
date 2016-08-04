@@ -172,18 +172,17 @@ def main():
     parser.add_argument('--limit', type=int, help='global limit of objects to process')
     parser.add_argument('--master-file', help='location of master file')
     parser.add_argument('--slave-file', help='location of slave file')
+    parser.add_argument('--card-file')
 
     group = parser.add_argument_group()
     group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
     group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
     group.add_argument('--debug-update', action='store_true', dest='debug_update')
     group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
-    group.add_argument('--debug-gen', action='store_true', dest='debug_gen')
-    group.add_argument('--debug-myo', action='store_true', dest='debug_myo')
-    group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
-    group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
     group.add_argument('--debug-name', action='store_true', dest='debug_name')
     group.add_argument('--debug-address', action='store_true', dest='debug_address')
+    group.add_argument('--debug-client', action='store_true', dest='debug_client')
+    group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
 
     args = parser.parse_args()
 
@@ -226,6 +225,9 @@ def main():
         if args.slave_file is not None:
             download_slave = False
             slave_file = args.slave_file
+        if args.card_file is not None:
+            cardFile = args.card_file
+            do_filter = True
 
         if args.debug_abstract is not None:
             Registrar.DEBUG_ABSTRACT = args.debug_abstract
@@ -239,6 +241,10 @@ def main():
             Registrar.DEBUG_NAME = args.debug_name
         if args.debug_address is not None:
             Registrar.DEBUG_ADDRESS = args.debug_address
+        if args.debug_client is not None:
+            Registrar.DEBUG_CLIENT = args.debug_client
+        if args.debug_utils is not None:
+            Registrar.DEBUG_UTILS = args.debug_utils
 
         global_limit = args.limit
 
@@ -466,12 +472,7 @@ def main():
         print PyMySqlConnectParams
 
         with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
-            client.analyseRemote(saParser, limit=global_limit)
-            #
-            # if testMode:
-            #     client.analyseRemote(saParser, limit=1000)
-            # else:
-            #     client.analyseRemote(saParser)
+            client.analyseRemote(saParser, limit=global_limit, filterItems=filterItems)
 
             saParser.getObjList().exportItems(os.path.join(inFolder, s_x_filename),
                                               ColData_User.getWPImportColNames())

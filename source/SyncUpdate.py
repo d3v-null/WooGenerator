@@ -157,10 +157,11 @@ class SyncUpdate(Registrar):
             return self.getSValue(col)
 
     def valuesSimilar(self, col, mValue, sValue):
+        response = False
         if not (mValue or sValue):
-            return True
+            response = True
         elif not (mValue and sValue):
-            return False
+            response = False
         #check if they are similar
         if "phone" in col.lower():
             if "preferred" in col.lower():
@@ -169,13 +170,13 @@ class SyncUpdate(Registrar):
                 # print repr(mValue), " -> ", mPreferred
                 # print repr(sValue), " -> ", sPreferred
                 if mPreferred == sPreferred:
-                    return True
+                    response = True
             else:
                 mPhone = SanitationUtils.similarPhoneComparison(mValue)
                 sPhone = SanitationUtils.similarPhoneComparison(sValue)
                 plen = min(len(mPhone), len(sPhone))
                 if plen > 7 and mPhone[-plen] == sPhone[-plen]:
-                    return True
+                    response = True
         elif "role" in col.lower():
             mRole = SanitationUtils.similarComparison(mValue)
             sRole = SanitationUtils.similarComparison(sValue)
@@ -184,25 +185,29 @@ class SyncUpdate(Registrar):
             if sRole == 'rn':
                 sRole = ''
             if mRole == sRole:
-                return True
+                response = True
         elif "address" in col.lower() and isinstance(mValue, ContactAddress):
             if( mValue != sValue ):
                 pass
                 # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
-            return mValue.similar(sValue)
+            response = mValue.similar(sValue)
         elif "web site" in col.lower():
             if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
-                return True
+                response = True
         else:
             if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
-                return True
-        return False
+                response = True
+        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
+                                                                                           SanitationUtils.boolToTruishString(response)))
+        return response
 
     def colIdentical(self, col):
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(mValue), repr(sValue)))
-        return mValue == sValue
+        response = mValue == sValue
+        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
+                                                                                            SanitationUtils.boolToTruishString(response)))
+        return response
 
     def colSimilar(self, col):
         mValue = self.getMValue(col)
@@ -213,20 +218,26 @@ class SyncUpdate(Registrar):
     def newColIdentical(self, col):
         mValue = self.getNewMValue(col)
         sValue = self.getNewSValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(mValue), repr(sValue)))
-        return mValue == sValue
+        response = mValue == sValue
+        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
+                                                                                            SanitationUtils.boolToTruishString(response)))
+        return response
 
     def mColStatic(self, col):
         oValue = self.getMValue(col)
         nValue = self.getNewMValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(oValue), repr(nValue)))
-        return oValue == nValue
+        response = oValue == nValue
+        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(oValue), repr(nValue),
+                                                                                            SanitationUtils.boolToTruishString(response)))
+        return response
 
     def sColStatic(self, col):
         oValue = self.getSValue(col)
         nValue = self.getNewSValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(oValue), repr(nValue)))
-        return oValue == nValue
+        response = oValue == nValue
+        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(oValue), repr(nValue),
+                                                                                            SanitationUtils.boolToTruishString(response)))
+        return response
 
     def mColSemiStatic(self, col):
         oValue = self.getMValue(col)
@@ -253,9 +264,9 @@ class SyncUpdate(Registrar):
             out += " | reas: %s " % updateParams['reason']
         if updateType in ['WARN', 'PROB']:
             if 'oldWinnerValue' in updateParams:
-                out += " | OLD: %s " % updateParams['oldWinnerValue'].__str__()
+                out += " | OLD: %s " % repr(updateParams['oldWinnerValue'].__str__())
             if 'oldLoserValue' in updateParams:
-                out += " | NEW: %s " % updateParams['oldLoserValue'].__str__()
+                out += " | NEW: %s " % repr(updateParams['oldLoserValue'].__str__())
         return out
 
     def addProblematicUpdate(self, **updateParams):
@@ -659,7 +670,7 @@ class SyncUpdate(Registrar):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
                     if self.sColSemiStatic(alias):
-                        if self.DEBUG_UPDATE: self.registerMessage( u"Alias Identical" )
+                        if self.DEBUG_UPDATE: self.registerMessage( u"Alias semistatic" )
                         continue
                     else:
                         updates = self.getSlaveUpdatesRecursive(alias, updates)
@@ -694,7 +705,7 @@ class SyncUpdate(Registrar):
                 data_aliases = data['aliases']
                 for alias in data_aliases:
                     if self.mColSemiStatic(alias):
-                        if self.DEBUG_UPDATE: self.registerMessage( u"Alias Identical" )
+                        if self.DEBUG_UPDATE: self.registerMessage( u"Alias semistatic" )
                         continue
                     else:
                         updates = self.getMasterUpdatesRecursive(alias, updates)

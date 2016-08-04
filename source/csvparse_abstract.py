@@ -169,7 +169,7 @@ class ObjList(list):
             else:
                 csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
             # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            if Registrar.Registrar.DEBUG_ABSTRACT:
+            if Registrar.DEBUG_ABSTRACT:
                 Registrar.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
             dictwriter = unicodecsv.DictWriter(
                 outFile,

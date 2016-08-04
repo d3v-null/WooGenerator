@@ -309,7 +309,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     def attemptConnect(self):
         self.client = SSHTunnelForwarder( **self.connectParams )
 
-    def analyseRemote(self, parser, since=None, limit=None):
+    def analyseRemote(self, parser, since=None, limit=None, filterItems=None):
 
         self.assertConnect()
 
@@ -318,14 +318,14 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         self.dbParams['port'] = self.client.local_bind_address[-1]
         cursor = pymysql.connect( **self.dbParams ).cursor()
 
+        sm_where_clauses = []
+
         if since:
             since_t = TimeUtils.wpServerToLocalTime( TimeUtils.wpStrptime(since))
             assert since_t, "Time should be valid format, got %s" % since
             since_s = TimeUtils.wpTimeToString(since_t)
 
-            where_clause = "WHERE tu.`time` > '%s'" % since_s
-        else:
-            where_clause = ""
+            sm_where_clauses.append( "tu.`time` > '%s'" % since_s )
 
         modtime_cols = [
             "tu.`user_id` as `user_id`",
@@ -341,18 +341,24 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
                 tracking_name = tracking_name
             ))
 
+        if sm_where_clauses:
+            sm_where_clause = 'WHERE ' + ' AND '.join(sm_where_clauses)
+        else:
+            sm_where_clause = ''
+
         sql_select_modtime = """\
     SELECT
         {modtime_cols}
     FROM
         {tbl_tu} tu
-    {where_clause}
+    {sm_where_clause}
     GROUP BY
         tu.`user_id`""".format(
             modtime_cols = ",\n\t\t".join(modtime_cols),
             tbl_tu=tbl_prefix+'tansync_updates',
-            where_clause = where_clause,
+            sm_where_clause = sm_where_clause,
         )
+
         # print sql_select_modtime
 
         if since:
@@ -381,7 +387,6 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
                     for key, name in wpDbMetaCols.items()
             ]
         ))
-
 
         # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
 
@@ -415,6 +420,33 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
             usr_cols = userdata_cols,
         )
 
+        um_on_clauses = []
+        um_where_clauses = []
+
+        um_on_clauses.append('ud.`Wordpress ID` = lu.`user_id`')
+
+        if filterItems:
+            if 'cards' in filterItems:
+                um_where_clauses.append( "ud.`MYOB Card ID` IN (%s)" % (','.join([
+                    '"%s"' % card for card in filterItems['cards']
+                ])))
+
+        if um_on_clauses:
+            um_on_clause = ' AND '.join([
+                "(%s)" % clause for clause in um_on_clauses
+            ])
+        else:
+            um_on_clause = ''
+
+        if um_where_clauses:
+            um_where_clause = 'WHERE ' + ' AND '.join([
+                "(%s)" % clause for clause in um_where_clauses
+            ])
+        else:
+            um_where_clause = ''
+
+
+
         # print sql_select_user
 
         sql_select_user_modtime = """
@@ -427,15 +459,18 @@ FROM
 (
     {sql_mt}
 ) as lu
-ON (ud.`Wordpress ID` = lu.`user_id`)
+ON {um_on_clause}
+{um_where_clause}
 {limit_clause};""".format(
             sql_ud = sql_select_user,
             sql_mt = sql_select_modtime,
-            join_type = "INNER" if where_clause else "LEFT",
-            limit_clause = "LIMIT %d" % limit if limit else ""
+            join_type = "INNER" if sm_where_clause else "LEFT",
+            limit_clause = "LIMIT %d" % limit if limit else "",
+            um_on_clause = um_on_clause,
+            um_where_clause = um_where_clause
         )
 
-        # Registrar.registerMessage(sql_select_user_modtime)
+        if Registrar.DEBUG_CLIENT: Registrar.registerMessage(sql_select_user_modtime)
 
         cursor.execute(sql_select_user_modtime)
 

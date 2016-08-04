@@ -22,19 +22,6 @@ from pympler import tracker
 
 DEFAULT_ENCODING = 'utf8'
 
-DEBUG = False
-# DEBUG = True
-DEBUG_ADDRESS = False
-# DEBUG_ADDRESS = True
-DEBUG_MESSAGE = False
-# DEBUG_MESSAGE = True
-DEBUG_ERROR = False
-# DEBUG_ERROR = True
-DEBUG_WARN = False
-# DEBUG_WARN = True
-DEBUG_NAME = False
-# DEBUG_NAME = True
-
 class SanitationUtils:
     email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
     url_regex = r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
@@ -248,79 +235,79 @@ class SanitationUtils:
     @staticmethod
     def removeLeadingDollarWhiteSpace(string):
         str_out = re.sub('^\W*\$','', string)
-        if DEBUG: print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLeadingPercentWhiteSpace(string):
         str_out = re.sub('%\W*$','', string)
-        if DEBUG: print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLoneDashes(string):
         str_out = re.sub('^-$', '', string)
-        if DEBUG: print "removeLoneDashes", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeLoneDashes", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeThousandsSeparator(string):
         str_out = re.sub(r'(\d+),(\d{3})', '\g<1>\g<2>', string)
-        if DEBUG: print "removeThousandsSeparator", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeThousandsSeparator", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeLoneWhiteSpace(string):
         str_out = re.sub(r'^\s*$','', string)
-        if DEBUG: print "removeLoneWhiteSpace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeLoneWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def removeNULL(string):
         str_out = re.sub(r'^NULL$', '', string)
-        if DEBUG: print "removeNULL", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "removeNULL", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripLeadingWhitespace(string):
         str_out = re.sub(r'^\s*', '', string)
-        if DEBUG: print "stripLeadingWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripLeadingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripLeadingNewline(string):
         str_out = re.sub(r'^(\\n|\n)*', '', string)
-        if DEBUG: print "stripLeadingNewline", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripLeadingNewline", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripTailingWhitespace(string):
         str_out = re.sub(r'\s*$', '', string)
-        if DEBUG: print "stripTailingWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripTailingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripTailingNewline(string):
         str_out = re.sub(r'(\\n|\n)*$', '', string)
-        if DEBUG: print "stripTailingNewline", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripTailingNewline", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAllWhitespace(string):
         str_out = re.sub(r'\s', '', string)
-        if DEBUG: print "stripAllWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripAllWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripExtraWhitespace(string):
         str_out = re.sub(r'\s{2,}', ' ', string)
-        if DEBUG: print "stripExtraWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripExtraWhitespace", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripNonNumbers(string):
         str_out = re.sub(r'[^\d]', '', string)
-        if DEBUG: print "stripNonNumbers", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripNonNumbers", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
@@ -331,31 +318,31 @@ class SanitationUtils:
     @staticmethod
     def stripPunctuation(string):
         str_out = re.sub(r'[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
-        if DEBUG: print "stripPunctuation", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripPunctuation", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripAreaCode(string):
         str_out = re.sub(r'\s*\+\d{2,3}\s*','', string)
-        if DEBUG: print "stripAreaCode", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripAreaCode", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def stripURLProtocol(string):
         str_out = re.sub(r"^\w+://", "", string)
-        if DEBUG: print "stripURLProtocol", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def toLower(string):
         str_out = string.lower()
-        if DEBUG: print "toLower", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "toLower", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
     def toUpper(string):
         str_out = string.upper()
-        if DEBUG: print "toUpper", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS: print "toUpper", repr(string), repr(str_out)
         return str_out
 
     @staticmethod
@@ -442,7 +429,7 @@ class SanitationUtils:
 
     @staticmethod
     def shorten(reg, subs, str_in):
-        # if(DEBUG_GEN):
+        # if(Registrar.DEBUG_GEN):
         #     print "calling shorten"
         #     print " | reg:", reg
         #     print " | subs:", subs
@@ -454,7 +441,7 @@ class SanitationUtils:
                 lambda mo: subs[mo.string[mo.start():mo.end()]],
                 str_in
             )
-        # if DEBUG_GEN:
+        # if Registrar.DEBUG_GEN:
         #     print " | str_o: ",str_out
         return str_out
 
@@ -556,11 +543,18 @@ class SanitationUtils:
     @staticmethod
     def truishStringToBool(string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
-            if DEBUG: print "truishStringToBool", repr(string), 'FALSE'
+            if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'FALSE'
             return "FALSE"
         else:
-            if DEBUG: print "truishStringToBool", repr(string), 'TRUE'
+            if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'TRUE'
             return "TRUE"
+
+    @staticmethod
+    def boolToTruishString(boolVal):
+        if boolVal:
+            return "TRUE"
+        else:
+            return "FALSE"
 
     @staticmethod
     def datetotimestamp(datestring):
@@ -926,7 +920,7 @@ class NameUtils:
         if(matchGrps):
             # name = " ".join(matchGrps)
             name = matchGrps[0]
-            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
             return name
 
     @staticmethod
@@ -939,7 +933,7 @@ class NameUtils:
         )
         names = [match[0] for match in filter(None, matches)]
         if names:
-            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAMES " + repr(names))
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAMES " + repr(names))
             return names
 
     @staticmethod
@@ -954,12 +948,12 @@ class NameUtils:
         if(matchGrps):
             # name = " ".join(matchGrps)
             name = matchGrps[0]
-            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint( "FOUND NAME " + repr(name))
             return name
 
     @staticmethod
     def getEmail(token):
-        # if DEBUG_NAME: SanitationUtils.safePrint("checking email", token)
+        # if Registrar.DEBUG_NAME: SanitationUtils.safePrint("checking email", token)
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 "({})".format(SanitationUtils.email_regex)
@@ -968,10 +962,10 @@ class NameUtils:
         )
         matchGrps = match.groups() if match else None
         if(matchGrps):
-            # if DEBUG_NAME: SanitationUtils.safePrint("email matches", repr(matchGrps))
+            # if Registrar.DEBUG_NAME: SanitationUtils.safePrint("email matches", repr(matchGrps))
             # name = " ".join(matchGrps)
             email = matchGrps[0]
-            if DEBUG_NAME: SanitationUtils.safePrint( "FOUND EMAIL " + repr(email))
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint( "FOUND EMAIL " + repr(email))
             return email
 
     @staticmethod
@@ -985,13 +979,13 @@ class NameUtils:
         matchDict = match.groupdict() if match else None
         if matchDict and matchDict.get('name_title'):
             title = NameUtils.identifyTitle(matchDict['name_title'])
-            if DEBUG_NAME: print "FOUND TITLE ", repr(title)
+            if Registrar.DEBUG_NAME: print "FOUND TITLE ", repr(title)
             return title
         # matchGrps = match.groups() if match else None
         # if(matchGrps):
         #     # title = " ".join(matchGrps)
         #     title = matchGrps[0]
-        #     if DEBUG_NAME: print "FOUND TITLE ", repr(title)
+        #     if Registrar.DEBUG_NAME: print "FOUND TITLE ", repr(title)
         #     return title
 
     @staticmethod
@@ -1005,13 +999,13 @@ class NameUtils:
         matchDict = match.groupdict() if match else None
         if matchDict and matchDict.get('name_position'):
             position = NameUtils.identifyPosition(matchDict['name_position'])
-            if DEBUG_NAME: print "FOUND POSITION ", repr(position)
+            if Registrar.DEBUG_NAME: print "FOUND POSITION ", repr(position)
             return position
         # matchGrps = match.groups() if match else None
         # if(matchGrps):
         #     # position = " ".join(matchGrps)
         #     position = matchGrps[0]
-        #     if DEBUG_NAME: print "FOUND POSITION ", repr(position)
+        #     if Registrar.DEBUG_NAME: print "FOUND POSITION ", repr(position)
         #     return position
 
     @staticmethod
@@ -1025,7 +1019,7 @@ class NameUtils:
         matchGrps = match.groups() if match else None
         if matchGrps:
             ordinal = matchGrps[0]
-            if DEBUG_NAME: SanitationUtils.safePrint("FOUND ORDINAL", ordinal)
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint("FOUND ORDINAL", ordinal)
             return ordinal
 
     @staticmethod
@@ -1039,13 +1033,13 @@ class NameUtils:
         matchDict = match.groupdict() if match else None
         if matchDict and matchDict.get('name_suffix'):
             suffix = NameUtils.identifyNameSuffix(matchDict['name_suffix'])
-            if DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
+            if Registrar.DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
             return suffix
         # matchGrps = match.groups() if match else None
         # if(matchGrps):
         #     # position = " ".join(matchGrps)
         #     suffix = matchGrps[0]
-        #     if DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
+        #     if Registrar.DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
         #     return suffix
 
     @staticmethod
@@ -1083,7 +1077,7 @@ class NameUtils:
                 names_after_note = matchDict.get('names_after_note_delimeter')
 
             note_tuple = (note_open_paren, names_before_note, note, names_after_note, note_close_paren)
-            if DEBUG_NAME: print "FOUND NOTE ", repr(note_tuple)
+            if Registrar.DEBUG_NAME: print "FOUND NOTE ", repr(note_tuple)
             return note_tuple
         # matchGrps = match.groups() if match else None
         # if(matchGrps):
@@ -1104,9 +1098,9 @@ class NameUtils:
             family_name = matchDict['family_name']
             family_name_prefix = matchDict.get('family_name_prefix')
             for component in [family_name_prefix, family_name]:
-                if DEBUG_NAME: print "name component", repr(component)
+                if Registrar.DEBUG_NAME: print "name component", repr(component)
             combined_family_name = " ".join(filter(None, [family_name_prefix, family_name]))
-            if DEBUG_NAME: SanitationUtils.safePrint("FOUND FAMILY NAME", combined_family_name)
+            if Registrar.DEBUG_NAME: SanitationUtils.safePrint("FOUND FAMILY NAME", combined_family_name)
             return combined_family_name
 
 
@@ -1123,13 +1117,13 @@ class NameUtils:
             careof = NameUtils.identifyCareOf(matchDict.get('careof'))
             names = matchDict.get('careof_names')
             careof_tuple = (careof, names)
-            if DEBUG_NAME: print "FOUND CAREOF ", repr(careof_tuple)
+            if Registrar.DEBUG_NAME: print "FOUND CAREOF ", repr(careof_tuple)
             return careof_tuple
         # matchGrps = match.groups() if match else None
         # if(matchGrps):
         #     # note = " ".join(matchGrps)
         #     careof = matchGrps[0]
-        #     if DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
+        #     if Registrar.DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
         #     return careof
 
     @staticmethod
@@ -1145,7 +1139,7 @@ class NameUtils:
             organization_name = matchDict.get('organization_name')
             organization_type = matchDict.get('organization_type')
             organization = (organization_name, organization_type)
-            if DEBUG_NAME: print "FOUND ORGANIZATION ", repr(organization)
+            if Registrar.DEBUG_NAME: print "FOUND ORGANIZATION ", repr(organization)
             return organization
 
     @staticmethod
@@ -1155,7 +1149,7 @@ class NameUtils:
             NameUtils.nameTokenRegex,
             string
         )
-        # if DEBUG_NAME: print repr(matches)
+        # if Registrar.DEBUG_NAME: print repr(matches)
         return map(
             lambda match: NameUtils.sanitizeNameToken(match[0]),
             matches
@@ -1909,7 +1903,7 @@ class AddressUtils:
         if(matchDict):
             floor_type = AddressUtils.identifyFloor(matchDict.get('floor_type'))
             floor_number = matchDict.get('floor_number')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND FLOOR", floor_type, floor_number)
             return floor_type, floor_number
         return None
 
@@ -1941,7 +1935,7 @@ class AddressUtils:
             subunit_type = AddressUtils.identifySubunit(matchDict.get('subunit_type'))
             subunit_number = matchDict.get('subunit_number')
             subunit = (subunit_type, subunit_number)
-            if DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND SUBUNIT", subunit)
+            if Registrar.DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND SUBUNIT", subunit)
             return subunit
         return None
 
@@ -1958,7 +1952,7 @@ class AddressUtils:
             subunit_type = AddressUtils.identifySubunit(matchDict.get('weak_subunit_type'))
             subunit_number = matchDict.get('weak_subunit_number')
             subunit = (subunit_type, subunit_number)
-            if DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
+            if Registrar.DEBUG_ADDRESS:  SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
             return subunit
         return None
 
@@ -1995,7 +1989,7 @@ class AddressUtils:
                 matchDict.get('thoroughfare_suffix')
             )
             thoroughfare_number = matchDict.get('thoroughfare_number')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint(
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint(
                 "FOUND THOROUGHFARE",
                 thoroughfare_number,
                 thoroughfare_name,
@@ -2020,7 +2014,7 @@ class AddressUtils:
             building_type = ''.join(AddressUtils.identifyBuildingTypes(
                 matchDict.get('building_type')
             ))
-            if DEBUG_ADDRESS: SanitationUtils.safePrint(
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint(
                 "FOUND BUILDING",
                 building_name,
                 building_type
@@ -2047,7 +2041,7 @@ class AddressUtils:
                 matchDict.get('weak_thoroughfare_suffix')
             )
 
-            if DEBUG_ADDRESS: print "FOUND WEAK THOROUGHFARE %s | %s (%s)" % (
+            if Registrar.DEBUG_ADDRESS: print "FOUND WEAK THOROUGHFARE %s | %s (%s)" % (
                 weak_thoroughfare_name,
                 weak_thoroughfare_type,
                 weak_thoroughfare_suffix
@@ -2065,7 +2059,7 @@ class AddressUtils:
         matchDict = match.groupdict() if match else None
         if(matchDict and matchDict.get('state_name')):
             state_name = matchDict.get('state_name')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND STATE ", state_name)
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND STATE ", state_name)
             return state_name
 
     @staticmethod
@@ -2080,7 +2074,7 @@ class AddressUtils:
         if(matchDict):
             delivery_type = AddressUtils.identifyDeliveryType(matchDict.get('delivery_type'))
             delivery_number = matchDict.get('delivery_number')
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND DELIVERY ", delivery_type, delivery_number)
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND DELIVERY ", delivery_type, delivery_number)
             return delivery_type, delivery_number
 
     @staticmethod
@@ -2094,7 +2088,7 @@ class AddressUtils:
         matchGrps = match.groups() if match else None
         if(matchGrps):
             number = matchGrps[0]
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND NUMBER ", repr(number))
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND NUMBER ", repr(number))
             number = SanitationUtils.stripAllWhitespace( number )
             return number
 
@@ -2108,7 +2102,7 @@ class AddressUtils:
         matchGrps = match.groups() if match else None
         if(matchGrps):
             number = matchGrps[0]
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
             number = SanitationUtils.stripAllWhitespace( number )
             return number
 
@@ -2122,7 +2116,7 @@ class AddressUtils:
         matchGrps = match.groups() if match else None
         if(matchGrps):
             number = matchGrps[0]
-            if DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
+            if Registrar.DEBUG_ADDRESS: SanitationUtils.safePrint( "FOUND SINGLE NUMBER ", repr(number))
             number = SanitationUtils.stripAllWhitespace( number )
             return number
 
@@ -2141,18 +2135,18 @@ class AddressUtils:
         string = SanitationUtils.stripExtraWhitespace(string)
         string = re.sub(AddressUtils.numberAlphaRegex + SanitationUtils.clearStartRegex , r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
-        if DEBUG: SanitationUtils.safePrint( "sanitizeAddressToken", string)
+        if Registrar.DEBUG_UTILS: SanitationUtils.safePrint( "sanitizeAddressToken", string)
         return string
 
     @staticmethod
     def tokenizeAddress(string):
-        # if DEBUG_ADDRESS:
+        # if Registrar.DEBUG_ADDRESS:
         #     SanitationUtils.safePrint("in tokenizeAddress")
         matches =  re.findall(
             AddressUtils.addressTokenRegex,
             string.upper()
         )
-        # if DEBUG_ADDRESS:
+        # if Registrar.DEBUG_ADDRESS:
         #     for match in matches:
         #         print repr(match)
         return map(
@@ -2564,15 +2558,17 @@ class Registrar(object):
     DEBUG_WOO = False
     DEBUG_ADDRESS = False
     DEBUG_NAME = False
+    DEBUG_UTILS = False
+    DEBUG_CLIENT = False
 
 
 
     # def __init__(self):
         # self.objectIndexer = id
         # self.conflictResolver = self.passiveResolver
-        # self.DEBUG_ERROR = True
-        # self.DEBUG_WARN = False
-        # self.DEBUG_MESSAGE = False
+        # self.Registrar.DEBUG_ERROR = True
+        # self.Registrar.DEBUG_WARN = False
+        # self.Registrar.DEBUG_MESSAGE = False
 
     @classmethod
     def conflictResolver(self, *args):
@@ -2601,7 +2597,7 @@ class Registrar(object):
 
     @classmethod
     def stringAnything(self, index, thing, delimeter):
-        return SanitationUtils.coerceBytes( u"%31s %s %s" % (index, delimeter, thing) )
+        return SanitationUtils.coerceBytes( u"%50s %s %s" % (index, delimeter, thing) )
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
