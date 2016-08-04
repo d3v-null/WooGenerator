@@ -241,7 +241,7 @@ class CSVParse_Base(Registrar):
             self.registerError('No default for column '+str(col)+' | '+str(e) + ' ' + unicode(self.defaults))
             return None
         try:
-            if self.DEBUG_ABSTRACT: self.registerMessage(u"row [%s] = %s" % (index, row[index]))
+            if self.DEBUG_ABSTRACT: self.registerMessage(u"row [%3d] = %s" % (index, repr(row[index])))
             #this may break shit
             return row[index]
         except Exception as e:

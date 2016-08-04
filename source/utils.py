@@ -2521,13 +2521,22 @@ class listUtils:
         ])
 
 class debugUtils:
-    @staticmethod
-    def getProcedure():
-        return inspect.stack()[1][3]
+    @classmethod
+    def getProcedure(cls, level=1):
+        try:
+            return inspect.stack()[level][3]
+        except:
+            return None
 
-    @staticmethod
-    def getCallerProcedure():
-        return inspect.stack()[2][3]
+    @classmethod
+    def getCallerProcedure(cls, level=0):
+        return cls.getProcedure(3+level)
+
+    @classmethod
+    def getCallerProcedures(cls, levels=2):
+        procedures = map(cls.getCallerProcedure, range(1,levels+1))
+        return ">".join(reversed(filter(None, procedures)))
+
 
     @staticmethod
     def hashify(in_str):
@@ -2636,7 +2645,7 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.getCallerProcedure()
+            index = debugUtils.getCallerProcedures()
         error_string = SanitationUtils.coerceUnicode(error)
         if self.DEBUG_ERROR: Registrar.printAnything(index, error_string, '!')
         self.registerAnything(
@@ -2656,7 +2665,7 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.getCallerProcedure()
+            index = debugUtils.getCallerProcedures()
         error_string = SanitationUtils.coerceUnicode(message)
         if self.DEBUG_WARN: Registrar.printAnything(index, error_string, '|')
         self.registerAnything(
@@ -2670,7 +2679,7 @@ class Registrar(object):
     @classmethod
     def registerMessage(self, message, source=None):
         if source is None:
-            source = debugUtils.getCallerProcedure()
+            source = debugUtils.getCallerProcedures()
         if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, '~')
         self.registerAnything(
             message,
