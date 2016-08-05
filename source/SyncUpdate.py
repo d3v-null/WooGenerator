@@ -163,93 +163,101 @@ class SyncUpdate(Registrar):
         elif not (mValue and sValue):
             response = False
         #check if they are similar
-        if "phone" in col.lower():
-            if "preferred" in col.lower():
-                mPreferred = SanitationUtils.similarTruStrComparison(mValue)
-                sPreferred = SanitationUtils.similarTruStrComparison(sValue)
-                # print repr(mValue), " -> ", mPreferred
-                # print repr(sValue), " -> ", sPreferred
-                if mPreferred == sPreferred:
-                    response = True
-            else:
-                mPhone = SanitationUtils.similarPhoneComparison(mValue)
-                sPhone = SanitationUtils.similarPhoneComparison(sValue)
-                plen = min(len(mPhone), len(sPhone))
-                if plen > 7 and mPhone[-plen] == sPhone[-plen]:
-                    response = True
-        elif "role" in col.lower():
-            mRole = SanitationUtils.similarComparison(mValue)
-            sRole = SanitationUtils.similarComparison(sValue)
-            if mRole == 'rn':
-                mRole = ''
-            if sRole == 'rn':
-                sRole = ''
-            if mRole == sRole:
-                response = True
-        elif "address" in col.lower() and isinstance(mValue, ContactAddress):
-            if( mValue != sValue ):
-                pass
-                # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
-            response = mValue.similar(sValue)
-        elif "web site" in col.lower():
-            if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
-                response = True
+        if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
+            response = True
         else:
-            if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
-                response = True
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
-                                                                                           SanitationUtils.boolToTruishString(response)))
+            if "phone" in col.lower():
+                if "preferred" in col.lower():
+                    mPreferred = SanitationUtils.similarTruStrComparison(mValue)
+                    sPreferred = SanitationUtils.similarTruStrComparison(sValue)
+                    # print repr(mValue), " -> ", mPreferred
+                    # print repr(sValue), " -> ", sPreferred
+                    if mPreferred == sPreferred:
+                        response = True
+                else:
+                    mPhone = SanitationUtils.similarPhoneComparison(mValue)
+                    sPhone = SanitationUtils.similarPhoneComparison(sValue)
+                    plen = min(len(mPhone), len(sPhone))
+                    if plen > 7 and mPhone[-plen] == sPhone[-plen]:
+                        response = True
+            elif "role" in col.lower():
+                mRole = SanitationUtils.similarComparison(mValue)
+                sRole = SanitationUtils.similarComparison(sValue)
+                if mRole == 'rn':
+                    mRole = ''
+                if sRole == 'rn':
+                    sRole = ''
+                if mRole == sRole:
+                    response = True
+            elif "address" in col.lower() and isinstance(mValue, ContactAddress):
+                if( mValue != sValue ):
+                    pass
+                    # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
+                response = mValue.similar(sValue)
+            elif "web site" in col.lower():
+                if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
+                    response = True
+
+        if self.DEBUG_UPDATE: self.registerMessage(self.testToStr(col, mValue.__str__(), sValue.__str__(), response))
         return response
 
     def colIdentical(self, col):
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
         response = mValue == sValue
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
-                                                                                            SanitationUtils.boolToTruishString(response)))
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, mValue.__str__(), sValue.__str__(), response) )
         return response
 
     def colSimilar(self, col):
         mValue = self.getMValue(col)
         sValue = self.getSValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(mValue), repr(sValue)))
-        return self.valuesSimilar(col, mValue, sValue)
+        response = self.valuesSimilar(col, mValue, sValue)
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, mValue.__str__(), sValue.__str__(), response) )
+        return response
 
     def newColIdentical(self, col):
         mValue = self.getNewMValue(col)
         sValue = self.getNewSValue(col)
         response = mValue == sValue
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(mValue), repr(sValue),
-                                                                                            SanitationUtils.boolToTruishString(response)))
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, mValue.__str__(), sValue.__str__(), response) )
         return response
 
     def mColStatic(self, col):
         oValue = self.getMValue(col)
         nValue = self.getNewMValue(col)
         response = oValue == nValue
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(oValue), repr(nValue),
-                                                                                            SanitationUtils.boolToTruishString(response)))
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, oValue.__str__(), nValue.__str__(), response) )
         return response
 
     def sColStatic(self, col):
         oValue = self.getSValue(col)
         nValue = self.getNewSValue(col)
         response = oValue == nValue
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s -> %s" % (unicode(col), repr(oValue), repr(nValue),
-                                                                                            SanitationUtils.boolToTruishString(response)))
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, oValue.__str__(), nValue.__str__(), response) )
         return response
 
     def mColSemiStatic(self, col):
         oValue = self.getMValue(col)
         nValue = self.getNewMValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(oValue), repr(nValue)))
-        return self.valuesSimilar(col, oValue, nValue)
+        response = self.valuesSimilar(col, oValue, nValue)
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, oValue.__str__(), nValue.__str__(), response) )
+        return response
 
     def sColSemiStatic(self, col):
         oValue = self.getSValue(col)
         nValue = self.getNewSValue(col)
-        if self.DEBUG_UPDATE: self.registerMessage(u"testing col %s: M %s | S %s" % (unicode(col), repr(oValue), repr(nValue)))
-        return self.valuesSimilar(col, oValue, nValue)
+        response = self.valuesSimilar(col, oValue, nValue)
+        if self.DEBUG_UPDATE: self.registerMessage( self.testToStr(col, oValue.__str__(), nValue.__str__(), response) )
+        return response
+
+    def testToStr(self, col, val1, val2, res):
+        return u"testing col %s: %s | %s -> %s" % (
+            unicode(col),
+            repr(val1),
+            repr(val2),
+            SanitationUtils.boolToTruishString(res)
+        )
+
 
     def updateToStr(self, updateType, updateParams):
         assert isinstance(updateType, str)
@@ -829,7 +837,7 @@ class SyncUpdate(Registrar):
         # return -cmp((self.importantUpdates, self.updates, - self.lTime), (other.importantUpdates, other.updates, - other.lTime))
 
     def __str__(self):
-        return "update < %s | %s >" % (self.MYOBID, self.WPID)
+        return "update < %7s | %7s >" % (self.MYOBID, self.WPID)
 
 # def testSyncUpdate1():
 #

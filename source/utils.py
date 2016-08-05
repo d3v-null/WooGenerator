@@ -19,6 +19,14 @@ import time, math, random
 import io
 import base64
 from pympler import tracker
+import cgi
+
+try:
+    # Python 2.6-2.7
+    from HTMLParser import HTMLParser
+except ImportError:
+    # Python 3
+    from html.parser import HTMLParser
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -400,8 +408,10 @@ class SanitationUtils:
     @staticmethod
     def similarPhoneComparison(string):
         return SanitationUtils.compose(
+            SanitationUtils.stripLeadingWhitespace,
             SanitationUtils.stripNonNumbers,
             SanitationUtils.stripAreaCode,
+            SanitationUtils.stripExtraWhitespace,
             SanitationUtils.stripNonPhoneCharacters,
             SanitationUtils.coerceUnicode
         )(string)
@@ -446,6 +456,14 @@ class SanitationUtils:
         return str_out
 
     @staticmethod
+    def html_unescape(string):
+        return HTMLParser().unescape(string)
+
+    @staticmethod
+    def html_escape(string):
+        return cgi.escape(string)
+
+    @staticmethod
     def findAllImages(instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
@@ -488,6 +506,7 @@ class SanitationUtils:
     @staticmethod
     def findallURLs(instring):
         instring = SanitationUtils.coerceUnicode(instring)
+        instring = SanitationUtils.html_unescape(instring)
         return re.findall(
             '(' + SanitationUtils.url_regex + ')',
             instring
@@ -2560,6 +2579,7 @@ class Registrar(object):
     DEBUG_NAME = False
     DEBUG_UTILS = False
     DEBUG_CLIENT = False
+    DEBUG_CONTACT = False
 
 
 

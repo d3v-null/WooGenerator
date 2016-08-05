@@ -183,6 +183,7 @@ def main():
     group.add_argument('--debug-address', action='store_true', dest='debug_address')
     group.add_argument('--debug-client', action='store_true', dest='debug_client')
     group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
+    group.add_argument('--debug-contact', action='store_true', dest='debug_contact')
 
     args = parser.parse_args()
 
@@ -237,7 +238,7 @@ def main():
             Registrar.DEBUG_UPDATE = args.debug_update
         if args.debug_flat is not None:
             Registrar.DEBUG_FLAT = args.debug_flat
-        if args.debug_gen is not None:
+        if args.debug_name is not None:
             Registrar.DEBUG_NAME = args.debug_name
         if args.debug_address is not None:
             Registrar.DEBUG_ADDRESS = args.debug_address
@@ -245,6 +246,8 @@ def main():
             Registrar.DEBUG_CLIENT = args.debug_client
         if args.debug_utils is not None:
             Registrar.DEBUG_UTILS = args.debug_utils
+        if args.debug_contact is not None:
+            Registrar.DEBUG_CONTACT = args.dest='debug_contact'
 
         global_limit = args.limit
 

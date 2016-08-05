@@ -296,6 +296,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         super(UsrSyncClient_SQL_WP, self).__init__()
         self.connectParams = connectParams
         self.dbParams = dbParams
+        self.tbl_prefix = self.dbParams.pop('tbl_prefix','')
         self.attemptConnect()
         # self.fsParams = fsParams
 
@@ -313,7 +314,6 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
 
         self.assertConnect()
 
-        tbl_prefix = self.dbParams.pop('tbl_prefix','')
         # srv_offset = self.dbParams.pop('srv_offset','')
         self.dbParams['port'] = self.client.local_bind_address[-1]
         cursor = pymysql.connect( **self.dbParams ).cursor()
@@ -355,7 +355,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     GROUP BY
         tu.`user_id`""".format(
             modtime_cols = ",\n\t\t".join(modtime_cols),
-            tbl_tu=tbl_prefix+'tansync_updates',
+            tbl_tu=self.tbl_prefix+'tansync_updates',
             sm_where_clause = sm_where_clause,
         )
 
@@ -415,8 +415,8 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         ON ( um.`user_id` = u.`ID`)
     GROUP BY
         u.`ID`""".format(
-            tbl_u = tbl_prefix+'users',
-            tbl_um = tbl_prefix+'usermeta',
+            tbl_u = self.tbl_prefix+'users',
+            tbl_um = self.tbl_prefix+'usermeta',
             usr_cols = userdata_cols,
         )
 
@@ -486,96 +486,6 @@ ON {um_on_clause}
             print "there are %d results" % len(results)
             parser.analyseRows(rows)
 
-        # for row in cursor:
-            # print row
-
-        # saRows = []
-
-        # for i, row in enumerate(cursor):
-        #     saRows += [map(SanitationUtils.coerceUnicode, row)]
-
-        # if saRows:
-        #     parser.analyseRows(saRows)
-
-        # sql_select_user = """\
-        # SELECT
-        #     {usr_cols}
-        # FROM
-        #     {tbl_u} u
-        #     LEFT JOIN {tbl_um} um
-        #     ON ( um.`user_id` = u.`ID`)
-        # GROUP BY
-        #     u.`ID`
-        # """.format(
-        #     tbl_u = tbl_prefix+'users',
-        #     tbl_um = tbl_prefix+'usermeta'
-        # )
-#
-# def testXMLRPC():
-#     # store_url = 'http://technotea.com.au/'
-#     # username = 'Neil'
-#     # password = 'Stretch@6164'
-#     store_url = 'http://minimac.ddns.me:11182/'
-#     username = 'neil'
-#     password = 'Stretch6164'
-#     xmlrpc_uri = store_url + 'xmlrpc.php'
-#
-#     xmlConnectParams = {
-#         'xmlrpc_uri': xmlrpc_uri,
-#         'wp_user': username,
-#         'wp_pass': password
-#     }
-#
-#     client = UsrSyncClient_XMLRPC(xmlConnectParams)
-#
-#     fields = {
-#         u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
-#         'user_url': "http://www.laserphile.com/",
-#         'user_login': "admin"
-#     }
-#
-#     client.uploadChanges(1, fields)
-#
-# def testJSON():
-#     store_url = 'http://technotea.com.au/'
-#     username = 'Neil'
-#     password = 'Stretch@6164'
-#     # store_url = 'http://minimac.ddns.me:11182/'
-#     # username = 'neil'
-#     # password = 'Stretch6164'
-#     json_uri = store_url + 'wp-json/wp/v2'
-#
-#     jsonConnectParams = {
-#         'json_uri': json_uri,
-#         'wp_user': username,
-#         'wp_pass': password
-#     }
-#
-#     client = UsrSyncClient_JSON(jsonConnectParams)
-#
-#     fields = {
-#         u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
-#         'user_url': "http://www.laserphile.com/asd",
-#         # 'first_name': 'noodle',
-#         'user_login': "admin"
-#     }
-#
-#     #
-#
-#     client.uploadChanges(1, fields)
-#
-# def testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams):
-#
-#
-#
-#     saParser = CSVParse_User(
-#         cols = ColData_User.getImportCols(),
-#         defaults = ColData_User.getDefaults()
-#     )
-#     with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as sqlClient:
-#         sqlClient.analyseRemote(saParser, since='2016-01-01 00:00:00')
-#
-#     CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 #
 # if __name__ == '__main__':
 #     # srcFolder = "../source/"

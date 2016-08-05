@@ -35,7 +35,7 @@ class FieldGroup(Registrar):
         self.properties = OrderedDict()
         self.problematic = False
         self.reason = ""
-        self.debug = False
+        self.debug = Registrar.DEBUG_CONTACT
 
     @property
     def properties_override(self):
@@ -264,7 +264,9 @@ class ContactObject(FieldGroup):
         return SanitationUtils.normalizeVal(val)
 
     def similar(self, other):
-        if(self.empty or other.empty):
+        if not isinstance(other, FieldGroup):
+            return False
+        if self.empty or other.empty:
             return True if self.empty and other.empty else False
         for key in self.similarity_keys:
             # print "-> LOOKING AT KEY", key

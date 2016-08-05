@@ -40,6 +40,21 @@ class testSanitationUtils(TestCase):
             SanitationUtils.findallURLs(url1),
             ['http://www.laserphile.com/'])
 
+    def test_findUrlHard(self):
+        url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
+        self.assertItemsEqual(
+            SanitationUtils.findallURLs(url),
+            ['http://www.facebook.com/search/?flt=1&q=amber+melrose&o=2048&s=0#']
+        )
+
+    def test_sanitizeCell(self):
+        url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
+        self.assertItemsEqual(url, SanitationUtils.sanitizeCell(url))
+
+    def test_similarComparison(self):
+        url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
+        self.assertItemsEqual(url, SanitationUtils.similarComparison(url))
+
 if __name__ == '__main__':
     main()
     # doubleNameTestSuite = unittest.TestSuite()

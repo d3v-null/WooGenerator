@@ -173,6 +173,73 @@ class testUsrSyncClient(TestCase):
 
         print response
 
+    def test_JSON_Upload_Core_Easy(self):
+        url = "http://www.google.com/"
+        fields = {"user_url": url}
+        user_id = 2508
+
+        response = ''
+        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+            response = client.uploadChanges(user_id, fields)
+
+        updated = ''
+        with UsrSyncClient_SQL_WP(
+            self.SSHTunnelForwarderParams,
+            self.PyMySqlConnectParams
+        ) as sqlClient:
+            sqlClient.assertConnect()
+            sqlClient.dbParams['port'] = sqlClient.client.local_bind_address[-1]
+            cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+
+            sql = """
+            SELECT user_url
+            FROM {tbl_u}
+            WHERE `ID` = {user_id}""".format(
+                tbl_u = sqlClient.tbl_prefix + 'users',
+                user_id = user_id
+            )
+
+            cursor.execute(sql)
+
+            updated = list(list(cursor)[0])[0]
+
+        self.assertEqual(url, updated)
+
+    def test_JSON_Upload_Core_Hard(self):
+        url = "http://www.facebook.com/search/?post_form_id=474a034babb679a6e6eed34af9a686c0&q=kezzi@live.com.au&init=quick&ref=search_loaded#"
+        fields = {"user_url": url}
+        user_id = 2508
+
+        response = ''
+        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+            response = client.uploadChanges(user_id, fields)
+
+        updated = ''
+        with UsrSyncClient_SQL_WP(
+            self.SSHTunnelForwarderParams,
+            self.PyMySqlConnectParams
+        ) as sqlClient:
+            sqlClient.assertConnect()
+            sqlClient.dbParams['port'] = sqlClient.client.local_bind_address[-1]
+            cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+
+            sql = """
+            SELECT user_url
+            FROM {tbl_u}
+            WHERE `ID` = {user_id}""".format(
+                tbl_u = sqlClient.tbl_prefix + 'users',
+                user_id = user_id
+            )
+
+            cursor.execute(sql)
+
+            updated = list(list(cursor)[0])[0]
+
+        self.assertEqual(url, updated)
+
+
+
+
     # def test_SSH_download(self):
     #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
     #         response = client.getDeleteFile('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
@@ -192,7 +259,8 @@ class testUsrSyncClient(TestCase):
 
 
 if __name__ == '__main__':
-    main()
-    # testSuite = unittest.TestSuite()
-    # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_good'))
-    # unittest.TextTestRunner().run(testSuite)
+    # main()
+    testSuite = unittest.TestSuite()
+    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Easy'))
+    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Hard'))
+    unittest.TextTestRunner().run(testSuite)
