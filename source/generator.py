@@ -150,6 +150,19 @@ parser.add_argument('--schema', help='what schema to process the files as', defa
 parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
 parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
 parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
+
+group = parser.add_argument_group()
+group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
+group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
+group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
+group.add_argument('--debug-client', action='store_true', dest='debug_client')
+group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
+group.add_argument('--debug-gen', action='store_true', dest='debug_gen')
+group.add_argument('--debug-myo', action='store_true', dest='debug_myo')
+group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
+group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
+group.add_argument('--debug-name', action='store_true', dest='debug_name')
+
 args = parser.parse_args()
 if args:
     print args
@@ -196,6 +209,7 @@ if args:
     if args.debug_woo is not None:
         Registrar.DEBUG_WOO = args.debug_woo
     if args.debug_name is not None:
+        Registrar.DEBUG_NAME = args.debug_name
 
 ### DISPLAY CONFIG ###
 if Registrar.DEBUG_MESSAGE:
