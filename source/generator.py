@@ -39,7 +39,7 @@ os.chdir('source')
 
 yamlPath = "generator_config.yaml"
 
-# thumbsize = 1920, 1200
+thumbsize = 1920, 1200
 
 importName = TimeUtils.getMsTimeStamp()
 
@@ -57,16 +57,16 @@ with open(yamlPath) as stream:
 
     #mandatory
     # webFolder = config.get('webFolder')
-    # imgFolder_glb = config.get('imgFolder_glb')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
     taxoDepth = config.get('taxoDepth')
     itemDepth = config.get('itemDepth')
 
     #optional
+    imgRawFolder = config.get('imgRawFolder')
+    imgCmpFolder = config.get('imgCmpFolder')
     fallback_schema = config.get('fallback_schema')
     fallback_variant = config.get('fallback_variant')
-    # imgFolder_extra = config.get('imgFolder_extra')
 
     # ssh_user = config.get('ssh_user')
     # ssh_pass = config.get('ssh_pass')
@@ -95,9 +95,9 @@ with open(yamlPath) as stream:
     xsGID = config.get('xsGID')
 
     skip_google_download = config.get('skip_google_download')
-    skip_images = config.get('skip_images')
-    # assert isinstance(download, bool), "%s %s" % tuple(map(str, [download, download.__class__] ))
-    # assert isinstance(skip_images, bool), "%s %s" % tuple(map(str, [skip_images, skip_images.__class__] ))
+    do_images = config.get('do_images')
+    do_delete_images = config.get('do_delete_images')
+    do_resize_images = config.get('do_resize_images')
 
     current_special = config.get('current_special')
     add_special_categories = config.get('add_special_categories')
@@ -112,15 +112,10 @@ dprpPath= os.path.join(inFolder, 'DPRP.csv')
 specPath= os.path.join(inFolder, 'specials.csv')
 usPath  = os.path.join(inFolder, 'US.csv')
 xsPath  = os.path.join(inFolder, 'XS.csv')
-# imgFolder = [imgFolder_glb]
 
 sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
 ### GET SHELL ARGS ###
-
-schema = ""
-variant = ""
-# skip_google_download = True
 
 parser = argparse.ArgumentParser(description = 'Generate Import files from Google Drive')
 group = parser.add_mutually_exclusive_group()
@@ -141,9 +136,23 @@ group.add_argument('--skip-update-slave', help='don\'t update the slave database
                    action="store_false", dest='update_slave')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-images', help='process images',
-                   action="store_true", default=None)
+                   action="store_true", default=do_images)
 group.add_argument('--skip-images', help='don\'t process images',
-                   action="store_false", dest='update_slave')
+                   action="store_false", dest='do_images')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-delete-images', help='delete extra images in compressed folder',
+                   action="store_true", default=do_delete_images)
+group.add_argument('--skip-delete-images', help='protect images from deletion',
+                   action="store_false", dest='do_delete_images')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-resize-images', help='resize images in compressed folder',
+                   action="store_true", default=do_resize_images)
+group.add_argument('--skip-resize-images', help='protect images from resizing',
+                   action="store_false", dest='do_resize_images')
+parser.add_argument('--img-raw-folder', help='location of raw images',
+                    default=imgRawFolder)
+parser.add_argument('--img-raw-extra-folder', help='location of additional raw images',
+                    default='')
 parser.add_argument('--current-special', help='prefix of current special code')
 parser.add_argument('--add-special-categories', help='add special items to special category', action="store_true", default=None)
 parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
@@ -162,6 +171,7 @@ group.add_argument('--debug-myo', action='store_true', dest='debug_myo')
 group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
 group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
 group.add_argument('--debug-name', action='store_true', dest='debug_name')
+group.add_argument('--debug-img', action='store_true', dest='debug_img')
 
 args = parser.parse_args()
 if args:
@@ -185,14 +195,21 @@ if args:
         current_special = args.current_special
     if args.add_special_categories:
         add_special_categories = args.add_special_categories
-    if args.schema:
-        schema = args.schema
-    if args.variant:
-        variant = args.variant
     if args.taxo_depth:
         taxoDepth = args.taxo_depth
     if args.item_depth:
         itemDepth = args.item_depth
+
+    schema = args.schema
+    variant = args.variant
+    do_images = args.do_images
+    do_delete_images = args.do_delete_images
+    do_resize_images = args.do_resize_images
+    do_resize_images = args.do_resize_images
+    imgRawFolder = args.img_raw_folder
+    imgRawFolders = [imgRawFolder]
+    if args.img_raw_extra_folder is not None:
+        imgRawFolders.append(args.img_raw_extra_folder)
 
     if args.debug_abstract is not None:
         Registrar.DEBUG_ABSTRACT = args.debug_abstract
@@ -210,6 +227,8 @@ if args:
         Registrar.DEBUG_WOO = args.debug_woo
     if args.debug_name is not None:
         Registrar.DEBUG_NAME = args.debug_name
+    if args.debug_img is not None:
+        Registrar.DEBUG_IMG = args.debug_img
 
 ### DISPLAY CONFIG ###
 if Registrar.DEBUG_MESSAGE:
@@ -222,35 +241,6 @@ if Registrar.DEBUG_MESSAGE:
     if not update_slave:
         print "not updating slave"
 
-# if __name__ == "__main__":
-#     if sys.argv and len(sys.argv) > 1 and sys.argv[1]:
-#         if sys.argv[1] in myo_schemas + woo_schemas :
-#             schema = sys.argv[1]
-#             if len(sys.argv) > 2 and sys.argv[2]:
-#                 variant = sys.argv[2]
-#         else:
-#             print "invalid schema"
-#     else:
-#         print "no schema specified"
-
-    #todo: set current_special, imgFolder_glb, delete, remeta, resize, download from args
-
-### FALLBACK SHELL ARGS ###
-
-# if not schema:
-#     assert fallback_schema
-#     schema = fallback_schema
-# if not variant and fallback_variant:
-#     variant = fallback_variant
-
-### CONFIG OVERRIDE ###
-
-# skip_images = True
-# delete = True
-# remeta = True
-# resize = False
-# rename = False
-
 if variant == "ACC":
     genPath = os.path.join(inFolder, 'generator-solution.csv')
 
@@ -258,11 +248,6 @@ if variant == "SOL":
     genPath = os.path.join(inFolder, 'generator-accessories.csv')
 
 ### PROCESS CONFIG ###
-
-# if variant:
-#     delete = False
-#     remeta = False
-#     resize = False
 
 suffix = schema
 if variant:
@@ -278,11 +263,9 @@ bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
 # spoPath = os.path.join(outFolder , "specials-"+suffix+".html")
 # wpaiFolder = os.path.join(webFolder, "images-"+schema)
 # refFolder = wpaiFolder
+imgDst = os.path.join(imgCmpFolder, "images-"+schema)
 
 maxDepth = taxoDepth + itemDepth
-
-# if imgFolder_extra and schema in imgFolder_extra.keys():
-#     imgFolder += [imgFolder_extra[schema]]
 
 if current_special:
     CSVParse_Woo.specialsCategory = "Specials"
@@ -400,7 +383,7 @@ if schema in woo_schemas:
     vattributes    = productParser.vattributes
     categories     = productParser.categories
     variations     = productParser.variations
-    # images         = productParser.images
+    images         = productParser.images
 
 if Registrar.errors:
     print "there were some errors that need to be reviewed before sync can happen"
@@ -411,141 +394,138 @@ elif Registrar.warnings:
     Registrar.print_message_dict(1)
 
 
-# #########################################
-# # Images
-# #########################################
-#
-# if schema in woo_schemas and not skip_images:
-#     print ""
-#     print "Images:"
-#     print "==========="
-#
-#     def reportImportError(source, error):
-#         Registrar.registerError(error, source)
-#         # import_errors[source] = import_errors.get(source,[]) + [str(error)]
-#
-#     def invalidImage(img, error):
-#         reportImportError(img, error)
-#         images[img].invalidate()
-#
-#     if skip_images:
-#         images = {}
-#         delete = False
-#
-#     ls_imgs = {}
-#     for folder in imgFolder:
-#         ls_imgs[folder] = os.listdir(folder)
-#
-#     def getImage(img):
-#         for folder in imgFolder:
-#             if img in ls_imgs[folder]:
-#                 return os.path.join(folder, img)
-#         raise UserWarning("no img found")
-#
-#     if not os.path.exists(refFolder):
-#         os.makedirs(refFolder)
-#
-#     ls_reflattened = os.listdir(refFolder)
-#     for f in ls_reflattened:
-#         if f not in images.keys():
-#             print "DELETING", f, "FROM REFLATTENED"
-#             if delete:
-#                 os.remove(os.path.join(refFolder,f))
-#
-#
-#     for img, data in images.items():
-#         print img
-#         if data.taxos:
-#             print "-> Associated Taxos"
-#             for taxo in data.taxos:
-#                 print " -> (%4d) %10s" % (taxo.rowcount, taxo.codesum)
-#
-#         if data.items:
-#             print "-> Associated Items"
-#             for item in data.items:
-#                 print " -> (%4d) %10s" % (item.rowcount, item.codesum)
-#
-#         if data.products:
-#             print "-> Associated Products"
-#             for item in data.products:
-#                 print " -> (%4d) %10s" % (item.rowcount, item.codesum)
-#         else:
-#             continue
-#             # we only care about product images atm
-#
-#         try:
-#             imgsrcpath = getImage(img)
-#         except Exception as e:
-#             invalidImage(img, e)
-#
-#         name, ext = os.path.splitext(img)
-#         if(not name):
-#             invalidImage(img, "could not extract name")
-#             continue
-#
-#         try:
-#             title, description = data.title, data.description
-#         except Exception as e:
-#             invalidImage(img, "could not get title or description: "+str(e) )
-#             continue
-#
-#         # print "-> title, description", title, description
-#
-#         # ------
-#         # REMETA
-#         # ------
-#
-#         try:
-#             metagator = MetaGator(imgsrcpath)
-#         except Exception, e:
-#             invalidImage(img, "error creating metagator: " + str(e))
-#             continue
-#
-#         try:
-#             metagator.update_meta({
-#                 'title': title,
-#                 'description': description
-#             })
-#         except Exception as e:
-#             invalidImage(img, "error updating meta: " + str(e))
-#
-#         # ------
-#         # RESIZE
-#         # ------
-#
-#         if resize:
-#             imgdstpath = os.path.join(refFolder, img)
-#             if not os.path.isfile(imgsrcpath) :
-#                 print "SOURCE FILE NOT FOUND: ", imgsrcpath
-#                 continue
-#
-#             if os.path.isfile(imgdstpath) :
-#                 imgsrcmod = max(os.path.getmtime(imgsrcpath), os.path.getctime(imgsrcpath))
-#                 imgdstmod = os.path.getmtime(imgdstpath)
-#                 # print "image mod (src, dst): ", imgsrcmod, imgdstmod
-#                 if imgdstmod > imgsrcmod:
-#                     # print "DESTINATION FILE NEWER: ", imgdstpath
-#                     continue
-#
-#             print "resizing:", img
-#             shutil.copy(imgsrcpath, imgdstpath)
-#
-#             try:
-#                 # imgmeta = MetaGator(imgdstpath)
-#                 # imgmeta.write_meta(title, description)
-#                 # print imgmeta.read_meta()
-#
-#                 image = Image.open(imgdstpath)
-#                 image.thumbnail(thumbsize)
-#                 image.save(imgdstpath)
-#
-#                 imgmeta = MetaGator(imgdstpath)
-#                 imgmeta.write_meta(title, description)
-#                 # print imgmeta.read_meta()
-#
-#             except Exception as e:
-#                 invalidImage(img, "could not resize: " + str(e))
-#                 continue
+#########################################
+# Images
+#########################################
+
+if schema in woo_schemas and do_images:
+    print ""
+    print "Images:"
+    print "==========="
+
+    def invalidImage(img, error):
+        # Registrar.registerError(error, img)
+        images[img].invalidate(error)
+
+    ls_raw = {}
+    for folder in imgRawFolders:
+        ls_raw[folder] = os.listdir(folder)
+
+    def getRawImage(img):
+        for imgRawFolder in imgRawFolders:
+            if img in ls_raw[imgRawFolder]:
+                return os.path.join(imgRawFolder, img)
+        raise UserWarning("no img found")
+
+    if not os.path.exists(imgDst):
+        os.makedirs(imgDst)
+
+    #list of images in compressed directory
+    ls_cmp = os.listdir(imgDst)
+    for f in ls_cmp:
+        if f not in images.keys():
+            Registrar.registerWarning("DELETING FROM REFLATTENED", f)
+            if do_delete_images:
+                os.remove(os.path.join(imgDst,f))
+
+    for img, data in images.items():
+        if not data.products:
+            continue
+            # we only care about product images atm
+        if Registrar.DEBUG_IMG:
+            if data.taxos:
+                Registrar.registerMessage(
+                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.taxos]),
+                    img
+                )
+
+            if data.items:
+                Registrar.registerMessage(
+                    "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
+                    img
+                )
+
+            if data.products:
+                Registrar.registerMessage(
+                    "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
+                    img
+                )
+
+        try:
+            imgRawPath = getRawImage(img)
+        except Exception as e:
+            invalidImage(img, e)
+            continue
+
+        name, ext = os.path.splitext(img)
+        if(not name):
+            invalidImage(img, UserWarning("could not extract name"))
+            continue
+
+        try:
+            title, description = data.title, data.description
+        except Exception as e:
+            invalidImage(img, "could not get title or description: "+str(e) )
+            continue
+
+        Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
+
+        # ------
+        # REMETA
+        # ------
+
+        try:
+            metagator = MetaGator(imgRawPath)
+        except Exception, e:
+            invalidImage(img, "error creating metagator: " + str(e))
+            continue
+
+        try:
+            metagator.update_meta({
+                'title': title,
+                'description': description
+            })
+        except Exception as e:
+            invalidImage(img, "error updating meta: " + str(e))
+
+        # ------
+        # RESIZE
+        # ------
+
+        if do_resize_images:
+            if not os.path.isfile(imgRawPath) :
+                invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
+                continue
+
+            imgDstPath = os.path.join(imgDst, img)
+            if os.path.isfile(imgDstPath) :
+                imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
+                imgDstMod = os.path.getmtime(imgDstPath)
+                # print "image mod (src, dst): ", imgSrcMod, imgdstmod
+                if imgDstMod > imgSrcMod:
+                    if Registrar.DEBUG_IMG:
+                        Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
+                    continue
+
+            print "resizing:", img
+            shutil.copy(imgRawPath, imgDstPath)
+
+            try:
+                # imgmeta = MetaGator(imgDstPath)
+                # imgmeta.write_meta(title, description)
+                # print imgmeta.read_meta()
+
+                image = Image.open(imgDstPath)
+                image.thumbnail(thumbsize)
+                image.save(imgDstPath)
+
+                imgmeta = MetaGator(imgDstPath)
+                imgmeta.write_meta(title, description)
+                # print imgmeta.read_meta()
+
+            except Exception as e:
+                invalidImage(img, "could not resize: " + str(e))
+                continue
 #
 #     # ------
 #     # RSYNC
@@ -554,7 +534,7 @@ elif Registrar.warnings:
 #     if not os.path.exists(wpaiFolder):
 #         os.makedirs(wpaiFolder)
 #
-#     rsync.main([os.path.join(refFolder,'*'), wpaiFolder])
+#     rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
 
 #########################################
 # Export Info to Spreadsheets
@@ -567,7 +547,7 @@ if schema in myo_schemas:
 elif schema in woo_schemas:
     product_cols = ColData_Woo.getProductCols()
 
-    if skip_images:
+    if not do_images:
         if(product_cols.get('Images')):
             del product_cols['Images']
 

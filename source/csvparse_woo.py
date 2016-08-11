@@ -305,8 +305,12 @@ class WooObjList(ObjList):
         if objectData not in container:
             bisect.insort(container, objectData)
 
-    def invalidate(self):
-        self._isValid = False;
+    def invalidate(self, reason=""):
+        if self.DEBUG_IMG:
+            if not reason:
+                reason = "IMG INVALID"
+            self.registerError(reason, self.fileName)
+        self._isValid = False
 
 
 class CSVParse_Woo(CSVParse_Gen):

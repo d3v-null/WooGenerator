@@ -66,7 +66,7 @@ class ImportObject(OrderedDict, Registrar):
             return -1
         return cmp(self.rowcount, other.rowcount)
 
-class ObjList(list):
+class ObjList(list, Registrar):
 
     _supports_tablefmt = True
 

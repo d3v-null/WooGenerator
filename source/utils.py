@@ -2580,6 +2580,7 @@ class Registrar(object):
     DEBUG_UTILS = False
     DEBUG_CLIENT = False
     DEBUG_CONTACT = False
+    DEBUG_IMG = False
 
 
 
