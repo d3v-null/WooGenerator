@@ -61,6 +61,10 @@ class ColData_Base(object):
     def getReportCols(cls):
         return cls.getExportCols('report')
 
+    @classmethod
+    def getWPAPICols(cls):
+        return cls.getExportCols('wp-api')
+
 class ColData_MYO(ColData_Base):
 
     data = OrderedDict([
@@ -147,6 +151,9 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key': 'ID',
                 'meta': False
+            },
+            'wp-api':{
+                'key':'id'
             }
         }),
         ('parent_SKU', {
@@ -161,6 +168,9 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'_sku',
                 'meta':True
+            },
+            'wp-api':{
+                'key':'sku'
             }
         }),
         ('itemsum', {
@@ -171,6 +181,9 @@ class ColData_Woo(ColData_Base):
             'wp':{
                 'key':'post_title',
                 'meta':False
+            },
+            'wp-api':{
+                'key':'title'
             }
         }),
         ('title_1', {
@@ -319,6 +332,9 @@ class ColData_Woo(ColData_Base):
                 'key':'_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'regular_price'
+            }
         }),
         ('sale_price', {
             'label':'sale_price',
@@ -329,6 +345,7 @@ class ColData_Woo(ColData_Base):
                 'key':'_sale_price',
                 'meta':True
             },
+            'wp-api':True
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',
@@ -619,6 +636,7 @@ class ColData_Woo(ColData_Base):
                 'key':'_weight',
                 'meta':True
             },
+            'wp-api':True
         }),
         ('length', {
             'import': True,
@@ -678,6 +696,9 @@ class ColData_Woo(ColData_Base):
                 'key':'_manage_stock',
                 'meta':True
             },
+            'wp-api':{
+                'key': 'managing_stock'
+            }
         }),
         ('Images', {
             'import': True,
@@ -685,6 +706,9 @@ class ColData_Woo(ColData_Base):
         }),
         ('HTML Description', {
             'import': True,
+            'wp-api':{
+                'key':'description'
+            }
         }),
         ('last_import', {
             'label':'meta:last_import',
@@ -697,7 +721,10 @@ class ColData_Woo(ColData_Base):
         ('post_status', {
             'import':True,
             'product':True,
-            'variation':True
+            'variation':True,
+            'wp-api':{
+                'key':'status'
+            }
         }),
     ])
 
