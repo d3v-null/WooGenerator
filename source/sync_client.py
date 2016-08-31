@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
@@ -35,14 +35,15 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
+from woocommerce import API as WCAPI
+
 class SyncClient_Abstract(Registrar):
+    """docstring for UsrSyncClient_Abstract"""
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
         raise NotImplementedError()
-
-    """docstring for UsrSyncClient_Abstract"""
 
     @property
     def connectionReady(self):
@@ -150,6 +151,81 @@ class SyncClient_GDrive(SyncClient_Abstract):
                     outFile.write(content)
                     print "downloaded ", outFile
         parser.analyseFile(outPath)
+
+class SyncClient_WC(SyncClient_Abstract):
+    class ApiIterator(Iterable):
+        def __init__(self, api, endpoint):
+            assert isinstance(api, WCAPI)
+            self.api = api
+            self.last_response = self.api.get(endpoint)
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('first api response: %s' % str(self.last_response.json()))
+            if 'errors' in self.last_response.json():
+                raise UserWarning('api call returned errors: %s' % (self.last_response.json()['errors']))
+            self.stopNextIteration = False
+
+        def __get_endpoint(self, url):
+            api_url = self.api._API__get_url('')
+            if url.startswith(api_url):
+                return url.replace(api_url, '')
+
+        def __iter__(self):
+            return self
+
+        def next(self):
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('start')
+            if self.stopNextIteration:
+                if Registrar.DEBUG_API:
+                    Registrar.registerMessage('stopping due to stopNextIteration')
+                raise StopIteration()
+
+            assert self.last_response.status_code not in [404]
+            last_response_json = self.last_response.json()
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('last_response_json: %s' % last_response_json)
+            last_response_headers = self.last_response.headers
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('last_response_headers: %s' % last_response_headers)
+            if last_response_headers.get('x-wc-totalpages') == '1':
+                if Registrar.DEBUG_API:
+                    Registrar.registerMessage('one page, enabling stopNextIteration')
+                self.stopNextIteration = True
+                return last_response_json
+            else:
+                if Registrar.DEBUG_API:
+                    Registrar.registerMessage('more than one page: enabling pagination')
+            links_str = last_response_headers.get('link', '')
+            for link in SanitationUtils.findall_wc_links(links_str):
+                if link.get('rel') == 'next' and link.get('url'):
+                    next_response_url = link['url']
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
+                    self.last_response = self.api.get(
+                        self.__get_endpoint(next_response_url)
+                    )
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('last_response_json: %s' % last_response_json)
+                    return last_response_json
+            raise StopIteration()
+
+    def __init__(self, connectParams):
+        super(SyncClient_WC, self).__init__()
+        mandatory_params = ['api_key', 'api_secret', 'url']
+        for param in mandatory_params:
+            assert param in connectParams and connectParams[param], \
+                "missing mandatory param: %s" % param
+        self.client = WCAPI(
+            url=connectParams['url'],
+            consumer_key=connectParams['api_key'],
+            consumer_secret=connectParams['api_secret'],
+            timeout=30
+        )
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+
 
 
 

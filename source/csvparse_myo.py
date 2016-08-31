@@ -1,4 +1,4 @@
-from csvparse_gen import CSVParse_Gen, ImportGenProduct, GenProdList
+from CSVParse_Gen_Tree import CSVParse_Gen_Tree, ImportGenProduct, GenProdList
 from csvparse_abstract import ObjList
 from utils import listUtils, SanitationUtils
 from collections import OrderedDict
@@ -6,15 +6,16 @@ from coldata import ColData_MYO
 import time
 import os
 
-class CSVParse_MYO(CSVParse_Gen):
+class CSVParse_MYO(CSVParse_Gen_Tree):
 
-    prod_containers = {
+    containers = {
         'Y': ImportGenProduct
     }
 
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
-
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         extra_cols = [ 'WNRC', 'RNRC', 'HTML Description' ]
 
         extra_defaults =  OrderedDict([

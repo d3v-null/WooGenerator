@@ -1,21 +1,166 @@
+"""
+CSVParse Abstract
+Abstract base classes originally intended to be used for parsing and storing CSV data in a
+convenient accessible dictionary structure, but modified to store data in other formats.
+Parse classes store Import objects in their internal structure and output ObjList instances
+for easy analyis.
+"""
+
+
 # from pprint import pprint
 from collections import OrderedDict
-from utils import listUtils, SanitationUtils, Registrar, ProgressCounter, Registrar
+from utils import listUtils, SanitationUtils, Registrar, ProgressCounter
 from utils import UnicodeCsvDialectUtils
 from tabulate import tabulate
 import unicodecsv
-from coldata import ColData_User
+# from coldata import ColData_User
 from copy import deepcopy, copy
-from time import time
+# from time import time
+# import os
+
+class ObjList(list, Registrar):
+    # supports_tablefmt = True
+    objList_type = 'objects'
+    supported_type = object
+
+    def __init__(self, objects=None, indexer=None):
+        super(ObjList, self).__init__()
+        Registrar.__init__(self)
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
+        self.indexer = indexer if indexer else (lambda x: x.index)
+        self.supported_type = ImportObject
+        # self._objList_type = 'objects'
+        # self._objects = []
+        self.indices = []
+        if objects:
+            self.extend(objects)
+
+    @property
+    def objects(self):
+        return self[:]
+
+    # @property
+    # def objList_type(self):
+    #     return self._objList_type
+
+    # @property
+    # def indices(self):
+    #     return self._indices
 
 
-import os
+    # def __len__(self):
+    #     return len(self.objects)
+
+    def append(self, objectData):
+        #re-implemeny by overriding .append()?
+        try:
+            assert issubclass(objectData.__class__, self.supported_type), \
+                "object must be subclass of %s not %s" % \
+                    (str(self.supported_type.__name__), str(objectData.__class__))
+        except Exception as e:
+            self.registerError(e)
+            return
+        index = self.indexer(objectData)
+        if(index not in self.indices):
+            super(ObjList, self).append(objectData)
+            self.indices.append(index)
+
+    def extend(self, objects):
+        #re-implemeny by overriding .extend()?
+        for obj in objects:
+            self.append(obj)
+
+    def getKey(self, key):
+        values = listUtils.filterUniqueTrue([
+            obj.get(key) for obj in self.objects
+        ])
+
+        if values:
+            return values[0]
+
+    def getSanitizer(self, tablefmt=None):
+        if tablefmt == 'html':
+            return SanitationUtils.sanitizeForXml
+        else:
+            return SanitationUtils.sanitizeForTable
+
+    def tabulate(self, cols=None, tablefmt=None):
+        objs = self.objects
+        sanitizer = self.getSanitizer(tablefmt)
+        # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
+        if objs:
+            if not cols: cols = self.reportCols
+            header = [self.objList_type]
+            for col in cols.keys():
+                header += [col]
+            table = []
+            for obj in objs:
+                row = [obj.index]
+                for col in cols.keys():
+                    # if col == 'Address':
+                    #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
+                    row += [ sanitizer(obj.get(col) )or ""]
+                    try:
+                        SanitationUtils.coerceUnicode(row[-1])
+                    except:
+                        Registrar.registerWarning("can't turn row into unicode: %s" % SanitationUtils.coerceUnicode(row))
+
+                table += [row]
+                # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
+            # print "table", table
+            # SanitationUtils.safePrint(table)
+            # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
+            return (tabulate(table, headers=header, tablefmt=tablefmt))
+            # print repr(table)
+            # print repr(table.encode('utf8'))
+            # return table.encode('utf8')
+        else:
+            Registrar.registerWarning("cannot tabulate Objlist: there are no objects")
+            return ""
+
+    def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
+        assert filePath, "needs a filepath"
+        assert colNames, "needs colNames"
+        assert self.objects, "meeds items"
+        with open(filePath, 'w+') as outFile:
+            if dialect is None:
+                csvdialect = UnicodeCsvDialectUtils.act_out
+            else:
+                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
+            # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
+            if self.DEBUG_ABSTRACT:
+                self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+            dictwriter = unicodecsv.DictWriter(
+                outFile,
+                dialect=csvdialect,
+                fieldnames=colNames.keys(),
+                encoding=encoding,
+                extrasaction='ignore',
+            )
+            dictwriter.writerow(colNames)
+            dictwriter.writerows(self.objects)
+        self.registerMessage("WROTE FILE: %s" % filePath)
+
+    reportCols = OrderedDict([
+        ('_row',{'label':'Row'}),
+        ('index',{})
+    ])
+
+    def getReportCols(self):
+        e = DeprecationWarning("use .reportCols instead of .getReportCols()")
+        self.registerError(e)
+        return self.reportCols
+
 
 class ImportObject(OrderedDict, Registrar):
+    container = ObjList
 
     def __init__(self, data, rowcount = None, row = None):
         super(ImportObject, self).__init__(data)
         Registrar.__init__(self)
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         if rowcount is not None:
             self['rowcount'] = rowcount
         # if not self.get('rowcount'): self['rowcount'] = 0
@@ -35,18 +180,39 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def index(self): return self.rowcount
 
-    @staticmethod
-    def getContainer():
-        return ObjList
+    @property
+    def identifierDelimeter(self): return ""
 
-    def getTypeName(self):
+    # @classmethod
+    # def getNewObjContainer(cls):
+    #     e = DeprecationWarning("user .container instead of .getNewObjContainer()")
+    #     self.registerError(e)
+    #     return cls.container
+    #     # return ObjList
+
+    @property
+    def typeName(self):
         return type(self).__name__
 
+    def getTypeName(self):
+        e = DeprecationWarning("use .typeName instead of .getTypeName()")
+        self.registerError(e)
+        return self.typeName
+
     def getIdentifierDelimeter(self):
-        return ""
+        e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        self.registerError(e)
+        return self.identifierDelimeter
+
+    @property
+    def identifier(self):
+        Registrar.stringAnything( self.index, "<%s>" % self.typeName, self.identifierDelimeter )
 
     def getIdentifier(self):
-        return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
+        e = DeprecationWarning("use .identifier instead of .getIdentifier()")
+        self.registerError(e)
+        return self.identifier
+        # return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
 
     def __getstate__(self): return self.__dict__
     def __setstate__(self, d): self.__dict__.update(d)
@@ -54,7 +220,7 @@ class ImportObject(OrderedDict, Registrar):
     def __deepcopy__(self, memodict={}): return self.__class__(deepcopy(OrderedDict(self)), self.rowcount, self.row[:])
 
     def __str__(self):
-        return "%10s <%s>" % (self.index, self.getTypeName())
+        return "%10s <%s>" % (self.index, self.typeName)
 
     def __repr__(self):
         return self.__str__()
@@ -66,134 +232,14 @@ class ImportObject(OrderedDict, Registrar):
             return -1
         return cmp(self.rowcount, other.rowcount)
 
-class ObjList(list, Registrar):
-
-    _supports_tablefmt = True
-
-    def __init__(self, objects=None, indexer=None):
-        super(ObjList, self).__init__()
-        self._indexer = indexer if indexer else (lambda x: x.index)
-        self._objList_type = 'objects'
-        # self._objects = []
-        self._indices = []
-        if objects:
-            self.addObjects(objects)
-
-    @property
-    def objects(self):
-        return self[:]
-
-    @property
-    def objList_type(self):
-        return self._objList_type
-
-    @property
-    def indices(self):
-        return self._indices
-
-
-    # def __len__(self):
-    #     return len(self.objects)
-
-    def addObject(self, objectData):
-        try:
-            assert issubclass(objectData.__class__, ImportObject), \
-            "object must be subclass of ImportObject not %s" % str(objectData.__class__)
-        except Exception as e:
-            raise e
-        index = self._indexer(objectData)
-        if(index not in self._indices):
-            self.append(objectData)
-            self._indices.append(index)
-
-    def addObjects(self, objects):
-        for obj in objects:
-            self.addObject(obj)
-
-    def getKey(self, key):
-        values = listUtils.filterUniqueTrue([
-            obj.get(key) for obj in self.objects
-        ])
-
-        if values:
-            return values[0]
-
-    def getSanitizer(self, tablefmt=None):
-        if tablefmt == 'html':
-            return SanitationUtils.sanitizeForXml
-        else:
-            return SanitationUtils.sanitizeForTable
-
-    def tabulate(self, cols=None, tablefmt=None):
-        objs = self.objects
-        sanitizer = self.getSanitizer(tablefmt);
-        # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
-        if(objs):
-            # print "there are objects"
-            if not cols: cols = self.getReportCols()
-            header = [self.objList_type]
-            for col, data in cols.items():
-                header += [col]
-            table = []
-            for obj in objs:
-                row = [obj.index]
-                for col in cols.keys():
-                    # if col == 'Address':
-                    #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
-                    row += [ sanitizer(obj.get(col) )or ""]
-                    try:
-                        SanitationUtils.coerceUnicode(row[-1])
-                    except:
-                        Registrar.registerMessage("can't turn row into unicode: %s" % SanitationUtils.coerceUnicode(row))
-
-                table += [row]
-                # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
-            # print "table", table
-            # SanitationUtils.safePrint(table)
-            # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
-            return (tabulate(table, headers=header, tablefmt=tablefmt))
-            # print repr(table)
-            # print repr(table.encode('utf8'))
-            # return table.encode('utf8')
-        else:
-            Registrar.registerMessage("cannot tabulate Objlist: there are no objects")
-            return ""
-
-    def exportItems(self, filePath, colNames, dialect = None, encoding="utf8"):
-        assert filePath, "needs a filepath"
-        assert colNames, "needs colNames"
-        assert self.objects, "meeds items"
-        with open(filePath, 'w+') as outFile:
-            if dialect is None:
-                csvdialect = UnicodeCsvDialectUtils.act_out
-            else:
-                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
-            # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
-            if Registrar.DEBUG_ABSTRACT:
-                Registrar.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
-            dictwriter = unicodecsv.DictWriter(
-                outFile,
-                dialect=csvdialect,
-                fieldnames=colNames.keys(),
-                encoding=encoding,
-                extrasaction='ignore',
-            )
-            dictwriter.writerow(colNames)
-            dictwriter.writerows(self.objects)
-        Registrar.registerMessage("WROTE FILE: %s" % filePath)
-
-    def getReportCols(self):
-        return OrderedDict([
-                    ('_row',{'label':'Row'}),
-                    ('index',{})
-                ])
-
 class CSVParse_Base(Registrar):
     objectContainer = ImportObject
 
-    def __init__(self, cols, defaults, limit=None):
+    def __init__(self, cols, defaults, limit=None, **kwargs):
         super(CSVParse_Base, self).__init__()
         Registrar.__init__(self)
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
 
         extra_cols = []
         extra_defaults = OrderedDict()
@@ -208,10 +254,15 @@ class CSVParse_Base(Registrar):
     def __setstate__(self, d): self.__dict__.update(d)
 
     def clearTransients(self):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         self.indices = OrderedDict()
         self.objects = OrderedDict()
+        self.rowcount = 0
 
     def registerObject(self, objectData):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         self.registerAnything(
             objectData,
             self.objects,
@@ -260,7 +311,11 @@ class CSVParse_Base(Registrar):
                 rowData[col] = self.sanitizeCell(retrieved)
         return rowData
 
-    def getContainer(self, allData, **kwargs):
+    def getNewObjContainer(self, allData, **kwargs):
+        if kwargs:
+            pass # gets rid of unused argument error
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         return self.objectContainer
 
     def getKwargs(self, allData, container, **kwargs):
@@ -269,18 +324,19 @@ class CSVParse_Base(Registrar):
     def newObject(self, rowcount, row, **kwargs):
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
-        if(self.DEBUG_PARSER): self.registerMessage( "defaultData: {}".format(defaultData) )
+        if self.DEBUG_PARSER: self.registerMessage( "defaultData: {}".format(defaultData) )
         rowData = self.getRowData(row)
-        if(self.DEBUG_PARSER): self.registerMessage( "rowData: {}".format(rowData) )
+        if self.DEBUG_PARSER: self.registerMessage( "rowData: {}".format(rowData) )
         # allData = listUtils.combineOrderedDicts(rowData, defaultData)
         allData = listUtils.combineOrderedDicts(defaultData, rowData)
-        if(self.DEBUG_PARSER): self.registerMessage( "allData: {}".format(allData) )
-        container = self.getContainer(allData, **kwargs)
-        # self.registerMessage("container: {}".format(container.__name__))
+        if self.DEBUG_PARSER: self.registerMessage( "allData: {}".format(allData) )
+        kwargs['rowcount'] = rowcount
+        kwargs['row'] = row
+        container = self.getNewObjContainer(allData, **kwargs)
+        if self.DEBUG_PARSER: self.registerMessage("container: {}".format(container.__name__))
         kwargs = self.getKwargs(allData, container, **kwargs)
-        # self.registerMessage("kwargs: {}".format(kwargs))
-        objectData = container(allData, rowcount, row, **kwargs)
-        # self.registerMessage("mro: {}".format(container.mro()))
+        if self.DEBUG_PARSER: self.registerMessage("kwargs: {}".format(kwargs))
+        objectData = container(allData, **kwargs)
         return objectData
 
     def initializeObject(self, objectData):
@@ -314,13 +370,13 @@ class CSVParse_Base(Registrar):
             self.progressCounter = ProgressCounter(rowlen)
             unicode_rows = rows
 
-        for rowcount, unicode_row in enumerate(unicode_rows):
+        for unicode_row in (unicode_rows):
             if self.DEBUG_PROGRESS:
-                self.progressCounter.maybePrintUpdate(rowcount)
+                self.progressCounter.maybePrintUpdate(self.rowcount)
                 # now = time()
                 # if now - last_print > 1:
                 #     last_print = now
-                #     print "%d of %d rows processed" % (rowcount, rowlen)
+                #     print "%d of %d rows processed" % (self.rowcount, rowlen)
 
             if unicode_row:
                 non_unicode = filter(
@@ -333,33 +389,38 @@ class CSVParse_Base(Registrar):
                 self.analyseHeader(unicode_row)
                 continue
             try:
-                objectData = self.newObject( rowcount, unicode_row )
+                objectData = self.newObject( self.rowcount, unicode_row )
             except UserWarning as e:
-                self.registerWarning("could not create new object: {}".format(e), "%s:%d" % (fileName, rowcount))
+                self.registerWarning("could not create new object: {}".format(e), "%s:%d" % (fileName, self.rowcount))
                 continue
             else:
-                if (self.DEBUG_PARSER): self.registerMessage("%s CREATED" % objectData.getIdentifier() )
+                if self.DEBUG_PARSER:
+                    self.registerMessage("%s CREATED" % objectData.identifier )
             try:
                 self.processObject(objectData)
-                if (self.DEBUG_PARSER): self.registerMessage("%s PROCESSED" % objectData.getIdentifier() )
+                if self.DEBUG_PARSER:
+                    self.registerMessage("%s PROCESSED" % objectData.identifier )
             except UserWarning as e:
                 self.registerError("could not process new object: {}".format(e), objectData)
                 continue
             try:
                 self.registerObject(objectData)
-                if (self.DEBUG_PARSER):
-                    self.registerMessage("%s REGISTERED" % objectData.getIdentifier() )
+                if self.DEBUG_PARSER:
+                    self.registerMessage("%s REGISTERED" % objectData.identifier )
                     self.registerMessage("%s" % objectData.__repr__())
 
             except UserWarning as e:
                 self.registerWarning("could not register new object: {}".format(e), objectData)
                 continue
-        self.registerMessage("Completed analysis")
+            self.rowcount += 1
+        if self.DEBUG_PARSER:
+            self.registerMessage("Completed analysis")
 
     def analyseFile(self, fileName, encoding=None, dialect_suggestion=None):
         if encoding is None:
             encoding = "utf8"
-        self.registerMessage("Analysing file: {0}, encoding: {1}".format(fileName, encoding))
+        if self.DEBUG_PARSER:
+            self.registerMessage("Analysing file: {0}, encoding: {1}".format(fileName, encoding))
         with open(fileName, 'rbU') as byte_file_obj:
             # I can't imagine this having any problems
             byte_sample = byte_file_obj.read(1000)
@@ -381,11 +442,17 @@ class CSVParse_Base(Registrar):
             return self.analyseRows(unicodecsvreader, fileName)
         return None
 
+    def analyseWpApiObj(self, apiData):
+        raise NotImplementedError()
+
     def getObjects(self):
+        e = DeprecationWarning("Use .objects instead of .getObjects()")
+        self.registerError(e)
         return self.objects
 
     def getObjList(self):
-        listClass = self.objectContainer.getContainer()
+        listClass = self.objectContainer.container
+        # listClass = self.objectContainer.getNewObjContainer()
         objlist = listClass(self.objects.values())
         return objlist
 

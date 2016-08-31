@@ -731,7 +731,7 @@ def main():
 
         # for user in saParser.badAddress.values():
         #     # user['address_reason'] = ''.join([address.reason for address in addresses])
-        #     s_bad_addresses_usrlist.addObject(user)
+        #     s_bad_addresses_usrlist.append(user)
 
         if saParser.badAddress:
             sanitizingGroup.addSection(
@@ -938,7 +938,7 @@ def main():
                 description = matchListInstructions.get(parselistType, parselistType)
                 usrList  = UsrObjList()
                 for obj in parseList.values():
-                    usrList.addObject(obj)
+                    usrList.append(obj)
 
                 data = usrList.tabulate(tablefmt="html")
 

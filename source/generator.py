@@ -11,12 +11,14 @@ from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
-from csvparse_woo import WooCatList, WooProdList, WooVarList
+from csvparse_woo import WooCatList, WooProdList, WooVarList, CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
+from sync_client_prod import ProdSyncClient_WC
+from matching import ProductMatcher
 # import xml.etree.ElementTree as ET
 # import rsync
 import sys
@@ -43,7 +45,7 @@ thumbsize = 1920, 1200
 
 importName = TimeUtils.getMsTimeStamp()
 
-### Process YAML file ###
+### Process YAML file for defaults ###
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)
@@ -102,6 +104,7 @@ with open(yamlPath) as stream:
     current_special = config.get('current_special')
     add_special_categories = config.get('add_special_categories')
     download_master = config.get('download_master')
+    update_slave = config.get('update_slave')
 
 #mandatory params
 assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
@@ -172,6 +175,8 @@ group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
 group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
 group.add_argument('--debug-name', action='store_true', dest='debug_name')
 group.add_argument('--debug-img', action='store_true', dest='debug_img')
+group.add_argument('--debug-api', action='store_true', dest='debug_api')
+group.add_argument('--debug-shop', action='store_true', dest='debug_shop')
 
 args = parser.parse_args()
 if args:
@@ -229,25 +234,30 @@ if args:
         Registrar.DEBUG_NAME = args.debug_name
     if args.debug_img is not None:
         Registrar.DEBUG_IMG = args.debug_img
+    if args.debug_api is not None:
+        Registrar.DEBUG_API = args.debug_api
+    if args.debug_shop is not None:
+        Registrar.DEBUG_SHOP = args.debug_shop
 
-### DISPLAY CONFIG ###
-if Registrar.DEBUG_MESSAGE:
-    if testMode:
-        print "testMode enabled"
-    else:
-        print "testMode disabled"
-    if not download_master:
-        print "no download_master"
-    if not update_slave:
-        print "not updating slave"
+#process YAML file after determining mode
+
+with open(yamlPath) as stream:
+    optionNamePrefix = 'test_' if testMode else ''
+    config = yaml.load(stream)
+    wc_api_key = config.get(optionNamePrefix+'wc_api_key')
+    wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
+    wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
+    store_url = config.get(optionNamePrefix+'store_url', '')
+
+### PROCESS CONFIG ###
+
+TimeUtils.setWpSrvOffset(wp_srv_offset)
 
 if variant == "ACC":
     genPath = os.path.join(inFolder, 'generator-solution.csv')
 
 if variant == "SOL":
     genPath = os.path.join(inFolder, 'generator-accessories.csv')
-
-### PROCESS CONFIG ###
 
 suffix = schema
 if variant:
@@ -274,6 +284,17 @@ if current_special:
 
 if skip_google_download:
     SyncClient_GDrive.skip_download = True
+
+### DISPLAY CONFIG ###
+if Registrar.DEBUG_MESSAGE:
+    if testMode:
+        print "testMode enabled"
+    else:
+        print "testMode disabled"
+    if not download_master:
+        print "no download_master"
+    if not update_slave:
+        print "not updating slave"
 
 #
 # gDriveFsParams = {
@@ -302,11 +323,26 @@ gDriveParams = {
     'genFID': genFID,
 }
 
+wcApiParams = {
+    'api_key':wc_api_key,
+    'api_secret':wc_api_secret,
+    'url':store_url
+}
+
+apiProductParserArgs = {
+    'importName': importName,
+    'itemDepth': itemDepth,
+    'taxoDepth': taxoDepth,
+    'cols': ColData_Woo.getImportCols(),
+    'defaults': ColData_Woo.getDefaults(),
+}
+
 productParserArgs = {
     'importName': importName,
     'itemDepth': itemDepth,
     'taxoDepth': taxoDepth,
 }
+
 if schema in myo_schemas:
     colDataClass = ColData_MYO
 elif schema in woo_schemas:
@@ -740,3 +776,22 @@ elif schema in woo_schemas:
 #########################################
 # Attempt import
 #########################################
+
+apiProductParser = CSVParse_Woo_Api(
+    **apiProductParserArgs
+)
+
+with ProdSyncClient_WC(wcApiParams) as client:
+    client.analyseRemote(apiProductParser)
+
+productMatcher = ProductMatcher()
+productMatcher.processRegisters(productParser.products, apiProductParser.products)
+print productMatcher.__repr__()
+
+# for sku, product in apiProductParser.products.items():
+#     print sku
+#
+#     if sku in productParser.products:
+#         print 'sku match found'
+#     else:
+#         print 'sku_match not found'

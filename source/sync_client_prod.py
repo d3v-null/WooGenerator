@@ -27,28 +27,35 @@ import io
 from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
-from sync_client import SyncClient_Abstract
+from sync_client import SyncClient_Abstract, SyncClient_WC
 from woocommerce import API as WCAPI
+from coldata import ColData_Woo
 
 class ProdSyncClient_Abstract(SyncClient_Abstract):
     pass
 
-class ProdSyncClient_WC(SyncClient_Abstract):
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def __init__(self, connectParams):
-        super(ProdSyncClient_WC, self).__init__()
-        mandatory_params = ['api_key', 'api_secret', 'url']
-        for param in mandatory_params:
-            assert param in connectParams, "missing mandatory param: %s" % param
-        self.client = WCAPI(
-            url=connectParams['url'],
-            consumer_key=connectParams['api_key'],
-            consumer_secret=connectParams['api_secret']
-        )
+class ProdSyncClient_WC(SyncClient_WC):
+    def analyseRemote(self, parser, since=None, limit=None):
+        endpoint = 'products'
+        #todo: implement since
+        #todo: implement limit
+        #todo: implenent variations
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage('api endpoint: %s' % endpoint)
+        productCount = 0
+        for page in self.ApiIterator(self.client, endpoint):
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('processing page: %s' % str(page))
+            if 'products' in page:
+                for page_product in page.get('products'):
+                    parser.analyseWpApiObj(page_product)
+                    productCount += 1
+                    if limit and productCount > limit:
+                        if Registrar.DEBUG_API:
+                            Registrar.registerMessage('reached limit, exiting')
+                        return
 
     def uploadChanges(self, pkey, updates=None):
-        super(type(self), self).uploadChanges(pkey)
+        super(ProdSyncClient_WC, self).uploadChanges(pkey)
         endpoint = 'products/%s' % pkey
         response = self.client.put(endpoint, updates)

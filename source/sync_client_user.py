@@ -310,7 +310,7 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
     def attemptConnect(self):
         self.client = SSHTunnelForwarder( **self.connectParams )
 
-    def analyseRemote(self, parser, since=None, limit=None, filterItems=None):
+    def analyseRemote(self, parser, since=None          , limit=None, filterItems=None):
 
         self.assertConnect()
 

@@ -1,131 +1,251 @@
-from csvparse_abstract import CSVParse_Base, ImportObject
+"""
+Classes that add the concept of heirarchy to the CSVParse classes and corresponding helper classes
+"""
+
+from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from collections import OrderedDict
 
 class ImportTreeObject(ImportObject):
-    _isRoot = False
-    _isItem = False
-    _isTaxo = False
+    isRoot = None
+    isItem = None
+    isTaxo = None
+    _depth = None
 
-    def __init__(self, data, rowcount, row, depth=-1, meta=None, parent=None, **kwargs):
-        super(ImportTreeObject, self).__init__(data, rowcount, row)
-        if not isinstance(self, ImportTreeRoot):
-            assert all([
-                depth is not None and depth >= 0,
-                meta is not None,
-                parent is not None
-            ])
-        self.setDepth(depth)
-        self._meta = meta
-        if parent:
-            self._parent = parent
-            parent.registerChild(self)
-        self.children = OrderedDict()
+    def __init__(self, data, **kwargs):
+        # row = kwargs.get('row')
+        # rowcount = kwargs.get('rowcount')
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
+        super(ImportTreeObject, self).__init__(data, **{
+            key:value for key, value in kwargs.items() if key in ['row', 'rowcount']
+        })
+        try:
+            depth = kwargs.pop('depth', -1)
+            if not isinstance(self, ImportTreeRoot):
+                assert depth is not None and depth >= 0
+        finally:
+            self.depth = depth
+
+        try:
+            meta = kwargs.pop('meta')
+            assert meta is not None
+        except:
+            meta = []
+        finally:
+            self.meta = meta
+
+        try:
+            parent = kwargs.pop('parent')
+            assert parent is not None
+        except KeyError, AssertionError:
+            if self.isRoot:
+                parent = None
+            else:
+                raise UserWarning("No parent specified, try specifying root as parent")
+        finally:
+            self.parent = parent
+            if not self.isRoot:
+                parent.registerChild(self)
+
+        self.childRegister = OrderedDict()
         self.childIndexer = self.getObjectRowcount
+
         self.processMeta()
         self.verifyMeta()
+    #
+    # @classmethod
+    # def fromImportObject(cls, objectData, depth, meta, parent):
+    #     e = DeprecationWarning()
+    #     self.registerError(e)
+        # assert isinstance(objectData, ImportObject)
+        # row = objectData.row
+        # rowcount = objectData.rowcount
+        # return cls(objectData, rowcount, row, depth, meta, parent)
+    #
+    # @property
+    # def isItem(self): return self.isItem
+    #
+    # @property
+    # def isTaxo(self): return self.isTaxo
+    #
+    # @property
+    # def isRoot(self): return self.isRoot
 
-    @classmethod
-    def fromImportObject(cls, objectData, depth, meta, parent):
-        assert isinstance(objectData, ImportObject)
-        row = objectData.row
-        rowcount = objectData.rowcount
-        return cls(objectData, rowcount, row, depth, meta, parent)
+    # @property
+    # def meta(self): return self._meta
 
-    @property
-    def isItem(self): return self._isItem
-
-    @property
-    def isTaxo(self): return self._isTaxo
-
-    @property
-    def isRoot(self): return self._isRoot
-
-    @property
-    def meta(self): return self._meta
-
-    @property
-    def parent(self): return self._parent
+    # @property
+    # def parent(self): return self._parent
 
     def processMeta(self): pass
     def verifyMeta(self): pass
 
+    def inheritKey(self, key):
+        if not self.get(key):
+            inheritence = filter(None, map(
+                lambda x: x.get(key),
+                self.inheritenceAncestors
+            ))
+            if inheritence:
+                self[key] = inheritence[-1]
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @depth.setter
+    def depth(self, depth):
+        assert(isinstance(depth, int))
+        self._depth = depth
+
+    @property
+    def identifierDelimeter(self):
+        return "=" * self.depth
+
     def getIdentifierDelimeter(self):
-        return "=" * self.getDepth()
+        e = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        self.registerError(e)
+        return self.identifierDelimeter
 
     def getParent(self):
+        e = DeprecationWarning("Use .parent instead of .getParent()")
+        self.registerError(e)
         return self.parent
 
-    def getAncestors(self):
+    @property
+    def ancestors(self):
         "gets all ancestors not including self or root"
-        this = self.getParent()
+        this = self.parent
         ancestors = []
         while this and not this.isRoot:
             ancestors.insert(0, this)
-            this = this.getParent()
+            this = this.parent
         return ancestors
 
+    def getAncestors(self):
+        e = DeprecationWarning("use .ancestors instead of .getAncestors()")
+        self.registerError(e)
+        return self.ancestors
+        # "gets all ancestors not including self or root"
+        # this = self.getParent()
+        # ancestors = []
+        # while this and not this.isRoot:
+        #     ancestors.insert(0, this)
+        #     this = this.getParent()
+        # return ancestors
+
+    @property
+    def taxoAncestors(self):
+        return filter( lambda x: x.isTaxo, self.ancestors)
+
     def getTaxoAncestors(self):
-        ancestors = self.getAncestors()
-        return filter( lambda x: x.isTaxo, ancestors)
+        e = DeprecationWarning("use .taxoAncestors instead of .getTaxoAncestors()")
+        self.registerError(e)
+        return self.taxoAncestors
+        # ancestors = self.getAncestors()
+        # return filter( lambda x: x.isTaxo, ancestors)
 
     def getAncestorKey(self, key):
-        ancestors = self.getAncestors()
-        return [ancestor[key] for ancestor in ancestors]
+        # ancestors = self.getAncestors()
+        return [ancestor[key] for ancestor in self.ancestors]
 
     def registerChild(self, childData):
         assert childData, "childData must be valid"
         self.registerAnything(
             childData,
-            self.children,
+            self.childRegister,
             indexer = self.childIndexer,
             singular = True,
             # resolver = self.passiveResolver,
             registerName = 'parent'
         )
 
+    @property
+    def children(self):
+        return self.childRegister.values()
+
     def getChildren(self):
-        return self.children.values()
+        e = DeprecationWarning("use .children instead of .getChildren()")
+        return self.children
 
     def getSiblings(self):
-        return self.getParent().getChildren()
+        e = DeprecationWarning("use .siblings instead of .getSiblings()")
+        self.registerError(e)
+        return self.siblings
 
-    def setDepth(self, depth):
-        assert(isinstance(depth, int))
-        self.depth = depth
+    @property
+    def siblings(self):
+        parent = self.parent
+        if parent:
+            return parent.children
+        else:
+            return []
 
 #do we need these?
-
-    def getDepth(self):
-        return self.depth
-
-    def getMeta(self):
-        return self.meta
+    #
+    # def getDepth(self):
+    #     e = DeprecationWarning("use .depth instead of .getDepth()")
+    #     self.registerError(e)
+    #     return self.depth
+    #
+    # def getMeta(self):
+    #     e = DeprecationWarning("use .meta instead of .getMeta()")
+    #     self.registerError(e)
+    #     return self.meta
 
 class ImportTreeRoot(ImportTreeObject):
-    _isRoot = True
+    isRoot = True
 
     def __init__(self):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         data = OrderedDict()
-        rowcount = -1
-        row = []
-        super(ImportTreeRoot, self).__init__(data, rowcount, row)
+        super(ImportTreeRoot, self).__init__(data, rowcount=-1, row=[])
 
 class ImportTreeItem(ImportTreeObject):
-    _isItem = True
+    isItem = True
+
+    @property
+    def identifierDelimeter(self):
+        return super(ImportTreeItem, self).identifierDelimeter + '>'
 
     def getIdentifierDelimeter(self):
-        return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
+        e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        self.registerError(e)
+        return self.identifierDelimeter
+        # return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
+
+    @property
+    def itemAncestors(self):
+        return filter( lambda x: x.isItem, self.ancestors)
 
     def getItemAncestors(self):
-        ancestors = self.getAncestors()
-        return filter( lambda x: x.isItem, ancestors)
+        e = DeprecationWarning("use .itemAncestors instead of .getItemAncestors()")
+        self.registerError(e)
+        return self.itemAncestors
+        # ancestors = self.getAncestors()
+        # return filter( lambda x: x.isItem, ancestors)
 
 class ImportTreeTaxo(ImportTreeObject):
-    _isTaxo = True
+    isTaxo = True
+
+    @property
+    def identifierDelimeter(self):
+        return super(ImportTreeTaxo, self).identifierDelimeter + '#'
 
     def getIdentifierDelimeter(self):
-        return super(ImportTreeTaxo, self).getIdentifierDelimeter() + '#'
+        e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        self.registerError(e)
+        return self.identifierDelimeter
+        # return super(ImportTreeTaxo, self).getIdentifierDelimeter() + '#'
 
+class ItemList(ObjList):
+    supported_type = ImportTreeItem
+    objList_type = 'items'
+
+class TaxoList(ObjList):
+    supported_type = ImportTreeTaxo
+    objList_type = 'taxos'
 
 class ImportStack(list):
     def topHasParent(self):
@@ -157,10 +277,12 @@ class ImportStack(list):
 
     def __repr__(self):
         return ''.join([
-            '[',
-            ','.join([str(x.index) for x in self]),
-            ']'
+            '<%s>' % self.__class__.__name__,
+            '[%s]' % ','.join([str(x.index) for x in self]),
         ])
+
+    def __getslice__(self, i, j):
+        return self.__class__(list.__getslice__(self, i, j))
 
     def display(self):
         out = "\n"
@@ -181,9 +303,11 @@ class CSVParse_Tree(CSVParse_Base):
     taxoContainer   = ImportTreeTaxo
 
     def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
-        self.maxDepth  = taxoDepth + itemDepth
+        # self.maxDepth  = taxoDepth + itemDepth
         self.metaWidth = metaWidth
         self.itemIndexer = self.getObjectRowcount
         self.taxoIndexer = self.getObjectRowcount
@@ -196,8 +320,13 @@ class CSVParse_Tree(CSVParse_Base):
         #     print "-> maxDepth: ", self.maxDepth
         #     print "-> metaWidth: ", self.metaWidth
 
+    @property
+    def maxDepth(self):
+        return self.taxoDepth + self.itemDepth
 
     def clearTransients(self):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         super(CSVParse_Tree, self).clearTransients()
         self.items = OrderedDict()
         self.taxos = OrderedDict()
@@ -231,6 +360,8 @@ class CSVParse_Tree(CSVParse_Base):
         )
 
     def registerObject(self, objectData):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         super(CSVParse_Tree, self).registerObject(objectData)
         if objectData.isItem:
             self.registerItem(objectData)
@@ -257,9 +388,12 @@ class CSVParse_Tree(CSVParse_Base):
     def isItemDepth(self, depth):
         return depth >= self.taxoDepth and depth < self.maxDepth
 
-    def getContainer(self, allData, **kwargs):
+    def getNewObjContainer(self, allData, **kwargs):
+        container = super(CSVParse_Tree, self).getNewObjContainer( allData, **kwargs)
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         depth = kwargs['depth']
-        assert depth is not None, "depth should be available to CSVParse_Tree.getContainer"
+        assert depth is not None, "depth should be available to CSVParse_Tree.getNewObjContainer"
         if self.isTaxoDepth(depth):
             container = self.taxoContainer
         else:
@@ -270,13 +404,14 @@ class CSVParse_Tree(CSVParse_Base):
     def getKwargs(self, allData, container, **kwargs):
         kwargs = super(CSVParse_Tree, self).getKwargs(allData, container, **kwargs)
         assert issubclass(container, ImportTreeObject)
-        for key in ['meta', 'parent']:
+        for key in ['meta', 'parent', 'depth']:
             assert kwargs[key] is not None
         return kwargs
 
     def newObject(self, rowcount, row, **kwargs):
-        # self.registerMessage(u"new tree object! rowcount: %d, row: %s, kwargs: %s"%\
-        #                      (rowcount, unicode(row), unicode(kwargs)))
+        if self.DEBUG_TREE:
+            self.registerMessage(u"new tree object! rowcount: %d, row: %s, kwargs: %s"%\
+                                 (rowcount, unicode(row), unicode(kwargs)))
 
         try:
             depth = kwargs['depth']
@@ -284,15 +419,18 @@ class CSVParse_Tree(CSVParse_Base):
         except:
             depth = self.depth( row )
             kwargs['depth'] = depth
-        # self.registerMessage("depth: %d"%(depth))
+        if self.DEBUG_TREE:
+            self.registerMessage("depth: %d"%(depth))
 
         try:
             meta = kwargs['meta']
             assert meta is not None
         except:
             meta = self.extractMeta(row, depth)
+        finally:
             kwargs['meta'] = meta
-        # self.registerMessage("meta: {}".format(meta))
+        if self.DEBUG_TREE:
+            self.registerMessage("meta: {}".format(meta))
 
         try:
             stack = kwargs['stack']
@@ -300,13 +438,16 @@ class CSVParse_Tree(CSVParse_Base):
             assert stack is not None
         except:
             self.refreshStack(rowcount, row, depth)
+        finally:
             stack = self.stack
         assert isinstance(stack, ImportStack)
-        self.registerMessage("stack: {}".format(stack))
+        if self.DEBUG_TREE:
+            self.registerMessage("stack: {}".format(stack))
 
         parent = stack.getTop()
         if parent is None: parent = self.rootData
-        self.registerMessage("parent: {}".format(parent))
+        if self.DEBUG_TREE:
+            self.registerMessage("parent: {}".format(parent))
         kwargs['parent'] = parent
 
         return super(CSVParse_Tree, self).newObject(rowcount, row, **kwargs)
@@ -325,12 +466,15 @@ class CSVParse_Tree(CSVParse_Base):
 
     def refreshStackFromObject(self, objectData):
         assert isinstance(objectData, ImportTreeObject)
-        return self.refreshStack(objectData.rowcount, objectData.row, objectData.getDepth() )
+        return self.refreshStack(objectData.rowcount, objectData.row, objectData.depth )
 
     def processObject(self, objectData):
+        assert isinstance(self.stack, ImportStack)
         oldstack = self.stack[:]
+        assert isinstance(oldstack, ImportStack), 'stack should be ImportStack not %s' % oldstack.__class__.__name__
         self.refreshStackFromObject(objectData)
-        assert oldstack == self.stack
+        assert isinstance(self.stack, ImportStack), 'stack should be ImportStack not %s' % self.stack.__class__.__name__
+        assert oldstack == self.stack, 'self.stack (%s) is inconsistent with %s' % (oldstack.display(), self.stack.display())
         self.stack.append(objectData)
         super(CSVParse_Tree, self).processObject(objectData)
 
@@ -345,7 +489,11 @@ class CSVParse_Tree(CSVParse_Base):
     #     super(CSVParse_Tree, self).analyseFile(fileName)
 
     def getItems(self):
+        e = DeprecationWarning("Use .items instead of .getItems()")
+        self.registerError(e)
         return self.items
 
     def getTaxos(self):
+        e = DeprecationWarning("use .taxos instead of .getTaxos()")
+        self.registerError(e)
         return self.taxos

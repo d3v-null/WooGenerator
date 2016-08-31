@@ -101,7 +101,7 @@ class Match(object):
                 heading = ImportObject({}, 'M')
                 objs = [heading] + objs
             for obj in objs :
-                users.addObject(obj)
+                users.append(obj)
         if(s_len > 0):
             objs = self.sObjects
             if(print_headings):
@@ -109,7 +109,7 @@ class Match(object):
                 objs = [heading] + objs
             for obj in objs:
                 # pprint(obj)
-                users.addObject(obj)
+                users.append(obj)
         out += users.tabulate(tablefmt=tablefmt)
         # return SanitationUtils.coerceUnicode(out)
         return (out)
@@ -322,6 +322,12 @@ class AbstractMatcher(Registrar):
         for match in self.duplicateMatches:
             repr_str += " -> " + repr(match) + "\n"
         return repr_str
+
+class ProductMatcher(AbstractMatcher):
+    def __init__(self):
+        super(ProductMatcher, self).__init__( lambda x: x.codesum )
+        self.processRegisters = self.processRegistersSingular
+        self.retrieveObjects = self.retrieveObjectsSingular
 
 class UsernameMatcher(AbstractMatcher):
     def __init__(self):

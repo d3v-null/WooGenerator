@@ -20,6 +20,7 @@ import io
 import base64
 from pympler import tracker
 import cgi
+import os
 
 try:
     # Python 2.6-2.7
@@ -32,7 +33,12 @@ DEFAULT_ENCODING = 'utf8'
 
 class SanitationUtils:
     email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
-    url_regex = r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+    regex_url_simple = r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
+    regex_url = \
+        ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)'+\
+        ur'(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'+\
+        ur'(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?]))'
+    regex_wc_link = ur"<(?P<url>{0})>; rel=\"(?P<rel>\w+)\"".format(regex_url)
     cell_email_regex = r"^%s$" % email_regex
     myobid_regex = r"C\d+"
     punctuationChars = [
@@ -76,63 +82,63 @@ class SanitationUtils:
     clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
-    @staticmethod
-    def wrapClearRegex(regex):
-        return SanitationUtils.clearStartRegex + regex + SanitationUtils.clearFinishRegex
+    @classmethod
+    def wrapClearRegex(cls, regex):
+        return cls.clearStartRegex + regex + cls.clearFinishRegex
 
-    @staticmethod
-    def identifyAbbreviation(abbrvDict, string):
+    @classmethod
+    def identifyAbbreviation(cls, abbrvDict, string):
         for abbrvKey, abbrvs in abbrvDict.items():
             if( string in [abbrvKey] + abbrvs):
                 return abbrvKey
         return string
 
-    @staticmethod
-    def identifyAbbreviations(abbrvDict, string):
+    @classmethod
+    def identifyAbbreviations(cls, abbrvDict, string):
         matches = re.findall(
-            '('+SanitationUtils.compileAbbrvRegex(abbrvDict)+')',
+            '('+cls.compileAbbrvRegex(abbrvDict)+')',
             string
         )
 
         for candidate in [match for match in filter(None, matches)]:
-            identified = SanitationUtils.identifyAbbreviation(abbrvDict, candidate)
+            identified = cls.identifyAbbreviation(abbrvDict, candidate)
             if identified: yield identified
 
-    @staticmethod
-    def compilePartialAbbrvRegex( abbrvKey, abbrvs ):
+    @classmethod
+    def compilePartialAbbrvRegex(cls,  abbrvKey, abbrvs ):
         return "|".join(filter(None,[
             "|".join(filter(None,abbrvs)),
             abbrvKey
         ]))
 
-    @staticmethod
-    def compileAbbrvRegex( abbrv ):
+    @classmethod
+    def compileAbbrvRegex(cls,  abbrv ):
         return "|".join(filter(None,
-            [SanitationUtils.compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
+            [cls.compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
         ))
 
-    @staticmethod
-    def compose(*functions):
+    @classmethod
+    def compose(cls, *functions):
         return functools.reduce(lambda f, g: lambda x: f(g(x)), functions)
 
     # Functions for dealing with string encodings
 
-    @staticmethod
-    def unicodeToUTF8(u_str):
+    @classmethod
+    def unicodeToUTF8(cls, u_str):
         assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "utf8")
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def unicodeToAscii(u_str):
+    @classmethod
+    def unicodeToAscii(cls, u_str):
         assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "ascii", "backslashreplace")
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def unicodeToXml(u_str, ascii_only = False):
+    @classmethod
+    def unicodeToXml(cls, u_str, ascii_only = False):
         assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         if ascii_only:
             byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
@@ -141,29 +147,29 @@ class SanitationUtils:
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def utf8ToUnicode(utf8_str):
+    @classmethod
+    def utf8ToUnicode(cls, utf8_str):
         assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.to_unicode(utf8_str, "utf8")
         assert isinstance(byte_return, unicode), "something went wrong, should return unicode not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def xmlToUnicode(utf8_str):
+    @classmethod
+    def xmlToUnicode(cls, utf8_str):
         assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.xml_to_unicode(utf8_str)
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def asciiToUnicode(ascii_str):
+    @classmethod
+    def asciiToUnicode(cls, ascii_str):
         assert isinstance(ascii_str, str), "parameter should be str not %s" % type(ascii_str)
         unicode_return = converters.to_unicode(ascii_str, "ascii")
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    @staticmethod
-    def coerceUnicode(thing):
+    @classmethod
+    def coerceUnicode(cls, thing):
         if thing is None:
             unicode_return = u""
         else:
@@ -171,274 +177,274 @@ class SanitationUtils:
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    @staticmethod
-    def coerceBytes(thing):
-        byte_return = SanitationUtils.compose(
-            SanitationUtils.unicodeToUTF8,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def coerceBytes(cls, thing):
+        byte_return = cls.compose(
+            cls.unicodeToUTF8,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def coerceAscii(thing):
-        byte_return = SanitationUtils.compose(
-            SanitationUtils.unicodeToAscii,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def coerceAscii(cls, thing):
+        byte_return = cls.compose(
+            cls.unicodeToAscii,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def coerceXML(thing):
-        byte_return = SanitationUtils.compose(
-            SanitationUtils.unicodeToXml,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def coerceXML(cls, thing):
+        byte_return = cls.compose(
+            cls.unicodeToXml,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
-    @staticmethod
-    def sanitizeForTable(thing, tablefmt=None):
+    @classmethod
+    def sanitizeForTable(cls, thing, tablefmt=None):
         if hasattr(thing, '_supports_tablefmt'):
             thing = thing.__unicode__(tablefmt)
         if isinstance(thing, (str, unicode)) and tablefmt == 'simple':
             thing = thing[:64] + '...'
-        unicode_return = SanitationUtils.compose(
-            SanitationUtils.coerceUnicode,
-            SanitationUtils.escapeNewlines,
-            SanitationUtils.coerceUnicode
+        unicode_return = cls.compose(
+            cls.coerceUnicode,
+            cls.escapeNewlines,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    @staticmethod
-    def sanitizeForXml(thing):
-        unicode_return = SanitationUtils.compose(
-            SanitationUtils.coerceUnicode,
-            SanitationUtils.sanitizeNewlines,
-            SanitationUtils.unicodeToXml,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def sanitizeForXml(cls, thing):
+        unicode_return = cls.compose(
+            cls.coerceUnicode,
+            cls.sanitizeNewlines,
+            cls.unicodeToXml,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    @staticmethod
-    def safePrint(*args):
-        print " ".join([SanitationUtils.coerceBytes(arg) for arg in args ])
+    @classmethod
+    def safePrint(cls, *args):
+        print " ".join([cls.coerceBytes(arg) for arg in args ])
 
-    @staticmethod
-    def normalizeVal(thing):
-        unicode_return = SanitationUtils.compose(
-            SanitationUtils.coerceUnicode,
-            SanitationUtils.toUpper,
-            SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.stripExtraWhitespace,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def normalizeVal(cls, thing):
+        unicode_return = cls.compose(
+            cls.coerceUnicode,
+            cls.toUpper,
+            cls.stripLeadingWhitespace,
+            cls.stripTailingWhitespace,
+            cls.stripExtraWhitespace,
+            cls.coerceUnicode
         )(thing)
         assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
-    @staticmethod
-    def removeLeadingDollarWhiteSpace(string):
+    @classmethod
+    def removeLeadingDollarWhiteSpace(cls, string):
         str_out = re.sub('^\W*\$','', string)
         if Registrar.DEBUG_UTILS: print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def removeLeadingPercentWhiteSpace(string):
+    @classmethod
+    def removeLeadingPercentWhiteSpace(cls, string):
         str_out = re.sub('%\W*$','', string)
         if Registrar.DEBUG_UTILS: print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def removeLoneDashes(string):
+    @classmethod
+    def removeLoneDashes(cls, string):
         str_out = re.sub('^-$', '', string)
         if Registrar.DEBUG_UTILS: print "removeLoneDashes", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def removeThousandsSeparator(string):
+    @classmethod
+    def removeThousandsSeparator(cls, string):
         str_out = re.sub(r'(\d+),(\d{3})', '\g<1>\g<2>', string)
         if Registrar.DEBUG_UTILS: print "removeThousandsSeparator", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def removeLoneWhiteSpace(string):
+    @classmethod
+    def removeLoneWhiteSpace(cls, string):
         str_out = re.sub(r'^\s*$','', string)
         if Registrar.DEBUG_UTILS: print "removeLoneWhiteSpace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def removeNULL(string):
+    @classmethod
+    def removeNULL(cls, string):
         str_out = re.sub(r'^NULL$', '', string)
         if Registrar.DEBUG_UTILS: print "removeNULL", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripLeadingWhitespace(string):
+    @classmethod
+    def stripLeadingWhitespace(cls, string):
         str_out = re.sub(r'^\s*', '', string)
         if Registrar.DEBUG_UTILS: print "stripLeadingWhitespace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripLeadingNewline(string):
+    @classmethod
+    def stripLeadingNewline(cls, string):
         str_out = re.sub(r'^(\\n|\n)*', '', string)
         if Registrar.DEBUG_UTILS: print "stripLeadingNewline", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripTailingWhitespace(string):
+    @classmethod
+    def stripTailingWhitespace(cls, string):
         str_out = re.sub(r'\s*$', '', string)
         if Registrar.DEBUG_UTILS: print "stripTailingWhitespace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripTailingNewline(string):
+    @classmethod
+    def stripTailingNewline(cls, string):
         str_out = re.sub(r'(\\n|\n)*$', '', string)
         if Registrar.DEBUG_UTILS: print "stripTailingNewline", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripAllWhitespace(string):
+    @classmethod
+    def stripAllWhitespace(cls, string):
         str_out = re.sub(r'\s', '', string)
         if Registrar.DEBUG_UTILS: print "stripAllWhitespace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripExtraWhitespace(string):
+    @classmethod
+    def stripExtraWhitespace(cls, string):
         str_out = re.sub(r'\s{2,}', ' ', string)
         if Registrar.DEBUG_UTILS: print "stripExtraWhitespace", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripNonNumbers(string):
+    @classmethod
+    def stripNonNumbers(cls, string):
         str_out = re.sub(r'[^\d]', '', string)
         if Registrar.DEBUG_UTILS: print "stripNonNumbers", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripNonPhoneCharacters(string):
-        str_out = re.sub(SanitationUtils.disallowedPhoneCharRegex, '', string)
+    @classmethod
+    def stripNonPhoneCharacters(cls, string):
+        str_out = re.sub(cls.disallowedPhoneCharRegex, '', string)
         return str_out
 
-    @staticmethod
-    def stripPunctuation(string):
-        str_out = re.sub(r'[%s]' % ''.join(SanitationUtils.punctuationChars) , '', string)
+    @classmethod
+    def stripPunctuation(cls, string):
+        str_out = re.sub(r'[%s]' % ''.join(cls.punctuationChars) , '', string)
         if Registrar.DEBUG_UTILS: print "stripPunctuation", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripAreaCode(string):
+    @classmethod
+    def stripAreaCode(cls, string):
         str_out = re.sub(r'\s*\+\d{2,3}\s*','', string)
         if Registrar.DEBUG_UTILS: print "stripAreaCode", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def stripURLProtocol(string):
+    @classmethod
+    def stripURLProtocol(cls, string):
         str_out = re.sub(r"^\w+://", "", string)
         if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def toLower(string):
+    @classmethod
+    def toLower(cls, string):
         str_out = string.lower()
         if Registrar.DEBUG_UTILS: print "toLower", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def toUpper(string):
+    @classmethod
+    def toUpper(cls, string):
         str_out = string.upper()
         if Registrar.DEBUG_UTILS: print "toUpper", repr(string), repr(str_out)
         return str_out
 
-    @staticmethod
-    def sanitizeNewlines(string):
+    @classmethod
+    def sanitizeNewlines(cls, string):
         return re.sub('\n','</br>', string)
 
-    @staticmethod
-    def escapeNewlines(string):
+    @classmethod
+    def escapeNewlines(cls, string):
         return re.sub('\n',r'\\n', string)
 
-    @staticmethod
-    def compileRegex(subs):
+    @classmethod
+    def compileRegex(cls, subs):
         if subs:
             return re.compile( "(%s)" % '|'.join(filter(None, map(re.escape, subs))) )
         else:
             return None
 
-    @staticmethod
-    def sanitizeCell(cell):
-        return SanitationUtils.compose(
-            SanitationUtils.removeLeadingDollarWhiteSpace,
-            SanitationUtils.removeLeadingPercentWhiteSpace,
-            SanitationUtils.removeLoneDashes,
-            SanitationUtils.removeThousandsSeparator,
-            SanitationUtils.removeLoneWhiteSpace,
-            SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.sanitizeNewlines,
-            SanitationUtils.stripTailingNewline,
-            SanitationUtils.stripLeadingNewline,
-            SanitationUtils.removeNULL,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def sanitizeCell(cls, cell):
+        return cls.compose(
+            cls.removeLeadingDollarWhiteSpace,
+            cls.removeLeadingPercentWhiteSpace,
+            cls.removeLoneDashes,
+            cls.removeThousandsSeparator,
+            cls.removeLoneWhiteSpace,
+            cls.stripLeadingWhitespace,
+            cls.stripTailingWhitespace,
+            cls.sanitizeNewlines,
+            cls.stripTailingNewline,
+            cls.stripLeadingNewline,
+            cls.removeNULL,
+            cls.coerceUnicode
         )(cell)
 
-    @staticmethod
-    def sanitizeClass(string):
+    @classmethod
+    def sanitizeClass(cls, string):
         return re.sub('[^a-z]', '', string.lower())
 
-    @staticmethod
-    def similarComparison(string):
-        return SanitationUtils.compose(
-            SanitationUtils.toLower,
-            SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def similarComparison(cls, string):
+        return cls.compose(
+            cls.toLower,
+            cls.stripLeadingWhitespace,
+            cls.stripTailingWhitespace,
+            cls.coerceUnicode
         )(string)
 
-    @staticmethod
-    def similarNoPunctuationComparison(string):
-        return SanitationUtils.compose(
-            SanitationUtils.normalizeVal,
-            SanitationUtils.stripPunctuation,
+    @classmethod
+    def similarNoPunctuationComparison(cls, string):
+        return cls.compose(
+            cls.normalizeVal,
+            cls.stripPunctuation,
         )(string)
 
-    @staticmethod
-    def similarPhoneComparison(string):
-        return SanitationUtils.compose(
-            SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripNonNumbers,
-            SanitationUtils.stripAreaCode,
-            SanitationUtils.stripExtraWhitespace,
-            SanitationUtils.stripNonPhoneCharacters,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def similarPhoneComparison(cls, string):
+        return cls.compose(
+            cls.stripLeadingWhitespace,
+            cls.stripNonNumbers,
+            cls.stripAreaCode,
+            cls.stripExtraWhitespace,
+            cls.stripNonPhoneCharacters,
+            cls.coerceUnicode
         )(string)
 
-    @staticmethod
-    def similarTruStrComparison(string):
-        return SanitationUtils.compose(
-            SanitationUtils.truishStringToBool,
-            SanitationUtils.similarComparison
+    @classmethod
+    def similarTruStrComparison(cls, string):
+        return cls.compose(
+            cls.truishStringToBool,
+            cls.similarComparison
         )(string)
 
-    @staticmethod
-    def similarURLComparison(string):
-        return SanitationUtils.compose(
-            SanitationUtils.stripURLProtocol,
-            SanitationUtils.coerceUnicode
+    @classmethod
+    def similarURLComparison(cls, string):
+        return cls.compose(
+            cls.stripURLProtocol,
+            cls.coerceUnicode
         )(string)
 
-    @staticmethod
-    def makeSafeClass(string):
-        return SanitationUtils.compose(
-            SanitationUtils.stripAllWhitespace,
-            SanitationUtils.stripPunctuation
+    @classmethod
+    def makeSafeClass(cls, string):
+        return cls.compose(
+            cls.stripAllWhitespace,
+            cls.stripPunctuation
         )(string)
 
-    @staticmethod
-    def shorten(reg, subs, str_in):
+    @classmethod
+    def shorten(cls, reg, subs, str_in):
         # if(Registrar.DEBUG_GEN):
         #     print "calling shorten"
         #     print " | reg:", reg
@@ -455,65 +461,78 @@ class SanitationUtils:
         #     print " | str_o: ",str_out
         return str_out
 
-    @staticmethod
-    def html_unescape(string):
+    @classmethod
+    def html_unescape(cls, string):
         return HTMLParser().unescape(string)
 
-    @staticmethod
-    def html_escape(string):
+    @classmethod
+    def html_escape(cls, string):
         return cgi.escape(string)
 
-    @staticmethod
-    def findAllImages(instring):
+    @classmethod
+    def findAllImages(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = SanitationUtils.coerceUnicode(instring)
+        instring = cls.coerceUnicode(instring)
         return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',instring)
 
-    @staticmethod
-    def findAllTokens(instring, delim = "|"):
+    @classmethod
+    def findAllTokens(cls, instring, delim = "|"):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = SanitationUtils.coerceUnicode(instring)
+        instring = cls.coerceUnicode(instring)
         return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring )
 
-    @staticmethod
-    def findallDollars(instring):
+    @classmethod
+    def findallDollars(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = SanitationUtils.coerceUnicode(instring)
+        instring = cls.coerceUnicode(instring)
         return re.findall(r"\s*\$([\d,]+\.?\d*)", instring)
 
-    @staticmethod
-    def findallPercent(instring):
+    @classmethod
+    def findallPercent(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = SanitationUtils.coerceUnicode(instring)
+        instring = cls.coerceUnicode(instring)
         return re.findall(r"\s*(\d+\.?\d*)%", instring)
 
-    @staticmethod
-    def findallEmails(instring):
-        instring = SanitationUtils.coerceUnicode(instring)
+    @classmethod
+    def findallEmails(cls, instring):
+        instring = cls.coerceUnicode(instring)
         return re.findall(
-            SanitationUtils.wrapClearRegex( SanitationUtils.email_regex ),
+            cls.wrapClearRegex( cls.email_regex ),
             instring
         )
 
-    @staticmethod
-    def findallURLs(instring):
-        instring = SanitationUtils.coerceUnicode(instring)
-        instring = SanitationUtils.html_unescape(instring)
+    @classmethod
+    def findallURLs(cls, instring):
+        instring = cls.coerceUnicode(instring)
+        instring = cls.html_unescape(instring)
         return re.findall(
-            '(' + SanitationUtils.url_regex + ')',
+            '(' + cls.regex_url_simple + ')',
             instring
         )
 
-    @staticmethod
-    def titleSplitter(instring):
+    @classmethod
+    def findall_wc_links(cls, string):
+        """Finds all wc style link occurences in a given string"""
+        matches = []
+        for line in string.split(', '):
+            match = re.match(cls.regex_wc_link, line)
+            if match is None:
+                continue
+            match_dict = match.groupdict()
+            if 'url' in match_dict and 'rel' in match_dict:
+                matches.append(match_dict)
+        return matches
+
+    @classmethod
+    def titleSplitter(cls, instring):
         assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         if not isinstance(instring, unicode):
             instring = instring.decode('utf-8')
@@ -524,43 +543,43 @@ class SanitationUtils:
             return instring, ""
 
 
-    @staticmethod
-    def stringIsEmail(email):
-        return re.match(SanitationUtils.email_regex, email)
+    @classmethod
+    def stringIsEmail(cls, email):
+        return re.match(cls.email_regex, email)
 
-    @staticmethod
-    def stringIsMYOBID(card):
-        return re.match(SanitationUtils.myobid_regex, card)
+    @classmethod
+    def stringIsMYOBID(cls, card):
+        return re.match(cls.myobid_regex, card)
 
-    @staticmethod
-    def stringCapitalized(string):
+    @classmethod
+    def stringCapitalized(cls, string):
         return unicode(string) == unicode(string).upper()
 
-    @staticmethod
-    def stringContainsNumbers(string):
+    @classmethod
+    def stringContainsNumbers(cls, string):
         if(re.search('\d', string)):
             return True
         else:
             return False
 
-    @staticmethod
-    def stringContainsNoNumbers(string):
-        return not SanitationUtils.stringContainsNumbers(string)
+    @classmethod
+    def stringContainsNoNumbers(cls, string):
+        return not cls.stringContainsNumbers(string)
 
-    @staticmethod
-    def stringContainsDelimeters(string):
-        return True if(re.search(SanitationUtils.delimeterRegex, string)) else False
+    @classmethod
+    def stringContainsDelimeters(cls, string):
+        return True if(re.search(cls.delimeterRegex, string)) else False
 
-    @staticmethod
-    def stringContainsDisallowedPunctuation(string):
-        return True if(re.search(SanitationUtils.disallowedPunctuationRegex, string)) else False
+    @classmethod
+    def stringContainsDisallowedPunctuation(cls, string):
+        return True if(re.search(cls.disallowedPunctuationRegex, string)) else False
 
-    @staticmethod
-    def stringContainsPunctuation(string):
-        return True if(re.search(SanitationUtils.punctuationRegex, string)) else False
+    @classmethod
+    def stringContainsPunctuation(cls, string):
+        return True if(re.search(cls.punctuationRegex, string)) else False
 
-    @staticmethod
-    def truishStringToBool(string):
+    @classmethod
+    def truishStringToBool(cls, string):
         if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
             if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'FALSE'
             return "FALSE"
@@ -568,38 +587,38 @@ class SanitationUtils:
             if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'TRUE'
             return "TRUE"
 
-    @staticmethod
-    def boolToTruishString(boolVal):
+    @classmethod
+    def boolToTruishString(cls, boolVal):
         if boolVal:
             return "TRUE"
         else:
             return "FALSE"
 
-    @staticmethod
-    def datetotimestamp(datestring):
+    @classmethod
+    def datetotimestamp(cls, datestring):
         raise DeprecationWarning()
         # assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
         # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))
 
-    @staticmethod
-    def decodeJSON(json_str):
+    @classmethod
+    def decodeJSON(cls, json_str):
         assert isinstance(json_str, (str, unicode))
         attrs = json.loads(json_str)
         return attrs
 
-    @staticmethod
-    def encodeJSON(obj):
+    @classmethod
+    def encodeJSON(cls, obj):
         assert isinstance(obj, (dict, list))
         json_str = json.dumps(obj, encoding="utf8", ensure_ascii=False)
         return json_str
 
-    @staticmethod
-    def encodeBase64(str):
-        utf8_str = SanitationUtils.coerceBytes(str)
+    @classmethod
+    def encodeBase64(cls, str):
+        utf8_str = cls.coerceBytes(str)
         return base64.standard_b64encode(utf8_str)
 
-    @staticmethod
-    def decodeBase64(b64_str):
+    @classmethod
+    def decodeBase64(cls, b64_str):
         return base64.standard_b64decode(b64_str)
 
 def testSanitationUtils():
@@ -2537,7 +2556,13 @@ class debugUtils:
     @classmethod
     def getProcedure(cls, level=1):
         try:
-            return inspect.stack()[level][3]
+            procedure = inspect.stack()[level][3]
+            # return procedure
+            path = inspect.stack()[level][1]
+            basename = 'source/'+os.path.basename(path)
+            line = inspect.stack()[level][2]
+            baseline = "%s:%s" % (basename, line)
+            return ".".join([baseline,str(procedure)])
         except:
             return None
 
@@ -2581,8 +2606,9 @@ class Registrar(object):
     DEBUG_CLIENT = False
     DEBUG_CONTACT = False
     DEBUG_IMG = False
-
-
+    DEBUG_API = False
+    DEBUG_SHOP = False
+    DEBUG_MRO = False
 
     # def __init__(self):
         # self.objectIndexer = id
@@ -2601,7 +2627,8 @@ class Registrar(object):
     def getObjectRowcount(self, objectData):
         return objectData.rowcount
 
-    def getObjectIndex(self, objectData):
+    @classmethod
+    def getObjectIndex(cls, objectData):
         return objectData.index
 
     def passiveResolver(*args):
@@ -2842,12 +2869,18 @@ class UnicodeCsvDialectUtils(object):
         out += " | SWS: %s" % repr(dialect.skipinitialspace)
         return out
 
+class FileUtils(object):
+    @classmethod
+    def getFileName(cls, path):
+        fileName, ext = os.path.splitext(os.path.basename(path))
+        return fileName
 
 
 if __name__ == '__main__':
+    pass
     # testHTMLReporter()
     # testTimeUtils()
     # testSanitationUtils()
     # testUnicodeWriter()
     # testAddressUtils()
-    testNameUtils()
+    # testNameUtils()

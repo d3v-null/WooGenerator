@@ -17,7 +17,6 @@ class ImportFlat(ImportObject):
     pass
 
 class CSVParse_Flat(CSVParse_Base):
-
     objectContainer = ImportFlat
     # def __init__(self, cols, defaults):
     #     super(CSVParse_Flat, self).__init__(cols, defaults)
@@ -35,6 +34,8 @@ class ImportSpecial(ImportFlat):
     # def end_time_iso(self): return TimeUtils.isoTimeToString(self.end_time)
 
     def __init__(self, data, rowcount, row):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         super(ImportSpecial, self).__init__(data, rowcount, row)
         try:
             self.ID
@@ -44,14 +45,22 @@ class ImportSpecial(ImportFlat):
         self['start_time'] = TimeUtils.gDriveStrpTime(self['FROM'])
         self['end_time'] = TimeUtils.gDriveStrpTime(self['TO'])
 
-    def getIndex(self):
+    @property
+    def index(self):
         return self.ID
+
+    def getIndex(self):
+        e = DeprecationWarning("use .index instead of .getIndex()")
+        self.registerError(e)
+        return self.index
 
 class CSVParse_Special(CSVParse_Flat):
 
     objectContainer = ImportSpecial
 
     def __init__(self, cols=None, defaults=None):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         if cols is None:
             cols = []
         if defaults is None:
@@ -78,7 +87,31 @@ class CSVParse_Special(CSVParse_Flat):
     def getObjectID(self, objectData):
         return objectData.ID
 
+class UsrObjList(ObjList):
+    def __init__(self, objects=None, indexer=None):
+        super(UsrObjList, self).__init__(objects, indexer=None)
+        self._objList_type = 'User'
+
+    def getSanitizer(self, tablefmt=None):
+        if tablefmt is 'html':
+            return SanitationUtils.sanitizeForXml
+        elif tablefmt is 'simple':
+            return SanitationUtils.sanitizeForTable
+        else:
+            return super(UsrObjList, self).getSanitizer(tablefmt)
+
+
+    def getReportCols(self):
+        usrData = ColData_User()
+        report_cols = usrData.getReportCols()
+        # for exclude_col in ['E-mail','MYOB Card ID','Wordpress Username','Role']:
+        #     if exclude_col in report_cols:
+        #         del report_cols[exclude_col]
+
+        return report_cols
+
 class ImportUser(ImportFlat):
+    container = UsrObjList
 
     WPID = descriptorUtils.safeKeyProperty('Wordpress ID')
     email = descriptorUtils.safeKeyProperty('E-mail')
@@ -313,7 +346,7 @@ class ImportUser(ImportFlat):
             return None
 
     @staticmethod
-    def getContainer():
+    def getNewObjContainer():
         return UsrObjList
 
     def addressesActLike(self):
@@ -329,28 +362,6 @@ class ImportUser(ImportFlat):
     def __repr__(self):
         return "<%s> %s | %s | %s | %s | %s" % (self.index, self.email, self.MYOBID, self.role, self.username, self.WPID)
 
-class UsrObjList(ObjList):
-    def __init__(self, objects=None, indexer=None):
-        super(UsrObjList, self).__init__(objects, indexer=None)
-        self._objList_type = 'User'
-
-    def getSanitizer(self, tablefmt=None):
-        if tablefmt is 'html':
-            return SanitationUtils.sanitizeForXml
-        elif tablefmt is 'simple':
-            return SanitationUtils.sanitizeForTable
-        else:
-            return super(UsrObjList, self).getSanitizer(tablefmt)
-
-
-    def getReportCols(self):
-        usrData = ColData_User()
-        report_cols = usrData.getReportCols()
-        # for exclude_col in ['E-mail','MYOB Card ID','Wordpress Username','Role']:
-        #     if exclude_col in report_cols:
-        #         del report_cols[exclude_col]
-
-        return report_cols
 
 
 
@@ -359,6 +370,8 @@ class CSVParse_User(CSVParse_Flat):
     objectContainer = ImportUser
 
     def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None, limit=None):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         extra_cols = [
             # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date',
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
@@ -389,6 +402,8 @@ class CSVParse_User(CSVParse_Flat):
     #             kwargs[key] = self.retrieveColFromRow
 
     def clearTransients(self):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         super(CSVParse_User, self).clearTransients()
         self.roles = OrderedDict()
         self.noroles = OrderedDict()
@@ -515,14 +530,14 @@ class CSVParse_User(CSVParse_Flat):
             registerName = 'badname'
         )
 
-    def registerBadEmail(self, objectData, name):
-        self.registerAnything(
-            objectData,
-            self.badEmail,
-            objectData.index,
-            singular = True,
-            registerName = 'bademail'
-        )
+    # def registerBadEmail(self, objectData, name):
+    #     self.registerAnything(
+    #         objectData,
+    #         self.badEmail,
+    #         objectData.index,
+    #         singular = True,
+    #         registerName = 'bademail'
+    #     )
 
     def validateFilters(self, objectData):
         if self.filterItems:
@@ -633,7 +648,7 @@ class CSVParse_User(CSVParse_Flat):
     def printBasicColumns(users):
         usrList = UsrObjList()
         for user in users:
-            usrList.addObject(user)
+            usrList.append(user)
 
         cols = ColData_User.getBasicCols()
 
@@ -737,10 +752,10 @@ class CSVParse_WPSQLProd(CSVParse_Flat):
 #     usrList = UsrObjList()
 #
 #     for usr in usrParser.objects.values()[:3]:
-#         usrList.addObject(usr)
+#         usrList.append(usr)
 #         clone = deepcopy(usr)
 #         usr['Wordpress Username'] = 'jonno'
-#         usrList.addObject(clone)
+#         usrList.append(clone)
 #         # card_id = usr.MYOBID
 #         # edit_date = usr.get('Edit Date')
 #         # act_date = usr.get('Edited in Act')

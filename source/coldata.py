@@ -65,9 +65,43 @@ class ColData_Base(object):
     def getWPAPICols(cls):
         return cls.getExportCols('wp-api')
 
-class ColData_MYO(ColData_Base):
-
+class ColData_Prod(ColData_Base):
     data = OrderedDict([
+        ('codesum', {
+            'label': 'SKU',
+            'product':True,
+            'report':True
+        }),
+        ('itemsum', {
+            'label': 'Name',
+            'product':True,
+            'report':True
+        }),
+        ('descsum', {
+            'label': 'Description',
+            'product': True,
+            'report':True,
+        }),
+        ('WNR', {
+            'product':True,
+            'report':True,
+            'pricing':True,
+        }),
+        ('RNR', {
+            'product':True,
+            'report':True,
+            'pricing':True,
+        }),
+        ('DNR', {
+            'product':True,
+            'report':True,
+            'pricing':True,
+        }),
+    ])
+
+class ColData_MYO(ColData_Prod):
+
+    data = OrderedDict(ColData_Prod.data.items() + [
         ('codesum', {
             'label': 'Item Number',
             'product':True,
@@ -144,9 +178,9 @@ class ColData_MYO(ColData_Base):
     def getProductCols(self):
         return self.getExportCols('product')
 
-class ColData_Woo(ColData_Base):
+class ColData_Woo(ColData_Prod):
 
-    data = OrderedDict([
+    data = OrderedDict(ColData_Prod.data.items() + [
         ('ID', {
             'wp':{
                 'key': 'ID',
@@ -154,7 +188,8 @@ class ColData_Woo(ColData_Base):
             },
             'wp-api':{
                 'key':'id'
-            }
+            },
+            'report':True
         }),
         ('parent_SKU', {
             'variation':True,
@@ -171,7 +206,8 @@ class ColData_Woo(ColData_Base):
             },
             'wp-api':{
                 'key':'sku'
-            }
+            },
+            'report':True
         }),
         ('itemsum', {
             'tag':'Title',
@@ -184,7 +220,8 @@ class ColData_Woo(ColData_Base):
             },
             'wp-api':{
                 'key':'title'
-            }
+            },
+            'report':True
         }),
         ('title_1', {
             'label': 'meta:title_1',
@@ -334,7 +371,8 @@ class ColData_Woo(ColData_Base):
             },
             'wp-api':{
                 'key':'regular_price'
-            }
+            },
+            'report':True
         }),
         ('sale_price', {
             'label':'sale_price',
@@ -345,7 +383,8 @@ class ColData_Woo(ColData_Base):
                 'key':'_sale_price',
                 'meta':True
             },
-            'wp-api':True
+            'wp-api':True,
+            'report':True
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',

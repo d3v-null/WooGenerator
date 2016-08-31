@@ -311,6 +311,8 @@ if __name__ == '__main__':
     dynParser = CSVParse_Dyn()
     dynParser.analyseFile(dprpPath)
 
+    #todo: rewrite in htmlReporter
+
     with open(outPath, 'w+') as outFile:
         def writeSection(title, description, data, length = 0, html_class="results_section"):
             sectionID = SanitationUtils.makeSafeClass(title)
