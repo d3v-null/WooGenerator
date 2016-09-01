@@ -129,7 +129,7 @@ class SyncClient_GDrive(SyncClient_Abstract):
         return time.strptime(modifiedDate, '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
-    def analyseRemote(self, parser, gid=None, outPath=None):
+    def analyseRemote(self, parser, gid=None, outPath=None, limit=None):
         if not outPath:
             outPath = '/tmp/' + gid + '.csv'
         if not self.skip_download:

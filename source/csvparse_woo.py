@@ -176,11 +176,6 @@ class ImportWooProduct(ImportWooItem, ImportShopProduct):
         self['title_1'] = line1
         self['title_2'] = line2
 
-
-    def joinCategory(self, catData):
-        self.registerCategory(catData)
-        catData.registerMember(self)
-
     def getNameDelimeter(self):
         e = DeprecationWarning("use .nameDelimeter insetad of .getNameDelimeter()")
         self.registerError(e)
@@ -357,33 +352,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
         self.images[image].append(objectData)
         objectData.registerImage(image)
 
-    def registerAttribute(self, objectData, attr, val, var=False):
-        try:
-            attr = str(attr)
-            assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(type(attr).__name__)
-            assert attr is not '', 'Attribute must not be empty'
-            assert attr[0] is not ' ', 'Attribute must not start with whitespace or '
-        except AssertionError as e:
-            self.registerError("could not register attribute: {}".format(e))
-            # raise e
-        else:
-            objectData.registerAttribute(attr, val, var)
-            self.registerAnything(
-                val,
-                self.attributes,
-                indexer=attr,
-                singular=False,
-                registerName='Attributes'
-            )
-            if var:
-                self.registerAnything(
-                    val,
-                    self.vattributes,
-                    indexer=attr,
-                    singular=False,
-                    registerName='Variable Attributes'
-                )
-
     def registerSpecial(self, objectData, special):
         try:
             special = str(special)
@@ -484,7 +452,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                 extraStack = self.stack.getLeftSlice(extraDepth)
                 extraLayer = self.newObject(
                     extraRowcount,
-                    objectData.row,
+                    row=objectData.row,
                     depth = extraDepth,
                     meta = [
                         objectData.name + ' Items',
@@ -1001,7 +969,6 @@ class CSVParse_TT(CSVParse_Woo):
         #     print "-> metaWidth: ", self.metaWidth
 
 class CSVParse_VT(CSVParse_Woo):
-
     def __init__(self, cols={}, defaults ={}, importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
                 dprcRules={}, dprpRules={}, specials={}, catMapping={}):
@@ -1047,84 +1014,3 @@ class CSVParse_VT(CSVParse_Woo):
         super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
                 taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
                 dprcRules, dprpRules, specials, catMapping)
-
-
-class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
-    objectContainer = CSVParse_Shop_Mixin.objectContainer
-
-    def __init__(self, *args, **kwargs):
-        super(self.__class__, self).__init__(*args, **kwargs)
-
-    def clearTransients(self):
-        super(CSVParse_Woo_Api, self).clearTransients()
-        CSVParse_Shop_Mixin.clearTransients(self)
-
-    # def processObject(self, objectData):
-        # super(CSVParse_Woo_Api, self).processObject(objectData)
-        #todo: this
-
-    def registerObject(self, objectData):
-        if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        if self.DEBUG_API:
-            self.registerMessage("registering objectData: %s" % str(objectData))
-        super(CSVParse_Woo_Api, self).registerObject(objectData)
-        if issubclass(objectData.__class__, ImportShopProduct)\
-        and not issubclass(type(objectData), ImportShopProductVariation):
-            self.registerProduct(objectData)
-
-    def analyseWpApiObj(self, apiData):
-        defaultData = OrderedDict(self.defaults.items())
-        # if(self.DEBUG_API): self.registerMessage( "defaultData: {}".format(defaultData) )
-
-        parserData = OrderedDict()
-        for col, col_data in ColData_Woo.getWPAPICols().items():
-            # if self.DEBUG_API:
-            #     self.registerMessage('processing col: %s, col_data: %s' % \
-            #                               (col, col_data))
-            try:
-                wp_api_key = col_data['wp-api']['key']
-            except:
-                wp_api_key = col
-            # if self.DEBUG_API:
-            #     self.registerMessage('wp_api_key: %s' % \
-            #                               (wp_api_key,))
-            if wp_api_key in apiData:
-                parserData[col] = apiData[wp_api_key]
-        if 'dimensions' in apiData:
-            api_dimensions = apiData['dimensions']
-            for dimension_key in ['length', 'width', 'height']:
-                if dimension_key in api_dimensions:
-                    parserData[dimension_key] = api_dimensions[dimension_key]
-        if 'type' in apiData:
-            pass
-            #todo: implement type stuff
-        if 'in_stock' in apiData:
-            pass
-            #todo: implement stock_status stuff
-        if 'variations' in apiData:
-            #todo: implement variations
-            pass
-        if 'categories' in apiData:
-            #todo: implement categories
-            pass
-        if 'attributes' in apiData:
-            #todo: implement attributes
-            pass
-
-        if self.DEBUG_API: self.registerMessage( "parserData: {}".format(parserData) )
-        allData = listUtils.combineOrderedDicts(defaultData, parserData)
-        if self.DEBUG_API: self.registerMessage( "allData: {}".format(allData) )
-        container = self.objectContainer
-        if self.DEBUG_API: self.registerMessage("container: {}".format(container.__name__))
-        kwargs = {
-            'rowcount': self.rowcount,
-            'row':[]
-        }
-        # self.registerMessage("kwargs: {}".format(kwargs))
-        objectData = container(allData, **kwargs)
-        # self.registerMessage("mro: {}".format(container.mro()))
-        self.processObject(objectData)
-        self.registerObject(objectData)
-
-        self.rowcount += 1

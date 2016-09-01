@@ -33,10 +33,10 @@ class ImportSpecial(ImportFlat):
     # @property
     # def end_time_iso(self): return TimeUtils.isoTimeToString(self.end_time)
 
-    def __init__(self, data, rowcount, row):
+    def __init__(self, data, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(ImportSpecial, self).__init__(data, rowcount, row)
+        super(ImportSpecial, self).__init__(data, **kwargs)
         try:
             self.ID
         except:
@@ -159,8 +159,8 @@ class ImportUser(ImportFlat):
         times = [self.act_modtime, self.wp_modtime]
         return max(times)
 
-    def __init__(self, data, rowcount=None, row=None, **kwargs):
-        super(ImportUser, self).__init__(data, rowcount, row)
+    def __init__(self, data, **kwargs):
+        super(ImportUser, self).__init__(data, **kwargs)
         for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema', 'Wordpress ID']:
             val = kwargs.get(key, "")
             if(val):

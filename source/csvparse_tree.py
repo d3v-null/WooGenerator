@@ -16,9 +16,7 @@ class ImportTreeObject(ImportObject):
         # rowcount = kwargs.get('rowcount')
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(ImportTreeObject, self).__init__(data, **{
-            key:value for key, value in kwargs.items() if key in ['row', 'rowcount']
-        })
+        super(ImportTreeObject, self).__init__(data, kwargs)
         try:
             depth = kwargs.pop('depth', -1)
             if not isinstance(self, ImportTreeRoot):
@@ -102,10 +100,10 @@ class ImportTreeObject(ImportObject):
     def identifierDelimeter(self):
         return "=" * self.depth
 
-    def getIdentifierDelimeter(self):
-        e = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
-        self.registerError(e)
-        return self.identifierDelimeter
+    # def getIdentifierDelimeter(self):
+    #     e = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     self.registerError(e)
+    #     return self.identifierDelimeter
 
     def getParent(self):
         e = DeprecationWarning("Use .parent instead of .getParent()")
@@ -209,10 +207,10 @@ class ImportTreeItem(ImportTreeObject):
     def identifierDelimeter(self):
         return super(ImportTreeItem, self).identifierDelimeter + '>'
 
-    def getIdentifierDelimeter(self):
-        e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
-        self.registerError(e)
-        return self.identifierDelimeter
+    # def getIdentifierDelimeter(self):
+    #     e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     self.registerError(e)
+    #     return self.identifierDelimeter
         # return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
 
     @property
@@ -288,7 +286,7 @@ class ImportStack(list):
         out = "\n"
         for objectData in self:
             try:
-                out += objectData.getIdentifier() + "\n"
+                out += objectData.identifier + "\n"
             except:
                 out += repr(objectData) + "\n"
         return out
@@ -408,16 +406,17 @@ class CSVParse_Tree(CSVParse_Base):
             assert kwargs[key] is not None
         return kwargs
 
-    def newObject(self, rowcount, row, **kwargs):
+    def newObject(self, rowcount, **kwargs):
+        kwargs['row'] = kwargs.get('row', [])
         if self.DEBUG_TREE:
             self.registerMessage(u"new tree object! rowcount: %d, row: %s, kwargs: %s"%\
-                                 (rowcount, unicode(row), unicode(kwargs)))
+                                 (rowcount, unicode(kwargs['row']), unicode(kwargs)))
 
         try:
             depth = kwargs['depth']
             assert depth is not None
         except:
-            depth = self.depth( row )
+            depth = self.depth( kwargs['row'] )
             kwargs['depth'] = depth
         if self.DEBUG_TREE:
             self.registerMessage("depth: %d"%(depth))
@@ -426,7 +425,7 @@ class CSVParse_Tree(CSVParse_Base):
             meta = kwargs['meta']
             assert meta is not None
         except:
-            meta = self.extractMeta(row, depth)
+            meta = self.extractMeta(kwargs['row'], depth)
         finally:
             kwargs['meta'] = meta
         if self.DEBUG_TREE:
@@ -437,7 +436,7 @@ class CSVParse_Tree(CSVParse_Base):
             del kwargs['stack']
             assert stack is not None
         except:
-            self.refreshStack(rowcount, row, depth)
+            self.refreshStack(rowcount, kwargs['row'], depth)
         finally:
             stack = self.stack
         assert isinstance(stack, ImportStack)
@@ -450,7 +449,7 @@ class CSVParse_Tree(CSVParse_Base):
             self.registerMessage("parent: {}".format(parent))
         kwargs['parent'] = parent
 
-        return super(CSVParse_Tree, self).newObject(rowcount, row, **kwargs)
+        return super(CSVParse_Tree, self).newObject(rowcount, **kwargs)
 
     def refreshStack(self, rowcount, row, thisDepth):
         try:
@@ -459,7 +458,7 @@ class CSVParse_Tree(CSVParse_Base):
             raise UserWarning(str(e))
         del self.stack[thisDepth:]
         for depth in range(len(self.stack), thisDepth):
-            layer = self.newObject(rowcount, row, depth=depth)
+            layer = self.newObject(rowcount, row=row, depth=depth)
             self.stack.append(layer)
             # self.initializeObject(layer)
         assert len(self.stack) == thisDepth , "stack should have been properly refreshed"

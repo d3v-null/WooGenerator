@@ -106,3 +106,10 @@ scripttest.py
 .remote-sync.json
 
 ids that were deleted.txt
+
+html/*
+source/.DS_Store
+
+pocs/.DS_Store
+
+.DS_Store

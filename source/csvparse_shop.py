@@ -3,16 +3,17 @@ Introduces the shop products and categories interfaces to CSV Parser classes
 """
 
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
+from csvparse_tree import ItemList, TaxoList
 from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
+from csvparse_gen import ImportGenBase
 from collections import OrderedDict
-from utils import descriptorUtils, SanitationUtils
+from utils import descriptorUtils, SanitationUtils, Registrar
 from coldata import ColData_Prod
 
-class ShopProdList(ObjList):
+class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
-    def getReportCols(self):
-        return ColData_Prod.getReportCols()
+    reportCols = ColData_Prod.getReportCols()
 
     def append(self, objectData):
         assert issubclass(objectData.__class__, ImportShop), \
@@ -22,7 +23,10 @@ class ShopProdList(ObjList):
             )
         return super(ShopProdList, self).append(objectData)
 
-class ImportShop(ImportObject):
+class ShopCatList(TaxoList):
+    reportCols = ColData_Prod.getReportCols()
+
+class ImportShop(ImportGenBase):
     "Base class for shop objects (products, categories)"
     isProduct = None
     isCategory = None
@@ -81,6 +85,7 @@ class ImportShop(ImportObject):
 
 class ImportShopProduct(ImportShop):
     container = ShopProdList
+    categoryIndexer = Registrar.getObjectRowcount
     product_type = None
     isProduct = True
 
@@ -97,11 +102,15 @@ class ImportShopProduct(ImportShop):
             catData,
             self.categories,
             # indexer = self.getSum,
-            indexer = catData.rowcount,
+            indexer = self.categoryIndexer,
             singular = True,
             resolver = self.exceptionResolver,
             registerName = 'product categories'
         )
+
+    def joinCategory(self, catData):
+        self.registerCategory(catData)
+        catData.registerMember(self)
 
     def getCategories(self):
         e = DeprecationWarning("use .categories instead of .getCategories()")
@@ -165,6 +174,7 @@ class ImportShopProductVariation(ImportShopProduct):
 
 class ImportShopCategory(ImportShop):
     isCategory = True
+    container = ShopCatList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -195,13 +205,17 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     """
     objectContainer = ImportShop
     productContainer = ImportShopProduct
+    simpleContainer = ImportShopProductSimple
+    variableContainer = ImportShopProductVariable
+    variationContainer = ImportShopProductVariation
+    categoryContainer = ImportShopCategory
     productIndexer = CSVParse_Gen_Mixin.getCodeSum
     categoryIndexer = CSVParse_Gen_Mixin.getCodeSum
-    products = None
-    categories = None
-    attributes = None
-    vattributes = None
-    variations = None
+    # products = None
+    # categories = None
+    # attributes = None
+    # vattributes = None
+    # variations = None
 
     # def __init__(self, *args, **kwargs):
     #     if args:
@@ -253,10 +267,12 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         super(CSVParse_Shop_Mixin, self).registerObject(objectData)
-        if objectData.isProduct:
+        if issubclass(type(objectData), ImportShopProduct)\
+        and not issubclass(type(objectData), ImportShopProductVariation):
             if self.DEBUG_SHOP:
                 self.registerMessage("Object is product")
             self.registerProduct(objectData)
+        else:
             if self.DEBUG_SHOP:
                 self.registerMessage("Object is not product")
 
@@ -266,8 +282,7 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         self.registerAnything(
             catData,
             self.categories,
-            # indexer = self.getSum,
-            indexer = self.getObjectIndex,
+            indexer = self.categoryIndexer,
             resolver = self.passiveResolver,
             singular = True,
             registerName = 'categories'
@@ -289,3 +304,30 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         )
         # if not parentData.get('variations'): parentData['variations'] = OrderedDict()
         varData.joinVariable(parentData)
+
+    def registerAttribute(self, objectData, attr, val, var=False):
+        try:
+            attr = str(attr)
+            assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(type(attr).__name__)
+            assert attr is not '', 'Attribute must not be empty'
+            assert attr[0] is not ' ', 'Attribute must not start with whitespace or '
+        except AssertionError as e:
+            self.registerError("could not register attribute: {}".format(e))
+            # raise e
+        else:
+            objectData.registerAttribute(attr, val, var)
+            self.registerAnything(
+                val,
+                self.attributes,
+                indexer=attr,
+                singular=False,
+                registerName='Attributes'
+            )
+            if var:
+                self.registerAnything(
+                    val,
+                    self.vattributes,
+                    indexer=attr,
+                    singular=False,
+                    registerName='Variable Attributes'
+                )

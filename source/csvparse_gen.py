@@ -36,7 +36,7 @@ from csvparse_flat import ImportFlat
 #         return super(GenTaxoList, self).append(objectData)
 
 class ImportGenBase(ImportObject):
-    "Provides basic Generator interface for Import classes"
+    "Provides basic Generator interface for Import classes as a mixin"
     codesumKey = 'codesum'
     descsumKey = 'descsum'
     namesumKey = 'itemsum'
@@ -50,6 +50,8 @@ class ImportGenBase(ImportObject):
     #     super(ImportGenBase, self).__init__(*args, **kwargs)
 
     def verifyMeta(self):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         "Sanity checks that metadata has been processed correctly"
         # super(ImportGenBase, self).verifyMeta()
         keys = [
@@ -64,9 +66,13 @@ class ImportGenBase(ImportObject):
     def index(self):
         return self.codesum
 
-class ImportGenFlat(ImportGenBase, ImportFlat):
+class ImportGenFlat(ImportFlat, ImportGenBase):
     "Base class for flat generator classes"
-    pass
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
+        super(ImportGenFlat, self).__init__(*args, **kwargs)
+        self.verifyMeta()
 
 
 class ImportGenObject(ImportTreeObject, ImportGenBase):
@@ -280,6 +286,11 @@ class CSVParse_Gen_Mixin(CSVParse_Base):
     def getCodeSum(cls, objectData):
         assert issubclass(type(objectData), ImportGenBase)
         return objectData.codesum
+
+    @classmethod
+    def getNameSum(cls, objectData):
+        assert issubclass(type(objectData), ImportGenBase)
+        return objectData.namesum
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)

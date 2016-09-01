@@ -162,6 +162,7 @@ parser.add_argument('--schema', help='what schema to process the files as', defa
 parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
 parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
 parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
+parser.add_argument('--limit', type=int, help='global limit of objects to process')
 
 group = parser.add_argument_group()
 group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
@@ -204,6 +205,7 @@ if args:
         taxoDepth = args.taxo_depth
     if args.item_depth:
         itemDepth = args.item_depth
+    global_limit = args.limit
 
     schema = args.schema
     variant = args.variant

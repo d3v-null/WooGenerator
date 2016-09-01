@@ -156,11 +156,13 @@ class ObjList(list, Registrar):
 class ImportObject(OrderedDict, Registrar):
     container = ObjList
 
-    def __init__(self, data, rowcount = None, row = None):
-        super(ImportObject, self).__init__(data)
-        Registrar.__init__(self)
+    def __init__(self, data, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
+        super(ImportObject, self).__init__(data)
+        Registrar.__init__(self)
+        rowcount = kwargs.get('rowcount')
+        row = kwargs.get('row')
         if rowcount is not None:
             self['rowcount'] = rowcount
         # if not self.get('rowcount'): self['rowcount'] = 0
@@ -206,7 +208,16 @@ class ImportObject(OrderedDict, Registrar):
 
     @property
     def identifier(self):
-        Registrar.stringAnything( self.index, "<%s>" % self.typeName, self.identifierDelimeter )
+        index =  self.index
+        if self.DEBUG_ABSTRACT:
+            self.registerMessage("index: %s" % repr(index))
+        typeName = self.typeName
+        if self.DEBUG_ABSTRACT:
+            self.registerMessage("typeName %s" % repr(typeName))
+        identifierDelimeter = self.identifierDelimeter
+        if self.DEBUG_ABSTRACT:
+            self.registerMessage("identifierDelimeter %s" % repr(identifierDelimeter))
+        return self.stringAnything( index, "<%s>" % typeName, identifierDelimeter )
 
     def getIdentifier(self):
         e = DeprecationWarning("use .identifier instead of .getIdentifier()")
@@ -303,7 +314,12 @@ class CSVParse_Base(Registrar):
     def sanitizeCell(self, cell):
         return cell
 
-    def getRowData(self, row):
+    def getParserData(self, **kwargs):
+        """
+        gets data for the parser (in this case from row, specified in kwargs)
+        generalized from getRowData
+        """
+        row = kwargs.get('row', [])
         rowData = OrderedDict()
         for col in self.cols:
             retrieved = self.retrieveColFromRow(col, row)
@@ -321,17 +337,17 @@ class CSVParse_Base(Registrar):
     def getKwargs(self, allData, container, **kwargs):
         return kwargs
 
-    def newObject(self, rowcount, row, **kwargs):
+    def newObject(self, rowcount, **kwargs):
+        kwargs['row'] = kwargs.get('row', [])
+        kwargs['rowcount'] = rowcount
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
         if self.DEBUG_PARSER: self.registerMessage( "defaultData: {}".format(defaultData) )
-        rowData = self.getRowData(row)
+        rowData = self.getParserData(**kwargs)
         if self.DEBUG_PARSER: self.registerMessage( "rowData: {}".format(rowData) )
         # allData = listUtils.combineOrderedDicts(rowData, defaultData)
         allData = listUtils.combineOrderedDicts(defaultData, rowData)
         if self.DEBUG_PARSER: self.registerMessage( "allData: {}".format(allData) )
-        kwargs['rowcount'] = rowcount
-        kwargs['row'] = row
         container = self.getNewObjContainer(allData, **kwargs)
         if self.DEBUG_PARSER: self.registerMessage("container: {}".format(container.__name__))
         kwargs = self.getKwargs(allData, container, **kwargs)
@@ -339,8 +355,8 @@ class CSVParse_Base(Registrar):
         objectData = container(allData, **kwargs)
         return objectData
 
-    def initializeObject(self, objectData):
-        pass
+    # def initializeObject(self, objectData):
+    #     pass
 
     def processObject(self, objectData):
         pass
@@ -389,7 +405,7 @@ class CSVParse_Base(Registrar):
                 self.analyseHeader(unicode_row)
                 continue
             try:
-                objectData = self.newObject( self.rowcount, unicode_row )
+                objectData = self.newObject( self.rowcount, row=unicode_row )
             except UserWarning as e:
                 self.registerWarning("could not create new object: {}".format(e), "%s:%d" % (fileName, self.rowcount))
                 continue

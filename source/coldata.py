@@ -256,6 +256,9 @@ class ColData_Woo(ColData_Prod):
             'tag':'Description',
             'product': True,
             'category': True,
+            'wp-api':{
+                'key':'description'
+            }
         }),
         ('imgsum', {
             'label':'Images',
@@ -716,6 +719,9 @@ class ColData_Woo(ColData_Prod):
                 'key':'_stock',
                 'meta':True
             },
+            'wp-api':{
+                'key':'stock_quantity'
+            }
         }),
         ('stock_status', {
             'import': True,
@@ -744,10 +750,7 @@ class ColData_Woo(ColData_Prod):
             'default': ''
         }),
         ('HTML Description', {
-            'import': True,
-            'wp-api':{
-                'key':'description'
-            }
+            'import': True
         }),
         ('last_import', {
             'label':'meta:last_import',

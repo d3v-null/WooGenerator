@@ -2624,14 +2624,19 @@ class Registrar(object):
     def resolveConflict(self, new, old, index, registerName = ''):
         self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
 
-    def getObjectRowcount(self, objectData):
+    @classmethod
+    def getObjectRowcount(cls, objectData):
         return objectData.rowcount
 
     @classmethod
     def getObjectIndex(cls, objectData):
-        return objectData.index
+        if hasattr(objectData, 'index'):
+            return objectData.index
+        else:
+            raise UserWarning('object is not indexable')
 
-    def passiveResolver(*args):
+    @classmethod
+    def passiveResolver(cls, *args):
         pass
 
     def exceptionResolver(self, new, old, index, registerName = ''):
@@ -2644,7 +2649,7 @@ class Registrar(object):
             self.registerError(e, new )
 
     @classmethod
-    def stringAnything(self, index, thing, delimeter):
+    def stringAnything(self, index, thing, delimeter='|'):
         return SanitationUtils.coerceBytes( u"%50s %s %s" % (index, delimeter, thing) )
 
     @classmethod
@@ -2652,14 +2657,19 @@ class Registrar(object):
         print Registrar.stringAnything(index, thing, delimeter)
 
     @classmethod
-    def registerAnything(self, thing, register, indexer = None, resolver = None, singular = True, registerName = ''):
+    def registerAnything(self, thing, register, indexer = None, resolver = None, \
+                         singular = True, unique=True, registerName = ''):
         if resolver is None: resolver = self.conflictResolver
         if indexer is None: indexer = self.objectIndexer
         index = None
         try:
             if callable(indexer):
+                if self.DEBUG_UTILS:
+                    print "INDEXER IS CALLABLE"
                 index = indexer(thing)
             else:
+                if self.DEBUG_UTILS:
+                    print "INDEXER IS NOT CALLABLE"
                 index = indexer
             assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
@@ -2677,7 +2687,8 @@ class Registrar(object):
             else:
                 if index not in register:
                     register[index] = []
-                register[index].append(thing)
+                if not unique or thing not in register[index]:
+                    register[index].append(thing)
         # print "registered", thing
 
     @classmethod
