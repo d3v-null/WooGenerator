@@ -367,7 +367,7 @@ class CSVParse_Base(Registrar):
         # self.processObject(objectData)
         # self.registerObject(objectData)
 
-    def analyseRows(self, unicode_rows, fileName="rows"):
+    def analyseRows(self, unicode_rows, fileName="rows", limit=None):
         limit = None
         if hasattr(self, 'limit'):
             limit = self.limit
@@ -387,6 +387,8 @@ class CSVParse_Base(Registrar):
             unicode_rows = rows
 
         for unicode_row in (unicode_rows):
+            if limit and self.rowcount > limit:
+                break
             if self.DEBUG_PROGRESS:
                 self.progressCounter.maybePrintUpdate(self.rowcount)
                 # now = time()
@@ -432,7 +434,7 @@ class CSVParse_Base(Registrar):
         if self.DEBUG_PARSER:
             self.registerMessage("Completed analysis")
 
-    def analyseFile(self, fileName, encoding=None, dialect_suggestion=None):
+    def analyseFile(self, fileName, encoding=None, dialect_suggestion=None, limit=None):
         if encoding is None:
             encoding = "utf8"
         if self.DEBUG_PARSER:

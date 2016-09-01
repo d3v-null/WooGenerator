@@ -389,7 +389,7 @@ if download_master:
         productParser = productParserClass(**productParserArgs)
 
         Registrar.registerMessage("analysing products")
-        client.analyseRemote(productParser, None, genPath)
+        client.analyseRemote(productParser, None, genPath, limit=global_limit)
 else:
     if schema in woo_schemas:
         Registrar.registerMessage("analysing dprc rules")
@@ -784,7 +784,7 @@ apiProductParser = CSVParse_Woo_Api(
 )
 
 with ProdSyncClient_WC(wcApiParams) as client:
-    client.analyseRemote(apiProductParser)
+    client.analyseRemote(apiProductParser, limit=global_limit)
 
 productMatcher = ProductMatcher()
 productMatcher.processRegisters(productParser.products, apiProductParser.products)

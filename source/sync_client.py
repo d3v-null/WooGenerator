@@ -150,7 +150,7 @@ class SyncClient_GDrive(SyncClient_Abstract):
                 with open(outPath, 'w') as outFile:
                     outFile.write(content)
                     print "downloaded ", outFile
-        parser.analyseFile(outPath)
+        parser.analyseFile(outPath, limit=limit)
 
 class SyncClient_WC(SyncClient_Abstract):
     class ApiIterator(Iterable):

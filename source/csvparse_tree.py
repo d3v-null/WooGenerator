@@ -16,7 +16,7 @@ class ImportTreeObject(ImportObject):
         # rowcount = kwargs.get('rowcount')
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(ImportTreeObject, self).__init__(data, kwargs)
+        super(ImportTreeObject, self).__init__(data, **kwargs)
         try:
             depth = kwargs.pop('depth', -1)
             if not isinstance(self, ImportTreeRoot):
