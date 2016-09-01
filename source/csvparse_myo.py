@@ -1,4 +1,5 @@
-from CSVParse_Gen_Tree import CSVParse_Gen_Tree, ImportGenProduct, GenProdList
+from csvparse_gen import CSVParse_Gen_Tree
+from csvparse_shop import ImportShopProduct, ShopProdList
 from csvparse_abstract import ObjList
 from utils import listUtils, SanitationUtils
 from collections import OrderedDict
@@ -9,7 +10,7 @@ import os
 class CSVParse_MYO(CSVParse_Gen_Tree):
 
     containers = {
-        'Y': ImportGenProduct
+        'Y': ImportShopProduct
     }
 
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
@@ -243,7 +244,7 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
     #         # itemData['description'] = itemData['descsum'][:]
     #         self.registerProduct(itemData)
 
-class MYOProdList(GenProdList):
+class MYOProdList(ShopProdList):
     def getReportCols(self):
         return ColData_MYO.getProductCols()
 

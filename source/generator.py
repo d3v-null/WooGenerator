@@ -11,7 +11,8 @@ from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils
 from csvparse_abstract import Registrar
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
-from csvparse_woo import WooCatList, WooProdList, WooVarList, CSVParse_Woo_Api
+from csvparse_woo import WooCatList, WooProdList, WooVarList
+from csvparse_api import CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
@@ -98,6 +99,8 @@ with open(yamlPath) as stream:
 
     skip_google_download = config.get('skip_google_download')
     do_images = config.get('do_images')
+    do_specials = config.get('do_specials')
+    do_dyns = config.get('do_dyns')
     do_delete_images = config.get('do_delete_images')
     do_resize_images = config.get('do_resize_images')
 
@@ -142,6 +145,16 @@ group.add_argument('--do-images', help='process images',
                    action="store_true", default=do_images)
 group.add_argument('--skip-images', help='don\'t process images',
                    action="store_false", dest='do_images')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-specials', help='process specials',
+                   action="store_true", default=do_specials)
+group.add_argument('--skip-specials', help='don\'t process specials',
+                   action="store_false", dest='do_specials')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-dyns', help='process dyns',
+                   action="store_true", default=do_dyns)
+group.add_argument('--skip-dyns', help='don\'t process dyns',
+                   action="store_false", dest='do_dyns')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-delete-images', help='delete extra images in compressed folder',
                    action="store_true", default=do_delete_images)
@@ -205,6 +218,12 @@ if args:
         taxoDepth = args.taxo_depth
     if args.item_depth:
         itemDepth = args.item_depth
+    if args.do_images:
+        do_images = args.do_images
+    if args.do_specials:
+        do_specials = args.do_specials
+    if args.do_dyns:
+        do_dyns = args.do_dyns
     global_limit = args.limit
 
     schema = args.schema
@@ -286,6 +305,10 @@ if current_special:
 
 if skip_google_download:
     SyncClient_GDrive.skip_download = True
+
+CSVParse_Woo.do_images = do_images
+CSVParse_Woo.do_dyns = do_dyns
+CSVParse_Woo.do_specials = do_specials
 
 ### DISPLAY CONFIG ###
 if Registrar.DEBUG_MESSAGE:
@@ -414,7 +437,7 @@ else:
     Registrar.registerMessage("analysing products")
     productParser.analyseFile(genPath)
 
-products = productParser.getProducts()
+products = productParser.products
 
 if schema in woo_schemas:
     attributes     = productParser.attributes
