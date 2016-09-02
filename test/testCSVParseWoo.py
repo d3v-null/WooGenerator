@@ -65,14 +65,15 @@ class testCSVParseWoo(TestCase):
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_WOO = True
         # Registrar.DEBUG_API = True
+        CSVParse_TT.do_images = False
+        CSVParse_TT.do_specials = False
+        CSVParse_TT.do_dyns = False
+
 
     def testCSVParseTT(self):
         productParser = CSVParse_TT(
             **self.productParserArgs
         )
-        CSVParse_TT.do_images = False
-        CSVParse_TT.do_specials = False
-        CSVParse_TT.do_dyns = False
 
         productParser.analyseFile(self.genPath)
 

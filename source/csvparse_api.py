@@ -138,13 +138,22 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         """
         parserData = OrderedDict()
         apiData = kwargs.get('apiData',{})
-        for col, col_data in ColData_Woo.getWPAPICols().items():
+        for col, col_data in ColData_Woo.getWPAPICoreCols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
                 wp_api_key = col
             if wp_api_key in apiData:
                 parserData[col] = apiData[wp_api_key]
+        if 'meta' in apiData:
+            metaData = apiData['meta']
+            for col, col_data in ColData_Woo.getWPAPIMetaCols().items():
+                try:
+                    wp_api_key = col_data['wp-api']['key']
+                except:
+                    wp_api_key = col
+                if wp_api_key in metaData:
+                    parserData[col] = metaData[wp_api_key]
         if 'dimensions' in apiData:
             self.getApiDimensionData(parserData, apiData['dimensions'])
         if 'in_stock' in apiData:

@@ -12,11 +12,11 @@ from csvparse_abstract import ImportObject
 class SyncUpdate(Registrar):
 
     @classmethod
-    def setGlobals(_class, master_name, slave_name, merge_mode, default_lastSync):
-        _class.master_name = master_name
-        _class.slave_name = slave_name
-        _class.merge_mode = merge_mode
-        _class.default_lastSync = default_lastSync
+    def setGlobals(cls, master_name, slave_name, merge_mode, default_lastSync):
+        cls.master_name = master_name
+        cls.slave_name = slave_name
+        cls.merge_mode = merge_mode
+        cls.default_lastSync = default_lastSync
 
     def __init__(self, oldMObject, oldSObject, lastSync=None):
         super(SyncUpdate, self).__init__()
@@ -28,11 +28,6 @@ class SyncUpdate(Registrar):
         self.oldMObject = oldMObject
         self.oldSObject = oldSObject
         self.tTime = TimeUtils.wpStrptime(lastSync)
-        self.mTime = self.oldMObject.act_modtime
-        self.sTime = self.oldSObject.wp_modtime
-        self.bTime = self.oldMObject.last_sale
-
-        self.winner = self.getWinnerName(self.mTime, self.sTime)
 
         self.newSObject = None
         self.newMObject = None
@@ -46,24 +41,11 @@ class SyncUpdate(Registrar):
         self.importantCols = []
         self.mDeltas = False
         self.sDeltas = False
-        # self.problematic = False
 
-        #extra heuristics for merge mode:
-        if self.merge_mode == 'merge' and not self.sMod:
-            might_be_sEdited = False
-            if not oldSObject.addressesActLike():
-                might_be_sEdited = True
-            elif oldSObject.get('Home Country') == 'AU':
-                might_be_sEdited = True
-            elif oldSObject.usernameActLike():
-                might_be_sEdited = True
-            if might_be_sEdited:
-                # print repr(oldSObject), "might be edited"
-                self.sTime = self.tTime
-                if self.mMod:
-                    self.static = False
-                    # self.importantStatic = False
-#
+        self.mTime = 0
+        self.sTime = 0
+        self.bTime = 0
+
     @property
     def sUpdated(self): return self.newSObject
     @property
@@ -839,93 +821,75 @@ class SyncUpdate(Registrar):
     def __str__(self):
         return "update < %7s | %7s >" % (self.MYOBID, self.WPID)
 
-# def testSyncUpdate1():
-#
-#
-#     usr1 = ImportUser(
-#         {
-#             'MYOB Card ID': 'C00002',
-#             'Wordpress ID': 7,
-#             'Wordpress Username': 'derewnt',
-#             'First Name': 'Derwent',
-#             'Surname': 'Smith',
-#             'Name Modified': '2015-11-10 12:55:00',
-#             'Edited in Act': '11/11/2015 6:45:00 AM',
-#         },
-#         1,
-#         [],
-#     )
-#
-#     usr2 = ImportUser(
-#         {
-#             'MYOB Card ID': 'C00002',
-#             'Wordpress ID': 7,
-#             'Wordpress Username': 'derewnt',
-#             'First Name': 'Abe',
-#             'Surname': 'Jackson',
-#             'Name Modified': '2015-11-10 12:45:03',
-#             'Edited in Wordpress': '2015-11-11 6:55:00',
-#         },
-#         2,
-#         [],
-#     )
-#
-#     syncUpdate = SyncUpdate(usr1, usr2)
-#
-#     syncCols = ColData_User.getSyncCols()
-#
-#     syncUpdate.update(syncCols)
-#
-#     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
-#
-# def testSyncUpdate2():
-#
-#     usr1 = ImportUser(
-#         {
-#             'MYOB Card ID': 'C00002',
-#             'Wordpress ID': 7,
-#             'Wordpress Username': 'derewnt',
-#             'First Name': 'Derwent',
-#             'Surname': 'Smith',
-#             'Edited Name': '10/11/2015 12:45:00 PM',
-#             'Edited in Act': '11/11/2015 6:55:00 AM',
-#         },
-#         1,
-#         [],
-#     )
-#
-#     usr2 = ImportUser(
-#         {
-#             'MYOB Card ID': 'C00002',
-#             'Wordpress ID': 7,
-#             'Wordpress Username': 'derewnt',
-#             'First Name': 'Abe',
-#             'Surname': 'Jackson',
-#             'Edited Name': '2015-11-10 12:55:03',
-#             'Edited in Wordpress': '2015-11-11 6:45:00',
-#         },
-#         2,
-#         [],
-#     )
-#
-#     syncUpdate = SyncUpdate(usr1, usr2)
-#
-#     syncCols = ColData_User.getSyncCols()
-#
-#     syncUpdate.update(syncCols)
-#
-#     # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
-#
-# if __name__ == '__main__':
-#     yamlPath = "source/merger_config.yaml"
-#
-#     with open(yamlPath) as stream:
-#         config = yaml.load(stream)
-#         merge_mode = config.get('merge_mode', 'sync')
-#         MASTER_NAME = config.get('master_name', 'MASTER')
-#         SLAVE_NAME = config.get('slave_name', 'SLAVE')
-#         DEFAULT_LAST_SYNC = config.get('default_last_sync')
-#
-#     SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
-#     testSyncUpdate1()
-#     testSyncUpdate2()
+class SyncUpdate_Usr(SyncUpdate):
+    def __init__(self, *args, **kwargs):
+        super(SyncUpdate_Usr, self).__init__(*args, **kwargs)
+
+        self.mTime = self.oldMObject.act_modtime
+        self.sTime = self.oldSObject.wp_modtime
+        self.bTime = self.oldMObject.last_sale
+        self.winner = self.getWinnerName(self.mTime, self.sTime)
+
+        #extra heuristics for merge mode:
+        if self.merge_mode == 'merge' and not self.sMod:
+            might_be_sEdited = False
+            if not self.oldSObject.addressesActLike():
+                might_be_sEdited = True
+            elif self.oldSObject.get('Home Country') == 'AU':
+                might_be_sEdited = True
+            elif self.oldSObject.usernameActLike():
+                might_be_sEdited = True
+            if might_be_sEdited:
+                # print repr(self.oldSObject), "might be edited"
+                self.sTime = self.tTime
+                if self.mMod:
+                    self.static = False
+                    # self.importantStatic = False
+
+    def valuesSimilar(self, col, mValue, sValue):
+        response = super(SyncUpdate_Usr, self).valuesSimilar(col, mValue, sValue)
+        if not response:
+            if "phone" in col.lower():
+                if "preferred" in col.lower():
+                    mPreferred = SanitationUtils.similarTruStrComparison(mValue)
+                    sPreferred = SanitationUtils.similarTruStrComparison(sValue)
+                    # print repr(mValue), " -> ", mPreferred
+                    # print repr(sValue), " -> ", sPreferred
+                    if mPreferred == sPreferred:
+                        response = True
+                else:
+                    mPhone = SanitationUtils.similarPhoneComparison(mValue)
+                    sPhone = SanitationUtils.similarPhoneComparison(sValue)
+                    plen = min(len(mPhone), len(sPhone))
+                    if plen > 7 and mPhone[-plen] == sPhone[-plen]:
+                        response = True
+            elif "role" in col.lower():
+                mRole = SanitationUtils.similarComparison(mValue)
+                sRole = SanitationUtils.similarComparison(sValue)
+                if mRole == 'rn':
+                    mRole = ''
+                if sRole == 'rn':
+                    sRole = ''
+                if mRole == sRole:
+                    response = True
+            elif "address" in col.lower() and isinstance(mValue, ContactAddress):
+                if( mValue != sValue ):
+                    pass
+                    # print "M: ", mValue.__str__(out_schema="flat"), "S: ", sValue.__str__(out_schema="flat")
+                response = mValue.similar(sValue)
+            elif "web site" in col.lower():
+                if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
+                    response = True
+
+        if self.DEBUG_UPDATE: self.registerMessage(self.testToStr(col, mValue.__str__(), sValue.__str__(), response))
+        return response
+
+
+class SyncUpdate_Prod(SyncUpdate):
+    def __init__(self, *args, **kwargs):
+        super(SyncUpdate_Prod, self).__init__(*args, **kwargs)
+
+    def valuesSimilar(self, col, mValue, sValue):
+        response = super(SyncUpdate_Prod, self).valuesSimilar(col, mValue, sValue)
+        if self.DEBUG_UPDATE: self.registerMessage(self.testToStr(col, mValue.__str__(), sValue.__str__(), response))
+        return response

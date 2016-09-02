@@ -65,6 +65,33 @@ class ColData_Base(object):
     def getWPAPICols(cls):
         return cls.getExportCols('wp-api')
 
+    @classmethod
+    def getWPAPICoreCols(cls):
+        exportCols = cls.getExportCols('wp-api')
+        apiCols = OrderedDict()
+        for col, data in exportCols.items():
+            apiData = data.get('wp-api', {})
+            if hasattr(apiData, '__getitem__') \
+            and not apiData.get('meta'):
+                apiCols[col] = data
+
+        return apiCols
+
+    @classmethod
+    def getWPAPIMetaCols(cls):
+        exportCols = cls.getExportCols('wp-api')
+        apiCols = OrderedDict()
+        for col, data in exportCols.items():
+            apiData = data.get('wp-api', {})
+            if hasattr(apiData, '__getitem__') \
+            and apiData.get('meta'):
+                apiCols[col] = data
+        return apiCols
+
+    @classmethod
+    def getSyncCols(self):
+        return self.getExportCols('sync')
+
 class ColData_Prod(ColData_Base):
     data = OrderedDict([
         ('codesum', {
@@ -246,6 +273,9 @@ class ColData_Woo(ColData_Prod):
         ('prod_type', {
             'label':'tax:product_type',
             'product':True,
+            'wp-api':{
+                'key':'type'
+            }
         }),
         ('catsum', {
             'label':'tax:product_cat',
@@ -284,6 +314,10 @@ class ColData_Woo(ColData_Prod):
             'product': True,
             'variation': True,
             'shipping': True,
+            'wp-api':{
+                'key':'wootan_danger',
+                'meta':True
+            }
         }),
         ('E', {
             'import': True,

@@ -38,7 +38,6 @@ class ProdSyncClient_WC(SyncClient_WC):
     def analyseRemote(self, parser, since=None, limit=None):
         endpoint = 'products'
         #todo: implement since
-        #todo: implement limit
         #todo: implenent variations
         if Registrar.DEBUG_API:
             Registrar.registerMessage('api endpoint: %s' % endpoint)

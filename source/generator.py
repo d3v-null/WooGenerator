@@ -20,6 +20,7 @@ from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC
 from matching import ProductMatcher
+from SyncUpdate import SyncUpdate_Prod
 # import xml.etree.ElementTree as ET
 # import rsync
 import sys
@@ -59,6 +60,10 @@ with open(yamlPath) as stream:
         logFolder = config['logFolder']
 
     #mandatory
+    merge_mode = config.get('merge_mode', 'sync')
+    MASTER_NAME = config.get('master_name', 'MASTER')
+    SLAVE_NAME = config.get('slave_name', 'SLAVE')
+    DEFAULT_LAST_SYNC = config.get('default_last_sync')
     # webFolder = config.get('webFolder')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
@@ -101,6 +106,7 @@ with open(yamlPath) as stream:
     do_images = config.get('do_images')
     do_specials = config.get('do_specials')
     do_dyns = config.get('do_dyns')
+    do_sync = config.get('do_sync')
     do_delete_images = config.get('do_delete_images')
     do_resize_images = config.get('do_resize_images')
 
@@ -136,10 +142,20 @@ group.add_argument('--download-master', help='download the master data from goog
 group.add_argument('--skip-download-master', help='use the local master file instead\
     of downloading the master data', action="store_false", dest='download_master')
 group = parser.add_mutually_exclusive_group()
+group.add_argument('--download-slave', help='download the slave data',
+                   action="store_true", default=None)
+group.add_argument('--skip-download-slave', help='use the local slave file instead\
+    of downloading the slave data', action="store_false", dest='download_slave')
+group = parser.add_mutually_exclusive_group()
 group.add_argument('--update-slave', help='update the slave database in WooCommerce',
                    action="store_true", default=None)
 group.add_argument('--skip-update-slave', help='don\'t update the slave database',
                    action="store_false", dest='update_slave')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-sync', help='sync the databases',
+                  action="store_true", default=None)
+group.add_argument('--skip-sync', help='don\'t sync the databases',
+                  action="store_false", dest='do_sync')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-images', help='process images',
                    action="store_true", default=do_images)
@@ -218,12 +234,14 @@ if args:
         taxoDepth = args.taxo_depth
     if args.item_depth:
         itemDepth = args.item_depth
-    if args.do_images:
+    if args.do_images is not None:
         do_images = args.do_images
-    if args.do_specials:
+    if args.do_specials is not None:
         do_specials = args.do_specials
-    if args.do_dyns:
+    if args.do_dyns is not None:
         do_dyns = args.do_dyns
+    if args.do_sync is not None:
+        do_sync = args.do_sync
     global_limit = args.limit
 
     schema = args.schema
@@ -273,6 +291,7 @@ with open(yamlPath) as stream:
 ### PROCESS CONFIG ###
 
 TimeUtils.setWpSrvOffset(wp_srv_offset)
+SyncUpdate_Prod.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
 if variant == "ACC":
     genPath = os.path.join(inFolder, 'generator-solution.csv')
@@ -391,23 +410,25 @@ elif schema in woo_schemas:
 if download_master:
     with SyncClient_GDrive(gDriveParams) as client:
         if schema in woo_schemas:
-            Registrar.registerMessage("analysing dprc rules")
-            dynParser = CSVParse_Dyn()
-            client.analyseRemote(dynParser, dprcGID, dprcPath)
-            dprcRules = dynParser.taxos
-            productParserArgs['dprcRules'] = dprcRules
+            if do_dyns:
+                Registrar.registerMessage("analysing dprc rules")
+                dynParser = CSVParse_Dyn()
+                client.analyseRemote(dynParser, dprcGID, dprcPath)
+                dprcRules = dynParser.taxos
+                productParserArgs['dprcRules'] = dprcRules
 
-            Registrar.registerMessage("analysing dprp rules")
-            dynParser.clearTransients()
-            client.analyseRemote(dynParser, dprpGID, dprpPath)
-            dprpRules = dynParser.taxos
-            productParserArgs['dprpRules'] = dprpRules
+                Registrar.registerMessage("analysing dprp rules")
+                dynParser.clearTransients()
+                client.analyseRemote(dynParser, dprpGID, dprpPath)
+                dprpRules = dynParser.taxos
+                productParserArgs['dprpRules'] = dprpRules
 
-            Registrar.registerMessage("analysing specials")
-            specialParser = CSVParse_Special()
-            client.analyseRemote(specialParser, specGID, specPath)
-            specials = specialParser.objects
-            productParserArgs['specials'] = specials
+            if do_specials:
+                Registrar.registerMessage("analysing specials")
+                specialParser = CSVParse_Special()
+                client.analyseRemote(specialParser, specGID, specPath)
+                specials = specialParser.objects
+                productParserArgs['specials'] = specials
 
         productParser = productParserClass(**productParserArgs)
 
@@ -415,23 +436,25 @@ if download_master:
         client.analyseRemote(productParser, None, genPath, limit=global_limit)
 else:
     if schema in woo_schemas:
-        Registrar.registerMessage("analysing dprc rules")
-        dynParser = CSVParse_Dyn()
-        dynParser.analyseFile(dprcPath)
-        dprcRules = dynParser.taxos
-        productParserArgs['dprcRules'] = dprcRules
+        if do_dyns:
+            Registrar.registerMessage("analysing dprc rules")
+            dynParser = CSVParse_Dyn()
+            dynParser.analyseFile(dprcPath)
+            dprcRules = dynParser.taxos
+            productParserArgs['dprcRules'] = dprcRules
 
-        Registrar.registerMessage("analysing dprp rules")
-        dynParser.clearTransients()
-        dynParser.analyseFile(dprpPath)
-        dprpRules = dynParser.taxos
-        productParserArgs['dprpRules'] = dprpRules
+            Registrar.registerMessage("analysing dprp rules")
+            dynParser.clearTransients()
+            dynParser.analyseFile(dprpPath)
+            dprpRules = dynParser.taxos
+            productParserArgs['dprpRules'] = dprpRules
 
-        Registrar.registerMessage("analysing specials")
-        specialParser = CSVParse_Special()
-        specialParser.analyseFile(specPath)
-        specials = specialParser.objects
-        productParserArgs['specials'] = specials
+        if do_specials:
+            Registrar.registerMessage("analysing specials")
+            specialParser = CSVParse_Special()
+            specialParser.analyseFile(specPath)
+            specials = specialParser.objects
+            productParserArgs['specials'] = specials
 
     productParser = productParserClass(**productParserArgs)
     Registrar.registerMessage("analysing products")
@@ -459,7 +482,7 @@ elif Registrar.warnings:
 # Images
 #########################################
 
-if schema in woo_schemas and do_images:
+if do_images and schema in woo_schemas:
     print ""
     print "Images:"
     print "==========="
@@ -494,17 +517,17 @@ if schema in woo_schemas and do_images:
             continue
             # we only care about product images atm
         if Registrar.DEBUG_IMG:
-            if data.taxos:
+            if data.categories:
                 Registrar.registerMessage(
-                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.taxos]),
+                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
                     img
                 )
 
-            if data.items:
-                Registrar.registerMessage(
-                    "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
-                    img
-                )
+            # if data.items:
+            #     Registrar.registerMessage(
+            #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
+            #         img
+            #     )
 
             if data.products:
                 Registrar.registerMessage(
@@ -799,7 +822,7 @@ elif schema in woo_schemas:
     #     Registrar.printAnything(source, error, '!')
 
 #########################################
-# Attempt import
+# Attempt download API data
 #########################################
 
 apiProductParser = CSVParse_Woo_Api(
@@ -809,9 +832,21 @@ apiProductParser = CSVParse_Woo_Api(
 with ProdSyncClient_WC(wcApiParams) as client:
     client.analyseRemote(apiProductParser, limit=global_limit)
 
-productMatcher = ProductMatcher()
-productMatcher.processRegisters(productParser.products, apiProductParser.products)
-print productMatcher.__repr__()
+#########################################
+# Attempt sync
+#########################################
+
+if do_sync:
+    productMatcher = ProductMatcher()
+    productMatcher.processRegisters(productParser.products, apiProductParser.products)
+    print productMatcher.__repr__()
+
+    for matchCount, match in enumerate(productMatcher.pureMatches):
+        mObject = match.mObjects[0]
+        sObject = match.sObjects[0]
+        syncUpdate = SyncUpdate_Prod(mObject, sObject)
+
+
 
 # for sku, product in apiProductParser.products.items():
 #     print sku

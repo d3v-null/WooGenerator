@@ -9,6 +9,7 @@ from csvparse_gen import ImportGenBase
 from collections import OrderedDict
 from utils import descriptorUtils, SanitationUtils, Registrar
 from coldata import ColData_Prod
+import bisect
 
 class ShopProdList(ItemList):
     "Container for shop products"
@@ -23,8 +24,67 @@ class ShopProdList(ItemList):
             )
         return super(ShopProdList, self).append(objectData)
 
-class ShopCatList(TaxoList):
+class ShopCatList(ItemList):
     reportCols = ColData_Prod.getReportCols()
+
+class ShopObjList(ObjList):
+    def __init__(self, fileName=None, objects=None):
+        self.fileName = fileName
+        self.isValid = True
+        if not self.fileName:
+            self.isValid = False
+        self.products = ShopProdList()
+        self.categories = ShopCatList()
+        super(ShopObjList, self).__init__(objects)
+
+    @property
+    def objects(self):
+        return self.products + self.categories
+
+    @property
+    def name(self):
+        e = DeprecationWarning(".name deprecated")
+        self.registerError(e)
+        raise e
+
+    @property
+    def title(self):
+        return self.getKey('fullnamesum')
+
+    @property
+    def description(self):
+        description = self.getKey('HTML Description')
+        if not description:
+            description = self.getKey('descsum')
+        if not description:
+            description = self.name
+        return description
+
+
+    # @property
+    # def isValid(self):
+    #     return self._isValid
+    #
+    # @property
+    # def fileName(self):
+    #     return self._fileName
+
+    def append(self, objectData):
+        assert isinstance(objectData, ImportShop)
+        if objectData.isCategory:
+            container = self.categories
+        elif objectData.isProduct:
+            container = self.products
+
+        if objectData not in container:
+            bisect.insort(container, objectData)
+
+    def invalidate(self, reason=""):
+        if self.DEBUG_IMG:
+            if not reason:
+                reason = "IMG INVALID"
+            self.registerError(reason, self.fileName)
+        self.isValid = False
 
 class ImportShop(ImportGenBase):
     "Base class for shop objects (products, categories)"
@@ -46,6 +106,7 @@ class ImportShop(ImportGenBase):
             ) )
         super(ImportShop, self).__init__(*args, **kwargs)
         self.attributes = OrderedDict()
+        self.images = []
 
     # @classmethod
     # def getNewObjContainer(cls):
@@ -82,6 +143,22 @@ class ImportShop(ImportGenBase):
         e = DeprecationWarning("use .attributes instead of .getAttributes()")
         self.registerError(e)
         return self.attributes
+
+
+    def registerImage(self, image):
+        assert isinstance(image, (str, unicode))
+        thisImages = self.images
+        if image not in thisImages:
+            thisImages.append(image)
+            # parent = self.getParent()
+            # parentImages = parent.getImages()
+            # if not parentImages:
+            #     parent.registerImage(image)
+
+    def getImages(self):
+        e = DeprecationWarning("use .images instead of .getImages()")
+        self.registerError(e)
+        return self.images
 
 class ImportShopProduct(ImportShop):
     container = ShopProdList
@@ -211,6 +288,8 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     categoryContainer = ImportShopCategory
     productIndexer = CSVParse_Gen_Mixin.getCodeSum
     categoryIndexer = CSVParse_Gen_Mixin.getCodeSum
+    do_images = True
+    
     # products = None
     # categories = None
     # attributes = None
@@ -236,6 +315,7 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         self.attributes = OrderedDict()
         self.vattributes= OrderedDict()
         self.variations = OrderedDict()
+        self.images     = OrderedDict()
 
     # def getNewObjContainer(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
@@ -255,6 +335,15 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
             resolver = self.resolveConflict,
             registerName = 'products'
         )
+
+
+    def registerImage(self, image, objectData):
+        assert isinstance(image,(str,unicode))
+        assert image is not ""
+        if image not in self.images.keys():
+            self.images[image] = ShopObjList(image)
+        self.images[image].append(objectData)
+        objectData.registerImage(image)
 
     def getProducts(self):
         e = DeprecationWarning("Use .products instead of .getProducts()")

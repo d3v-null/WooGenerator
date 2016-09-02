@@ -38,7 +38,7 @@ from sshtunnel import SSHTunnelForwarder, check_address
 import io
 # import wordpress_xmlrpc
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_JSON, UsrSyncClient_SQL_WP
-from SyncUpdate import SyncUpdate
+from SyncUpdate import SyncUpdate, SyncUpdate_Usr
 from contact_objects import FieldGroup
 
 
@@ -628,7 +628,7 @@ def main():
             mObject = match.mObjects[0]
             sObject = match.sObjects[0]
 
-            syncUpdate = SyncUpdate(mObject, sObject)
+            syncUpdate = SyncUpdate_Usr(mObject, sObject)
             syncUpdate.update(syncCols)
 
             # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
@@ -658,7 +658,7 @@ def main():
                     if(syncUpdate.sMod):
                         insort(problematicUpdates, syncUpdate)
                         continue
-                elif(syncUpdate.mUpdated and not SyncUpdate.sUpdated):
+                elif(syncUpdate.mUpdated and not syncUpdate.sUpdated):
                     insort(nonstaticMUpdates, syncUpdate)
                     if(syncUpdate.sMod):
                         insort(problematicUpdates, syncUpdate)

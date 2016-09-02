@@ -6,11 +6,10 @@ from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, ImportGenBase
 from csvparse_gen import ImportGenTaxo, ImportGenObject
 from csvparse_shop import ImportShop, ImportShopProduct, ImportShopProductSimple
 from csvparse_shop import ImportShopProductVariable, ImportShopProductVariation
-from csvparse_shop import ImportShopCategory, CSVParse_Shop_Mixin
+from csvparse_shop import ImportShopCategory, CSVParse_Shop_Mixin, ShopObjList
 from csvparse_flat import CSVParse_Flat, ImportFlat
 from coldata import ColData_Woo
 from collections import OrderedDict
-import bisect
 import time
 
 
@@ -23,77 +22,13 @@ class WooCatList(TaxoList):
 class WooVarList(ItemList):
     reportCols = ColData_Woo.getVariationCols()
 
-class WooObjList(ObjList):
-    def __init__(self, fileName, objects=None):
-        self.fileName = fileName
-        self.isValid = True
-        if not self.fileName:
-            self.isValid = False
-        self.products = []
-        self.items = []
-        self.taxos = []
-        super(WooObjList, self).__init__(objects)
-
-    @property
-    def objects(self):
-        return self.products + self.items + self.taxos
-
-    @property
-    def name(self):
-        e = DeprecationWarning(".name deprecated")
-        self.registerError(e)
-        raise e
-
-    @property
-    def title(self):
-        return self.getKey('fullnamesum')
-
-    @property
-    def description(self):
-        description = self.getKey('HTML Description')
-        if not description:
-            description = self.getKey('descsum')
-        if not description:
-            description = self.name
-        return description
-
-    # @property
-    # def isValid(self):
-    #     return self._isValid
-    #
-    # @property
-    # def fileName(self):
-    #     return self._fileName
-
-    def append(self, objectData):
-        assert isinstance(objectData, ImportWooObject)
-        if objectData.isTaxo:
-            container = self.taxos
-        else:
-            if objectData.isProduct:
-                container = self.products
-            else:
-                assert objectData.isItem
-                container = self.items
-
-        if objectData not in container:
-            bisect.insort(container, objectData)
-
-    def invalidate(self, reason=""):
-        if self.DEBUG_IMG:
-            if not reason:
-                reason = "IMG INVALID"
-            self.registerError(reason, self.fileName)
-        self.isValid = False
-
 class ImportWooObject(ImportGenObject, ImportShop):
-    container = WooObjList
+    container = ShopObjList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         super(ImportWooObject, self).__init__(*args, **kwargs)
-        self.images = []
         self.specials = []
 
 
@@ -116,21 +51,6 @@ class ImportWooObject(ImportGenObject, ImportShop):
         for sp in map(SanitationUtils.normalizeVal, self.specials):
             if special in sp:
                 return True
-
-    def registerImage(self, image):
-        assert isinstance(image, (str, unicode))
-        thisImages = self.images
-        if image not in thisImages:
-            thisImages.append(image)
-            # parent = self.getParent()
-            # parentImages = parent.getImages()
-            # if not parentImages:
-            #     parent.registerImage(image)
-
-    def getImages(self):
-        e = DeprecationWarning("use .images instead of .getImages()")
-        self.registerError(e)
-        return self.images
 
     def registerSpecial(self, special):
         if special not in self.specials:
@@ -254,7 +174,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
         'B': ImportWooProductBundled,
     }
 
-    do_images = True
     do_specials = True
     do_dyns = True
     current_special = None
@@ -331,7 +250,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
             self.registerMessage(' ')
         super(CSVParse_Woo, self).clearTransients()
         # CSVParse_Shop_Mixin.clearTransients(self)
-        self.images     = OrderedDict()
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
@@ -343,14 +261,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
     #         self.registerMessage(' ')
     #     container = super(CSVParse_Woo, self).getNewObjContainer(*args, **kwargs)
     #     return container
-
-    def registerImage(self, image, objectData):
-        assert isinstance(image,(str,unicode))
-        assert image is not ""
-        if image not in self.images.keys():
-            self.images[image] = WooObjList(image)
-        self.images[image].append(objectData)
-        objectData.registerImage(image)
 
     def registerSpecial(self, objectData, special):
         try:

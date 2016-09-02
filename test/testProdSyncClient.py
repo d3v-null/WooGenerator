@@ -80,7 +80,7 @@ class testProdSyncClient(TestCase):
         # Registrar.DEBUG_GEN = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_WOO = True
-        # Registrar.DEBUG_API = True
+        Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
         CSVParse_Woo_Api.do_images = False
@@ -93,7 +93,7 @@ class testProdSyncClient(TestCase):
         )
 
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            client.analyseRemote(productParser, limit=None)
+            client.analyseRemote(productParser, limit=20)
 
         prodList = ShopProdList(productParser.products.values())
         print SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))

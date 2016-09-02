@@ -219,28 +219,10 @@ class SyncClient_WC(SyncClient_Abstract):
             url=connectParams['url'],
             consumer_key=connectParams['api_key'],
             consumer_secret=connectParams['api_secret'],
-            timeout=30
+            timeout=30,
+            wp_api=True, # Enable the WP REST API integration
+            version="wc/v1" # WooCommerce WP REST API version
         )
 
     def __exit__(self, type, value, traceback):
         pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            #
