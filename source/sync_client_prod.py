@@ -38,15 +38,24 @@ class ProdSyncClient_WC(SyncClient_WC):
     def analyseRemote(self, parser, since=None, limit=None):
         endpoint = 'products'
         #todo: implement since
-        #todo: implenent variations
         if Registrar.DEBUG_API:
             Registrar.registerMessage('api endpoint: %s' % endpoint)
         productCount = 0
-        for page in self.ApiIterator(self.client, endpoint):
+        apiIterator = self.ApiIterator(self.client, endpoint)
+        progressCounter = None
+        for page in apiIterator:
+            if progressCounter is None:
+                total_items = apiIterator.total_items
+                if limit:
+                    total_items = min(limit, total_items)
+                progressCounter = ProgressCounter(total_items)
+            progressCounter.maybePrintUpdate(productCount)
+
             if Registrar.DEBUG_API:
                 Registrar.registerMessage('processing page: %s' % str(page))
             if 'products' in page:
                 for page_product in page.get('products'):
+
                     parser.analyseWpApiObj(page_product)
                     productCount += 1
                     if limit and productCount > limit:

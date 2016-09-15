@@ -289,7 +289,7 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     productIndexer = CSVParse_Gen_Mixin.getCodeSum
     categoryIndexer = CSVParse_Gen_Mixin.getCodeSum
     do_images = True
-    
+
     # products = None
     # categories = None
     # attributes = None
@@ -305,6 +305,14 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     #     self.categoryIndexer = self.getCodeSum
 
 
+    @property
+    def containers(self):
+        return {
+            'simple':self.simpleContainer,
+            'variable':self.variableContainer,
+            'variation':self.variationContainer,
+            'category':self.categoryContainer
+        }
 
     def clearTransients(self):
         if self.DEBUG_MRO:
@@ -316,12 +324,6 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         self.vattributes= OrderedDict()
         self.variations = OrderedDict()
         self.images     = OrderedDict()
-
-    # def getNewObjContainer(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.registerMessage(' ')
-    #     container = super(CSVParse_Shop_Mixin, self).getNewObjContainer(*args, **kwargs)
-    #     return container
 
     def registerProduct(self, prodData):
         if self.DEBUG_SHOP:
@@ -356,14 +358,14 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         super(CSVParse_Shop_Mixin, self).registerObject(objectData)
-        if issubclass(type(objectData), ImportShopProduct)\
-        and not issubclass(type(objectData), ImportShopProductVariation):
-            if self.DEBUG_SHOP:
-                self.registerMessage("Object is product")
+        if issubclass(type(objectData), ImportShopProduct):
+            # and not issubclass(type(objectData), ImportShopProductVariation):
             self.registerProduct(objectData)
-        else:
-            if self.DEBUG_SHOP:
-                self.registerMessage("Object is not product")
+            # if self.DEBUG_SHOP:
+                # self.registerMessage("Object is product")
+        # else:
+            # if self.DEBUG_SHOP:
+            #     self.registerMessage("Object is not product")
 
     def registerCategory(self, catData, itemData):
         assert issubclass(type(catData), ImportShopCategory)

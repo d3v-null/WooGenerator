@@ -92,6 +92,10 @@ class ColData_Base(object):
     def getSyncCols(self):
         return self.getExportCols('sync')
 
+    @classmethod
+    def deltaCol(self, col):
+        return 'Delta ' + col
+
 class ColData_Prod(ColData_Base):
     data = OrderedDict([
         ('codesum', {
@@ -123,6 +127,55 @@ class ColData_Prod(ColData_Base):
             'product':True,
             'report':True,
             'pricing':True,
+        }),
+        ('weight', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'shipping': True,
+            'wp':{
+                'key':'_weight',
+                'meta':True
+            },
+            'wp-api':True,
+            'sync':True,
+            'report':True
+        }),
+        ('length', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'shipping':True,
+            'wp':{
+                'key':'_length',
+                'meta':True
+            },
+            'sync':True,
+            'report':True
+        }),
+        ('width', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'shipping': True,
+            'wp':{
+                'key':'_width',
+                'meta':True
+            },
+            'sync':True,
+            'report':True
+        }),
+        ('height', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'shipping': True,
+            'wp':{
+                'key':'_height',
+                'meta':True
+            },
+            'sync':True,
+            'report':True
         }),
     ])
 
@@ -234,7 +287,8 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'sku'
             },
-            'report':True
+            'report':True,
+            'sync':True
         }),
         ('itemsum', {
             'tag':'Title',
@@ -248,7 +302,8 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'title'
             },
-            'report':True
+            'report':True,
+            'sync':True
         }),
         ('title_1', {
             'label': 'meta:title_1',
@@ -288,7 +343,8 @@ class ColData_Woo(ColData_Prod):
             'category': True,
             'wp-api':{
                 'key':'description'
-            }
+            },
+            'sync':True
         }),
         ('imgsum', {
             'label':'Images',
@@ -300,7 +356,11 @@ class ColData_Woo(ColData_Prod):
             'label':'menu_order',
             'product': True,
             'category': True,
-            'variation': True
+            'variation': True,
+            'wp-api':{
+                'key':'menu_order'
+            },
+            # 'sync':True
         }),
         ('PA', {
             'import': True
@@ -317,7 +377,8 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'wootan_danger',
                 'meta':True
-            }
+            },
+            'sync':True
         }),
         ('E', {
             'import': True,
@@ -392,7 +453,7 @@ class ColData_Woo(ColData_Prod):
             'label': 'meta:_pricing_rules',
             'pricing':True,
             'wp':{
-                'key':'post_title',
+                'key':'pricing_rules',
                 'meta':False
             },
             'product':True,
@@ -433,6 +494,9 @@ class ColData_Woo(ColData_Prod):
                 'key':'_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'regular_price'
+            },
         }),
         ('sale_price_dates_to', {
             'label':'sale_price_dates_to',
@@ -447,6 +511,7 @@ class ColData_Woo(ColData_Prod):
         }),
         ('RNR', {
             'label': 'meta:lc_rn_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -455,9 +520,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rn_regular_price',
+                'meta':True
+            },
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -465,9 +535,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rn_sale_price',
+                'meta':True
+            },
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -475,9 +550,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rn_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('RNT', {
             'label': 'meta:lc_rn_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -485,9 +565,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rn_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('RPR', {
             'label': 'meta:lc_rp_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -496,9 +581,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rp_regular_price',
+                'meta':True
+            },
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -506,9 +596,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rp_sale_price',
+                'meta':True
+            },
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -516,9 +611,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rp_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('RPT', {
             'label': 'meta:lc_rp_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -526,9 +626,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_rp_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('WNR', {
             'label': 'meta:lc_wn_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -537,9 +642,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wn_regular_price',
+                'meta':True
+            },
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -547,9 +657,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wn_sale_price',
+                'meta':True
+            },
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -557,9 +672,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wn_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('WNT', {
             'label': 'meta:lc_wn_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -567,9 +687,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wn_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('WPR', {
             'label': 'meta:lc_wp_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -578,9 +703,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wp_regular_price',
+                'meta':True
+            },
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -588,9 +718,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wp_sale_price',
+                'meta':True
+            },
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -598,9 +733,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wp_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('WPT', {
             'label': 'meta:lc_wp_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -608,9 +748,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_wp_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('DNR', {
             'label': 'meta:lc_dn_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -619,9 +764,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dn_regular_price',
+                'meta':True
+            },
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -629,9 +779,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dn_sale_price',
+                'meta':True
+            },
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -639,9 +794,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dn_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('DNT', {
             'label': 'meta:lc_dn_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -649,9 +809,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dn_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('DPR', {
             'label': 'meta:lc_dp_regular_price',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
@@ -660,9 +825,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_regular_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dp_regular_price',
+                'meta':True
+            },
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -670,9 +840,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_sale_price',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dp_sale_price',
+                'meta':True
+            },
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -680,9 +855,14 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_sale_price_dates_from',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dp_sale_price_dates_from',
+                'meta':True
+            },
         }),
         ('DPT', {
             'label': 'meta:lc_dp_sale_price_dates_to',
+            'sync':True,
             'product': True,
             'variation': True,
             'pricing': True,
@@ -690,15 +870,24 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_sale_price_dates_to',
                 'meta':True
             },
+            'wp-api':{
+                'key':'lc_dp_sale_price_dates_to',
+                'meta':True
+            },
         }),
         ('CVC', {
             'label': 'meta:commissionable_value',
+            'sync':True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
             'default': 0,
             'wp':{
+                'key':'commissionable_value',
+                'meta':True
+            },
+            'wp-api':{
                 'key':'commissionable_value',
                 'meta':True
             },
@@ -712,7 +901,10 @@ class ColData_Woo(ColData_Prod):
                 'key':'_weight',
                 'meta':True
             },
-            'wp-api':True
+            'wp-api':{
+                'key':'weight'
+            },
+            'sync':True
         }),
         ('length', {
             'import': True,
@@ -723,6 +915,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'_length',
                 'meta':True
             },
+            'sync':True
         }),
         ('width', {
             'import': True,
@@ -733,6 +926,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'_width',
                 'meta':True
             },
+            'sync':True
         }),
         ('height', {
             'import': True,
@@ -743,6 +937,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'_height',
                 'meta':True
             },
+            'sync':True
         }),
         ('stock', {
             'import': True,
@@ -753,6 +948,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'_stock',
                 'meta':True
             },
+            'sync':True,
             'wp-api':{
                 'key':'stock_quantity'
             }
@@ -766,6 +962,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'_stock_status',
                 'meta':True
             },
+            'sync':True
         }),
         ('manage_stock', {
             'product': True,
@@ -776,8 +973,10 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'wp-api':{
-                'key': 'managing_stock'
-            }
+                'key': 'manage_stock'
+            },
+            'sync':True,
+            'default':'no'
         }),
         ('Images', {
             'import': True,
@@ -792,7 +991,10 @@ class ColData_Woo(ColData_Prod):
         }),
         ('Updated', {
             'import': True,
-            'product':True
+            'product':True,
+            'wp-api':{
+                'key':'updated_at'
+            }
         }),
         ('post_status', {
             'import':True,
@@ -800,7 +1002,9 @@ class ColData_Woo(ColData_Prod):
             'variation':True,
             'wp-api':{
                 'key':'status'
-            }
+            },
+            'sync':True,
+            'default':'publish'
         }),
     ])
 
@@ -875,10 +1079,6 @@ class ColData_User(ColData_Base):
         if col in self.modMapping:
             col = self.modMapping[col]
         return 'Edited ' + col
-
-    @classmethod
-    def deltaCol(self, col):
-        return 'Delta ' + col
 
     wpdbPKey = 'Wordpress ID'
 

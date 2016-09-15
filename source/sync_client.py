@@ -157,17 +157,58 @@ class SyncClient_WC(SyncClient_Abstract):
         def __init__(self, api, endpoint):
             assert isinstance(api, WCAPI)
             self.api = api
-            self.last_response = self.api.get(endpoint)
+            self.next_endpoint = endpoint
+            self.prev_response = None
+            # self.next_page = None
+            # self.progressCounter = None
+            self.total_pages = None
+            self.total_items = None
+            # self.stopNextIteration = False
+
+        def get_page_param(self, url):
+            params = SanitationUtils.findall_url_params(url)
+            if 'page' in params:
+                pages = params['page']
+                assert len(pages) == 1
+                return int(pages[0])
+            else:
+                return None
+
+        def processHeaders(self, headers):
+            if self.total_pages is None:
+                self.total_pages = int(headers.get('x-wc-totalpages'))
+            if self.total_items is None:
+                self.total_items = int(headers.get('x-wc-total'))
+            # if self.progressCounter is None:
+            #     self.progressCounter = ProgressCounter(total=self.total_pages)
+            # self.stopNextIteration = True
+            # self.next_page = self.total_pages
+            self.next_endpoint = None
+            links_str = headers.get('link', '')
             if Registrar.DEBUG_API:
-                Registrar.registerMessage('first api response: %s' % str(self.last_response.json()))
-            if 'errors' in self.last_response.json():
-                raise UserWarning('api call returned errors: %s' % (self.last_response.json()['errors']))
-            self.stopNextIteration = False
+                Registrar.registerMessage("links str: {}".format(links_str))
+            for link in SanitationUtils.findall_wc_links(links_str):
+                if link.get('rel') == 'next' and link.get('url'):
+                    next_response_url = link['url']
+                    # self.next_page = self.get_page_param(next_response_url)
+                    # self.stopNextIteration = False
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
+                    self.next_endpoint = self.__get_endpoint(next_response_url)
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
+                    break
+
+            # self.progressCounter.maybePrintUpdate(self.next_page)
+
 
         def __get_endpoint(self, url):
-            api_url = self.api._API__get_url('')
-            if url.startswith(api_url):
-                return url.replace(api_url, '')
+            url_path = SanitationUtils.stripURLHost(url)
+            api_url_path = SanitationUtils.stripURLHost(self.api._API__get_url(''))
+            if url_path.startswith(api_url_path):
+                return url_path.replace(api_url_path, '')
+            else:
+                return url_path
 
         def __iter__(self):
             return self
@@ -175,39 +216,29 @@ class SyncClient_WC(SyncClient_Abstract):
         def next(self):
             if Registrar.DEBUG_API:
                 Registrar.registerMessage('start')
-            if self.stopNextIteration:
+
+            if self.next_endpoint is None:
                 if Registrar.DEBUG_API:
-                    Registrar.registerMessage('stopping due to stopNextIteration')
+                    Registrar.registerMessage('stopping due to no next endpoint')
                 raise StopIteration()
 
-            assert self.last_response.status_code not in [404]
-            last_response_json = self.last_response.json()
+            # get API response
+            self.prev_response = self.api.get(self.next_endpoint)
+
+            # handle API errors
+            if self.prev_response.status_code in [404]:
+                raise UserWarning('api call failed')
             if Registrar.DEBUG_API:
-                Registrar.registerMessage('last_response_json: %s' % last_response_json)
-            last_response_headers = self.last_response.headers
-            if Registrar.DEBUG_API:
-                Registrar.registerMessage('last_response_headers: %s' % last_response_headers)
-            if last_response_headers.get('x-wc-totalpages') == '1':
-                if Registrar.DEBUG_API:
-                    Registrar.registerMessage('one page, enabling stopNextIteration')
-                self.stopNextIteration = True
-                return last_response_json
-            else:
-                if Registrar.DEBUG_API:
-                    Registrar.registerMessage('more than one page: enabling pagination')
-            links_str = last_response_headers.get('link', '')
-            for link in SanitationUtils.findall_wc_links(links_str):
-                if link.get('rel') == 'next' and link.get('url'):
-                    next_response_url = link['url']
-                    if Registrar.DEBUG_API:
-                        Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
-                    self.last_response = self.api.get(
-                        self.__get_endpoint(next_response_url)
-                    )
-                    if Registrar.DEBUG_API:
-                        Registrar.registerMessage('last_response_json: %s' % last_response_json)
-                    return last_response_json
-            raise StopIteration()
+                Registrar.registerMessage('first api response: %s' % str(self.prev_response.json()))
+            prev_response_json = self.prev_response.json()
+            if 'errors' in prev_response_json:
+                raise UserWarning('first api call returned errors: %s' % (self.prev_response.json()['errors']))
+
+            # process API headers
+            self.processHeaders(self.prev_response.headers)
+
+            return prev_response_json
+
 
     def __init__(self, connectParams):
         super(SyncClient_WC, self).__init__()
@@ -220,8 +251,8 @@ class SyncClient_WC(SyncClient_Abstract):
             consumer_key=connectParams['api_key'],
             consumer_secret=connectParams['api_secret'],
             timeout=30,
-            wp_api=True, # Enable the WP REST API integration
-            version="wc/v1" # WooCommerce WP REST API version
+            # wp_api=True, # Enable the WP REST API integration
+            # version="v3" # WooCommerce WP REST API version
         )
 
     def __exit__(self, type, value, traceback):

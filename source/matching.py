@@ -1,6 +1,6 @@
-from csvparse_abstract import ImportObject
-from csvparse_flat import UsrObjList #, ImportUser
-from utils import SanitationUtils, Registrar
+from csvparse_abstract import ImportObject, ObjList
+# from csvparse_flat import UsrObjList #, ImportUser
+from utils import SanitationUtils, Registrar, InheritenceUtils
 
 
 class Match(object):
@@ -19,16 +19,24 @@ class Match(object):
         return self._sObjects
 
     @property
+    def sLen(self):
+        return len(self._sObjects)
+
+    @property
+    def mLen(self):
+        return len(self._mObjects)
+
+    @property
     def isSingular(self):
-        return len(self.mObjects) <= 1 and len(self.sObjects) <= 1
+        return self.mLen <= 1 and self.sLen <= 1
 
     @property
     def hasNoMaster(self):
-        return len(self.mObjects) == 0
+        return self.mLen == 0
 
     @property
     def hasNoSlave(self):
-        return len(self.sObjects) == 0
+        return self.sLen == 0
 
     @property
     def type(self):
@@ -44,6 +52,14 @@ class Match(object):
                 return 'pure'
         else:
             return 'duplicate'
+
+    @property
+    def gcs(self):
+        """Greatest common subset"""
+        if self.mLen or self.sLen:
+            return InheritenceUtils.gcs(*(self.mObjects + self.sObjects))
+        else:
+            return None
 
 
     def addSObject(self, sObject):
@@ -71,7 +87,7 @@ class Match(object):
 
     def WooObjListRepr(self, objs):
         length = len(objs)
-        return "({0}) [{1:^200s}]".format(len(objs), ",".join(map(lambda obj: obj.__repr__()[:200/length], objs)))
+        return "({0}) [{1:^100s}]".format(len(objs), ",".join(map(lambda obj: obj.__repr__()[:200/length], objs)))
 
     def __repr__(self):
         return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] )
@@ -79,38 +95,47 @@ class Match(object):
     def tabulate(self, tablefmt=None):
         out  = ""
         match_type = self.type
-        m_len, s_len = len(self.mObjects), len(self.sObjects)
         print_headings = False
-        if(match_type in ['duplicate']):
-            if(m_len > 0):
+        if match_type in ['duplicate']:
+            if self.mObjects:
                 # out += "The following ACT records are diplicates"
-                if(s_len > 0):
+                if self.sObjects:
                     print_headings = True
                     # out += " of the following WORDPRESS records"
             else:
-                assert (s_len > 0)
+                assert self.sObjects
                 # out += "The following WORDPRESS records are duplicates"
-        elif(match_type in ['masterless', 'slavelaveless']):
+        elif match_type in ['masterless', 'slavelaveless']:
             pass
             # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
         # out += "\n"
-        users = UsrObjList()
-        if(m_len > 0):
-            objs = self.mObjects
-            if(print_headings):
-                heading = ImportObject({}, 'M')
-                objs = [heading] + objs
-            for obj in objs :
-                users.append(obj)
-        if(s_len > 0):
-            objs = self.sObjects
-            if(print_headings):
-                heading = ImportObject({}, 'S')
-                objs = [heading] + objs
-            for obj in objs:
-                # pprint(obj)
-                users.append(obj)
-        out += users.tabulate(tablefmt=tablefmt)
+
+        if self.mLen or self.sLen:
+            gcs = self.gcs
+            if gcs is not None:
+                obj_container = gcs.container(indexer=(lambda x: x.identifier))
+            else:
+                obj_container = ObjList()
+            if self.mObjects:
+                mobjs = self.mObjects[:]
+                if(print_headings):
+                    heading = gcs({}, rowcount='M')
+                    # heading = ImportObject({}, rowcount='M')
+                    mobjs = [heading] + mobjs
+                for mobj in mobjs :
+                    obj_container.append(mobj)
+            if self.sObjects:
+                sobjs = self.sObjects[:]
+                if(print_headings):
+                    heading = gcs({}, rowcount='S')
+                    # heading = ImportObject({}, rowcount='S')
+                    sobjs = [heading] + sobjs
+                for sobj in sobjs:
+                    # pprint(sobj)
+                    obj_container.append(sobj)
+            out += obj_container.tabulate(tablefmt=tablefmt)
+        else:
+            out += 'EMPTY'
         # return SanitationUtils.coerceUnicode(out)
         return (out)
 

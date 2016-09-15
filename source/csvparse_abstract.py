@@ -96,7 +96,7 @@ class ObjList(list, Registrar):
                 header += [col]
             table = []
             for obj in objs:
-                row = [obj.index]
+                row = [obj.identifier]
                 for col in cols.keys():
                     # if col == 'Address':
                     #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
@@ -150,6 +150,10 @@ class ObjList(list, Registrar):
     def getReportCols(self):
         e = DeprecationWarning("use .reportCols instead of .getReportCols()")
         self.registerError(e)
+        return self.reportCols
+
+    @classmethod
+    def getBasicCols(cls, self):
         return self.reportCols
 
 
@@ -225,10 +229,24 @@ class ImportObject(OrderedDict, Registrar):
         return self.identifier
         # return Registrar.stringAnything( self.index, "<%s>" % self.getTypeName(), self.getIdentifierDelimeter() )
 
+    def getCopyArgs(self):
+        return {
+            'rowcount': self.rowcount,
+            'row':self.row[:]
+        }
+
     def __getstate__(self): return self.__dict__
     def __setstate__(self, d): self.__dict__.update(d)
-    def __copy__(self): return self.__class__(copy(super(ImportObject,self)), self.rowcount, self.row)
-    def __deepcopy__(self, memodict={}): return self.__class__(deepcopy(OrderedDict(self)), self.rowcount, self.row[:])
+    def __copy__(self):
+        return self.__class__(
+            copy(super(ImportObject,self)),
+            **self.getCopyArgs()
+        )
+    def __deepcopy__(self, memodict=None):
+        return self.__class__(
+            deepcopy(OrderedDict(self)),
+            **self.getCopyArgs()
+        )
 
     def __str__(self):
         return "%10s <%s>" % (self.index, self.typeName)
@@ -294,7 +312,7 @@ class CSVParse_Base(Registrar):
             if self.DEBUG_ABSTRACT: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
 
     def retrieveColFromRow(self, col, row):
-        # if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col
+        if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col
         try:
             index = self.indices[col]
         except KeyError as e:
@@ -323,7 +341,7 @@ class CSVParse_Base(Registrar):
         rowData = OrderedDict()
         for col in self.cols:
             retrieved = self.retrieveColFromRow(col, row)
-            if retrieved is not None and retrieved is not '':
+            if retrieved is not None and unicode(retrieved) is not u"":
                 rowData[col] = self.sanitizeCell(retrieved)
         return rowData
 
@@ -477,6 +495,20 @@ class CSVParse_Base(Registrar):
     def tabulate(self, cols=None, tablefmt=None):
         objlist = self.getObjList()
         return SanitationUtils.coerceBytes(objlist.tabulate(cols, tablefmt))
+
+
+    @classmethod
+    def printBasicColumns(cls, objects):
+        obj_list = cls.objectContainer.container()
+        for _object in objects:
+            obj_list.append(_object)
+
+        cols = cls.objectContainer.container.getBasicCols()
+
+        SanitationUtils.safePrint( obj_list.tabulate(
+            cols,
+            tablefmt = 'simple'
+        ))
 #
 # if __name__ == '__main__':
 #     inFolder = "../input/"

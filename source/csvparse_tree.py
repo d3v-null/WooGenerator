@@ -19,31 +19,29 @@ class ImportTreeObject(ImportObject):
         super(ImportTreeObject, self).__init__(data, **kwargs)
         try:
             depth = kwargs.pop('depth', -1)
-            if not isinstance(self, ImportTreeRoot):
-                assert depth is not None and depth >= 0
+            if not self.isRoot:
+                assert depth is not None
+                assert depth >= 0
         finally:
             self.depth = depth
 
         try:
             meta = kwargs.pop('meta')
             assert meta is not None
-        except:
+        except (AssertionError, KeyError):
             meta = []
         finally:
             self.meta = meta
 
         try:
-            parent = kwargs.pop('parent')
-            assert parent is not None
-        except KeyError, AssertionError:
-            if self.isRoot:
-                parent = None
-            else:
-                raise UserWarning("No parent specified, try specifying root as parent")
-        finally:
-            self.parent = parent
+            parent = kwargs.pop('parent', None)
             if not self.isRoot:
-                parent.registerChild(self)
+                assert parent is not None
+        except (KeyError, AssertionError):
+            raise UserWarning("No parent specified, try specifying root as parent")
+        self.parent = parent
+        if not self.isRoot:
+            parent.registerChild(self)
 
         self.childRegister = OrderedDict()
         self.childIndexer = self.getObjectRowcount
@@ -75,8 +73,25 @@ class ImportTreeObject(ImportObject):
     # @property
     # def parent(self): return self._parent
 
+    def getCopyArgs(self):
+        args = super(ImportTreeObject, self).getCopyArgs()
+        args.update(
+            depth=self.depth,
+            parent=self.parent
+        )
+        return args
+
     def processMeta(self): pass
     def verifyMeta(self): pass
+
+    @property
+    def inheritenceAncestors(self):
+        return self.ancestors
+
+    def getInheritanceAncestors(self):
+        e = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
+        self.registerError(e)
+        return self.inheritenceAncestors
 
     def inheritKey(self, key):
         if not self.get(key):

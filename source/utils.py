@@ -21,6 +21,7 @@ import base64
 from pympler import tracker
 import cgi
 import os
+from urlparse import urlparse, parse_qs
 
 try:
     # Python 2.6-2.7
@@ -205,6 +206,10 @@ class SanitationUtils:
         return byte_return
 
     @classmethod
+    def limitString(cls, length):
+        return (lambda x: x[:length])
+
+    @classmethod
     def sanitizeForTable(cls, thing, tablefmt=None):
         if hasattr(thing, '_supports_tablefmt'):
             thing = thing.__unicode__(tablefmt)
@@ -212,6 +217,7 @@ class SanitationUtils:
             thing = thing[:64] + '...'
         unicode_return = cls.compose(
             cls.coerceUnicode,
+            cls.limitString(50),
             cls.escapeNewlines,
             cls.coerceUnicode
         )(thing)
@@ -348,6 +354,29 @@ class SanitationUtils:
         return str_out
 
     @classmethod
+    def stripPTags(cls, string):
+        str_out = re.sub(r"</?p[^>]*>", "", string)
+        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
+        return str_out
+
+    @classmethod
+    def stripURLHost(cls, url):
+        str_out = url
+        result = urlparse(url)
+        if result:
+            if result.scheme:
+                remove_str = '%s:' % result.scheme
+                if str_out.startswith( remove_str ):
+                    str_out = str_out[len(remove_str):]
+            if result.netloc:
+                remove_str = '//%s' % result.netloc
+                if str_out.startswith(remove_str):
+                    str_out = str_out[len(remove_str):]
+
+        if Registrar.DEBUG_UTILS: print "stripURLHost", repr(url), repr(str_out)
+        return str_out
+
+    @classmethod
     def toLower(cls, string):
         str_out = string.lower()
         if Registrar.DEBUG_UTILS: print "toLower", repr(string), repr(str_out)
@@ -433,6 +462,16 @@ class SanitationUtils:
     def similarURLComparison(cls, string):
         return cls.compose(
             cls.stripURLProtocol,
+            cls.coerceUnicode
+        )(string)
+
+    @classmethod
+    def similarMarkupComparison(cls, string):
+        return cls.compose(
+            cls.toLower,
+            cls.stripLeadingWhitespace,
+            cls.stripTailingWhitespace,
+            cls.stripPTags,
             cls.coerceUnicode
         )(string)
 
@@ -530,6 +569,16 @@ class SanitationUtils:
             if 'url' in match_dict and 'rel' in match_dict:
                 matches.append(match_dict)
         return matches
+
+    @classmethod
+    def findall_url_params(cls, url):
+        result = urlparse(url)
+        if result and result.query:
+            return parse_qs(result.query)
+        else:
+            return {}
+
+
 
     @classmethod
     def titleSplitter(cls, instring):
@@ -2500,6 +2549,33 @@ class descriptorUtils:
             self.processKwargs()
 
         return property(getter, setter)
+
+class InheritenceUtils:
+    @classmethod
+    def gcs(cls, *instances):
+        """
+        Taken from http://stackoverflow.com/questions/25786566/greatest-common-superclass
+        """
+        # try:
+        if len(instances) > 1:
+            classes = [type(x).mro() for x in instances]
+            if classes:
+                for x in classes.pop():
+                    if x == object:
+                        continue
+                    if all(x in mro for mro in classes):
+                        return x
+            assert False, "no common match found for %s" % str([type(x) for x in instances])
+        elif len(instances) == 1:
+            return instances[0]
+        else:
+            return None
+        # except AssertionError, e:
+        #     Registrar.registerError(e)
+        #     raise e
+        #     return None
+
+
 
 class listUtils:
     @staticmethod

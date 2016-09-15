@@ -36,20 +36,20 @@ class testProdSyncClient(TestCase):
                 inFolder = config['inFolder']
             if 'outFolder' in config.keys():
                 outFolder = config['outFolder']
-            if 'logFolder' in config.keys():
-                logFolder = config['logFolder']
+            # if 'logFolder' in config.keys():
+            #     logFolder = config['logFolder']
 
             wc_api_key = config.get(optionNamePrefix+'wc_api_key')
             wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
             wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
             store_url = config.get(optionNamePrefix+'store_url', '')
 
-            taxoDepth = config.get('taxoDepth')
-            itemDepth = config.get('itemDepth')
+            # taxoDepth = config.get('taxoDepth')
+            # itemDepth = config.get('itemDepth')
 
         TimeUtils.setWpSrvOffset(wp_srv_offset)
 
-        json_uri = store_url + 'wp-json/wp/v2'
+        # json_uri = store_url + 'wp-json/wp/v2'
 
         self.wcApiParams = {
             'api_key':wc_api_key,

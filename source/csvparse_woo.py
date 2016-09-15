@@ -1,7 +1,7 @@
 """Introduces woo structure to shop classes"""
 from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
 from csvparse_abstract import ObjList, CSVParse_Base
-from csvparse_tree import ItemList, TaxoList, ImportTreeObject
+from csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
 from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, ImportGenBase
 from csvparse_gen import ImportGenTaxo, ImportGenObject
 from csvparse_shop import ImportShop, ImportShopProduct, ImportShopProductSimple
@@ -60,16 +60,6 @@ class ImportWooObject(ImportGenObject, ImportShop):
         e = DeprecationWarning("use .specials instead of .getSpecials()")
         self.registerError(e)
         return self.specials
-
-    @property
-    def inheritenceAncestors(self):
-        return self.ancestors
-
-    def getInheritanceAncestors(self):
-        e = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
-        self.registerError(e)
-        return self.inheritenceAncestors
-        # return self.getAncestors()
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
     pass
@@ -164,21 +154,30 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
     itemContainer      = ImportWooItem
     productContainer   = ImportWooProduct
     taxoContainer      = ImportWooCategory
-
-    containers = {
-        'S': ImportWooProductSimple,
-        'V': ImportWooProductVariable,
-        'I': ImportWooProductVariation,
-        'C': ImportWooProductComposite,
-        'G': ImportWooProductGrouped,
-        'B': ImportWooProductBundled,
-    }
+    simpleContainer    = ImportWooProductSimple
+    variableContainer  = ImportWooProductVariable
+    variationContainer = ImportWooProductVariation
+    categoryContainer  = ImportWooCategory
+    compositeContainer = ImportWooProductComposite
+    groupedContainer  = ImportWooProductGrouped
+    bundledContainer  = ImportWooProductBundled
 
     do_specials = True
     do_dyns = True
     current_special = None
     specialsCategory = None
     add_special_categories = False
+
+    @property
+    def containers(self):
+        return {
+            'S': self.simpleContainer,
+            'V': self.variableContainer,
+            'I': self.variationContainer,
+            'C': self.compositeContainer,
+            'G': self.groupedContainer,
+            'B': self.bundledContainer,
+        }
 
     def __init__(self, cols, defaults, schema="", importName="", \
                 taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
@@ -256,11 +255,31 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
         self.onspecial_products = OrderedDict()
         self.onspecial_variations = OrderedDict()
 
-    # def getNewObjContainer(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.registerMessage(' ')
-    #     container = super(CSVParse_Woo, self).getNewObjContainer(*args, **kwargs)
-    #     return container
+    def getNewObjContainer(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
+        container = super(CSVParse_Woo, self).getNewObjContainer(*args, **kwargs)
+        try:
+            allData = args[0]
+        except IndexError:
+            e = UserWarning("allData not specified")
+            self.registerError(e)
+            raise e
+
+        if issubclass(container, ImportTreeItem) \
+        and self.schema in allData:
+            woo_type = allData[self.schema]
+            if woo_type:
+                try:
+                    container = self.containers[woo_type]
+                except IndexError:
+                    e = UserWarning("Unknown API product type: %s" % woo_type)
+                    source = kwargs.get('rowcount')
+                    self.registerError(e, source)
+        if self.DEBUG_SHOP:
+            self.registerMessage("container: {}".format(container.__name__))
+        return container
+
 
     def registerSpecial(self, objectData, special):
         try:
@@ -777,8 +796,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                     break
 
 
-    def analyseFile(self, fileName, encoding=None):
-        objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding)
+    def analyseFile(self, fileName, encoding=None, limit=None):
+        objects = super(CSVParse_Woo, self).analyseFile(fileName, encoding=encoding, limit=limit)
         #post processing
         # for itemData in self.taxos.values() + self.items.values():
             # print 'POST analysing product', itemData.codesum, itemData.namesum

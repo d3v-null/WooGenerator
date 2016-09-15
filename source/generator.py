@@ -8,9 +8,10 @@ import datetime
 import argparse
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils, TimeUtils
+from utils import listUtils, SanitationUtils, TimeUtils, debugUtils
 from csvparse_abstract import Registrar
-from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
+from csvparse_shop import ShopProdList
+from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_api import CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
@@ -20,7 +21,8 @@ from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC
 from matching import ProductMatcher
-from SyncUpdate import SyncUpdate_Prod
+from SyncUpdate import SyncUpdate_Prod, SyncUpdate_Prod_Woo
+from bisect import insort
 # import xml.etree.ElementTree as ET
 # import rsync
 import sys
@@ -155,7 +157,7 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-sync', help='sync the databases',
                   action="store_true", default=None)
 group.add_argument('--skip-sync', help='don\'t sync the databases',
-                  action="store_false", dest='do_sync')
+                  action="store_false", dest='do_sync', default=do_sync)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-images', help='process images',
                    action="store_true", default=do_images)
@@ -207,6 +209,7 @@ group.add_argument('--debug-name', action='store_true', dest='debug_name')
 group.add_argument('--debug-img', action='store_true', dest='debug_img')
 group.add_argument('--debug-api', action='store_true', dest='debug_api')
 group.add_argument('--debug-shop', action='store_true', dest='debug_shop')
+group.add_argument('--debug-update', action='store_true', dest='debug_update')
 
 args = parser.parse_args()
 if args:
@@ -277,6 +280,8 @@ if args:
         Registrar.DEBUG_API = args.debug_api
     if args.debug_shop is not None:
         Registrar.DEBUG_SHOP = args.debug_shop
+    if args.debug_update is not None:
+        Registrar.DEBUG_UPDATE = args.debug_update
 
 #process YAML file after determining mode
 
@@ -458,7 +463,7 @@ else:
 
     productParser = productParserClass(**productParserArgs)
     Registrar.registerMessage("analysing products")
-    productParser.analyseFile(genPath)
+    productParser.analyseFile(genPath, limit=global_limit)
 
 products = productParser.products
 
@@ -832,19 +837,50 @@ apiProductParser = CSVParse_Woo_Api(
 with ProdSyncClient_WC(wcApiParams) as client:
     client.analyseRemote(apiProductParser, limit=global_limit)
 
+print "API PRODUCTS"
+print ShopProdList(apiProductParser.products.values()).tabulate()
+
+# CSVParse_Woo_Api.printBasicColumns(apiProductParser.products.values())
+
 #########################################
 # Attempt sync
 #########################################
 
+sDeltaUpdates = []
+
 if do_sync:
     productMatcher = ProductMatcher()
-    productMatcher.processRegisters(productParser.products, apiProductParser.products)
+    productMatcher.processRegisters(apiProductParser.products, productParser.products)
     print productMatcher.__repr__()
+
+    sync_cols = ColData_Woo.getWPAPICols()
+    if Registrar.DEBUG_UPDATE:
+        Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
 
     for matchCount, match in enumerate(productMatcher.pureMatches):
         mObject = match.mObjects[0]
         sObject = match.sObjects[0]
-        syncUpdate = SyncUpdate_Prod(mObject, sObject)
+
+        gcs = match.gcs
+        if gcs and gcs.isVariable:
+            print "\n\n\n is variable \n\n\n"
+
+        syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
+        syncUpdate.update(sync_cols)
+
+        if not syncUpdate:
+            continue
+
+        if syncUpdate.sUpdated and syncUpdate.sDeltas:
+            insort(sDeltaUpdates, syncUpdate)
+
+        if syncUpdate.eUpdated:
+            print syncUpdate.tabulate()
+
+    print debugUtils.hashify("COMPLETED MERGE")
+
+
+
 
 
 

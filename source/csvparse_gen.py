@@ -202,13 +202,13 @@ class ImportGenObject(ImportTreeObject, ImportGenBase):
 
         try:
             self.fullname =  meta[0]
-        except KeyError:
+        except IndexError:
             self.fullname =  ""
         # self.registerMessage("fullname: {}".format(self.fullname ) )
 
         try:
             self.code = meta[1]
-        except KeyError:
+        except IndexError:
             self.code = ""
         # self.registerMessage("code: {}".format(self.code ) )
 
@@ -251,7 +251,8 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
         return self.itemAncestors
 
     def getNameAncestors(self):
-        raise DeprecationWarning("use .nameAncestors instead of .getNameAncestors()")
+        e = DeprecationWarning("use .nameAncestors instead of .getNameAncestors()")
+        self.registerError(e)
         return self.nameAncestors
         # return self.getItemAncestors()
 
@@ -270,7 +271,8 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
     nameDelimeter = ' > '
 
     def getNameDelimeter(self):
-        raise DeprecationWarning("use .nameDelimeter instead of .getNameDelimeter()")
+        e = DeprecationWarning("use .nameDelimeter instead of .getNameDelimeter()")
+        self.registerError(e)
         return ' > '
 
 class CSVParse_Gen_Mixin(CSVParse_Base):

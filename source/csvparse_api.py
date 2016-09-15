@@ -167,15 +167,9 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         container = super(CSVParse_Woo_Api, self).getNewObjContainer( allData, **kwargs)
         apiData = kwargs.get('apiData', {})
         if 'type' in apiData:
-            #todo: implement type stuff
             api_type = apiData['type']
             try:
-                container = {
-                    'simple':self.simpleContainer,
-                    'variable':self.variableContainer,
-                    'variation':self.variationContainer,
-                    'category':self.categoryContainer
-                }[api_type]
+                container = self.containers[api_type]
             except IndexError:
                 e = UserWarning("Unknown API product type: %s" % api_type)
                 source = apiData.get('SKU')
@@ -229,6 +223,7 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         self.processObject(variationData)
         if self.DEBUG_PARSER:
             self.registerMessage("PROCESSED: %s" % variationData.identifier)
+        self.registerObject(variationData)    
         self.registerVariation(objectData, variationData)
         if self.DEBUG_PARSER:
             self.registerMessage("REGISTERED: %s" % variationData.identifier)

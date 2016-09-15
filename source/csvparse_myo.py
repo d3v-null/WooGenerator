@@ -8,10 +8,13 @@ import time
 import os
 
 class CSVParse_MYO(CSVParse_Gen_Tree):
+    productContainer = ImportShopProduct
 
-    containers = {
-        'Y': ImportShopProduct
-    }
+    @property
+    def containers(self):
+        return  {
+            'Y': self.productContainer
+        }
 
     def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
             taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):

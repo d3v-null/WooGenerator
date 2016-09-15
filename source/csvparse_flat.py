@@ -102,13 +102,16 @@ class UsrObjList(ObjList):
 
 
     def getReportCols(self):
-        usrData = ColData_User()
-        report_cols = usrData.getReportCols()
+        report_cols = ColData_User.getReportCols()
         # for exclude_col in ['E-mail','MYOB Card ID','Wordpress Username','Role']:
         #     if exclude_col in report_cols:
         #         del report_cols[exclude_col]
 
         return report_cols
+
+    @classmethod
+    def getBasicCols(cls, self):
+        return ColData_User.getBasicCols()
 
 class ImportUser(ImportFlat):
     container = UsrObjList
@@ -644,18 +647,6 @@ class CSVParse_User(CSVParse_Flat):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
     #     return objectData
 
-    @staticmethod
-    def printBasicColumns(users):
-        usrList = UsrObjList()
-        for user in users:
-            usrList.append(user)
-
-        cols = ColData_User.getBasicCols()
-
-        SanitationUtils.safePrint( usrList.tabulate(
-            cols,
-            tablefmt = 'simple'
-        ))
 
 
 class ImportSqlProduct(ImportFlat):
