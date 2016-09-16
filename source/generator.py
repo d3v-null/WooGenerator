@@ -8,7 +8,7 @@ import datetime
 import argparse
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils, TimeUtils, debugUtils
+from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
 from csvparse_abstract import Registrar
 from csvparse_shop import ShopProdList
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
@@ -152,7 +152,7 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('--update-slave', help='update the slave database in WooCommerce',
                    action="store_true", default=None)
 group.add_argument('--skip-update-slave', help='don\'t update the slave database',
-                   action="store_false", dest='update_slave')
+                   action="store_false", dest='update_slave', default=update_slave)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-sync', help='sync the databases',
                   action="store_true", default=None)
@@ -847,6 +847,8 @@ print ShopProdList(apiProductParser.products.values()).tabulate()
 #########################################
 
 sDeltaUpdates = []
+slaveUpdates = []
+problematicUpdates = []
 
 if do_sync:
     productMatcher = ProductMatcher()
@@ -854,6 +856,7 @@ if do_sync:
     print productMatcher.__repr__()
 
     sync_cols = ColData_Woo.getWPAPICols()
+    sync_cols_var = ColData_Woo.getWPAPIVariableCols()
     if Registrar.DEBUG_UPDATE:
         Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
 
@@ -862,23 +865,66 @@ if do_sync:
         sObject = match.sObjects[0]
 
         gcs = match.gcs
-        if gcs and gcs.isVariable:
-            print "\n\n\n is variable \n\n\n"
+        # if gcs and gcs.isVariable:
 
         syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
-        syncUpdate.update(sync_cols)
+        if gcs and gcs.isVariation:
+            # print "IS VARIATION"
+            syncUpdate.update(sync_cols_var)
+        else:
+            # print "IS NOT VARIATION"
+            syncUpdate.update(sync_cols)
 
-        if not syncUpdate:
+        if not syncUpdate.eUpdated:
             continue
+
+        print syncUpdate.tabulate()
 
         if syncUpdate.sUpdated and syncUpdate.sDeltas:
             insort(sDeltaUpdates, syncUpdate)
 
-        if syncUpdate.eUpdated:
-            print syncUpdate.tabulate()
+        if not syncUpdate.importantStatic:
+            insort(problematicUpdates, syncUpdate)
+            continue
+
+        if syncUpdate.sUpdated:
+            insort(slaveUpdates, syncUpdate)
+
 
     print debugUtils.hashify("COMPLETED MERGE")
 
+    allUpdates = slaveUpdates
+    allUpdates += problematicUpdates
+
+    slaveFailures = []
+    if allUpdates:
+        print debugUtils.hashify("UPDATING %d RECORDS" % len(allUpdates))
+
+        if Registrar.DEBUG_PROGRESS:
+            updateProgressCounter = ProgressCounter(len(allUpdates))
+
+        with ProdSyncClient_WC(wcApiParams) as slaveClient:
+            for count, update in enumerate(allUpdates):
+                if Registrar.DEBUG_PROGRESS:
+                    updateProgressCounter.maybePrintUpdate(count)
+
+                if update_slave and update.sUpdated :
+                    try:
+                        update.updateSlave(slaveClient)
+                    finally:
+                        pass
+                    # except Exception, e:
+                    #     slaveFailures.append({
+                    #         'update':update,
+                    #         'master':SanitationUtils.coerceUnicode(update.newMObject),
+                    #         'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                    #         'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
+                    #         'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                    #         'exception':repr(e)
+                    #     })
+                    #     SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+
+        print debugUtils.hashify("COMPLETED UPDATES")
 
 
 

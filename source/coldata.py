@@ -66,6 +66,17 @@ class ColData_Base(object):
         return cls.getExportCols('wp-api')
 
     @classmethod
+    def getWPAPIVariableCols(cls):
+        cols = OrderedDict()
+        for col, data in cls.getWPAPICols().items():
+            if 'sync' in data:
+                if data.get('sync') == 'simple_only':
+                    continue
+            cols[col] = data
+        return cols
+
+
+    @classmethod
     def getWPAPICoreCols(cls):
         exportCols = cls.getExportCols('wp-api')
         apiCols = OrderedDict()
@@ -303,7 +314,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'title'
             },
             'report':True,
-            'sync':True
+            'sync':'simple_only'
         }),
         ('title_1', {
             'label': 'meta:title_1',
@@ -344,7 +355,7 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'description'
             },
-            'sync':True
+            'sync':'simple_only'
         }),
         ('imgsum', {
             'label':'Images',

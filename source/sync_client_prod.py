@@ -66,4 +66,13 @@ class ProdSyncClient_WC(SyncClient_WC):
     def uploadChanges(self, pkey, updates=None):
         super(ProdSyncClient_WC, self).uploadChanges(pkey)
         endpoint = 'products/%s' % pkey
+        if self.client.version is not 'wc/v1':
+            updates = {'product':updates}
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage("updating %s: %s" % (endpoint, updates))
         response = self.client.put(endpoint, updates)
+        assert response.status_code not in [400], "API ERROR"
+        assert response.json(), "json should exist"
+        assert not isinstance(response.json(), int), "could not convert response to json: %s %s" % (str(response), str(response.json()))
+        assert 'errors' not in response.json(), "response has errors: %s" % str(response.json()['errors'])
+        return response

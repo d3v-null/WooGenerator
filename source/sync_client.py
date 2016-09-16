@@ -36,6 +36,7 @@ from oauth2client import client
 from oauth2client import tools
 
 from woocommerce import API as WCAPI
+from simplejson.scanner import JSONDecodeError
 
 class SyncClient_Abstract(Registrar):
     """docstring for UsrSyncClient_Abstract"""
@@ -190,7 +191,9 @@ class SyncClient_WC(SyncClient_Abstract):
             for link in SanitationUtils.findall_wc_links(links_str):
                 if link.get('rel') == 'next' and link.get('url'):
                     next_response_url = link['url']
-                    # self.next_page = self.get_page_param(next_response_url)
+                    self.next_page = self.get_page_param(next_response_url)
+                    if self.next_page == 2:
+                        next_response_url = re.sub(r'page=\d', 'page=8', next_response_url)
                     # self.stopNextIteration = False
                     if Registrar.DEBUG_API:
                         Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
@@ -200,7 +203,6 @@ class SyncClient_WC(SyncClient_Abstract):
                     break
 
             # self.progressCounter.maybePrintUpdate(self.next_page)
-
 
         def __get_endpoint(self, url):
             url_path = SanitationUtils.stripURLHost(url)
@@ -227,12 +229,29 @@ class SyncClient_WC(SyncClient_Abstract):
 
             # handle API errors
             if self.prev_response.status_code in [404]:
-                raise UserWarning('api call failed')
+                raise UserWarning('api call failed: 404d')
+            try:
+                prev_response_json = self.prev_response.json()
+            except JSONDecodeError:
+                Registrar.registerWarning("first attempt timed out, trying again on %s" % self.next_endpoint)
+                old_timeout = self.api.timeout
+                self.api.timeout = old_timeout * 2
+                self.prev_response = self.api.get(self.next_endpoint)
+                self.api.timeout = old_timeout
+
+                try:
+                    prev_response_json = self.prev_response.json()
+                except JSONDecodeError:
+                    prev_response_json = {}
+                    e = UserWarning('api call failed: timed out on %s' % self.next_endpoint)
+                    Registrar.registerError(e)
+
+                    # raise e
+
             if Registrar.DEBUG_API:
-                Registrar.registerMessage('first api response: %s' % str(self.prev_response.json()))
-            prev_response_json = self.prev_response.json()
+                Registrar.registerMessage('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
-                raise UserWarning('first api call returned errors: %s' % (self.prev_response.json()['errors']))
+                raise UserWarning('first api call returned errors: %s' % (prev_response_json['errors']))
 
             # process API headers
             self.processHeaders(self.prev_response.headers)
@@ -250,10 +269,14 @@ class SyncClient_WC(SyncClient_Abstract):
             url=connectParams['url'],
             consumer_key=connectParams['api_key'],
             consumer_secret=connectParams['api_secret'],
-            timeout=30,
+            timeout=60,
             # wp_api=True, # Enable the WP REST API integration
-            # version="v3" # WooCommerce WP REST API version
+            # version="v3", # WooCommerce WP REST API version
+            # version="wc/v1"
         )
+
+    def connectionReady(self):
+        return self.client
 
     def __exit__(self, type, value, traceback):
         pass

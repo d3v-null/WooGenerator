@@ -1031,7 +1031,7 @@ def main():
                             'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
                             'exception':repr(e)
                         })
-                        SanitationUtils.safePrint("ERROR UPDATING MASTER (%s): %s" % (update.MYOBID, repr(e) ) )
+                        SanitationUtils.safePrint("ERROR UPDATING MASTER (%s): %s" % (update.MasterID, repr(e) ) )
                         # continue
                 if update_slave and update.sUpdated :
                     try:
@@ -1045,7 +1045,7 @@ def main():
                             'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
                             'exception':repr(e)
                         })
-                        SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.WPID, repr(e) ) )
+                        SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
 
     def outputFailures(failures, filePath):
         with open(filePath, 'w+') as outFile:

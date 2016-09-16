@@ -697,6 +697,9 @@ class SyncUpdate(Registrar):
     def __str__(self):
         return "update < %7s | %7s >" % (self.MasterID, self.SlaveID)
 
+    def __nonzero__(self):
+        return self.eUpdated
+
 class SyncUpdate_Usr(SyncUpdate):
     colData = ColData_User
     s_meta_target = 'wp'
@@ -941,12 +944,25 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
-        if col in self.colData.data.keys():
+        if col in self.colData.data:
             data = self.colData.data[col]
-            if data.get(self.s_meta_target):
-                data_s = data.get(self.s_meta_target,{})
-                if not data_s.get('final') and data_s.get('key'):
-                    updates[data_s.get('key')] = self.newSObject.get(col)
+            if self.s_meta_target in data:
+                data_s = data[self.s_meta_target]
+                if 'key' in data_s:
+                    key = data_s.get('key')
+                    val = self.newSObject.get(col)
+                    if data_s.get('meta'):
+                        if not val:
+                            if 'delete_meta' not in updates:
+                                updates['delete_meta'] = []
+                            updates['delete_meta'].append(key)
+                            
+                        if 'custom_meta' not in updates:
+                            updates['custom_meta'] = OrderedDict()
+                        updates['custom_meta'][key] = val
+
+                    elif not data_s.get('final'):
+                        updates[key] = val
             # if data.get('aliases'):
             #     data_aliases = data.get('aliases')
             #     for alias in data_aliases:

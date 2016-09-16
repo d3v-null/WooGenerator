@@ -360,6 +360,12 @@ class SanitationUtils:
         return str_out
 
     @classmethod
+    def stripBrTags(cls, string):
+        str_out = re.sub(r"</?\s*br\s*/?>", "", string)
+        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
+        return str_out
+
+    @classmethod
     def stripURLHost(cls, url):
         str_out = url
         result = urlparse(url)
@@ -472,6 +478,7 @@ class SanitationUtils:
             cls.stripLeadingWhitespace,
             cls.stripTailingWhitespace,
             cls.stripPTags,
+            cls.stripBrTags,
             cls.coerceUnicode
         )(string)
 

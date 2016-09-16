@@ -153,8 +153,8 @@ class ObjList(list, Registrar):
         return self.reportCols
 
     @classmethod
-    def getBasicCols(cls, self):
-        return self.reportCols
+    def getBasicCols(cls):
+        return cls.reportCols
 
 
 class ImportObject(OrderedDict, Registrar):
