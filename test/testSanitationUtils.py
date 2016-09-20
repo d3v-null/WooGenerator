@@ -55,8 +55,16 @@ class testSanitationUtils(TestCase):
         url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
         self.assertItemsEqual(url, SanitationUtils.similarComparison(url))
 
+    def test_similarMarkupComparison(self):
+        markup1 = 'Complete A Frame Assembly  (No Insert) - A-Frame Sign Parts - A-Frame Signs - Generic Signage'
+        markup2 = '<p>Complete A Frame Assembly (No Insert) - A-Frame Sign Parts - A-Frame Signs - Generic Signage</p>\n'
+        self.assertEqual(
+            SanitationUtils.similarMarkupComparison(markup1),
+            SanitationUtils.similarMarkupComparison(markup2)
+        )
+
 if __name__ == '__main__':
-    main()
-    # doubleNameTestSuite = unittest.TestSuite()
-    # doubleNameTestSuite.addTest(testSyncUpdate('test_similarURL'))
-    # unittest.TextTestRunner().run(doubleNameTestSuite)
+    # main()
+    doubleNameTestSuite = unittest.TestSuite()
+    doubleNameTestSuite.addTest(testSanitationUtils('test_similarMarkupComparison'))
+    unittest.TextTestRunner().run(doubleNameTestSuite)

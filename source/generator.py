@@ -403,8 +403,10 @@ productParserArgs = {
     'taxoDepth': taxoDepth,
 }
 
-for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
-    print "%s: %s" % (thing, eval(thing))
+if Registrar.DEBUG_GEN:
+    for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
+        Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
+
 
 if schema in myo_schemas:
     colDataClass = ColData_MYO

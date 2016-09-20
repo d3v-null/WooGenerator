@@ -477,6 +477,7 @@ class SanitationUtils:
             cls.toLower,
             cls.stripLeadingWhitespace,
             cls.stripTailingWhitespace,
+            cls.stripExtraWhitespace,
             cls.stripPTags,
             cls.stripBrTags,
             cls.coerceUnicode
