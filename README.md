@@ -11,6 +11,7 @@ Google Drive API
 
 pip install --upgrade google-api-python-client
 
+refer to these instructions on setting it up:
 https://developers.google.com/drive/web/quickstart/python
 
 SSHTunnel
@@ -24,7 +25,7 @@ apt-cyg install libffi-devel
 Other dependencies
 ------------------
 
-pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json pympler httplib2 pillow
+pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json pympler httplib2 pillow bleach woocommerce
 
 Cygwin Packages
 ---------------
@@ -32,77 +33,8 @@ Cygwin Packages
  - cygwin-devel
  - exiv2
  - gcc-core
- - libargp
- - libatomic1
- - libattr1
- - libblkid1
  - libboost_python-devel
- - libbz2_1
- - libcatgets1
- - libcloog-isl4
- - libcom_err2
- - libcrypt0
- - libcurl4
- - libdb5.3
- - libedit0
- - libexpat1
  - libexiv2-devel
- - libfam0
- - libffi-devel
- - libffi6
- - libfreetype6
- - libgcc1
- - libgdbm4
- - libglib2.0_0
- - libgmp10
- - libgnutls28
- - libgomp1
- - libgssapi_krb5_2
- - libhogweed2
- - libiconv
- - libiconv2
- - libidn11
- - libintl8
- - libisl10
- - libisl13
- - libjbig2
- - libjpeg8
- - libk5crypto3
- - libkrb5_3
- - libkrb5support0
- - liblcms2_2
- - liblzma5
- - libmpc3
- - libmpfr4
- - libncursesw10
- - libnettle4
- - libnghttp2_14
- - libopenjp2_7
- - libopenldap2_4_2
- - libopenssl100
- - libp11-kit0
- - libpcre1
- - libpipeline1
- - libpng16
- - libpopt0
- - libpsl5
- - libquadmath0
- - libreadline7
- - libsasl2_3
- - libsigsegv2
- - libsmartcols1
- - libsqlite3_0
- - libssh2_1
- - libssp0
- - libstdc++6
- - libtasn1_6
- - libtiff6
- - libunistring2
- - libuuid-devel
- - libuuid1
- - libvtv0
- - libwebp5
- - libwebpmux1
  - mingw64-i686-binutils
  - mingw64-i686-gcc-core
  - mingw64-i686-headers
