@@ -2,15 +2,18 @@
 from collections import OrderedDict
 import os
 import shutil
-from PIL import Image
+# from PIL import Image
 import time
 import datetime
 import argparse
+import io
+
 # from itertools import chain
-from metagator import MetaGator
+# from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
+from utils import HtmlReporter
 from csvparse_abstract import Registrar
-from csvparse_shop import ShopProdList
+from csvparse_shop import ShopProdList, ShopObjList
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_api import CSVParse_Woo_Api
@@ -23,6 +26,7 @@ from sync_client_prod import ProdSyncClient_WC
 from matching import ProductMatcher
 from SyncUpdate import SyncUpdate_Prod, SyncUpdate_Prod_Woo
 from bisect import insort
+from matching import MatchList
 # import xml.etree.ElementTree as ET
 # import rsync
 import sys
@@ -44,6 +48,8 @@ srcFolder = "../source"
 os.chdir('source')
 
 yamlPath = "generator_config.yaml"
+
+repPath = ''
 
 thumbsize = 1920, 1200
 
@@ -313,6 +319,11 @@ flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
 catPath = os.path.join(outFolder , "categories-"+suffix+".csv")
 myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
 bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
+repPath = os.path.join(outFolder, "prod_sync_report%s.html" % suffix)
+# masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % suffix)
+# masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % suffix)
+slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % suffix)
+
 # xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
 # objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
 # spoPath = os.path.join(outFolder , "specials-"+suffix+".html")
@@ -391,6 +402,9 @@ productParserArgs = {
     'itemDepth': itemDepth,
     'taxoDepth': taxoDepth,
 }
+
+for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
+    print "%s: %s" % (thing, eval(thing))
 
 if schema in myo_schemas:
     colDataClass = ColData_MYO
@@ -487,134 +501,134 @@ elif Registrar.warnings:
 # Images
 #########################################
 
-if do_images and schema in woo_schemas:
-    print ""
-    print "Images:"
-    print "==========="
-
-    def invalidImage(img, error):
-        # Registrar.registerError(error, img)
-        images[img].invalidate(error)
-
-    ls_raw = {}
-    for folder in imgRawFolders:
-        ls_raw[folder] = os.listdir(folder)
-
-    def getRawImage(img):
-        for imgRawFolder in imgRawFolders:
-            if img in ls_raw[imgRawFolder]:
-                return os.path.join(imgRawFolder, img)
-        raise UserWarning("no img found")
-
-    if not os.path.exists(imgDst):
-        os.makedirs(imgDst)
-
-    #list of images in compressed directory
-    ls_cmp = os.listdir(imgDst)
-    for f in ls_cmp:
-        if f not in images.keys():
-            Registrar.registerWarning("DELETING FROM REFLATTENED", f)
-            if do_delete_images:
-                os.remove(os.path.join(imgDst,f))
-
-    for img, data in images.items():
-        if not data.products:
-            continue
-            # we only care about product images atm
-        if Registrar.DEBUG_IMG:
-            if data.categories:
-                Registrar.registerMessage(
-                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
-                    img
-                )
-
-            # if data.items:
-            #     Registrar.registerMessage(
-            #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
-            #         img
-            #     )
-
-            if data.products:
-                Registrar.registerMessage(
-                    "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
-                    img
-                )
-
-        try:
-            imgRawPath = getRawImage(img)
-        except Exception as e:
-            invalidImage(img, e)
-            continue
-
-        name, ext = os.path.splitext(img)
-        if(not name):
-            invalidImage(img, UserWarning("could not extract name"))
-            continue
-
-        try:
-            title, description = data.title, data.description
-        except Exception as e:
-            invalidImage(img, "could not get title or description: "+str(e) )
-            continue
-
-        Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
-
-        # ------
-        # REMETA
-        # ------
-
-        try:
-            metagator = MetaGator(imgRawPath)
-        except Exception, e:
-            invalidImage(img, "error creating metagator: " + str(e))
-            continue
-
-        try:
-            metagator.update_meta({
-                'title': title,
-                'description': description
-            })
-        except Exception as e:
-            invalidImage(img, "error updating meta: " + str(e))
-
-        # ------
-        # RESIZE
-        # ------
-
-        if do_resize_images:
-            if not os.path.isfile(imgRawPath) :
-                invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
-                continue
-
-            imgDstPath = os.path.join(imgDst, img)
-            if os.path.isfile(imgDstPath) :
-                imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
-                imgDstMod = os.path.getmtime(imgDstPath)
-                # print "image mod (src, dst): ", imgSrcMod, imgdstmod
-                if imgDstMod > imgSrcMod:
-                    if Registrar.DEBUG_IMG:
-                        Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
-                    continue
-
-            print "resizing:", img
-            shutil.copy(imgRawPath, imgDstPath)
-
-            try:
-                # imgmeta = MetaGator(imgDstPath)
-                # imgmeta.write_meta(title, description)
-                # print imgmeta.read_meta()
-
-                image = Image.open(imgDstPath)
-                image.thumbnail(thumbsize)
-                image.save(imgDstPath)
-
-                imgmeta = MetaGator(imgDstPath)
-                imgmeta.write_meta(title, description)
-                # print imgmeta.read_meta()
-
-            except Exception as e:
-                invalidImage(img, "could not resize: " + str(e))
-                continue
+# if do_images and schema in woo_schemas:
+#     print ""
+#     print "Images:"
+#     print "==========="
+#
+#     def invalidImage(img, error):
+#         # Registrar.registerError(error, img)
+#         images[img].invalidate(error)
+#
+#     ls_raw = {}
+#     for folder in imgRawFolders:
+#         ls_raw[folder] = os.listdir(folder)
+#
+#     def getRawImage(img):
+#         for imgRawFolder in imgRawFolders:
+#             if img in ls_raw[imgRawFolder]:
+#                 return os.path.join(imgRawFolder, img)
+#         raise UserWarning("no img found")
+#
+#     if not os.path.exists(imgDst):
+#         os.makedirs(imgDst)
+#
+#     #list of images in compressed directory
+#     ls_cmp = os.listdir(imgDst)
+#     for f in ls_cmp:
+#         if f not in images.keys():
+#             Registrar.registerWarning("DELETING FROM REFLATTENED", f)
+#             if do_delete_images:
+#                 os.remove(os.path.join(imgDst,f))
+#
+#     for img, data in images.items():
+#         if not data.products:
+#             continue
+#             # we only care about product images atm
+#         if Registrar.DEBUG_IMG:
+#             if data.categories:
+#                 Registrar.registerMessage(
+#                     "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
+#                     img
+#                 )
+#
+#             # if data.items:
+#             #     Registrar.registerMessage(
+#             #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
+#             #         img
+#             #     )
+#
+#             if data.products:
+#                 Registrar.registerMessage(
+#                     "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
+#                     img
+#                 )
+#
+#         try:
+#             imgRawPath = getRawImage(img)
+#         except Exception as e:
+#             invalidImage(img, e)
+#             continue
+#
+#         name, ext = os.path.splitext(img)
+#         if(not name):
+#             invalidImage(img, UserWarning("could not extract name"))
+#             continue
+#
+#         try:
+#             title, description = data.title, data.description
+#         except Exception as e:
+#             invalidImage(img, "could not get title or description: "+str(e) )
+#             continue
+#
+#         Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
+#
+#         # ------
+#         # REMETA
+#         # ------
+#
+#         try:
+#             metagator = MetaGator(imgRawPath)
+#         except Exception, e:
+#             invalidImage(img, "error creating metagator: " + str(e))
+#             continue
+#
+#         try:
+#             metagator.update_meta({
+#                 'title': title,
+#                 'description': description
+#             })
+#         except Exception as e:
+#             invalidImage(img, "error updating meta: " + str(e))
+#
+#         # ------
+#         # RESIZE
+#         # ------
+#
+#         if do_resize_images:
+#             if not os.path.isfile(imgRawPath) :
+#                 invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
+#                 continue
+#
+#             imgDstPath = os.path.join(imgDst, img)
+#             if os.path.isfile(imgDstPath) :
+#                 imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
+#                 imgDstMod = os.path.getmtime(imgDstPath)
+#                 # print "image mod (src, dst): ", imgSrcMod, imgdstmod
+#                 if imgDstMod > imgSrcMod:
+#                     if Registrar.DEBUG_IMG:
+#                         Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
+#                     continue
+#
+#             print "resizing:", img
+#             shutil.copy(imgRawPath, imgDstPath)
+#
+#             try:
+#                 # imgmeta = MetaGator(imgDstPath)
+#                 # imgmeta.write_meta(title, description)
+#                 # print imgmeta.read_meta()
+#
+#                 image = Image.open(imgDstPath)
+#                 image.thumbnail(thumbsize)
+#                 image.save(imgDstPath)
+#
+#                 imgmeta = MetaGator(imgDstPath)
+#                 imgmeta.write_meta(title, description)
+#                 # print imgmeta.read_meta()
+#
+#             except Exception as e:
+#                 invalidImage(img, "could not resize: " + str(e))
+#                 continue
 #
 #     # ------
 #     # RSYNC
@@ -797,7 +811,7 @@ elif schema in woo_schemas:
     #         if product.get('dprpIDlist') or product.get('dprcIDlist') \
     #     ]
     #
-    #     dynProductList = WooObjList("fileName", dynProducts )
+    #     dynProductList = ShopObjList("fileName", dynProducts )
     #
     #     writeSection(
     #         "Dynamic Pricing Rules",
@@ -843,17 +857,25 @@ print ShopProdList(apiProductParser.products.values()).tabulate()
 # CSVParse_Woo_Api.printBasicColumns(apiProductParser.products.values())
 
 #########################################
-# Attempt sync
+# Attempt Matching
 #########################################
 
 sDeltaUpdates = []
+mDeltaUpdates = []
 slaveUpdates = []
 problematicUpdates = []
+globalMatches = MatchList()
+masterlessMatches = MatchList()
+slavelessMatches = MatchList()
 
 if do_sync:
     productMatcher = ProductMatcher()
     productMatcher.processRegisters(apiProductParser.products, productParser.products)
-    print productMatcher.__repr__()
+    # print productMatcher.__repr__()
+
+    globalMatches.addMatches( productMatcher.pureMatches)
+    masterlessMatches.addMatches( productMatcher.masterlessMatches)
+    slavelessMatches.addMatches( productMatcher.slavelessMatches)
 
     sync_cols = ColData_Woo.getWPAPICols()
     sync_cols_var = ColData_Woo.getWPAPIVariableCols()
@@ -893,6 +915,129 @@ if do_sync:
 
     print debugUtils.hashify("COMPLETED MERGE")
 
+    #########################################
+    # Write Report
+    #########################################
+
+    print debugUtils.hashify("Write Report")
+
+    with io.open(repPath, 'w+', encoding='utf8') as resFile:
+        reporter = HtmlReporter()
+
+        basic_cols = ColData_Woo.getBasicCols()
+        csv_colnames = ColData_Woo.getColNames(
+            OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
+                # 'address_reason',
+                # 'name_reason',
+                # 'Edited Name',
+                # 'Edited Address',
+                # 'Edited Alt Address',
+            ]).items()))
+
+        # print repr(basic_colnames)
+        unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
+        # print repr(unicode_colnames)
+
+        if do_sync and (sDeltaUpdates):
+
+            deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
+
+            sDeltaList = ShopObjList(filter(None,
+                                [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
+
+            deltaCols = ColData_Woo.getDeltaCols()
+
+            allDeltaCols = OrderedDict(
+                ColData_Woo.getBasicCols().items() +
+                ColData_Woo.nameCols(deltaCols.keys()+deltaCols.values()).items()
+            )
+
+            if sDeltaList:
+                deltaGroup.addSection(
+                    HtmlReporter.Section(
+                        's_deltas',
+                        title = '%s Changes List' % SLAVE_NAME.title(),
+                        description = '%s records that have changed important fields' % SLAVE_NAME,
+                        data = sDeltaList.tabulate(
+                            cols=allDeltaCols,
+                            tablefmt='html'),
+                        length = len(sDeltaList)
+                    )
+                )
+
+            reporter.addGroup(deltaGroup)
+
+            if sDeltaList:
+                sDeltaList.exportItems(slaveDeltaCsvPath, ColData_Woo.getColNames(allDeltaCols))
+
+        #
+        report_matching = do_sync
+        if report_matching:
+
+            matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
+            matchingGroup.addSection(
+                HtmlReporter.Section(
+                    'perfect_matches',
+                    **{
+                        'title': 'Perfect Matches',
+                        'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                        'data': globalMatches.tabulate(tablefmt="html"),
+                        'length': len(globalMatches)
+                    }
+                )
+            )
+            matchingGroup.addSection(
+                HtmlReporter.Section(
+                    'masterless_matches',
+                    **{
+                        'title': 'Masterless matches',
+                        'description': "matches are masterless",
+                        'data': masterlessMatches.tabulate(tablefmt="html"),
+                        'length': len(masterlessMatches)
+                    }
+                )
+            )
+            matchingGroup.addSection(
+                HtmlReporter.Section(
+                    'slaveless_matches',
+                    **{
+                        'title': 'Slaveless matches',
+                        'description': "matches are slaveless",
+                        'data': slavelessMatches.tabulate(tablefmt="html"),
+                        'length': len(slavelessMatches)
+                    }
+                )
+            )
+
+            reporter.addGroup(matchingGroup)
+
+
+        report_sync = do_sync
+        if report_sync:
+            syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    (SLAVE_NAME + "_updates"),
+                    description = SLAVE_NAME + " items will be updated",
+                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
+                    length = len(slaveUpdates)
+                )
+            )
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    "problematic_updates",
+                    description = "items can't be merged because they are too dissimilar",
+                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+                    length = len(problematicUpdates)
+                )
+            )
+
+            reporter.addGroup(syncingGroup)
+
+        resFile.write( reporter.getDocumentUnicode() )
+
     allUpdates = slaveUpdates
     allUpdates += problematicUpdates
 
@@ -925,10 +1070,6 @@ if do_sync:
                     #     SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
 
         print debugUtils.hashify("COMPLETED UPDATES")
-
-
-
-
 
 # for sku, product in apiProductParser.products.items():
 #     print sku

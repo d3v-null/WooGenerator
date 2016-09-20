@@ -69,7 +69,7 @@ pklFolder = "../pickles/"
 
 yamlPath = "merger_config.yaml"
 
-resPath = ''
+repPath = ''
 mFailPath = os.path.join(outFolder, "act_fails.csv")
 sFailPath = os.path.join(outFolder, "wp_fails.csv" )
 logPath = os.path.join(logFolder, "log_%s.txt" % importName)
@@ -77,7 +77,7 @@ zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
 
 def main():
     global testMode, inFolder, outFolder, logFolder, srcFolder, pklFolder, \
-        yamlPath, resPath, mFailPath, sFailPath, logPath, zipPath
+        yamlPath, repPath, mFailPath, sFailPath, logPath, zipPath
 
     userFile = cardFile = emailFile = sinceM = sinceS = False
 
@@ -342,11 +342,11 @@ def main():
         saEncoding = "utf8"
 
     moPath = os.path.join(outFolder, m_i_filename)
-    resPath = os.path.join(outFolder, "sync_report%s.html" % fileSuffix)
+    repPath = os.path.join(outFolder, "usr_sync_report%s.html" % fileSuffix)
     WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
-    ACTresCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
-    ACTDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
-    WPDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
+    masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
+    masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
+    slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
     mFailPath = os.path.join(outFolder, "act_fails%s.csv" % fileSuffix)
     sFailPath = os.path.join(outFolder, "wp_fails%s.csv" % fileSuffix)
     sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
@@ -689,7 +689,7 @@ def main():
     print debugUtils.hashify("Write Report")
     print timediff()
 
-    with io.open(resPath, 'w+', encoding='utf8') as resFile:
+    with io.open(repPath, 'w+', encoding='utf8') as resFile:
         reporter = HtmlReporter()
 
         basic_cols = ColData_User.getBasicCols()
@@ -804,7 +804,7 @@ def main():
         #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
         if maParser.badName or maParser.badAddress:
             UsrObjList(maParser.badName.values() + maParser.badAddress.values())\
-                .exportItems(ACTresCsvPath, csv_colnames)
+                .exportItems(masterResCsvPath, csv_colnames)
 
         reporter.addGroup(sanitizingGroup)
 
@@ -853,9 +853,9 @@ def main():
 
             reporter.addGroup(deltaGroup)
             if mDeltaList:
-                mDeltaList.exportItems(ACTDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
+                mDeltaList.exportItems(masterDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
             if sDeltaList:
-                sDeltaList.exportItems(WPDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
+                sDeltaList.exportItems(slaveDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
 
 
         report_matching = do_sync
@@ -1088,7 +1088,7 @@ if __name__ == '__main__':
     # email reports
     #########################################
 
-    files_to_zip = [mFailPath, sFailPath, resPath]
+    files_to_zip = [mFailPath, sFailPath, repPath]
 
     with zipfile.ZipFile(zipPath, 'w') as zipFile:
         for file_to_zip in files_to_zip:

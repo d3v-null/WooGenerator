@@ -43,6 +43,18 @@ class ColData_Base(object):
         return exportCols
 
     @classmethod
+    def getBasicCols(self):
+        return self.getExportCols('basic')
+
+    @classmethod
+    def getDeltaCols(self):
+        cols = OrderedDict()
+        for col, data in self.data.items():
+            if data.get('delta'):
+                cols[col] = self.deltaCol(col)
+        return cols
+
+    @classmethod
     def getColNames(cls, cols):
         colNames = OrderedDict()
         for col, data in cols.items():
@@ -1895,10 +1907,6 @@ class ColData_User(ColData_Base):
         return self.getExportCols('aliases')
 
     @classmethod
-    def getBasicCols(self):
-        return self.getExportCols('basic')
-
-    @classmethod
     def getWPImportCols(self):
         cols = []
         for col, data in self.data.items():
@@ -2026,14 +2034,6 @@ class ColData_User(ColData_Base):
                 cols.append(col)
             if data.get('tracked'):
                 cols.append(self.modTimeCol(col))
-        return cols
-
-    @classmethod
-    def getDeltaCols(self):
-        cols = OrderedDict()
-        for col, data in self.data.items():
-            if data.get('delta'):
-                cols[col] = self.deltaCol(col)
         return cols
 
     @classmethod

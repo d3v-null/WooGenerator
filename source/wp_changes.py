@@ -55,7 +55,7 @@ with open(yamlPath) as stream:
 #########################################
 
 fileSuffix = "_test" if testMode else ""
-resPath = os.path.join(outFolder, "changes_report%s.html" % fileSuffix)
+repPath = os.path.join(outFolder, "changes_report%s.html" % fileSuffix)
 
 #########################################
 # Download / Generate Slave Parser Object
@@ -136,7 +136,7 @@ for user_id, c_time, changed, data in sorted(changeData[1:]):
 
 print "creating report..."
 
-with io.open(resPath, 'w+', encoding='utf-8') as resFile:
+with io.open(repPath, 'w+', encoding='utf-8') as resFile:
     reporter = HtmlReporter()
 
     group = HtmlReporter.Group('changes', 'Changes')
