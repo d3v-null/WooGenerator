@@ -139,6 +139,10 @@ class ImportWooProductBundled(ImportWooProduct):
     product_type = 'bundle'
 
 class ImportWooCategory(ImportGenTaxo, ImportWooObject, ImportShopCategory):
+    # @property
+    # def identifierDelimeter(self):
+    #     return ImportWooObject.identifierDelimeter(self)
+
     def findChildCategory(self, index):
         for child in self.children:
             if child.isCategory:

@@ -327,7 +327,7 @@ class SyncUpdate(Registrar):
     # def loserUpdate(self, winner, col, reason = "", data={}, sTime=None, mTime=None):
     def loserUpdate(self, **updateParams):
         for key in ['col', 'subject']:
-            assert updateParams[key], 'missing mandatory update param, %s' % key
+            assert updateParams[key], 'missing mandatory update param, %s from %s' % (key, updateParams)
 
         col = updateParams['col']
         winner = updateParams['subject']
@@ -956,7 +956,7 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
                             if 'delete_meta' not in updates:
                                 updates['delete_meta'] = []
                             updates['delete_meta'].append(key)
-                            
+
                         if 'custom_meta' not in updates:
                             updates['custom_meta'] = OrderedDict()
                         updates['custom_meta'][key] = val

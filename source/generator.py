@@ -23,10 +23,12 @@ from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC
-from matching import ProductMatcher
-from SyncUpdate import SyncUpdate_Prod, SyncUpdate_Prod_Woo
+from matching import ProductMatcher, CategoryMatcher
+from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo
 from bisect import insort
 from matching import MatchList
+from tabulate import tabulate
+
 # import xml.etree.ElementTree as ET
 # import rsync
 import sys
@@ -507,7 +509,7 @@ if do_images and schema in woo_schemas:
     e = UserWarning("do_images currently not supported")
     Registrar.registerError(e)
     raise e
-    
+
     print ""
     print "Images:"
     print "==========="
@@ -803,9 +805,12 @@ problematicUpdates = []
 globalMatches = MatchList()
 masterlessMatches = MatchList()
 slavelessMatches = MatchList()
+delete_categories = OrderedDict()
+join_categories = OrderedDict()
 
 if do_sync:
     productMatcher = ProductMatcher()
+    categoryMatcher = CategoryMatcher()
     productMatcher.processRegisters(apiProductParser.products, productParser.products)
     # print productMatcher.__repr__()
 
@@ -832,6 +837,65 @@ if do_sync:
         else:
             # print "IS NOT VARIATION"
             syncUpdate.update(sync_cols)
+
+        if gcs and not gcs.isVariation:
+            #category matching
+
+            categoryMatcher.clear()
+            categoryMatcher.processRegisters(sObject.categories, mObject.categories)
+
+            updateParams = {
+                'col':'catlist',
+                'data':{
+                    # 'sync'
+                },
+                'subject': syncUpdate.master_name
+            }
+
+            changeMatchList = categoryMatcher.masterlessMatches
+            changeMatchList.addMatches(categoryMatcher.slavelessMatches)
+
+            master_categories = set([category.wooCatName for category in mObject.categories.values()])
+            slave_categories =  set([category.wooCatName for category in sObject.categories.values()])
+            syncUpdate.oldMObject['catlist'] = list(master_categories)
+            syncUpdate.oldSObject['catlist'] = list(slave_categories)
+
+            if changeMatchList:
+                assert master_categories != slave_categories
+                updateParams['reason'] = 'updating'
+                # updateParams['subject'] = SyncUpdate.master_name
+
+                # master_categories = [category.wooCatName for category in changeMatchList.merge().mObjects]
+                # slave_categories =  [category.wooCatName for category in changeMatchList.merge().sObjects]
+
+                syncUpdate.loserUpdate(**updateParams)
+                # syncUpdate.newMObject['catlist'] = master_categories
+                # syncUpdate.newSObject['catlist'] = master_categories
+
+                # updateParams['oldLoserValue'] = slave_categories
+                # updateParams['oldWinnerValue'] = master_categories
+            else:
+                assert\
+                    master_categories == slave_categories, \
+                    "should equal, %s | %s" % (
+                        repr(master_categories),
+                        repr(slave_categories)
+                    )
+                updateParams['reason'] = 'identical'
+                syncUpdate.tieUpdate(**updateParams)
+
+
+            # print categoryMatcher.__repr__()
+            for cat_match in categoryMatcher.masterlessMatches:
+                sIndex = sObject.index
+                if delete_categories.get(sIndex) is None:
+                    delete_categories[sIndex] = MatchList()
+                delete_categories[sIndex].append(cat_match)
+            for cat_match in categoryMatcher.slavelessMatches:
+                sIndex = sObject.index
+                if join_categories.get(sIndex) is None:
+                    join_categories[sIndex] = MatchList()
+                join_categories[sIndex].append(cat_match)
 
         if not syncUpdate.eUpdated:
             continue
@@ -967,6 +1031,62 @@ if do_sync:
                     description = "items can't be merged because they are too dissimilar",
                     data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
                     length = len(problematicUpdates)
+                )
+            )
+
+            reporter.addGroup(syncingGroup)
+
+        report_cats = do_sync
+        if report_cats:
+            syncingGroup = HtmlReporter.Group('cats', 'Category Syncing Results')
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    ('delete_categories'),
+                    description = "%s items will leave categories" % SLAVE_NAME,
+                    data = tabulate(
+                        [
+                            [
+                                index,
+                                # apiProductParser.products[index],
+                                # apiProductParser.products[index].categories,
+                                # ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                                ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                            ] for index, matches in delete_categories.items()
+                        ],
+                        tablefmt="html"
+                    ),
+                    length = len(delete_categories)
+                    # data = '<hr>'.join([
+                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+                    #         for index, match in delete_categories.items()
+                    #     ]
+                    # )
+                )
+            )
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    ('join_categories'),
+                    description = "%s items will join categories" % SLAVE_NAME,
+                    data = tabulate(
+                        [
+                            [
+                                index,
+                                # apiProductParser.products[index],
+                                # apiProductParser.products[index].categories,
+                                ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                                # ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                            ] for index, matches in join_categories.items()
+                        ],
+                        tablefmt="html"
+                    ),
+                    length = len(join_categories)
+                    # data = '<hr>'.join([
+                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+                    #         for index, match in delete_categories.items()
+                    #     ]
+                    # )
                 )
             )
 

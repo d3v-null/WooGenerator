@@ -28,14 +28,14 @@ class ShopCatList(ItemList):
     reportCols = ColData_Prod.getReportCols()
 
 class ShopObjList(ObjList):
-    def __init__(self, fileName=None, objects=None):
+    def __init__(self, fileName=None, objects=None, indexer=None):
         self.fileName = fileName
         self.isValid = True
         if not self.fileName:
             self.isValid = False
         self.products = ShopProdList()
         self.categories = ShopCatList()
-        super(ShopObjList, self).__init__(objects)
+        super(ShopObjList, self).__init__(objects, indexer=indexer)
 
     @property
     def objects(self):
@@ -163,6 +163,7 @@ class ImportShop(ImportGenBase):
 class ImportShopProduct(ImportShop):
     container = ShopProdList
     categoryIndexer = Registrar.getObjectRowcount
+    # categoryIndexer = CSVParse_Gen_Mixin.getFullNameSum
     product_type = None
     isProduct = True
 
@@ -275,6 +276,20 @@ class ImportShopCategory(ImportShop):
         self.registerError(e)
         return self.members
 
+    @property
+    def wooCatName(self):
+        cat_layers = self.namesum.split(' > ')
+        return cat_layers[-1]
+
+    @classmethod
+    def getWooCatName(cls, inst):
+        assert isinstance(inst, ImportShopCategory)
+        return inst.wooCatName
+
+    # @property
+    # def identifierDelimeter(self):
+    #     delim = super(ImportShopCategory, self).identifierDelimeter
+    #     return '|'.join([d for d in [delim, self.namesum] ])
 
 class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     """

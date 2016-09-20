@@ -113,6 +113,7 @@ class ImportTreeObject(ImportObject):
 
     @property
     def identifierDelimeter(self):
+        # delim = super(ImportTreeObject, self).identifierDelimeter
         return "=" * self.depth
 
     # def getIdentifierDelimeter(self):

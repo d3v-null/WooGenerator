@@ -66,6 +66,9 @@ class ImportGenBase(ImportObject):
     def index(self):
         return self.codesum
 
+    def __str__(self):
+        return "%10s <%s>" % ('|'.join(i for i in [self.codesum, self.namesum] if i), self.typeName)
+
 class ImportGenFlat(ImportFlat, ImportGenBase):
     "Base class for flat generator classes"
     def __init__(self, *args, **kwargs):
@@ -293,6 +296,11 @@ class CSVParse_Gen_Mixin(CSVParse_Base):
     def getNameSum(cls, objectData):
         assert issubclass(type(objectData), ImportGenBase)
         return objectData.namesum
+
+    @classmethod
+    def getFullNameSum(cls, objectData):
+        assert issubclass(type(objectData), ImportGenObject)
+        return objectData.fullnamesum
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeCell(cell)

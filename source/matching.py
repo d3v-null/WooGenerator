@@ -1,7 +1,7 @@
 from csvparse_abstract import ImportObject, ObjList
 # from csvparse_flat import UsrObjList #, ImportUser
 from utils import SanitationUtils, Registrar, InheritenceUtils
-
+from collections import OrderedDict
 
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
@@ -113,7 +113,11 @@ class Match(object):
         if self.mLen or self.sLen:
             gcs = self.gcs
             if gcs is not None:
-                obj_container = gcs.container(indexer=(lambda x: x.identifier))
+                try:
+                    obj_container = gcs.container(indexer=(lambda x: x.identifier))
+                except Exception, e:
+                    Registrar.registerError("could not create GCS %s, container: %s | %s" % (repr(gcs), repr(gcs.container), str(e)))
+                    raise e
             else:
                 obj_container = ObjList()
             if self.mObjects:
@@ -170,11 +174,19 @@ class MatchList(list):
     def addMatch(self, match):
         for sObject in match.sObjects:
             sIndex = self._indexFn(sObject)
-            assert sIndex not in self.sIndices
+            assert \
+                sIndex not in self.sIndices, \
+                "can't add match: sIndex %s already in sIndices: %s \n %s" % (
+                    str(sIndex), str(self.sIndices), str(match)
+                )
             self.sIndices.append(sIndex)
         for mObject in match.mObjects:
             mIndex = self._indexFn(mObject)
-            assert mIndex not in self.mIndices
+            assert \
+                mIndex not in self.mIndices, \
+                "can't add match: mIndex %s already in mIndices: %s \n %s" % (
+                    str(mIndex), str(self.mIndices), str(match)
+                )
             self.mIndices.append(mIndex)
         self.append(match)
 
@@ -210,15 +222,15 @@ class MatchList(list):
 
 
 class AbstractMatcher(Registrar):
-    def __init__(self, keyFn = None):
-        super(Registrar, self).__init__()
+    def __init__(self, indexFn = None):
+        super(AbstractMatcher, self).__init__()
         # print "entering AbstractMatcher __init__"
-        if(keyFn):
-            # print "-> keyFn"
-            self.keyFn = keyFn
+        if(indexFn):
+            # print "-> indexFn"
+            self.indexFn = indexFn
         else:
-            # print "-> not keyFn"
-            self.keyFn = (lambda x: x.index)
+            # print "-> not indexFn"
+            self.indexFn = (lambda x: x.index)
         self.processRegisters = self.processRegistersNonsingular
         self.retrieveObjects = self.retrieveObjectsNonsingular
         self.mFilterFn = None
@@ -227,11 +239,11 @@ class AbstractMatcher(Registrar):
 
     def clear(self):
         self._matches = {
-            'all': MatchList(),
-            'pure': MatchList(),
-            'slaveless': MatchList(),
-            'masterless': MatchList(),
-            'duplicate': MatchList()
+            'all': MatchList(indexFn=self.indexFn),
+            'pure': MatchList(indexFn=self.indexFn),
+            'slaveless': MatchList(indexFn=self.indexFn),
+            'masterless': MatchList(indexFn=self.indexFn),
+            'duplicate': MatchList(indexFn=self.indexFn)
         }
 
     @property
@@ -257,21 +269,44 @@ class AbstractMatcher(Registrar):
     # saRegister is in nonsingular form. regkey => [slaveObjects]
     def processRegistersNonsingular(self, saRegister, maRegister):
         # print "processing nonsingular register"
+        mKeys = set(maRegister.keys())
+
         for regKey, regValue in saRegister.items():
+            saObjects = regValue
             maObjects = self.retrieveObjects(maRegister, regKey)
-            self.processMatch(maObjects, regValue)
+            if regKey in mKeys:
+                mKeys.remove(regKey)
+            self.processMatch(maObjects, saObjects)
+        for mKey in mKeys:
+            saObjects = []
+            maObjects = self.retrieveObjects(maRegister, mKey)
+            self.processMatch(maObjects, saObjects)
 
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
         # print "processing singular register"
+        # mKeys = set(maRegister.keys())
+        # mKeys = OrderedDict()
+        # for regKey, regValue in maRegister:
+        #     mKeys.update({self.indexFn(regValue):regKey})
+        mKeys = OrderedDict(
+            [(self.indexFn(regValue), regKey) for regKey, regValue in maRegister.items()]
+        )
+        # print "mKeys", mKeys
         for regKey, regValue in saRegister.items():
-            maObjects = self.retrieveObjects(maRegister, self.keyFn(regValue))
-            # try:
-            #     key = self.keyFn(regValue)
-            #     maObjects = self.retrieveObjects(maRegister, key)
-            # except:
-            #     return
-            self.processMatch(maObjects, [regValue])
+            saObjects = [regValue]
+            mKey = self.indexFn(regValue)
+            maObjects = []
+            if mKey in mKeys:
+                mRegKey = mKeys[mKey]
+                # print "removing key", mKey, "from", mKeys
+                mKeys.pop(mKey)
+                maObjects = self.retrieveObjects(maRegister, mRegKey)
+            self.processMatch(maObjects, saObjects)
+        for mKey, regKey in mKeys.items():
+            saObjects = []
+            maObjects = self.retrieveObjects(maRegister, regKey)
+            self.processMatch(maObjects, saObjects)
 
     def retrieveObjectsNonsingular(self, register, key):
         # print "retrieving nonsingular object"
@@ -294,13 +329,13 @@ class AbstractMatcher(Registrar):
         except Exception as e:
             self.registerWarning( "could not add match to %s matches %s" % (
                 match_type,
-                SanitationUtils.coerceUnicode(e)
+                SanitationUtils.coerceUnicode(repr(e))
             ))
         try:
             self._matches['all'].addMatch(match)
         except Exception as e:
             self.registerWarning( "could not add match to matches %s" % (
-                SanitationUtils.coerceUnicode(e)
+                SanitationUtils.coerceUnicode(repr(e))
             ))
 
     def mFilter(self, objects):
@@ -316,6 +351,7 @@ class AbstractMatcher(Registrar):
             return objects
 
     def processMatch(self, maObjects, saObjects):
+        # print "processing match %s | %s" % (repr(maObjects), repr(saObjects))
         maObjects = self.mFilter(maObjects)
         for maObject in maObjects:
             assert \
@@ -334,6 +370,9 @@ class AbstractMatcher(Registrar):
 
     def __repr__(self):
         repr_str = ""
+        # repr_str += "all matches:\n"
+        # for match in self.matches:
+        #     repr_str += " -> " + repr(match) + "\n"
         repr_str += "pure matches:\n"
         for match in self.pureMatches:
             repr_str += " -> " + repr(match) + "\n"
@@ -354,14 +393,20 @@ class ProductMatcher(AbstractMatcher):
         self.processRegisters = self.processRegistersSingular
         self.retrieveObjects = self.retrieveObjectsSingular
 
+class CategoryMatcher(AbstractMatcher):
+    def __init__(self):
+        super(CategoryMatcher, self).__init__( lambda x: x.wooCatName )
+        self.processRegisters = self.processRegistersSingular
+        self.retrieveObjects = self.retrieveObjectsSingular
+
 class UsernameMatcher(AbstractMatcher):
     def __init__(self):
         super(UsernameMatcher, self).__init__( lambda x: x.username )
 
 class FilteringMatcher(AbstractMatcher):
-    def __init__(self, keyFn, sMatchIndices = [], mMatchIndices = []):
+    def __init__(self, indexFn, sMatchIndices = [], mMatchIndices = []):
         # print "entering FilteringMatcher __init__"
-        super(FilteringMatcher, self).__init__( keyFn )
+        super(FilteringMatcher, self).__init__( indexFn )
         self.sMatchIndices = sMatchIndices
         self.mMatchIndices = mMatchIndices
         self.mFilterFn = lambda x: x.index not in self.mMatchIndices
