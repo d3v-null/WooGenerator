@@ -69,8 +69,8 @@ with open(yamlPath) as stream:
 
     #mandatory
     merge_mode = config.get('merge_mode', 'sync')
-    MASTER_NAME = config.get('master_name', 'MASTER')
-    SLAVE_NAME = config.get('slave_name', 'SLAVE')
+    MASTER_NAME = config.get('master_name', 'GDrive')
+    SLAVE_NAME = config.get('slave_name', 'WooCommerce')
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
     # webFolder = config.get('webFolder')
     myo_schemas = config.get('myo_schemas')
@@ -853,8 +853,8 @@ apiProductParser = CSVParse_Woo_Api(
 with ProdSyncClient_WC(wcApiParams) as client:
     client.analyseRemote(apiProductParser, limit=global_limit)
 
-print "API PRODUCTS"
-print ShopProdList(apiProductParser.products.values()).tabulate()
+# print "API PRODUCTS"
+# print ShopProdList(apiProductParser.products.values()).tabulate()
 
 # CSVParse_Woo_Api.printBasicColumns(apiProductParser.products.values())
 
