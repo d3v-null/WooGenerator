@@ -69,8 +69,8 @@ with open(yamlPath) as stream:
 
     #mandatory
     merge_mode = config.get('merge_mode', 'sync')
-    MASTER_NAME = config.get('master_name', 'GDrive')
-    SLAVE_NAME = config.get('slave_name', 'WooCommerce')
+    MASTER_NAME = config.get('master_name', 'MASTER')
+    SLAVE_NAME = config.get('slave_name', 'SLAVE')
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
     # webFolder = config.get('webFolder')
     myo_schemas = config.get('myo_schemas')
@@ -503,77 +503,81 @@ elif Registrar.warnings:
 # Images
 #########################################
 
-# if do_images and schema in woo_schemas:
-#     print ""
-#     print "Images:"
-#     print "==========="
-#
-#     def invalidImage(img, error):
-#         # Registrar.registerError(error, img)
-#         images[img].invalidate(error)
-#
-#     ls_raw = {}
-#     for folder in imgRawFolders:
-#         ls_raw[folder] = os.listdir(folder)
-#
-#     def getRawImage(img):
-#         for imgRawFolder in imgRawFolders:
-#             if img in ls_raw[imgRawFolder]:
-#                 return os.path.join(imgRawFolder, img)
-#         raise UserWarning("no img found")
-#
-#     if not os.path.exists(imgDst):
-#         os.makedirs(imgDst)
-#
-#     #list of images in compressed directory
-#     ls_cmp = os.listdir(imgDst)
-#     for f in ls_cmp:
-#         if f not in images.keys():
-#             Registrar.registerWarning("DELETING FROM REFLATTENED", f)
-#             if do_delete_images:
-#                 os.remove(os.path.join(imgDst,f))
-#
-#     for img, data in images.items():
-#         if not data.products:
-#             continue
-#             # we only care about product images atm
-#         if Registrar.DEBUG_IMG:
-#             if data.categories:
-#                 Registrar.registerMessage(
-#                     "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
-#                     img
-#                 )
-#
-#             # if data.items:
-#             #     Registrar.registerMessage(
-#             #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
-#             #         img
-#             #     )
-#
-#             if data.products:
-#                 Registrar.registerMessage(
-#                     "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
-#                     img
-#                 )
-#
-#         try:
-#             imgRawPath = getRawImage(img)
-#         except Exception as e:
-#             invalidImage(img, e)
-#             continue
-#
-#         name, ext = os.path.splitext(img)
-#         if(not name):
-#             invalidImage(img, UserWarning("could not extract name"))
-#             continue
-#
-#         try:
-#             title, description = data.title, data.description
-#         except Exception as e:
-#             invalidImage(img, "could not get title or description: "+str(e) )
-#             continue
-#
-#         Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
+if do_images and schema in woo_schemas:
+    e = UserWarning("do_images currently not supported")
+    Registrar.registerError(e)
+    raise e
+    
+    print ""
+    print "Images:"
+    print "==========="
+
+    def invalidImage(img, error):
+        # Registrar.registerError(error, img)
+        images[img].invalidate(error)
+
+    ls_raw = {}
+    for folder in imgRawFolders:
+        ls_raw[folder] = os.listdir(folder)
+
+    def getRawImage(img):
+        for imgRawFolder in imgRawFolders:
+            if img in ls_raw[imgRawFolder]:
+                return os.path.join(imgRawFolder, img)
+        raise UserWarning("no img found")
+
+    if not os.path.exists(imgDst):
+        os.makedirs(imgDst)
+
+    #list of images in compressed directory
+    ls_cmp = os.listdir(imgDst)
+    for f in ls_cmp:
+        if f not in images.keys():
+            Registrar.registerWarning("DELETING FROM REFLATTENED", f)
+            if do_delete_images:
+                os.remove(os.path.join(imgDst,f))
+
+    for img, data in images.items():
+        if not data.products:
+            continue
+            # we only care about product images atm
+        if Registrar.DEBUG_IMG:
+            if data.categories:
+                Registrar.registerMessage(
+                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
+                    img
+                )
+
+            # if data.items:
+            #     Registrar.registerMessage(
+            #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
+            #         img
+            #     )
+
+            if data.products:
+                Registrar.registerMessage(
+                    "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
+                    img
+                )
+
+        try:
+            imgRawPath = getRawImage(img)
+        except Exception as e:
+            invalidImage(img, e)
+            continue
+
+        name, ext = os.path.splitext(img)
+        if(not name):
+            invalidImage(img, UserWarning("could not extract name"))
+            continue
+
+        try:
+            title, description = data.title, data.description
+        except Exception as e:
+            invalidImage(img, "could not get title or description: "+str(e) )
+            continue
+
+        Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
 #
 #         # ------
 #         # REMETA
@@ -772,76 +776,6 @@ elif schema in woo_schemas:
     #     imageData = images
     # )
 
-
-#########################################
-# Report
-#########################################
-
-    # with open(spoPath, 'w+') as spoFile:
-    #     def writeSection(title, description, data, length = 0, html_class="results_section"):
-    #         sectionID = SanitationUtils.makeSafeClass(title)
-    #         description = "%s %s" % (str(length) if length else "No", description)
-    #         spoFile.write('<div class="%s">'% html_class )
-    #         spoFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
-    #         spoFile.write('<h2>%s (%d)</h2>' % (title, length))
-    #         spoFile.write('</a>')
-    #         spoFile.write('<div class="collapse" id="%s">' % sectionID)
-    #         spoFile.write('<p class="description">%s</p>' % description)
-    #         spoFile.write('<p class="data">' )
-    #         spoFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
-    #         spoFile.write('</p>')
-    #         spoFile.write('</div>')
-    #         spoFile.write('</div>')
-    #
-    #     spoFile.write('<!DOCTYPE html>')
-    #     spoFile.write('<html lang="en">')
-    #     spoFile.write('<head>')
-    #     spoFile.write("""
-    # <!-- Latest compiled and minified CSS -->
-    # <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-    #
-    # <!-- Optional theme -->
-    # <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    # """)
-    #     spoFile.write('<body>')
-    #     spoFile.write('<div class="matching">')
-    #     spoFile.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
-    #
-    #     dynProducts = [ \
-    #         product \
-    #         for product in products.values() \
-    #         if product.get('dprpIDlist') or product.get('dprcIDlist') \
-    #     ]
-    #
-    #     dynProductList = ShopObjList("fileName", dynProducts )
-    #
-    #     writeSection(
-    #         "Dynamic Pricing Rules",
-    #         "all products and their dynaimc pricing rules",
-    #         re.sub("<table>","<table class=\"table table-striped\">",
-    #             dynProductList.tabulate(cols=OrderedDict([
-    #                 ('itemsum', {}),
-    #                 ('dprcIDlist', {}),
-    #                 ('dprcsum', {}),
-    #                 ('dprpIDlist', {}),
-    #                 ('dprpsum', {}),
-    #                 ('pricing_rules', {})
-    #             ]), tablefmt="html")
-    #         ),
-    #         length = len(dynProductList.objects)
-    #     )
-    #
-    #     spoFile.write('</div>')
-    #     spoFile.write("""
-    # <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    # <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-    # """)
-    #     spoFile.write('</body>')
-    #     spoFile.write('</html>')
-    #
-    # for source, error in import_errors.items():
-    #     Registrar.printAnything(source, error, '!')
-
 #########################################
 # Attempt download API data
 #########################################
@@ -1020,7 +954,7 @@ if do_sync:
 
             syncingGroup.addSection(
                 HtmlReporter.Section(
-                    (SLAVE_NAME + "_updates"),
+                    (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_updates"),
                     description = SLAVE_NAME + " items will be updated",
                     data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
                     length = len(slaveUpdates)
