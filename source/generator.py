@@ -78,6 +78,7 @@ with open(yamlPath) as stream:
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
     webFolder = config.get('webFolder')
     webAddress = config.get('webAddress')
+    webBrowser = config.get('webBrowser')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
     taxoDepth = config.get('taxoDepth')
@@ -1150,7 +1151,12 @@ if allUpdates:
 
 if show_report:
     shutil.copyfile(repPath, repWebPath)
-    print "moved file from %s to %s" % (repPath, repWebPath)
+
+    if webBrowser:
+        os.environ['BROWSER'] = webBrowser
+        print "set browser environ to %s" % repr(webBrowser)
+    # print "moved file from %s to %s" % (repPath, repWebPath)
+
     webbrowser.open(repWebLink)
 
 
