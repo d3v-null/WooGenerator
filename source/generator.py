@@ -1150,7 +1150,7 @@ if allUpdates:
 
 if show_report:
     shutil.copyfile(repPath, repWebPath)
-    print "moved file from %s to %s" % repPath, repWebPath
+    print "moved file from %s to %s" % (repPath, repWebPath)
     webbrowser.open(repWebLink)
 
 
