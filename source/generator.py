@@ -28,6 +28,8 @@ from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo
 from bisect import insort
 from matching import MatchList
 from tabulate import tabulate
+import urlparse
+import webbrowser
 
 # import xml.etree.ElementTree as ET
 # import rsync
@@ -74,7 +76,8 @@ with open(yamlPath) as stream:
     MASTER_NAME = config.get('master_name', 'MASTER')
     SLAVE_NAME = config.get('slave_name', 'SLAVE')
     DEFAULT_LAST_SYNC = config.get('default_last_sync')
-    # webFolder = config.get('webFolder')
+    webFolder = config.get('webFolder')
+    webAddress = config.get('webAddress')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
     taxoDepth = config.get('taxoDepth')
@@ -113,6 +116,7 @@ with open(yamlPath) as stream:
     xsGID = config.get('xsGID')
 
     skip_google_download = config.get('skip_google_download')
+    show_report = config.get('show_report')
     do_images = config.get('do_images')
     do_specials = config.get('do_specials')
     do_dyns = config.get('do_dyns')
@@ -166,6 +170,11 @@ group.add_argument('--do-sync', help='sync the databases',
                   action="store_true", default=None)
 group.add_argument('--skip-sync', help='don\'t sync the databases',
                   action="store_false", dest='do_sync', default=do_sync)
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--show-report', help='show report',
+                   action="store_true", default=show_report)
+group.add_argument('--skip-report', help='don\'t show report',
+                   action="store_false", dest='show_report')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-images', help='process images',
                    action="store_true", default=do_images)
@@ -321,7 +330,11 @@ flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
 catPath = os.path.join(outFolder , "categories-"+suffix+".csv")
 myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
 bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
-repPath = os.path.join(outFolder, "prod_sync_report%s.html" % suffix)
+repName = "prod_sync_report%s.html" % suffix
+repPath = os.path.join(outFolder, repName)
+repWebPath = os.path.join(webFolder, repName)
+repWebLink = urlparse.urljoin(webAddress, repName)
+
 # masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % suffix)
 # masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % suffix)
 slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % suffix)
@@ -915,217 +928,230 @@ if do_sync:
 
     print debugUtils.hashify("COMPLETED MERGE")
 
-    #########################################
-    # Write Report
-    #########################################
+#########################################
+# Write Report
+#########################################
 
-    print debugUtils.hashify("Write Report")
+print debugUtils.hashify("Write Report")
 
-    with io.open(repPath, 'w+', encoding='utf8') as resFile:
-        reporter = HtmlReporter()
+with io.open(repPath, 'w+', encoding='utf8') as resFile:
+    reporter = HtmlReporter()
 
-        basic_cols = ColData_Woo.getBasicCols()
-        csv_colnames = ColData_Woo.getColNames(
-            OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
-                # 'address_reason',
-                # 'name_reason',
-                # 'Edited Name',
-                # 'Edited Address',
-                # 'Edited Alt Address',
-            ]).items()))
+    basic_cols = ColData_Woo.getBasicCols()
+    csv_colnames = ColData_Woo.getColNames(
+        OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
+            # 'address_reason',
+            # 'name_reason',
+            # 'Edited Name',
+            # 'Edited Address',
+            # 'Edited Alt Address',
+        ]).items()))
 
-        # print repr(basic_colnames)
-        unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
-        # print repr(unicode_colnames)
+    # print repr(basic_colnames)
+    unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
+    # print repr(unicode_colnames)
 
-        if do_sync and (sDeltaUpdates):
+    if do_sync and (sDeltaUpdates):
 
-            deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
+        deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
 
-            sDeltaList = ShopObjList(filter(None,
-                                [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
+        sDeltaList = ShopObjList(filter(None,
+                            [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
 
-            deltaCols = ColData_Woo.getDeltaCols()
+        deltaCols = ColData_Woo.getDeltaCols()
 
-            allDeltaCols = OrderedDict(
-                ColData_Woo.getBasicCols().items() +
-                ColData_Woo.nameCols(deltaCols.keys()+deltaCols.values()).items()
-            )
+        allDeltaCols = OrderedDict(
+            ColData_Woo.getBasicCols().items() +
+            ColData_Woo.nameCols(deltaCols.keys()+deltaCols.values()).items()
+        )
 
-            if sDeltaList:
-                deltaGroup.addSection(
-                    HtmlReporter.Section(
-                        's_deltas',
-                        title = '%s Changes List' % SLAVE_NAME.title(),
-                        description = '%s records that have changed important fields' % SLAVE_NAME,
-                        data = sDeltaList.tabulate(
-                            cols=allDeltaCols,
-                            tablefmt='html'),
-                        length = len(sDeltaList)
-                    )
-                )
-
-            reporter.addGroup(deltaGroup)
-
-            if sDeltaList:
-                sDeltaList.exportItems(slaveDeltaCsvPath, ColData_Woo.getColNames(allDeltaCols))
-
-        #
-        report_matching = do_sync
-        if report_matching:
-
-            matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
-            matchingGroup.addSection(
+        if sDeltaList:
+            deltaGroup.addSection(
                 HtmlReporter.Section(
-                    'perfect_matches',
-                    **{
-                        'title': 'Perfect Matches',
-                        'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                        'data': globalMatches.tabulate(tablefmt="html"),
-                        'length': len(globalMatches)
-                    }
-                )
-            )
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'masterless_matches',
-                    **{
-                        'title': 'Masterless matches',
-                        'description': "matches are masterless",
-                        'data': masterlessMatches.tabulate(tablefmt="html"),
-                        'length': len(masterlessMatches)
-                    }
-                )
-            )
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'slaveless_matches',
-                    **{
-                        'title': 'Slaveless matches',
-                        'description': "matches are slaveless",
-                        'data': slavelessMatches.tabulate(tablefmt="html"),
-                        'length': len(slavelessMatches)
-                    }
+                    's_deltas',
+                    title = '%s Changes List' % SLAVE_NAME.title(),
+                    description = '%s records that have changed important fields' % SLAVE_NAME,
+                    data = sDeltaList.tabulate(
+                        cols=allDeltaCols,
+                        tablefmt='html'),
+                    length = len(sDeltaList)
                 )
             )
 
-            reporter.addGroup(matchingGroup)
+        reporter.addGroup(deltaGroup)
 
+        if sDeltaList:
+            sDeltaList.exportItems(slaveDeltaCsvPath, ColData_Woo.getColNames(allDeltaCols))
 
-        report_sync = do_sync
-        if report_sync:
-            syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+    #
+    report_matching = do_sync
+    if report_matching:
 
-            syncingGroup.addSection(
-                HtmlReporter.Section(
-                    (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_updates"),
-                    description = SLAVE_NAME + " items will be updated",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-                    length = len(slaveUpdates)
-                )
+        matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'perfect_matches',
+                **{
+                    'title': 'Perfect Matches',
+                    'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                    'data': globalMatches.tabulate(tablefmt="html"),
+                    'length': len(globalMatches)
+                }
             )
-
-            syncingGroup.addSection(
-                HtmlReporter.Section(
-                    "problematic_updates",
-                    description = "items can't be merged because they are too dissimilar",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
-                    length = len(problematicUpdates)
-                )
+        )
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'masterless_matches',
+                **{
+                    'title': 'Masterless matches',
+                    'description': "matches are masterless",
+                    'data': masterlessMatches.tabulate(tablefmt="html"),
+                    'length': len(masterlessMatches)
+                }
             )
+        )
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'slaveless_matches',
+                **{
+                    'title': 'Slaveless matches',
+                    'description': "matches are slaveless",
+                    'data': slavelessMatches.tabulate(tablefmt="html"),
+                    'length': len(slavelessMatches)
+                }
+            )
+        )
 
-            reporter.addGroup(syncingGroup)
+        reporter.addGroup(matchingGroup)
 
-        report_cats = do_sync
-        if report_cats:
-            syncingGroup = HtmlReporter.Group('cats', 'Category Syncing Results')
 
-            syncingGroup.addSection(
-                HtmlReporter.Section(
-                    ('delete_categories'),
-                    description = "%s items will leave categories" % SLAVE_NAME,
-                    data = tabulate(
+    report_sync = do_sync
+    if report_sync:
+        syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_updates"),
+                description = SLAVE_NAME + " items will be updated",
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
+                length = len(slaveUpdates)
+            )
+        )
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                "problematic_updates",
+                description = "items can't be merged because they are too dissimilar",
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
+                length = len(problematicUpdates)
+            )
+        )
+
+        reporter.addGroup(syncingGroup)
+
+    report_cats = do_sync
+    if report_cats:
+        syncingGroup = HtmlReporter.Group('cats', 'Category Syncing Results')
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                ('delete_categories'),
+                description = "%s items will leave categories" % SLAVE_NAME,
+                data = tabulate(
+                    [
                         [
-                            [
-                                index,
-                                # apiProductParser.products[index],
-                                # apiProductParser.products[index].categories,
-                                # ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                                ", ".join(category.wooCatName for category in matches.merge().sObjects)
-                            ] for index, matches in delete_categories.items()
-                        ],
-                        tablefmt="html"
-                    ),
-                    length = len(delete_categories)
-                    # data = '<hr>'.join([
-                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in delete_categories.items()
-                    #     ]
-                    # )
-                )
+                            index,
+                            # apiProductParser.products[index],
+                            # apiProductParser.products[index].categories,
+                            # ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                            ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                        ] for index, matches in delete_categories.items()
+                    ],
+                    tablefmt="html"
+                ),
+                length = len(delete_categories)
+                # data = '<hr>'.join([
+                #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+                #         for index, match in delete_categories.items()
+                #     ]
+                # )
             )
+        )
 
-            syncingGroup.addSection(
-                HtmlReporter.Section(
-                    ('join_categories'),
-                    description = "%s items will join categories" % SLAVE_NAME,
-                    data = tabulate(
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                ('join_categories'),
+                description = "%s items will join categories" % SLAVE_NAME,
+                data = tabulate(
+                    [
                         [
-                            [
-                                index,
-                                # apiProductParser.products[index],
-                                # apiProductParser.products[index].categories,
-                                ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                                # ", ".join(category.wooCatName for category in matches.merge().sObjects)
-                            ] for index, matches in join_categories.items()
-                        ],
-                        tablefmt="html"
-                    ),
-                    length = len(join_categories)
-                    # data = '<hr>'.join([
-                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in delete_categories.items()
-                    #     ]
-                    # )
-                )
+                            index,
+                            # apiProductParser.products[index],
+                            # apiProductParser.products[index].categories,
+                            ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                            # ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                        ] for index, matches in join_categories.items()
+                    ],
+                    tablefmt="html"
+                ),
+                length = len(join_categories)
+                # data = '<hr>'.join([
+                #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+                #         for index, match in delete_categories.items()
+                #     ]
+                # )
             )
+        )
 
-            reporter.addGroup(syncingGroup)
+        reporter.addGroup(syncingGroup)
 
-        resFile.write( reporter.getDocumentUnicode() )
+    resFile.write( reporter.getDocumentUnicode() )
 
-    allUpdates = slaveUpdates
-    allUpdates += problematicUpdates
+#########################################
+# Perform updates
+#########################################
 
-    slaveFailures = []
-    if allUpdates:
-        print debugUtils.hashify("UPDATING %d RECORDS" % len(allUpdates))
+allUpdates = slaveUpdates
+allUpdates += problematicUpdates
 
-        if Registrar.DEBUG_PROGRESS:
-            updateProgressCounter = ProgressCounter(len(allUpdates))
+slaveFailures = []
+if allUpdates:
+    print debugUtils.hashify("UPDATING %d RECORDS" % len(allUpdates))
 
-        with ProdSyncClient_WC(wcApiParams) as slaveClient:
-            for count, update in enumerate(allUpdates):
-                if Registrar.DEBUG_PROGRESS:
-                    updateProgressCounter.maybePrintUpdate(count)
+    if Registrar.DEBUG_PROGRESS:
+        updateProgressCounter = ProgressCounter(len(allUpdates))
 
-                if update_slave and update.sUpdated :
-                    try:
-                        update.updateSlave(slaveClient)
-                    finally:
-                        pass
-                    # except Exception, e:
-                    #     slaveFailures.append({
-                    #         'update':update,
-                    #         'master':SanitationUtils.coerceUnicode(update.newMObject),
-                    #         'slave':SanitationUtils.coerceUnicode(update.newSObject),
-                    #         'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                    #         'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                    #         'exception':repr(e)
-                    #     })
-                    #     SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+    with ProdSyncClient_WC(wcApiParams) as slaveClient:
+        for count, update in enumerate(allUpdates):
+            if Registrar.DEBUG_PROGRESS:
+                updateProgressCounter.maybePrintUpdate(count)
 
-        print debugUtils.hashify("COMPLETED UPDATES")
+            if update_slave and update.sUpdated :
+                try:
+                    update.updateSlave(slaveClient)
+                finally:
+                    pass
+                # except Exception, e:
+                #     slaveFailures.append({
+                #         'update':update,
+                #         'master':SanitationUtils.coerceUnicode(update.newMObject),
+                #         'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                #         'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
+                #         'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                #         'exception':repr(e)
+                #     })
+                #     SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+
+    print debugUtils.hashify("COMPLETED UPDATES")
+
+#########################################
+# Display reports
+#########################################
+
+if show_report:
+    shutil.copyfile(repPath, repWebPath)
+    webbrowser.open(repWebLink)
+
 
 # for sku, product in apiProductParser.products.items():
 #     print sku
