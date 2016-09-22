@@ -98,7 +98,7 @@ def printBasicColumns(users):
     # print len(users)
     usrList = UsrObjList()
     for user in users:
-        usrList.addObject(user)
+        usrList.append(user)
         # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
 
     cols = colData.getBasicCols()

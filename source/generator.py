@@ -1149,15 +1149,16 @@ if allUpdates:
 # Display reports
 #########################################
 
+shutil.copyfile(repPath, repWebPath)
 if show_report:
-    shutil.copyfile(repPath, repWebPath)
-
     if webBrowser:
         os.environ['BROWSER'] = webBrowser
         print "set browser environ to %s" % repr(webBrowser)
     # print "moved file from %s to %s" % (repPath, repWebPath)
 
     webbrowser.open(repWebLink)
+else:
+    print "open this link to view report %s" % repWebLink
 
 
 # for sku, product in apiProductParser.products.items():

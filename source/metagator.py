@@ -1,7 +1,9 @@
 from PIL import Image
 from PIL import PngImagePlugin
 from utils import SanitationUtils, Registrar
-from pyexiv2.metadata import ImageMetadata
+# from pyexiv2.metadata import ImageMetadata
+import piexif
+import iptcinfo
 import os
 from time import time
 
@@ -42,27 +44,37 @@ class MetaGator(Registrar):
 
         elif self.isJPG:
             # print "image is JPG"
+            fullname = os.path.join(self.dir, self.fname)
             try:
-                fullname = os.path.join(self.dir, self.fname)
-                imgmeta = ImageMetadata(fullname)
-                imgmeta.read()
+                im = Image.open(fullname)
             except IOError:
                 raise Exception("file not found: "+fullname)
 
-            for index, value in (
-                ('Exif.Image.DocumentName', title),
-                ('Exif.Image.ImageDescription', description),
-                ('Iptc.Application2.Headline', title),
-                ('Iptc.Application2.Caption', description),
-            ):
-                # print " -> imgmeta[%s] : %s" % (index, value)
-                if index[:4] == 'Iptc' :
-                    # print " --> setting IPTC key", index, "to", value
-                    imgmeta[index] = [value]
-                if index[:4] == 'Exif' :
-                    # print " --> setting EXIF key", index, "to", value
-                    imgmeta[index] = value
-            imgmeta.write()
+            #write exif
+            exif_dict = piexif.load(im.info["exif"])
+
+            exif_dict["0th"][piexif.ImageIFD.DocumentName] = title
+            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = description
+
+            exif_bytes = piexif.dump(exif_dict)
+            im.save(fullname, "jpeg", exif=exif_bytes)
+
+            #write IPTC
+
+            # for index, value in (
+            #     ('Exif.Image.DocumentName', title),
+            #     ('Exif.Image.ImageDescription', description),
+            #     ('Iptc.Application2.Headline', title),
+            #     ('Iptc.Application2.Caption', description),
+            # ):
+            #     # print " -> imgmeta[%s] : %s" % (index, value)
+            #     if index[:4] == 'Iptc' :
+            #         # print " --> setting IPTC key", index, "to", value
+            #         imgmeta[index] = [value]
+            #     if index[:4] == 'Exif' :
+            #         # print " --> setting EXIF key", index, "to", value
+            #         imgmeta[index] = value
+            # imgmeta.write()
         else:
             raise Exception("not an image file: ",self.ext)
 
@@ -74,23 +86,30 @@ class MetaGator(Registrar):
             title = oldimg.info.get('title','')
             description = oldimg.info.get('description','')
         elif self.isJPG:
+            fullname = os.path.join(self.dir, self.fname)
             try:
-                imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
-                imgmeta.read()
+                im = Image.open(fullname)
+                # imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
+                # imgmeta.read()
             except IOError:
                 raise Exception("file not found")
 
-            for index, field in (
-                ('Iptc.Application2.Headline', 'title'),
-                ('Iptc.Application2.Caption', 'description')
-            ):
-                if(index in imgmeta.iptc_keys):
-                    value = imgmeta[index].value
-                    if isinstance(value, list):
-                        value = value[0]
+            exif_dict = piexif.load(im.info["exif"])
 
-                    if field == 'title': title = value
-                    if field == 'description': description = value
+            title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName)
+            description = exif_dict["0th"].get(piexif.ImageIFD.ImageDescription)
+            #
+            # for index, field in (
+            #     ('Iptc.Application2.Headline', 'title'),
+            #     ('Iptc.Application2.Caption', 'description')
+            # ):
+            #     if(index in imgmeta.iptc_keys):
+            #         value = imgmeta[index].value
+            #         if isinstance(value, list):
+            #             value = value[0]
+            #
+            #         if field == 'title': title = value
+            #         if field == 'description': description = value
         else:
             raise Exception("not an image file: ",self.ext)
 
@@ -110,38 +129,3 @@ class MetaGator(Registrar):
                     )
         if changed:
             self.write_meta(newmeta['title'], newmeta['description'])
-
-if __name__ == '__main__':
-    work_dir = "/Users/Derwent/Dropbox/Technotan"
-    assert os.path.isdir(work_dir)
-
-    print "JPG test"
-
-    print "Test read meta"
-
-    newmeta = {
-        'title': u'TITLE \xa9 \u2014',
-        'description': time()
-    }
-
-    fname = os.path.join(work_dir, 'CT-TE.jpg')
-    metagator = MetaGator(fname)
-    print metagator.read_meta()
-
-    print "test read and write jpg"
-
-    fname = os.path.join(work_dir, 'EAP-PECPRE.jpg')
-
-    metagator = MetaGator(fname)
-    metagator.write_meta(newmeta['title'], newmeta['description'])
-    metagator.update_meta(newmeta)
-    print metagator.read_meta()
-
-
-    print "test read and write png"
-
-    fname = os.path.join(work_dir, 'STFTO-CAL.png')
-
-    metagator = MetaGator(fname)
-    metagator.write_meta(u'TITLE \xa9 \u2014', time())
-    print metagator.read_meta()

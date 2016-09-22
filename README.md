@@ -25,46 +25,71 @@ apt-cyg install libffi-devel
 Other dependencies
 ------------------
 
-pip install --upgrade sshtunnel tabulate dill pyyaml phpserialize uniqid python-wordpress-xmlrpc kitchen unicodecsv pymysql wordpress_json pympler httplib2 pillow bleach woocommerce
+pip install --upgrade
+  bleach
+  bzr
+  dill
+  httplib2
+  iptcinfo
+  kitchen
+  pgi
+  phpserialize
+  pillow
+  piexif
+  pygobject3
+  pympler
+  pymysql
+  python-wordpress-xmlrpc
+  pyyaml
+  sshtunnel
+  tabulate
+  unicodecsv
+  uniqid
+  urllib3  
+  woocommerce
+  wordpress_json
 
 Cygwin Packages
 ---------------
- - bzr
- - cygwin-devel
- - exiv2
- - gcc-core
- - libboost_python-devel
- - libexiv2-devel
- - mingw64-i686-binutils
- - mingw64-i686-gcc-core
- - mingw64-i686-headers
- - mingw64-i686-openssl
- - mingw64-i686-pkg-config
- - mingw64-i686-runtime
- - mingw64-i686-windows-default-manifest
- - mingw64-i686-winpthreads
- - mingw64-i686-zlib
- - mingw64-x86_64-binutils
- - mingw64-x86_64-gcc-core
- - mingw64-x86_64-headers
- - mingw64-x86_64-openssl
- - mingw64-x86_64-pkg-config
- - mingw64-x86_64-runtime
- - mingw64-x86_64-windows-default-manifest
- - mingw64-x86_64-winpthreads
- - mingw64-x86_64-zlib
- - openssh
- - openssl
- - openssl-devel
- - python
- - python-cffi
- - python-imaging
- - python-ply
- - python-pycparser
- - rsync
- - scons
- - w32api-headers
- - w32api-runtime
+apt-cyg install
+  cygwin-devel
+  exiv2
+  gcc-core
+  gexiv2
+  libboost_python-devel
+  libexiv2-devel
+  mingw64-i686-binutils
+  mingw64-i686-gcc-core
+  mingw64-i686-headers
+  mingw64-i686-openssl
+  mingw64-i686-pkg-config
+  mingw64-i686-runtime
+  mingw64-i686-windows-default-manifest
+  mingw64-i686-winpthreads
+  mingw64-i686-zlib
+  mingw64-x86_64-binutils
+  mingw64-x86_64-exiv2
+  mingw64-x86_64-gcc-core
+  mingw64-x86_64-headers
+  mingw64-x86_64-openssl
+  mingw64-x86_64-pkg-config
+  mingw64-x86_64-runtime
+  mingw64-x86_64-windows-default-manifest
+  mingw64-x86_64-winpthreads
+  mingw64-x86_64-zlib
+  openssh
+  openssl
+  openssl-devel
+  python
+  python-cffi
+  python-gi
+  python-imaging
+  python-ply
+  python-pycparser
+  rsync
+  scons
+  w32api-headers
+  w32api-runtime
 
  Other Libraries
  ---------------
