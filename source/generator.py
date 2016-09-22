@@ -3,13 +3,13 @@ from collections import OrderedDict
 import os
 import shutil
 # from PIL import Image
-import time
-import datetime
+# import time
+# import datetime
 import argparse
 import io
 
 # from itertools import chain
-# from metagator import MetaGator
+from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
 from utils import HtmlReporter
 from csvparse_abstract import Registrar
@@ -33,7 +33,7 @@ import webbrowser
 
 # import xml.etree.ElementTree as ET
 # import rsync
-import sys
+# import sys
 import yaml
 # import re
 # import MySQLdb
@@ -594,72 +594,72 @@ if do_images and schema in woo_schemas:
             continue
 
         Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
-#
-#         # ------
-#         # REMETA
-#         # ------
-#
-#         try:
-#             metagator = MetaGator(imgRawPath)
-#         except Exception, e:
-#             invalidImage(img, "error creating metagator: " + str(e))
-#             continue
-#
-#         try:
-#             metagator.update_meta({
-#                 'title': title,
-#                 'description': description
-#             })
-#         except Exception as e:
-#             invalidImage(img, "error updating meta: " + str(e))
-#
-#         # ------
-#         # RESIZE
-#         # ------
-#
-#         if do_resize_images:
-#             if not os.path.isfile(imgRawPath) :
-#                 invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
-#                 continue
-#
-#             imgDstPath = os.path.join(imgDst, img)
-#             if os.path.isfile(imgDstPath) :
-#                 imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
-#                 imgDstMod = os.path.getmtime(imgDstPath)
-#                 # print "image mod (src, dst): ", imgSrcMod, imgdstmod
-#                 if imgDstMod > imgSrcMod:
-#                     if Registrar.DEBUG_IMG:
-#                         Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
-#                     continue
-#
-#             print "resizing:", img
-#             shutil.copy(imgRawPath, imgDstPath)
-#
-#             try:
-#                 # imgmeta = MetaGator(imgDstPath)
-#                 # imgmeta.write_meta(title, description)
-#                 # print imgmeta.read_meta()
-#
-#                 image = Image.open(imgDstPath)
-#                 image.thumbnail(thumbsize)
-#                 image.save(imgDstPath)
-#
-#                 imgmeta = MetaGator(imgDstPath)
-#                 imgmeta.write_meta(title, description)
-#                 # print imgmeta.read_meta()
-#
-#             except Exception as e:
-#                 invalidImage(img, "could not resize: " + str(e))
-#                 continue
-#
-#     # ------
-#     # RSYNC
-#     # ------
-#
-#     if not os.path.exists(wpaiFolder):
-#         os.makedirs(wpaiFolder)
-#
-#     rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
+
+        # ------
+        # REMETA
+        # ------
+
+        try:
+            metagator = MetaGator(imgRawPath)
+        except Exception, e:
+            invalidImage(img, "error creating metagator: " + str(e))
+            continue
+
+        try:
+            metagator.update_meta({
+                'title': title,
+                'description': description
+            })
+        except Exception as e:
+            invalidImage(img, "error updating meta: " + str(e))
+
+        # ------
+        # RESIZE
+        # ------
+
+        if do_resize_images:
+            if not os.path.isfile(imgRawPath) :
+                invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
+                continue
+
+            imgDstPath = os.path.join(imgDst, img)
+            if os.path.isfile(imgDstPath) :
+                imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
+                imgDstMod = os.path.getmtime(imgDstPath)
+                # print "image mod (src, dst): ", imgSrcMod, imgdstmod
+                if imgDstMod > imgSrcMod:
+                    if Registrar.DEBUG_IMG:
+                        Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
+                    continue
+
+            print "resizing:", img
+            shutil.copy(imgRawPath, imgDstPath)
+
+            try:
+                # imgmeta = MetaGator(imgDstPath)
+                # imgmeta.write_meta(title, description)
+                # print imgmeta.read_meta()
+
+                image = Image.open(imgDstPath)
+                image.thumbnail(thumbsize)
+                image.save(imgDstPath)
+
+                imgmeta = MetaGator(imgDstPath)
+                imgmeta.write_meta(title, description)
+                # print imgmeta.read_meta()
+
+            except Exception as e:
+                invalidImage(img, "could not resize: " + str(e))
+                continue
+
+    # ------
+    # RSYNC
+    # ------
+
+    if not os.path.exists(wpaiFolder):
+        os.makedirs(wpaiFolder)
+
+    rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
 
 #########################################
 # Export Info to Spreadsheets
