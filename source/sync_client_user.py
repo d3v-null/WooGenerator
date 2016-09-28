@@ -2,34 +2,34 @@
 from collections import OrderedDict
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
+from utils import SanitationUtils, TimeUtils, Registrar #, listUtils #, debugUtils
 from utils import ProgressCounter, UnicodeCsvDialectUtils
-from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
+# from csvparse_flat import CSVParse_User #, UsrObjList #, ImportUser
 from coldata import ColData_User
-from tabulate import tabulate
-from itertools import chain
+# from tabulate import tabulate
+# from itertools import chain
 # from pprint import pprint
 # import sys
-from copy import deepcopy
+# from copy import deepcopy
 import unicodecsv
 # import pickle
-import dill as pickle
+# import dill as pickle
 import requests
-from bisect import insort
+# from bisect import insort
 import re
-import time
-import yaml
+# import time
+# import yaml
 # import MySQLdb
 import paramiko
-from sshtunnel import SSHTunnelForwarder, check_address
-import io
+from sshtunnel import SSHTunnelForwarder #, check_address
+# import io
 # import wordpress_xmlrpc
 from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
-from sync_client import SyncClient_Abstract
+from sync_client import SyncClient_Abstract, AbstractClientInterface
 
-class TansyncWordpressJsonWrapper(WordpressJsonWrapper):
+class TansyncWordpressJsonWrapper(WordpressJsonWrapper, AbstractClientInterface):
     def _request(self, method_name, **kw):
         method, endpoint, params, data, headers = self._prepare_req(
             method_name, **kw
@@ -73,7 +73,13 @@ class TansyncWordpressJsonWrapper(WordpressJsonWrapper):
         return http_response_json
 
 class UsrSyncClient_Abstract(SyncClient_Abstract):
-    def __exit__(self, type, value, traceback):
+    client_class = AbstractClientInterface
+
+    def __init__(self, connectParams):
+        self.connectParams = connectParams
+        self.attemptConnect()
+
+    def __exit__(self, exit_type, value, traceback):
         self.client.close()
 
     def connectionReady(self):
@@ -85,27 +91,26 @@ class UsrSyncClient_Abstract(SyncClient_Abstract):
         assert self.connectionReady, "connection must be ready"
 
     def attemptConnect(self):
-        pass
+        self.client = self.client_class( **self.connectParams )
 
 class UsrSyncClient_JSON(UsrSyncClient_Abstract):
+    client_class = TansyncWordpressJsonWrapper
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         pass
 
     def __init__(self, connectParams):
-        super(UsrSyncClient_JSON, self).__init__()
-        self.connectParams = []
-        for param in ['json_uri', 'wp_user', 'wp_pass']:
+        superConnectParams = {}
+        for param, key in zip(
+            ['json_uri', 'wp_user', 'wp_pass'],
+            ['site',     'user',    'pwd']
+        ):
             assert param in connectParams, "missing mandatory param: " + param
-            self.connectParams.append(connectParams.get(param))
-        self.attemptConnect()
-
-    def attemptConnect(self):
-        self.client = TansyncWordpressJsonWrapper(*self.connectParams)
-
+            superConnectParams[key] = param
+        super(UsrSyncClient_JSON, self).__init__(superConnectParams)
 
     def uploadChanges(self, user_pkey, updates=None):
-        super(type(self), self).uploadChanges(user_pkey)
+        super(UsrSyncClient_JSON, self).uploadChanges(user_pkey)
         updates_json = SanitationUtils.encodeJSON(updates)
         # print "UPDATES:", updates
         updates_json_base64 = SanitationUtils.encodeBase64(updates_json)
@@ -125,11 +130,9 @@ class UsrSyncClient_JSON(UsrSyncClient_Abstract):
 
 class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def __init__(self, connectParams, dbParams, fsParams):
-        super(UsrSyncClient_SSH_ACT, self).__init__()
-        self.connectParams = connectParams
         self.dbParams = dbParams
         self.fsParams = fsParams
-        self.attemptConnect()
+        super(UsrSyncClient_SSH_ACT, self).__init__(connectParams)
 
     def attemptConnect(self):
         self.client = paramiko.SSHClient()
@@ -156,9 +159,10 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def putFile(self, localPath, remotePath):
         self.assertConnect()
 
-        remoteDir, remoteFileName = os.path.split(remotePath)
+        # remoteDir, remoteFileName = os.path.split(remotePath)
+        remoteDir = os.path.split(remotePath)[0]
 
-        exception = None
+        exception = Exception()
         try:
             sftpClient = self.client.open_sftp()
             if remoteDir:
@@ -169,19 +173,20 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
             sftpClient.put(localPath, remotePath)
             fstat = sftpClient.stat(remotePath)
             if not fstat:
-                exception = Exception("could not stat remote file")
+                exception = UserWarning("could not stat remote file")
         except Exception, e:
             exception = e
         finally:
             sftpClient.close()
-        if exception:
+        if not isinstance(exception, Exception):
             raise exception
 
 
     def assertRemoteFileExists(self, remotePath, assertion = ""):
         self.assertConnect()
 
-        stdin, stdout, stderr = self.client.exec_command('stat "%s"' % remotePath)
+        # stdin, stdout, stderr = self.client.exec_command('stat "%s"' % remotePath)
+        stderr = self.client.exec_command('stat "%s"' % remotePath)[2]
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
 
@@ -193,17 +198,23 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
     def getDeleteFile(self, remotePath, localPath):
         self.assertRemoteFileExists(remotePath)
-        exception = None
-        try:
-            sftpClient = self.client.open_sftp()
-            sftpClient.get(remotePath, localPath, self.printFileProgress)
-            sftpClient.remove(remotePath)
-        except Exception, e:
-            exception = e
-        finally:
-            sftpClient.close()
-        if exception:
-            raise exception
+
+        sftpClient = self.client.open_sftp()
+        sftpClient.get(remotePath, localPath, self.printFileProgress)
+        sftpClient.remove(remotePath)
+        sftpClient.close()
+
+        # exception = None
+        # try:
+        #     sftpClient = self.client.open_sftp()
+        #     sftpClient.get(remotePath, localPath, self.printFileProgress)
+        #     sftpClient.remove(remotePath)
+        # except Exception, e:
+        #     exception = e
+        # finally:
+        #     sftpClient.close()
+        # if exception:
+        #     raise exception
 
     def removeRemoteFile(self, remotePath):
         self.assertRemoteFileExists(remotePath)
@@ -265,6 +276,10 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def analyseRemote(self, parser, since=None, limit=None):
         if not since:
             since = '1970-01-01'
+        if limit:
+            # todo: implement limit
+            # this gets rid of unused argument warnings
+            pass
 
         importName = self.fsParams['importName']
         remote_export_folder = self.fsParams['remote_export_folder']
@@ -291,26 +306,26 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         parser.analyseFile(localPath, dialect_suggestion='act_out')
 
 class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
+    client_class = SSHTunnelForwarder
+
     """docstring for UsrSyncClient_SQL_WP"""
     def __init__(self, connectParams, dbParams):
-        super(UsrSyncClient_SQL_WP, self).__init__()
-        self.connectParams = connectParams
         self.dbParams = dbParams
         self.tbl_prefix = self.dbParams.pop('tbl_prefix','')
-        self.attemptConnect()
+        super(UsrSyncClient_SQL_WP, self).__init__(connectParams)
         # self.fsParams = fsParams
 
     def __enter__(self):
         self.client.start()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         self.client.close()
 
     def attemptConnect(self):
         self.client = SSHTunnelForwarder( **self.connectParams )
 
-    def analyseRemote(self, parser, since=None          , limit=None, filterItems=None):
+    def analyseRemote(self, parser, since=None, limit=None, filterItems=None):
 
         self.assertConnect()
 

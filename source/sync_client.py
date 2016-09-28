@@ -38,24 +38,32 @@ from oauth2client import tools
 from woocommerce import API as WCAPI
 from simplejson.scanner import JSONDecodeError
 
+class AbstractClientInterface:
+    def close(self):
+        pass
+
+    def connect(self, connectParams):
+        pass
+
 class SyncClient_Abstract(Registrar):
     """docstring for UsrSyncClient_Abstract"""
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         raise NotImplementedError()
 
     @property
     def connectionReady(self):
         raise NotImplementedError()
 
-    def analyseRemote(self, parser):
+    def analyseRemote(self, parser, *args):
         raise NotImplementedError()
 
     def uploadChanges(self, pkey, updates=None):
-        assert pkey, "must have a valid primary key"
-        assert self.connectionReady, "connection should be ready"
+        if updates:
+            assert pkey, "must have a valid primary key"
+            assert self.connectionReady, "connection should be ready"
 
 class SyncClient_GDrive(SyncClient_Abstract):
     skip_download = None
@@ -71,7 +79,7 @@ class SyncClient_GDrive(SyncClient_Abstract):
         self.service = discovery.build('drive', 'v2', http=auth_http)
         self.drive_file = self.service.files().get(fileId=self.gdriveParams['genFID']).execute()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         pass
 
     @property
@@ -160,7 +168,7 @@ class SyncClient_WC(SyncClient_Abstract):
             self.api = api
             self.next_endpoint = endpoint
             self.prev_response = None
-            # self.next_page = None
+            self.next_page = None
             # self.progressCounter = None
             self.total_pages = None
             self.total_items = None
@@ -278,5 +286,5 @@ class SyncClient_WC(SyncClient_Abstract):
     def connectionReady(self):
         return self.client
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         pass
