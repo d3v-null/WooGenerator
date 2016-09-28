@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import os
 import shutil
-# from PIL import Image
+from PIL import Image
 # import time
 # import datetime
 import argparse
@@ -652,14 +652,14 @@ if do_images and schema in woo_schemas:
                 invalidImage(img, "could not resize: " + str(e))
                 continue
 
-    # ------
-    # RSYNC
-    # ------
-
-    if not os.path.exists(wpaiFolder):
-        os.makedirs(wpaiFolder)
-
-    rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
+    # # ------
+    # # RSYNC
+    # # ------
+    #
+    # if not os.path.exists(wpaiFolder):
+    #     os.makedirs(wpaiFolder)
+    #
+    # rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
 
 #########################################
 # Export Info to Spreadsheets
