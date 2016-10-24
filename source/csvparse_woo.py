@@ -11,7 +11,7 @@ from csvparse_flat import CSVParse_Flat, ImportFlat
 from coldata import ColData_Woo
 from collections import OrderedDict
 import time
-
+import re
 
 class WooProdList(ItemList):
     reportCols = ColData_Woo.getProductCols()
@@ -379,29 +379,95 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                 self.registerCategory(ancestor, objectData)
 
         if objectData.get('E'):
+            if self.DEBUG_WOO:
+                self.registerMessage("HAS EXTRA LAYERS")
             if objectData.isProduct:
+                # self.registerMessage("ANCESTOR NAMESUM: %s" % str(objectData.getAncestorKey('namesum')))
+                # self.registerMessage("ANCESTOR DESCSUM: %s" % str(objectData.getAncestorKey('descsum')))
+                # self.registerMessage("ANCESTOR CATSUM: %s" % str(objectData.getAncestorKey('catsum')))
+                # self.registerMessage("ANCESTOR ITEMSUM: %s" % str(objectData.getAncestorKey('itemsum')))
+                # self.registerMessage("ANCESTOR TAXOSUM: %s" % str(objectData.getAncestorKey('taxosum')))
+                # self.registerMessage("ANCESTOR NAME: %s" % str(objectData.getAncestorKey('name')))
+                taxoAncestorNames = [ancestorData.get('name') for ancestorData in objectData.taxoAncestors]
+                # self.registerMessage("TAXO ANCESTOR NAMES: %s" % str(taxoAncestorNames))
                 extraDepth = self.taxoDepth - 1
                 extraRowcount = objectData.rowcount
                 extraStack = self.stack.getLeftSlice(extraDepth)
+                extraName = objectData.name
+                extraName = re.sub(r' ?\([^\)]*\)', '', extraName)
+                extraName = re.sub(r'1Litre', '1 Litre', extraName)
+                extraTaxoName = ''
+                if taxoAncestorNames:
+                    if len(taxoAncestorNames) > 2:
+                        extraTaxoName = taxoAncestorNames[-2]
+                    else:
+                        extraTaxoName = taxoAncestorNames[0]
+                extraSuffix = 'Items'
+                if re.search('Sample', extraName, flags=re.I):
+                    extraSuffix = 'Samples'
+                    extraName = re.sub(r' ?Samples?', '', extraName, flags=re.I)
+                elif re.search('Trial Size', extraName, flags=re.I):
+                    extraSuffix = 'Trial Sizes'
+                    extraName = re.sub(r' ?Trial Sizes?', '', extraName, flags=re.I)
+                elif re.search('10g', extraName, flags=re.I):
+                    if re.search('Bronzing Powder', extraTaxoName, flags=re.I) \
+                    or re.search('Foundation', extraTaxoName, flags=re.I):
+                        extraSuffix = 'Jars'
+
+                if re.search('Brushes', extraTaxoName, flags=re.I):
+                    extraSuffix = ''
+                    if re.search('Concealor', extraName, flags=re.I):
+                        extraName += 's'
+                        extraTaxoName = ''
+                elif re.search('Kits', extraTaxoName, flags=re.I):
+                    extraSuffix = ''
+                elif re.search('Tan Care Kits', extraTaxoName, flags=re.I):
+                    extraSuffix = 'Items'
+                    extraTaxoName = ''
+                elif re.search('Natural Soy Wax Candles', extraTaxoName, flags=re.I):
+                    extraSuffix = ''
+                    extraTaxoName = ''
+                    if not extraName.endswith('s'):
+                        extraName += 's'
+                elif re.search('Shimmerz 4 Hair', extraTaxoName, flags=re.I):
+                    extraTaxoName = 'Shimmerz'
+                    if extraName.endswith('s'):
+                        extraName = extraName[:-1]
+                    extraSuffix = 'Packs'
+                elif re.search('Hair Care', extraTaxoName):
+                    extraName = re.sub(' Sachet', '', extraName, flags=re.I)
+
+
+                # Eucalyptus & Spearmint Candles
+                # Eucalyptus & Spearmint Candles
+                # Eucalyptus & Spearmint Candles
+                # Eucalyptus & Spearmint Candles
+
+
+                print "EXTRA LAYER NAME: %s" % str([extraName, extraTaxoName, extraSuffix])
+                extraName = ' '.join(filter(None, [extraName, extraTaxoName, extraSuffix]))
                 extraLayer = self.newObject(
                     extraRowcount,
                     row=objectData.row,
                     depth = extraDepth,
                     meta = [
-                        objectData.name + ' Items',
+                        extraName,
                         objectData.code
                     ],
                     stack = extraStack
                 )
                 if self.DEBUG_WOO:
-                    self.registerMessage("extraLayer type: %s" % str(type(extraLayer)))
+                    self.registerMessage("extraLayer name: %s; type: %s" % (str(extraName), str(type(extraLayer))))
                 # extraStack.append(extraLayer)
                 assert issubclass(type(extraLayer), ImportGenBase), \
                     "needs to subclass ImportGenBase to do codesum"
-                extraCodesum = (extraLayer).codesum
+                extraCodesum = getattr(extraLayer, 'codesum')
+                # extraCodesum = (extraLayer).codesum
                 assert issubclass(type(extraLayer), ImportTreeObject), \
                     "needs to subclass ImportTreeObject to do siblings"
-                for sibling in extraLayer.siblings:
+                siblings = getattr(extraLayer, 'siblings')
+                # siblings = extraLayer.siblings
+                for sibling in siblings:
                     if sibling.codesum == extraCodesum:
                         if sibling.rowcount != extraRowcount:
                             extraLayer = sibling

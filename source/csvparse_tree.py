@@ -161,7 +161,7 @@ class ImportTreeObject(ImportObject):
 
     def getAncestorKey(self, key):
         # ancestors = self.getAncestors()
-        return [ancestor[key] for ancestor in self.ancestors]
+        return [ancestor.get(key) for ancestor in self.ancestors]
 
     def registerChild(self, childData):
         assert childData, "childData must be valid"

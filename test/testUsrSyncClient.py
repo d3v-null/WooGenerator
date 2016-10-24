@@ -1,66 +1,73 @@
 from os import sys, path
 import unittest
 from unittest import TestCase, main, skip
+from tabulate import tabulate
 
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
+from testSyncClient import abstractSyncClientTestCase
 from source.sync_client_user import *
 from source.coldata import ColData_User
-from source.csvparse_flat import ImportUser
+from source.csvparse_flat import ImportUser, CSVParse_User
 
-class testUsrSyncClient(TestCase):
-    def setUp(self):
-        try:
-            os.stat('source')
-            os.chdir('source')
-        except:
-            pass
+class testUsrSyncClient(abstractSyncClientTestCase):
+    yamlPath = "merger_config.yaml"
+    optionNamePrefix = 'dummy_'
 
-        yamlPath = "merger_config.yaml"
+    def __init__(self, *args, **kwargs):
+        super(testUsrSyncClient, self).__init__(*args, **kwargs)
+        self.SSHTunnelForwarderParams = {}
+        self.PyMySqlConnectParams = {}
+        self.jsonConnectParams = {}
+        self.actConnectParams = {}
+        self.actDbParams = {}
+        self.fsParams = {}
 
-        importName = TimeUtils.getMsTimeStamp()
+    def processConfig(self, config):
         inFolder = "../input/"
         outFolder = "../output/"
 
-        with open(yamlPath) as stream:
-            config = yaml.load(stream)
-            optionNamePrefix = 'test_'
-            optionNamePrefix = ''
+        if 'inFolder' in config.keys():
+            inFolder = config['inFolder']
+        if 'outFolder' in config.keys():
+            outFolder = config['outFolder']
+        # if 'logFolder' in config.keys():
+        #     logFolder = config['logFolder']
 
-            if 'inFolder' in config.keys():
-                inFolder = config['inFolder']
-            if 'outFolder' in config.keys():
-                outFolder = config['outFolder']
-            if 'logFolder' in config.keys():
-                logFolder = config['logFolder']
-
-            ssh_user = config.get(optionNamePrefix+'ssh_user')
-            ssh_pass = config.get(optionNamePrefix+'ssh_pass')
-            ssh_host = config.get(optionNamePrefix+'ssh_host')
-            ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
-            m_ssh_user = config.get(optionNamePrefix+'m_ssh_user')
-            m_ssh_pass = config.get(optionNamePrefix+'m_ssh_pass')
-            m_ssh_host = config.get(optionNamePrefix+'m_ssh_host')
-            m_ssh_port = config.get(optionNamePrefix+'m_ssh_port', 22)
-            remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
-            remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
-            db_user = config.get(optionNamePrefix+'db_user')
-            db_pass = config.get(optionNamePrefix+'db_pass')
-            db_name = config.get(optionNamePrefix+'db_name')
-            db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
-            wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-            m_db_user = config.get(optionNamePrefix+'m_db_user')
-            m_db_pass = config.get(optionNamePrefix+'m_db_pass')
-            m_db_name = config.get(optionNamePrefix+'m_db_name')
-            m_db_host = config.get(optionNamePrefix+'m_db_host')
-            m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
-            m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
-            tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
-            wp_user = config.get(optionNamePrefix+'wp_user', '')
-            wp_pass = config.get(optionNamePrefix+'wp_pass', '')
-            store_url = config.get(optionNamePrefix+'store_url', '')
-            remote_export_folder = config.get(optionNamePrefix+'remote_export_folder', '')
+        ssh_user = config.get(self.optionNamePrefix+'ssh_user')
+        ssh_pass = config.get(self.optionNamePrefix+'ssh_pass')
+        ssh_host = config.get(self.optionNamePrefix+'ssh_host')
+        ssh_port = config.get(self.optionNamePrefix+'ssh_port', 22)
+        m_ssh_user = config.get(self.optionNamePrefix+'m_ssh_user')
+        m_ssh_pass = config.get(self.optionNamePrefix+'m_ssh_pass')
+        m_ssh_host = config.get(self.optionNamePrefix+'m_ssh_host')
+        m_ssh_port = config.get(self.optionNamePrefix+'m_ssh_port', 22)
+        remote_bind_host = config.get(self.optionNamePrefix+'remote_bind_host', '127.0.0.1')
+        remote_bind_port = config.get(self.optionNamePrefix+'remote_bind_port', 3306)
+        db_user = config.get(self.optionNamePrefix+'db_user')
+        db_pass = config.get(self.optionNamePrefix+'db_pass')
+        db_name = config.get(self.optionNamePrefix+'db_name')
+        db_charset = config.get(self.optionNamePrefix+'db_charset', 'utf8mb4')
+        wp_srv_offset = config.get(self.optionNamePrefix+'wp_srv_offset', 0)
+        m_db_user = config.get(self.optionNamePrefix+'m_db_user')
+        m_db_pass = config.get(self.optionNamePrefix+'m_db_pass')
+        m_db_name = config.get(self.optionNamePrefix+'m_db_name')
+        m_db_host = config.get(self.optionNamePrefix+'m_db_host')
+        m_x_cmd = config.get(self.optionNamePrefix+'m_x_cmd')
+        m_i_cmd = config.get(self.optionNamePrefix+'m_i_cmd')
+        tbl_prefix = config.get(self.optionNamePrefix+'tbl_prefix', '')
+        # wp_user = config.get(self.optionNamePrefix+'wp_user', '')
+        # wp_pass = config.get(self.optionNamePrefix+'wp_pass', '')
+        wc_api_key = config.get(self.optionNamePrefix+'wc_api_key')
+        wc_api_secret = config.get(self.optionNamePrefix+'wc_api_secret')
+        wp_api_key = config.get(self.optionNamePrefix+'wp_api_key')
+        wp_api_secret = config.get(self.optionNamePrefix+'wp_api_secret')
+        store_url = config.get(self.optionNamePrefix+'store_url', '')
+        wp_user = config.get(self.optionNamePrefix+'wp_user')
+        wp_pass = config.get(self.optionNamePrefix+'wp_pass')
+        wp_callback = config.get(self.optionNamePrefix+'wp_callback')
+        remote_export_folder = config.get(self.optionNamePrefix+'remote_export_folder', '')
 
         TimeUtils.setWpSrvOffset(wp_srv_offset)
 
@@ -87,13 +94,29 @@ class testUsrSyncClient(TestCase):
             # 'srv_offset': wp_srv_offset,
         }
 
-        json_uri = store_url + 'wp-json/wp/v2'
-
-        self.jsonConnectParams = {
-            'json_uri': json_uri,
-            'wp_user': wp_user,
-            'wp_pass': wp_pass
+        self.wcApiParams = {
+            'api_key':wc_api_key,
+            'api_secret':wc_api_secret,
+            'url':store_url
         }
+
+        self.wpApiParams = {
+            'api_key': wp_api_key,
+            'api_secret': wp_api_secret,
+            'url':store_url,
+            'wp_user':wp_user,
+            'wp_pass':wp_pass,
+            'callback':wp_callback
+
+        }
+
+        # json_uri = store_url + 'wp-json/wp/v2'
+        #
+        # self.jsonConnectParams = {
+        #     'json_uri': json_uri,
+        #     'wp_user': wp_user,
+        #     'wp_pass': wp_pass
+        # }
 
         self.actConnectParams = {
             'hostname':    m_ssh_host,
@@ -113,15 +136,30 @@ class testUsrSyncClient(TestCase):
         }
 
         self.fsParams = {
-            'importName': importName,
+            'importName': self.importName,
             'remote_export_folder': remote_export_folder,
             'inFolder': inFolder,
             'outFolder': outFolder
         }
 
-        for var in ['self.SSHTunnelForwarderParams', 'self.PyMySqlConnectParams',
-                    'self.jsonConnectParams', 'self.actConnectParams', 'self.actDbParams']:
-            print var, eval(var)
+    def setUp(self):
+        super(testUsrSyncClient, self).setUp()
+
+        for var in ['SSHTunnelForwarderParams', 'PyMySqlConnectParams',
+                    'wcApiParams', 'actConnectParams', 'actDbParams']:
+            print var, getattr(self, var)
+
+        # Registrar.DEBUG_SHOP = True
+        # Registrar.DEBUG_MRO = True
+        # Registrar.DEBUG_TREE = True
+        # Registrar.DEBUG_PARSER = True
+        # Registrar.DEBUG_GEN = True
+        # Registrar.DEBUG_ABSTRACT = True
+        # Registrar.DEBUG_WOO = True
+        Registrar.DEBUG_API = True
+        # Registrar.DEBUG_PARSER = True
+        # Registrar.DEBUG_UTILS = True
+
 
     def test_SQLWP_Analyse(self):
         saParser = CSVParse_User(
@@ -138,6 +176,7 @@ class testUsrSyncClient(TestCase):
         # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
 
+    @skip
     def test_SSH_ACT_Upload(self):
         fields = {
             "ABN": "1",
@@ -148,97 +187,200 @@ class testUsrSyncClient(TestCase):
             response = client.uploadChanges('C000001', fields)
         print response
 
-    def test_JSON_read(self):
-        response = ''
-        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.client.get_posts()
-        print response
+    # @skip
+    # def test_JSON_read(self):
+    #     response = ''
+    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #         response = client.service.get_posts()
+    #     print response
+    #     self.assertTrue(response)
+    #
+    # @skip
+    # def test_JSON_Upload_bad(self):
+    #     fields = {"user_email": "neil@technotan.com.au"}
+    #
+    #     response = ''
+    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #         response = client.uploadChanges(2, fields)
+    #
+    #     print response
+    #
+    # @skip
+    # def test_JSON_Upload_good(self):
+    #     fields = {"first_name": "neil"}
+    #
+    #     response = ''
+    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #         response = client.uploadChanges(1, fields)
+    #
+    #     self.assertTrue(response)
+    #
+    # @skip
+    # def test_JSON_Upload_Core_Easy(self):
+    #     url = "http://www.google.com/"
+    #     fields = {"user_url": url}
+    #     user_id = 2508
+    #
+    #     response = None
+    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #         response = client.uploadChanges(user_id, fields)
+    #
+    #     updated = ''
+    #     with UsrSyncClient_SQL_WP(
+    #         self.SSHTunnelForwarderParams,
+    #         self.PyMySqlConnectParams
+    #     ) as sqlClient:
+    #         sqlClient.assertConnect()
+    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #
+    #         sql = """
+    #         SELECT user_url
+    #         FROM {tbl_u}
+    #         WHERE `ID` = {user_id}""".format(
+    #             tbl_u = sqlClient.tbl_prefix + 'users',
+    #             user_id = user_id
+    #         )
+    #
+    #         cursor.execute(sql)
+    #
+    #         updated = list(list(cursor)[0])[0]
+    #
+    #     self.assertTrue(response)
+    #     self.assertEqual(url, updated)
+    #
+    # @skip
+    # def test_JSON_Upload_Core_Hard(self):
+    #     url = "http://www.facebook.com/search/?post_form_id=474a034babb679a6e6eed34af9a686c0&q=kezzi@live.com.au&init=quick&ref=search_loaded#"
+    #     fields = {"user_url": url}
+    #     user_id = 2508
+    #
+    #     response = None
+    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #         response = client.uploadChanges(user_id, fields)
+    #
+    #     updated = ''
+    #     with UsrSyncClient_SQL_WP(
+    #         self.SSHTunnelForwarderParams,
+    #         self.PyMySqlConnectParams
+    #     ) as sqlClient:
+    #         sqlClient.assertConnect()
+    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #
+    #         sql = """
+    #         SELECT user_url
+    #         FROM {tbl_u}
+    #         WHERE `ID` = {user_id}""".format(
+    #             tbl_u = sqlClient.tbl_prefix + 'users',
+    #             user_id = user_id
+    #         )
+    #
+    #         cursor.execute(sql)
+    #
+    #         updated = list(list(cursor)[0])[0]
+    #
+    #     self.assertTrue(response)
+    #     self.assertEqual(url, updated)
+
+    # def test_WC_read(self):
+    #     response = []
+    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #         response = client.getIterator()
+    #     print tabulate(list(response)[:10], headers='keys')
+    #     print list(response)
+    #     self.assertTrue(response)
+    # def test_WC_Upload_bad(self):
+    #     fields = {"user_email": "neil@technotan.com.au"}
+    #
+    #     response = ''
+    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #         response = client.uploadChanges(2, fields)
+    #
+    #     print response
+    #
+    # def test_WC_Upload_good(self):
+    #     fields = {"first_name": "neil"}
+    #
+    #     response = ''
+    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #         response = client.uploadChanges(1, fields)
+    #
+    #     self.assertTrue(response)
+    #
+    # def test_WC_Upload_Core_Easy(self):
+    #     url = "http://www.google.com/"
+    #     fields = {"user_url": url}
+    #     user_id = 2508
+    #
+    #     response = None
+    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #         response = client.uploadChanges(user_id, fields)
+    #
+    #     updated = ''
+    #     with UsrSyncClient_SQL_WP(
+    #         self.SSHTunnelForwarderParams,
+    #         self.PyMySqlConnectParams
+    #     ) as sqlClient:
+    #         sqlClient.assertConnect()
+    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #
+    #         sql = """
+    #         SELECT user_url
+    #         FROM {tbl_u}
+    #         WHERE `ID` = {user_id}""".format(
+    #             tbl_u = sqlClient.tbl_prefix + 'users',
+    #             user_id = user_id
+    #         )
+    #
+    #         cursor.execute(sql)
+    #
+    #         updated = list(list(cursor)[0])[0]
+    #
+    #     self.assertTrue(response)
+    #     self.assertEqual(url, updated)
+    #
+    # def test_WC_Upload_Core_Hard(self):
+    #     url = "http://www.facebook.com/search/?post_form_id=474a034babb679a6e6eed34af9a686c0&q=kezzi@live.com.au&init=quick&ref=search_loaded#"
+    #     fields = {"user_url": url}
+    #     user_id = 2508
+    #
+    #     response = None
+    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #         response = client.uploadChanges(user_id, fields)
+    #
+    #     updated = ''
+    #     with UsrSyncClient_SQL_WP(
+    #         self.SSHTunnelForwarderParams,
+    #         self.PyMySqlConnectParams
+    #     ) as sqlClient:
+    #         sqlClient.assertConnect()
+    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #
+    #         sql = """
+    #         SELECT user_url
+    #         FROM {tbl_u}
+    #         WHERE `ID` = {user_id}""".format(
+    #             tbl_u = sqlClient.tbl_prefix + 'users',
+    #             user_id = user_id
+    #         )
+    #
+    #         cursor.execute(sql)
+    #
+    #         updated = list(list(cursor)[0])[0]
+    #
+    #     self.assertTrue(response)
+    #     self.assertEqual(url, updated)
+
+    def test_WP_READ(self):
+        response = []
+        with UsrSyncClient_WP(self.wpApiParams) as client:
+            response = client.getIterator()
+        print tabulate(list(response)[:10], headers='keys')
+        print list(response)
         self.assertTrue(response)
-
-    def test_JSON_Upload_bad(self):
-        fields = {"user_email": "neil@technotan.com.au"}
-
-        response = ''
-        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.uploadChanges(2, fields)
-
-        print response
-
-    def test_JSON_Upload_good(self):
-        fields = {"first_name": "neil"}
-
-        response = ''
-        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.uploadChanges(1, fields)
-
-        print response
-
-    def test_JSON_Upload_Core_Easy(self):
-        url = "http://www.google.com/"
-        fields = {"user_url": url}
-        user_id = 2508
-
-        response = ''
-        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.uploadChanges(user_id, fields)
-
-        updated = ''
-        with UsrSyncClient_SQL_WP(
-            self.SSHTunnelForwarderParams,
-            self.PyMySqlConnectParams
-        ) as sqlClient:
-            sqlClient.assertConnect()
-            sqlClient.dbParams['port'] = sqlClient.client.local_bind_address[-1]
-            cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
-
-            sql = """
-            SELECT user_url
-            FROM {tbl_u}
-            WHERE `ID` = {user_id}""".format(
-                tbl_u = sqlClient.tbl_prefix + 'users',
-                user_id = user_id
-            )
-
-            cursor.execute(sql)
-
-            updated = list(list(cursor)[0])[0]
-
-        self.assertEqual(url, updated)
-
-    def test_JSON_Upload_Core_Hard(self):
-        url = "http://www.facebook.com/search/?post_form_id=474a034babb679a6e6eed34af9a686c0&q=kezzi@live.com.au&init=quick&ref=search_loaded#"
-        fields = {"user_url": url}
-        user_id = 2508
-
-        response = ''
-        with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-            response = client.uploadChanges(user_id, fields)
-
-        updated = ''
-        with UsrSyncClient_SQL_WP(
-            self.SSHTunnelForwarderParams,
-            self.PyMySqlConnectParams
-        ) as sqlClient:
-            sqlClient.assertConnect()
-            sqlClient.dbParams['port'] = sqlClient.client.local_bind_address[-1]
-            cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
-
-            sql = """
-            SELECT user_url
-            FROM {tbl_u}
-            WHERE `ID` = {user_id}""".format(
-                tbl_u = sqlClient.tbl_prefix + 'users',
-                user_id = user_id
-            )
-
-            cursor.execute(sql)
-
-            updated = list(list(cursor)[0])[0]
-
-        self.assertEqual(url, updated)
-
-
-
 
     # def test_SSH_download(self):
     #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
@@ -259,8 +401,9 @@ class testUsrSyncClient(TestCase):
 
 
 if __name__ == '__main__':
-    # main()
-    testSuite = unittest.TestSuite()
-    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Easy'))
-    testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Hard'))
-    unittest.TextTestRunner().run(testSuite)
+    main()
+    # testSuite = unittest.TestSuite()
+    # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Easy'))
+    # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Hard'))
+    # testSuite.addTest(testUsrSyncClient('test_WP_READ'))
+    # unittest.TextTestRunner().run(testSuite)

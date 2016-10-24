@@ -28,6 +28,17 @@ from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
 
+from requests import request
+from json import dumps as jsonencode
+
+try:
+    from urllib.parse import urlencode, quote, unquote, parse_qs, parse_qsl, urlparse, urlunparse
+    from urllib.parse import ParseResult as URLParseResult
+except ImportError:
+    from urllib import urlencode, quote, unquote
+    from urlparse import parse_qs, parse_qsl, urlparse, urlunparse
+    from urlparse import ParseResult as URLParseResult
+
 import httplib2
 
 from apiclient import discovery
@@ -35,29 +46,124 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
-from woocommerce import API as WCAPI
+# from woocommerce import API
+from wordpress import API
+from wordpress.helpers import UrlUtils
 from simplejson.scanner import JSONDecodeError
 
-class AbstractClientInterface:
-    def close(self):
-        pass
+class AbstractServiceInterface(object):
+    """Defines the interface to an abstract service"""
+    def close(self): pass
+    def connect(self, connectParams): raise NotImplementedError()
+    # def files(self): raise NotImplementedError()
+    def put(self, *args, **kwargs): raise NotImplementedError()
+    # @property
+    # def version(self): raise NotImplementedError()
+    # @property
+    # def wp_api(self): raise NotImplementedError()
 
-    def connect(self, connectParams):
-        pass
+class WPAPI_Service(API, AbstractServiceInterface):
+    """ A child of the wordpress API that implements the Service interface """
+    pass
+    # def __init__(self, *args, **kwargs):
+        # if not args:
+            # args = [kwargs['api_key'], kwargs['api_secret']]
+        # super(WPAPI_Service, self).__init__(*args, **kwargs)
+    # pass
+    # def __init__(self, *args, **kwargs):
+    #     # print "hello from __init__"
+    #     super(WPAPI_Service, self).__init__(*args, **kwargs)
+
+    # def _API__get_url(self, endpoint):
+    #     # print "hello from _API__get_url"
+    #     url = super(WPAPI_Service, self)._API__get_url(endpoint)
+    #     #
+    #     # if Registrar.DEBUG_API:
+    #     #     Registrar.registerMessage("API got endpoint url: %s" % url)
+    #     return url
+    #
+    # def _API__request(self, method, endpoint, data):
+    #     """ Do requests """
+    #     url = self._API__get_url(endpoint)
+    #     auth = None
+    #     headers = {
+    #         "user-agent": "WooCommerce API Client-Python/%s" % 1.2,
+    #         "content-type": "application/json;charset=utf-8",
+    #         "accept": "application/json"
+    #     }
+    #
+    #     if self.is_ssl is True:
+    #         auth = (self.consumer_key, self.consumer_secret)
+    #     else:
+    #         url = self._API__get_oauth_url(url, method)
+    #
+    #     if data is not None:
+    #         data = jsonencode(data, ensure_ascii=False).encode('utf-8')
+    #
+    #     request_params = {}
+    #     request_params.update(
+    #         method=method,
+    #         url=url,
+    #         verify=self.verify_ssl,
+    #         auth=auth,
+    #         data=data,
+    #         timeout=self.timeout,
+    #         headers=headers
+    #     )
+    #
+    #     if Registrar.DEBUG_API:
+    #         Registrar.registerMessage("WCAPI, request params: %s" % str(request_params))
+    #
+    #     return request(
+    #         **request_params
+    #     )
 
 class SyncClient_Abstract(Registrar):
     """docstring for UsrSyncClient_Abstract"""
+    service_builder = AbstractServiceInterface
+
+    def __init__(self, connectParams):
+        self.connectParams = connectParams
+        self.attemptConnect()
+
     def __enter__(self):
         return self
 
     def __exit__(self, exit_type, value, traceback):
-        raise NotImplementedError()
+        if hasattr(self.service, 'close'):
+            self.service.close()
 
     @property
     def connectionReady(self):
-        raise NotImplementedError()
+        return self.service
 
-    def analyseRemote(self, parser, *args):
+    def assertConnect(self):
+        if not self.connectionReady:
+            self.attemptConnect()
+        assert self.connectionReady, "connection must be ready"
+
+    def attemptConnect(self):
+        positional_args = self.connectParams.pop('positional', [])
+        service_name = 'UNKN'
+        if hasattr(self.service_builder, '__name__'):
+            service_name = getattr(self.service_builder, '__name__')
+        if self.DEBUG_API: self.registerMessage("building service (%s) with positional: %s and keyword: %s" %
+            (
+                str(service_name),
+                str(positional_args),
+                str(self.connectParams)
+            )
+        )
+        self.service = self.service_builder(*positional_args, **self.connectParams )
+
+    # def __exit__(self, exit_type, value, traceback):
+    #     raise NotImplementedError()
+    #
+    # @property
+    # def connectionReady(self):
+    #     raise NotImplementedError()
+
+    def analyseRemote(self, parser, *args, **kwargs):
         raise NotImplementedError()
 
     def uploadChanges(self, pkey, updates=None):
@@ -67,24 +173,42 @@ class SyncClient_Abstract(Registrar):
 
 class SyncClient_GDrive(SyncClient_Abstract):
     skip_download = None
+    service_builder = discovery.build
 
     def __init__(self, gdriveParams):
-        super(SyncClient_GDrive, self).__init__()
         for key in ['credentials_dir', 'credentials_file', 'client_secret_file',
                     'scopes', 'app_name']:
-            assert key in gdriveParams
+            assert key in gdriveParams, "key %s should be specified" % key
         self.gdriveParams = gdriveParams
         credentials = self.get_credentials()
         auth_http = credentials.authorize(httplib2.Http())
-        self.service = discovery.build('drive', 'v2', http=auth_http)
+
+        superConnectParams = {
+            'positional': ['drive', 'v2'],
+            'http':auth_http
+        }
+        super(SyncClient_GDrive, self).__init__(superConnectParams)
+        # self.service = self.service_builder('drive', 'v2', http=auth_http)
+        self.service = discovery.build(
+            *superConnectParams.pop('positional',[]),
+            **superConnectParams
+        )
+        # self.service = self.service_builder(    #todo: figure out why this doesn't work but the others do
+        #     *superConnectParams.pop('positional',[]),
+        #     **superConnectParams
+        # )
+        # self.service = discovery.build('drive', 'v2', http=auth_http)
+
         self.drive_file = self.service.files().get(fileId=self.gdriveParams['genFID']).execute()
 
     def __exit__(self, exit_type, value, traceback):
         pass
 
-    @property
-    def connectionReady(self):
-        return self.service
+    def attemptConnect(self):
+        pass
+
+    def assertConnect(self):
+        assert self.connectionReady, "connection must be ready"
 
     def get_credentials(self):
         credential_dir = os.path.expanduser(self.gdriveParams['credentials_dir'])
@@ -133,10 +257,10 @@ class SyncClient_GDrive(SyncClient_Abstract):
             # The file doesn't have any content stored on Drive.
 
     def get_gm_modtime(self, gid=None):
+        if gid: pass #gets rid of annoying warnings
         modifiedDate = self.drive_file['modifiedDate']
 
         return time.strptime(modifiedDate, '%Y-%m-%dT%H:%M:%S.%fZ')
-
 
     def analyseRemote(self, parser, gid=None, outPath=None, limit=None):
         if not outPath:
@@ -161,11 +285,11 @@ class SyncClient_GDrive(SyncClient_Abstract):
                     print "downloaded ", outFile
         parser.analyseFile(outPath, limit=limit)
 
-class SyncClient_WC(SyncClient_Abstract):
+class SyncClient_Rest(SyncClient_Abstract):
     class ApiIterator(Iterable):
-        def __init__(self, api, endpoint):
-            assert isinstance(api, WCAPI)
-            self.api = api
+        def __init__(self, service, endpoint):
+            assert isinstance(service, WPAPI_Service)
+            self.service = service
             self.next_endpoint = endpoint
             self.prev_response = None
             self.next_page = None
@@ -183,42 +307,87 @@ class SyncClient_WC(SyncClient_Abstract):
             else:
                 return None
 
-        def processHeaders(self, headers):
-            if self.total_pages is None:
-                self.total_pages = int(headers.get('x-wc-totalpages'))
-            if self.total_items is None:
-                self.total_items = int(headers.get('x-wc-total'))
+        def processHeaders(self, response):
+            headers = response.headers
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage("headers: %s" % str(headers))
+
+            if self.service.namespace == 'wp-api':
+                total_pages_key = 'X-WP-TotalPages'
+                total_items_key = 'X-WP-Total'
+                links_finder = SanitationUtils.findall_wp_links
+            else:
+                total_pages_key = 'x-wc-totalpages'
+                total_items_key = 'x-wc-total'
+                links_finder = SanitationUtils.findall_wc_links
+
+            if self.total_pages is None and total_items_key in headers:
+                self.total_pages = int(headers.get(total_pages_key,''))
+            if self.total_items is None and total_pages_key in headers:
+                self.total_items = int(headers.get(total_items_key,''))
             # if self.progressCounter is None:
             #     self.progressCounter = ProgressCounter(total=self.total_pages)
             # self.stopNextIteration = True
             # self.next_page = self.total_pages
+            prev_endpoint = self.next_endpoint
             self.next_endpoint = None
-            links_str = headers.get('link', '')
-            if Registrar.DEBUG_API:
-                Registrar.registerMessage("links str: {}".format(links_str))
-            for link in SanitationUtils.findall_wc_links(links_str):
-                if link.get('rel') == 'next' and link.get('url'):
+
+            for rel, link in response.links.items():
+                if rel == 'next' and link.get('url'):
                     next_response_url = link['url']
-                    self.next_page = self.get_page_param(next_response_url)
-                    if self.next_page == 2:
-                        next_response_url = re.sub(r'page=\d', 'page=8', next_response_url)
-                    # self.stopNextIteration = False
-                    if Registrar.DEBUG_API:
-                        Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
-                    self.next_endpoint = self.__get_endpoint(next_response_url)
-                    if Registrar.DEBUG_API:
-                        Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
-                    break
+                    # if Registrar.DEBUG_API:
+                    #     Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
+                    self.next_page = parse_qs(urlparse(next_response_url).query).get('page',[None])[0]
+                    self.next_page = int(self.next_page)
+                    if not self.next_page:
+                        return
+                    assert \
+                        self.next_page <= self.total_pages, \
+                        "next page (%s) should be lte total pages (%s)" \
+                        % (str(self.next_page), str(self.total_pages))
+                    next_endpoint_queries = parse_qs(urlparse(next_response_url).query)
+                    next_endpoint_queries.update(page=self.next_page)
+                    self.next_endpoint = UrlUtils.substitute_query(prev_endpoint, urlencode(next_endpoint_queries))
+                    # self.next_endpoint = self.__get_endpoint(next_response_url)
+                    # if Registrar.DEBUG_API:
+                    #     Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
+
+            # links_str = headers.get('link', '')
+            # if Registrar.DEBUG_API:
+            #     Registrar.registerMessage("links str: {}".format(links_str))
+            # links = links_finder(links_str)
+            # if Registrar.DEBUG_API:
+            #     Registrar.registerMessage("wc_links: %s" % str(links))
+            # for link in links:
+            #     if link.get('rel') == 'next' and link.get('url'):
+            #         next_response_url = link['url']
+            #         self.next_page = self.get_page_param(next_response_url)
+            #         if self.next_page == 2:
+            #             next_response_url = re.sub(r'page=\d', 'page=8', next_response_url)
+            #         # self.stopNextIteration = False
+            #         if Registrar.DEBUG_API:
+            #             Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
+            #         self.next_endpoint = self.__get_endpoint(next_response_url)
+            #         if Registrar.DEBUG_API:
+            #             Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
+            #         break
 
             # self.progressCounter.maybePrintUpdate(self.next_page)
 
-        def __get_endpoint(self, url):
-            url_path = SanitationUtils.stripURLHost(url)
-            api_url_path = SanitationUtils.stripURLHost(self.api._API__get_url(''))
-            if url_path.startswith(api_url_path):
-                return url_path.replace(api_url_path, '')
-            else:
-                return url_path
+        # def __get_endpoint(self, url):
+        #     url_path = SanitationUtils.stripURLHost(url)
+        #     response = url_path
+        #     print "url_path", url_path
+        #     service_url_path = UrlUtils.join_components([
+        #         SanitationUtils.stripURLHost(self.service.url),
+        #         self.service.namespace,
+        #         self.service.version
+        #     ])
+        #     print "service_url_path", service_url_path
+        #     if url_path.startswith(service_url_path):
+        #         response = response.replace(service_url_path, '')
+        #     print "reponse", response
+        #     return response
 
         def __iter__(self):
             return self
@@ -233,28 +402,19 @@ class SyncClient_WC(SyncClient_Abstract):
                 raise StopIteration()
 
             # get API response
-            self.prev_response = self.api.get(self.next_endpoint)
+            self.prev_response = self.service.get(self.next_endpoint)
 
             # handle API errors
-            if self.prev_response.status_code in [404]:
-                raise UserWarning('api call failed: 404d')
+            if self.prev_response.status_code in range(400, 500):
+                raise UserWarning('api call failed: %dd with %s' %( self.prev_response.status_code, self.prev_response.text))
+
+            # can still 200 and fail
             try:
                 prev_response_json = self.prev_response.json()
             except JSONDecodeError:
-                Registrar.registerWarning("first attempt timed out, trying again on %s" % self.next_endpoint)
-                old_timeout = self.api.timeout
-                self.api.timeout = old_timeout * 2
-                self.prev_response = self.api.get(self.next_endpoint)
-                self.api.timeout = old_timeout
-
-                try:
-                    prev_response_json = self.prev_response.json()
-                except JSONDecodeError:
-                    prev_response_json = {}
-                    e = UserWarning('api call failed: timed out on %s' % self.next_endpoint)
-                    Registrar.registerError(e)
-
-                    # raise e
+                prev_response_json = {}
+                e = UserWarning('api call to %s failed: %s' % (self.next_endpoint, self.prev_response.text))
+                Registrar.registerError(e)
 
             if Registrar.DEBUG_API:
                 Registrar.registerMessage('first api response: %s' % str(prev_response_json))
@@ -262,29 +422,116 @@ class SyncClient_WC(SyncClient_Abstract):
                 raise UserWarning('first api call returned errors: %s' % (prev_response_json['errors']))
 
             # process API headers
-            self.processHeaders(self.prev_response.headers)
+            self.processHeaders(self.prev_response)
 
             return prev_response_json
 
+    service_builder = WPAPI_Service
+    version = None
+    endpoint_singular = ''
+    mandatory_params = ['api_key', 'api_secret', 'url']
+    default_version='wp/v2'
+    default_namespace='wp-json'
+
+    @property
+    def endpoint_plural(self):
+        return "%ss" % self.endpoint_singular
 
     def __init__(self, connectParams):
-        super(SyncClient_WC, self).__init__()
-        mandatory_params = ['api_key', 'api_secret', 'url']
-        for param in mandatory_params:
+
+        key_translation = {
+            'api_key': 'consumer_key',
+            'api_secret': 'consumer_secret'
+        }
+        for param in self.mandatory_params:
             assert param in connectParams and connectParams[param], \
-                "missing mandatory param: %s" % param
-        self.client = WCAPI(
-            url=connectParams['url'],
-            consumer_key=connectParams['api_key'],
-            consumer_secret=connectParams['api_secret'],
-            timeout=60,
-            # wp_api=True, # Enable the WP REST API integration
-            # version="v3", # WooCommerce WP REST API version
-            # version="wc/v1"
+                "missing mandatory param (%s) from connect parameters: %s" \
+                % (param, str(connectParams))
+
+        #
+        superConnectParams = {}
+
+        for key, value in connectParams.items():
+            super_key = key
+            if key in key_translation:
+                super_key = key_translation[key]
+            superConnectParams[super_key] = value
+
+        if 'api' not in superConnectParams:
+            superConnectParams['api'] = self.default_namespace
+        if 'version' not in superConnectParams:
+            superConnectParams['version'] = self.default_version
+        if superConnectParams['api'] == 'wp-json':
+            superConnectParams['oauth1a_3leg'] = True
+
+
+        superConnectParams.update(
+            timeout=60
         )
 
-    def connectionReady(self):
-        return self.client
+        super(SyncClient_Rest, self).__init__(superConnectParams)
+        #
+        # self.service = WCAPI(
+        #     url=connectParams['url'],
+        #     consumer_key=connectParams['api_key'],
+        #     consumer_secret=connectParams['api_secret'],
+        #     timeout=60,
+        #     # wp_api=True, # Enable the WP REST API integration
+        #     # version="v3", # WooCommerce WP REST API version
+        #     # version="wc/v1"
+        # )
 
-    def __exit__(self, exit_type, value, traceback):
-        pass
+    #
+    def analyseRemote(self, parser, since=None, limit=None):
+        if since: pass #todo: implement since
+        resultCount = 0
+        apiIterator = self.ApiIterator(self.service, self.endpoint_plural)
+        progressCounter = None
+        for page in apiIterator:
+            if progressCounter is None:
+                total_items = apiIterator.total_items
+                if limit:
+                    total_items = min(limit, total_items)
+                progressCounter = ProgressCounter(total_items)
+            progressCounter.maybePrintUpdate(resultCount)
+
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage('processing page: %s' % str(page))
+            if self.endpoint_plural in page:
+                for page_item in page.get(self.endpoint_plural):
+
+                    parser.analyseWpApiObj(page_item)
+                    resultCount += 1
+                    if limit and resultCount > limit:
+                        if Registrar.DEBUG_API:
+                            Registrar.registerMessage('reached limit, exiting')
+                        return
+
+    def uploadChanges(self, pkey, updates=None):
+        super(SyncClient_Rest, self).uploadChanges(pkey)
+        service_endpoint = '%s/%d' % (self.endpoint_plural,pkey)
+        if self.service.version is not 'wc/v1':
+            updates = {'product':updates}
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage("updating %s: %s" % (service_endpoint, updates))
+        response = self.service.put(service_endpoint, updates)
+        assert response.status_code not in [400,401], "API ERROR"
+        assert response.json(), "json should exist"
+        assert not isinstance(response.json(), int), "could not convert response to json: %s %s" % (str(response), str(response.json()))
+        assert 'errors' not in response.json(), "response has errors: %s" % str(response.json()['errors'])
+        return response
+
+    def getIterator(self, endpoint=None):
+        if not endpoint:
+            endpoint = self.endpoint_plural
+        return self.ApiIterator(self.service, endpoint)
+
+    # def __exit__(self, exit_type, value, traceback):
+    #     pass
+
+class SyncClient_WC(SyncClient_Rest):
+    default_version='v3'
+    default_namespace='wc-api'
+
+class SyncClient_WP(SyncClient_Rest):
+    mandatory_params = ['api_key', 'api_secret', 'url', 'wp_user', 'wp_pass', 'callback']

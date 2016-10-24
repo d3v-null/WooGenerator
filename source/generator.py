@@ -30,6 +30,7 @@ from matching import MatchList
 from tabulate import tabulate
 import urlparse
 import webbrowser
+import re
 
 # import xml.etree.ElementTree as ET
 # import rsync
@@ -245,6 +246,8 @@ if args:
         testMode = args.testmode
     if args.download_master is not None:
         download_master = args.download_master
+    if args.download_slave is not None:
+        download_slave = args.download_slave
     if args.update_slave is not None:
         update_slave = args.update_slave
     if args.current_special:
@@ -262,7 +265,7 @@ if args:
     if args.do_dyns is not None:
         do_dyns = args.do_dyns
     if args.do_sync is not None:
-        do_sync = args.do_sync
+        do_sync = args.do_sync and download_slave
     global_limit = args.limit
 
     schema = args.schema
@@ -796,12 +799,16 @@ elif schema in woo_schemas:
 # Attempt download API data
 #########################################
 
-apiProductParser = CSVParse_Woo_Api(
-    **apiProductParserArgs
-)
+if download_slave:
 
-with ProdSyncClient_WC(wcApiParams) as client:
-    client.analyseRemote(apiProductParser, limit=global_limit)
+    apiProductParser = CSVParse_Woo_Api(
+        **apiProductParserArgs
+    )
+
+    with ProdSyncClient_WC(wcApiParams) as client:
+        client.analyseRemote(apiProductParser, limit=global_limit)
+else:
+    apiProductParser = None
 
 # print "API PRODUCTS"
 # print ShopProdList(apiProductParser.products.values()).tabulate()
@@ -1066,6 +1073,32 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
                             # apiProductParser.products[index].categories,
                             # ", ".join(category.wooCatName for category in matches.merge().mObjects),
                             ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                        ] for index, matches in delete_categories.items()
+                    ],
+                    tablefmt="html"
+                ),
+                length = len(delete_categories)
+                # data = '<hr>'.join([
+                #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+                #         for index, match in delete_categories.items()
+                #     ]
+                # )
+            )
+        )
+
+        syncingGroup.addSection(
+            HtmlReporter.Section(
+                ('delete_categories_not_specials'),
+                description = "%s items will leave categories" % SLAVE_NAME,
+                data = tabulate(
+                    [
+                        [
+                            index,
+                            # apiProductParser.products[index],
+                            # apiProductParser.products[index].categories,
+                            # ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                            ", ".join(category.wooCatName for category in matches.merge().sObjects\
+                            if not re.search('Specials', category.wooCatName))
                         ] for index, matches in delete_categories.items()
                     ],
                     tablefmt="html"

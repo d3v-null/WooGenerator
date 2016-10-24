@@ -566,16 +566,30 @@ class SanitationUtils:
         )
 
     @classmethod
+    def findall_wp_links(cls, string):
+        #todo implement
+        return []
+
+    @classmethod
     def findall_wc_links(cls, string):
         """Finds all wc style link occurences in a given string"""
         matches = []
-        for line in string.split(', '):
+        lines = string.split(', ')
+        print lines
+        for line in lines:
+            print 'processing line', line
+            print 'attempting match on %s' % cls.regex_wc_link
             match = re.match(cls.regex_wc_link, line)
+            print "match", match
             if match is None:
+                print "match is none"
                 continue
+            else:
+                print "match is none"
             match_dict = match.groupdict()
             if 'url' in match_dict and 'rel' in match_dict:
                 matches.append(match_dict)
+        print 'returning matches', matches
         return matches
 
     @classmethod

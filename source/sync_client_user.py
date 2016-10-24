@@ -24,128 +24,117 @@ import paramiko
 from sshtunnel import SSHTunnelForwarder #, check_address
 # import io
 # import wordpress_xmlrpc
-from wordpress_json import WordpressJsonWrapper, WordpressError
+# from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
-from sync_client import SyncClient_Abstract, AbstractClientInterface
+from sync_client import SyncClient_Abstract, AbstractServiceInterface
+from sync_client import SyncClient_WP
 
-class TansyncWordpressJsonWrapper(WordpressJsonWrapper, AbstractClientInterface):
-    def _request(self, method_name, **kw):
-        method, endpoint, params, data, headers = self._prepare_req(
-            method_name, **kw
-        )
+# class TansyncWordpressJsonWrapper(WordpressJsonWrapper, AbstractServiceInterface):
+#     def _request(self, method_name, **kw):
+#         method, endpoint, params, data, headers = self._prepare_req(
+#             method_name, **kw
+#         )
+#
+#         http_response = requests.request(
+#             method,
+#             self.site + endpoint,
+#             auth=self.auth,
+#             params=params,
+#             json=data,
+#             headers=headers
+#         )
+#
+#         try:
+#             http_response_json = http_response.json()
+#         except JSONDecodeError:
+#             raise WordpressError(' '.join([
+#                 'could not decode JSON:',
+#                 str(http_response.text)
+#             ]))
+#
+#         if http_response.status_code not in [200, 201, 400]:
+#             try:
+#                 first_json_response = http_response_json[0]
+#             except KeyError:
+#                 raise WordpressError(' '.join([
+#                     "invalid JSON response from",
+#                     http_response.url,
+#                     ": ",
+#                     http_response.text
+#                 ]))
+#             raise WordpressError(" ".join([
+#                 str(http_response.status_code),
+#                 str(http_response.reason),
+#                 ": ",
+#                 '[%s] %s' % (first_json_response.get('code'),
+#                              first_json_response.get('message'))
+#             ]))
+#
+#         return http_response_json
+#
+# class SyncClient_Abstract(SyncClient_Abstract):
+#     pass
 
-        http_response = requests.request(
-            method,
-            self.site + endpoint,
-            auth=self.auth,
-            params=params,
-            json=data,
-            headers=headers
-        )
+# class UsrSyncClient_JSON(SyncClient_Abstract):
+#     service_builder = TansyncWordpressJsonWrapper
+#
+#     def __exit__(self, exit_type, value, traceback):
+#         pass
+#
+#     def __init__(self, connectParams):
+#         mandatory_params = ['json_uri', 'wp_user', 'wp_pass']
+#         super_keys =       ['site',     'user',    'pwd']
+#         superConnectParams = {}
+#         for param, key in zip( mandatory_params, super_keys ):
+#             assert param in connectParams, "missing mandatory param: " + param
+#             superConnectParams[key] = connectParams[param]
+#         super(UsrSyncClient_JSON, self).__init__(superConnectParams)
+#
+#     def uploadChanges(self, user_pkey, updates=None):
+#         super(UsrSyncClient_JSON, self).uploadChanges(user_pkey)
+#         updates_json = SanitationUtils.encodeJSON(updates)
+#         # print "UPDATES:", updates
+#         updates_json_base64 = SanitationUtils.encodeBase64(updates_json)
+#         # print updates_json_base64
+#         json_out = self.service.update_user(user_id=user_pkey, data={'tansync_updated_fields': updates_json_base64})
+#
+#         # print json_out
+#         if json_out is None:
+#             json_out = self.service.get_user(user_id=user_pkey)
+#             if 'tansync_last_error' in json_out:
+#                 last_error = json_out['tansync_last_error']
+#                 raise Exception(
+#                     "No response from json api, last error: %s" % last_error
+#                 )
+#             raise Exception("No response from json api")
+#         return json_out
 
-        try:
-            http_response_json = http_response.json()
-        except JSONDecodeError:
-            raise WordpressError(' '.join([
-                'could not decode JSON:',
-                str(http_response.text)
-            ]))
+# class UsrSyncClient_WC(SyncClient_WC):
+#     endpoint_singular = 'customer'
 
-        if http_response.status_code not in [200, 201, 400]:
-            try:
-                first_json_response = http_response_json[0]
-            except KeyError:
-                raise WordpressError(' '.join([
-                    "invalid JSON response from",
-                    http_response.url,
-                    ": ",
-                    http_response.text
-                ]))
-            raise WordpressError(" ".join([
-                str(http_response.status_code),
-                str(http_response.reason),
-                ": ",
-                '[%s] %s' % (first_json_response.get('code'),
-                             first_json_response.get('message'))
-            ]))
+class UsrSyncClient_WP(SyncClient_WP):
+    endpoint_singular = 'user'
 
-        return http_response_json
-
-class UsrSyncClient_Abstract(SyncClient_Abstract):
-    client_class = AbstractClientInterface
-
-    def __init__(self, connectParams):
-        self.connectParams = connectParams
-        self.attemptConnect()
-
-    def __exit__(self, exit_type, value, traceback):
-        self.client.close()
-
-    def connectionReady(self):
-        return self.client
-
-    def assertConnect(self):
-        if not self.connectionReady:
-            self.attemptConnect()
-        assert self.connectionReady, "connection must be ready"
-
-    def attemptConnect(self):
-        self.client = self.client_class( **self.connectParams )
-
-class UsrSyncClient_JSON(UsrSyncClient_Abstract):
-    client_class = TansyncWordpressJsonWrapper
-
-    def __exit__(self, exit_type, value, traceback):
-        pass
-
-    def __init__(self, connectParams):
-        superConnectParams = {}
-        for param, key in zip(
-            ['json_uri', 'wp_user', 'wp_pass'],
-            ['site',     'user',    'pwd']
-        ):
-            assert param in connectParams, "missing mandatory param: " + param
-            superConnectParams[key] = param
-        super(UsrSyncClient_JSON, self).__init__(superConnectParams)
-
-    def uploadChanges(self, user_pkey, updates=None):
-        super(UsrSyncClient_JSON, self).uploadChanges(user_pkey)
-        updates_json = SanitationUtils.encodeJSON(updates)
-        # print "UPDATES:", updates
-        updates_json_base64 = SanitationUtils.encodeBase64(updates_json)
-        # print updates_json_base64
-        json_out = self.client.update_user(user_id=user_pkey, data={'tansync_updated_fields': updates_json_base64})
-
-        # print json_out
-        if json_out is None:
-            json_out = self.client.get_user(user_id=user_pkey)
-            if 'tansync_last_error' in json_out:
-                last_error = json_out['tansync_last_error']
-                raise Exception(
-                    "No response from json api, last error: %s" % last_error
-                )
-            raise Exception("No response from json api")
-        return json_out
-
-class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
+class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
     def __init__(self, connectParams, dbParams, fsParams):
         self.dbParams = dbParams
         self.fsParams = fsParams
         super(UsrSyncClient_SSH_ACT, self).__init__(connectParams)
 
     def attemptConnect(self):
-        self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.client.connect(**self.connectParams)
+        self.service = paramiko.SSHClient()
+        self.service.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.service.connect(**self.connectParams)
 
     @property
     def connectionReady(self):
-        return self.client and self.client._transport and self.client._transport.active
+        return self.service and self.service._transport and self.service._transport.active
 
     def execSilentCommandAssert(self, command):
         self.assertConnect()
-        stdin, stdout, stderr = self.client.exec_command(command)
+        stdin, stdout, stderr = self.service.exec_command(command)
+        if stdin: pass #gets rid of annoying warnings
         possible_errors = stdout.readlines() + stderr.readlines()
         for error in possible_errors:
             if re.match("^Countries.*", error):
@@ -163,30 +152,43 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         remoteDir = os.path.split(remotePath)[0]
 
         exception = Exception()
-        try:
-            sftpClient = self.client.open_sftp()
-            if remoteDir:
-                try:
-                    sftpClient.stat(remoteDir)
-                except:
-                    sftpClient.mkdir(remoteDir)
-            sftpClient.put(localPath, remotePath)
-            fstat = sftpClient.stat(remotePath)
-            if not fstat:
-                exception = UserWarning("could not stat remote file")
-        except Exception, e:
-            exception = e
-        finally:
-            sftpClient.close()
-        if not isinstance(exception, Exception):
-            raise exception
+        sftpClient = self.service.open_sftp()
+        if remoteDir:
+            try:
+                sftpClient.stat(remoteDir)
+            except:
+                sftpClient.mkdir(remoteDir)
+        sftpClient.put(localPath, remotePath)
+        fstat = sftpClient.stat(remotePath)
+        sftpClient.close()
+
+        if not fstat:
+            exception = UserWarning("could not stat remote file")
+
+        # try:
+        #     sftpClient = self.service.open_sftp()
+        #     if remoteDir:
+        #         try:
+        #             sftpClient.stat(remoteDir)
+        #         except:
+        #             sftpClient.mkdir(remoteDir)
+        #     sftpClient.put(localPath, remotePath)
+        #     fstat = sftpClient.stat(remotePath)
+        #     if not fstat:
+        #         exception = UserWarning("could not stat remote file")
+        # except Exception, e:
+        #     exception = e
+        # finally:
+        #     sftpClient.close()
+        # if not isinstance(exception, Exception):
+        #     raise exception
 
 
     def assertRemoteFileExists(self, remotePath, assertion = ""):
         self.assertConnect()
 
-        # stdin, stdout, stderr = self.client.exec_command('stat "%s"' % remotePath)
-        stderr = self.client.exec_command('stat "%s"' % remotePath)[2]
+        # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remotePath)
+        stderr = self.service.exec_command('stat "%s"' % remotePath)[2]
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
 
@@ -199,14 +201,14 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
     def getDeleteFile(self, remotePath, localPath):
         self.assertRemoteFileExists(remotePath)
 
-        sftpClient = self.client.open_sftp()
+        sftpClient = self.service.open_sftp()
         sftpClient.get(remotePath, localPath, self.printFileProgress)
         sftpClient.remove(remotePath)
         sftpClient.close()
 
         # exception = None
         # try:
-        #     sftpClient = self.client.open_sftp()
+        #     sftpClient = self.service.open_sftp()
         #     sftpClient.get(remotePath, localPath, self.printFileProgress)
         #     sftpClient.remove(remotePath)
         # except Exception, e:
@@ -218,7 +220,7 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
     def removeRemoteFile(self, remotePath):
         self.assertRemoteFileExists(remotePath)
-        self.client.exec_command('rm "%s"' % remotePath)
+        self.service.exec_command('rm "%s"' % remotePath)
 
     def uploadChanges(self, user_pkey, updates=None):
         if not updates:
@@ -258,13 +260,25 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
 
         self.putFile( localPath, remotePath)
 
-        command = " ".join(filter(None,[
+        tokens = [
             'cd ' + remote_export_folder + ';',
             '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
                 **self.dbParams
             ),
             ('"%s"' % fileName) if fileName else None
-        ]))
+        ]
+
+        command = " ".join( token for token in tokens if token)
+
+        # command = " ".join(filter(None,))
+        #
+        # command = " ".join(filter(None,[
+        #     'cd ' + remote_export_folder + ';',
+        #     '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
+        #         **self.dbParams
+        #     ),
+        #     ('"%s"' % fileName) if fileName else None
+        # ]))
 
         self.execSilentCommandAssert(command)
 
@@ -289,14 +303,25 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         localPath = os.path.join(inFolder, fileName)
         remotePath = os.path.join(remote_export_folder, fileName)
 
-        command = " ".join(filter(None,[
+        tokens = [
             'cd ' + remote_export_folder + ';',
             '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
                 **self.dbParams
             ),
             '-s"%s"' % since,
             '"%s"' % fileName
-        ]))
+        ]
+
+        command = " ".join([token for token in tokens if token])
+
+        # command = " ".join(filter(None,[
+        #     'cd ' + remote_export_folder + ';',
+        #     '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
+        #         **self.dbParams
+        #     ),
+        #     '-s"%s"' % since,
+        #     '"%s"' % fileName
+        # ]))
 
         print "executing export command..."
         self.execSilentCommandAssert(command)
@@ -305,8 +330,8 @@ class UsrSyncClient_SSH_ACT(UsrSyncClient_Abstract):
         print "analysing file..."
         parser.analyseFile(localPath, dialect_suggestion='act_out')
 
-class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
-    client_class = SSHTunnelForwarder
+class UsrSyncClient_SQL_WP(SyncClient_Abstract):
+    service_builder = SSHTunnelForwarder
 
     """docstring for UsrSyncClient_SQL_WP"""
     def __init__(self, connectParams, dbParams):
@@ -316,21 +341,21 @@ class UsrSyncClient_SQL_WP(UsrSyncClient_Abstract):
         # self.fsParams = fsParams
 
     def __enter__(self):
-        self.client.start()
+        self.service.start()
         return self
 
     def __exit__(self, exit_type, value, traceback):
-        self.client.close()
+        self.service.close()
 
     def attemptConnect(self):
-        self.client = SSHTunnelForwarder( **self.connectParams )
+        self.service = SSHTunnelForwarder( **self.connectParams )
 
     def analyseRemote(self, parser, since=None, limit=None, filterItems=None):
 
         self.assertConnect()
 
         # srv_offset = self.dbParams.pop('srv_offset','')
-        self.dbParams['port'] = self.client.local_bind_address[-1]
+        self.dbParams['port'] = self.service.local_bind_address[-1]
         cursor = pymysql.connect( **self.dbParams ).cursor()
 
         sm_where_clauses = []
@@ -500,64 +525,3 @@ ON {um_on_clause}
         if results:
             print "there are %d results" % len(results)
             parser.analyseRows(rows)
-
-#
-# if __name__ == '__main__':
-#     # srcFolder = "../source/"
-#     # inFolder = "../input/"
-#     yamlPath = "merger_config.yaml"
-#     # importName = time.strftime("%Y-%m-%d %H:%M:%S")
-#
-#     with open(yamlPath) as stream:
-#         # optionNamePrefix = 'test_'
-#         optionNamePrefix = ''
-#
-#         config = yaml.load(stream)
-#
-#         # if 'inFolder' in config.keys():
-#         #     inFolder = config['inFolder']
-#         # if 'outFolder' in config.keys():
-#         #     outFolder = config['outFolder']
-#         # if 'logFolder' in config.keys():
-#         #     logFolder = config['logFolder']
-#
-#         #mandatory
-#         # merge_mode = config.get('merge_mode', 'sync')
-#         ssh_user = config.get(optionNamePrefix+'ssh_user')
-#         ssh_pass = config.get(optionNamePrefix+'ssh_pass')
-#         ssh_host = config.get(optionNamePrefix+'ssh_host')
-#         ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
-#         remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
-#         remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
-#         db_user = config.get(optionNamePrefix+'db_user')
-#         db_pass = config.get(optionNamePrefix+'db_pass')
-#         db_name = config.get(optionNamePrefix+'db_name')
-#         db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
-#         wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-#         tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
-#
-#     TimeUtils.setWpSrvOffset(wp_srv_offset)
-#
-#     SSHTunnelForwarderAddress = (ssh_host, ssh_port)
-#     SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
-#
-#     SSHTunnelForwarderParams = {
-#         'ssh_address_or_host':SSHTunnelForwarderAddress,
-#         'ssh_password':ssh_pass,
-#         'ssh_username':ssh_user,
-#         'remote_bind_address': SSHTunnelForwarderBindAddress,
-#     }
-#
-#     PyMySqlConnectParams = {
-#         'host' : 'localhost',
-#         'user' : db_user,
-#         'password': db_pass,
-#         'db'   : db_name,
-#         'charset': db_charset,
-#         'use_unicode': True,
-#         'tbl_prefix': tbl_prefix,
-#         # 'srv_offset': wp_srv_offset,
-#     }
-#     # testXMLRPC()
-#     # testJSON()
-#     testSQLWP(SSHTunnelForwarderParams, PyMySqlConnectParams)
