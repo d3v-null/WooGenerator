@@ -99,13 +99,13 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         #     parserData,
         #     **catKwargs
         # )
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("CONSTRUCTED: %s" % catData.identifier)
         self.processObject(catData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("PROCESSED: %s" % catData.identifier)
         self.registerCategory(catData, objectData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("REGISTERED: %s" % catData.identifier)
 
     def processApiAttributes(self, objectData, attributes, var=False):
@@ -178,17 +178,23 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         return container
 
     def analyseWpApiObj(self, apiData):
+        if self.DEBUG_API:
+            self.registerMessage("API DATA CATEGORIES: %s" % repr(apiData.get('categories')))
+        if not apiData.get('categories'):
+
+            if self.DEBUG_API:
+                self.registerMessage("NO CATEGORIES FOUND IN API DATA: %s" % repr(apiData))
         kwargs = {
             'apiData':apiData,
         }
         objectData = self.newObject(rowcount=self.rowcount, **kwargs)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("CONSTRUCTED: %s" % objectData.identifier)
         self.processObject(objectData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("PROCESSED: %s" % objectData.identifier)
         self.registerObject(objectData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("REGISTERED: %s" % objectData.identifier)
         # self.registerMessage("mro: {}".format(container.mro()))
         self.rowcount += 1
@@ -218,14 +224,14 @@ class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin):
         }
         variationData = self.newObject(rowcount=self.rowcount, **kwargs)
 
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("CONSTRUCTED: %s" % variationData.identifier)
         self.processObject(variationData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("PROCESSED: %s" % variationData.identifier)
-        self.registerObject(variationData)    
+        self.registerObject(variationData)
         self.registerVariation(objectData, variationData)
-        if self.DEBUG_PARSER:
+        if self.DEBUG_API:
             self.registerMessage("REGISTERED: %s" % variationData.identifier)
 
         if 'attributes' in variationApiData:

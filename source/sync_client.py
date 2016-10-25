@@ -315,11 +315,11 @@ class SyncClient_Rest(SyncClient_Abstract):
             if self.service.namespace == 'wp-api':
                 total_pages_key = 'X-WP-TotalPages'
                 total_items_key = 'X-WP-Total'
-                links_finder = SanitationUtils.findall_wp_links
+                # links_finder = SanitationUtils.findall_wp_links
             else:
                 total_pages_key = 'x-wc-totalpages'
                 total_items_key = 'x-wc-total'
-                links_finder = SanitationUtils.findall_wc_links
+                # links_finder = SanitationUtils.findall_wc_links
 
             if self.total_pages is None and total_items_key in headers:
                 self.total_pages = int(headers.get(total_pages_key,''))
@@ -416,8 +416,8 @@ class SyncClient_Rest(SyncClient_Abstract):
                 e = UserWarning('api call to %s failed: %s' % (self.next_endpoint, self.prev_response.text))
                 Registrar.registerError(e)
 
-            if Registrar.DEBUG_API:
-                Registrar.registerMessage('first api response: %s' % str(prev_response_json))
+            # if Registrar.DEBUG_API:
+            #     Registrar.registerMessage('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
                 raise UserWarning('first api call returned errors: %s' % (prev_response_json['errors']))
 
@@ -495,8 +495,8 @@ class SyncClient_Rest(SyncClient_Abstract):
                 progressCounter = ProgressCounter(total_items)
             progressCounter.maybePrintUpdate(resultCount)
 
-            if Registrar.DEBUG_API:
-                Registrar.registerMessage('processing page: %s' % str(page))
+            # if Registrar.DEBUG_API:
+            #     Registrar.registerMessage('processing page: %s' % str(page))
             if self.endpoint_plural in page:
                 for page_item in page.get(self.endpoint_plural):
 
@@ -510,6 +510,7 @@ class SyncClient_Rest(SyncClient_Abstract):
     def uploadChanges(self, pkey, updates=None):
         super(SyncClient_Rest, self).uploadChanges(pkey)
         service_endpoint = '%s/%d' % (self.endpoint_plural,pkey)
+        updates = dict([(key, jsonencode(value)) for key, value in updates.items()])
         if self.service.version is not 'wc/v1':
             updates = {'product':updates}
         if Registrar.DEBUG_API:
