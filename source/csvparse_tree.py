@@ -448,12 +448,12 @@ class CSVParse_Tree(CSVParse_Base):
             self.registerMessage("meta: {}".format(meta))
 
         try:
-            stack = kwargs['stack']
-            del kwargs['stack']
+            stack = kwargs.pop('stack', None)
+            # stack = kwargs['stack']
+            # del kwargs['stack']
             assert stack is not None
-        except:
+        except (AssertionError):
             self.refreshStack(rowcount, kwargs['row'], depth)
-        finally:
             stack = self.stack
         assert isinstance(stack, ImportStack)
         if self.DEBUG_TREE:

@@ -390,9 +390,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                 # self.registerMessage("ANCESTOR NAME: %s" % str(objectData.getAncestorKey('name')))
                 taxoAncestorNames = [ancestorData.get('name') for ancestorData in objectData.taxoAncestors]
                 # self.registerMessage("TAXO ANCESTOR NAMES: %s" % str(taxoAncestorNames))
-                extraDepth = self.taxoDepth - 1
-                extraRowcount = objectData.rowcount
-                extraStack = self.stack.getLeftSlice(extraDepth)
                 extraName = objectData.name
                 extraName = re.sub(r' ?\([^\)]*\)', '', extraName)
                 extraName = re.sub(r'1Litre', '1 Litre', extraName)
@@ -438,30 +435,36 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                     extraName = re.sub(' Sachet', '', extraName, flags=re.I)
 
 
-                # Eucalyptus & Spearmint Candles
-                # Eucalyptus & Spearmint Candles
-                # Eucalyptus & Spearmint Candles
-                # Eucalyptus & Spearmint Candles
-
-
-                print "EXTRA LAYER NAME: %s" % str([extraName, extraTaxoName, extraSuffix])
+                extraDepth = self.taxoDepth - 1
+                extraRowcount = objectData.rowcount
+                extraStack = self.stack.getLeftSlice(extraDepth)
                 extraName = ' '.join(filter(None, [extraName, extraTaxoName, extraSuffix]))
+                extraCode = objectData.code
+                extraRow = objectData.row
+
+                # print "SKU: %s" % objectData.codesum
+                # print "-> EXTRA LAYER NAME: %s" % str(extraName)
+                # print "-> EXTRA STACK: %s" % repr(extraStack)
+                # print "-> EXTRA LAYER CODE: %s" % extraCode
+                # print "-> EXTRA ROW: %s" % str(extraRow)
                 extraLayer = self.newObject(
                     extraRowcount,
-                    row=objectData.row,
+                    row=extraRow,
                     depth = extraDepth,
                     meta = [
                         extraName,
-                        objectData.code
+                        extraCode
                     ],
                     stack = extraStack
                 )
+                # print "-> EXTRA LAYER ANCESTORS: %s" % repr(extraLayer.ancestors)
                 if self.DEBUG_WOO:
                     self.registerMessage("extraLayer name: %s; type: %s" % (str(extraName), str(type(extraLayer))))
-                # extraStack.append(extraLayer)
                 assert issubclass(type(extraLayer), ImportGenBase), \
                     "needs to subclass ImportGenBase to do codesum"
                 extraCodesum = getattr(extraLayer, 'codesum')
+                # print "-> EXTRA CODESUM: %s" % extraCodesum
+
                 # extraCodesum = (extraLayer).codesum
                 assert issubclass(type(extraLayer), ImportTreeObject), \
                     "needs to subclass ImportTreeObject to do siblings"
@@ -471,10 +474,13 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                     if sibling.codesum == extraCodesum:
                         if sibling.rowcount != extraRowcount:
                             extraLayer = sibling
-                            self.registerMessage("found sibling: %s"% extraLayer.index )
+                            if self.DEBUG_WOO: self.registerMessage("found sibling: %s"% extraLayer.index )
                             break
 
                 assert isinstance(extraLayer, ImportWooCategory )
+                extraStack.append(extraLayer)
+
+                # print "-> FINAL EXTRA LAYER: %s" % repr(extraLayer)
 
                 self.registerCategory(extraLayer, objectData)
             # todo maybe something with extra categories
@@ -721,7 +727,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
                 if special in self.specials.keys():
-                    self.registerMessage( "special %s exists!" % special )
+                    if self.DEBUG_WOO:
+                        self.registerMessage( "special %s exists!" % special )
 
                     if not objectData.isVariable :
 
@@ -731,12 +738,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                         specialto = specialparams.end_time
 
                         if( not TimeUtils.hasHappenedYet(specialto) ):
-                            self.registerMessage( "special %s is over: %s" % (special, specialto) )
+                            if self.DEBUG_WOO:
+                                self.registerMessage( "special %s is over: %s" % (special, specialto) )
                             continue
                         else:
                             specialfromString = TimeUtils.wpTimeToString(specialfrom)
                             specialtoString = TimeUtils.wpTimeToString(specialto)
-                            self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
+                            if self.DEBUG_WOO:
+                                self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
 
                         for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                             discount = specialparams.get(tier)
@@ -761,7 +770,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                                             special_price = dollar
 
                                 if special_price:
-                                    self.registerMessage( "special %s price is %s " % (special, special_price) )
+                                    if self.DEBUG_WOO:
+                                        self.registerMessage( "special %s price is %s " % (special, special_price) )
                                     tier_key = tier
                                     tier_from_key = tier[:-1]+"F"
                                     tier_to_key = tier[:-1]+"T"
@@ -770,7 +780,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                                         tier_from_key: TimeUtils.localToServerTime( specialfrom),
                                         tier_to_key: TimeUtils.localToServerTime(specialto)
                                     }.items():
-                                        self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
+                                        if self.DEBUG_WOO:
+                                            self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
                                         objectData[key] = value
                                     # objectData[tier_key] = special_price
                                     # objectData[tier_from_key] = specialfrom
@@ -841,7 +852,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                         filter(None,[
                             objectData.get('catsum', ""),
                             self.specialsCategory,
-                            objectData.getExtraSpecialCategory()
+                            objectData.extraSpecialCategory
                         ])
                     )
                 if objectData.isVariation:

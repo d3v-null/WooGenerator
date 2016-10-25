@@ -55,10 +55,10 @@ class AbstractServiceInterface(object):
     """Defines the interface to an abstract service"""
     def close(self): pass
     def connect(self, connectParams): raise NotImplementedError()
-    # def files(self): raise NotImplementedError()
+    def files(self): raise NotImplementedError()
     def put(self, *args, **kwargs): raise NotImplementedError()
-    # @property
-    # def version(self): raise NotImplementedError()
+    @property
+    def version(self): raise NotImplementedError()
     # @property
     # def wp_api(self): raise NotImplementedError()
 

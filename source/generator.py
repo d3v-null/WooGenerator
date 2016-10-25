@@ -125,10 +125,12 @@ with open(yamlPath) as stream:
     do_sync = config.get('do_sync')
     do_delete_images = config.get('do_delete_images')
     do_resize_images = config.get('do_resize_images')
+    do_remeta_images = config.get('do_remeta_images')
 
     current_special = config.get('current_special')
     add_special_categories = config.get('add_special_categories')
     download_master = config.get('download_master')
+    download_slave = config.get('download_slave')
     update_slave = config.get('update_slave')
 
 #mandatory params
@@ -523,27 +525,28 @@ elif Registrar.warnings:
 #########################################
 
 if do_images and schema in woo_schemas:
-    e = UserWarning("do_images currently not supported")
-    Registrar.registerError(e)
-    raise e
+    # e = UserWarning("do_images currently not supported")
+    # Registrar.registerError(e)
+    # raise e
 
     print ""
     print "Images:"
     print "==========="
 
-    def invalidImage(img, error):
-        # Registrar.registerError(error, img)
-        images[img].invalidate(error)
+    def invalidImage(img_name, error):
+        Registrar.registerError(error, img_name)
+        images[img_name].invalidate(error)
 
     ls_raw = {}
     for folder in imgRawFolders:
-        ls_raw[folder] = os.listdir(folder)
+        if folder:
+            ls_raw[folder] = os.listdir(folder)
 
-    def getRawImage(img):
-        for imgRawFolder in imgRawFolders:
-            if img in ls_raw[imgRawFolder]:
-                return os.path.join(imgRawFolder, img)
-        raise UserWarning("no img found")
+    def getRawImage(img_name):
+        for path in imgRawFolders:
+            if path and img_name in ls_raw[path]:
+                return os.path.join(path, img_name)
+        raise UserWarning("no image named %s found" % str(img_name))
 
     if not os.path.exists(imgDst):
         os.makedirs(imgDst)
@@ -582,7 +585,7 @@ if do_images and schema in woo_schemas:
         try:
             imgRawPath = getRawImage(img)
         except Exception as e:
-            invalidImage(img, e)
+            invalidImage(img, UserWarning("could not get raw image: %s " % repr(e)))
             continue
 
         name, ext = os.path.splitext(img)
@@ -596,23 +599,26 @@ if do_images and schema in woo_schemas:
             invalidImage(img, "could not get title or description: "+str(e) )
             continue
 
-        Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
+        if Registrar.DEBUG_IMG:
+            Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
 
         # ------
         # REMETA
         # ------
 
         try:
-            metagator = MetaGator(imgRawPath)
+            if do_remeta_images:
+                metagator = MetaGator(imgRawPath)
         except Exception, e:
             invalidImage(img, "error creating metagator: " + str(e))
             continue
 
         try:
-            metagator.update_meta({
-                'title': title,
-                'description': description
-            })
+            if do_remeta_images:
+                metagator.update_meta({
+                    'title': title,
+                    'description': description
+                })
         except Exception as e:
             invalidImage(img, "error updating meta: " + str(e))
 
@@ -622,7 +628,7 @@ if do_images and schema in woo_schemas:
 
         if do_resize_images:
             if not os.path.isfile(imgRawPath) :
-                invalidImage("SOURCE FILE NOT FOUND: %s" % imgRawPath, img)
+                invalidImage(img, "SOURCE FILE NOT FOUND: %s" % imgRawPath)
                 continue
 
             imgDstPath = os.path.join(imgDst, img)
@@ -632,7 +638,7 @@ if do_images and schema in woo_schemas:
                 # print "image mod (src, dst): ", imgSrcMod, imgdstmod
                 if imgDstMod > imgSrcMod:
                     if Registrar.DEBUG_IMG:
-                        Registrar.registerMessage("DESTINATION FILE NEWER: %s" % imgDstPath, img)
+                        Registrar.registerMessage(img, "DESTINATION FILE NEWER: %s" % imgDstPath)
                     continue
 
             print "resizing:", img
@@ -647,9 +653,10 @@ if do_images and schema in woo_schemas:
                 image.thumbnail(thumbsize)
                 image.save(imgDstPath)
 
-                imgmeta = MetaGator(imgDstPath)
-                imgmeta.write_meta(title, description)
-                # print imgmeta.read_meta()
+                if do_remeta_images:
+                    imgmeta = MetaGator(imgDstPath)
+                    imgmeta.write_meta(title, description)
+                    # print imgmeta.read_meta()
 
             except Exception as e:
                 invalidImage(img, "could not resize: " + str(e))
@@ -1161,20 +1168,22 @@ if allUpdates:
                 updateProgressCounter.maybePrintUpdate(count)
 
             if update_slave and update.sUpdated :
+                # print "attempting update to %s " % str(update)
+
                 try:
                     update.updateSlave(slaveClient)
-                finally:
-                    pass
-                # except Exception, e:
-                #     slaveFailures.append({
-                #         'update':update,
-                #         'master':SanitationUtils.coerceUnicode(update.newMObject),
-                #         'slave':SanitationUtils.coerceUnicode(update.newSObject),
-                #         'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                #         'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                #         'exception':repr(e)
-                #     })
-                #     SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+                except Exception, e:
+                    # slaveFailures.append({
+                    #     'update':update,
+                    #     'master':SanitationUtils.coerceUnicode(update.newMObject),
+                    #     'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                    #     'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
+                    #     'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                    #     'exception':repr(e)
+                    # })
+                    SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+            # else:
+            #     print "no update made to %s " % str(update)
 
     print debugUtils.hashify("COMPLETED UPDATES")
 

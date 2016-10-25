@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# from collections import OrderedDict
+from collections import OrderedDict
 # import os
 # import shutil
 # from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
@@ -27,7 +27,7 @@
 # from wordpress_json import WordpressJsonWrapper, WordpressError
 # import pymysql
 # from simplejson import JSONDecodeError
-from sync_client import SyncClient_WC # SyncClient_Abstract, 
+from sync_client import SyncClient_WC # SyncClient_Abstract,
 # from woocommerce import API as WCAPI
 # from coldata import ColData_Woo
 
@@ -36,3 +36,28 @@ from sync_client import SyncClient_WC # SyncClient_Abstract,
 
 class ProdSyncClient_WC(SyncClient_WC):
     endpoint_singular = 'product'
+    #
+    # def __init__(self, *args, **kwargs):
+    #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
+
+    def uploadChanges(self, pkey, updates=None):
+        # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
+        if updates == None:
+            updates = OrderedDict()
+        catlist = None
+        if 'catlist' in updates:
+            catlist = updates.pop('catlist')
+        response = None
+        if updates:
+            response = super(ProdSyncClient_WC, self).uploadChanges(pkey, updates)
+        if catlist:
+            print "\n\n\nWILL CHANGE THESE CATEGORIES: %s\n\n\n" % str(catlist)
+            self.setCategories(pkey, catlist)
+        else:
+            print "\n\n\nNO CAT CHANGES IN %s\n\n\n" % str(updates)
+        return response
+
+    def setCategories(self, pkey, categories):
+        """ Sets the item specified by pkey to be a member exclusively of the categories specified """
+        api_categories = self.service.get('products/%s?fields=categories' % pkey)
+        print "CURRENT CATEGORIES: %s" % unicode(api_categories)

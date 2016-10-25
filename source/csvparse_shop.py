@@ -35,11 +35,12 @@ class ShopObjList(ObjList):
             self.isValid = False
         self.products = ShopProdList()
         self.categories = ShopCatList()
+        self._objects = ObjList()
         super(ShopObjList, self).__init__(objects, indexer=indexer)
 
     @property
     def objects(self):
-        return self.products + self.categories
+        return self.products + self.categories + self._objects
 
     @property
     def name(self):
@@ -75,6 +76,8 @@ class ShopObjList(ObjList):
             container = self.categories
         elif objectData.isProduct:
             container = self.products
+        else:
+            container = self._objects
 
         if objectData not in container:
             bisect.insort(container, objectData)

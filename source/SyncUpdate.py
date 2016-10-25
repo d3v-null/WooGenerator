@@ -564,10 +564,13 @@ class SyncUpdate(Registrar):
     def getSlaveUpdatesNative(self):
         updates = OrderedDict()
         for col, warnings in self.syncWarnings.items():
+            if self.DEBUG_UPDATE: self.registerMessage( u"checking col %s" % unicode(col) )
             for warning in warnings:
+                if self.DEBUG_UPDATE: self.registerMessage( u"-> checking warning %s" % unicode(warning) )
                 subject = warning['subject']
                 if subject == self.opposite_src(self.slave_name):
                     updates = self.getSlaveUpdatesNativeRecursive(col, updates)
+        if self.DEBUG_UPDATE: self.registerMessage( u"returned %s" % unicode(updates) )
         return updates
 
     def getSlaveUpdates(self):
@@ -681,7 +684,7 @@ class SyncUpdate(Registrar):
         #todo: Determine if file imported correctly and delete file
 
     def updateSlave(self, client):
-            # SanitationUtils.safePrint(  self.displaySlaveChanges() )
+        # SanitationUtils.safePrint(  self.displaySlaveChanges() )
         updates = self.getSlaveUpdatesNative()
         if not updates:
             return
@@ -836,7 +839,7 @@ class SyncUpdate_Usr(SyncUpdate):
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
-        # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
+        SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
         if col in self.colData.data.keys():
             data = self.colData.data[col]
             if data.get(self.s_meta_target):
@@ -963,6 +966,10 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
 
                     elif not data_s.get('final'):
                         updates[key] = val
+                elif 'special' in data_s:
+                    key = col
+                    val = self.newSObject.get(col)
+                    updates[key] = val
             # if data.get('aliases'):
             #     data_aliases = data.get('aliases')
             #     for alias in data_aliases:

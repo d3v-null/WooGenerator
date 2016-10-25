@@ -118,6 +118,7 @@ class MetaGator(Registrar):
 
     def update_meta(self, newmeta):
         oldmeta = self.read_meta()
+        newmeta = dict([(key, SanitationUtils.coerceAscii(value)) for key, value in newmeta.items()])
         changed = []
         for key in ['title', 'description']:
             if SanitationUtils.similarComparison(oldmeta[key]) != SanitationUtils.similarComparison(newmeta[key]):

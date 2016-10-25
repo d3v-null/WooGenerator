@@ -348,6 +348,11 @@ class ColData_Woo(ColData_Prod):
             'label':'category_title',
             'category':True,
         }),
+        ('catlist', {
+            'wp-api':{
+                'special':True
+            }
+        }),
         ('prod_type', {
             'label':'tax:product_type',
             'product':True,
