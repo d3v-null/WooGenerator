@@ -231,6 +231,7 @@ group.add_argument('--debug-img', action='store_true', dest='debug_img')
 group.add_argument('--debug-api', action='store_true', dest='debug_api')
 group.add_argument('--debug-shop', action='store_true', dest='debug_shop')
 group.add_argument('--debug-update', action='store_true', dest='debug_update')
+group.add_argument('--debug-mro', action='store_true', dest='debug_mro')
 
 args = parser.parse_args()
 if args:
@@ -305,6 +306,8 @@ if args:
         Registrar.DEBUG_SHOP = args.debug_shop
     if args.debug_update is not None:
         Registrar.DEBUG_UPDATE = args.debug_update
+    if args.debug_mro is not None:
+        Registrar.DEBUG_MRO = args.debug_mro
 
 #process YAML file after determining mode
 
@@ -806,6 +809,8 @@ elif schema in woo_schemas:
 # Attempt download API data
 #########################################
 
+# Registrar.DEBUG_PARSER = True
+
 if download_slave:
 
     apiProductParser = CSVParse_Woo_Api(
@@ -814,6 +819,8 @@ if download_slave:
 
     with ProdSyncClient_WC(wcApiParams) as client:
         client.analyseRemote(apiProductParser, limit=global_limit)
+
+    print apiProductParser.categories
 else:
     apiProductParser = None
 

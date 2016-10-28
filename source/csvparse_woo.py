@@ -2,8 +2,8 @@
 from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
 from csvparse_abstract import ObjList, CSVParse_Base
 from csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
-from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, ImportGenBase
-from csvparse_gen import ImportGenTaxo, ImportGenObject
+from csvparse_gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
+from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
 from csvparse_shop import ImportShop, ImportShopProduct, ImportShopProductSimple
 from csvparse_shop import ImportShopProductVariable, ImportShopProductVariation
 from csvparse_shop import ImportShopCategory, CSVParse_Shop_Mixin, ShopObjList
@@ -22,7 +22,31 @@ class WooCatList(TaxoList):
 class WooVarList(ItemList):
     reportCols = ColData_Woo.getVariationCols()
 
-class ImportWooObject(ImportGenObject, ImportShop):
+class ImportWooMixin(object):
+    """ all things common to Woo import classes """
+
+    wpidKey = 'ID'
+    WPID = descriptorUtils.safeKeyProperty(wpidKey)
+    titleKey = 'title'
+    title = descriptorUtils.safeKeyProperty(titleKey)
+    slugKey = 'slug'
+    slug = descriptorUtils.safeKeyProperty(slugKey)
+
+    def __getitem__(self, key):
+        if key == self.titleKey:
+            return self.wooCatName
+        else:
+            return super(ImportWooMixin, self).__getitem__(key)
+
+    @property
+    def verifyMetaKeys(self):
+        return super(ImportWooMixin, self).verifyMetaKeys + [
+            self.wpidKey,
+            self.titleKey,
+            self.slugKey
+        ]
+
+class ImportWooObject(ImportShop, ImportWooMixin):
     container = ShopObjList
 
     def __init__(self, *args, **kwargs):
@@ -154,7 +178,48 @@ class ImportWooCategory(ImportGenTaxo, ImportWooObject, ImportShopCategory):
                         return result
         return None
 
-class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
+class CSVParse_Woo_Mixin(object):
+    """ All the stuff that's common to Woo Parser classes """
+    objectContainer = ImportWooObject
+
+    def findCategory(self, searchData):
+        response = None
+        for key in [
+            self.objectContainer.wpidKey,
+            self.objectContainer.slugKey,
+            self.objectContainer.titleKey
+        ]:
+            value = searchData.get(key)
+            if value:
+                for category in self.categories.values():
+                    if category.get(key) == value:
+                        response = category
+                        return response
+        return response
+
+    def getTitle(self, objectData):
+        assert isinstance(objectData, ImportWooMixin)
+        return objectData.title
+
+    def getParserData(self, **kwargs):
+        if Registrar.DEBUG_MRO:
+            Registrar.registerMessage(' ')
+        defaults = {
+            self.objectContainer.wpidKey:'',
+            self.objectContainer.slugKey:'',
+            self.objectContainer.titleKey:''
+        }
+        # superData = super(CSVParse_Woo_Mixin, self).getParserData(**kwargs)
+        # defaults.update(superData)
+        # if self.DEBUG_PARSER:
+            # self.registerMessage("PARSER DATA: %s" % repr(defaults))
+        return defaults
+
+    def clearTransients(self):
+        pass
+
+class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
+    objectContainer    = ImportWooObject
     itemContainer      = ImportWooItem
     productContainer   = ImportWooProduct
     taxoContainer      = ImportWooCategory
@@ -172,6 +237,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
     specialsCategory = None
     add_special_categories = False
 
+
+
     @property
     def containers(self):
         return {
@@ -183,9 +250,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
             'B': self.bundledContainer,
         }
 
-    def __init__(self, cols, defaults, schema="", importName="", \
-                taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
+    def __init__(self, cols, defaults, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         # print ("catMapping woo pre: %s" % str(catMapping))
@@ -223,23 +288,27 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
 
         extra_catMaps = OrderedDict()
 
-        # if not importName: importName = time.strftime("%Y-%m-%d %H:%M:%S")
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
-        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
-        if not schema: schema = "TT"
-        super(CSVParse_Woo, self).__init__( cols, defaults, schema, \
-                taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
-        self.dprcRules = dprcRules
-        self.dprpRules = dprpRules
-        self.specials = specials
-        self.categoryIndexer = self.productIndexer
-        self.catMapping = catMapping
+        kwargs['taxoSubs'] = listUtils.combineOrderedDicts( kwargs.get('taxoSubs', {}), extra_taxoSubs )
+        kwargs['itemSubs'] = listUtils.combineOrderedDicts( kwargs.get('itemSubs', {}), extra_itemSubs )
+        # importName = kwargs.pop('importName', time.strftime("%Y-%m-%d %H:%M:%S") )
+        if not kwargs.get('schema'):
+            kwargs['schema'] = "TT"
+        self.catMapping = listUtils.combineOrderedDicts( kwargs.pop('catMapping', {}), extra_catMaps )
+        self.dprcRules = kwargs.pop('dprcRules', {})
+        self.dprpRules = kwargs.pop('dprpRules', {})
+        self.specials = kwargs.pop('specials', {})
+        if not kwargs.get('metaWidth'): kwargs['metaWidth'] = 2
+        if not kwargs.get('itemDepth'): kwargs['itemDepth'] = 2
+        if not kwargs.get('taxoDepth'): kwargs['taxoDepth'] = 2
 
-        if self.DEBUG_WOO:
-            self.registerMessage("catMapping woo post: %s" % str(catMapping))
+        super(CSVParse_Woo, self).__init__( cols, defaults, **kwargs)
+
+        # self.categoryIndexer = self.productIndexer
+
+        # if self.DEBUG_WOO:
+        #     self.registerMessage("catMapping woo post: %s" % str(catMapping))
 
         # if self.DEBUG_WOO:
         #     print "WOO initializing: "
@@ -251,13 +320,32 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
     def clearTransients(self):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(CSVParse_Woo, self).clearTransients()
-        # CSVParse_Shop_Mixin.clearTransients(self)
+        CSVParse_Gen_Tree.clearTransients(self)
+        CSVParse_Shop_Mixin.clearTransients(self)
+        CSVParse_Woo_Mixin.clearTransients(self)
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
         self.onspecial_products = OrderedDict()
         self.onspecial_variations = OrderedDict()
+
+    def registerObject(self, objectData):
+        CSVParse_Gen_Tree.registerObject(self, objectData)
+        CSVParse_Shop_Mixin.registerObject(self, objectData)
+
+    def getParserData(self, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
+        superData = {}
+        for base_class in reversed(CSVParse_Woo.__bases__):
+            if hasattr(base_class, 'getParserData'):
+                superData.update(base_class.getParserData(self, **kwargs))
+        # superData = CSVParse_Woo_Mixin.getParserData(self, **kwargs)
+        # superData.update(CSVParse_Shop_Mixin.getParserData(self, **kwargs))
+        # superData.update(CSVParse_Gen_Tree.getParserData(self, **kwargs))
+        if self.DEBUG_PARSER:
+            self.registerMessage("PARSER DATA: %s" % repr(superData))
+        return superData
 
     def getNewObjContainer(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -460,8 +548,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
                 # print "-> EXTRA LAYER ANCESTORS: %s" % repr(extraLayer.ancestors)
                 if self.DEBUG_WOO:
                     self.registerMessage("extraLayer name: %s; type: %s" % (str(extraName), str(type(extraLayer))))
-                assert issubclass(type(extraLayer), ImportGenBase), \
-                    "needs to subclass ImportGenBase to do codesum"
+                assert issubclass(type(extraLayer), ImportGenMixin), \
+                    "needs to subclass ImportGenMixin to do codesum"
                 extraCodesum = getattr(extraLayer, 'codesum')
                 # print "-> EXTRA CODESUM: %s" % extraCodesum
 
@@ -921,12 +1009,12 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin):
 
 
 class CSVParse_TT(CSVParse_Woo):
-
-    def __init__(self, cols={}, defaults ={}, importName="", \
-                taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
-
-        schema = "TT"
+    def __init__(self, cols=None, defaults=None, **kwargs):
+        if cols is None:
+            cols = {}
+        if defaults is None:
+            defaults = {}
+        # schema = "TT"
 
         extra_cols = [ 'RNRC', 'RPRC', 'WNRC', 'WPRC', 'DNRC', 'DPRC']
         extra_defaults    = OrderedDict([])
@@ -958,19 +1046,29 @@ class CSVParse_TT(CSVParse_Woo):
             ('CTPP', 'CTKPP')
         ])
 
+        # cols = listUtils.combineLists( cols, extra_cols )
+        # defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        # taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        # itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
+        # catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
+        #
+        #
+        # super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
+        #         taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
+        #         dprcRules, dprpRules, specials, catMapping)
+
+        #
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
-        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
+        kwargs['taxoSubs'] = listUtils.combineOrderedDicts( kwargs.get('taxoSubs', {}), extra_taxoSubs )
+        kwargs['itemSubs'] = listUtils.combineOrderedDicts( kwargs.get('itemSubs', {}), extra_itemSubs )
+        kwargs['catMapping'] = listUtils.combineOrderedDicts( kwargs.get('catMapping', {}), extra_catMaps )
+        kwargs['schema'] = "TT"
+        # importName = kwargs.pop('importName', time.strftime("%Y-%m-%d %H:%M:%S") )
+        super(CSVParse_TT, self).__init__( cols, defaults, **kwargs)
 
-
-        super(CSVParse_TT, self).__init__( cols, defaults, schema, importName,\
-                taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials, catMapping)
-
-        if self.DEBUG_WOO:
-            self.registerMessage("catMapping: %s" % str(catMapping))
+        # if self.DEBUG_WOO:
+        #     self.registerMessage("catMapping: %s" % str(catMapping))
         # if self.DEBUG_WOO:
         #     print "WOO initializing: "
         #     print "-> taxoDepth: ", self.taxoDepth
@@ -979,11 +1077,14 @@ class CSVParse_TT(CSVParse_Woo):
         #     print "-> metaWidth: ", self.metaWidth
 
 class CSVParse_VT(CSVParse_Woo):
-    def __init__(self, cols={}, defaults ={}, importName="", \
-                taxoSubs={}, itemSubs={}, taxoDepth=2, itemDepth=2, metaWidth=2,\
-                dprcRules={}, dprpRules={}, specials={}, catMapping={}):
+    def __init__(self, cols=None, defaults=None, **kwargs):
+        if cols is None:
+            cols = {}
+        if defaults is None:
+            defaults = {}
 
-        schema = "VT"
+
+        # schema = "VT"
 
         extra_cols = [ 'RNRC', 'RPRC', 'WNRC', 'WPRC', 'DNRC', 'DPRC']
         extra_defaults    = OrderedDict([])
@@ -1013,14 +1114,26 @@ class CSVParse_VT(CSVParse_Woo):
 
         extra_catMaps = OrderedDict()
 
+        # cols = listUtils.combineLists( cols, extra_cols )
+        # defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
+        # taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
+        # itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
+        # catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
+        #
+        # self.registerMessage("catMapping: %s" % str(catMapping))
+        #
+        # super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
+        #         taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
+        #         dprcRules, dprpRules, specials, catMapping)
+        #
+
+
+        #
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
-        catMapping = listUtils.combineOrderedDicts( catMapping, extra_catMaps )
-
-        self.registerMessage("catMapping: %s" % str(catMapping))
-
-        super(CSVParse_VT, self).__init__( cols, defaults, schema, importName,\
-                taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth, \
-                dprcRules, dprpRules, specials, catMapping)
+        kwargs['taxoSubs'] = listUtils.combineOrderedDicts( kwargs.get('taxoSubs', {}), extra_taxoSubs )
+        kwargs['itemSubs'] = listUtils.combineOrderedDicts( kwargs.get('itemSubs', {}), extra_itemSubs )
+        kwargs['catMapping'] = listUtils.combineOrderedDicts( kwargs.get('catMapping', {}), extra_catMaps )
+        kwargs['schema'] = "VT"
+        # importName = kwargs.pop('importName', time.strftime("%Y-%m-%d %H:%M:%S") )
+        super(CSVParse_VT, self).__init__( cols, defaults, **kwargs)

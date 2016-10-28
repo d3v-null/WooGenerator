@@ -52,10 +52,13 @@ from wordpress.helpers import UrlUtils
 from simplejson.scanner import JSONDecodeError
 
 class AbstractServiceInterface(object):
-    """Defines the interface to an abstract service"""
+    """Defines the interface to an abstract service, gets rid of PEP8 warnings"""
     def close(self): pass
     def connect(self, connectParams): raise NotImplementedError()
     def files(self): raise NotImplementedError()
+    def put(self, *args, **kwargs): raise NotImplementedError()
+    def get(self, *args, **kwargs): raise NotImplementedError()
+    def post(self, *args, **kwargs): raise NotImplementedError()
     def put(self, *args, **kwargs): raise NotImplementedError()
     @property
     def version(self): raise NotImplementedError()
@@ -485,6 +488,7 @@ class SyncClient_Rest(SyncClient_Abstract):
     def analyseRemote(self, parser, since=None, limit=None):
         if since: pass #todo: implement since
         resultCount = 0
+
         apiIterator = self.ApiIterator(self.service, self.endpoint_plural)
         progressCounter = None
         for page in apiIterator:

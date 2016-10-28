@@ -323,7 +323,8 @@ class ColData_Woo(ColData_Prod):
                 'meta':False
             },
             'wp-api':{
-                'key':'title'
+                'key':'name',
+                'meta':False
             },
             'report':True,
             'sync':'simple_only'

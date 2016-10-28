@@ -5,7 +5,7 @@ Introduces the shop products and categories interfaces to CSV Parser classes
 from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 from csvparse_tree import ItemList, TaxoList
 from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
-from csvparse_gen import ImportGenBase
+from csvparse_gen import ImportGenMixin, ImportGenObject
 from collections import OrderedDict
 from utils import descriptorUtils, SanitationUtils, Registrar
 from coldata import ColData_Prod
@@ -89,7 +89,7 @@ class ShopObjList(ObjList):
             self.registerError(reason, self.fileName)
         self.isValid = False
 
-class ImportShop(ImportGenBase):
+class ImportShop(ImportGenObject):
     "Base class for shop objects (products, categories)"
     isProduct = None
     isCategory = None
@@ -165,8 +165,10 @@ class ImportShop(ImportGenBase):
 
 class ImportShopProduct(ImportShop):
     container = ShopProdList
+    # categoryIndexer = Registrar.getObjectIndex
     categoryIndexer = Registrar.getObjectRowcount
     # categoryIndexer = CSVParse_Gen_Mixin.getFullNameSum
+    # categoryIndexer = CSVParse_Gen_Mixin.getNameSum
     product_type = None
     isProduct = True
 
@@ -294,7 +296,7 @@ class ImportShopCategory(ImportShop):
     #     delim = super(ImportShopCategory, self).identifierDelimeter
     #     return '|'.join([d for d in [delim, self.namesum] ])
 
-class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
+class CSVParse_Shop_Mixin(object):
     """
     Mixin class provides shop interface for Parser classes
     """
@@ -333,9 +335,9 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         }
 
     def clearTransients(self):
-        if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        super(CSVParse_Shop_Mixin,self).clearTransients()
+        if Registrar.DEBUG_MRO:
+            Registrar.registerMessage(' ')
+        # super(CSVParse_Shop_Mixin,self).clearTransients()
         self.products   = OrderedDict()
         self.categories = OrderedDict()
         self.attributes = OrderedDict()
@@ -344,8 +346,8 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
         self.images     = OrderedDict()
 
     def registerProduct(self, prodData):
-        if self.DEBUG_SHOP:
-            self.registerMessage("registering product %s" % prodData.identifier)
+        if Registrar.DEBUG_SHOP:
+            Registrar.registerMessage("registering product %s" % prodData.identifier)
         assert prodData.isProduct
         self.registerAnything(
             prodData,
@@ -368,26 +370,27 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
     def getProducts(self):
         e = DeprecationWarning("Use .products instead of .getProducts()")
         self.registerError(e)
-        if self.DEBUG_SHOP:
-            self.registerMessage("returning products: {}".format(self.products.keys()))
+        if Registrar.DEBUG_SHOP:
+            Registrar.registerMessage("returning products: {}".format(self.products.keys()))
         return self.products
 
     def registerObject(self, objectData):
-        if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        super(CSVParse_Shop_Mixin, self).registerObject(objectData)
+        if Registrar.DEBUG_MRO:
+            Registrar.registerMessage(' ')
+        # super(CSVParse_Shop_Mixin, self).registerObject(objectData)
         if issubclass(type(objectData), ImportShopProduct):
             # and not issubclass(type(objectData), ImportShopProductVariation):
             self.registerProduct(objectData)
-            # if self.DEBUG_SHOP:
-                # self.registerMessage("Object is product")
+            # if Registrar.DEBUG_SHOP:
+                # Registrar.registerMessage("Object is product")
         # else:
-            # if self.DEBUG_SHOP:
-            #     self.registerMessage("Object is not product")
+            # if Registrar.DEBUG_SHOP:
+            #     Registrar.registerMessage("Object is not product")
 
-    def registerCategory(self, catData, itemData):
-        assert issubclass(type(catData), ImportShopCategory)
-        assert issubclass(type(itemData), ImportShopProduct)
+    def registerCategory(self, catData, itemData=None):
+        assert\
+            issubclass(type(catData), ImportShopCategory), \
+            "catData should be ImportShopCategory not %s" % str(type(catData))
         self.registerAnything(
             catData,
             self.categories,
@@ -396,7 +399,11 @@ class CSVParse_Shop_Mixin(CSVParse_Gen_Mixin):
             singular = True,
             registerName = 'categories'
         )
-        itemData.joinCategory(catData)
+        if itemData:
+            assert\
+                issubclass(type(itemData), ImportShopProduct), \
+                "itemData should be ImportShopProduct not %s" % str(type(itemData))
+            itemData.joinCategory(catData)
 
     def registerVariation(self, parentData, varData):
         assert issubclass(type(parentData), ImportShopProductVariable)

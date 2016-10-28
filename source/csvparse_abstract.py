@@ -1,9 +1,11 @@
 """
 CSVParse Abstract
 Abstract base classes originally intended to be used for parsing and storing CSV data in a
-convenient accessible dictionary structure, but modified to store data in other formats.
+convenient accessible dictionary structure, but modified to parse data in other formats.
 Parse classes store Import objects in their internal structure and output ObjList instances
 for easy analyis.
+Here be dragons. Some of the design decisions are pretty bizarre, so please have a full read
+through before changing anything. Sorry about that.
 """
 
 
@@ -17,6 +19,7 @@ import unicodecsv
 from copy import deepcopy, copy
 # from time import time
 # import os
+from pprint import pformat
 
 class ObjList(list, Registrar):
     # supports_tablefmt = True
@@ -159,14 +162,19 @@ class ObjList(list, Registrar):
 
 class ImportObject(OrderedDict, Registrar):
     container = ObjList
+    rowcountKey = 'rowcount'
 
     def __init__(self, data, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(ImportObject, self).__init__(data)
-        Registrar.__init__(self)
-        rowcount = kwargs.get('rowcount')
-        row = kwargs.get('row')
+        # Registrar.__init__(self)
+        if self.DEBUG_PARSER:
+            self.registerMessage('About to register child,\n -> DATA: %s\n -> KWARGS: %s' \
+                % (pformat(data), pformat(kwargs)) )
+
+        OrderedDict.__init__(self, **data)
+        rowcount = kwargs.pop(self.rowcountKey, None)
+        row = kwargs.pop('row', None)
         if rowcount is not None:
             self['rowcount'] = rowcount
         # if not self.get('rowcount'): self['rowcount'] = 0
@@ -176,12 +184,14 @@ class ImportObject(OrderedDict, Registrar):
         else:
             if not '_row' in self.keys():
                 self['_row'] = []
+        # super(ImportObject, self).__init__(*args, **kwargs)
+
 
     @property
     def row(self): return self._row
 
     @property
-    def rowcount(self): return self['rowcount']
+    def rowcount(self): return self[self.rowcountKey]
 
     @property
     def index(self): return self.rowcount
@@ -264,16 +274,16 @@ class ImportObject(OrderedDict, Registrar):
 class CSVParse_Base(Registrar):
     objectContainer = ImportObject
 
-    def __init__(self, cols, defaults, limit=None, **kwargs):
-        super(CSVParse_Base, self).__init__()
-        Registrar.__init__(self)
+    def __init__(self, cols, defaults, **kwargs):
+        # super(CSVParse_Base, self).__init__()
+        # Registrar.__init__(self)
         if self.DEBUG_MRO:
             self.registerMessage(' ')
 
         extra_cols = []
         extra_defaults = OrderedDict()
 
-        self.limit = limit
+        self.limit = kwargs.pop('limit', None)
         self.cols = listUtils.combineLists( cols, extra_cols )
         self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         self.objectIndexer = self.getObjectRowcount
@@ -301,7 +311,7 @@ class CSVParse_Base(Registrar):
         )
 
     def analyseHeader(self, row):
-        if self.DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
+        # if self.DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
         for col in self.cols:
             if( col in row ):
                 self.indices[col] = row.index(col)
@@ -312,7 +322,7 @@ class CSVParse_Base(Registrar):
             if self.DEBUG_ABSTRACT: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
 
     def retrieveColFromRow(self, col, row):
-        if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col
+        # if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col
         try:
             index = self.indices[col]
         except KeyError as e:
@@ -337,6 +347,8 @@ class CSVParse_Base(Registrar):
         gets data for the parser (in this case from row, specified in kwargs)
         generalized from getRowData
         """
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         row = kwargs.get('row', [])
         rowData = OrderedDict()
         for col in self.cols:
@@ -356,15 +368,22 @@ class CSVParse_Base(Registrar):
         return kwargs
 
     def newObject(self, rowcount, **kwargs):
+        """
+        An import object is created with two pieces of information:
+         - data: a dict containing the raw data in the importObject as a dictionary
+         - kwargs: extra arguments passed to subclass __init__s to initialize the object
+        Subclasses of CSVParse_Base override the getKwargs and getParserData methods
+        so that they can supply their own arguments to an object's initialization
+        """
         kwargs['row'] = kwargs.get('row', [])
         kwargs['rowcount'] = rowcount
         # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
         if self.DEBUG_PARSER: self.registerMessage( "defaultData: {}".format(defaultData) )
-        rowData = self.getParserData(**kwargs)
-        if self.DEBUG_PARSER: self.registerMessage( "rowData: {}".format(rowData) )
-        # allData = listUtils.combineOrderedDicts(rowData, defaultData)
-        allData = listUtils.combineOrderedDicts(defaultData, rowData)
+        parserData = self.getParserData(**kwargs)
+        if self.DEBUG_PARSER: self.registerMessage( "parserData: {}".format(parserData) )
+        # allData = listUtils.combineOrderedDicts(parserData, defaultData)
+        allData = listUtils.combineOrderedDicts(defaultData, parserData)
         if self.DEBUG_PARSER: self.registerMessage( "allData: {}".format(allData) )
         container = self.getNewObjContainer(allData, **kwargs)
         if self.DEBUG_PARSER: self.registerMessage("container: {}".format(container.__name__))

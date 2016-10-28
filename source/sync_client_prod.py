@@ -2,8 +2,8 @@
 from collections import OrderedDict
 # import os
 # import shutil
-# from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
-# from utils import ProgressCounter
+from utils import SanitationUtils
+# from utils import ProgressCounter, TimeUtils, listUtils, debugUtils, Registrar
 # from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 # from coldata import ColData_User
 # from tabulate import tabulate
@@ -28,6 +28,7 @@ from collections import OrderedDict
 # import pymysql
 from simplejson import JSONDecodeError
 from sync_client import SyncClient_WC # SyncClient_Abstract,
+from pprint import pformat
 # from woocommerce import API as WCAPI
 # from coldata import ColData_Woo
 
@@ -39,6 +40,31 @@ class ProdSyncClient_WC(SyncClient_WC):
     #
     # def __init__(self, *args, **kwargs):
     #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
+
+    def analyseRemote(self, parser, since=None, limit=None):
+        taxoApiIterator = self.ApiIterator(self.service, '/products/categories')
+        for page in taxoApiIterator:
+            if 'product_categories' in page:
+                for page_item in page.get('product_categories'):
+                    parser.processApiCategory(page_item)
+        if self.DEBUG_API:
+            self.registerMessage("Analysed categories:")
+            # % pformat(parser.categories.items()))
+            def printCatRecursive(catData):
+                for child in catData.children:
+                    if child.isRoot:
+                        continue
+                    print("%-5s | %50s | %5s | " % (
+                        (child.depth + 1) * '*',
+                        child.slug[:50],
+                        child.WPID
+                    ))
+                    printCatRecursive(child)
+            printCatRecursive(parser.rootData)
+
+        quit()
+
+        return super(ProdSyncClient_WC, self).analyseRemote(parser, since, limit)
 
     def uploadChanges(self, pkey, updates=None):
         # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
@@ -52,24 +78,31 @@ class ProdSyncClient_WC(SyncClient_WC):
             response = super(ProdSyncClient_WC, self).uploadChanges(pkey, updates)
         if categories:
             print "\n\n\nWILL CHANGE THESE CATEGORIES: %s\n\n\n" % str(categories)
-            # self.setCategories(pkey, categories)
+            self.setCategories(pkey, categories)
         else:
             print "\n\n\nNO CAT CHANGES IN %s\n\n\n" % str(updates)
         return response
 
-    # def setCategories(self, pkey, categories):
-    #     """ Sets the item specified by pkey to be a member exclusively of the categories specified """
-    #     categories = map(SanitationUtils.similarComparison, categories)
-    #     get_categories_response = self.service.get('products/%s?fields=categories' % pkey)
-    #     current_categories = []
-    #     if get_categories_response.status_code == 200:
-    #         try:
-    #             current_categories = get_categories_response.json()\
-    #                 .get('product', {})\
-    #                 .get('categories', [])
-    #         except JSONDecodeError:
-    #             raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
-    #     print "CURRENT CATEGORIES: %s" % unicode(current_categories)
-    #     current_categories = map(SanitationUtils.similarComparison, current_categories)
-    #     for category in current_categories:
-    #         for
+    def setCategories(self, pkey, categories):
+        """ Sets the item specified by pkey to be a member exclusively of the categories specified """
+        categories = map(SanitationUtils.similarComparison, categories)
+        get_categories_response = self.service.get('products/%s?fields=categories' % pkey)
+        current_categories = []
+        if get_categories_response.status_code == 200:
+            try:
+                current_categories = get_categories_response.json()\
+                    .get('product', {})\
+                    .get('categories', [])
+            except JSONDecodeError:
+                raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
+        print "CURRENT CATEGORIES: %s" % unicode(current_categories)
+        current_categories = map(SanitationUtils.similarComparison, current_categories)
+        delete_categories = []
+        add_categories = []
+        #not efficient but whatever
+        for category in categories:
+            if category not in current_categories:
+                add_categories.append(category)
+        for current_category in current_categories:
+            if not current_category in categories:
+                delete_categories.append(current_category)
