@@ -29,6 +29,7 @@ from utils import SanitationUtils
 from simplejson import JSONDecodeError
 from sync_client import SyncClient_WC # SyncClient_Abstract,
 from pprint import pformat
+from utils import Registrar
 # from woocommerce import API as WCAPI
 # from coldata import ColData_Woo
 
@@ -62,7 +63,9 @@ class ProdSyncClient_WC(SyncClient_WC):
                     printCatRecursive(child)
             printCatRecursive(parser.rootData)
 
-        quit()
+        # Registrar.DEBUG_PARSER = True
+        # Registrar.DEBUG_API = True
+
 
         return super(ProdSyncClient_WC, self).analyseRemote(parser, since, limit)
 

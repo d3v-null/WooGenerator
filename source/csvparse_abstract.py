@@ -163,20 +163,23 @@ class ObjList(list, Registrar):
 class ImportObject(OrderedDict, Registrar):
     container = ObjList
     rowcountKey = 'rowcount'
+    rowKey = '_row'
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
+        data = args[0]
         # Registrar.__init__(self)
         if self.DEBUG_PARSER:
             self.registerMessage('About to register child,\n -> DATA: %s\n -> KWARGS: %s' \
                 % (pformat(data), pformat(kwargs)) )
 
-        OrderedDict.__init__(self, **data)
         rowcount = kwargs.pop(self.rowcountKey, None)
-        row = kwargs.pop('row', None)
         if rowcount is not None:
-            self['rowcount'] = rowcount
+            data[self.rowcountKey] = rowcount
+        OrderedDict.__init__(self, **data)
+        row = kwargs.pop('row', None)
+
         # if not self.get('rowcount'): self['rowcount'] = 0
         # assert isinstance(self['rowcount'], int), "must specify integer rowcount not %s" % (self['rowcount'])
         if row is not None:
@@ -184,7 +187,7 @@ class ImportObject(OrderedDict, Registrar):
         else:
             if not '_row' in self.keys():
                 self['_row'] = []
-        # super(ImportObject, self).__init__(*args, **kwargs)
+        super(ImportObject, self).__init__(*args, **kwargs)
 
 
     @property
@@ -249,12 +252,17 @@ class ImportObject(OrderedDict, Registrar):
     def __setstate__(self, d): self.__dict__.update(d)
     def __copy__(self):
         return self.__class__(
-            copy(super(ImportObject,self)),
+            copy(OrderedDict(self.items())),
             **self.getCopyArgs()
         )
     def __deepcopy__(self, memodict=None):
+        # print "doing a deepcopy on %s with args %s and kwargs %s" % (
+        #     repr(self.__class__),
+        #     deepcopy(self.items()),
+        #     self.getCopyArgs()
+        # )
         return self.__class__(
-            deepcopy(OrderedDict(self)),
+            deepcopy(OrderedDict(self.items())),
             **self.getCopyArgs()
         )
 
@@ -375,9 +383,9 @@ class CSVParse_Base(Registrar):
         Subclasses of CSVParse_Base override the getKwargs and getParserData methods
         so that they can supply their own arguments to an object's initialization
         """
+        if self.DEBUG_PARSER: self.registerMessage( 'rowcount: {} | kwargs {}'.format(rowcount, kwargs) )
         kwargs['row'] = kwargs.get('row', [])
         kwargs['rowcount'] = rowcount
-        # self.registerMessage( 'row: {} | {}'.format(rowcount, row) )
         defaultData = OrderedDict(self.defaults.items())
         if self.DEBUG_PARSER: self.registerMessage( "defaultData: {}".format(defaultData) )
         parserData = self.getParserData(**kwargs)

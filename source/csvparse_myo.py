@@ -1,5 +1,5 @@
 from csvparse_gen import CSVParse_Gen_Tree
-from csvparse_shop import ImportShopProduct, ShopProdList
+from csvparse_shop import ImportShopProductMixin, ShopProdList
 from csvparse_abstract import ObjList
 from utils import listUtils, SanitationUtils
 from collections import OrderedDict
@@ -8,7 +8,7 @@ import time
 import os
 
 class CSVParse_MYO(CSVParse_Gen_Tree):
-    productContainer = ImportShopProduct
+    productContainer = ImportShopProductMixin
 
     @property
     def containers(self):

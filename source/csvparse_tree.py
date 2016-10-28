@@ -19,9 +19,11 @@ class ImportTreeObject(ImportObject):
     verifyMetaKeys = []
 
     def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage(' ')
         super(ImportTreeObject, self).__init__(*args, **kwargs)
-        if self.DEBUG_PARSER:
-            self.registerMessage('called with kwargs: %s' % pformat(kwargs))
+        # if self.DEBUG_PARSER:
+        #     self.registerMessage('called with kwargs: %s' % pformat(kwargs))
 
         # row = kwargs.get('row')
         # rowcount = kwargs.get('rowcount')
@@ -62,13 +64,18 @@ class ImportTreeObject(ImportObject):
             parent.registerChild(self)
 
         self.childRegister = OrderedDict()
-        self.childIndexer = str
+        self.childIndexer = Registrar.getObjectRowcount
 
         self.processMeta()
         self.verifyMeta()
 
+    # @property
+    # def verifyMetaKeys(self):
+    #     return []
+
     #
     def verifyMeta(self):
+        # return
         for key in self.verifyMetaKeys:
             if self.DEBUG_PARSER:
                 self.registerMessage("CHECKING KEY: %s" % key)
@@ -237,7 +244,7 @@ class ImportTreeObject(ImportObject):
 class ImportTreeRoot(ImportTreeObject):
     isRoot = True
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         data = OrderedDict()
@@ -337,13 +344,13 @@ class ImportStack(list):
     def copy(self):
         return ImportStack(self[:])
 
-class CSVParse_Rootable_Mixin(object):
+class CSVParse_Tree_Mixin(object):
     rootContainer   = ImportTreeRoot
 
     def clearTransients(self):
         self.rootData = self.rootContainer()
 
-class CSVParse_Tree(CSVParse_Base, CSVParse_Rootable_Mixin):
+class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     objectContainer = ImportTreeObject
     itemContainer   = ImportTreeItem
     taxoContainer   = ImportTreeTaxo
@@ -374,19 +381,14 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Rootable_Mixin):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         CSVParse_Base.clearTransients(self)
-        CSVParse_Rootable_Mixin.clearTransients(self)
-
+        CSVParse_Tree_Mixin.clearTransients(self)
         self.items = OrderedDict()
         self.taxos = OrderedDict()
         self.stack = ImportStack()
-        # self.registerMessage("ceated root: %s" % str(self.rootData))
 
-    def assignParent(self, parentData = None, itemData = None):
-        if not parentData: parentData = self.rootData
-        parentData.registerChild(itemData)
-        itemData.registerParent(parentData)
-
+    #
     def registerItem(self, itemData):
+        assert isinstance(itemData, ImportTreeObject)
         assert itemData.isItem
         self.registerAnything(
             itemData,
@@ -397,6 +399,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Rootable_Mixin):
         )
 
     def registerTaxo(self, taxoData):
+        assert isinstance(taxoData, ImportTreeObject)
         assert taxoData.isTaxo
         self.registerAnything(
             taxoData,
@@ -408,13 +411,27 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Rootable_Mixin):
         )
 
     def registerObject(self, objectData):
+        assert isinstance(objectData, ImportTreeObject)
+        super(CSVParse_Tree, self).registerObject(objectData)
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(CSVParse_Tree, self).registerObject(objectData)
         if objectData.isItem:
             self.registerItem(objectData)
         if objectData.isTaxo:
             self.registerTaxo(objectData)
+
+    # def registerObject(self, objectData):
+    #     CSVParse_Base.registerObject(self, objectData)
+    #     CSVParse_Tree_Mixin.registerObject(self, objectData)
+
+        # self.registerMessage("ceated root: %s" % str(self.rootData))
+
+    def assignParent(self, parentData = None, itemData = None):
+        assert isinstance(itemData, ImportTreeObject)
+        if not parentData: parentData = self.rootData
+        assert isinstance(parentData, ImportTreeObject)
+        parentData.registerChild(itemData)
+        itemData.registerParent(parentData)
 
     def depth(self, row): #overridden by child classes
         return 0

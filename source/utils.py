@@ -2772,7 +2772,7 @@ class Registrar(object):
             assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
         except AssertionError as e:
-            name = thing.__name__ if hasattr(thing, '__name__') else 'UNKN'
+            name = thing.__name__ if hasattr(thing, '__name__') else repr(indexer)
             raise Exception("Indexer [%s] produced invalid index: %s | %s" % (name, repr(index), str(e)))
         else:
             # if not register:

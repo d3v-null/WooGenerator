@@ -45,39 +45,40 @@ class ImportGenMixin(object):
     codesum     = descriptorUtils.safeKeyProperty(codesumKey)
     descsum     = descriptorUtils.safeKeyProperty(descsumKey)
 
+    verifyMetaKeys = [
+        namesumKey,
+        codesumKey,
+        descsumKey,
+    ]
+
     # def __init__(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
     #         self.registerMessage(' ')
     #     super(ImportGenMixin, self).__init__(*args, **kwargs)
 
     @property
-    def verifyMetaKeys(self):
-        superObj = super(ImportGenMixin, self)
-        superVerifyMetaKeys = []
-        if hasattr(superObj, 'verifyMetaKeys'):
-            superVerifyMetaKeys = superObj.verifyMetaKeys
-        return  superVerifyMetaKeys + [
-            self.namesumKey,
-            self.codesumKey,
-            self.descsumKey,
-        ]
-
-    @property
     def index(self):
         return self.codesum
+
+    # @property
+    # def verifyMetaKeys(self):
+    #     return [
+    #         self.namesumKey,
+    #         self.codesumKey,
+    #         self.descsumKey,
+    #     ]
 
     def __str__(self):
         return "%10s <%s>" % ('|'.join(i for i in [self.codesum, self.namesum] if i), self.typeName)
 
 class ImportGenFlat(ImportFlat, ImportGenMixin):
     index = ImportGenMixin.index
-    verifyMetaKeys = ImportGenMixin.verifyMetaKeys
 
     "Base class for flat generator classes"
-    def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        super(ImportGenFlat, self).__init__(*args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     if self.DEBUG_MRO:
+    #         self.registerMessage(' ')
+    #     super(ImportGenFlat, self).__init__(*args, **kwargs)
         # self.verifyMeta()
 
 
@@ -90,6 +91,8 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     descriptionKey = 'HTML Description'
     fullnamesumKey = 'fullnamesum'
 
+    verifyMetaKeys = ImportTreeObject.verifyMetaKeys + ImportGenMixin.verifyMetaKeys
+
     code        = descriptorUtils.safeKeyProperty(codeKey)
     name        = descriptorUtils.safeKeyProperty(nameKey)
     fullname    = descriptorUtils.safeKeyProperty(fullnameKey)
@@ -99,7 +102,6 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     nameDelimeter = ' '
 
     index = ImportGenMixin.index
-    verifyMetaKeys = ImportGenMixin.verifyMetaKeys
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -119,18 +121,16 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
         # parent = objectData.getParent()
         # return cls(objectData, rowcount, row, depth, meta, parent, regex, subs)
 
-    @property
-    def verifyMetaKeys(self):
-        superObj = super(ImportGenMixin, self)
-        superVerifyMetaKeys = []
-        if hasattr(superObj, 'verifyMetaKeys'):
-            superVerifyMetaKeys = superObj.verifyMetaKeys
-        return  superVerifyMetaKeys + [
-            self.codeKey,
-            self.nameKey,
-            self.fullnameKey,
-            self.fullnamesumKey
-        ]
+    # @property
+    # def verifyMetaKeys(self):
+    #     superVerifyMetaKeys = super(ImportGenObject, self).verifyMetaKeys
+    #     superVerifyMetaKeys += ImportGenMixin.verifyMetaKeys
+    #     return  superVerifyMetaKeys + [
+    #         self.codeKey,
+    #         self.nameKey,
+    #         self.fullnameKey,
+    #         self.fullnamesumKey
+    #     ]
 
     # @property
     # def index(self):
@@ -252,6 +252,7 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 
 class ImportGenItem(ImportGenObject, ImportTreeItem):
     "Class for items in generator heirarchy"
+
     @property
     def nameAncestors(self):
         return self.itemAncestors

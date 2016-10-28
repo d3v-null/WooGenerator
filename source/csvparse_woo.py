@@ -4,9 +4,9 @@ from csvparse_abstract import ObjList, CSVParse_Base
 from csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
 from csvparse_gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
 from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
-from csvparse_shop import ImportShop, ImportShopProduct, ImportShopProductSimple
-from csvparse_shop import ImportShopProductVariable, ImportShopProductVariation
-from csvparse_shop import ImportShopCategory, CSVParse_Shop_Mixin, ShopObjList
+from csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
+from csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
+from csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
 from csvparse_flat import CSVParse_Flat, ImportFlat
 from coldata import ColData_Woo
 from collections import OrderedDict
@@ -31,30 +31,17 @@ class ImportWooMixin(object):
     title = descriptorUtils.safeKeyProperty(titleKey)
     slugKey = 'slug'
     slug = descriptorUtils.safeKeyProperty(slugKey)
-
-    def __getitem__(self, key):
-        if key == self.titleKey:
-            return self.wooCatName
-        else:
-            return super(ImportWooMixin, self).__getitem__(key)
-
-    @property
-    def verifyMetaKeys(self):
-        return super(ImportWooMixin, self).verifyMetaKeys + [
-            self.wpidKey,
-            self.titleKey,
-            self.slugKey
-        ]
-
-class ImportWooObject(ImportShop, ImportWooMixin):
-    container = ShopObjList
+    verifyMetaKeys = [
+        wpidKey,
+        titleKey,
+        slugKey
+    ]
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        super(ImportWooObject, self).__init__(*args, **kwargs)
+            self.registerMessage('ImportWooMixin')
+        super(ImportWooMixin, self).__init__(*args, **kwargs)
         self.specials = []
-
 
     @property
     def isUpdated(self):
@@ -85,15 +72,61 @@ class ImportWooObject(ImportShop, ImportWooMixin):
         self.registerError(e)
         return self.specials
 
-class ImportWooItem(ImportWooObject, ImportGenItem):
-    pass
+class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
+    container = ShopObjList
 
-class ImportWooProduct(ImportWooItem, ImportShopProduct):
+    verifyMetaKeys = ImportGenObject.verifyMetaKeys + ImportWooMixin.verifyMetaKeys
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooObject')
+        ImportGenObject.__init__(self, *args, **kwargs)
+        ImportShopMixin.__init__(self, *args, **kwargs)
+        ImportWooMixin.__init__(self, *args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     if self.DEBUG_MRO:
+    #         self.registerMessage(' ')
+    #     super(ImportWooObject, self).__init__(*args, **kwargs)
+    #
+    # @property
+    # def verifyMetaKeys(self):
+    #     superVerifyMetaKeys = super(ImportWooObject, self).verifyMetaKeys
+    #     # superVerifyMetaKeys += ImportShopMixin.verifyMetaKeys
+    #     superVerifyMetaKeys += ImportWooMixin.verifyMetaKeys
+    #     return superVerifyMetaKeys
+
+class ImportWooItem(ImportWooObject, ImportGenItem):
+    verifyMetaKeys = ImportWooObject.verifyMetaKeys + ImportGenItem.verifyMetaKeys
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooItem')
+        ImportWooObject.__init__(self, *args, **kwargs)
+        ImportGenItem.__init__(self, *args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     if self.DEBUG_MRO:
+    #         self.registerMessage(' ')
+    #     super(ImportWooItem, self).__init__(*args, **kwargs)
+    #
+    # @property
+    # def verifyMetaKeys(self):
+    #     superVerifyMetaKeys = super(ImportWooItem, self).verifyMetaKeys
+    #     # superVerifyMetaKeys += ImportGenItem.verifyMetaKeys
+    #     return superVerifyMetaKeys
+
+class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
+    isProduct = ImportShopProductMixin.isProduct
     nameDelimeter = ' - '
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooProduct')
+        ImportWooItem.__init__(self, *args, **kwargs)
+        ImportShopProductMixin.__init__(self, *args, **kwargs)
 
     def processMeta(self):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ImportWooProduct')
         super(ImportWooProduct, self).processMeta()
 
         #process titles
@@ -144,14 +177,22 @@ class ImportWooProduct(ImportWooItem, ImportShopProduct):
         # names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
         # return "Specials > " + names[0] + " Specials"
 
-class ImportWooProductSimple(ImportWooProduct, ImportShopProductSimple):
-    pass
+class ImportWooProductSimple(ImportWooProduct, ImportShopProductSimpleMixin):
+    product_type = ImportShopProductSimpleMixin.product_type
 
-class ImportWooProductVariable(ImportWooProduct, ImportShopProductVariable):
-    pass
+class ImportWooProductVariable(ImportWooProduct, ImportShopProductVariableMixin):
+    isVariable = ImportShopProductVariableMixin.isVariable
+    product_type = ImportShopProductVariableMixin.product_type
 
-class ImportWooProductVariation(ImportWooProduct, ImportShopProductVariation):
-    pass
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooProductSimple')
+        ImportWooProduct.__init__(self, *args, **kwargs)
+        ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
+
+class ImportWooProductVariation(ImportWooProduct, ImportShopProductVariationMixin):
+    isVarition = ImportShopProductVariationMixin.isVariation
+    product_type = ImportShopProductVariationMixin.product_type
 
 class ImportWooProductComposite(ImportWooProduct):
     product_type = 'composite'
@@ -162,7 +203,35 @@ class ImportWooProductGrouped(ImportWooProduct):
 class ImportWooProductBundled(ImportWooProduct):
     product_type = 'bundle'
 
-class ImportWooCategory(ImportGenTaxo, ImportWooObject, ImportShopCategory):
+class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
+    verifyMetaKeys = ImportWooObject.verifyMetaKeys + ImportGenTaxo.verifyMetaKeys
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooTaxo')
+        ImportWooObject.__init__(self, *args, **kwargs)
+        ImportGenTaxo.__init__(self, *args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     if self.DEBUG_MRO:
+    #         self.registerMessage('ImportWooTaxo')
+    #     super(ImportWooTaxo, self).__init__(*args, **kwargs)
+    #
+    # @property
+    # def verifyMetaKeys(self):
+    #     superVerifyMetaKeys = super(ImportWooTaxo, self).verifyMetaKeys
+    #     # superVerifyMetaKeys += ImportGenTaxo.verifyMetaKeys
+    #     return superVerifyMetaKeys
+
+class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
+    isCategory = ImportShopCategoryMixin.isCategory
+    isProduct = ImportShopCategoryMixin.isProduct
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('ImportWooCategory')
+        ImportWooTaxo.__init__(self, *args, **kwargs)
+        ImportShopCategoryMixin.__init__(self, *args, **kwargs)
+        # super(ImportWooCategory, self).__init__(*args, **kwargs)
     # @property
     # def identifierDelimeter(self):
     #     return ImportWooObject.identifierDelimeter(self)
@@ -177,6 +246,19 @@ class ImportWooCategory(ImportGenTaxo, ImportWooObject, ImportShopCategory):
                     if result:
                         return result
         return None
+
+    @property
+    def wooCatName(self):
+        cat_layers = self.namesum.split(' > ')
+        return cat_layers[-1]
+
+    #
+    # def __getitem__(self, key):
+    #     if key == self.titleKey:
+    #         return self.wooCatName
+    #     else:
+    #         return super(ImportWooCategory, self).__getitem__(key)
+
 
 class CSVParse_Woo_Mixin(object):
     """ All the stuff that's common to Woo Parser classes """
@@ -197,7 +279,8 @@ class CSVParse_Woo_Mixin(object):
                         return response
         return response
 
-    def getTitle(self, objectData):
+    @classmethod
+    def getTitle(cls, objectData):
         assert isinstance(objectData, ImportWooMixin)
         return objectData.title
 
@@ -903,7 +986,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
         if objectData.isProduct:
             if objectData.isUpdated:
-                if objectData.isVariation:
+                if isinstance(objectData, ImportShopProductVariationMixin):
+                # if objectData.isVariation:
                     self.registerUpdatedVariation(objectData)
                 else:
                     self.registerUpdatedProduct(objectData)
@@ -953,14 +1037,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     def postProcessShipping(self, objectData):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['weight', 'length', 'height', 'width']:
-                if not objectData[key]:
+                if not objectData.get(key):
                     self.registerWarning("All products must have shipping: %s"%key, objectData)
                     break
 
     def postProcessPricing(self, objectData):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['WNR']:
-                if not objectData[key]:
+                if not objectData.get(key):
                     self.registerWarning("All products must have pricing: %s"%key, objectData)
                     break
 

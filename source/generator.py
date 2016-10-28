@@ -809,8 +809,6 @@ elif schema in woo_schemas:
 # Attempt download API data
 #########################################
 
-# Registrar.DEBUG_PARSER = True
-
 if download_slave:
 
     apiProductParser = CSVParse_Woo_Api(
@@ -866,14 +864,14 @@ if do_sync:
         # if gcs and gcs.isVariable:
 
         syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
-        if gcs and gcs.isVariation:
+        if gcs and hasattr(gcs,'isVariation') and gcs.isVariation:
             # print "IS VARIATION"
             syncUpdate.update(sync_cols_var)
         else:
             # print "IS NOT VARIATION"
             syncUpdate.update(sync_cols)
 
-        if gcs and not gcs.isVariation:
+        if gcs and not (hasattr(gcs,'isVariation') and gcs.isVariation):
             #category matching
 
             categoryMatcher.clear()
