@@ -561,6 +561,9 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 # self.registerMessage("ANCESTOR NAME: %s" % str(objectData.getAncestorKey('name')))
                 taxoAncestorNames = [ancestorData.get('name') for ancestorData in objectData.taxoAncestors]
                 # self.registerMessage("TAXO ANCESTOR NAMES: %s" % str(taxoAncestorNames))
+
+                # I'm so sorry for this code, it is utter horse shit but it works
+
                 extraName = objectData.name
                 extraName = re.sub(r' ?\([^\)]*\)', '', extraName)
                 extraName = re.sub(r'1Litre', '1 Litre', extraName)
@@ -602,8 +605,10 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                     if extraName.endswith('s'):
                         extraName = extraName[:-1]
                     extraSuffix = 'Packs'
-                elif re.search('Hair Care', extraTaxoName):
+                elif re.search('Hair Care', extraTaxoName, flags=re.I):
                     extraName = re.sub(' Sachet', '', extraName, flags=re.I)
+                elif re.search('Tanbience Product Packs', extraTaxoName, flags=re.I):
+                    extraTaxoName = ''
 
 
                 extraDepth = self.taxoDepth - 1

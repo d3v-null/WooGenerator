@@ -849,9 +849,54 @@ if do_sync:
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
+    categoryMatcher = CategoryMatcher()
+    categoryMatcher.clear()
+    categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
+
+    print "PERFECT MATCHES (%d)" % len(categoryMatcher.pureMatches)
+    for matchCount, match in enumerate(categoryMatcher.pureMatches):
+        # print "The category %100s matches with %100s" \
+        print repr(match)
+        print repr(match.mObjects[0].wooCatName)
+
+    print "MASTERLESS MATCHES (%d)" % len(categoryMatcher.masterlessMatches)
+    for matchCount, match in enumerate(categoryMatcher.masterlessMatches):
+        # print "The category %100s matches with %100s" \
+        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+        print repr(match)
+
+    print "SLAVELESS MATCHES (%d)" % len(categoryMatcher.slavelessMatches)
+    for matchCount, match in enumerate(categoryMatcher.slavelessMatches):
+        # print "The category %100s matches with %100s" \
+        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+        print repr(match)
+        print repr(match.mObjects[0].wooCatName)
+
+    print "DUPLICATE MATCHES (%d)" % len(categoryMatcher.duplicateMatches)
+    for matchCount, match in enumerate(categoryMatcher.duplicateMatches):
+        # print "The category %100s matches with %100s" \
+        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+        print repr(match)
+
+
+    if categoryMatcher.duplicateMatches:
+        e = UserWarning("categories couldn't be synchronized because of ambiguous names")
+        Registrar.registerError(e)
+        raise e
+
+    if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
+        e = UserWarning(
+            "You may want to fix up the following categories before syncing:\n%s\n%s"\
+            % (
+                '\n'.join(map(str,categoryMatcher.slavelessMatches)),
+                '\n'.join(map(str,categoryMatcher.masterlessMatches))
+            )
+        )
+        Registrar.registerError(e)
+        raise e
+    quit()
 
     productMatcher = ProductMatcher()
-    categoryMatcher = CategoryMatcher()
     productMatcher.processRegisters(apiProductParser.products, productParser.products)
     # print productMatcher.__repr__()
 
@@ -863,6 +908,11 @@ if do_sync:
     sync_cols_var = ColData_Woo.getWPAPIVariableCols()
     if Registrar.DEBUG_UPDATE:
         Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
+
+    if productMatcher.duplicateMatches:
+        e = UserWarning("products couldn't be synchronized because of duplicate SKUs")
+        Registrar.registerError(e)
+        raise e
 
     for matchCount, match in enumerate(productMatcher.pureMatches):
         mObject = match.mObjects[0]

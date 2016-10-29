@@ -251,6 +251,10 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         """
         parserData = OrderedDict()
         apiData = kwargs.get('apiData',{})
+        # print "apiData before: %s" % str(apiData)
+        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
+                        for key, value in apiData.items()])
+        # print "apiData after:  %s" % str(apiData)
         for col, col_data in ColData_Woo.getWPAPICoreCols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']

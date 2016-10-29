@@ -517,6 +517,15 @@ class SanitationUtils:
         return cgi.escape(string)
 
     @classmethod
+    def html_unescape_recursive(cls, things):
+        if isinstance(things, list):
+            return [cls.html_unescape_recursive(thing) for thing in things]
+        elif isinstance(things, (str, unicode)):
+            return cls.html_unescape(cls.coerceUnicode(things))
+        else:
+            return things
+
+    @classmethod
     def findAllImages(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
