@@ -100,12 +100,7 @@ class ProdSyncClient_WC(SyncClient_WC):
                 raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
         print "CURRENT CATEGORIES: %s" % unicode(current_categories)
         current_categories = map(SanitationUtils.similarComparison, current_categories)
-        delete_categories = []
-        add_categories = []
+        new_categories = list(set(categories) - set(current_categories))
+        # delete_categories = list(set(current_categories) - set(categories))
+
         #not efficient but whatever
-        for category in categories:
-            if category not in current_categories:
-                add_categories.append(category)
-        for current_category in current_categories:
-            if not current_category in categories:
-                delete_categories.append(current_category)

@@ -272,19 +272,20 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if 'in_stock' in apiData:
             self.getApiStockStatusData(parserData, apiData['in_stock'])
         # if 'description' in apiData:
-        #     parserData[self.categoryContainer.descriptionKey] = apiData['description']
+        #     parserData[self.objectContainer.descriptionKey] = apiData['description']
 
-        title = parserData.get(self.categoryContainer.titleKey, '')
+        title = parserData.get(self.objectContainer.titleKey, '')
         if not title and 'title' in apiData:
             title = apiData['title']
         if not title and 'name' in apiData:
             title = apiData['name']
-        parserData[self.categoryContainer.titleKey] = title
+        parserData[self.objectContainer.titleKey] = title
+        parserData['itemsum'] = title
 
-        slug = parserData.get(self.categoryContainer.slugKey,'')
+        slug = parserData.get(self.objectContainer.slugKey,'')
         if not slug and 'slug' in apiData:
             slug = apiData['slug']
-        parserData[self.categoryContainer.slugKey] = slug
+        parserData[self.objectContainer.slugKey] = slug
 
 
         if self.DEBUG_API: self.registerMessage( "parserData: {}".format(parserData) )

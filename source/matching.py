@@ -388,12 +388,16 @@ class AbstractMatcher(Registrar):
         return repr_str
 
 class ProductMatcher(AbstractMatcher):
+    # processRegisters = AbstractMatcher.processRegistersSingular
+    # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
     def __init__(self):
         super(ProductMatcher, self).__init__( lambda x: x.codesum )
         self.processRegisters = self.processRegistersSingular
         self.retrieveObjects = self.retrieveObjectsSingular
 
 class CategoryMatcher(AbstractMatcher):
+    # processRegisters = AbstractMatcher.processRegistersSingular
+    # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
     def __init__(self):
         super(CategoryMatcher, self).__init__( lambda x: x.wooCatName )
         self.processRegisters = self.processRegistersSingular

@@ -947,6 +947,20 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
+        if col == 'catlist':
+            if hasattr(self.oldSObject, 'isVariation') and self.oldSObject.isVariation:
+                # print "excluded item because isVariation"
+                return updates
+            else:
+                update_catlist = self.newSObject.get('catlist')
+                actual_catlist = self.oldSObject.categories.keys()
+                print "comparing cats of %s" % repr(self.newSObject)
+                static_catlist = list(set(update_catlist) | set(actual_catlist))
+                updates['categories'] = static_catlist
+                # new_catlist = list(set(update_catlist) - set(actual_catlist))
+                # print update_catlist
+                # print actual_catlist
+
         if col in self.colData.data:
             data = self.colData.data[col]
             if self.s_meta_target in data:
@@ -1010,6 +1024,12 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
     def getMasterUpdatesRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
         if self.DEBUG_UPDATE: self.registerMessage( u"checking %s" % unicode(col) )
+
+        if col == 'catlist':
+            if hasattr(self.oldSObject, 'isVariation') and self.oldSObject.isVariation:
+                # print "excluded item because isVariation"
+                return updates
+
         if col in self.colData.data:
             if self.DEBUG_UPDATE: self.registerMessage( u"col exists" )
             data = self.colData.data[col]

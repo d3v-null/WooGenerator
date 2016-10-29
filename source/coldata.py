@@ -353,8 +353,10 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'categories'
             },
-            # 'sync':'simple_only'
+            'sync':'simple_only'
         }),
+        # ('catids', {
+        # }),
         ('prod_type', {
             'label':'tax:product_type',
             'product':True,

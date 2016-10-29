@@ -842,6 +842,14 @@ delete_categories = OrderedDict()
 join_categories = OrderedDict()
 
 if do_sync:
+    #changes that I'm going to make to syncing:
+
+    # [ ] syncs ALL categories on WooCatName first, and updates Master categoryIDs
+    # [ ] creates list of categories that don't yet exist to be created
+    # [ ] Syncs categories on ID instead of WooCatName
+    # [ ] Probably need to patch SyncUpdate
+
+
     productMatcher = ProductMatcher()
     categoryMatcher = CategoryMatcher()
     productMatcher.processRegisters(apiProductParser.products, productParser.products)
