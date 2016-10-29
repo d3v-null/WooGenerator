@@ -835,9 +835,12 @@ sDeltaUpdates = []
 mDeltaUpdates = []
 slaveUpdates = []
 problematicUpdates = []
-globalMatches = MatchList()
-masterlessMatches = MatchList()
-slavelessMatches = MatchList()
+globalProductMatches = MatchList()
+globalCategoryMatches = MatchList()
+masterlessProductMatches = MatchList()
+masterlessCategoryMatches = MatchList()
+slavelessProductMatches = MatchList()
+slavelessCategoryMatches = MatchList()
 delete_categories = OrderedDict()
 join_categories = OrderedDict()
 
@@ -849,38 +852,45 @@ if do_sync:
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
+    # SYNC CATEGORIES
+
     categoryMatcher = CategoryMatcher()
     categoryMatcher.clear()
     categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
 
-    print "PERFECT MATCHES (%d)" % len(categoryMatcher.pureMatches)
-    for matchCount, match in enumerate(categoryMatcher.pureMatches):
-        # print "The category %100s matches with %100s" \
-        print repr(match)
-        print repr(match.mObjects[0].wooCatName)
+    # print "PERFECT MATCHES (%d)" % len(categoryMatcher.pureMatches)
+    # for matchCount, match in enumerate(categoryMatcher.pureMatches):
+    #     # print "The category %100s matches with %100s" \
+    #     print repr(match)
+    #     print repr(match.mObjects[0].wooCatName)
+    #
+    # print "MASTERLESS MATCHES (%d)" % len(categoryMatcher.masterlessMatches)
+    # for matchCount, match in enumerate(categoryMatcher.masterlessMatches):
+    #     # print "The category %100s matches with %100s" \
+    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+    #     print repr(match)
+    #
+    # print "SLAVELESS MATCHES (%d)" % len(categoryMatcher.slavelessMatches)
+    # for matchCount, match in enumerate(categoryMatcher.slavelessMatches):
+    #     # print "The category %100s matches with %100s" \
+    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+    #     print repr(match)
+    #     print repr(match.mObjects[0].wooCatName)
+    #
+    # print "DUPLICATE MATCHES (%d)" % len(categoryMatcher.duplicateMatches)
+    # for matchCount, match in enumerate(categoryMatcher.duplicateMatches):
+    #     # print "The category %100s matches with %100s" \
+    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
+    #     print repr(match)
 
-    print "MASTERLESS MATCHES (%d)" % len(categoryMatcher.masterlessMatches)
-    for matchCount, match in enumerate(categoryMatcher.masterlessMatches):
-        # print "The category %100s matches with %100s" \
-        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-        print repr(match)
 
-    print "SLAVELESS MATCHES (%d)" % len(categoryMatcher.slavelessMatches)
-    for matchCount, match in enumerate(categoryMatcher.slavelessMatches):
-        # print "The category %100s matches with %100s" \
-        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-        print repr(match)
-        print repr(match.mObjects[0].wooCatName)
-
-    print "DUPLICATE MATCHES (%d)" % len(categoryMatcher.duplicateMatches)
-    for matchCount, match in enumerate(categoryMatcher.duplicateMatches):
-        # print "The category %100s matches with %100s" \
-        # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-        print repr(match)
 
 
     if categoryMatcher.duplicateMatches:
-        e = UserWarning("categories couldn't be synchronized because of ambiguous names")
+        e = UserWarning(
+            "categories couldn't be synchronized because of ambiguous names:%s"\
+            % '\n'.join(map(str,categoryMatcher.duplicateMatches))
+        )
         Registrar.registerError(e)
         raise e
 
@@ -894,15 +904,21 @@ if do_sync:
         )
         Registrar.registerError(e)
         raise e
-    quit()
+    # quit()
+
+    globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
+    masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
+    slavelessCategoryMatches.addMatches( categoryMatcher.slavelessMatches)
+
+    # SYNC PRODUCTS
 
     productMatcher = ProductMatcher()
     productMatcher.processRegisters(apiProductParser.products, productParser.products)
     # print productMatcher.__repr__()
 
-    globalMatches.addMatches( productMatcher.pureMatches)
-    masterlessMatches.addMatches( productMatcher.masterlessMatches)
-    slavelessMatches.addMatches( productMatcher.slavelessMatches)
+    globalProductMatches.addMatches( productMatcher.pureMatches)
+    masterlessProductMatches.addMatches( productMatcher.masterlessMatches)
+    slavelessProductMatches.addMatches( productMatcher.slavelessMatches)
 
     sync_cols = ColData_Woo.getWPAPICols()
     sync_cols_var = ColData_Woo.getWPAPIVariableCols()
@@ -910,7 +926,10 @@ if do_sync:
         Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
 
     if productMatcher.duplicateMatches:
-        e = UserWarning("products couldn't be synchronized because of duplicate SKUs")
+        e = UserWarning(
+            "products couldn't be synchronized because of ambiguous SKUs:%s"\
+            % '\n'.join(map(str,productMatcher.duplicateMatches))
+        )
         Registrar.registerError(e)
         raise e
 
@@ -1065,15 +1084,15 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
     report_matching = do_sync
     if report_matching:
 
-        matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
+        matchingGroup = HtmlReporter.Group('product_matching', 'Product Matching Results')
         matchingGroup.addSection(
             HtmlReporter.Section(
                 'perfect_matches',
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                    'data': globalMatches.tabulate(tablefmt="html"),
-                    'length': len(globalMatches)
+                    'data': globalProductMatches.tabulate(tablefmt="html"),
+                    'length': len(globalProductMatches)
                 }
             )
         )
@@ -1083,8 +1102,8 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
                 **{
                     'title': 'Masterless matches',
                     'description': "matches are masterless",
-                    'data': masterlessMatches.tabulate(tablefmt="html"),
-                    'length': len(masterlessMatches)
+                    'data': masterlessProductMatches.tabulate(tablefmt="html"),
+                    'length': len(masterlessProductMatches)
                 }
             )
         )
@@ -1094,8 +1113,45 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
                 **{
                     'title': 'Slaveless matches',
                     'description': "matches are slaveless",
-                    'data': slavelessMatches.tabulate(tablefmt="html"),
-                    'length': len(slavelessMatches)
+                    'data': slavelessProductMatches.tabulate(tablefmt="html"),
+                    'length': len(slavelessProductMatches)
+                }
+            )
+        )
+
+        reporter.addGroup(matchingGroup)
+
+        matchingGroup = HtmlReporter.Group('category_matching', 'Category Matching Results')
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'perfect_matches',
+                **{
+                    'title': 'Perfect Matches',
+                    'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                    'data': globalCategoryMatches.tabulate(tablefmt="html"),
+                    'length': len(globalCategoryMatches)
+                }
+            )
+        )
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'masterless_matches',
+                **{
+                    'title': 'Masterless matches',
+                    'description': "matches are masterless",
+                    'data': masterlessCategoryMatches.tabulate(tablefmt="html"),
+                    'length': len(masterlessCategoryMatches)
+                }
+            )
+        )
+        matchingGroup.addSection(
+            HtmlReporter.Section(
+                'slaveless_matches',
+                **{
+                    'title': 'Slaveless matches',
+                    'description': "matches are slaveless",
+                    'data': slavelessCategoryMatches.tabulate(tablefmt="html"),
+                    'length': len(slavelessCategoryMatches)
                 }
             )
         )
