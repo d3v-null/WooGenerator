@@ -267,7 +267,7 @@ class ImportObject(OrderedDict, Registrar):
         )
 
     def __str__(self):
-        return "%10s <%s>" % (self.index, self.typeName)
+        return "%10s <%s>" % (self.identifier, self.typeName)
 
     def __repr__(self):
         return self.__str__()

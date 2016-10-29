@@ -24,13 +24,14 @@ from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC
 from matching import ProductMatcher, CategoryMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo
+from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo, SyncUpdate_Cat_Woo
 from bisect import insort
 from matching import MatchList
 from tabulate import tabulate
 import urlparse
 import webbrowser
 import re
+from pprint import pformat, pprint
 
 # import xml.etree.ElementTree as ET
 # import rsync
@@ -322,7 +323,7 @@ with open(yamlPath) as stream:
 ### PROCESS CONFIG ###
 
 TimeUtils.setWpSrvOffset(wp_srv_offset)
-SyncUpdate_Prod.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
 if variant == "ACC":
     genPath = os.path.join(inFolder, 'generator-solution.csv')
@@ -818,7 +819,7 @@ if download_slave:
     with ProdSyncClient_WC(wcApiParams) as client:
         client.analyseRemote(apiProductParser, limit=global_limit)
 
-    print apiProductParser.categories
+    # print apiProductParser.categories
 else:
     apiProductParser = None
 
@@ -833,8 +834,11 @@ else:
 
 sDeltaUpdates = []
 mDeltaUpdates = []
-slaveUpdates = []
-problematicUpdates = []
+slaveProductUpdates = []
+problematicProductUpdates = []
+masterCategoryUpdates = []
+slaveCategoryUpdates = []
+problematicCategoryUpdates = []
 globalProductMatches = MatchList()
 globalCategoryMatches = MatchList()
 masterlessProductMatches = MatchList()
@@ -857,31 +861,6 @@ if do_sync:
     categoryMatcher = CategoryMatcher()
     categoryMatcher.clear()
     categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
-
-    # print "PERFECT MATCHES (%d)" % len(categoryMatcher.pureMatches)
-    # for matchCount, match in enumerate(categoryMatcher.pureMatches):
-    #     # print "The category %100s matches with %100s" \
-    #     print repr(match)
-    #     print repr(match.mObjects[0].wooCatName)
-    #
-    # print "MASTERLESS MATCHES (%d)" % len(categoryMatcher.masterlessMatches)
-    # for matchCount, match in enumerate(categoryMatcher.masterlessMatches):
-    #     # print "The category %100s matches with %100s" \
-    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-    #     print repr(match)
-    #
-    # print "SLAVELESS MATCHES (%d)" % len(categoryMatcher.slavelessMatches)
-    # for matchCount, match in enumerate(categoryMatcher.slavelessMatches):
-    #     # print "The category %100s matches with %100s" \
-    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-    #     print repr(match)
-    #     print repr(match.mObjects[0].wooCatName)
-    #
-    # print "DUPLICATE MATCHES (%d)" % len(categoryMatcher.duplicateMatches)
-    # for matchCount, match in enumerate(categoryMatcher.duplicateMatches):
-    #     # print "The category %100s matches with %100s" \
-    #     # % (repr(match.mObjects[0]), repr(match.sObjects[0]))
-    #     print repr(match)
 
 
 
@@ -909,6 +888,47 @@ if do_sync:
     globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
     masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
     slavelessCategoryMatches.addMatches( categoryMatcher.slavelessMatches)
+
+    sync_cols = ColData_Woo.getWPAPICategoryCols()
+
+    print "SYNC COLS: %s" % pformat(sync_cols.items())
+    # quit()
+
+    for matchCount, match in enumerate(categoryMatcher.pureMatches):
+        mObject = match.mObjects[0]
+        sObject = match.sObjects[0]
+
+        gcs = match.gcs
+
+        syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
+
+        syncUpdate.update(sync_cols)
+
+        print syncUpdate.tabulate()
+
+        if not syncUpdate.importantStatic:
+            insort(problematicCategoryUpdates, syncUpdate)
+            continue
+
+        if syncUpdate.mUpdated:
+            masterCategoryUpdates.append(syncUpdate)
+
+        if syncUpdate.sUpdated:
+            slaveCategoryUpdates.append(syncUpdate)
+
+    for update in masterCategoryUpdates:
+        if not update.MasterID in productParser.categories:
+            print "couldn't fine pkey %s in productParser.categories" % update.MasterID
+            continue
+        for col, warnings in update.syncWarnings.items():
+            if not col == 'ID':
+                continue
+            for warning in warnings:
+                if not warning['subject'] == update.opposite_src(update.master_name):
+                    continue
+
+                newVal = warning['oldWinnerValue']
+                productParser.categories[update.MasterID][col] = newVal
 
     # SYNC PRODUCTS
 
@@ -948,7 +968,9 @@ if do_sync:
             # print "IS NOT VARIATION"
             syncUpdate.update(sync_cols)
 
-        if gcs and not (hasattr(gcs,'isVariation') and gcs.isVariation):
+            print syncUpdate.tabulate()
+
+        if gcs and hasattr(gcs,'isProduct') and gcs.isProduct:
             #category matching
 
             categoryMatcher.clear()
@@ -1016,11 +1038,11 @@ if do_sync:
             insort(sDeltaUpdates, syncUpdate)
 
         if not syncUpdate.importantStatic:
-            insort(problematicUpdates, syncUpdate)
+            insort(problematicProductUpdates, syncUpdate)
             continue
 
         if syncUpdate.sUpdated:
-            insort(slaveUpdates, syncUpdate)
+            insort(slaveProductUpdates, syncUpdate)
 
 
     print debugUtils.hashify("COMPLETED MERGE")
@@ -1167,8 +1189,8 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
             HtmlReporter.Section(
                 (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_updates"),
                 description = SLAVE_NAME + " items will be updated",
-                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-                length = len(slaveUpdates)
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveProductUpdates ]),
+                length = len(slaveProductUpdates)
             )
         )
 
@@ -1176,8 +1198,8 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
             HtmlReporter.Section(
                 "problematic_updates",
                 description = "items can't be merged because they are too dissimilar",
-                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
-                length = len(problematicUpdates)
+                data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicProductUpdates ]),
+                length = len(problematicProductUpdates)
             )
         )
 
@@ -1271,18 +1293,18 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
 # Perform updates
 #########################################
 
-allUpdates = slaveUpdates
-allUpdates += problematicUpdates
+allProductUpdates = slaveProductUpdates
+allProductUpdates += problematicProductUpdates
 
 slaveFailures = []
-if allUpdates:
-    print debugUtils.hashify("UPDATING %d RECORDS" % len(allUpdates))
+if allProductUpdates:
+    print debugUtils.hashify("UPDATING %d RECORDS" % len(allProductUpdates))
 
     if Registrar.DEBUG_PROGRESS:
-        updateProgressCounter = ProgressCounter(len(allUpdates))
+        updateProgressCounter = ProgressCounter(len(allProductUpdates))
 
     with ProdSyncClient_WC(wcApiParams) as slaveClient:
-        for count, update in enumerate(allUpdates):
+        for count, update in enumerate(allProductUpdates):
             if Registrar.DEBUG_PROGRESS:
                 updateProgressCounter.maybePrintUpdate(count)
 

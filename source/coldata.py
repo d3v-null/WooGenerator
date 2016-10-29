@@ -82,7 +82,7 @@ class ColData_Base(object):
         cols = OrderedDict()
         for col, data in cls.getWPAPICols().items():
             if 'sync' in data:
-                if data.get('sync') == 'simple_only':
+                if data.get('sync') == 'not_variable':
                     continue
             cols[col] = data
         return cols
@@ -285,6 +285,8 @@ class ColData_Woo(ColData_Prod):
 
     data = OrderedDict(ColData_Prod.data.items() + [
         ('ID', {
+            'category':True,
+            'product':True,
             'wp':{
                 'key': 'ID',
                 'meta': False
@@ -292,10 +294,17 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'id'
             },
-            'report':True
+            'report':True,
+            'sync':'slave_override',
         }),
         ('parent_SKU', {
             'variation':True,
+        }),
+        ('parent_id', {
+            'category':True,
+            'wp-api':{
+                'key':'parent'
+            }
         }),
         ('codesum', {
             'label':'SKU',
@@ -313,11 +322,25 @@ class ColData_Woo(ColData_Prod):
             'report':True,
             'sync':True
         }),
+        ('slug',{
+            'category':True,
+            'wp-api':True,
+            'sync':'slave_override'
+        }),
+        ('display', {
+            'category':True,
+            'wp-api':True,
+        }),
+        ('display', {
+            'category':True,
+            'wp-api':True,
+        }),
         ('itemsum', {
             'tag':'Title',
             'label':'post_title',
             'product':True,
             'variation': True,
+            'category': True,
             'wp':{
                 'key':'post_title',
                 'meta':False
@@ -326,8 +349,12 @@ class ColData_Woo(ColData_Prod):
                 'key':'name',
                 'meta':False
             },
+            'wp-api-wc-v1':{
+                'key':'name',
+                'meta':False
+            },
             'report':True,
-            'sync':'simple_only'
+            'sync':'not_variable'
         }),
         ('title_1', {
             'label': 'meta:title_1',
@@ -350,10 +377,11 @@ class ColData_Woo(ColData_Prod):
             'category':True,
         }),
         ('catlist', {
+            'product':True,
             'wp-api':{
                 'key':'categories'
             },
-            'sync':'simple_only'
+            'sync':'not_variable'
         }),
         # ('catids', {
         # }),
@@ -376,7 +404,7 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'description'
             },
-            'sync':'simple_only'
+            'sync':'not_variable'
         }),
         ('imgsum', {
             'label':'Images',
@@ -1045,35 +1073,43 @@ class ColData_Woo(ColData_Prod):
         super(ColData_Woo, self).__init__( data )
 
     @classmethod
-    def getProductCols(self):
-        return self.getExportCols('product')
+    def getProductCols(cls):
+        return cls.getExportCols('product')
 
     @classmethod
-    def getVariationCols(self):
-        return self.getExportCols('variation')
+    def getVariationCols(cls):
+        return cls.getExportCols('variation')
 
     @classmethod
-    def getCategoryCols(self):
-        return self.getExportCols('category')
+    def getCategoryCols(cls):
+        return cls.getExportCols('category')
 
     @classmethod
-    def getPricingCols(self):
-        return self.getExportCols('pricing')
+    def getWPAPICategoryCols(cls):
+        wpapiCategoryCols = OrderedDict()
+        for col, data in cls.data.items():
+            if data.get('category', '') and data.get('wp-api', ''):
+                wpapiCategoryCols[col] = data
+        return wpapiCategoryCols
 
     @classmethod
-    def getShippingCols(self):
-        return self.getExportCols('shipping')
+    def getPricingCols(cls):
+        return cls.getExportCols('pricing')
 
     @classmethod
-    def getInventoryCols(self):
-        return self.getExportCols('inventory')
+    def getShippingCols(cls):
+        return cls.getExportCols('shipping')
 
     @classmethod
-    def getWPCols(self):
-        return self.getExportCols('wp')
+    def getInventoryCols(cls):
+        return cls.getExportCols('inventory')
 
     @classmethod
-    def getAttributeCols(self, attributes, vattributes):
+    def getWPCols(cls):
+        return cls.getExportCols('wp')
+
+    @classmethod
+    def getAttributeCols(cls, attributes, vattributes):
         attributeCols = OrderedDict()
         all_attrs = listUtils.combineLists(attributes.keys(), vattributes.keys())
         for attr in all_attrs:
@@ -1090,7 +1126,7 @@ class ColData_Woo(ColData_Prod):
         return attributeCols
 
     @classmethod
-    def getAttributeMetaCols(self, vattributes):
+    def getAttributeMetaCols(cls, vattributes):
         atttributeMetaCols = OrderedDict()
         for attr in vattributes.keys():
             atttributeMetaCols['meta:attribute_'+attr] = {
@@ -1107,9 +1143,9 @@ class ColData_User(ColData_Base):
     }
 
     @classmethod
-    def modTimeCol(self, col):
-        if col in self.modMapping:
-            col = self.modMapping[col]
+    def modTimeCol(cls, col):
+        if col in cls.modMapping:
+            col = cls.modMapping[col]
         return 'Edited ' + col
 
     wpdbPKey = 'Wordpress ID'

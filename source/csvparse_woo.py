@@ -252,6 +252,18 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
         cat_layers = self.namesum.split(' > ')
         return cat_layers[-1]
 
+    @property
+    def index(self):
+        return self.rowcount
+
+    @property
+    def identifier(self):
+        identifier = super(ImportWooCategory, self).identifier
+        return "|".join([
+            self.codesum,
+            str(self.rowcount),
+            self.wooCatName,
+        ])
     #
     # def __getitem__(self, key):
     #     if key == self.titleKey:
@@ -313,6 +325,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     compositeContainer = ImportWooProductComposite
     groupedContainer  = ImportWooProductGrouped
     bundledContainer  = ImportWooProductBundled
+    categoryIndexer = Registrar.getObjectRowcount
 
     do_specials = True
     do_dyns = True

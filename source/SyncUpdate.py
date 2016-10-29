@@ -947,19 +947,21 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
-        if col == 'catlist':
-            if hasattr(self.oldSObject, 'isVariation') and self.oldSObject.isVariation:
-                # print "excluded item because isVariation"
-                return updates
-            else:
-                update_catlist = self.newSObject.get('catlist')
-                actual_catlist = self.oldSObject.categories.keys()
-                print "comparing cats of %s" % repr(self.newSObject)
-                static_catlist = list(set(update_catlist) | set(actual_catlist))
-                updates['categories'] = static_catlist
-                # new_catlist = list(set(update_catlist) - set(actual_catlist))
-                # print update_catlist
-                # print actual_catlist
+        # if col == 'catlist':
+        #     if hasattr(self.oldSObject, 'isVariation') and self.oldSObject.isVariation:
+        #         # print "excluded item because isVariation"
+        #         return updates
+        #     else:
+        #         update_catlist = self.newSObject.get('catlist')
+        #         actual_catlist = self.oldSObject.categories.keys()
+        #         print "comparing cats of %s" % repr(self.newSObject)
+        #         static_catlist = list(set(update_catlist) | set(actual_catlist))
+        #         # updates['categories'] = static_catlist
+        #         # update_catids = []
+        #         return updates
+        #         # new_catlist = list(set(update_catlist) - set(actual_catlist))
+        #         # print update_catlist
+        #         # print actual_catlist
 
         if col in self.colData.data:
             data = self.colData.data[col]
@@ -1051,3 +1053,26 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
             pass
             if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
         return updates
+
+class SyncUpdate_Cat_Woo(SyncUpdate):
+    colData = ColData_Woo
+
+    @property
+    def MasterID(self):
+        return self.getMValue('rowcount')
+
+    @property
+    def SlaveID(self):
+        return self.getSValue('ID')
+
+    def valuesSimilar(self, col, mValue, sValue):
+        response = super(SyncUpdate_Cat_Woo, self).valuesSimilar(col, mValue, sValue)
+        if not response:
+            if col is 'descsum':
+                mDesc = SanitationUtils.similarMarkupComparison(mValue)
+                sDesc = SanitationUtils.similarMarkupComparison(sValue)
+                if mDesc == sDesc:
+                    response = True
+
+        if self.DEBUG_UPDATE: self.registerMessage(self.testToStr(col, mValue.__repr__(), sValue.__repr__(), response))
+        return response
