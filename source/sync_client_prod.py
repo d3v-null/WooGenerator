@@ -50,18 +50,8 @@ class ProdSyncClient_WC(SyncClient_WC):
                     parser.processApiCategory(page_item)
         if self.DEBUG_API:
             self.registerMessage("Analysed categories:")
+            self.registerMessage(parser.toStrTree())
             # % pformat(parser.categories.items()))
-            def printCatRecursive(catData):
-                for child in catData.children:
-                    if child.isRoot:
-                        continue
-                    print("%-5s | %50s | %5s | " % (
-                        (child.depth + 1) * '*',
-                        child.slug[:50],
-                        child.WPID
-                    ))
-                    printCatRecursive(child)
-            printCatRecursive(parser.rootData)
 
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_API = True
@@ -75,32 +65,32 @@ class ProdSyncClient_WC(SyncClient_WC):
             updates = OrderedDict()
         categories = None
         if 'categories' in updates:
-            categories = updates.pop('categories')
+            categories = updates.get('categories')
         response = None
         if updates:
             response = super(ProdSyncClient_WC, self).uploadChanges(pkey, updates)
         if categories:
-            print "\n\n\nWILL CHANGE THESE CATEGORIES: %s\n\n\n" % str(categories)
-            self.setCategories(pkey, categories)
+            print "\nWILL CHANGE THESE CATEGORIES: %s" % str(categories)
+            # self.setCategories(pkey, categories)
         else:
-            print "\n\n\nNO CAT CHANGES IN %s\n\n\n" % str(updates)
+            print "\nNO CAT CHANGES IN %s" % str(updates)
         return response
 
-    def setCategories(self, pkey, categories):
-        """ Sets the item specified by pkey to be a member exclusively of the categories specified """
-        categories = map(SanitationUtils.similarComparison, categories)
-        get_categories_response = self.service.get('products/%s?fields=categories' % pkey)
-        current_categories = []
-        if get_categories_response.status_code == 200:
-            try:
-                current_categories = get_categories_response.json()\
-                    .get('product', {})\
-                    .get('categories', [])
-            except JSONDecodeError:
-                raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
-        print "CURRENT CATEGORIES: %s" % unicode(current_categories)
-        current_categories = map(SanitationUtils.similarComparison, current_categories)
-        new_categories = list(set(categories) - set(current_categories))
+    # def setCategories(self, pkey, categories):
+    #     """ Sets the item specified by pkey to be a member exclusively of the categories specified """
+    #     categories = map(SanitationUtils.similarComparison, categories)
+    #     get_categories_response = self.service.get('products/%s?fields=categories' % pkey)
+    #     current_categories = []
+    #     if get_categories_response.status_code == 200:
+    #         try:
+    #             current_categories = get_categories_response.json()\
+    #                 .get('product', {})\
+    #                 .get('categories', [])
+    #         except JSONDecodeError:
+    #             raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
+    #     print "CURRENT CATEGORIES: %s" % unicode(current_categories)
+    #     current_categories = map(SanitationUtils.similarComparison, current_categories)
+    #     new_categories = list(set(categories) - set(current_categories))
         # delete_categories = list(set(current_categories) - set(categories))
 
         #not efficient but whatever

@@ -102,7 +102,7 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
         if self.DEBUG_MRO:
             self.registerMessage('ImportWooItem')
         ImportWooObject.__init__(self, *args, **kwargs)
-        ImportGenItem.__init__(self, *args, **kwargs)
+        # ImportGenItem.__init__(self, *args, **kwargs)
     # def __init__(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
     #         self.registerMessage(' ')
@@ -186,7 +186,7 @@ class ImportWooProductVariable(ImportWooProduct, ImportShopProductVariableMixin)
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage('ImportWooProductSimple')
+            self.registerMessage('ImportWooProductVariable')
         ImportWooProduct.__init__(self, *args, **kwargs)
         ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
 
@@ -210,7 +210,7 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
         if self.DEBUG_MRO:
             self.registerMessage('ImportWooTaxo')
         ImportWooObject.__init__(self, *args, **kwargs)
-        ImportGenTaxo.__init__(self, *args, **kwargs)
+        # ImportGenTaxo.__init__(self, *args, **kwargs)
     # def __init__(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
     #         self.registerMessage('ImportWooTaxo')
@@ -265,6 +265,10 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
             'w:%s' % str(self.get(self.wpidKey)),
             self.wooCatName,
         ])
+
+    @property
+    def title(self):
+        return self.wooCatName
     #
     # def __getitem__(self, key):
     #     if key == self.titleKey:
@@ -282,7 +286,8 @@ class CSVParse_Woo_Mixin(object):
         for key in [
             self.objectContainer.wpidKey,
             self.objectContainer.slugKey,
-            self.objectContainer.titleKey
+            self.objectContainer.titleKey,
+            self.objectContainer.namesumKey,
         ]:
             value = searchData.get(key)
             if value:
@@ -561,7 +566,9 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     def processCategories(self, objectData):
         if objectData.isProduct:
             for ancestor in objectData.taxoAncestors:
-                self.registerCategory(ancestor, objectData)
+                if ancestor.name and self.categoryIndexer(ancestor) not in self.categories:
+                    self.registerCategory(ancestor)
+                self.joinCategory(ancestor, objectData)
 
         if objectData.get('E'):
             if self.DEBUG_WOO:
@@ -629,6 +636,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 extraRowcount = objectData.rowcount
                 extraStack = self.stack.getLeftSlice(extraDepth)
                 extraName = ' '.join(filter(None, [extraName, extraTaxoName, extraSuffix]))
+                extraName = SanitationUtils.stripExtraWhitespace(extraName)
                 extraCode = objectData.code
                 extraRow = objectData.row
 
@@ -637,42 +645,63 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 # print "-> EXTRA STACK: %s" % repr(extraStack)
                 # print "-> EXTRA LAYER CODE: %s" % extraCode
                 # print "-> EXTRA ROW: %s" % str(extraRow)
-                extraLayer = self.newObject(
-                    extraRowcount,
-                    row=extraRow,
-                    depth = extraDepth,
-                    meta = [
-                        extraName,
-                        extraCode
-                    ],
-                    stack = extraStack
-                )
-                # print "-> EXTRA LAYER ANCESTORS: %s" % repr(extraLayer.ancestors)
-                if self.DEBUG_WOO:
-                    self.registerMessage("extraLayer name: %s; type: %s" % (str(extraName), str(type(extraLayer))))
-                assert issubclass(type(extraLayer), ImportGenMixin), \
-                    "needs to subclass ImportGenMixin to do codesum"
-                extraCodesum = getattr(extraLayer, 'codesum')
-                # print "-> EXTRA CODESUM: %s" % extraCodesum
 
                 # extraCodesum = (extraLayer).codesum
-                assert issubclass(type(extraLayer), ImportTreeObject), \
-                    "needs to subclass ImportTreeObject to do siblings"
-                siblings = getattr(extraLayer, 'siblings')
-                # siblings = extraLayer.siblings
-                for sibling in siblings:
-                    if sibling.codesum == extraCodesum:
-                        if sibling.rowcount != extraRowcount:
-                            extraLayer = sibling
-                            if self.DEBUG_WOO: self.registerMessage("found sibling: %s"% extraLayer.index )
-                            break
 
-                assert isinstance(extraLayer, ImportWooCategory )
-                extraStack.append(extraLayer)
+                siblings = extraStack.getTop().children
+                # codeAncestors = [ancestor.code for ancestor in extraStack if ancestor.code ]
+                # codeAncestors += [extraCode]
+                # extraCodesum = ''.join(codeAncestors)
+
+                # assert issubclass(type(extraLayer), ImportTreeObject), \
+                    # "needs to subclass ImportTreeObject to do siblings"
+                # siblings = getattr(extraLayer, 'siblings')
+                # siblings = extraLayer.siblings
+                extraLayer = None
+                for sibling in siblings:
+                    # print "sibling meta: %s" % repr(sibling.meta)
+                    if sibling.name == extraName:
+                        extraLayer = sibling
+                    # if sibling.codesum == extraCodesum:
+                    #     if sibling.rowcount != extraRowcount:
+                    #         extraLayer = sibling
+                    #         found_sibling = True
+                    #         # if self.DEBUG_WOO: self.registerMessage("found sibling: %s"% extraLayer.index )
+                    #         break
+
+                if extraLayer:
+                    if self.DEBUG_WOO: self.registerMessage("found sibling: %s"% extraLayer.identifier )
+                else:
+                    if self.DEBUG_WOO: self.registerMessage("did not find sibling: %s"% extraLayer.identifier )
+
+                    extraLayer = self.newObject(
+                        extraRowcount,
+                        row=extraRow,
+                        depth = extraDepth,
+                        meta = [
+                            extraName,
+                            extraCode
+                        ],
+                        stack = extraStack
+                    )
+
+                    assert isinstance(extraLayer, ImportWooCategory )
+                    # extraStack.append(extraLayer)
+                    # print "-> EXTRA LAYER ANCESTORS: %s" % repr(extraLayer.ancestors)
+                    if self.DEBUG_WOO:
+                        self.registerMessage("extraLayer name: %s; type: %s" % (str(extraName), str(type(extraLayer))))
+                    assert issubclass(type(extraLayer), ImportGenTaxo)
+                    # assert issubclass(type(extraLayer), ImportGenMixin), \
+                    #     "needs to subclass ImportGenMixin to do codesum"
+
+                    self.registerCategory(extraLayer)
+
+                self.joinCategory(extraLayer, objectData)
+
 
                 # print "-> FINAL EXTRA LAYER: %s" % repr(extraLayer)
 
-                self.registerCategory(extraLayer, objectData)
+                # self.registerJoinCategory(extraLayer, objectData)
             # todo maybe something with extra categories
 
 
@@ -833,7 +862,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         result = ancestor.findChildCategory(index)
                         if result:
                             for member in objectData.members.values():
-                                self.registerCategory(result, member)
+                                self.registerJoinCategory(result, member)
 
         if objectData.isProduct:
             categories = objectData.categories.values()

@@ -30,7 +30,7 @@ class ObjList(list, Registrar):
         super(ObjList, self).__init__()
         Registrar.__init__(self)
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ObjList')
         self.indexer = indexer if indexer else (lambda x: x.index)
         self.supported_type = ImportObject
         # self._objList_type = 'objects'
@@ -167,7 +167,7 @@ class ImportObject(OrderedDict, Registrar):
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ImportObject')
         data = args[0]
         # Registrar.__init__(self)
         if self.DEBUG_PARSER:
@@ -286,7 +286,7 @@ class CSVParse_Base(Registrar):
         # super(CSVParse_Base, self).__init__()
         # Registrar.__init__(self)
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('CSVParse_Base')
 
         extra_cols = []
         extra_defaults = OrderedDict()

@@ -415,6 +415,7 @@ class SanitationUtils:
             cls.removeLeadingDollarWhiteSpace,
             cls.removeLeadingPercentWhiteSpace,
             cls.removeLoneDashes,
+            # cls.stripExtraWhitespace,
             cls.removeThousandsSeparator,
             cls.removeLoneWhiteSpace,
             cls.stripLeadingWhitespace,

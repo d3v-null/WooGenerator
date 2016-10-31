@@ -99,7 +99,7 @@ class ImportShopMixin(object):
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.registerMessage('ImportShopMixin')
         if Registrar.DEBUG_SHOP:
             self.registerMessage("creating shop object; %s %s %s %s" % (
                 'isProduct' if self.isProduct else '!isProduct',
@@ -206,7 +206,7 @@ class ImportShopProductMixin(object):
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.registerMessage('ImportShopProductMixin')
         if self.product_type:
             args[0]['prod_type'] = self.product_type
         # super(ImportShopProductMixin, self).__init__(*args, **kwargs)
@@ -251,7 +251,7 @@ class ImportShopProductVariableMixin(object):
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.registerMessage('ImportShopProductVariableMixin')
         # super(ImportShopProductVariableMixin, self).__init__(*args, **kwargs)
         self.variations = OrderedDict()
 
@@ -294,7 +294,7 @@ class ImportShopCategoryMixin(object):
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.registerMessage('ImportShopCategoryMixin')
         # super(ImportShopCategoryMixin, self).__init__(*args, **kwargs)
         self.members = OrderedDict()
 
@@ -411,7 +411,7 @@ class CSVParse_Shop_Mixin(object):
             # if Registrar.DEBUG_SHOP:
             #     Registrar.registerMessage("Object is not product")
 
-    def registerCategory(self, catData, itemData=None):
+    def registerCategory(self, catData):
         assert\
             issubclass(type(catData), ImportShopCategoryMixin), \
             "catData should be ImportShopCategoryMixin not %s" % str(type(catData))
@@ -423,11 +423,20 @@ class CSVParse_Shop_Mixin(object):
             singular = True,
             registerName = 'categories'
         )
+
+
+    def joinCategory(self, catData, itemData=None):
         if itemData:
             assert\
                 issubclass(type(itemData), ImportShopProductMixin), \
                 "itemData should be ImportShopProductMixin not %s" % str(type(itemData))
+            # for product_cat in itemData.categories:
+            #     assert self.categoryIndexer(product_cat) != self.categoryIndexer(catData)
             itemData.joinCategory(catData)
+
+    def registerJoinCategory(self, catData, itemData=None):
+        self.registerCategory(catData)
+        self.joinCategory(catData, itemData)
 
     def registerVariation(self, parentData, varData):
         assert issubclass(type(parentData), ImportShopProductVariableMixin)
@@ -474,3 +483,23 @@ class CSVParse_Shop_Mixin(object):
                     singular=False,
                     registerName='Variable Attributes'
                 )
+
+
+    def toStrTreeRecursive(self, catData):
+        response = ''
+        for child in catData.children:
+            if child.isRoot or not child.isCategory:
+                continue
+            response += " | ".join([
+                "%-5s" % ((child.depth + 1) * '*'),
+                "%50s" % child.title[:50],
+                "w:%10s" % str(child.WPID)[:10],
+
+                # "%5s" % child.WPID
+            ])
+            response += '\n'
+            response += self.toStrTreeRecursive(child)
+        return response
+
+    def toStrTree(self):
+        return self.toStrTreeRecursive(self.rootData)

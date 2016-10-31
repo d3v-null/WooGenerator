@@ -68,6 +68,15 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
     def index(self):
         return self.namesum
 
+    @property
+    def identifier(self):
+        identifier = super(ImportApiCategory, self).identifier
+        return "|".join([
+            'r:%s' % str(self.rowcount),
+            'w:%s' % str(self.get(self.wpidKey)),
+            self.wooCatName,
+        ])
+
 # class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin, CSVParse_Tree_Mixin):
 # class CSVParse_Woo_Api(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 # class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
@@ -85,6 +94,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
 
     def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.registerMessage('CSVParse_Woo_Api')
         super(CSVParse_Woo_Api, self).__init__(*args, **kwargs)
         # self.categoryIndexer = CSVParse_Gen_Mixin.getNameSum
         # if hasattr(CSVParse_Woo_Mixin, '__init__'):
@@ -168,9 +179,13 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if 'name' in categoryApiData:
             categorySearchData[self.categoryContainer.titleKey] = categoryApiData['name']
             categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['name']
+        elif 'title' in categoryApiData:
+            categorySearchData[self.categoryContainer.titleKey] = categoryApiData['title']
+            categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['title']
         if 'slug' in categoryApiData:
             categorySearchData[self.categoryContainer.slugKey] = categoryApiData['slug']
-            categorySearchData[self.categoryContainer.codesumKey] = categoryApiData['slug']
+        if self.DEBUG_API:
+            self.registerMessage("SEARCHING FOR CATEGORY: %s" % repr(categorySearchData))
         catData = self.findCategory(categorySearchData)
         if not catData:
             if self.DEBUG_API:
@@ -208,24 +223,25 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
             catData = self.newObject(rowcount=self.rowcount, **kwargs)
 
+            if self.DEBUG_API:
+                self.registerMessage("CONSTRUCTED: %s" % catData.identifier)
+            self.processObject(catData)
+            if self.DEBUG_API:
+                self.registerMessage("PROCESSED: %s" % catData.identifier)
+            self.registerCategory(catData)
+            if self.DEBUG_API:
+                self.registerMessage("REGISTERED: %s" % catData.identifier)
+
         else:
             if self.DEBUG_API:
                 self.registerMessage("FOUND CATEGORY: %s" % repr(catData))
 
-
-
-        if self.DEBUG_API:
-            self.registerMessage("CONSTRUCTED: %s" % catData.identifier)
-        self.processObject(catData)
-        if self.DEBUG_API:
-            self.registerMessage("PROCESSED: %s" % catData.identifier)
+        self.joinCategory(catData, objectData)
         # if self.DEBUG_API:
         #     index = self.categoryIndexer(catData)
         #     self.registerMessage(repr(self.categoryIndexer))
         #     self.registerMessage("REGISTERING CATEGORY WITH INDEX %s" % repr(index))
-        self.registerCategory(catData, objectData)
-        if self.DEBUG_API:
-            self.registerMessage("REGISTERED: %s" % catData.identifier)
+
 
         self.rowcount += 1
 

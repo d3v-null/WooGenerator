@@ -105,7 +105,7 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ImportGenObject')
         self.subs = kwargs.pop('subs', {})
         self.regex = kwargs.pop('regex', {})
         super(ImportGenObject, self).__init__(*args, **kwargs)
@@ -331,7 +331,7 @@ class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin): #, CSVParse_Shop):
 
     def __init__(self, cols, defaults, schema, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('CSVParse_Gen_Tree')
         taxoSubs = kwargs.pop('taxoSubs', {})
         itemSubs = kwargs.pop('itemSubs', {})
         extra_defaults = OrderedDict([

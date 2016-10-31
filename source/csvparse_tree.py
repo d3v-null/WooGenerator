@@ -20,7 +20,7 @@ class ImportTreeObject(ImportObject):
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ImportTreeObject')
         super(ImportTreeObject, self).__init__(*args, **kwargs)
         # if self.DEBUG_PARSER:
         #     self.registerMessage('called with kwargs: %s' % pformat(kwargs))
@@ -35,8 +35,6 @@ class ImportTreeObject(ImportObject):
             raise UserWarning("No parent specified, try specifying root as parent")
         self.parent = parent
 
-        if self.DEBUG_MRO:
-            self.registerMessage(' ')
         try:
             depth = kwargs.pop('depth', -1)
             if not self.isRoot:
@@ -60,13 +58,13 @@ class ImportTreeObject(ImportObject):
         if self.DEBUG_PARSER:
             self.registerMessage('About to register child: %s' % str(self.items()))
 
+        self.processMeta()
         if not self.isRoot:
             parent.registerChild(self)
 
         self.childRegister = OrderedDict()
         self.childIndexer = Registrar.getObjectRowcount
 
-        self.processMeta()
         self.verifyMeta()
 
     # @property
@@ -95,6 +93,19 @@ class ImportTreeObject(ImportObject):
     #
     def registerChild(self, childData):
         assert childData, "childData must be valid"
+        # self.registerMessage("Registering child %s of %s with siblings: %s"\
+        #     % (
+        #         childData.identifier,
+        #         self.identifier,
+        #         str(self.children)
+        #     ))
+        # for child in self.children:
+        #     assert child.fullname != childData.fullname, "child %s of %s not unique to %s" \
+        #                                             % (
+        #                                                 childData.identifier,
+        #                                                 self.identifier,
+        #                                                 self.children
+        #                                             )
         self.registerAnything(
             childData,
             self.childRegister,
@@ -246,9 +257,13 @@ class ImportTreeRoot(ImportTreeObject):
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('ImportTreeRoot')
         data = OrderedDict()
         super(ImportTreeRoot, self).__init__(data, rowcount=-1, row=[])
+
+    @property
+    def title(self):
+        return "root"
 
 class ImportTreeItem(ImportTreeObject):
     isItem = True
@@ -357,7 +372,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
     def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('CSVParse_Tree')
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         # self.maxDepth  = taxoDepth + itemDepth
@@ -379,7 +394,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
     def clearTransients(self):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.registerMessage('CSVParse_Tree')
         CSVParse_Base.clearTransients(self)
         CSVParse_Tree_Mixin.clearTransients(self)
         self.items = OrderedDict()

@@ -121,6 +121,7 @@ with open(yamlPath) as stream:
 
     skip_google_download = config.get('skip_google_download')
     show_report = config.get('show_report')
+    report_and_quit = config.get('report_and_quit')
     do_images = config.get('do_images')
     do_specials = config.get('do_specials')
     do_dyns = config.get('do_dyns')
@@ -181,6 +182,9 @@ group.add_argument('--show-report', help='show report',
                    action="store_true", default=show_report)
 group.add_argument('--skip-report', help='don\'t show report',
                    action="store_false", dest='show_report')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--report-and-quit', help='quit after generating report',
+                   action="store_true", default=report_and_quit)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-images', help='process images',
                    action="store_true", default=do_images)
@@ -271,6 +275,10 @@ if args:
         do_dyns = args.do_dyns
     if args.do_sync is not None:
         do_sync = args.do_sync and download_slave
+    if args.show_report is not None:
+        show_report = args.show_report
+    if args.report_and_quit is not None:
+        report_and_quit = args.report_and_quit
     global_limit = args.limit
 
     schema = args.schema
@@ -818,11 +826,18 @@ if download_slave:
     )
 
     with ProdSyncClient_WC(wcApiParams) as client:
-        client.analyseRemote(apiProductParser, limit=global_limit)
+        try:
+            client.analyseRemote(apiProductParser, limit=global_limit)
+        except Exception, e:
+            Registrar.registerError(e)
+            report_and_quit = True
 
     # print apiProductParser.categories
 else:
     apiProductParser = None
+
+# print productParser.toStrTree()
+# quit()
 
 # print "API PRODUCTS"
 # print ShopProdList(apiProductParser.products.values()).tabulate()
@@ -850,250 +865,297 @@ delete_categories = OrderedDict()
 join_categories = OrderedDict()
 
 if do_sync:
+
     #changes that I'm going to make to syncing:
 
     # [x] syncs ALL categories on WooCatName first, and updates Master categoryIDs
     # [x] creates list of categories that don't yet exist to be created
-    # [ ] Fix upload has quotations
+    # [x] Fix upload has quotations
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
     # SYNC CATEGORIES
+    try:
 
-    categoryMatcher = CategoryMatcher()
-    categoryMatcher.clear()
-    categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
-
-    if categoryMatcher.duplicateMatches:
-        e = UserWarning(
-            "categories couldn't be synchronized because of ambiguous names:%s"\
-            % '\n'.join(map(str,categoryMatcher.duplicateMatches))
+        print "matching %d master categories with %d slave categories" % (
+             len(productParser.categories),
+             len(apiProductParser.categories)
         )
-        Registrar.registerError(e)
-        raise e
 
-    if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
-        e = UserWarning(
-            "You may want to fix up the following categories before syncing:\n%s\n%s"\
-            % (
-                '\n'.join(map(str,categoryMatcher.slavelessMatches)),
-                '\n'.join(map(str,categoryMatcher.masterlessMatches))
+        categoryMatcher = CategoryMatcher()
+        categoryMatcher.clear()
+        categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
+
+        if categoryMatcher.pureMatches:
+            print "PERFECT MATCHES"
+            print '\n'.join(map(str,categoryMatcher.slavelessMatches)),
+
+
+        if categoryMatcher.duplicateMatches:
+            e = UserWarning(
+                "categories couldn't be synchronized because of ambiguous names:%s"\
+                % '\n'.join(map(str,categoryMatcher.duplicateMatches))
             )
-        )
-        Registrar.registerError(e)
-        # raise e
-    # quit()
+            Registrar.registerError(e)
+            raise e
 
-    globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
-    masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
-    slavelessCategoryMatches.addMatches( categoryMatcher.slavelessMatches)
+        if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
+            e = UserWarning(
+                "You may want to fix up the following categories before syncing:\n%s\n%s"\
+                % (
+                    '\n'.join(map(str,categoryMatcher.slavelessMatches)),
+                    '\n'.join(map(str,categoryMatcher.masterlessMatches))
+                )
+            )
+            Registrar.registerError(e)
+            # raise e
+        # quit()
 
-    sync_cols = ColData_Woo.getWPAPICategoryCols()
+        globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
+        masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
+        slavelessCategoryMatches.addMatches( categoryMatcher.slavelessMatches)
 
-    print "SYNC COLS: %s" % pformat(sync_cols.items())
-    # quit()
+        sync_cols = ColData_Woo.getWPAPICategoryCols()
 
-    for matchCount, match in enumerate(categoryMatcher.pureMatches):
-        mObject = match.mObjects[0]
-        sObject = match.sObjects[0]
+        # print "SYNC COLS: %s" % pformat(sync_cols.items())
+        # quit()
 
-        syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
+        for matchCount, match in enumerate(categoryMatcher.pureMatches):
+            mObject = match.mObjects[0]
+            sObject = match.sObjects[0]
 
-        syncUpdate.update(sync_cols)
+            syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
 
-        print syncUpdate.tabulate()
-
-        if not syncUpdate.importantStatic:
-            insort(problematicCategoryUpdates, syncUpdate)
-            continue
-
-        if syncUpdate.mUpdated:
-            masterCategoryUpdates.append(syncUpdate)
-
-        if syncUpdate.sUpdated:
-            slaveCategoryUpdates.append(syncUpdate)
-
-    for update in masterCategoryUpdates:
-        if not update.MasterID in productParser.categories:
-            print "couldn't fine pkey %s in productParser.categories" % update.MasterID
-            continue
-        for col, warnings in update.syncWarnings.items():
-            if not col == 'ID':
-                continue
-            for warning in warnings:
-                if not warning['subject'] == update.opposite_src(update.master_name):
-                    continue
-
-                newVal = warning['oldWinnerValue']
-                productParser.categories[update.MasterID][col] = newVal
-
-    # create categories that do not yet exist on slave
-
-    print "PRINTING NEW CATEGORIES"
-
-
-    # Registrar.DEBUG_API = True
-
-    with CatSyncClient_WC(wcApiParams) as client:
-        new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
-
-        while new_categories:
-            category = new_categories.pop(0)
-            if category.parent:
-                parent = category.parent
-                if not parent.isRoot and not parent.WPID:
-                    new_categories.push(category)
-                    continue
-            mApiData = category.toApiData(ColData_Woo, 'wp-api')
-            for key in ['id', 'slug', 'sku']:
-                if key in mApiData:
-                    del mApiData[key]
-            mApiData['name'] = category.wooCatName
-            pprint(mApiData)
-            if update_slave:
-                response = client.createItem(mApiData)
-                # print response
-                # print response.json()
-                responseApiData = response.json()
-                responseApiData = responseApiData.get('product_category', responseApiData)
-                apiProductParser.processApiCategory(responseApiData)
-                api_cat_translation = OrderedDict()
-                for key, data in ColData_Woo.getWPAPICategoryCols().items():
-                    try:
-                        wp_api_key = data['wp-api']['key']
-                    except:
-                        wp_api_key = key
-                    api_cat_translation[wp_api_key] = key
-                print "TRANSLATION: ", api_cat_translation
-                categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
-                print "CATEGORY PARSER DATA: ", categoryParserData
-
-                category.update(categoryParserData)
-
-                print "CATEGORY: ", category
-                # quit()
-
-    # quit()
-
-
-
-
-    # SYNC PRODUCTS
-
-    productMatcher = ProductMatcher()
-    productMatcher.processRegisters(apiProductParser.products, productParser.products)
-    # print productMatcher.__repr__()
-
-    globalProductMatches.addMatches( productMatcher.pureMatches)
-    masterlessProductMatches.addMatches( productMatcher.masterlessMatches)
-    slavelessProductMatches.addMatches( productMatcher.slavelessMatches)
-
-    sync_cols = ColData_Woo.getWPAPICols()
-    sync_cols_var = ColData_Woo.getWPAPIVariableCols()
-    if Registrar.DEBUG_UPDATE:
-        Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
-
-    if productMatcher.duplicateMatches:
-        e = UserWarning(
-            "products couldn't be synchronized because of ambiguous SKUs:%s"\
-            % '\n'.join(map(str,productMatcher.duplicateMatches))
-        )
-        Registrar.registerError(e)
-        raise e
-
-    for matchCount, match in enumerate(productMatcher.pureMatches):
-        mObject = match.mObjects[0]
-        sObject = match.sObjects[0]
-
-        gcs = match.gcs
-        # if gcs and gcs.isVariable:
-
-        syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
-        if gcs and hasattr(gcs,'isVariation') and gcs.isVariation:
-            # print "IS VARIATION"
-            syncUpdate.update(sync_cols_var)
-        else:
-            # print "IS NOT VARIATION"
             syncUpdate.update(sync_cols)
 
             print syncUpdate.tabulate()
 
-        if gcs and hasattr(gcs,'isProduct') and gcs.isProduct:
-            #category matching
+            if not syncUpdate.importantStatic:
+                insort(problematicCategoryUpdates, syncUpdate)
+                continue
 
-            categoryMatcher.clear()
-            categoryMatcher.processRegisters(sObject.categories, mObject.categories)
+            if syncUpdate.mUpdated:
+                masterCategoryUpdates.append(syncUpdate)
 
-            updateParams = {
-                'col':'catlist',
-                'data':{
-                    # 'sync'
-                },
-                'subject': syncUpdate.master_name
-            }
+            if syncUpdate.sUpdated:
+                slaveCategoryUpdates.append(syncUpdate)
 
-            changeMatchList = categoryMatcher.masterlessMatches
-            changeMatchList.addMatches(categoryMatcher.slavelessMatches)
+        for update in masterCategoryUpdates:
+            print "updating %s" % str(update.MasterID)
+            if not update.MasterID in productParser.categories:
+                print "couldn't fine pkey %s in productParser.categories" % update.MasterID
+                continue
+            for col, warnings in update.syncWarnings.items():
+                if not col == 'ID':
+                    continue
+                for warning in warnings:
+                    if not warning['subject'] == update.opposite_src(update.master_name):
+                        continue
 
-            master_categories = set([category.WPID for category in mObject.categories.values()])
-            slave_categories =  set([category.WPID for category in sObject.categories.values()])
-            syncUpdate.oldMObject['catlist'] = list(master_categories)
-            syncUpdate.oldSObject['catlist'] = list(slave_categories)
+                    newVal = warning['oldWinnerValue']
+                    productParser.categories[update.MasterID][col] = newVal
 
-            if changeMatchList:
-                assert master_categories != slave_categories
-                updateParams['reason'] = 'updating'
-                # updateParams['subject'] = SyncUpdate.master_name
+        # create categories that do not yet exist on slave
 
-                # master_categories = [category.wooCatName for category in changeMatchList.merge().mObjects]
-                # slave_categories =  [category.wooCatName for category in changeMatchList.merge().sObjects]
+        print "PRINTING NEW CATEGORIES: %d" % (len(slavelessCategoryMatches))
 
-                syncUpdate.loserUpdate(**updateParams)
-                # syncUpdate.newMObject['catlist'] = master_categories
-                # syncUpdate.newSObject['catlist'] = master_categories
 
-                # updateParams['oldLoserValue'] = slave_categories
-                # updateParams['oldWinnerValue'] = master_categories
+        # Registrar.DEBUG_API = True
+
+        with CatSyncClient_WC(wcApiParams) as client:
+            print "created client"
+            new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
+            print new_categories
+
+            while new_categories:
+                category = new_categories.pop(0)
+                if category.parent:
+                    parent = category.parent
+                    if not parent.isRoot and not parent.WPID and parent in new_categories:
+                        new_categories.append(category)
+                        continue
+
+                mApiData = category.toApiData(ColData_Woo, 'wp-api')
+                for key in ['id', 'slug', 'sku']:
+                    if key in mApiData:
+                        del mApiData[key]
+                mApiData['name'] = category.wooCatName
+                print "uploading category: %s" % mApiData
+                # pprint(mApiData)
+                if update_slave:
+                    response = client.createItem(mApiData)
+                    # print response
+                    # print response.json()
+                    responseApiData = response.json()
+                    responseApiData = responseApiData.get('product_category', responseApiData)
+                    apiProductParser.processApiCategory(responseApiData)
+                    api_cat_translation = OrderedDict()
+                    for key, data in ColData_Woo.getWPAPICategoryCols().items():
+                        try:
+                            wp_api_key = data['wp-api']['key']
+                        except:
+                            wp_api_key = key
+                        api_cat_translation[wp_api_key] = key
+                    print "TRANSLATION: ", api_cat_translation
+                    categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
+                    print "CATEGORY PARSER DATA: ", categoryParserData
+
+                    category.update(categoryParserData)
+
+                    print "CATEGORY: ", category
+                    # quit()
+
+        print productParser.toStrTree()
+
+        for category in productParser.categories.values():
+            if category.name:
+                print "category %s %s" % (category.title, category.WPID)
+        # quit()
+
+        categoryMatcher = CategoryMatcher()
+        categoryMatcher.clear()
+        categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
+
+
+        print "PRINTING NEW SYNCING PROUCTS"
+
+        # SYNC PRODUCTS
+
+        productMatcher = ProductMatcher()
+        productMatcher.processRegisters(apiProductParser.products, productParser.products)
+        # print productMatcher.__repr__()
+
+        globalProductMatches.addMatches( productMatcher.pureMatches)
+        masterlessProductMatches.addMatches( productMatcher.masterlessMatches)
+        slavelessProductMatches.addMatches( productMatcher.slavelessMatches)
+
+        sync_cols = ColData_Woo.getWPAPICols()
+        sync_cols_var = ColData_Woo.getWPAPIVariableCols()
+        if Registrar.DEBUG_UPDATE:
+            Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
+
+        if productMatcher.duplicateMatches:
+            e = UserWarning(
+                "products couldn't be synchronized because of ambiguous SKUs:%s"\
+                % '\n'.join(map(str,productMatcher.duplicateMatches))
+            )
+            Registrar.registerError(e)
+            raise e
+
+        for matchCount, match in enumerate(productMatcher.pureMatches):
+            mObject = match.mObjects[0]
+            sObject = match.sObjects[0]
+
+            # gcs = match.gcs
+            # if gcs and gcs.isVariable:
+
+            syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
+            if mObject.isVariation or sObject.isVariation:
+                # if gcs and hasattr(gcs,'isVariation') and gcs.isVariation:
+                # print "IS VARIATION"
+                syncUpdate.update(sync_cols_var)
             else:
-                assert\
-                    master_categories == slave_categories, \
-                    "should equal, %s | %s" % (
-                        repr(master_categories),
-                        repr(slave_categories)
+                # print "IS NOT VARIATION"
+                syncUpdate.update(sync_cols)
+                assert not mObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
+                assert not sObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
+
+                # print syncUpdate.tabulate()
+
+                # if gcs and hasattr(gcs,'isProduct') and gcs.isProduct:
+                #category matching
+
+                categoryMatcher.clear()
+                categoryMatcher.processRegisters(sObject.categories, mObject.categories)
+
+                updateParams = {
+                    'col':'catlist',
+                    'data':{
+                        # 'sync'
+                    },
+                    'subject': syncUpdate.master_name
+                }
+
+                changeMatchList = categoryMatcher.masterlessMatches
+                changeMatchList.addMatches(categoryMatcher.slavelessMatches)
+
+                master_categories = set(
+                    [category.WPID for category in mObject.categories.values() if category.WPID]
+                )
+                slave_categories =  set(
+                    [category.WPID for category in sObject.categories.values() if category.WPID]
+                )
+
+                print "comparing categories of %s:\n%s\n%s\n%s\n%s"\
+                    % (
+                        mObject.codesum,
+                        str(mObject.categories.values()),
+                        str(sObject.categories.values()),
+                        str(master_categories),
+                        str(slave_categories),
                     )
-                updateParams['reason'] = 'identical'
-                syncUpdate.tieUpdate(**updateParams)
+                syncUpdate.oldMObject['catlist'] = list(master_categories)
+                syncUpdate.oldSObject['catlist'] = list(slave_categories)
+
+                if changeMatchList:
+                    assert master_categories != slave_categories
+                    updateParams['reason'] = 'updating'
+                    # updateParams['subject'] = SyncUpdate.master_name
+
+                    # master_categories = [category.wooCatName for category in changeMatchList.merge().mObjects]
+                    # slave_categories =  [category.wooCatName for category in changeMatchList.merge().sObjects]
+
+                    syncUpdate.loserUpdate(**updateParams)
+                    # syncUpdate.newMObject['catlist'] = master_categories
+                    # syncUpdate.newSObject['catlist'] = master_categories
+
+                    # updateParams['oldLoserValue'] = slave_categories
+                    # updateParams['oldWinnerValue'] = master_categories
+                else:
+                    assert\
+                        master_categories == slave_categories, \
+                        "should equal, %s | %s" % (
+                            repr(master_categories),
+                            repr(slave_categories)
+                        )
+                    updateParams['reason'] = 'identical'
+                    syncUpdate.tieUpdate(**updateParams)
 
 
-            # print categoryMatcher.__repr__()
-            for cat_match in categoryMatcher.masterlessMatches:
-                sIndex = sObject.index
-                if delete_categories.get(sIndex) is None:
-                    delete_categories[sIndex] = MatchList()
-                delete_categories[sIndex].append(cat_match)
-            for cat_match in categoryMatcher.slavelessMatches:
-                sIndex = sObject.index
-                if join_categories.get(sIndex) is None:
-                    join_categories[sIndex] = MatchList()
-                join_categories[sIndex].append(cat_match)
+                # print categoryMatcher.__repr__()
+                for cat_match in categoryMatcher.masterlessMatches:
+                    sIndex = sObject.index
+                    if delete_categories.get(sIndex) is None:
+                        delete_categories[sIndex] = MatchList()
+                    delete_categories[sIndex].append(cat_match)
+                for cat_match in categoryMatcher.slavelessMatches:
+                    sIndex = sObject.index
+                    if join_categories.get(sIndex) is None:
+                        join_categories[sIndex] = MatchList()
+                    join_categories[sIndex].append(cat_match)
 
-        if not syncUpdate.eUpdated:
-            continue
+            if not syncUpdate.eUpdated:
+                continue
 
-        print syncUpdate.tabulate()
+            print syncUpdate.tabulate()
 
-        if syncUpdate.sUpdated and syncUpdate.sDeltas:
-            insort(sDeltaUpdates, syncUpdate)
+            if syncUpdate.sUpdated and syncUpdate.sDeltas:
+                insort(sDeltaUpdates, syncUpdate)
 
-        if not syncUpdate.importantStatic:
-            insort(problematicProductUpdates, syncUpdate)
-            continue
+            if not syncUpdate.importantStatic:
+                insort(problematicProductUpdates, syncUpdate)
+                continue
 
-        if syncUpdate.sUpdated:
-            insort(slaveProductUpdates, syncUpdate)
+            if syncUpdate.sUpdated:
+                insort(slaveProductUpdates, syncUpdate)
 
 
-    print debugUtils.hashify("COMPLETED MERGE")
+        print debugUtils.hashify("COMPLETED MERGE")
+
+    except Exception, e:
+        Registrar.registerError(e)
+        report_and_quit = True
+
 
 #########################################
 # Write Report
@@ -1336,6 +1398,11 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         reporter.addGroup(syncingGroup)
 
     resFile.write( reporter.getDocumentUnicode() )
+
+
+if report_and_quit:
+    quit()
+
 
 #########################################
 # Perform updates

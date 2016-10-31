@@ -392,7 +392,7 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'categories'
             },
-            'sync':'not_variable'
+            # 'sync':'not_variable'
         }),
         # ('catids', {
         # }),
