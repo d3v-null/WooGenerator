@@ -505,6 +505,14 @@ class CSVParse_Base(Registrar):
             return self.analyseRows(unicodecsvreader, fileName)
         return None
 
+    @classmethod
+    def translateKeys(cls, objectData, key_translation):
+        translated = OrderedDict()
+        for col, translation in key_translation.items():
+            if col in objectData:
+                translated[translation] = objectData[col]
+        return translated
+
     def analyseWpApiObj(self, apiData):
         raise NotImplementedError()
 

@@ -198,10 +198,15 @@ class testProdSyncClient(abstractSyncClientTestCase):
             # if hasattr(response, 'json'):
             #     print "testUploadChangesEmpty", response.json()
 
-if __name__ == '__main__':
-    main()
+    def testCatSyncClient(self):
+        with CatSyncClient_WC(self.wcApiParams) as client:
+            for page in client.getIterator():
+                print page
 
-    # testSuite = TestSuite()
+if __name__ == '__main__':
+    # main()
+
+    testSuite = TestSuite()
     # testSuite.addTest(testProdSyncClient('testUploadChanges'))
     # testSuite.addTest(testProdSyncClient('testUploadChangesMeta'))
     # testSuite.addTest(testProdSyncClient('testUploadDeleteMeta'))
@@ -210,4 +215,5 @@ if __name__ == '__main__':
     # testSuite.addTest(testProdSyncClient('testUploadDeleteVariationMeta'))
     # testSuite.addTest(testProdSyncClient('testGetSinglePage'))
     # testSuite.addTest(testProdSyncClient('testRead'))
-    # TextTestRunner().run(testSuite)
+    testSuite.addTest(testProdSyncClient('testCatSyncClient'))
+    TextTestRunner().run(testSuite)

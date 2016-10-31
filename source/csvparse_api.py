@@ -11,9 +11,11 @@ from csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin
 from csvparse_flat import CSVParse_Flat, ImportFlat
 from csvparse_woo import CSVParse_Woo_Mixin, ImportWooMixin
 from coldata import ColData_Woo
+
 from collections import OrderedDict
 import bisect
 import time
+from pprint import pformat
 
 class ImportApiObject(ImportGenFlat, ImportShopMixin, ImportWooMixin):
     def __init__(self, *args, **kwargs):
@@ -120,17 +122,24 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
     #         self.registerMessage("registering objectData: %s" % str(objectData))
     #     super(CSVParse_Woo_Api, self).registerObject(objectData)
 
-    def getApiDimensionData(self, objectData, dimensions):
+    @classmethod
+    def getApiDimensionData(cls, dimensions):
+        newData = OrderedDict()
         for dimension_key in ['length', 'width', 'height']:
             if dimension_key in dimensions:
-                objectData[dimension_key] = dimensions[dimension_key]
+                newData[dimension_key] = dimensions[dimension_key]
+                # objectData[dimension_key] = dimensions[dimension_key]
+        return newData
 
-    def getApiStockStatusData(self, objectData, in_stock):
+    @classmethod
+    def getApiStockStatusData(cls, in_stock):
+        newData = OrderedDict()
         if in_stock:
             stock_status = 'in_stock'
         else:
             stock_status = 'outofstock'
-        objectData['stock_status'] = stock_status
+        newData['stock_status'] = stock_status
+        return newData
 
     def processApiCategory(self, categoryApiData, objectData=None):
         """
@@ -245,7 +254,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                     self.registerAttribute(objectData, attr, val, var)
 
 
-    def getParserData(self, **kwargs):
+    @classmethod
+    def getParserData(cls, **kwargs):
         """
         Gets data ready for the parser, in this case from apiData
         """
@@ -255,45 +265,51 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
                         for key, value in apiData.items()])
         # print "apiData after:  %s" % str(apiData)
+        parserData = OrderedDict()
+        core_translation = OrderedDict()
         for col, col_data in ColData_Woo.getWPAPICoreCols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
                 wp_api_key = col
-            if wp_api_key in apiData:
-                parserData[col] = apiData[wp_api_key]
+            core_translation[wp_api_key] = col
+        # if Registrar.DEBUG_API: Registrar.registerMessage("core_translation: %s" % pformat(core_translation))
+        parserData.update(**cls.translateKeys(apiData, core_translation))
+
         if 'meta' in apiData:
             metaData = apiData['meta']
+            meta_translation = OrderedDict()
             for col, col_data in ColData_Woo.getWPAPIMetaCols().items():
                 try:
                     wp_api_key = col_data['wp-api']['key']
                 except:
                     wp_api_key = col
-                if wp_api_key in metaData:
-                    parserData[col] = metaData[wp_api_key]
+                meta_translation[wp_api_key] = col
+            parserData.update(**cls.translateKeys(metaData, meta_translation))
         if 'dimensions' in apiData:
-            self.getApiDimensionData(parserData, apiData['dimensions'])
+            parserData.update(**cls.getApiDimensionData(apiData['dimensions']))
         if 'in_stock' in apiData:
-            self.getApiStockStatusData(parserData, apiData['in_stock'])
+            parserData.update(**cls.getApiStockStatusData(apiData['in_stock']))
         # if 'description' in apiData:
-        #     parserData[self.objectContainer.descriptionKey] = apiData['description']
+        #     parserData[cls.objectContainer.descriptionKey] = apiData['description']
 
-        title = parserData.get(self.objectContainer.titleKey, '')
+        title = parserData.get(cls.objectContainer.titleKey, '')
         if not title and 'title' in apiData:
             title = apiData['title']
         if not title and 'name' in apiData:
             title = apiData['name']
-        parserData[self.objectContainer.titleKey] = title
+        parserData[cls.objectContainer.titleKey] = title
         parserData['itemsum'] = title
 
-        slug = parserData.get(self.objectContainer.slugKey,'')
+        slug = parserData.get(cls.objectContainer.slugKey,'')
         if not slug and 'slug' in apiData:
             slug = apiData['slug']
-        parserData[self.objectContainer.slugKey] = slug
+        parserData[cls.objectContainer.slugKey] = slug
 
 
-        if self.DEBUG_API: self.registerMessage( "parserData: {}".format(parserData) )
+        if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )
         return parserData
+
 
     def getKwargs(self, allData, container, **kwargs):
         if not 'parent' in kwargs:
@@ -307,7 +323,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         apiData = kwargs.get('apiData', {})
         if self.DEBUG_API:
             self.registerMessage('apiData: %s' % str(apiData))
-            self.registerMessage('apiData[type]: %s' % str(apiData['type']))
+            self.registerMessage('apiData[type]: %s' % repr(apiData.get('type')))
         if 'type' in apiData:
             api_type = apiData['type']
             if self.DEBUG_API:

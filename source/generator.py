@@ -20,9 +20,10 @@ from csvparse_api import CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
 from csvparse_dyn import CSVParse_Dyn
 from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
+from csvparse_api import CSVParse_Woo_Api
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
-from sync_client_prod import ProdSyncClient_WC
+from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from matching import ProductMatcher, CategoryMatcher
 from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo, SyncUpdate_Cat_Woo
 from bisect import insort
@@ -851,8 +852,9 @@ join_categories = OrderedDict()
 if do_sync:
     #changes that I'm going to make to syncing:
 
-    # [ ] syncs ALL categories on WooCatName first, and updates Master categoryIDs
-    # [ ] creates list of categories that don't yet exist to be created
+    # [x] syncs ALL categories on WooCatName first, and updates Master categoryIDs
+    # [x] creates list of categories that don't yet exist to be created
+    # [ ] Fix upload has quotations
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
@@ -861,9 +863,6 @@ if do_sync:
     categoryMatcher = CategoryMatcher()
     categoryMatcher.clear()
     categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
-
-
-
 
     if categoryMatcher.duplicateMatches:
         e = UserWarning(
@@ -882,7 +881,7 @@ if do_sync:
             )
         )
         Registrar.registerError(e)
-        raise e
+        # raise e
     # quit()
 
     globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
@@ -897,8 +896,6 @@ if do_sync:
     for matchCount, match in enumerate(categoryMatcher.pureMatches):
         mObject = match.mObjects[0]
         sObject = match.sObjects[0]
-
-        gcs = match.gcs
 
         syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
 
@@ -929,6 +926,57 @@ if do_sync:
 
                 newVal = warning['oldWinnerValue']
                 productParser.categories[update.MasterID][col] = newVal
+
+    # create categories that do not yet exist on slave
+
+    print "PRINTING NEW CATEGORIES"
+
+
+    # Registrar.DEBUG_API = True
+
+    with CatSyncClient_WC(wcApiParams) as client:
+        new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
+
+        while new_categories:
+            category = new_categories.pop(0)
+            if category.parent:
+                parent = category.parent
+                if not parent.isRoot and not parent.WPID:
+                    new_categories.push(category)
+                    continue
+            mApiData = category.toApiData(ColData_Woo, 'wp-api')
+            for key in ['id', 'slug', 'sku']:
+                if key in mApiData:
+                    del mApiData[key]
+            mApiData['name'] = category.wooCatName
+            pprint(mApiData)
+            if update_slave:
+                response = client.createItem(mApiData)
+                # print response
+                # print response.json()
+                responseApiData = response.json()
+                responseApiData = responseApiData.get('product_category', responseApiData)
+                apiProductParser.processApiCategory(responseApiData)
+                api_cat_translation = OrderedDict()
+                for key, data in ColData_Woo.getWPAPICategoryCols().items():
+                    try:
+                        wp_api_key = data['wp-api']['key']
+                    except:
+                        wp_api_key = key
+                    api_cat_translation[wp_api_key] = key
+                print "TRANSLATION: ", api_cat_translation
+                categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
+                print "CATEGORY PARSER DATA: ", categoryParserData
+
+                category.update(categoryParserData)
+
+                print "CATEGORY: ", category
+                # quit()
+
+    # quit()
+
+
+
 
     # SYNC PRODUCTS
 
@@ -987,8 +1035,8 @@ if do_sync:
             changeMatchList = categoryMatcher.masterlessMatches
             changeMatchList.addMatches(categoryMatcher.slavelessMatches)
 
-            master_categories = set([category.wooCatName for category in mObject.categories.values()])
-            slave_categories =  set([category.wooCatName for category in sObject.categories.values()])
+            master_categories = set([category.WPID for category in mObject.categories.values()])
+            slave_categories =  set([category.WPID for category in sObject.categories.values()])
             syncUpdate.oldMObject['catlist'] = list(master_categories)
             syncUpdate.oldSObject['catlist'] = list(slave_categories)
 
@@ -1109,7 +1157,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         matchingGroup = HtmlReporter.Group('product_matching', 'Product Matching Results')
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'perfect_matches',
+                'perfect_product_matches',
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
@@ -1120,7 +1168,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         )
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'masterless_matches',
+                'masterless_product_matches',
                 **{
                     'title': 'Masterless matches',
                     'description': "matches are masterless",
@@ -1131,7 +1179,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         )
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'slaveless_matches',
+                'slaveless_product_matches',
                 **{
                     'title': 'Slaveless matches',
                     'description': "matches are slaveless",
@@ -1146,7 +1194,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         matchingGroup = HtmlReporter.Group('category_matching', 'Category Matching Results')
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'perfect_matches',
+                'perfect_category_matches',
                 **{
                     'title': 'Perfect Matches',
                     'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
@@ -1157,7 +1205,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         )
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'masterless_matches',
+                'masterless_category_matches',
                 **{
                     'title': 'Masterless matches',
                     'description': "matches are masterless",
@@ -1168,7 +1216,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         )
         matchingGroup.addSection(
             HtmlReporter.Section(
-                'slaveless_matches',
+                'slaveless_category_matches',
                 **{
                     'title': 'Slaveless matches',
                     'description': "matches are slaveless",

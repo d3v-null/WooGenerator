@@ -261,7 +261,8 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
         identifier = super(ImportWooCategory, self).identifier
         return "|".join([
             self.codesum,
-            str(self.rowcount),
+            'r:%s' % str(self.rowcount),
+            'w:%s' % str(self.get(self.wpidKey)),
             self.wooCatName,
         ])
     #

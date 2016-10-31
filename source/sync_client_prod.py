@@ -104,3 +104,7 @@ class ProdSyncClient_WC(SyncClient_WC):
         # delete_categories = list(set(current_categories) - set(categories))
 
         #not efficient but whatever
+
+class CatSyncClient_WC(SyncClient_WC):
+    endpoint_singular = 'product_category'
+    endpoint_plural = 'products/categories'

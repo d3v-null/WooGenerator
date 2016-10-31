@@ -2555,7 +2555,7 @@ class descriptorUtils:
     @staticmethod
     def safeKeyProperty(key):
         def getter(self):
-            assert key in self.keys(), "{} must be set before get".format(key)
+            assert key in self.keys(), "{} must be set before get in {}".format(key, repr(type(self)))
             return self[key]
 
         def setter(self, value):

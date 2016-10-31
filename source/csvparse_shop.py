@@ -8,7 +8,7 @@ from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
 from csvparse_gen import ImportGenMixin, ImportGenObject
 from collections import OrderedDict
 from utils import descriptorUtils, SanitationUtils, Registrar
-from coldata import ColData_Prod
+from coldata import ColData_Prod, ColData_Woo
 import bisect
 
 class ShopProdList(ItemList):
@@ -162,6 +162,38 @@ class ImportShopMixin(object):
         e = DeprecationWarning("use .images instead of .getImages()")
         self.registerError(e)
         return self.images
+
+    def toApiData(self, colData, api):
+        apiData = OrderedDict()
+        if self.isCategory:
+            for col, col_data in colData.getWPAPICategoryCols(api).items():
+                if col in self:
+                    try:
+                        wp_api_key = col_data[api]['key']
+                    except:
+                        wp_api_key = col
+                    apiData[wp_api_key] = self[col]
+            if self.parent and self.parent.WPID:
+                apiData['parent'] = self.parent.WPID
+        else:
+            assert self.isProduct
+            for col, col_data in colData.getWPAPICoreCols(api).items():
+                if col in self:
+                    try:
+                        wp_api_key = col_data[api]['key']
+                    except:
+                        wp_api_key = col
+                    apiData[wp_api_key] = self[col]
+            for col, col_data in colData.getWPAPIMetaCols(api).items():
+                if col in self:
+                    try:
+                        wp_api_key = col_data[api]['key']
+                    except:
+                        wp_api_key = col
+                    if not 'meta' in apiData:
+                        apiData['meta'] = {}
+                    apiData['meta'][wp_api_key] = self[col]
+        return apiData
 
 class ImportShopProductMixin(object):
     container = ShopProdList

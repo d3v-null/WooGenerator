@@ -1056,6 +1056,7 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
 
 class SyncUpdate_Cat_Woo(SyncUpdate):
     colData = ColData_Woo
+    s_meta_target = 'wp-api'
 
     @property
     def MasterID(self):
@@ -1076,3 +1077,98 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
 
         if self.DEBUG_UPDATE: self.registerMessage(self.testToStr(col, mValue.__repr__(), sValue.__repr__(), response))
         return response
+
+    def getSlaveUpdatesNativeRecursive(self, col, updates=None):
+        if updates == None: updates = OrderedDict()
+        # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
+
+        if col in self.colData.data:
+            data = self.colData.data[col]
+            if self.s_meta_target in data:
+                data_s = data[self.s_meta_target]
+                if 'key' in data_s:
+                    key = data_s.get('key')
+                    val = self.newSObject.get(col)
+                    if data_s.get('meta'):
+                        if not val:
+                            if 'delete_meta' not in updates:
+                                updates['delete_meta'] = []
+                            updates['delete_meta'].append(key)
+
+                        if 'custom_meta' not in updates:
+                            updates['custom_meta'] = OrderedDict()
+                        updates['custom_meta'][key] = val
+
+                    elif not data_s.get('final'):
+                        updates[key] = val
+                elif 'special' in data_s:
+                    key = col
+                    val = self.newSObject.get(col)
+                    updates[key] = val
+            # if data.get('aliases'):
+            #     data_aliases = data.get('aliases')
+            #     for alias in data_aliases:
+            #         if self.sColSemiStatic(alias):
+            #             continue
+            #         updates = self.getSlaveUpdatesNativeRecursive(alias, updates)
+        return updates
+
+
+    def getSlaveUpdatesRecursive(self, col, updates=None):
+        if updates == None: updates = OrderedDict()
+        if self.DEBUG_UPDATE: self.registerMessage( u"checking %s" % unicode(col) )
+        if col in self.colData.data:
+            if self.DEBUG_UPDATE: self.registerMessage( u"col exists" )
+            data = self.colData.data[col]
+            if data.get(self.s_meta_target):
+                if self.DEBUG_UPDATE: self.registerMessage( u"wp exists" )
+                data_s = data.get(self.s_meta_target,{})
+                if not data_s.get('final') and data_s.get('key'):
+                    newVal = self.newSObject.get(col)
+                    updates[col] = newVal
+                    if self.DEBUG_UPDATE: self.registerMessage( u"newval: %s" % repr(newVal) )
+            # if data.get('aliases'):
+            #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
+            #     data_aliases = data['aliases']
+            #     for alias in data_aliases:
+            #         if self.sColSemiStatic(alias):
+            #             if self.DEBUG_UPDATE: self.registerMessage( u"Alias semistatic" )
+            #             continue
+            #         else:
+            #             updates = self.getSlaveUpdatesRecursive(alias, updates)
+        else:
+            pass
+            if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
+        return updates
+
+
+    def getMasterUpdatesRecursive(self, col, updates=None):
+        if updates == None: updates = OrderedDict()
+        if self.DEBUG_UPDATE: self.registerMessage( u"checking %s" % unicode(col) )
+
+        if col == 'catlist':
+            if hasattr(self.oldSObject, 'isVariation') and self.oldSObject.isVariation:
+                # print "excluded item because isVariation"
+                return updates
+
+        if col in self.colData.data:
+            if self.DEBUG_UPDATE: self.registerMessage( u"col exists" )
+            data = self.colData.data[col]
+            if data.get(self.m_meta_target):
+                if self.DEBUG_UPDATE: self.registerMessage( u"wp exists" )
+                newVal = self.newMObject.get(col)
+                updates[col] = newVal
+                if self.DEBUG_UPDATE: self.registerMessage( u"newval: %s" % repr(newVal) )
+            # if data.get('aliases'):
+            #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
+            #     data_aliases = data['aliases']
+            #     for alias in data_aliases:
+            #         if self.mColSemiStatic(alias):
+            #             if self.DEBUG_UPDATE: self.registerMessage( u"Alias semistatic" )
+            #             continue
+            #         else:
+            #             updates = self.getMasterUpdatesRecursive(alias, updates)
+        else:
+            pass
+            if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
+        return updates

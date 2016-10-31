@@ -74,8 +74,8 @@ class ColData_Base(object):
         return cls.getExportCols('report')
 
     @classmethod
-    def getWPAPICols(cls):
-        return cls.getExportCols('wp-api')
+    def getWPAPICols(cls, api='wp-api'):
+        return cls.getExportCols(api)
 
     @classmethod
     def getWPAPIVariableCols(cls):
@@ -89,11 +89,11 @@ class ColData_Base(object):
 
 
     @classmethod
-    def getWPAPICoreCols(cls):
-        exportCols = cls.getExportCols('wp-api')
+    def getWPAPICoreCols(cls, api='wp-api'):
+        exportCols = cls.getExportCols(api)
         apiCols = OrderedDict()
         for col, data in exportCols.items():
-            apiData = data.get('wp-api', {})
+            apiData = data.get(api, {})
             if hasattr(apiData, '__getitem__') \
             and not apiData.get('meta'):
                 apiCols[col] = data
@@ -101,15 +101,26 @@ class ColData_Base(object):
         return apiCols
 
     @classmethod
-    def getWPAPIMetaCols(cls):
-        exportCols = cls.getExportCols('wp-api')
+    def getWPAPIMetaCols(cls, api='wp-api'):
+        exportCols = cls.getExportCols(api)
         apiCols = OrderedDict()
         for col, data in exportCols.items():
-            apiData = data.get('wp-api', {})
+            apiData = data.get(api, {})
             if hasattr(apiData, '__getitem__') \
             and apiData.get('meta'):
                 apiCols[col] = data
         return apiCols
+
+
+    @classmethod
+    def getWPAPICategoryCols(cls, api='wp-api'):
+        exportCols = cls.getExportCols(api)
+        apiCategoryCols = OrderedDict()
+        for col, data in exportCols.items():
+            if data.get('category', ''):
+                apiCategoryCols[col] = data
+        return apiCategoryCols
+
 
     @classmethod
     def getSyncCols(self):
@@ -1083,14 +1094,6 @@ class ColData_Woo(ColData_Prod):
     @classmethod
     def getCategoryCols(cls):
         return cls.getExportCols('category')
-
-    @classmethod
-    def getWPAPICategoryCols(cls):
-        wpapiCategoryCols = OrderedDict()
-        for col, data in cls.data.items():
-            if data.get('category', '') and data.get('wp-api', ''):
-                wpapiCategoryCols[col] = data
-        return wpapiCategoryCols
 
     @classmethod
     def getPricingCols(cls):

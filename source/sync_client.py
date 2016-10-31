@@ -511,15 +511,15 @@ class SyncClient_Rest(SyncClient_Abstract):
                             Registrar.registerMessage('reached limit, exiting')
                         return
 
-    def uploadChanges(self, pkey, updates=None):
+    def uploadChanges(self, pkey, data=None):
         super(SyncClient_Rest, self).uploadChanges(pkey)
         service_endpoint = '%s/%d' % (self.endpoint_plural,pkey)
-        updates = dict([(key, jsonencode(value)) for key, value in updates.items()])
+        data = dict([(key, value) for key, value in data.items()])
         if self.service.version is not 'wc/v1':
-            updates = {'product':updates}
+            data = {self.endpoint_singular:data}
         if Registrar.DEBUG_API:
-            Registrar.registerMessage("updating %s: %s" % (service_endpoint, updates))
-        response = self.service.put(service_endpoint, updates)
+            Registrar.registerMessage("updating %s: %s" % (service_endpoint, data))
+        response = self.service.put(service_endpoint, data)
         assert response.status_code not in [400,401], "API ERROR"
         assert response.json(), "json should exist"
         assert not isinstance(response.json(), int), "could not convert response to json: %s %s" % (str(response), str(response.json()))
@@ -530,6 +530,24 @@ class SyncClient_Rest(SyncClient_Abstract):
         if not endpoint:
             endpoint = self.endpoint_plural
         return self.ApiIterator(self.service, endpoint)
+
+    def createItem(self, data):
+        data = dict([(key, value) for key, value in data.items()])
+        assert 'name' in data, "name is required to create a category, instead provided with %s" \
+                                % (str(data))
+        service_endpoint = self.endpoint_plural
+        endpoint_singular = self.endpoint_singular
+        endpoint_singular = re.sub('/','_', endpoint_singular)
+        if self.service.version is not 'wc/v1':
+            data = {endpoint_singular:data}
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage("creating %s: %s" % (service_endpoint, data))
+        response = self.service.post(service_endpoint, data)
+        assert response.status_code not in [400,401], "API ERROR"
+        assert response.json(), "json should exist"
+        assert not isinstance(response.json(), int), "could not convert response to json: %s %s" % (str(response), str(response.json()))
+        assert 'errors' not in response.json(), "response has errors: %s" % str(response.json()['errors'])
+        return response
 
     # def __exit__(self, exit_type, value, traceback):
     #     pass
