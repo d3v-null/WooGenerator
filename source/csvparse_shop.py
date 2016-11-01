@@ -368,6 +368,7 @@ class CSVParse_Shop_Mixin(object):
         self.vattributes= OrderedDict()
         self.variations = OrderedDict()
         self.images     = OrderedDict()
+        self.categories_name = OrderedDict()
 
     def registerProduct(self, prodData):
         if Registrar.DEBUG_SHOP:
@@ -422,6 +423,12 @@ class CSVParse_Shop_Mixin(object):
             resolver = self.passiveResolver,
             singular = True,
             registerName = 'categories'
+        )
+        self.registerAnything(
+            catData,
+            self.categories_name,
+            indexer = catData.wooCatName,
+            singular = False
         )
 
 
@@ -487,14 +494,18 @@ class CSVParse_Shop_Mixin(object):
 
     def toStrTreeRecursive(self, catData):
         response = ''
+        # print "stringing cat %s" % repr(catData)
         for child in catData.children:
             if child.isRoot or not child.isCategory:
                 continue
+            registered = self.categoryIndexer(child) in self.categories.keys()
             response += " | ".join([
-                "%-5s" % ((child.depth + 1) * '*'),
-                "%50s" % child.title[:50],
-                "w:%10s" % str(child.WPID)[:10],
-
+                "%-5s" % ((child.depth) * ' ' + '*'),
+                "%-16s" % str(child.get(self.objectContainer.codesumKey))[:16],
+                "%50s" % str(child.get(self.objectContainer.titleKey))[:50],
+                "r:%5s" % str(child.rowcount)[:10],
+                "w:%5s" % str(child.get(self.objectContainer.wpidKey))[:10],
+                "%1s" % "R" if registered else " "
                 # "%5s" % child.WPID
             ])
             response += '\n'

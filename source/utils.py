@@ -2660,6 +2660,16 @@ class listUtils:
             if key not in keys
         ])
 
+    @staticmethod
+    def checkEqual(iterator):
+        """Taken from SO answer http://stackoverflow.com/questions/3844801/check-if-all-elements-in-a-list-are-identical """
+        iterator = iter(iterator)
+        try:
+            first = next(iterator)
+        except StopIteration:
+            return True
+        return all(first == rest for rest in iterator)
+
 class debugUtils:
     @classmethod
     def getProcedure(cls, level=1):

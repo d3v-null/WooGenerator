@@ -316,6 +316,9 @@ class CSVParse_Woo_Mixin(object):
             # self.registerMessage("PARSER DATA: %s" % repr(defaults))
         return defaults
 
+    def getWPID(self, objectData):
+        return objectData.WPID
+
     def clearTransients(self):
         pass
 
@@ -671,6 +674,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
                 if extraLayer:
                     if self.DEBUG_WOO: self.registerMessage("found sibling: %s"% extraLayer.identifier )
+                    if self.categoryIndexer(extraLayer) not in self.categories:
+                        self.registerCategory(extraLayer)
                 else:
                     if self.DEBUG_WOO: self.registerMessage("did not find sibling: %s"% extraLayer.identifier )
 
@@ -685,7 +690,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         stack = extraStack
                     )
 
-                    assert isinstance(extraLayer, ImportWooCategory )
+                    # assert isinstance(extraLayer, ImportWooCategory )
                     # extraStack.append(extraLayer)
                     # print "-> EXTRA LAYER ANCESTORS: %s" % repr(extraLayer.ancestors)
                     if self.DEBUG_WOO:

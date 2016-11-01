@@ -4,7 +4,7 @@ from csvparse_abstract import ObjList, CSVParse_Base
 from csvparse_tree import ItemList, TaxoList, ImportTreeObject
 from csvparse_tree import CSVParse_Tree, CSVParse_Tree_Mixin
 from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem
-from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, CSVParse_Gen_Mixin
+from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenObject, CSVParse_Gen_Mixin
 from csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
 from csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
 from csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin
@@ -17,11 +17,11 @@ import bisect
 import time
 from pprint import pformat
 
-class ImportApiObject(ImportGenFlat, ImportShopMixin, ImportWooMixin):
+class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('ImportApiObject')
-        ImportGenFlat.__init__(self, *args, **kwargs)
+        ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
         self.categoryIndexer = CSVParse_Woo_Mixin.getTitle
@@ -245,6 +245,28 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
         self.rowcount += 1
 
+    def processApiCategories(self, categories):
+        """ creates a queue of categories to be processed in the correct order """
+        while categories:
+            category = categories.pop(0)
+            # self.registerMessage("analysing category: %s" % category)
+            if category.get('parent'):
+                parent = category.get('parent')
+                # self.registerMessage("parent id: %s" % parent)
+                queue_category_ids = [queue_category.get('id') for queue_category in categories]
+                if parent in queue_category_ids:
+                    # self.registerMessage('analysing later')
+                    categories.append(category)
+                    continue
+                # self.registerMessage("queue categories: %s" % queue_category_ids)
+                # for queue_category in categories:
+                #     # If category's parent exists in queue
+                #     if queue_category.get('id') == parent:
+                #         # then put it at the end of the queue
+                #         categories.append(category)
+            self.processApiCategory(category)
+
+
 
     def processApiAttributes(self, objectData, attributes, var=False):
         varstr = 'var ' if var else ''
@@ -315,12 +337,18 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if not title and 'name' in apiData:
             title = apiData['name']
         parserData[cls.objectContainer.titleKey] = title
-        parserData['itemsum'] = title
+        parserData[cls.objectContainer.namesumKey] = title
 
         slug = parserData.get(cls.objectContainer.slugKey,'')
         if not slug and 'slug' in apiData:
             slug = apiData['slug']
         parserData[cls.objectContainer.slugKey] = slug
+
+        description = parserData.get(cls.objectContainer.descriptionKey, '')
+        if not description and 'description' in apiData:
+            description = apiData['description']
+        parserData[cls.objectContainer.descriptionKey] = description
+        parserData[cls.objectContainer.descsumKey] = description
 
 
         if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )

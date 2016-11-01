@@ -265,6 +265,10 @@ class ImportTreeRoot(ImportTreeObject):
     def title(self):
         return "root"
 
+    @property
+    def WPID(self):
+        return "-1"
+
 class ImportTreeItem(ImportTreeObject):
     isItem = True
 

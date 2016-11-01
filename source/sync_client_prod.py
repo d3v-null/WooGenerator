@@ -44,10 +44,12 @@ class ProdSyncClient_WC(SyncClient_WC):
 
     def analyseRemote(self, parser, since=None, limit=None):
         taxoApiIterator = self.ApiIterator(self.service, '/products/categories')
+        categories = []
         for page in taxoApiIterator:
             if 'product_categories' in page:
                 for page_item in page.get('product_categories'):
-                    parser.processApiCategory(page_item)
+                    categories.append(page_item)
+        parser.processApiCategories(categories)
         if self.DEBUG_API:
             self.registerMessage("Analysed categories:")
             self.registerMessage(parser.toStrTree())
