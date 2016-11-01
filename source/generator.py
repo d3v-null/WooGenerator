@@ -845,7 +845,7 @@ else:
 
 # print productParser.toStrTree()
 print apiProductParser.toStrTree()
-quit()
+# quit()
 # quit()
 
 # print "API PRODUCTS"
@@ -881,6 +881,7 @@ if do_sync:
     # [x] creates list of categories that don't yet exist to be created
     # [x] Fix upload has quotations
     # [x] Fix toStrTree not working on apiProductParser
+    # [ ] Store API cats by WPID not name, since duplicates happen
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
