@@ -1,7 +1,8 @@
 from csvparse_abstract import ImportObject, ObjList
 # from csvparse_flat import UsrObjList #, ImportUser
-from utils import SanitationUtils, Registrar, InheritenceUtils
+from utils import SanitationUtils, Registrar, InheritenceUtils, listUtils
 from collections import OrderedDict
+from pprint import pformat
 
 class Match(object):
     def __init__(self, mObjects = None, sObjects = None):
@@ -172,24 +173,35 @@ class MatchList(list):
         return self._mIndices
 
     def addMatch(self, match):
+        Registrar.registerMessage("adding match: %s" % str(match))
+        matchSIndices = []
+        matchMIndices = []
         for sObject in match.sObjects:
-            sIndex = self._indexFn(sObject)
-            # Registrar.registerMessage('indexing %s with %s : %s' \
+            # Registrar.registerMessage('indexing slave %s with %s : %s' \
             #                         % (sObject, repr(self._indexFn), sIndex))
+            sIndex = self._indexFn(sObject)
             assert \
                 sIndex not in self.sIndices, \
-                "can't add match: sIndex %s already in sIndices: %s \n %s" % (
-                    str(sIndex), str(self.sIndices), str(match)
+                "can't add match: sIndex %s already in sIndices: %s \n %s \n all matches: %s" % (
+                    str(sIndex), str(self.sIndices), str(match), str(self)
                 )
-            self.sIndices.append(sIndex)
+            matchSIndices.append(sIndex)
+        if matchSIndices:
+            assert listUtils.checkEqual(matchSIndices), "all sIndices should be equal: %s" % matchSIndices
+            self.sIndices.append(matchSIndices[0])
         for mObject in match.mObjects:
+            # Registrar.registerMessage('indexing master %s with %s : %s' \
+                                    # % (sObject, repr(self._indexFn), sIndex))
             mIndex = self._indexFn(mObject)
             assert \
                 mIndex not in self.mIndices, \
-                "can't add match: mIndex %s already in mIndices: %s \n %s" % (
-                    str(mIndex), str(self.mIndices), str(match)
+                "can't add match: mIndex %s already in mIndices: %s \n %s \n all matches: %s" % (
+                    str(mIndex), str(self.mIndices), str(match), str(self)
                 )
-            self.mIndices.append(mIndex)
+            matchMIndices.append(mIndex)
+        if matchMIndices:
+            assert listUtils.checkEqual(matchMIndices), "all mIndices should be equal: %s" % matchMIndices
+            self.mIndices.append(matchMIndices[0])
         self.append(match)
 
     def addMatches(self, matches):
@@ -291,23 +303,38 @@ class AbstractMatcher(Registrar):
         # mKeys = OrderedDict()
         # for regKey, regValue in maRegister:
         #     mKeys.update({self.indexFn(regValue):regKey})
-        mKeys = OrderedDict(
-            [(self.indexFn(regValue), regKey) for regKey, regValue in maRegister.items()]
-        )
+        # mKeys = \
+        #     [(self.indexFn(regValue), regKey) for regKey, regValue in maRegister.items()]
+
+        # mKeys is a mapping from indexes of regValues to their corresponding regKeys
+        mKeys = OrderedDict()
+        for regKey, regValue in maRegister.items():
+            regIndex = self.indexFn(regValue)
+            if not regIndex in mKeys:
+                mKeys[regIndex] = []
+            mKeys[regIndex].append(regKey)
+
+        # self.registerMessage('mkeys: %s' % pformat(mKeys))
+
         # print "mKeys", mKeys
         for regKey, regValue in saRegister.items():
+            # self.registerMessage('analysing saRegisteritem (%s, %s)' % (regKey, regValue))
             saObjects = [regValue]
             mKey = self.indexFn(regValue)
             maObjects = []
             if mKey in mKeys:
-                mRegKey = mKeys[mKey]
+                mRegKeys = mKeys[mKey]
                 # print "removing key", mKey, "from", mKeys
                 mKeys.pop(mKey)
-                maObjects = self.retrieveObjects(maRegister, mRegKey)
+                maObjects = []
+                for mRegKey in mRegKeys:
+                    maObjects.extend(self.retrieveObjects(maRegister, mRegKey))
             self.processMatch(maObjects, saObjects)
-        for mKey, regKey in mKeys.items():
+        for mKey, regKeys in mKeys.items():
             saObjects = []
-            maObjects = self.retrieveObjects(maRegister, regKey)
+            maObjects = []
+            for regKey in regKeys:
+                maObjects.extend(self.retrieveObjects(maRegister, regKey))
             self.processMatch(maObjects, saObjects)
 
     def retrieveObjectsNonsingular(self, register, key):
@@ -328,22 +355,22 @@ class AbstractMatcher(Registrar):
     def addMatch(self, match, match_type):
         try:
             self._matches[match_type].addMatch(match)
-        # finally:
-        except Exception as e:
-            # pass
-            self.registerWarning( "could not add match to %s matches %s" % (
-                match_type,
-                SanitationUtils.coerceUnicode(repr(e))
-            ))
+        # except Exception as e:
+        finally:
+            pass
+            # self.registerWarning( "could not add match to %s matches %s" % (
+            #     match_type,
+            #     SanitationUtils.coerceUnicode(repr(e))
+            # ))
             # raise e
         try:
             self._matches['all'].addMatch(match)
-        # finally:
-        except Exception as e:
-            # pass
-            self.registerWarning( "could not add match to matches %s" % (
-                SanitationUtils.coerceUnicode(repr(e))
-            ))
+        # except Exception as e:
+        finally:
+            pass
+            # self.registerWarning( "could not add match to matches %s" % (
+            #     SanitationUtils.coerceUnicode(repr(e))
+            # ))
 
     def mFilter(self, objects):
         if self.mFilterFn:

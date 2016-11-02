@@ -886,7 +886,7 @@ if do_sync:
     # [x] Fix upload has quotations
     # [x] Fix toStrTree not working on apiProductParser
     # [x] AssertionError: can't add match: sIndex  already in sIndices: ['']
-    # [ ] Why no alerts for duplicate names
+    # [x] Why no alerts for duplicate names
     # [ ] get one-to-many matching working for category WPIDs
     # [ ] Store API cats by WPID not name, since duplicates happen
     # [ ] Syncs categories on ID instead of WooCatName
@@ -913,11 +913,12 @@ if do_sync:
 
     if categoryMatcher.duplicateMatches:
         e = UserWarning(
-            "categories couldn't be synchronized because of ambiguous names:%s"\
+            "categories couldn't be synchronized because of ambiguous names:\n%s"\
             % '\n'.join(map(str,categoryMatcher.duplicateMatches))
         )
         Registrar.registerError(e)
         raise e
+    # assert categoryMatcher.duplicateMatches
 
     if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
         e = UserWarning(
