@@ -889,9 +889,7 @@ if do_sync:
     # [x] Why no alerts for duplicate names
     # [x] get one-to-many matching working for category WPIDs
     # [x] Store API cats by WPID not name, since duplicates happen
-    # [ ] reduce false positive product title syncs
-    # [ ] Syncs categories on ID instead of WooCatName
-    # [ ] Probably need to patch SyncUpdate
+    # [x] reduce false positive product title syncs
 
     # SYNC CATEGORIES
     # try:
@@ -925,7 +923,9 @@ if do_sync:
         invalidCategoryMatches = []
         for match in categoryMatcher.duplicateMatches:
             masterTaxoSums = [cat.namesum for cat in match.mObjects]
-            if listUtils.checkEqual(masterTaxoSums) and not len(match.sObjects) > 1:
+            if all(masterTaxoSums) \
+            and listUtils.checkEqual(masterTaxoSums) \
+            and not len(match.sObjects) > 1:
                 validCategoryMatches.append(match)
             else:
                 invalidCategoryMatches.append(match)
@@ -946,7 +946,7 @@ if do_sync:
             )
         )
         Registrar.registerError(e)
-        # raise e
+        raise e
     # quit()
 
     globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
@@ -981,7 +981,15 @@ if do_sync:
                 slaveCategoryUpdates.append(syncUpdate)
 
     for update in masterCategoryUpdates:
-        print "updating %s" % str(update.MasterID)
+        Registrar.registerMessage(
+            "performing update < %5s | %5s > = %100s, %100s " \
+            % (
+                update.MasterID,
+                update.SlaveID,
+                str(update.oldMObject),
+                str(update.oldSObject)
+            )
+        )
         if not update.MasterID in productParser.categories:
             print "couldn't fine pkey %s in productParser.categories" % update.MasterID
             continue

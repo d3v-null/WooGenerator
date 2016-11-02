@@ -305,7 +305,7 @@ class CSVParse_Base(Registrar):
             self.registerMessage(' ')
         self.indices = OrderedDict()
         self.objects = OrderedDict()
-        self.rowcount = 0
+        self.rowcount = 1
 
     def registerObject(self, objectData):
         if self.DEBUG_MRO:

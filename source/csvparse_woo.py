@@ -143,6 +143,9 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         self['title_1'] = line1
         self['title_2'] = line2
 
+        if not self.title:
+            self.title = self.namesum
+
     def getNameDelimeter(self):
         e = DeprecationWarning("use .nameDelimeter insetad of .getNameDelimeter()")
         self.registerError(e)
