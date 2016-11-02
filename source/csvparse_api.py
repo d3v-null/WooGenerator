@@ -112,7 +112,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
     categoryContainer = ImportApiCategory
     # categoryIndexer = CSVParse_Gen_Mixin.getNameSum
     # categoryIndexer = CSVParse_Woo_Mixin.getTitle
-    categoryIndexer = CSVParse_Woo_Mixin.getWPID
+    # categoryIndexer = CSVParse_Woo_Mixin.getWPID
+    categoryIndexer = CSVParse_Base.getObjectRowcount
     productIndexer = CSVParse_Shop_Mixin.productIndexer
     variationIndexer = CSVParse_Woo_Mixin.getTitle
 
@@ -197,17 +198,28 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         #
         if self.DEBUG_API:
             self.registerMessage("ANALYSE CATEGORY: %s" % repr(categoryApiData))
+        core_translation = OrderedDict()
+        for col, col_data in ColData_Woo.getWPAPICoreCols().items():
+            try:
+                wp_api_key = col_data['wp-api']['key']
+            except:
+                wp_api_key = col
+            core_translation[wp_api_key] = col
         categorySearchData = {}
-        if 'id' in categoryApiData:
-            categorySearchData[self.categoryContainer.wpidKey] = categoryApiData['id']
-        if 'name' in categoryApiData:
-            categorySearchData[self.categoryContainer.titleKey] = categoryApiData['name']
-            categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['name']
-        elif 'title' in categoryApiData:
-            categorySearchData[self.categoryContainer.titleKey] = categoryApiData['title']
-            categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['title']
-        if 'slug' in categoryApiData:
-            categorySearchData[self.categoryContainer.slugKey] = categoryApiData['slug']
+        categorySearchData.update(**self.translateKeys(categoryApiData, core_translation))
+        categorySearchData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
+                        for key, value in categorySearchData.items()])
+
+        # if 'id' in categoryApiData:
+        #     categorySearchData[self.categoryContainer.wpidKey] = categoryApiData['id']
+        # if 'name' in categoryApiData:
+        #     categorySearchData[self.categoryContainer.titleKey] = categoryApiData['name']
+        #     categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['name']
+        # elif 'title' in categoryApiData:
+        #     categorySearchData[self.categoryContainer.titleKey] = categoryApiData['title']
+        #     categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['title']
+        # if 'slug' in categoryApiData:
+        #     categorySearchData[self.categoryContainer.slugKey] = categoryApiData['slug']
         if self.DEBUG_API:
             self.registerMessage("SEARCHING FOR CATEGORY: %s" % repr(categorySearchData))
         catData = self.findCategory(categorySearchData)
@@ -216,6 +228,10 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 self.registerMessage("CATEGORY NOT FOUND")
 
             categoryApiData['type'] = 'category'
+            if not 'description' in categoryApiData:
+                categoryApiData['description'] = ''
+            if not 'slug' in categoryApiData:
+                categoryApiData['slug'] = ''
 
             kwargs = OrderedDict()
             kwargs['apiData'] = categoryApiData
@@ -358,7 +374,6 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if 'title' in apiData:
             parserData[cls.objectContainer.titleKey] = apiData['title']
 
-
         assert \
             cls.objectContainer.descriptionKey in parserData, \
             "parserData should have description: %s\n original: %s\ntranslations: %s, %s" \
@@ -399,11 +414,11 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         #     slug = apiData['slug']
         # parserData[cls.objectContainer.slugKey] = slug
         #
-        # description = parserData.get(cls.objectContainer.descriptionKey, '')
-        # if not description and 'description' in apiData:
-        #     description = apiData['description']
-        # parserData[cls.objectContainer.descriptionKey] = description
-        # parserData[cls.objectContainer.descsumKey] = description
+        description = parserData.get(cls.objectContainer.descriptionKey, '')
+        if not description and 'description' in apiData:
+            description = apiData['description']
+        parserData[cls.objectContainer.descriptionKey] = description
+        parserData[cls.objectContainer.descsumKey] = description
 
 
         if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )

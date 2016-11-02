@@ -890,6 +890,18 @@ if do_sync:
     # [x] get one-to-many matching working for category WPIDs
     # [x] Store API cats by WPID not name, since duplicates happen
     # [x] reduce false positive product title syncs
+    # [x] fic this error:
+    #       source/utils.py:2804.registerAnything>source/utils.py:2743.resolveConflict ! Object [index: TechnoTan Personalised X-Frame Banner - Style D] already exists in register products
+    #       source/utils.py:2804.registerAnything>source/utils.py:2743.resolveConflict ! Object [index: TechnoTan Personalised X-Frame Banner - Style C] already exists in register products
+    #       source/utils.py:2804.registerAnything>source/utils.py:2743.resolveConflict ! Object [index: TechnoTan Personalised X-Frame Banner - Style B] already exists in register products
+    #       source/utils.py:2804.registerAnything>source/utils.py:2743.resolveConflict ! Object [index: TechnoTan Personalised X-Frame Banner - Style A] already exists in register products
+    # [x] fix this error:
+    #       AssertionError: parserData should have description: OrderedDict([('itemsum', u'Eucalyptus & Spearmint Candles'), ('prod_type', u'category'), ('title', u'Eucalyptus & Spearmint Candles')])
+    #        original: {'type': u'category', 'title': u'Eucalyptus & Spearmint Candles'}
+    #       translations: OrderedDict([('sku', 'codesum'), ('title', 'itemsum'), ('weight', 'weight'), ('id', 'ID'), ('parent', 'parent_id'), ('slug', 'slug'), ('name', 'title'), ('categories', 'catlist'), ('type', 'prod_type'), ('description', 'HTML Description'), ('menu_order', 'rowcount'), ('regular_price', 'sale_price_dates_from'), ('stock_quantity', 'stock'), ('manage_stock', 'manage_stock'), ('updated_at', 'Updated'), ('status', 'post_status')]), OrderedDict()
+    # [ ] fix mosaic minerals accessory category not showing up
+    # [ ] fix products syncing title AND itemsum
+
 
     # SYNC CATEGORIES
     # try:
@@ -946,7 +958,7 @@ if do_sync:
             )
         )
         Registrar.registerError(e)
-        raise e
+        # raise e
     # quit()
 
     globalCategoryMatches.addMatches( categoryMatcher.pureMatches)

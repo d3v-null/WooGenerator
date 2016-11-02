@@ -377,7 +377,7 @@ class CSVParse_Shop_Mixin(object):
         self.registerAnything(
             prodData,
             self.products,
-            indexer = self.variationIndexer,
+            indexer = self.productIndexer,
             singular = True,
             resolver = self.resolveConflict,
             registerName = 'products'

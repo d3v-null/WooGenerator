@@ -196,7 +196,7 @@ class MatchList(list):
             assert \
                 mIndex not in self.mIndices, \
                 "can't add match: mIndex %s already in mIndices: %s \n %s \n all matches: %s" % (
-                    str(mIndex), str(self.mIndices), str(match), str(self)
+                    str(mIndex), str(self.mIndices), str(match), str('\n'.join(map(str,self)))
                 )
             matchMIndices.append(mIndex)
         if matchMIndices:
