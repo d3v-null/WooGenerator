@@ -174,6 +174,8 @@ class MatchList(list):
     def addMatch(self, match):
         for sObject in match.sObjects:
             sIndex = self._indexFn(sObject)
+            # Registrar.registerMessage('indexing %s with %s : %s' \
+            #                         % (sObject, repr(self._indexFn), sIndex))
             assert \
                 sIndex not in self.sIndices, \
                 "can't add match: sIndex %s already in sIndices: %s \n %s" % (
@@ -326,14 +328,19 @@ class AbstractMatcher(Registrar):
     def addMatch(self, match, match_type):
         try:
             self._matches[match_type].addMatch(match)
+        # finally:
         except Exception as e:
+            # pass
             self.registerWarning( "could not add match to %s matches %s" % (
                 match_type,
                 SanitationUtils.coerceUnicode(repr(e))
             ))
+            # raise e
         try:
             self._matches['all'].addMatch(match)
+        # finally:
         except Exception as e:
+            # pass
             self.registerWarning( "could not add match to matches %s" % (
                 SanitationUtils.coerceUnicode(repr(e))
             ))
@@ -390,16 +397,24 @@ class AbstractMatcher(Registrar):
 class ProductMatcher(AbstractMatcher):
     # processRegisters = AbstractMatcher.processRegistersSingular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+    @staticmethod
+    def productIndexFn(x):
+        return x.codesum
+
     def __init__(self):
-        super(ProductMatcher, self).__init__( lambda x: x.codesum )
+        super(ProductMatcher, self).__init__( self.productIndexFn )
         self.processRegisters = self.processRegistersSingular
         self.retrieveObjects = self.retrieveObjectsSingular
 
 class CategoryMatcher(AbstractMatcher):
     # processRegisters = AbstractMatcher.processRegistersSingular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+    @staticmethod
+    def categoryIndexFn(x):
+        return x.wooCatName
+
     def __init__(self):
-        super(CategoryMatcher, self).__init__( lambda x: x.wooCatName )
+        super(CategoryMatcher, self).__init__( self.categoryIndexFn )
         self.processRegisters = self.processRegistersSingular
         self.retrieveObjects = self.retrieveObjectsSingular
 

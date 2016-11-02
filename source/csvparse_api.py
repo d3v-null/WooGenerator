@@ -26,6 +26,29 @@ class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportWooMixin.__init__(self, *args, **kwargs)
         self.categoryIndexer = CSVParse_Woo_Mixin.getTitle
 
+    @property
+    def index(self):
+        return self.codesum
+
+    @property
+    def identifier(self):
+        # identifier = super(ImportApiObject, self).identifier
+        return "|".join([
+            'r:%s' % str(self.rowcount),
+            'w:%s' % str(self.get(self.wpidKey)),
+            self.codesum,
+            self.title,
+        ])
+
+    def processMeta(self):
+        # self.descsum = self.description
+        assert self.descsumKey in self, "descsum should be set in %s. data: %s " % (self, self.items())
+        # self.namesum = self.title
+        assert self.namesumKey in self, "namesum should be set in %s. data: %s " % (self, self.items())
+        # if self.isCategory:
+        #     self.codesum = ''
+        assert self.codesumKey in self, "codesum should be set in %s. data: %s " % (self, self.items())
+
 class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
     isProduct = ImportShopProductMixin.isProduct
     def __init__(self, *args, **kwargs):
@@ -66,15 +89,15 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
 
     @property
     def index(self):
-        return self.namesum
+        return self.title
 
     @property
     def identifier(self):
-        identifier = super(ImportApiCategory, self).identifier
+        # identifier = super(ImportApiObject, self).identifier
         return "|".join([
             'r:%s' % str(self.rowcount),
             'w:%s' % str(self.get(self.wpidKey)),
-            self.wooCatName,
+            self.title,
         ])
 
 # class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin, CSVParse_Tree_Mixin):
@@ -87,8 +110,9 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
     variableContainer = ImportApiProductVariable
     variationContainer = ImportApiProductVariation
     categoryContainer = ImportApiCategory
-    categoryIndexer = CSVParse_Gen_Mixin.getNameSum
-    categoryIndexer = CSVParse_Woo_Mixin.getTitle
+    # categoryIndexer = CSVParse_Gen_Mixin.getNameSum
+    # categoryIndexer = CSVParse_Woo_Mixin.getTitle
+    categoryIndexer = CSVParse_Woo_Mixin.getWPID
     productIndexer = CSVParse_Shop_Mixin.productIndexer
     variationIndexer = CSVParse_Woo_Mixin.getTitle
 
@@ -314,9 +338,9 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         # if Registrar.DEBUG_API: Registrar.registerMessage("core_translation: %s" % pformat(core_translation))
         parserData.update(**cls.translateKeys(apiData, core_translation))
 
+        meta_translation = OrderedDict()
         if 'meta' in apiData:
             metaData = apiData['meta']
-            meta_translation = OrderedDict()
             for col, col_data in ColData_Woo.getWPAPIMetaCols().items():
                 try:
                     wp_api_key = col_data['wp-api']['key']
@@ -330,25 +354,56 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             parserData.update(**cls.getApiStockStatusData(apiData['in_stock']))
         # if 'description' in apiData:
         #     parserData[cls.objectContainer.descriptionKey] = apiData['description']
+        # Stupid hack because 'name' is 'title' in products, but 'name' in categories
+        if 'title' in apiData:
+            parserData[cls.objectContainer.titleKey] = apiData['title']
 
-        title = parserData.get(cls.objectContainer.titleKey, '')
-        if not title and 'title' in apiData:
-            title = apiData['title']
-        if not title and 'name' in apiData:
-            title = apiData['name']
-        parserData[cls.objectContainer.titleKey] = title
-        parserData[cls.objectContainer.namesumKey] = title
 
-        slug = parserData.get(cls.objectContainer.slugKey,'')
-        if not slug and 'slug' in apiData:
-            slug = apiData['slug']
-        parserData[cls.objectContainer.slugKey] = slug
+        assert \
+            cls.objectContainer.descriptionKey in parserData, \
+            "parserData should have description: %s\n original: %s\ntranslations: %s, %s" \
+                % (parserData, apiData, core_translation, meta_translation)
+        parserData[cls.objectContainer.descsumKey] = parserData[cls.objectContainer.descriptionKey]
+        assert \
+            cls.objectContainer.titleKey in parserData, \
+            "parserData should have title: %s\n original: %s\ntranslations: %s, %s" \
+                % (parserData, apiData, core_translation, meta_translation)
+        if apiData['type'] == 'category':
+            parserData[cls.categoryContainer.namesumKey] = parserData[cls.objectContainer.titleKey]
+            assert \
+                cls.objectContainer.slugKey in parserData, \
+                "parserData should have slug: %s\n original: %s\ntranslations: %s, %s" \
+                    % (parserData, apiData, core_translation, meta_translation)
+            parserData[cls.objectContainer.codesumKey] = parserData[cls.objectContainer.slugKey]
+        else:
+            parserData[cls.objectContainer.namesumKey] = parserData[cls.objectContainer.titleKey]
+        assert \
+            cls.objectContainer.codesumKey in parserData, \
+            "parserData should have codesum: %s\n original: %s\ntranslations: %s, %s" \
+                % (parserData, apiData, core_translation, meta_translation)
+        assert \
+            cls.objectContainer.namesumKey in parserData, \
+            "parserData should have namesum: %s\n original: %s\ntranslations: %s, %s" \
+                % (parserData, apiData, core_translation, meta_translation)
 
-        description = parserData.get(cls.objectContainer.descriptionKey, '')
-        if not description and 'description' in apiData:
-            description = apiData['description']
-        parserData[cls.objectContainer.descriptionKey] = description
-        parserData[cls.objectContainer.descsumKey] = description
+        # title = parserData.get(cls.objectContainer.titleKey, '')
+        # if not title and 'title' in apiData:
+        #     title = apiData['title']
+        # if not title and 'name' in apiData:
+        #     title = apiData['name']
+        # parserData[cls.objectContainer.titleKey] = title
+        # parserData[cls.objectContainer.namesumKey] = title
+        #
+        # slug = parserData.get(cls.objectContainer.slugKey,'')
+        # if not slug and 'slug' in apiData:
+        #     slug = apiData['slug']
+        # parserData[cls.objectContainer.slugKey] = slug
+        #
+        # description = parserData.get(cls.objectContainer.descriptionKey, '')
+        # if not description and 'description' in apiData:
+        #     description = apiData['description']
+        # parserData[cls.objectContainer.descriptionKey] = description
+        # parserData[cls.objectContainer.descsumKey] = description
 
 
         if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )

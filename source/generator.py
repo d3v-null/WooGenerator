@@ -864,12 +864,16 @@ problematicProductUpdates = []
 masterCategoryUpdates = []
 slaveCategoryUpdates = []
 problematicCategoryUpdates = []
-globalProductMatches = MatchList()
-globalCategoryMatches = MatchList()
-masterlessProductMatches = MatchList()
-masterlessCategoryMatches = MatchList()
-slavelessProductMatches = MatchList()
-slavelessCategoryMatches = MatchList()
+# productIndexFn = (lambda x: x.codesum)
+def productIndexFn(x): return x.codesum
+globalProductMatches = MatchList(indexFn=productIndexFn)
+masterlessProductMatches = MatchList(indexFn=productIndexFn)
+slavelessProductMatches = MatchList(indexFn=productIndexFn)
+def categoryIndexFn(x): return x.title
+# categoryIndexFn = (lambda x: x.title)
+globalCategoryMatches = MatchList(indexFn=categoryIndexFn)
+masterlessCategoryMatches = MatchList(indexFn=categoryIndexFn)
+slavelessCategoryMatches = MatchList(indexFn=categoryIndexFn)
 delete_categories = OrderedDict()
 join_categories = OrderedDict()
 
@@ -881,6 +885,9 @@ if do_sync:
     # [x] creates list of categories that don't yet exist to be created
     # [x] Fix upload has quotations
     # [x] Fix toStrTree not working on apiProductParser
+    # [x] AssertionError: can't add match: sIndex  already in sIndices: ['']
+    # [ ] Why no alerts for duplicate names
+    # [ ] get one-to-many matching working for category WPIDs
     # [ ] Store API cats by WPID not name, since duplicates happen
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
@@ -1027,7 +1034,7 @@ if do_sync:
     print "there are %s children of root" % len(apiProductParser.rootData.children)
     print apiProductParser.toStrTree()
     for key, category in apiProductParser.categories.items():
-        print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
+        print "%5s | %50s" % (key, category.title[:50])
 
     # quit()
 

@@ -335,7 +335,9 @@ class ColData_Woo(ColData_Prod):
         }),
         ('slug',{
             'category':True,
-            'wp-api':True,
+            'wp-api':{
+                'key':'slug'
+            },
             'sync':'slave_override'
         }),
         ('display', {
@@ -351,21 +353,28 @@ class ColData_Woo(ColData_Prod):
             'label':'post_title',
             'product':True,
             'variation': True,
-            'category': True,
             'wp':{
                 'key':'post_title',
                 'meta':False
             },
             'wp-api':{
-                'key':'name',
+                'key':'title',
                 'meta':False
             },
             'wp-api-wc-v1':{
-                'key':'name',
+                'key':'title',
                 'meta':False
             },
             'report':True,
             'sync':'not_variable'
+        }),
+        ('title', {
+            'category':True,
+            'wp-api':{
+                'key':'name',
+                'meta':False
+            },
+            'sync':True
         }),
         ('title_1', {
             'label': 'meta:title_1',
@@ -411,11 +420,14 @@ class ColData_Woo(ColData_Prod):
             'label':'post_content',
             'tag':'Description',
             'product': True,
+            'sync':'not_variable'
+        }),
+        ('HTML Description', {
+            'import': True,
             'category': True,
             'wp-api':{
                 'key':'description'
             },
-            'sync':'not_variable'
         }),
         ('imgsum', {
             'label':'Images',
@@ -1052,9 +1064,6 @@ class ColData_Woo(ColData_Prod):
         ('Images', {
             'import': True,
             'default': ''
-        }),
-        ('HTML Description', {
-            'import': True
         }),
         ('last_import', {
             'label':'meta:last_import',
