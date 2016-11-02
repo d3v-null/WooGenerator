@@ -887,8 +887,9 @@ if do_sync:
     # [x] Fix toStrTree not working on apiProductParser
     # [x] AssertionError: can't add match: sIndex  already in sIndices: ['']
     # [x] Why no alerts for duplicate names
-    # [ ] get one-to-many matching working for category WPIDs
-    # [ ] Store API cats by WPID not name, since duplicates happen
+    # [x] get one-to-many matching working for category WPIDs
+    # [x] Store API cats by WPID not name, since duplicates happen
+    # [ ] reduce false positive product title syncs
     # [ ] Syncs categories on ID instead of WooCatName
     # [ ] Probably need to patch SyncUpdate
 
@@ -904,21 +905,37 @@ if do_sync:
     categoryMatcher.clear()
     categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
 
-    time.sleep(1)
 
-    if categoryMatcher.pureMatches:
-        print "ALL MATCHES"
-        print '\n'.join(map(str,categoryMatcher.matches)),
+    validCategoryMatches = []
+    validCategoryMatches += categoryMatcher.pureMatches
+
+    # if categoryMatcher.pureMatches:
+    #     print "ALL MATCHES"
+    #     print '\n'.join(map(str,categoryMatcher.matches))
 
 
     if categoryMatcher.duplicateMatches:
-        e = UserWarning(
-            "categories couldn't be synchronized because of ambiguous names:\n%s"\
-            % '\n'.join(map(str,categoryMatcher.duplicateMatches))
-        )
-        Registrar.registerError(e)
-        raise e
-    # assert categoryMatcher.duplicateMatches
+        # e = UserWarning(
+        #     "categories couldn't be synchronized because of ambiguous names:\n%s"\
+        #     % '\n'.join(map(str,categoryMatcher.duplicateMatches))
+        # )
+        # Registrar.registerError(e)
+        # raise e
+        # taxoSums = []
+        invalidCategoryMatches = []
+        for match in categoryMatcher.duplicateMatches:
+            masterTaxoSums = [cat.namesum for cat in match.mObjects]
+            if listUtils.checkEqual(masterTaxoSums) and not len(match.sObjects) > 1:
+                validCategoryMatches.append(match)
+            else:
+                invalidCategoryMatches.append(match)
+        if invalidCategoryMatches:
+            e = UserWarning(
+                "categories couldn't be synchronized because of ambiguous names:\n%s"\
+                % '\n'.join(map(str,invalidCategoryMatches))
+            )
+            Registrar.registerError(e)
+            raise e
 
     if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
         e = UserWarning(
@@ -941,25 +958,27 @@ if do_sync:
     # print "SYNC COLS: %s" % pformat(sync_cols.items())
     # quit()
 
-    for matchCount, match in enumerate(categoryMatcher.pureMatches):
-        mObject = match.mObjects[0]
+    for matchCount, match in enumerate(validCategoryMatches):
+        assert len(match.sObjects) == 1, "invalid number of slave objects in match"
         sObject = match.sObjects[0]
+        for mObject in match.mObjects:
+            # mObject = match.mObjects[0]
 
-        syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
+            syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
 
-        syncUpdate.update(sync_cols)
+            syncUpdate.update(sync_cols)
 
-        print syncUpdate.tabulate()
+            print syncUpdate.tabulate()
 
-        if not syncUpdate.importantStatic:
-            insort(problematicCategoryUpdates, syncUpdate)
-            continue
+            if not syncUpdate.importantStatic:
+                insort(problematicCategoryUpdates, syncUpdate)
+                continue
 
-        if syncUpdate.mUpdated:
-            masterCategoryUpdates.append(syncUpdate)
+            if syncUpdate.mUpdated:
+                masterCategoryUpdates.append(syncUpdate)
 
-        if syncUpdate.sUpdated:
-            slaveCategoryUpdates.append(syncUpdate)
+            if syncUpdate.sUpdated:
+                slaveCategoryUpdates.append(syncUpdate)
 
     for update in masterCategoryUpdates:
         print "updating %s" % str(update.MasterID)

@@ -173,7 +173,7 @@ class MatchList(list):
         return self._mIndices
 
     def addMatch(self, match):
-        Registrar.registerMessage("adding match: %s" % str(match))
+        # Registrar.registerMessage("adding match: %s" % str(match))
         matchSIndices = []
         matchMIndices = []
         for sObject in match.sObjects:
