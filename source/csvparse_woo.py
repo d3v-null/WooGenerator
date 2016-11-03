@@ -286,18 +286,27 @@ class CSVParse_Woo_Mixin(object):
 
     def findCategory(self, searchData):
         response = None
-        for key in [
+        matching_category_sets = []
+        for search_key in [
             self.objectContainer.wpidKey,
             self.objectContainer.slugKey,
             self.objectContainer.titleKey,
             self.objectContainer.namesumKey,
         ]:
-            value = searchData.get(key)
+            value = searchData.get(search_key)
             if value:
-                for category in self.categories.values():
-                    if category.get(key) == value:
-                        response = category
-                        return response
+                matching_categories = set()
+                for category_key, category in self.categories.items():
+                    if category.get(search_key) == value:
+                        matching_categories.add(category_key)
+                matching_category_sets.append(matching_categories)
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage("matching_category_sets: %s" % matching_category_sets)
+        if matching_category_sets:
+            matches = set.intersection( *matching_category_sets )
+            if matches:
+                assert len(matches) == 1
+                response = self.categories.get(list(matches)[0])
         return response
 
     @classmethod

@@ -844,7 +844,7 @@ else:
     apiProductParser = None
 
 # print productParser.toStrTree()
-print apiProductParser.toStrTree()
+# print apiProductParser.toStrTree()
 # quit()
 # quit()
 
@@ -899,8 +899,19 @@ if do_sync:
     #       AssertionError: parserData should have description: OrderedDict([('itemsum', u'Eucalyptus & Spearmint Candles'), ('prod_type', u'category'), ('title', u'Eucalyptus & Spearmint Candles')])
     #        original: {'type': u'category', 'title': u'Eucalyptus & Spearmint Candles'}
     #       translations: OrderedDict([('sku', 'codesum'), ('title', 'itemsum'), ('weight', 'weight'), ('id', 'ID'), ('parent', 'parent_id'), ('slug', 'slug'), ('name', 'title'), ('categories', 'catlist'), ('type', 'prod_type'), ('description', 'HTML Description'), ('menu_order', 'rowcount'), ('regular_price', 'sale_price_dates_from'), ('stock_quantity', 'stock'), ('manage_stock', 'manage_stock'), ('updated_at', 'Updated'), ('status', 'post_status')]), OrderedDict()
-    # [ ] fix mosaic minerals accessory category not showing up
+    # [x] fix mosaic minerals accessory category not showing up
     # [ ] fix products syncing title AND itemsum
+    # [ ] fix variations matching with variable
+    #       OLD
+    #       objects	_row	index
+    #       MMPPFBB-MOCCHN ====>
+    #       r:1429|w:20193|MMPPFBB-MOCCHN|Mocha Foundation, Bronzer and Brush Pack - Chestnut Foundation
+    #
+    #       NEW
+    #       objects	_row	index
+    #       MMPPFBB-MOC ====>
+    #       r:1429|w:20193|MMPPFBB-MOCCHN|Mocha Foundation, Bronzer and Brush Pack - Chestnut Foundation
+
 
 
     # SYNC CATEGORIES

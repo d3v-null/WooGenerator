@@ -182,8 +182,8 @@ class MatchList(list):
             sIndex = self._indexFn(sObject)
             assert \
                 sIndex not in self.sIndices, \
-                "can't add match: sIndex %s already in sIndices: %s \n %s \n all matches: %s" % (
-                    str(sIndex), str(self.sIndices), str(match), str(self)
+                "can't add match sObject %s : sIndex %s already in sIndices: %s \n %s \n all matches: \n%s ;\n probably ambiguous category names" % (
+                    str(sObject), str(sIndex), str(self.sIndices), str(match), str('\n'.join(map(str,self)))
                 )
             matchSIndices.append(sIndex)
         if matchSIndices:
@@ -195,8 +195,8 @@ class MatchList(list):
             mIndex = self._indexFn(mObject)
             assert \
                 mIndex not in self.mIndices, \
-                "can't add match: mIndex %s already in mIndices: %s \n %s \n all matches: %s" % (
-                    str(mIndex), str(self.mIndices), str(match), str('\n'.join(map(str,self)))
+                "can't add match mObject %s : mIndex %s already in mIndices: %s \n %s \n all matches: %s" % (
+                    str(mObject), str(mIndex), str(self.mIndices), str(match), str('\n'.join(map(str,self)))
                 )
             matchMIndices.append(mIndex)
         if matchMIndices:
