@@ -244,10 +244,12 @@ class ImportShopProductMixin(object):
 
 class ImportShopProductSimpleMixin(object):
     product_type = 'simple'
+    container = ImportShopProductMixin.container
 
 class ImportShopProductVariableMixin(object):
     product_type = 'variable'
     isVariable = True
+    container = ImportShopProductMixin.container
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
@@ -273,6 +275,7 @@ class ImportShopProductVariableMixin(object):
 class ImportShopProductVariationMixin(object):
     product_type = 'variable-instance'
     isVariation = True
+    container = ImportShopProductMixin.container
 
     def registerParentProduct(self, parentData):
         assert issubclass(type(parentData), ImportShopProductVariableMixin)

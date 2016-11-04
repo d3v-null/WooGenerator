@@ -2590,16 +2590,29 @@ class InheritenceUtils:
         """
         # try:
         if len(instances) > 1:
-            classes = [type(x).mro() for x in instances]
-            if classes:
-                for x in classes.pop():
-                    if x == object:
-                        continue
-                    if all(x in mro for mro in classes):
-                        return x
-            assert False, "no common match found for %s" % str([type(x) for x in instances])
+            class_sets = [set([type(instance)]) for instance in instances]
+            while not set.intersection(*class_sets):
+                set_lengths = map(len, class_sets)
+                for i in range(len(class_sets)):
+                    additions = []
+                    for _class in class_sets[i]:
+                        additions.extend(_class.__bases__)
+                    # Registrar.registerMessage("additions: %s" % additions)
+                    if additions:
+                        class_sets[i].update(set(additions))
+                if set_lengths == map(len, class_sets):
+                    return None
+            return list(set.intersection(*class_sets))[0]
+            # classes = [type(x).mro() for x in instances]
+            # if classes:
+            #     for x in classes.pop():
+            #         if x == object:
+            #             continue
+            #         if all(x in mro for mro in classes):
+            #             return x
+            # assert False, "no common match found for %s" % str([type(x) for x in instances])
         elif len(instances) == 1:
-            return instances[0]
+            return type(instances[0])
         else:
             return None
         # except AssertionError, e:

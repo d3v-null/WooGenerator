@@ -58,6 +58,7 @@ class Match(object):
     def gcs(self):
         """Greatest common subset"""
         if self.mLen or self.sLen:
+            # Registrar.registerMessage("getting GCS of %s" % (self.mObjects + self.sObjects))
             return InheritenceUtils.gcs(*(self.mObjects + self.sObjects))
         else:
             return None
@@ -113,14 +114,24 @@ class Match(object):
 
         if self.mLen or self.sLen:
             gcs = self.gcs
-            if gcs is not None:
-                try:
-                    obj_container = gcs.container(indexer=(lambda x: x.identifier))
-                except Exception, e:
-                    Registrar.registerError("could not create GCS %s, container: %s | %s" % (repr(gcs), repr(gcs.container), str(e)))
-                    raise e
+            if gcs is not None and hasattr(gcs, 'container'):
+                obj_container = gcs.container(indexer=(lambda x: x.identifier))
+                # else:
+                    # container = None
+                    # if hasattr(gcs, 'container'):
+                    #     container = gcs.container
+                    # Registrar.registerError("could not create GCS %s, container: %s | %s" % (repr(gcs), repr(container), str(e)))
+                    # obj_container = ObjList()
+                # Registrar.registerMessage(
+                #     "tabulating with container: %s because of gcs %s" \
+                #     % (type(obj_container), gcs)
+                # )
             else:
-                obj_container = ObjList()
+                obj_container = ObjList(indexer=(lambda x: x.identifier))
+                # Registrar.registerMessage(
+                #     "tabulating with container: %s because no gcs" \
+                #     % (type(obj_container))
+                # )
             if self.mObjects:
                 mobjs = self.mObjects[:]
                 if(print_headings):
@@ -143,7 +154,6 @@ class Match(object):
             out += 'EMPTY'
         # return SanitationUtils.coerceUnicode(out)
         return (out)
-
 
 def findCardMatches(match):
     return match.findKeyMatches( lambda obj: obj.MYOBID or '')

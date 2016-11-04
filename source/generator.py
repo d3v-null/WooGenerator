@@ -993,7 +993,7 @@ if do_sync:
 
             syncUpdate.update(sync_cols)
 
-            print syncUpdate.tabulate()
+            # print syncUpdate.tabulate()
 
             if not syncUpdate.importantStatic:
                 insort(problematicCategoryUpdates, syncUpdate)
@@ -1006,15 +1006,15 @@ if do_sync:
                 slaveCategoryUpdates.append(syncUpdate)
 
     for update in masterCategoryUpdates:
-        Registrar.registerMessage(
-            "performing update < %5s | %5s > = %100s, %100s " \
-            % (
-                update.MasterID,
-                update.SlaveID,
-                str(update.oldMObject),
-                str(update.oldSObject)
-            )
-        )
+        # Registrar.registerMessage(
+        #     "performing update < %5s | %5s > = \n%100s, %100s " \
+        #     % (
+        #         update.MasterID,
+        #         update.SlaveID,
+        #         str(update.oldMObject),
+        #         str(update.oldSObject)
+        #     )
+        # )
         if not update.MasterID in productParser.categories:
             print "couldn't fine pkey %s in productParser.categories" % update.MasterID
             continue
@@ -1053,7 +1053,7 @@ if do_sync:
                 if key in mApiData:
                     del mApiData[key]
             mApiData['name'] = category.wooCatName
-            print "uploading category: %s" % mApiData
+            # print "uploading category: %s" % mApiData
             # pprint(mApiData)
             if update_slave:
                 response = client.createItem(mApiData)
@@ -1069,25 +1069,25 @@ if do_sync:
                     except:
                         wp_api_key = key
                     api_cat_translation[wp_api_key] = key
-                print "TRANSLATION: ", api_cat_translation
+                # print "TRANSLATION: ", api_cat_translation
                 categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
-                print "CATEGORY PARSER DATA: ", categoryParserData
+                # print "CATEGORY PARSER DATA: ", categoryParserData
 
                 category.update(categoryParserData)
 
-                print "CATEGORY: ", category
+                # print "CATEGORY: ", category
                 # quit()
 
-    print "product parser"
-    print productParser.toStrTree()
-    for key, category in productParser.categories.items():
-        print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
-    print "api product parser"
-    print "there are %s categories registered" % len(apiProductParser.categories)
-    print "there are %s children of root" % len(apiProductParser.rootData.children)
-    print apiProductParser.toStrTree()
-    for key, category in apiProductParser.categories.items():
-        print "%5s | %50s" % (key, category.title[:50])
+    # print "product parser"
+    # print productParser.toStrTree()
+    # for key, category in productParser.categories.items():
+    #     print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
+    # print "api product parser"
+    # print "there are %s categories registered" % len(apiProductParser.categories)
+    # print "there are %s children of root" % len(apiProductParser.rootData.children)
+    # print apiProductParser.toStrTree()
+    # for key, category in apiProductParser.categories.items():
+    #     print "%5s | %50s" % (key, category.title[:50])
 
     # quit()
 
@@ -1122,6 +1122,9 @@ if do_sync:
         raise e
 
     for matchCount, match in enumerate(productMatcher.pureMatches):
+        # print "processing match: %s" % match.tabulate()
+        assert len(match.mObjects) == 1
+        assert len(match.sObjects) == 1
         mObject = match.mObjects[0]
         sObject = match.sObjects[0]
 
@@ -1135,9 +1138,9 @@ if do_sync:
             syncUpdate.update(sync_cols_var)
         else:
             # print "IS NOT VARIATION"
-            syncUpdate.update(sync_cols)
             assert not mObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
             assert not sObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
+            syncUpdate.update(sync_cols)
 
             # print syncUpdate.tabulate()
 
@@ -1167,14 +1170,14 @@ if do_sync:
                 [category.WPID for category in sObject.categories.values() if category.WPID]
             )
 
-            print "comparing categories of %s:\n%s\n%s\n%s\n%s"\
-                % (
-                    mObject.codesum,
-                    str(mObject.categories.values()),
-                    str(sObject.categories.values()),
-                    str(master_categories),
-                    str(slave_categories),
-                )
+            # print "comparing categories of %s:\n%s\n%s\n%s\n%s"\
+            #     % (
+            #         mObject.codesum,
+            #         str(mObject.categories.values()),
+            #         str(sObject.categories.values()),
+            #         str(master_categories),
+            #         str(slave_categories),
+            #     )
             syncUpdate.oldMObject['catlist'] = list(master_categories)
             syncUpdate.oldSObject['catlist'] = list(slave_categories)
 
@@ -1202,7 +1205,6 @@ if do_sync:
                 updateParams['reason'] = 'identical'
                 syncUpdate.tieUpdate(**updateParams)
 
-
             # print categoryMatcher.__repr__()
             for cat_match in categoryMatcher.masterlessMatches:
                 sIndex = sObject.index
@@ -1215,7 +1217,9 @@ if do_sync:
                     join_categories[sIndex] = MatchList()
                 join_categories[sIndex].append(cat_match)
 
-        if not syncUpdate.eUpdated:
+
+        # Assumes that GDrive is read only, doesn't care about master updates
+        if not syncUpdate.sUpdated:
             continue
 
         print syncUpdate.tabulate()
@@ -1230,13 +1234,11 @@ if do_sync:
         if syncUpdate.sUpdated:
             insort(slaveProductUpdates, syncUpdate)
 
-
     print debugUtils.hashify("COMPLETED MERGE")
 
     # except Exception, e:
     #     Registrar.registerError(repr(e))
     #     report_and_quit = True
-
 
 #########################################
 # Write Report
