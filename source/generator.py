@@ -902,8 +902,8 @@ if do_sync:
     # [x] fix mosaic minerals accessory category not showing up
     # [x] Scan for ambiguous category name
     # [x] fix products syncing title AND itemsum
-    # [ ] fix display of changes in report
-    # [ ] fix variations matching with variable
+    # [x] fix display of changes in report
+    # [x] fix variations matching with variable
     #       OLD
     #       objects	_row	index
     #       MMPPFBB-MOCCHN ====>
