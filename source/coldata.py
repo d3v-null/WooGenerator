@@ -374,7 +374,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'name',
                 'meta':False
             },
-            'sync':True
+            # 'sync':True
         }),
         ('title_1', {
             'label': 'meta:title_1',
