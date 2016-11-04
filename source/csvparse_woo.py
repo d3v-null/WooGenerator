@@ -305,7 +305,7 @@ class CSVParse_Woo_Mixin(object):
         if matching_category_sets:
             matches = set.intersection( *matching_category_sets )
             if matches:
-                assert len(matches) == 1
+                assert len(matches) == 1, "should only have one match: %s " % [self.categories.get(match) for match in matches]
                 response = self.categories.get(list(matches)[0])
         return response
 

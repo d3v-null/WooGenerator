@@ -207,6 +207,11 @@ group.add_argument('--do-delete-images', help='delete extra images in compressed
 group.add_argument('--skip-delete-images', help='protect images from deletion',
                    action="store_false", dest='do_delete_images')
 group = parser.add_mutually_exclusive_group()
+group.add_argument('--do-problematic', help='perform problematic updates anyway',
+                   action="store_true", default=False)
+group.add_argument('--skip-problematic', help='protect data from problematic updates',
+                   action="store_false", dest='do_problematic')
+group = parser.add_mutually_exclusive_group()
 group.add_argument('--do-resize-images', help='resize images in compressed folder',
                    action="store_true", default=do_resize_images)
 group.add_argument('--skip-resize-images', help='protect images from resizing',
@@ -288,6 +293,7 @@ if args:
     do_delete_images = args.do_delete_images
     do_resize_images = args.do_resize_images
     do_resize_images = args.do_resize_images
+    do_problematic = args.do_problematic
     imgRawFolder = args.img_raw_folder
     imgRawFolders = [imgRawFolder]
     if args.img_raw_extra_folder is not None:
@@ -1492,7 +1498,8 @@ if report_and_quit:
 #########################################
 
 allProductUpdates = slaveProductUpdates
-allProductUpdates += problematicProductUpdates
+if do_problematic:
+    allProductUpdates += problematicProductUpdates
 
 slaveFailures = []
 if allProductUpdates:

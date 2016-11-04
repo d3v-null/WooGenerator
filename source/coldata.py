@@ -344,10 +344,6 @@ class ColData_Woo(ColData_Prod):
             'category':True,
             'wp-api':True,
         }),
-        ('display', {
-            'category':True,
-            'wp-api':True,
-        }),
         ('itemsum', {
             'tag':'Title',
             'label':'post_title',
@@ -366,7 +362,8 @@ class ColData_Woo(ColData_Prod):
                 'meta':False
             },
             'report':True,
-            'sync':'not_variable'
+            'sync':'not_variable',
+            'static':True,
         }),
         ('title', {
             'category':True,
@@ -553,7 +550,8 @@ class ColData_Woo(ColData_Prod):
             'wp-api':{
                 'key':'regular_price'
             },
-            'report':True
+            'report':True,
+            'static':True,
         }),
         ('sale_price', {
             'label':'sale_price',
@@ -607,6 +605,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
@@ -668,6 +667,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
@@ -729,6 +729,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
@@ -790,6 +791,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
@@ -851,6 +853,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
@@ -912,6 +915,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_regular_price',
                 'meta':True
             },
+            'static':True,
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
