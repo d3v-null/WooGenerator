@@ -298,6 +298,7 @@ class AbstractMatcher(Registrar):
 
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
+        """ Groups items in both registers by the result of applying the index function """
         # print "processing singular register"
         # mKeys = set(maRegister.keys())
         # mKeys = OrderedDict()
@@ -306,7 +307,7 @@ class AbstractMatcher(Registrar):
         # mKeys = \
         #     [(self.indexFn(regValue), regKey) for regKey, regValue in maRegister.items()]
 
-        # mKeys is a mapping from indexes of regValues to their corresponding regKeys
+        # mKeys is a mapping from indexes of regValues to their corresponding regKeys in maRegister
         mKeys = OrderedDict()
         for regKey, regValue in maRegister.items():
             regIndex = self.indexFn(regValue)
@@ -314,28 +315,50 @@ class AbstractMatcher(Registrar):
                 mKeys[regIndex] = []
             mKeys[regIndex].append(regKey)
 
+        sKeys = OrderedDict()
+        for regKey, regValue in saRegister.items():
+            regIndex = self.indexFn(regValue)
+            if not regIndex in sKeys:
+                sKeys[regIndex] = []
+            sKeys[regIndex].append(regKey)
+
+        for regIndex in list(set(mKeys) | set(sKeys)):
+            mObjects = []
+            sObjects = []
+            if regIndex in mKeys:
+                for regKey in mKeys[regIndex]:
+                    mObjects.extend(self.retrieveObjects(maRegister, regKey))
+            if regIndex in sKeys:
+                for regKey in sKeys[regIndex]:
+                    sObjects.extend(self.retrieveObjects(saRegister, regKey))
+            self.processMatch(mObjects, sObjects)
+
+
         # self.registerMessage('mkeys: %s' % pformat(mKeys))
 
         # print "mKeys", mKeys
-        for regKey, regValue in saRegister.items():
-            # self.registerMessage('analysing saRegisteritem (%s, %s)' % (regKey, regValue))
-            saObjects = [regValue]
-            mKey = self.indexFn(regValue)
-            maObjects = []
-            if mKey in mKeys:
-                mRegKeys = mKeys[mKey]
-                # print "removing key", mKey, "from", mKeys
-                mKeys.pop(mKey)
-                maObjects = []
-                for mRegKey in mRegKeys:
-                    maObjects.extend(self.retrieveObjects(maRegister, mRegKey))
-            self.processMatch(maObjects, saObjects)
-        for mKey, regKeys in mKeys.items():
-            saObjects = []
-            maObjects = []
-            for regKey in regKeys:
-                maObjects.extend(self.retrieveObjects(maRegister, regKey))
-            self.processMatch(maObjects, saObjects)
+        # for regKey, regValue in saRegister.items():
+        #     self.registerMessage('analysing saRegisteritem (%s, %s)' % (regKey, regValue))
+        #     saObjects = [regValue]
+        #     regIndex = self.indexFn(regValue)
+        #     self.registerMessage('-> (%s)' % (regIndex))
+        #     maObjects = []
+        #     if regIndex in mKeys:
+        #         mRegKeys = mKeys[regIndex]
+        #         # print "removing key", regIndex, "from", mKeys
+        #         mKeys.pop(regIndex)
+        #         maObjects = []
+        #         for mRegKey in mRegKeys:
+        #             maObjects.extend(self.retrieveObjects(maRegister, mRegKey))
+        #     self.processMatch(maObjects, saObjects)
+        # for regIndex, regKeys in mKeys.items():
+        #     self.registerMessage('processing leftover maRegister item (%s, %s)' % (regIndex, regKeys))
+        #
+        #     saObjects = []
+        #     maObjects = []
+        #     for regKey in regKeys:
+        #         maObjects.extend(self.retrieveObjects(maRegister, regKey))
+        #     self.processMatch(maObjects, saObjects)
 
     def retrieveObjectsNonsingular(self, register, key):
         # print "retrieving nonsingular object"
@@ -390,12 +413,14 @@ class AbstractMatcher(Registrar):
         for maObject in maObjects:
             assert \
                 isinstance(maObject, ImportObject), \
-                "maObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" % (type(maObject), maObjects, self.__repr__())
+                "maObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" \
+                % (type(maObject), maObjects, self.__repr__())
         saObjects = self.sFilter(saObjects)
         for saObject in saObjects:
             assert \
                 isinstance(saObject, ImportObject), \
-                "saObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" % (type(saObject), saObjects, self.__repr__())
+                "saObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" \
+                % (type(saObject), saObjects, self.__repr__())
         match = Match(maObjects, saObjects)
         match_type = self.get_match_type(match)
         if(match_type and match_type != 'empty'):

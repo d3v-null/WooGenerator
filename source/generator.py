@@ -900,6 +900,7 @@ if do_sync:
     #        original: {'type': u'category', 'title': u'Eucalyptus & Spearmint Candles'}
     #       translations: OrderedDict([('sku', 'codesum'), ('title', 'itemsum'), ('weight', 'weight'), ('id', 'ID'), ('parent', 'parent_id'), ('slug', 'slug'), ('name', 'title'), ('categories', 'catlist'), ('type', 'prod_type'), ('description', 'HTML Description'), ('menu_order', 'rowcount'), ('regular_price', 'sale_price_dates_from'), ('stock_quantity', 'stock'), ('manage_stock', 'manage_stock'), ('updated_at', 'Updated'), ('status', 'post_status')]), OrderedDict()
     # [x] fix mosaic minerals accessory category not showing up
+    # [x] Scan for ambiguous category name
     # [ ] fix products syncing title AND itemsum
     # [ ] fix variations matching with variable
     #       OLD
