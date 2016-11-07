@@ -61,19 +61,22 @@ class ProdSyncClient_WC(SyncClient_WC):
         # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
         if updates == None:
             updates = OrderedDict()
-        categories = None
-        if 'categories' in updates:
+        if self.DEBUG_API:
             categories = updates.get('categories')
+            if categories:
+                self.registerMessage( "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
+            else:
+                self.registerMessage( "NO CAT CHANGES IN %s" % str(updates))
+            custom_meta = updates.get('custom_meta')
+            if custom_meta:
+                self.registerMessage( "CUSTOM META: %s" % str(custom_meta))
+            else:
+                self.registerMessage( "NO CUSTOM META" )
+
+
         response = None
         if updates:
             response = super(ProdSyncClient_WC, self).uploadChanges(pkey, updates)
-        if categories:
-            if self.DEBUG_API:
-                self.registerMessage( "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
-            # self.setCategories(pkey, categories)
-        else:
-            if self.DEBUG_API:
-                self.registerMessage( "NO CAT CHANGES IN %s" % str(updates))
         return response
 
     # def setCategories(self, pkey, categories):

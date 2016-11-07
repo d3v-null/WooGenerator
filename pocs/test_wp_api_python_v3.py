@@ -42,26 +42,37 @@ print "\n\n*******\n* GET *\n*******\n\n"
 # response = wcapi.put('products/99', {'product':{'title':'Woo Single #2a'}} )
 # response = wcapi.put('products/99?id=http%3A%2F%2Fprinter', {'product':{'title':'Woo Single #2a'}} )
 
-response = wcapi.get('products/categories?filter[q]=solution')
-categories = response.json().get('product_categories')
-print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
+response = wcapi.get('products/21391?fields=meta')
+print_response(response)
+
+
+# response = wcapi.get('products/categories?filter[q]=solution')
+# categories = response.json().get('product_categories')
+# print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
 
 # print_response(response)
 # quit()
 
-response = wcapi.get('products/17834')
-product_categories = response.json().get('product',{}).get('categories',[])
-print "categories: %s" % pformat(product_categories)
+# response = wcapi.get('products/17834')
+# product_categories = response.json().get('product',{}).get('categories',[])
+# print "categories: %s" % pformat(product_categories)
 # print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
 
 print "\n\n*******\n* PUT *\n*******\n\n"
 
-data = {'product':{'categories':[898]}}
-response = wcapi.put('products/17834', data)
+data = {'product':{'custom_meta':{'wootan_danger':'D'}}}
+response = wcapi.put('products/21391', data)
+print_response(response)
 
-response = wcapi.get('products/17834?fields=categories')
-product_categories = response.json().get('product',{}).get('categories',[])
-print "categories: %s" % pformat(product_categories)
+response = wcapi.get('products/21391')
+print_response(response)
+
+# data = {'product':{'categories':[898]}}
+# response = wcapi.put('products/17834', data)
+#
+# response = wcapi.get('products/17834?fields=categories')
+# product_categories = response.json().get('product',{}).get('categories',[])
+# print "categories: %s" % pformat(product_categories)
 
 #
 # quit()

@@ -494,7 +494,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         defaultVarData = dict(
             type='variation',
             title='Variation #%s of %s' % (variationApiData.get('id'), objectData.title),
-            description=objectData.get('descsum')
+            description=objectData.get('descsum'),
+            parent_id=objectData.get('ID')
         )
         defaultVarData.update(**variationApiData)
         if self.DEBUG_API:

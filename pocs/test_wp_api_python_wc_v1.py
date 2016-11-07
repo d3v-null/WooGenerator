@@ -42,6 +42,10 @@ print "\n\n*******\n* GET *\n*******\n\n"
 # response = wcapi.put('products/99', {'product':{'title':'Woo Single #2a'}} )
 # response = wcapi.put('products/99?id=http%3A%2F%2Fprinter', {'product':{'title':'Woo Single #2a'}} )
 
+response = wcapi.get('products/21391')
+print_response(response)
+quit()
+
 response = wcapi.get('products/categories')
 categories = response.json()
 print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
