@@ -926,7 +926,15 @@ class SyncUpdate_Prod(SyncUpdate):
 
     def valuesSimilar(self, col, mValue, sValue):
         response = super(SyncUpdate_Prod, self).valuesSimilar(col, mValue, sValue)
-        if not response:
+        if col in self.colData.data:
+            colData = self.colData.data[col]
+            if colData.get('type'):
+                if colData.get('type') == 'currency':
+                    mPrice = SanitationUtils.similarCurrencyComparison(mValue)
+                    sPrice = SanitationUtils.similarCurrencyComparison(sValue)
+                    if mPrice == sPrice:
+                        response = True
+        elif not response:
             if col is 'descsum':
                 mDesc = SanitationUtils.similarMarkupComparison(mValue)
                 sDesc = SanitationUtils.similarMarkupComparison(sValue)

@@ -206,6 +206,18 @@ class SanitationUtils:
         return byte_return
 
     @classmethod
+    def coerceFloat(cls, thing):
+        unicode_thing = cls.compose(
+            cls.coerceUnicode
+        )(thing)
+        try:
+            float_return = float(unicode_thing)
+        except ValueError:
+            float_return = 0.0
+        assert isinstance(float_return, float), "something went wrong, should return str not %s" % type(float_return)
+        return float_return
+
+    @classmethod
     def limitString(cls, length):
         return (lambda x: x[:length])
 
@@ -482,6 +494,14 @@ class SanitationUtils:
             cls.stripPTags,
             cls.stripBrTags,
             cls.coerceUnicode
+        )(string)
+
+    @classmethod
+    def similarCurrencyComparison(cls, string):
+        return cls.compose(
+            cls.coerceFloat,
+            cls.removeLeadingDollarWhiteSpace,
+            cls.coerceUnicode,
         )(string)
 
     @classmethod
