@@ -121,6 +121,8 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('ImportWooProduct')
+        if self.product_type:
+            args[0]['prod_type'] = self.product_type
         ImportWooItem.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
@@ -194,7 +196,7 @@ class ImportWooProductVariable(ImportWooProduct, ImportShopProductVariableMixin)
         ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
 
 class ImportWooProductVariation(ImportWooProduct, ImportShopProductVariationMixin):
-    isVarition = ImportShopProductVariationMixin.isVariation
+    isVariation = ImportShopProductVariationMixin.isVariation
     product_type = ImportShopProductVariationMixin.product_type
 
 class ImportWooProductComposite(ImportWooProduct):
@@ -723,10 +725,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
 
     def processVariation(self, varData):
-        assert varData.isVariation
-        parentData = varData.parent
-        assert parentData and parentData.isVariable
-        self.registerVariation(parentData, varData)
+        pass
+
 
     def processAttributes(self, objectData):
         ancestors = \

@@ -38,6 +38,6 @@ class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
     pass
 
 class ImportApiProductVariation(ImportApiProduct, ImportShopProductVariationMixin):
-    isVarition = ImportShopProductVariationMixin.isVariation
+    isVariation = ImportShopProductVariationMixin.isVariation
 
-print "isVariation of ImportApiProductVariation", ImportApiProductVariation.isVarition
+print "isVariation of ImportApiProductVariation", ImportApiProductVariation.isVariation

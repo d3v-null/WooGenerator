@@ -1002,7 +1002,6 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
             #         updates = self.getSlaveUpdatesNativeRecursive(alias, updates)
         return updates
 
-
     def getSlaveUpdatesRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
         if self.DEBUG_UPDATE: self.registerMessage( u"checking %s" % unicode(col) )
@@ -1061,6 +1060,9 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
             pass
             if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
         return updates
+
+class SyncUpdate_Var_Woo(SyncUpdate_Prod_Woo):
+    pass
 
 class SyncUpdate_Cat_Woo(SyncUpdate):
     colData = ColData_Woo

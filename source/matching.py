@@ -468,6 +468,9 @@ class ProductMatcher(AbstractMatcher):
         self.processRegisters = self.processRegistersSingular
         self.retrieveObjects = self.retrieveObjectsSingular
 
+class VariationMatcher(ProductMatcher):
+    pass
+
 class CategoryMatcher(AbstractMatcher):
     # processRegisters = AbstractMatcher.processRegistersSingular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular

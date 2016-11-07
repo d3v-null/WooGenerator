@@ -207,8 +207,6 @@ class ImportShopProductMixin(object):
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
             Registrar.registerMessage('ImportShopProductMixin')
-        if self.product_type:
-            args[0]['prod_type'] = self.product_type
         # super(ImportShopProductMixin, self).__init__(*args, **kwargs)
         self.categories = OrderedDict()
 
@@ -407,8 +405,16 @@ class CSVParse_Shop_Mixin(object):
             Registrar.registerMessage(' ')
         # super(CSVParse_Shop_Mixin, self).registerObject(objectData)
         if issubclass(type(objectData), ImportShopProductMixin):
-            # and not issubclass(type(objectData), ImportShopProductVariationMixin):
-            self.registerProduct(objectData)
+            if issubclass(type(objectData), ImportShopProductVariationMixin):
+                assert \
+                    objectData.isVariation, \
+                    "objectData not variation %s, obj isVariation: %s, cls isVariation; %s" \
+                        % (type(objectData), repr(objectData.isVariation), repr(type(objectData).isVariation))
+                parentData = objectData.parent
+                assert parentData and parentData.isVariable
+                self.registerVariation(parentData, objectData)
+            else:
+                self.registerProduct(objectData)
             # if Registrar.DEBUG_SHOP:
                 # Registrar.registerMessage("Object is product")
         # else:

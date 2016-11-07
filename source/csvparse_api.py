@@ -54,6 +54,8 @@ class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('ImportApiProduct')
+        if self.product_type:
+            args[0]['prod_type'] = self.product_type
         ImportApiObject.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
@@ -486,17 +488,23 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             self.processApiAttributes(objectData, apiData['attributes'], False)
 
     def analyseWpApiVariation(self, objectData, variationApiData):
+        if self.DEBUG_API:
+            self.registerMessage("parentData: %s" % pformat(objectData.items()))
+            self.registerMessage("variationApiData: %s" % pformat(variationApiData))
         defaultVarData = dict(
             type='variation',
             title='Variation #%s of %s' % (variationApiData.get('id'), objectData.title),
             description=objectData.get('descsum')
         )
         defaultVarData.update(**variationApiData)
-        # print "defaultVarData: ", defaultVarData
-        # print "defaultVarData[type]: ", defaultVarData['type']
+        if self.DEBUG_API:
+            self.registerMessage("defaultVarData: %s" % pformat(defaultVarData))
+
         kwargs = {
             'apiData':defaultVarData,
+            'parent':objectData
         }
+
         variationData = self.newObject(rowcount=self.rowcount, **kwargs)
 
         if self.DEBUG_API:
@@ -505,7 +513,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if self.DEBUG_API:
             self.registerMessage("PROCESSED: %s" % variationData.identifier)
         self.registerObject(variationData)
-        self.registerVariation(objectData, variationData)
+        # self.registerVariation(objectData, variationData)
         if self.DEBUG_API:
             self.registerMessage("REGISTERED: %s" % variationData.identifier)
 
