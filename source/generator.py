@@ -561,7 +561,7 @@ for category_name, category_list in productParser.categories_name.items():
     if len(category_list) < 2: continue
     if listUtils.checkEqual([category.namesum for category in category_list]): continue
     print "bad category: %50s | %d | %s" % (category_name[:50], len(category_list), str(category_list))
-# 
+#
 # print "printing bad product"
 # Registrar.DEBUG_GEN = True
 # for codesum, product in productParser.products.items():
@@ -903,6 +903,8 @@ sDeltaUpdates = []
 mDeltaUpdates = []
 slaveProductUpdates = []
 problematicProductUpdates = []
+slaveVariationUpdates = []
+problematicVariationUpdates = []
 masterCategoryUpdates = []
 slaveCategoryUpdates = []
 problematicCategoryUpdates = []
@@ -1131,6 +1133,19 @@ if do_sync:
         if mObject.isVariation or sObject.isVariation:
             if do_variations:
                 syncUpdate.update(sync_cols_var)
+
+                # Assumes that GDrive is read only, doesn't care about master updates
+                if not syncUpdate.sUpdated:
+                    continue
+
+                print syncUpdate.tabulate()
+
+                if not syncUpdate.importantStatic:
+                    insort(problematicVariationUpdates, syncUpdate)
+                    continue
+
+                if syncUpdate.sUpdated:
+                    insort(slaveVariationUpdates, syncUpdate)
         else:
             assert not mObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
             assert not sObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
@@ -1208,21 +1223,21 @@ if do_sync:
                     join_categories[sIndex].append(cat_match)
 
 
-        # Assumes that GDrive is read only, doesn't care about master updates
-        if not syncUpdate.sUpdated:
-            continue
+            # Assumes that GDrive is read only, doesn't care about master updates
+            if not syncUpdate.sUpdated:
+                continue
 
-        print syncUpdate.tabulate()
+            print syncUpdate.tabulate()
 
-        if syncUpdate.sUpdated and syncUpdate.sDeltas:
-            insort(sDeltaUpdates, syncUpdate)
+            if syncUpdate.sUpdated and syncUpdate.sDeltas:
+                insort(sDeltaUpdates, syncUpdate)
 
-        if not syncUpdate.importantStatic:
-            insort(problematicProductUpdates, syncUpdate)
-            continue
+            if not syncUpdate.importantStatic:
+                insort(problematicProductUpdates, syncUpdate)
+                continue
 
-        if syncUpdate.sUpdated:
-            insort(slaveProductUpdates, syncUpdate)
+            if syncUpdate.sUpdated:
+                insort(slaveProductUpdates, syncUpdate)
 
     print debugUtils.hashify("COMPLETED MERGE")
 
@@ -1366,11 +1381,11 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
 
     report_sync = do_sync
     if report_sync:
-        syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+        syncingGroup = HtmlReporter.Group('prod_sync', 'Product Syncing Results')
 
         syncingGroup.addSection(
             HtmlReporter.Section(
-                (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_updates"),
+                (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_product_updates"),
                 description = SLAVE_NAME + " items will be updated",
                 data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveProductUpdates ]),
                 length = len(slaveProductUpdates)
@@ -1379,7 +1394,7 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
 
         syncingGroup.addSection(
             HtmlReporter.Section(
-                "problematic_updates",
+                "problematic_product_updates",
                 description = "items can't be merged because they are too dissimilar",
                 data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicProductUpdates ]),
                 length = len(problematicProductUpdates)
@@ -1387,6 +1402,30 @@ with io.open(repPath, 'w+', encoding='utf8') as resFile:
         )
 
         reporter.addGroup(syncingGroup)
+
+        if do_variations:
+            syncingGroup = HtmlReporter.Group('variation_sync', 'Variation Syncing Results')
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_variation_updates"),
+                    description = SLAVE_NAME + " items will be updated",
+                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveVariationUpdates ]),
+                    length = len(slaveVariationUpdates)
+                )
+            )
+
+            syncingGroup.addSection(
+                HtmlReporter.Section(
+                    "problematic_variation_updates",
+                    description = "items can't be merged because they are too dissimilar",
+                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicVariationUpdates ]),
+                    length = len(problematicVariationUpdates)
+                )
+            )
+
+            reporter.addGroup(syncingGroup)
+
 
     report_cats = do_sync and do_categories
     if report_cats:
@@ -1483,8 +1522,12 @@ if report_and_quit:
 #########################################
 
 allProductUpdates = slaveProductUpdates
+if do_variations:
+    allProductUpdates += slaveVariationUpdates
 if do_problematic:
     allProductUpdates += problematicProductUpdates
+    if do_variations:
+        allProductUpdates += problematicVariationUpdates
 
 slaveFailures = []
 if allProductUpdates:

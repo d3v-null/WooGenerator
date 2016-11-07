@@ -125,6 +125,11 @@ class SanitationUtils:
     # Functions for dealing with string encodings
 
     @classmethod
+    def assertAscii(cls, string):
+        for index, char in enumerate(string):
+            assert ord(char) < 128, "char %s of string %s ... is not ascii" % (index, (string[:index-1]))
+
+    @classmethod
     def unicodeToUTF8(cls, u_str):
         assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "utf8")
