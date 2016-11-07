@@ -552,6 +552,7 @@ class ColData_Woo(ColData_Prod):
             },
             'report':True,
             'static':True,
+            'type':'currency',
         }),
         ('sale_price', {
             'label':'sale_price',
@@ -563,7 +564,8 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'wp-api':True,
-            'report':True
+            'report':True,
+            'type':'currency',
         }),
         ('sale_price_dates_from', {
             'label':'sale_price_dates_from',
@@ -606,6 +608,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
@@ -621,6 +624,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rn_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
@@ -668,6 +672,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
@@ -683,6 +688,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_rp_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
@@ -730,6 +736,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
@@ -745,6 +752,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wn_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
@@ -792,6 +800,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
@@ -807,6 +816,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_wp_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
@@ -854,6 +864,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
@@ -869,6 +880,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dn_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
@@ -916,6 +928,7 @@ class ColData_Woo(ColData_Prod):
                 'meta':True
             },
             'static':True,
+            'type':'currency',
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
@@ -931,6 +944,7 @@ class ColData_Woo(ColData_Prod):
                 'key':'lc_dp_sale_price',
                 'meta':True
             },
+            'type':'currency',
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',

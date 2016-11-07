@@ -42,7 +42,7 @@ class ProdSyncClient_WC(SyncClient_WC):
     # def __init__(self, *args, **kwargs):
     #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
 
-    def analyseRemote(self, parser, since=None, limit=None):
+    def analyseRemoteCategories(self, parser):
         taxoApiIterator = self.ApiIterator(self.service, '/products/categories')
         categories = []
         for page in taxoApiIterator:
@@ -53,13 +53,9 @@ class ProdSyncClient_WC(SyncClient_WC):
         if self.DEBUG_API:
             self.registerMessage("Analysed categories:")
             self.registerMessage(parser.toStrTree())
-            # % pformat(parser.categories.items()))
 
-        # Registrar.DEBUG_PARSER = True
-        # Registrar.DEBUG_API = True
-
-
-        return super(ProdSyncClient_WC, self).analyseRemote(parser, since, limit)
+    # def analyseRemote(self, parser, since=None, limit=None):
+    #     return super(ProdSyncClient_WC, self).analyseRemote(parser, since, limit)
 
     def uploadChanges(self, pkey, updates=None):
         # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
@@ -72,10 +68,12 @@ class ProdSyncClient_WC(SyncClient_WC):
         if updates:
             response = super(ProdSyncClient_WC, self).uploadChanges(pkey, updates)
         if categories:
-            print "\nWILL CHANGE THESE CATEGORIES: %s" % str(categories)
+            if self.DEBUG_API:
+                self.registerMessage( "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
             # self.setCategories(pkey, categories)
         else:
-            print "\nNO CAT CHANGES IN %s" % str(updates)
+            if self.DEBUG_API:
+                self.registerMessage( "NO CAT CHANGES IN %s" % str(updates))
         return response
 
     # def setCategories(self, pkey, categories):

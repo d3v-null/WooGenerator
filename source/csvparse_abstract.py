@@ -251,18 +251,30 @@ class ImportObject(OrderedDict, Registrar):
     def __getstate__(self): return self.__dict__
     def __setstate__(self, d): self.__dict__.update(d)
     def __copy__(self):
+        items = copy(self.items())
+        print "doing a copy on %s \nwith items %s \nand copyargs %s" % (
+            repr(self.__class__),
+            pformat(items),
+            self.getCopyArgs(),
+        )
         return self.__class__(
             copy(OrderedDict(self.items())),
             **self.getCopyArgs()
         )
     def __deepcopy__(self, memodict=None):
-        # print "doing a deepcopy on %s with args %s and kwargs %s" % (
+        if not hasattr(Registrar, 'deepcopyprefix'):
+            Registrar.deepcopyprefix = '>'
+        Registrar.deepcopyprefix = '=' + Registrar.deepcopyprefix
+        items = deepcopy(self.items())
+        # print Registrar.deepcopyprefix, "doing a deepcopy on %s \nwith items %s \nand copyargs %s, \nmemodict: %s" % (
         #     repr(self.__class__),
-        #     deepcopy(self.items()),
-        #     self.getCopyArgs()
+        #     pformat(items),
+        #     self.getCopyArgs(),
+        #     pformat(memodict)
         # )
+        Registrar.deepcopyprefix = Registrar.deepcopyprefix[1:]
         return self.__class__(
-            deepcopy(OrderedDict(self.items())),
+            deepcopy(OrderedDict(items)),
             **self.getCopyArgs()
         )
 

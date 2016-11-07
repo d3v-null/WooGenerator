@@ -58,7 +58,14 @@ class ImportGenMixin(object):
 
     @property
     def index(self):
-        return self.codesum
+        index = self.codesum
+        superObj = super(ImportGenMixin, self)
+        if hasattr(superObj, 'index'):
+            index = '|'.join([
+                superObj.index,
+                index
+            ])
+        return index
 
     # @property
     # def verifyMetaKeys(self):
@@ -221,6 +228,10 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
         # self.registerMessage("code: {}".format(self.code ) )
 
         ancestors = self.ancestors
+        if self.DEBUG_GEN:
+            self.registerMessage('ancestors:')
+            for ancestor in ancestors:
+                self.registerMessage(u"-> {}".format( ancestor) )
 
         codesum = self.joinCodes(ancestors)
         if self.DEBUG_GEN:

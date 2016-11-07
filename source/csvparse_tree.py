@@ -156,7 +156,8 @@ class ImportTreeObject(ImportObject):
         args = super(ImportTreeObject, self).getCopyArgs()
         args.update(
             depth=self.depth,
-            parent=self.parent
+            parent=self.parent,
+            meta=self.meta,
         )
         return args
 
