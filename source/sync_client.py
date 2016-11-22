@@ -246,7 +246,6 @@ class SyncClient_GDrive(SyncClient_Abstract):
         download_url = self.drive_file['exportLinks']['text/csv']
         if gid:
             download_url += "&gid=" + str(gid )
-        self.registerMessage( "Downloading: %s" % download_url )
         if download_url:
             resp, content = self.service._http.request(download_url)
             if resp.status == 200:
@@ -268,6 +267,14 @@ class SyncClient_GDrive(SyncClient_Abstract):
     def analyseRemote(self, parser, gid=None, outPath=None, limit=None):
         if not outPath:
             outPath = '/tmp/' + gid + '.csv'
+
+        if Registrar.DEBUG_GDRIVE:
+            print "debug_gdrive true"
+            Registrar.registerMessage( "Downloading gid %s to: %s" % (gid, outPath) )
+        else:
+            print "debug_gdrive false"
+            Registrar.registerMessage( "Downloading gid %s to: %s" % (gid, outPath) )
+
         if not self.skip_download:
             # try:
             #     assert os.path.isfile(outPath)
@@ -281,6 +288,7 @@ class SyncClient_GDrive(SyncClient_Abstract):
             # print "local / remote gmtime", local_gmtime, remote_gmtime
 
             # if local_gmtime < remote_gmtime:
+
             content = self.download_file_content_csv(gid)
             if content:
                 with open(outPath, 'w') as outFile:

@@ -338,7 +338,7 @@ class CSVParse_Base(Registrar):
             # elif( '\xef\xbb\xbf'+col in row ):
             #     self.indices[col] = row.index('\xef\xbb\xbf'+col)
             else:
-                self.registerError('Could not find index of '+str(col) )
+                self.registerError('Could not find index of %s in %s' % (str(col), str(row)) )
             if self.DEBUG_ABSTRACT: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
 
     def retrieveColFromRow(self, col, row):
@@ -444,6 +444,8 @@ class CSVParse_Base(Registrar):
             unicode_rows = rows
 
         for unicode_row in (unicode_rows):
+            self.rowcount += 1
+
             if limit and self.rowcount > limit:
                 break
             if self.DEBUG_PROGRESS:
@@ -459,6 +461,9 @@ class CSVParse_Base(Registrar):
                     unicode_row
                 )
                 assert not non_unicode, "non-empty cells must be unicode objects, {}".format(repr(non_unicode))
+
+            if not any(unicode_row):
+                continue
 
             if not self.indices :
                 self.analyseHeader(unicode_row)
@@ -487,7 +492,6 @@ class CSVParse_Base(Registrar):
             except UserWarning as e:
                 self.registerWarning("could not register new object: {}".format(e), objectData)
                 continue
-            self.rowcount += 1
         if self.DEBUG_PARSER:
             self.registerMessage("Completed analysis")
 

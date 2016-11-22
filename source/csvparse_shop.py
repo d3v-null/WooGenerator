@@ -217,7 +217,7 @@ class ImportShopProductMixin(object):
             # indexer = self.getSum,
             indexer = self.categoryIndexer,
             singular = True,
-            resolver = self.exceptionResolver,
+            resolver = self.duplicateObjectExceptionResolver,
             registerName = 'product categories'
         )
 
@@ -467,7 +467,7 @@ class CSVParse_Shop_Mixin(object):
             self.variations,
             indexer=self.variationIndexer,
             singular=True,
-            resolver=self.exceptionResolver,
+            resolver=self.duplicateObjectExceptionResolver,
             registerName='variations'
         )
 

@@ -2765,6 +2765,7 @@ class Registrar(object):
     DEBUG_API = False
     DEBUG_SHOP = False
     DEBUG_MRO = False
+    DEBUG_GDRIVE = False
 
     # def __init__(self):
         # self.objectIndexer = id
@@ -2795,8 +2796,16 @@ class Registrar(object):
     def passiveResolver(cls, *args):
         pass
 
-    def exceptionResolver(self, new, old, index, registerName = ''):
-        raise Exception("could not register %s in %s. Duplicate index: %s" % (str(new), registerName, index) )
+    @classmethod
+    def exceptionResolver(cls, new, old, index, registerName = ''):
+        raise Exception("could not register %s in %s. \nDuplicate index: %s" % (str(new), registerName, index) )
+
+    @classmethod
+    def duplicateObjectExceptionResolver(cls, new, old, index, registerName=''):
+        assert hasattr(new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
+        assert hasattr(old, 'rowcount'), 'old object type: %s should have a .rowcount attr' % type(old)
+        raise Exception("could not register %s in %s. \nDuplicate index: %s appears in rowcounts %s and %s" % (str(new), registerName, index, new.rowcount, old.rowcount) )
+
 
     def warningResolver(self, new, old, index, registerName = ''):
         try:
