@@ -180,7 +180,7 @@ while $try_again ; do
   case "$exit_code" in
     0 )
       echo "Completed"
-      try_again=false
+      break
       ;;
     74 )
       echo "It looks there were problems accessing files at some point"
