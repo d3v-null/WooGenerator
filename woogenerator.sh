@@ -5,6 +5,7 @@
 # - doesn't print instructions when complete
 # - file info should be more verbose
 # - doesn't do images
+# - doesn't email report
 
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
@@ -64,11 +65,11 @@ function yes_like() {
 }
 
 function binary_prompt() {
-  read -d '' -t 1 -n 10000 discard
+  read -d '' -t 1 -n 100 discard
   question_suffix=' '
   default_answer=$ANSWER_TRUE
   if [[ ! -z "$2" ]] ; then
-    yes_like "$2" "$default_answer"
+    yes_like "$2" $default_answer
     default_answer=$?
   fi
   # echo "default_answer is $default_answer"
@@ -81,7 +82,7 @@ function binary_prompt() {
   read -n 1 answer
   printf '\n'
   if [[ ! -z "$answer" ]] ; then
-    yes_like "$answer" "$default_answer"
+    yes_like "$answer" $default_answer
     response=$?
     # echo "yes_like $answer $default_answer gives $response"
   else
@@ -194,7 +195,7 @@ case "$sync_subject" in
       specials_answer="$ANSWER_TRUE"
     fi
 
-    if [[ "$sync_report_answer" == "$ANSWER_TRUE" ]] ; then
+    if [[ "$specials_answer" == "$ANSWER_TRUE" ]] ; then
       sync_command+=('--do-specials')
       if ! $download_report_quit ; then
         style_prompt "what is the current special? (e.g. SP2016-11-20-) "
@@ -267,7 +268,7 @@ case "$sync_subject" in
     ;;
 esac
 
-style_info "running" ${sync_command[@]}
+style_info "running ${sync_command[@]}"
 
 try_again=true
 errors_present=false
@@ -294,7 +295,7 @@ while $try_again ; do
       ;;
     "74" )
       style_warning "It looks there were problems accessing files at some point"
-      style_warning "please check the missing files exist and are readable"
+      style_warning "please check the missing files exist and are readable and not currently open"
       binary_prompt "were you able to fix the problems?" "y"
       try_again_answer="$?"
       if [[ "$try_again_answer" == "$ANSWER_TRUE" ]] ; then
@@ -312,6 +313,7 @@ while $try_again ; do
       ;;
     "69" ) # connection error
       style_warning "It looks like the connection timed out."
+      style_warning "please check your internet connection"
       binary_prompt "try again with larger timeout?" "y"
       try_again_answer="$?"
       if [[ "$try_again_answer" == "$ANSWER_TRUE" ]] ; then
@@ -334,8 +336,17 @@ if ! $errors_present ; then
       checklist=(
         "syncing program did not display any errors"
       )
-      if $sync_report ; then
-        checklist+=("only products you expect to be created are being created")
+      if [[ "$sync_report_answer" == "$ANSWER_TRUE" ]] ; then
+        checklist+=("are only products you expect to be created being created?")
+      fi
+      if [[ "$specials_answer" == "$ANSWER_TRUE" ]] ; then
+        checklist+=("does the specials spreadsheet information look ok?")
+      fi
+      if [[ "$categories_answer" == "$ANSWER_TRUE" ]] ; then
+        checklist+=("does the categories spreadsheet information look ok?")
+      fi
+      if [[ "$variations_answer" == "$ANSWER_TRUE" ]] ; then
+        checklist+=("does the variations spreadsheet information look ok?")
       fi
       ;;
     'customers' )
@@ -358,8 +369,17 @@ if ! $errors_present ; then
     'products' )
       style_info "once everything looks ok you can log in to the website and upload the csv files"
       style_info "see https://docs.woocommerce.com/document/product-csv-import-suite/ if you're having trouble"
-      style_info "WooCommerce -> csv import suite -> merge products"
-      style_info "WooCommerce -> csv import suite -> merge variations"
+      if [[ "$specials_answer" == "$ANSWER_TRUE" ]] ; then
+        style_info "WooCommerce -> csv import suite -> merge products -> upload product specials spreadsheet"
+        if [[ "$variations_answer" == "$ANSWER_TRUE" ]] ; then
+          style_info "WooCommerce -> csv import suite -> merge variations -> upload variation specials spreadsheet"
+        fi
+      else
+        style_info "WooCommerce -> csv import suite -> merge products -> upload product spreadsheet"
+        if [[ "$variations_answer" == "$ANSWER_TRUE" ]] ; then
+          style_info "WooCommerce -> csv import suite -> merge variations -> upload variations spreadsheet"
+        fi
+      fi
       ;;
     'customers' )
       style_info ''
@@ -378,7 +398,6 @@ if $errors_present ; then
   binary_prompt "would you like to email the developer a report of the errors?" "y"
   email_dev_answer="$?"
 
-  read  -n 1 -p "would you like to email the developer a report of the errors? (Y/n) " email_dev
   if [[ "$email_dev_answer" == "$ANSWER_FALSE" ]] ; then
     style_success "all done!"
     exit

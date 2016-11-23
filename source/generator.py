@@ -40,6 +40,7 @@ from copy import deepcopy, copy
 from exitstatus import ExitStatus
 
 from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
+from httplib2 import ServerNotFoundError
 
 
 # import xml.etree.ElementTree as ET
@@ -303,7 +304,7 @@ def main():
 
     args = parser.parse_args()
     if args:
-        pprint(args)
+        Registrar.registerMessage(pformat(args))
         if args.verbosity > 0:
             Registrar.DEBUG_PROGRESS = True
             Registrar.DEBUG_ERROR = True
@@ -1785,7 +1786,7 @@ if __name__ == '__main__':
         main()
     except SystemExit:
         exit()
-    except (ReadTimeout, ConnectionError, ConnectTimeout):
+    except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
         status=69 #service unavailable
         Registrar.registerError(traceback.format_exc())
     except IOError:
