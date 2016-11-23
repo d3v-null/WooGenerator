@@ -41,14 +41,17 @@ from copy import deepcopy, copy
 
 # import xml.etree.ElementTree as ET
 # import rsync
-# import sys
+import sys
 import yaml
 # import re
 # import MySQLdb
 # from sshtunnel import SSHTunnelForwarder
 
 testMode = False
-testMode = True
+# testMode = True
+
+# program exit status
+status=0
 
 ### DEFAULT CONFIG ###
 
@@ -187,77 +190,91 @@ def main():
                        action="store_true", default=None)
     group.add_argument('--skip-download-slave', help='use the local slave file instead\
         of downloading the slave data', action="store_false", dest='download_slave')
-    group = parser.add_mutually_exclusive_group()
+
+    update_group = parser.add_argument_group('Update options')
+    group = update_group.add_mutually_exclusive_group()
     group.add_argument('--update-slave', help='update the slave database in WooCommerce',
                        action="store_true", default=None)
     group.add_argument('--skip-update-slave', help='don\'t update the slave database',
                        action="store_false", dest='update_slave', default=update_slave)
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--do-problematic', help='perform problematic updates anyway',
+                       action="store_true", default=False)
+    group.add_argument('--skip-problematic', help='protect data from problematic updates',
+                       action="store_false", dest='do_problematic')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', help='sync the databases',
                       action="store_true", default=None)
     group.add_argument('--skip-sync', help='don\'t sync the databases',
                       action="store_false", dest='do_sync', default=do_sync)
+
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-categories', help='sync categories',
                       action="store_true", default=None)
     group.add_argument('--skip-categories', help='don\'t sync categories',
                       action="store_false", dest='do_categories', default=do_categories)
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-variations', help='sync variations',
                       action="store_true", default=None)
     group.add_argument('--skip-variations', help='don\'t sync variations',
                       action="store_false", dest='do_variations', default=do_variations)
-    group = parser.add_mutually_exclusive_group()
+
+    report_group = parser.add_argument_group('Report options')
+    group = report_group.add_mutually_exclusive_group()
     group.add_argument('--show-report', help='show report',
                        action="store_true", default=show_report)
     group.add_argument('--skip-report', help='don\'t show report',
                        action="store_false", dest='show_report')
-    group = parser.add_mutually_exclusive_group()
+    group = report_group.add_mutually_exclusive_group()
     group.add_argument('--report-and-quit', help='quit after generating report',
                        action="store_true", default=report_and_quit)
-    group = parser.add_mutually_exclusive_group()
+
+    images_group = parser.add_argument_group('Image options')
+    group = images_group.add_mutually_exclusive_group()
     group.add_argument('--do-images', help='process images',
                        action="store_true", default=do_images)
     group.add_argument('--skip-images', help='don\'t process images',
                        action="store_false", dest='do_images')
-    group = parser.add_mutually_exclusive_group()
+    group = images_group.add_mutually_exclusive_group()
+    group.add_argument('--do-delete-images', help='delete extra images in compressed folder',
+                       action="store_true", default=do_delete_images)
+    group.add_argument('--skip-delete-images', help='protect images from deletion',
+                       action="store_false", dest='do_delete_images')
+    group = images_group.add_mutually_exclusive_group()
+    group.add_argument('--do-resize-images', help='resize images in compressed folder',
+                       action="store_true", default=do_resize_images)
+    group.add_argument('--skip-resize-images', help='protect images from resizing',
+                       action="store_false", dest='do_resize_images')
+    images_group.add_argument('--img-raw-folder', help='location of raw images',
+                        default=imgRawFolder)
+    images_group.add_argument('--img-raw-extra-folder', help='location of additional raw images',
+                        default='')
+
+    specials_group = parser.add_argument_group('Specials options')
+    group = specials_group.add_mutually_exclusive_group()
     group.add_argument('--do-specials', help='process specials',
                        action="store_true", default=do_specials)
     group.add_argument('--skip-specials', help='don\'t process specials',
                        action="store_false", dest='do_specials')
+    specials_group.add_argument('--current-special', help='prefix of current special code')
+    specials_group.add_argument('--add-special-categories', help='add special items to special category', action="store_true", default=None)
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-dyns', help='process dynamic pricing rules',
                        action="store_true", default=do_dyns)
     group.add_argument('--skip-dyns', help='don\'t process dynamic pricing rules',
                        action="store_false", dest='do_dyns')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-delete-images', help='delete extra images in compressed folder',
-                       action="store_true", default=do_delete_images)
-    group.add_argument('--skip-delete-images', help='protect images from deletion',
-                       action="store_false", dest='do_delete_images')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic', help='perform problematic updates anyway',
-                       action="store_true", default=False)
-    group.add_argument('--skip-problematic', help='protect data from problematic updates',
-                       action="store_false", dest='do_problematic')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-resize-images', help='resize images in compressed folder',
-                       action="store_true", default=do_resize_images)
-    group.add_argument('--skip-resize-images', help='protect images from resizing',
-                       action="store_false", dest='do_resize_images')
-    parser.add_argument('--img-raw-folder', help='location of raw images',
-                        default=imgRawFolder)
-    parser.add_argument('--img-raw-extra-folder', help='location of additional raw images',
-                        default='')
-    parser.add_argument('--current-special', help='prefix of current special code')
-    parser.add_argument('--add-special-categories', help='add special items to special category', action="store_true", default=None)
+
     parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
     parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
-    parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
-    parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
+    # parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
+    # parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
     parser.add_argument('--limit', type=int, help='global limit of objects to process')
 
-    group = parser.add_argument_group()
+    group = parser.add_argument_group('Debug options')
     group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
     group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
     group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
@@ -299,10 +316,10 @@ def main():
             current_special = args.current_special
         if args.add_special_categories:
             add_special_categories = args.add_special_categories
-        if args.taxo_depth:
-            taxoDepth = args.taxo_depth
-        if args.item_depth:
-            itemDepth = args.item_depth
+        # if args.taxo_depth:
+        #     taxoDepth = args.taxo_depth
+        # if args.item_depth:
+        #     itemDepth = args.item_depth
         if args.do_images is not None:
             do_images = args.do_images
         if args.do_specials is not None:
@@ -1746,6 +1763,7 @@ if __name__ == '__main__':
     except SystemExit:
         exit()
     except:
+        status=1
         Registrar.registerError(traceback.format_exc())
 
     with io.open(logPath, 'w+', encoding='utf8') as logFile:
@@ -1773,3 +1791,6 @@ if __name__ == '__main__':
                 if(e):
                     pass
         Registrar.registerMessage('wrote file %s' % zipPath)
+
+    print "exiting with status", status
+    sys.exit(status)
