@@ -28,7 +28,7 @@ from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
 
-from requests import request
+from requests import request, ConnectionError
 from json import dumps as jsonencode
 
 try:
@@ -269,10 +269,6 @@ class SyncClient_GDrive(SyncClient_Abstract):
             outPath = '/tmp/' + gid + '.csv'
 
         if Registrar.DEBUG_GDRIVE:
-            print "debug_gdrive true"
-            Registrar.registerMessage( "Downloading gid %s to: %s" % (gid, outPath) )
-        else:
-            print "debug_gdrive false"
             Registrar.registerMessage( "Downloading gid %s to: %s" % (gid, outPath) )
 
         if not self.skip_download:
@@ -293,7 +289,7 @@ class SyncClient_GDrive(SyncClient_Abstract):
             if content:
                 with open(outPath, 'w') as outFile:
                     outFile.write(content)
-                    print "downloaded ", outFile
+                    Registrar.registerMessage( "downloaded %s" % outFile)
         parser.analyseFile(outPath, limit=limit)
 
 class SyncClient_Rest(SyncClient_Abstract):
@@ -417,20 +413,20 @@ class SyncClient_Rest(SyncClient_Abstract):
 
             # handle API errors
             if self.prev_response.status_code in range(400, 500):
-                raise UserWarning('api call failed: %dd with %s' %( self.prev_response.status_code, self.prev_response.text))
+                raise ConnectionError('api call failed: %dd with %s' %( self.prev_response.status_code, self.prev_response.text))
 
             # can still 200 and fail
             try:
                 prev_response_json = self.prev_response.json()
             except JSONDecodeError:
                 prev_response_json = {}
-                e = UserWarning('api call to %s failed: %s' % (self.next_endpoint, self.prev_response.text))
+                e = ConnectionError('api call to %s failed: %s' % (self.next_endpoint, self.prev_response.text))
                 Registrar.registerError(e)
 
             # if Registrar.DEBUG_API:
             #     Registrar.registerMessage('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
-                raise UserWarning('first api call returned errors: %s' % (prev_response_json['errors']))
+                raise ConnectionError('first api call returned errors: %s' % (prev_response_json['errors']))
 
             # process API headers
             self.processHeaders(self.prev_response)

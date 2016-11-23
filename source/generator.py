@@ -37,6 +37,9 @@ import re
 from pprint import pformat, pprint
 import time
 from copy import deepcopy, copy
+from exitstatus import ExitStatus
+
+from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
 
 
 # import xml.etree.ElementTree as ET
@@ -81,7 +84,7 @@ thumbsize = 1920, 1200
 def main():
 
     global testMode, inFolder, outFolder, logFolder, srcFolder, \
-        yamlPath, repPath
+        yamlPath, repPath, status
 
     ### Process YAML file for defaults ###
 
@@ -142,6 +145,7 @@ def main():
 
         skip_google_download = config.get('skip_google_download')
         show_report = config.get('show_report')
+        print_report = config.get('show_report')
         report_and_quit = config.get('report_and_quit')
         do_images = config.get('do_images')
         do_specials = config.get('do_specials')
@@ -224,10 +228,15 @@ def main():
 
     report_group = parser.add_argument_group('Report options')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--show-report', help='show report',
+    group.add_argument('--show-report', help='generate report files',
                        action="store_true", default=show_report)
-    group.add_argument('--skip-report', help='don\'t show report',
+    group.add_argument('--skip-report', help='don\'t generate report files',
                        action="store_false", dest='show_report')
+    group = report_group.add_mutually_exclusive_group()
+    group.add_argument('--print-report', help='pirnt report in terminal',
+                       action="store_true", default=print_report)
+    group.add_argument('--skip-print-report', help='don\'t print report in terminal',
+                       action="store_false", dest='print_report')
     group = report_group.add_mutually_exclusive_group()
     group.add_argument('--report-and-quit', help='quit after generating report',
                        action="store_true", default=report_and_quit)
@@ -330,6 +339,8 @@ def main():
             do_sync = args.do_sync and download_slave
         if args.show_report is not None:
             show_report = args.show_report
+        if args.print_report is not None:
+            print_report = args.print_report
         if args.report_and_quit is not None:
             report_and_quit = args.report_and_quit
         global_limit = args.limit
@@ -634,7 +645,10 @@ def main():
     if Registrar.errors:
         print "there were some errors that need to be reviewed before sync can happen"
         Registrar.print_message_dict(0)
-        quit()
+        status = 65
+        status = ExitStatus.failure
+        print "\nexiting with status %s\n" % status
+        sys.exit(status)
     elif Registrar.warnings:
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
@@ -688,7 +702,7 @@ def main():
             for path in imgRawFolders:
                 if path and img_name in ls_raw[path]:
                     return os.path.join(path, img_name)
-            raise UserWarning("no image named %s found" % str(img_name))
+            raise IOError("no image named %s found" % str(img_name))
 
         if not os.path.exists(imgDst):
             os.makedirs(imgDst)
@@ -1426,117 +1440,126 @@ def main():
         if report_matching:
 
             matchingGroup = HtmlReporter.Group('product_matching', 'Product Matching Results')
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'perfect_product_matches',
-                    **{
-                        'title': 'Perfect Matches',
-                        'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                        'data': globalProductMatches.tabulate(tablefmt="html"),
-                        'length': len(globalProductMatches)
-                    }
+            if globalProductMatches:
+                matchingGroup.addSection(
+                    HtmlReporter.Section(
+                        'perfect_product_matches',
+                        **{
+                            'title': 'Perfect Matches',
+                            'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                            'data': globalProductMatches.tabulate(tablefmt="html"),
+                            'length': len(globalProductMatches)
+                        }
+                    )
                 )
-            )
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'masterless_product_matches',
-                    **{
-                        'title': 'Masterless matches',
-                        'description': "matches are masterless",
-                        'data': masterlessProductMatches.tabulate(tablefmt="html"),
-                        'length': len(masterlessProductMatches)
-                    }
+            if masterlessProductMatches:
+                matchingGroup.addSection(
+                    HtmlReporter.Section(
+                        'masterless_product_matches',
+                        **{
+                            'title': 'Masterless matches',
+                            'description': "matches are masterless",
+                            'data': masterlessProductMatches.tabulate(tablefmt="html"),
+                            'length': len(masterlessProductMatches)
+                        }
+                    )
                 )
-            )
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'slaveless_product_matches',
-                    **{
-                        'title': 'Slaveless matches',
-                        'description': "matches are slaveless",
-                        'data': slavelessProductMatches.tabulate(tablefmt="html"),
-                        'length': len(slavelessProductMatches)
-                    }
+            if slavelessProductMatches:
+                matchingGroup.addSection(
+                    HtmlReporter.Section(
+                        'slaveless_product_matches',
+                        **{
+                            'title': 'Slaveless matches',
+                            'description': "matches are slaveless",
+                            'data': slavelessProductMatches.tabulate(tablefmt="html"),
+                            'length': len(slavelessProductMatches)
+                        }
+                    )
                 )
-            )
-
-            reporter.addGroup(matchingGroup)
+            if matchingGroup.sections:
+                reporter.addGroup(matchingGroup)
 
             if do_categories:
                 matchingGroup = HtmlReporter.Group('category_matching', 'Category Matching Results')
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'perfect_category_matches',
-                        **{
-                            'title': 'Perfect Matches',
-                            'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                            'data': globalCategoryMatches.tabulate(tablefmt="html"),
-                            'length': len(globalCategoryMatches)
-                        }
+                if globalCategoryMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'perfect_category_matches',
+                            **{
+                                'title': 'Perfect Matches',
+                                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                                'data': globalCategoryMatches.tabulate(tablefmt="html"),
+                                'length': len(globalCategoryMatches)
+                            }
+                        )
                     )
-                )
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'masterless_category_matches',
-                        **{
-                            'title': 'Masterless matches',
-                            'description': "matches are masterless",
-                            'data': masterlessCategoryMatches.tabulate(tablefmt="html"),
-                            'length': len(masterlessCategoryMatches)
-                        }
+                if masterlessCategoryMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'masterless_category_matches',
+                            **{
+                                'title': 'Masterless matches',
+                                'description': "matches are masterless",
+                                'data': masterlessCategoryMatches.tabulate(tablefmt="html"),
+                                'length': len(masterlessCategoryMatches)
+                            }
+                        )
                     )
-                )
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'slaveless_category_matches',
-                        **{
-                            'title': 'Slaveless matches',
-                            'description': "matches are slaveless",
-                            'data': slavelessCategoryMatches.tabulate(tablefmt="html"),
-                            'length': len(slavelessCategoryMatches)
-                        }
+                if slavelessCategoryMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'slaveless_category_matches',
+                            **{
+                                'title': 'Slaveless matches',
+                                'description': "matches are slaveless",
+                                'data': slavelessCategoryMatches.tabulate(tablefmt="html"),
+                                'length': len(slavelessCategoryMatches)
+                            }
+                        )
                     )
-                )
-
-                reporter.addGroup(matchingGroup)
+                if matchingGroup.sections:
+                    reporter.addGroup(matchingGroup)
 
             if do_variations:
                 matchingGroup = HtmlReporter.Group('variation_matching', 'Variation Matching Results')
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'perfect_variation_matches',
-                        **{
-                            'title': 'Perfect Matches',
-                            'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                            'data': globalVariationMatches.tabulate(tablefmt="html"),
-                            'length': len(globalVariationMatches)
-                        }
+                if globalVariationMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'perfect_variation_matches',
+                            **{
+                                'title': 'Perfect Matches',
+                                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
+                                'data': globalVariationMatches.tabulate(tablefmt="html"),
+                                'length': len(globalVariationMatches)
+                            }
+                        )
                     )
-                )
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'masterless_variation_matches',
-                        **{
-                            'title': 'Masterless matches',
-                            'description': "matches are masterless",
-                            'data': masterlessVariationMatches.tabulate(tablefmt="html"),
-                            'length': len(masterlessVariationMatches)
-                        }
+                if masterlessVariationMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'masterless_variation_matches',
+                            **{
+                                'title': 'Masterless matches',
+                                'description': "matches are masterless",
+                                'data': masterlessVariationMatches.tabulate(tablefmt="html"),
+                                'length': len(masterlessVariationMatches)
+                            }
+                        )
                     )
-                )
-                matchingGroup.addSection(
-                    HtmlReporter.Section(
-                        'slaveless_variation_matches',
-                        **{
-                            'title': 'Slaveless matches',
-                            'description': "matches are slaveless",
-                            'data': slavelessVariationMatches.tabulate(tablefmt="html"),
-                            'length': len(slavelessVariationMatches)
-                        }
+                if slavelessVariationMatches:
+                    matchingGroup.addSection(
+                        HtmlReporter.Section(
+                            'slaveless_variation_matches',
+                            **{
+                                'title': 'Slaveless matches',
+                                'description': "matches are slaveless",
+                                'data': slavelessVariationMatches.tabulate(tablefmt="html"),
+                                'length': len(slavelessVariationMatches)
+                            }
+                        )
                     )
-                )
-
-                reporter.addGroup(matchingGroup)
+                if matchingGroup.sections:
+                    reporter.addGroup(matchingGroup)
 
         report_sync = do_sync
         if report_sync:
@@ -1685,7 +1708,7 @@ def main():
 
 
     if report_and_quit:
-        quit()
+        sys.exit(ExitStatus.success)
 
 
     #########################################
@@ -1762,6 +1785,15 @@ if __name__ == '__main__':
         main()
     except SystemExit:
         exit()
+    except (ReadTimeout, ConnectionError, ConnectTimeout):
+        status=69 #service unavailable
+        Registrar.registerError(traceback.format_exc())
+    except IOError:
+        status=74
+        Registrar.registerError(traceback.format_exc())
+    except UserWarning:
+        status=65
+        Registrar.registerError(traceback.format_exc())
     except:
         status=1
         Registrar.registerError(traceback.format_exc())
@@ -1777,7 +1809,7 @@ if __name__ == '__main__':
                 pprint( message, indent=4, width=80, depth=2)
 
     #########################################
-    # email reports
+    # zip reports
     #########################################
 
     files_to_zip = [mFailPath, sFailPath, repPath]
@@ -1792,5 +1824,5 @@ if __name__ == '__main__':
                     pass
         Registrar.registerMessage('wrote file %s' % zipPath)
 
-    print "exiting with status", status
+    print "\nexiting with status %s \n" % status
     sys.exit(status)

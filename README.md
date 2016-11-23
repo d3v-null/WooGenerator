@@ -48,6 +48,7 @@ pip install --upgrade
   urllib3  
   woocommerce
   wordpress_json
+  exitstatus
 
 Cygwin Packages
 ---------------

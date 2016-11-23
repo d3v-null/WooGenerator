@@ -81,16 +81,20 @@ case "$sync_subject" in
 
     if ! $safe_defaults ; then
       read -p "do you want to process specials? (y/N) " specials
+    elif $download_report_quit ; then
+      specials='y'
     fi
 
     case "$specials" in
       "y" | "Y" )
         sync_command+=('--do-specials')
-        read -p "what is the current special? (e.g. SP2016-11-20-) " current_special
-        if [ -z $current_special ]
-        then
-          sync_command+=('--add-special-categories')
-          sync_command+=('--current-special' "$current_special")
+        if ! $download_report_quit ; then
+          read -p "what is the current special? (e.g. SP2016-11-20-) " current_special
+          if [ -z $current_special ]
+          then
+            sync_command+=('--add-special-categories')
+            sync_command+=('--current-special' "$current_special")
+          fi
         fi
         ;;
       *)
@@ -99,6 +103,8 @@ case "$sync_subject" in
 
     if ! $safe_defaults ; then
       read -p "do you want to process categories? (y/N) " categories
+    elif $download_report_quit ; then
+      categories='y'
     fi
 
     case "$categories" in
@@ -107,6 +113,20 @@ case "$sync_subject" in
         ;;
       *)
         sync_command+=('--skip-categories')
+    esac
+
+    if ! $safe_defaults ; then
+      read -p "do you want to process variations? (y/N) " variations
+    elif $download_report_quit ; then
+      variations='y'
+    fi
+
+    case "$variations" in
+      "y" | "Y" )
+        sync_command+=('--do-variations')
+        ;;
+      *)
+        sync_command+=('--skip-variations')
     esac
 
     # auto update not finished yet
@@ -154,7 +174,7 @@ while $try_again ; do
   exit_code=$?
 
   # printf "\n\n\n\n"
-  # echo "exit_code is $exit_code"
+  echo "exit_code is $exit_code"
   # echo "result is $result"
 
   case "$exit_code" in
@@ -162,32 +182,51 @@ while $try_again ; do
       echo "Completed"
       try_again=false
       ;;
-    * )
-      errors_present=true
-      echo "It looks like something went wrong."
-      echo "if there was a connection error you can try again."
-      echo "otherwise an report can be emailed to the developer."
-      read -p "try again? (y/N) " try_again
-      case "$try_again" in
+    74 )
+      echo "It looks there were problems accessing files at some point"
+      echo "please check the missing files exist and are readable"
+      read -p "were you able to fix the problems? (y/N) " try_again_answer
+      case "$try_again_answer" in
         'y' | 'Y' )
-          try_again=true
-          ;;
-        *)
-          try_again=false
+          continue
           ;;
       esac
       ;;
+    65 )
+      echo "It looks like there are some problems in the data"
+      echo "please fix these problems and try again"
+      read -p "were you able to fix the problems? (y/N) " try_again_answer
+      case "$try_again_answer" in
+        'y' | 'Y' )
+          continue
+          ;;
+      esac
+      ;;
+    69 ) # connection error
+      echo "It looks like the connection timed out."
+      read -p "try again with larger timeout? (y/N) " try_again_answer
+      case "$try_again_answer" in
+        'y' | 'Y' )
+          continue
+          ;;
+      esac
+      ;;
+    *)
+      echo "It looks like something went wrong."
+      ;;
   esac
+  try_again=false
+  errors_present=true
 done
 
 if ! $errors_present ; then
-  checklist = ()
+  checklist=()
   case "$sync_subject" in
     'products' )
       echo "please check the report files and the generated csv files."
-      checklist = (
-        "syncing program did not display any errors"
-        "only products you expect to be created are being created"
+      checklist=(\
+        "syncing program did not display any errors"\
+        "only products you expect to be created are being created"\
       )
       ;;
     'customers' )
@@ -235,6 +274,10 @@ if $errors_present ; then
       exit
       ;;
     *)
+      read -p "any additional information to report?" additional_info
+
       echo "creating report..."
   esac
+else
+  echo "looks like everything worked"
 fi
