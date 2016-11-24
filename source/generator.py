@@ -1825,5 +1825,5 @@ if __name__ == '__main__':
                     pass
         Registrar.registerMessage('wrote file %s' % zipPath)
 
-    print "\nexiting with status %s \n" % status
+    # print "\nexiting with status %s \n" % status
     sys.exit(status)

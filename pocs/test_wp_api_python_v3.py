@@ -5,6 +5,14 @@ from wordpress import API
 # from woocommerce import API
 from pprint import pprint, pformat
 
+### What this proof of concept is about
+#   Testing the features of v3 of the api
+#   things that work:
+#   - simple products
+#   - variable products
+#   - variable instances
+#   - variable meta
+
 def print_response(response):
     """figures out the type of response and attempts to print it """
     try:
@@ -21,37 +29,41 @@ def print_response(response):
         print "failed: %s" % repr(e)
         print "response: %s" % repr(response)
 
-# wcapi = API(
-#     url='http://localhost:8888/wordpress/',
-#     consumer_key='ck_681c2be361e415519dce4b65ee981682cda78bc6',
-#     consumer_secret='cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877',
-#     api="wc-api",
-#     version="v3"
-# )
 wcapi = API(
-    url='http://technotea.com.au/',
-    consumer_key='ck_204e2f68c5ca4d3be966b7e5da7a48cac1a75104',
-    consumer_secret='cs_bcb080a472a2bbded7dc421c63cbe031a91241f5',
+    url='http://localhost:8888/wordpress/',
+    consumer_key='ck_681c2be361e415519dce4b65ee981682cda78bc6',
+    consumer_secret='cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877',
     api="wc-api",
     version="v3"
 )
+# wcapi = API(
+#     url='http://technotea.com.au/',
+#     consumer_key='ck_204e2f68c5ca4d3be966b7e5da7a48cac1a75104',
+#     consumer_secret='cs_bcb080a472a2bbded7dc421c63cbe031a91241f5',
+#     api="wc-api",
+#     version="v3"
+# )
 
 print "\n\n*******\n* GET *\n*******\n\n"
+
+### tests for wordpress local test
+
 # response = wcapi.get('products')
+# response = wcapi.get('products/22') # id=22 is variable
+response = wcapi.get('products/23') # id=23 is variation of 22
+
 # response = wcapi.get('products?page=2')
 # response = wcapi.put('products/99', {'product':{'title':'Woo Single #2a'}} )
 # response = wcapi.put('products/99?id=http%3A%2F%2Fprinter', {'product':{'title':'Woo Single #2a'}} )
 
-response = wcapi.get('products/21391?fields=meta')
-print_response(response)
+### tests for technotea
 
-
+# response = wcapi.get('products/21391?fields=meta')
 # response = wcapi.get('products/categories?filter[q]=solution')
 # categories = response.json().get('product_categories')
 # print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
 
-# print_response(response)
-# quit()
+print_response(response)
 
 # response = wcapi.get('products/17834')
 # product_categories = response.json().get('product',{}).get('categories',[])
@@ -60,12 +72,29 @@ print_response(response)
 
 print "\n\n*******\n* PUT *\n*******\n\n"
 
-data = {'product':{'custom_meta':{'wootan_danger':'D'}}}
-response = wcapi.put('products/21391', data)
+### Tests for woocommerce local staging
+
+data = {'product':{'custom_meta':{'attribute_pa_color':'grey'}}}
+response = wcapi.put('products/23', data)
 print_response(response)
 
-response = wcapi.get('products/21391')
+### Tests for technotea
+
+# data = {'product':{'custom_meta':{'wootan_danger':'D'}}}
+# response = wcapi.put('products/21391', data)
+# print_response(response)
+
+print "\n\n*******\n* GET 2 *\n*******\n\n"
+
+### Tests for woocommerce local staging
+
+response = wcapi.get('products/product/23')
 print_response(response)
+
+### Tests for technotea
+
+# response = wcapi.get('products/21391')
+# print_response(response)
 
 # data = {'product':{'categories':[898]}}
 # response = wcapi.put('products/17834', data)
