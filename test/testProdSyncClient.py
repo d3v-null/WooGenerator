@@ -159,10 +159,10 @@ class testProdSyncClient(abstractSyncClientTestCase):
             self.assertEqual(description,'11.0')
 
     def testUploadChangesVariationMeta(self):
-        pkey = 41
+        pkey = 23
         expected_result = str(random.randint(1,100))
-        updates = OrderedDict([
-            ('custom_meta',OrderedDict([
+        updates = dict([
+            ('custom_meta',dict([
                 ('lc_dn_regular_price', expected_result)
             ]))
         ])
@@ -204,9 +204,9 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 print page
 
 if __name__ == '__main__':
-    # main()
+    main()
 
-    testSuite = TestSuite()
+    # testSuite = TestSuite()
     # testSuite.addTest(testProdSyncClient('testUploadChanges'))
     # testSuite.addTest(testProdSyncClient('testUploadChangesMeta'))
     # testSuite.addTest(testProdSyncClient('testUploadDeleteMeta'))
@@ -215,5 +215,5 @@ if __name__ == '__main__':
     # testSuite.addTest(testProdSyncClient('testUploadDeleteVariationMeta'))
     # testSuite.addTest(testProdSyncClient('testGetSinglePage'))
     # testSuite.addTest(testProdSyncClient('testRead'))
-    testSuite.addTest(testProdSyncClient('testCatSyncClient'))
-    TextTestRunner().run(testSuite)
+    # testSuite.addTest(testProdSyncClient('testUploadChangesVariationMeta'))
+    # TextTestRunner().run(testSuite)
