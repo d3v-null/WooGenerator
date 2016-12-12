@@ -301,6 +301,7 @@ def main():
     group.add_argument('--debug-update', action='store_true', dest='debug_update')
     group.add_argument('--debug-mro', action='store_true', dest='debug_mro')
     group.add_argument('--debug-gdrive', action='store_true', dest='debug_gdrive')
+    group.add_argument('--debug-special', action='store_true', dest='debug_special')
 
     args = parser.parse_args()
     if args:
@@ -388,6 +389,8 @@ def main():
             Registrar.DEBUG_MRO = args.debug_mro
         if args.debug_gdrive is not None:
             Registrar.DEBUG_GDRIVE = args.debug_gdrive
+        if args.debug_special is not None:
+            Registrar.DEBUG_SPECIAL = args.debug_special
 
     #process YAML file after determining mode
 
@@ -628,6 +631,8 @@ def main():
                 specialParser = CSVParse_Special()
                 specialParser.analyseFile(specPath)
                 specials = specialParser.objects
+                if Registrar.DEBUG_SPECIAL:
+                    Registrar.registerMessage("Specials: %s" % pformat(specials.keys()))
                 productParserArgs['specials'] = specials
 
         productParser = productParserClass(**productParserArgs)

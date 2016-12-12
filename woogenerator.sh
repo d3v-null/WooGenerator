@@ -200,7 +200,8 @@ case "$sync_subject" in
       if ! $download_report_quit ; then
         style_prompt "what is the current special? (e.g. SP2016-11-20-) "
         read current_special
-        if [ -z $current_special ]
+        style_info "current special is ${current_special}"
+        if [[ ! -z $current_special ]]
         then
           sync_command+=('--add-special-categories')
           sync_command+=('--current-special' "$current_special")
@@ -268,7 +269,7 @@ case "$sync_subject" in
     ;;
 esac
 
-style_info "running ${sync_command[@]}"
+style_info "running ${sync_command[*]}"
 
 try_again=true
 errors_present=false
