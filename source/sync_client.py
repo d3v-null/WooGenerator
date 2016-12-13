@@ -28,7 +28,7 @@ from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
 from simplejson import JSONDecodeError
 
-from requests import request, ConnectionError
+from requests import request, ConnectionError, ReadTimeout
 from json import dumps as jsonencode
 
 try:
@@ -303,16 +303,13 @@ class SyncClient_Rest(SyncClient_Abstract):
             # self.progressCounter = None
             self.total_pages = None
             self.total_items = None
+            self.limit = 10
+            self.offset = None
             # self.stopNextIteration = False
 
-        def get_page_param(self, url):
-            params = SanitationUtils.findall_url_params(url)
-            if 'page' in params:
-                pages = params['page']
-                assert len(pages) == 1
-                return int(pages[0])
-            else:
-                return None
+        # def get_url_param(self, url, param, default=None):
+        #     url_params = parse_qs(urlparse(url).query)
+        #     return url_params.get(param, [default])[0]
 
         def processHeaders(self, response):
             headers = response.headers
@@ -322,20 +319,17 @@ class SyncClient_Rest(SyncClient_Abstract):
             if self.service.namespace == 'wp-api':
                 total_pages_key = 'X-WP-TotalPages'
                 total_items_key = 'X-WP-Total'
-                # links_finder = SanitationUtils.findall_wp_links
             else:
-                total_pages_key = 'x-wc-totalpages'
-                total_items_key = 'x-wc-total'
-                # links_finder = SanitationUtils.findall_wc_links
+                total_pages_key = 'X-WC-TotalPages'
+                total_items_key = 'X-WC-Total'
 
-            if self.total_pages is None and total_items_key in headers:
+            if total_items_key in headers:
                 self.total_pages = int(headers.get(total_pages_key,''))
-            if self.total_items is None and total_pages_key in headers:
+            if total_pages_key in headers:
                 self.total_items = int(headers.get(total_items_key,''))
             # if self.progressCounter is None:
             #     self.progressCounter = ProgressCounter(total=self.total_pages)
             # self.stopNextIteration = True
-            # self.next_page = self.total_pages
             prev_endpoint = self.next_endpoint
             self.next_endpoint = None
 
@@ -344,57 +338,20 @@ class SyncClient_Rest(SyncClient_Abstract):
                     next_response_url = link['url']
                     # if Registrar.DEBUG_API:
                     #     Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
-                    self.next_page = parse_qs(urlparse(next_response_url).query).get('page',[None])[0]
-                    self.next_page = int(self.next_page)
+                    self.next_page = int(UrlUtils.get_query_singular(next_response_url, 'page'))
                     if not self.next_page:
                         return
                     assert \
                         self.next_page <= self.total_pages, \
                         "next page (%s) should be lte total pages (%s)" \
                         % (str(self.next_page), str(self.total_pages))
-                    next_endpoint_queries = parse_qs(urlparse(next_response_url).query)
-                    next_endpoint_queries.update(page=self.next_page)
-                    self.next_endpoint = UrlUtils.substitute_query(prev_endpoint, urlencode(next_endpoint_queries))
-                    # self.next_endpoint = self.__get_endpoint(next_response_url)
+                    self.next_endpoint = UrlUtils.set_query_singular(prev_endpoint,'page', self.next_page)
+
                     # if Registrar.DEBUG_API:
                     #     Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
 
-            # links_str = headers.get('link', '')
-            # if Registrar.DEBUG_API:
-            #     Registrar.registerMessage("links str: {}".format(links_str))
-            # links = links_finder(links_str)
-            # if Registrar.DEBUG_API:
-            #     Registrar.registerMessage("wc_links: %s" % str(links))
-            # for link in links:
-            #     if link.get('rel') == 'next' and link.get('url'):
-            #         next_response_url = link['url']
-            #         self.next_page = self.get_page_param(next_response_url)
-            #         if self.next_page == 2:
-            #             next_response_url = re.sub(r'page=\d', 'page=8', next_response_url)
-            #         # self.stopNextIteration = False
-            #         if Registrar.DEBUG_API:
-            #             Registrar.registerMessage('next_response_url: %s' % str(next_response_url))
-            #         self.next_endpoint = self.__get_endpoint(next_response_url)
-            #         if Registrar.DEBUG_API:
-            #             Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
-            #         break
-
-            # self.progressCounter.maybePrintUpdate(self.next_page)
-
-        # def __get_endpoint(self, url):
-        #     url_path = SanitationUtils.stripURLHost(url)
-        #     response = url_path
-        #     print "url_path", url_path
-        #     service_url_path = UrlUtils.join_components([
-        #         SanitationUtils.stripURLHost(self.service.url),
-        #         self.service.namespace,
-        #         self.service.version
-        #     ])
-        #     print "service_url_path", service_url_path
-        #     if url_path.startswith(service_url_path):
-        #         response = response.replace(service_url_path, '')
-        #     print "reponse", response
-        #     return response
+            if self.next_page:
+                self.offset = (self.limit * self.next_page) + 1
 
         def __iter__(self):
             return self
@@ -409,7 +366,51 @@ class SyncClient_Rest(SyncClient_Abstract):
                 raise StopIteration()
 
             # get API response
-            self.prev_response = self.service.get(self.next_endpoint)
+            try:
+                self.prev_response = self.service.get(self.next_endpoint)
+            except ReadTimeout as e:
+                # instead of processing this endoint, do the page product by product
+                if self.limit > 1:
+                    new_limit = 1
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('reducing limit in %s' % self.next_endpoint)
+
+                    self.next_endpoint = UrlUtils.set_query_singular(
+                        self.next_endpoint,
+                        'filter[limit]',
+                        new_limit
+                    )
+                    self.next_endpoint = UrlUtils.del_query_singular(
+                        self.next_endpoint,
+                        'page'
+                    )
+                    if self.offset:
+                        self.next_endpoint = UrlUtils.set_query_singular(
+                            self.next_endpoint,
+                            'filter[offset]',
+                            self.offset
+                        )
+
+                    self.limit = new_limit
+
+                    # endpoint_queries = parse_qs(urlparse(self.next_endpoint).query)
+                    # endpoint_queries = dict([
+                    #     (key, value[0]) for key, value in endpoint_queries.items()
+                    # ])
+                    # endpoint_queries['filter[limit]'] = 1
+                    # if self.next_page:
+                    #     endpoint_queries['page'] = 10 * self.next_page
+                    # print "endpoint_queries: ", endpoint_queries
+                    # self.next_endpoint = UrlUtils.substitute_query(
+                    #     self.next_endpoint,
+                    #     urlencode(endpoint_queries)
+                    # )
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('new endpoint %s' % self.next_endpoint)
+
+                    self.prev_response = self.service.get(self.next_endpoint)
+
+
 
             # handle API errors
             if self.prev_response.status_code in range(400, 500):
@@ -458,6 +459,10 @@ class SyncClient_Rest(SyncClient_Abstract):
         #
         superConnectParams = {}
 
+        superConnectParams.update(
+            timeout=60
+        )
+
         for key, value in connectParams.items():
             super_key = key
             if key in key_translation:
@@ -472,9 +477,7 @@ class SyncClient_Rest(SyncClient_Abstract):
             superConnectParams['oauth1a_3leg'] = True
 
 
-        superConnectParams.update(
-            timeout=60
-        )
+
 
         super(SyncClient_Rest, self).__init__(superConnectParams)
         #

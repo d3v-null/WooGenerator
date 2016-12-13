@@ -94,3 +94,10 @@ apt-cyg install
 
  Other Libraries
  ---------------
+
+ Testing
+ ----
+to test X
+```
+python test/testX.py
+```
