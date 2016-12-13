@@ -304,15 +304,18 @@ class SyncClient_Rest(SyncClient_Abstract):
             # self.progressCounter = None
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
+            # print "endpoint_queries:", endpoint_queries
             self.next_page = None
             if 'page' in endpoint_queries:
                 self.next_page = int(endpoint_queries['page'])
             self.limit = 10
             if 'fliter[limit]' in endpoint_queries:
                 self.limit = int(endpoint_queries['filter[limit]'])
+            # print "slave limit set to to ", self.limit
             self.offset = None
             if 'filter[offset]' in endpoint_queries:
                 self.offset = int(endpoint_queries['filter[offset]'])
+            # print "slave offset set to to ", self.offset
 
         # def get_url_param(self, url, param, default=None):
         #     url_params = parse_qs(urlparse(url).query)
