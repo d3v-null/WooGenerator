@@ -609,7 +609,8 @@ def main():
 
             productParser = productParserClass(**productParserArgs)
 
-            Registrar.registerMessage("analysing products")
+            if Registrar.DEBUG_PROGRESS:
+                print("analysing remote GDrive products")
             client.analyseRemote(productParser, genGID, genPath, limit=global_limit)
     else:
         if schema in woo_schemas:
@@ -636,7 +637,8 @@ def main():
                 productParserArgs['specials'] = specials
 
         productParser = productParserClass(**productParserArgs)
-        Registrar.registerMessage("analysing products")
+        if Registrar.DEBUG_PROGRESS:
+            print("analysing local GDrive products")
         productParser.analyseFile(genPath, limit=global_limit)
 
     products = productParser.products
@@ -979,6 +981,9 @@ def main():
             # try:
             if do_categories:
                 client.analyseRemoteCategories(apiProductParser)
+
+            if Registrar.DEBUG_PROGRESS:
+                print "analysing WC API data"
             client.analyseRemote(apiProductParser, limit=global_limit)
             # except Exception, e:
             #     Registrar.registerError(e)

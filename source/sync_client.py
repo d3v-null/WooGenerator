@@ -299,13 +299,14 @@ class SyncClient_Rest(SyncClient_Abstract):
             self.service = service
             self.next_endpoint = endpoint
             self.prev_response = None
-            self.next_page = None
-            # self.progressCounter = None
             self.total_pages = None
             self.total_items = None
-            self.limit = 10
-            self.offset = None
-            # self.stopNextIteration = False
+            # self.progressCounter = None
+
+            endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
+            self.next_page = endpoint_queries.get('page')
+            self.limit = endpoint_queries.get('filter[limit]', 10)
+            self.offset = endpoint_queries.get('filter[offset]')
 
         # def get_url_param(self, url, param, default=None):
         #     url_params = parse_qs(urlparse(url).query)
