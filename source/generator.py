@@ -164,6 +164,10 @@ def main():
         download_slave = config.get('download_slave')
         update_slave = config.get('update_slave')
 
+        slave_timeout = config.get('slave_timeout')
+        slave_limit = config.get('slave_limit')
+        slave_offset = config.get('slave_offset')
+
     #mandatory params
     assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
@@ -195,6 +199,9 @@ def main():
                        action="store_true", default=None)
     group.add_argument('--skip-download-slave', help='use the local slave file instead\
         of downloading the slave data', action="store_false", dest='download_slave')
+    parser.add_argument('--slave-timeout', help='timeout when using the slave api', default=slave_timeout)
+    parser.add_argument('--slave-limit', help='limit per page when using the slave api', default=slave_limit)
+    parser.add_argument('--slave-offset', help='offset when using the slave api (for debugging)', default=slave_offset)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
@@ -321,6 +328,10 @@ def main():
             download_master = args.download_master
         if args.download_slave is not None:
             download_slave = args.download_slave
+        slave_timeout = args.slave_timeout  
+        slave_limit = args.slave_limit
+        slave_offset = args.slave_offset
+
         if args.update_slave is not None:
             update_slave = args.update_slave
         if args.current_special:
@@ -540,7 +551,10 @@ def main():
     wcApiParams = {
         'api_key':wc_api_key,
         'api_secret':wc_api_secret,
-        'url':store_url
+        'url':store_url,
+        'timeout':slave_timeout,
+        'offset':slave_offset,
+        'limit':slave_limit
     }
 
     apiProductParserArgs = {
@@ -557,9 +571,11 @@ def main():
         'taxoDepth': taxoDepth,
     }
 
-    if Registrar.DEBUG_GEN:
+    # if Registrar.DEBUG_GEN:
+    if True:
         for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
-            Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
+            print( "%s: %s" % (thing, eval(thing)))
+            # Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
 
 
     if schema in myo_schemas:

@@ -304,9 +304,15 @@ class SyncClient_Rest(SyncClient_Abstract):
             # self.progressCounter = None
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
-            self.next_page = endpoint_queries.get('page')
-            self.limit = endpoint_queries.get('filter[limit]', 10)
-            self.offset = endpoint_queries.get('filter[offset]')
+            self.next_page = None
+            if 'page' in endpoint_queries:
+                self.next_page = int(endpoint_queries['page'])
+            self.limit = 10
+            if 'fliter[limit]' in endpoint_queries:
+                self.limit = int(endpoint_queries['filter[limit]'])
+            self.offset = None
+            if 'filter[offset]' in endpoint_queries:
+                self.offset = int(endpoint_queries['filter[offset]'])
 
         # def get_url_param(self, url, param, default=None):
         #     url_params = parse_qs(urlparse(url).query)
@@ -448,6 +454,9 @@ class SyncClient_Rest(SyncClient_Abstract):
 
     def __init__(self, connectParams):
 
+        self.limit = connectParams['limit']
+        self.offset = connectParams['offset']
+
         key_translation = {
             'api_key': 'consumer_key',
             'api_secret': 'consumer_secret'
@@ -460,9 +469,9 @@ class SyncClient_Rest(SyncClient_Abstract):
         #
         superConnectParams = {}
 
-        superConnectParams.update(
-            timeout=60
-        )
+        # superConnectParams.update(
+        #     timeout=60
+        # )
 
         for key, value in connectParams.items():
             super_key = key
@@ -476,9 +485,6 @@ class SyncClient_Rest(SyncClient_Abstract):
             superConnectParams['version'] = self.default_version
         if superConnectParams['api'] == 'wp-json':
             superConnectParams['oauth1a_3leg'] = True
-
-
-
 
         super(SyncClient_Rest, self).__init__(superConnectParams)
         #
@@ -497,7 +503,8 @@ class SyncClient_Rest(SyncClient_Abstract):
         if since: pass #todo: implement since
         resultCount = 0
 
-        apiIterator = self.ApiIterator(self.service, self.endpoint_plural)
+        # apiIterator = self.ApiIterator(self.service, self.endpoint_plural)
+        apiIterator = self.getIterator(self.endpoint_plural)
         progressCounter = None
         for page in apiIterator:
             if progressCounter is None:
@@ -537,6 +544,13 @@ class SyncClient_Rest(SyncClient_Abstract):
     def getIterator(self, endpoint=None):
         if not endpoint:
             endpoint = self.endpoint_plural
+        endpoint_queries = {}
+        if self.limit is not None:
+            endpoint_queries['filter[limit]'] = self.limit
+        if self.offset is not None:
+            endpoint_queries['filter[offset]'] = self.offset
+        if endpoint_queries:
+            endpoint += "?" + urlencode(endpoint_queries)
         return self.ApiIterator(self.service, endpoint)
 
     def createItem(self, data):
