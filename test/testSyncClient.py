@@ -105,6 +105,7 @@ class testSyncClient(abstractSyncClientTestCase):
             'api_key':wc_api_key,
             'api_secret':wc_api_secret,
             'url':store_url,
+            'limit':6
             # 'version':'wc/v1'
         }
 

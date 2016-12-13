@@ -454,8 +454,8 @@ class SyncClient_Rest(SyncClient_Abstract):
 
     def __init__(self, connectParams):
 
-        self.limit = connectParams['limit']
-        self.offset = connectParams['offset']
+        self.limit = connectParams.get('limit')
+        self.offset = connectParams.get('offset')
 
         key_translation = {
             'api_key': 'consumer_key',
