@@ -237,31 +237,34 @@ case "$sync_subject" in
       sync_command+=('--skip-variations')
     fi
 
-    # auto update not finished yet
-    sync_command+=('--skip-update-slave')
-    # binary_prompt "do you want to automatically update WooCommerce? (unsafe)" "n"
-    # update_answer="$?"
-    # read -n 1 -p
-    #
-    # case "$update" in
-    #   "y" | "Y" )
-    #     sync_command+=('--update-slave')
-    #     ;;
-    #   *)
-    #     sync_command+=('--skip-update-slave')
-    # esac
-    #
-    # binary_prompt "do you want to perform the updates in the report flagged as problematic?" "n"
-    # update_problematic_answer="$?"
-    # read -n 1 -p
-    #
-    # case "$update_problematic" in
-    #   "y" | "Y" )
-    #     sync_command+=('--update-problematic')
-    #     ;;
-    #   *)
-    #     sync_command+=('--skip-update-problematic')
-    # esac
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to automatically update WooCommerce? (unsafe)" "n"
+      update_answer="$?"
+    fi
+    if [[ "$update_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--update-slave')
+    else
+      sync_command+=('--skip-update-slave')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to perform the updates in the report flagged as problematic?" "n"
+      update_problematic_answer="$?"
+    fi
+    if [[ "$update_problematic_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--do-problematic')
+    else
+      sync_command+=('--skip-problematic')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to show verbose debugging information?" "n"
+      show_debug="$?"
+    fi
+    if [[ "$show_debug" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('-vv')
+    fi
+
     ;;
   'customers' )
     style_info "You have selected to sync customers"
