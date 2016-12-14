@@ -1283,10 +1283,10 @@ def main():
                 changeMatchList.addMatches(categoryMatcher.slavelessMatches)
 
                 master_categories = set(
-                    [category.WPID for category in mObject.categories.values() if category.WPID]
+                    [master_category.WPID for master_category in mObject.categories.values() if master_category.WPID]
                 )
                 slave_categories =  set(
-                    [category.WPID for category in sObject.categories.values() if category.WPID]
+                    [slave_category.WPID for slave_category in sObject.categories.values() if slave_category.WPID]
                 )
 
                 # print "comparing categories of %s:\n%s\n%s\n%s\n%s"\
