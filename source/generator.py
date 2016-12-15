@@ -89,6 +89,8 @@ def main():
 
     ### Process YAML file for defaults ###
 
+    config = {}
+
     with open(yamlPath) as stream:
         config = yaml.load(stream)
         #overrides
@@ -141,32 +143,34 @@ def main():
         dprcGID = config.get('dprcGID')
         dprpGID = config.get('dprpGID')
         specGID = config.get('specGID')
-        usGID = config.get('usGID')
-        xsGID = config.get('xsGID')
+        # usGID = config.get('usGID')
+        # xsGID = config.get('xsGID')
 
-        skip_google_download = config.get('skip_google_download')
-        show_report = config.get('show_report')
-        print_report = config.get('show_report')
-        report_and_quit = config.get('report_and_quit')
-        do_images = config.get('do_images')
-        do_specials = config.get('do_specials')
-        do_dyns = config.get('do_dyns')
-        do_sync = config.get('do_sync')
-        do_categories = config.get('do_categories')
-        do_variations = config.get('do_variations')
-        do_delete_images = config.get('do_delete_images')
-        do_resize_images = config.get('do_resize_images')
-        do_remeta_images = config.get('do_remeta_images')
+        # skip_google_download = config.get('skip_google_download')
+        # show_report = config.get('show_report')
+        # print_report = config.get('show_report')
+        # report_and_quit = config.get('report_and_quit')
+        # do_images = config.get('do_images')
+        # do_specials = config.get('do_specials')
+        # do_dyns = config.get('do_dyns')
+        # do_sync = config.get('do_sync')
+        # do_categories = config.get('do_categories')
+        # do_variations = config.get('do_variations')
+        # do_delete_images = config.get('do_delete_images')
+        # do_resize_images = config.get('do_resize_images')
+        # do_remeta_images = config.get('do_remeta_images')
 
-        current_special = config.get('current_special')
-        add_special_categories = config.get('add_special_categories')
-        download_master = config.get('download_master')
-        download_slave = config.get('download_slave')
-        update_slave = config.get('update_slave')
+        # current_special = config.get('current_special')
+        # add_special_categories = config.get('add_special_categories')
+        # download_master = config.get('download_master')
+        # download_slave = config.get('download_slave')
+        # update_slave = config.get('update_slave')
+        # do_problematic = config.get('do_problematic')
+        # auto_create_new = config.get('auto_create_new')
 
-        slave_timeout = config.get('slave_timeout')
-        slave_limit = config.get('slave_limit')
-        slave_offset = config.get('slave_offset')
+        # slave_timeout = config.get('slave_timeout')
+        # slave_limit = config.get('slave_limit')
+        # slave_offset = config.get('slave_offset')
 
     #mandatory params
     assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
@@ -175,10 +179,10 @@ def main():
     dprcPath= os.path.join(inFolder, 'DPRC.csv')
     dprpPath= os.path.join(inFolder, 'DPRP.csv')
     specPath= os.path.join(inFolder, 'specials.csv')
-    usPath  = os.path.join(inFolder, 'US.csv')
-    xsPath  = os.path.join(inFolder, 'XS.csv')
+    # usPath  = os.path.join(inFolder, 'US.csv')
+    # xsPath  = os.path.join(inFolder, 'XS.csv')
 
-    sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
+    # sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
     ### GET SHELL ARGS ###
 
@@ -187,109 +191,202 @@ def main():
     group.add_argument("-v", "--verbosity", action="count",
                         help="increase output verbosity")
     group.add_argument("-q", "--quiet", action="store_true")
-    parser.add_argument('--testmode', help='Run in test mode with test servers',
-                        action='store_true')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--download-master', help='download the master data from google',
-                       action="store_true", default=None)
-    group.add_argument('--skip-download-master', help='use the local master file instead\
-        of downloading the master data', action="store_false", dest='download_master')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--download-slave', help='download the slave data',
-                       action="store_true", default=None)
-    group.add_argument('--skip-download-slave', help='use the local slave file instead\
-        of downloading the slave data', action="store_false", dest='download_slave')
-    parser.add_argument('--slave-timeout', help='timeout when using the slave api', default=slave_timeout)
-    parser.add_argument('--slave-limit', help='limit per page when using the slave api', default=slave_limit)
-    parser.add_argument('--slave-offset', help='offset when using the slave api (for debugging)', default=slave_offset)
+    parser.add_argument('--testmode', 
+        help='Run in test mode with test servers',
+        action='store_true',
+        default=testMode)
+
+
+    download_group = parser.add_argument_group('Download options')
+    group = download_group.add_mutually_exclusive_group()
+    group.add_argument('--download-master', 
+        help='download the master data from google',
+        action="store_true", 
+        default=config.get('download_master'))
+    group.add_argument('--skip-download-master', 
+        help='use the local master file instead of downloading the master data', 
+        action="store_false", 
+        dest='download_master')
+    group = download_group.add_mutually_exclusive_group()
+    group.add_argument('--download-slave', 
+        help='download the slave data',
+        action="store_true", 
+        default=config.get('download_slave'))
+    group.add_argument('--skip-download-slave', 
+        help='use the local slave file instead of downloading the slave data', 
+        action="store_false", 
+        dest='download_slave')
+    download_group.add_argument('--download-limit', 
+        help='global limit of objects to download (for debugging)',
+        type=int)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--update-slave', help='update the slave database in WooCommerce',
-                       action="store_true", default=None)
-    group.add_argument('--skip-update-slave', help='don\'t update the slave database',
-                       action="store_false", dest='update_slave', default=update_slave)
+    group.add_argument('--update-slave', 
+        help='update the slave database in WooCommerce',
+        action="store_true", 
+        default=config.get('update_slave'))
+    group.add_argument('--skip-update-slave', 
+        help='don\'t update the slave database',
+        action="store_false", dest='update_slave')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic', help='perform problematic updates anyway',
-                       action="store_true", default=False)
-    group.add_argument('--skip-problematic', help='protect data from problematic updates',
-                       action="store_false", dest='do_problematic')
+    group.add_argument('--do-problematic', 
+        help='perform problematic updates anyway',
+        action="store_true", 
+        default=config.get('do_problematic'))
+    group.add_argument('--skip-problematic', 
+        help='protect data from problematic updates',
+        action="store_false", 
+        dest='do_problematic')
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--auto-create-new', 
+        help='automatically create new products if they don\'t exist yet',
+        action="store_true", 
+        default=config.get('auto_create_new'))
+    update_group.add_argument('--no-create-new', 
+        help='do not create new items, print which need to be created',
+        action="store_false", 
+        dest="auto_create_new")
+    update_group.add_argument('--slave-timeout', 
+        help='timeout when using the slave api', 
+        default=config.get('slave_timeout'))
+    update_group.add_argument('--slave-limit', 
+        help='limit per page when using the slave api', 
+        default=config.get('slave_limit'))
+    update_group.add_argument('--slave-offset', 
+        help='offset when using the slave api (for debugging)', 
+        default=config.get('slave_offset'))
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-sync', help='sync the databases',
-                      action="store_true", default=None)
-    group.add_argument('--skip-sync', help='don\'t sync the databases',
-                      action="store_false", dest='do_sync', default=do_sync)
-
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-categories', help='sync categories',
-                      action="store_true", default=None)
-    group.add_argument('--skip-categories', help='don\'t sync categories',
-                      action="store_false", dest='do_categories', default=do_categories)
+    group.add_argument('--do-sync', 
+        help='sync the databases',
+        action="store_true", 
+        default=config.get('do_sync'))
+    group.add_argument('--skip-sync', 
+        help='don\'t sync the databases',
+        action="store_false", 
+        dest='do_sync')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-variations', help='sync variations',
-                      action="store_true", default=None)
-    group.add_argument('--skip-variations', help='don\'t sync variations',
-                      action="store_false", dest='do_variations', default=do_variations)
+    group.add_argument('--do-categories', 
+        help='sync categories',
+        action="store_true", 
+        default=config.get('do_categories'))
+    group.add_argument('--skip-categories', 
+        help='don\'t sync categories',
+        action="store_false",
+        dest='do_categories')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--do-variations', 
+        help='sync variations',
+        action="store_true", 
+        default=config.get('do_variations'))
+    group.add_argument('--skip-variations', 
+        help='don\'t sync variations',
+        action="store_false", 
+        dest='do_variations')
 
     report_group = parser.add_argument_group('Report options')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--show-report', help='generate report files',
-                       action="store_true", default=show_report)
-    group.add_argument('--skip-report', help='don\'t generate report files',
-                       action="store_false", dest='show_report')
+    group.add_argument('--show-report', 
+        help='generate report files',
+        action="store_true", default=config.get('show_report'))
+    group.add_argument('--skip-report', 
+        help='don\'t generate report files',
+        action="store_false", 
+        dest='show_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--print-report', help='pirnt report in terminal',
-                       action="store_true", default=print_report)
-    group.add_argument('--skip-print-report', help='don\'t print report in terminal',
-                       action="store_false", dest='print_report')
+    group.add_argument('--print-report', 
+        help='pirnt report in terminal',
+        action="store_true", 
+        default=config.get('show_report'))
+    group.add_argument('--skip-print-report', 
+        help='don\'t print report in terminal',
+        action="store_false", 
+        dest='print_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--report-and-quit', help='quit after generating report',
-                       action="store_true", default=report_and_quit)
+    group.add_argument('--report-and-quit', 
+        help='quit after generating report',
+        action="store_true", 
+        default=config.get('report_and_quit'))
 
     images_group = parser.add_argument_group('Image options')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-images', help='process images',
-                       action="store_true", default=do_images)
-    group.add_argument('--skip-images', help='don\'t process images',
-                       action="store_false", dest='do_images')
+    group.add_argument('--do-images', 
+        help='process images',
+        action="store_true", 
+        default=config.get('do_images'))
+    group.add_argument('--skip-images', 
+        help='don\'t process images',
+        action="store_false", 
+        dest='do_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-delete-images', help='delete extra images in compressed folder',
-                       action="store_true", default=do_delete_images)
-    group.add_argument('--skip-delete-images', help='protect images from deletion',
-                       action="store_false", dest='do_delete_images')
+    group.add_argument('--do-delete-images', 
+        help='delete extra images in compressed folder',
+        action="store_true", 
+        default=config.get('do_delete_images'))
+    group.add_argument('--skip-delete-images', 
+        help='protect images from deletion',
+        action="store_false", 
+        dest='do_delete_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-resize-images', help='resize images in compressed folder',
-                       action="store_true", default=do_resize_images)
-    group.add_argument('--skip-resize-images', help='protect images from resizing',
-                       action="store_false", dest='do_resize_images')
-    images_group.add_argument('--img-raw-folder', help='location of raw images',
-                        default=imgRawFolder)
-    images_group.add_argument('--img-raw-extra-folder', help='location of additional raw images',
-                        default='')
+    group.add_argument('--do-resize-images', 
+        help='resize images in compressed folder',
+        action="store_true", 
+        default=config.get('do_resize_images'))
+    group.add_argument('--skip-resize-images', 
+        help='protect images from resizing',
+        action="store_false", 
+        dest='do_resize_images')
+    group = images_group.add_mutually_exclusive_group()
+    group.add_argument('--do-remeta-images', 
+        help='remeta images in compressed folder',
+        action="store_true", 
+        default=config.get('do_remeta_images'))
+    group.add_argument('--skip-remeta-images', 
+        help='protect images from resizing',
+        action="store_false", 
+        dest='do_remeta_images')
+    images_group.add_argument('--img-raw-folder', 
+        help='location of raw images',
+        default=imgRawFolder)
+    images_group.add_argument('--img-raw-extra-folder', 
+        help='location of additional raw images',
+        default='')
 
     specials_group = parser.add_argument_group('Specials options')
     group = specials_group.add_mutually_exclusive_group()
-    group.add_argument('--do-specials', help='process specials',
-                       action="store_true", default=do_specials)
-    group.add_argument('--skip-specials', help='don\'t process specials',
-                       action="store_false", dest='do_specials')
-    specials_group.add_argument('--current-special', help='prefix of current special code')
-    specials_group.add_argument('--add-special-categories', help='add special items to special category', action="store_true", default=None)
+    group.add_argument('--do-specials', 
+        help='process specials',
+        action="store_true", 
+        default=config.get('do_specials'))
+    group.add_argument('--skip-specials', 
+        help='don\'t process specials',
+        action="store_false", 
+        dest='do_specials')
+    specials_group.add_argument('--current-special', 
+        help='prefix of current special code',
+        default=config.get('current_special', 'SP'))
+    specials_group.add_argument('--add-special-categories', 
+        help='add special items to special category', 
+        action="store_true", 
+        default=config.get('add_special_categories'))
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-dyns', help='process dynamic pricing rules',
-                       action="store_true", default=do_dyns)
-    group.add_argument('--skip-dyns', help='don\'t process dynamic pricing rules',
-                       action="store_false", dest='do_dyns')
+    group.add_argument('--do-dyns', 
+        help='process dynamic pricing rules',
+        action="store_true", 
+        default=config.get('do_dyns'))
+    group.add_argument('--skip-dyns', 
+        help='don\'t process dynamic pricing rules',
+        action="store_false", 
+        dest='do_dyns')
 
     parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
     parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
     # parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
     # parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
-    parser.add_argument('--limit', type=int, help='global limit of objects to process')
 
     group = parser.add_argument_group('Debug options')
     group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
@@ -328,45 +425,45 @@ def main():
             download_master = args.download_master
         if args.download_slave is not None:
             download_slave = args.download_slave
-        slave_timeout = args.slave_timeout  
-        slave_limit = args.slave_limit
-        slave_offset = args.slave_offset
+        # slave_timeout = args.slave_timeout  
+        # slave_limit = args.slave_limit
+        # slave_offset = args.slave_offset
 
-        if args.update_slave is not None:
-            update_slave = args.update_slave
-        if args.current_special:
-            current_special = args.current_special
-        if args.add_special_categories:
-            add_special_categories = args.add_special_categories
+        # if args.update_slave is not None:
+        #     update_slave = args.update_slave
+        # if args.current_special:
+        #     current_special = args.current_special
+        # if args.add_special_categories:
+        #     add_special_categories = args.add_special_categories
         # if args.taxo_depth:
         #     taxoDepth = args.taxo_depth
         # if args.item_depth:
         #     itemDepth = args.item_depth
-        if args.do_images is not None:
-            do_images = args.do_images
-        if args.do_specials is not None:
-            do_specials = args.do_specials
-        if args.do_dyns is not None:
-            do_dyns = args.do_dyns
+        # if args.do_images is not None:
+        #     do_images = args.do_images
+        # if args.do_specials is not None:
+        #     do_specials = args.do_specials
+        # if args.do_dyns is not None:
+        #     do_dyns = args.do_dyns
         if args.do_sync is not None:
             do_sync = args.do_sync and download_slave
-        if args.show_report is not None:
-            show_report = args.show_report
-        if args.print_report is not None:
-            print_report = args.print_report
-        if args.report_and_quit is not None:
-            report_and_quit = args.report_and_quit
-        global_limit = args.limit
+        # if args.show_report is not None:
+            # show_report = args.show_report
+        # if args.print_report is not None:
+        #     print_report = args.print_report
+        # if args.report_and_quit is not None:
+        #     report_and_quit = args.report_and_quit
+        # global_limit = args.download_limit
 
         schema = args.schema
         variant = args.variant
-        do_images = args.do_images
-        do_delete_images = args.do_delete_images
-        do_resize_images = args.do_resize_images
-        do_resize_images = args.do_resize_images
-        do_categories = args.do_categories
-        do_variations = args.do_variations
-        do_problematic = args.do_problematic
+        # do_images = args.do_images
+        # do_delete_images = args.do_delete_images
+        # do_resize_images = args.do_resize_images
+        # do_resize_images = args.do_resize_images
+        # do_categories = args.do_categories
+        # do_variations = args.do_variations
+        # do_problematic = args.do_problematic
         imgRawFolder = args.img_raw_folder
         imgRawFolders = [imgRawFolder]
         if args.img_raw_extra_folder is not None:
@@ -432,7 +529,7 @@ def main():
     flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
     catPath = os.path.join(outFolder , "categories-"+suffix+".csv")
     myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
-    bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
+    # bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
     repName = "prod_sync_report%s.html" % suffix
     repPath = os.path.join(outFolder, repName)
     repWebPath = os.path.join(webFolder, repName)
@@ -449,19 +546,19 @@ def main():
     # refFolder = wpaiFolder
     imgDst = os.path.join(imgCmpFolder, "images-"+schema)
 
-    maxDepth = taxoDepth + itemDepth
+    # maxDepth = taxoDepth + itemDepth
 
-    if current_special:
+    if args.current_special:
         CSVParse_Woo.specialsCategory = "Specials"
-        CSVParse_Woo.current_special = current_special
-        CSVParse_Woo.add_special_categories = add_special_categories
+        CSVParse_Woo.current_special = args.current_special
+        CSVParse_Woo.add_special_categories = args.add_special_categories
 
-    if skip_google_download:
+    if not download_master:
         SyncClient_GDrive.skip_download = True
 
-    CSVParse_Woo.do_images = do_images
-    CSVParse_Woo.do_dyns = do_dyns
-    CSVParse_Woo.do_specials = do_specials
+    CSVParse_Woo.do_images = args.do_images
+    CSVParse_Woo.do_dyns = args.do_dyns
+    CSVParse_Woo.do_specials = args.do_specials
 
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
@@ -471,7 +568,7 @@ def main():
             print "testMode disabled"
         if not download_master:
             print "no download_master"
-        if not update_slave:
+        if not args.update_slave:
             print "not updating slave"
 
     #
@@ -488,15 +585,15 @@ def main():
 
     exclude_cols = []
 
-    if not do_images:
+    if not args.do_images:
         exclude_cols.append('Images')
         exclude_cols.append('imgsum')
 
-    if not do_categories:
+    if not args.do_categories:
         exclude_cols.append('catsum')
         exclude_cols.append('catlist')
 
-    if not do_dyns:
+    if not args.do_dyns:
         exclude_cols.append('DYNCAT')
         exclude_cols.append('DYNPROD')
         exclude_cols.append('spsum')
@@ -508,7 +605,7 @@ def main():
         exclude_cols.append('dprpsum')
         exclude_cols.append('pricing_rules')
 
-    if not do_specials:
+    if not args.do_specials:
         exclude_cols.append('SCHEDULE')
         exclude_cols.append('sale_price')
         exclude_cols.append('sale_price_dates_from')
@@ -552,9 +649,9 @@ def main():
         'api_key':wc_api_key,
         'api_secret':wc_api_secret,
         'url':store_url,
-        'timeout':slave_timeout,
-        'offset':slave_offset,
-        'limit':slave_limit
+        'timeout':args.slave_timeout,
+        'offset':args.slave_offset,
+        'limit':args.slave_limit
     }
 
     apiProductParserArgs = {
@@ -603,7 +700,7 @@ def main():
             Registrar.registerMessage("GDrive params: %s" % gDriveParams)
         with SyncClient_GDrive(gDriveParams) as client:
             if schema in woo_schemas:
-                if do_dyns:
+                if args.do_dyns:
                     Registrar.registerMessage("analysing dprc rules")
                     dynParser = CSVParse_Dyn()
                     client.analyseRemote(dynParser, dprcGID, dprcPath)
@@ -616,7 +713,7 @@ def main():
                     dprpRules = dynParser.taxos
                     productParserArgs['dprpRules'] = dprpRules
 
-                if do_specials:
+                if args.do_specials:
                     Registrar.registerMessage("analysing specials")
                     specialParser = CSVParse_Special()
                     client.analyseRemote(specialParser, specGID, specPath)
@@ -627,10 +724,10 @@ def main():
 
             if Registrar.DEBUG_PROGRESS:
                 print("analysing remote GDrive products")
-            client.analyseRemote(productParser, genGID, genPath, limit=global_limit)
+            client.analyseRemote(productParser, genGID, genPath, limit=args.download_limit)
     else:
         if schema in woo_schemas:
-            if do_dyns:
+            if args.do_dyns:
                 Registrar.registerMessage("analysing dprc rules")
                 dynParser = CSVParse_Dyn()
                 dynParser.analyseFile(dprcPath)
@@ -643,7 +740,7 @@ def main():
                 dprpRules = dynParser.taxos
                 productParserArgs['dprpRules'] = dprpRules
 
-            if do_specials:
+            if args.do_specials:
                 Registrar.registerMessage("analysing specials")
                 specialParser = CSVParse_Special()
                 specialParser.analyseFile(specPath)
@@ -655,7 +752,7 @@ def main():
         productParser = productParserClass(**productParserArgs)
         if Registrar.DEBUG_PROGRESS:
             print("analysing local GDrive products")
-        productParser.analyseFile(genPath, limit=global_limit)
+        productParser.analyseFile(genPath, limit=args.download_limit)
 
     products = productParser.products
 
@@ -704,7 +801,7 @@ def main():
     # Images
     #########################################
 
-    if do_images and schema in woo_schemas:
+    if args.do_images and schema in woo_schemas:
         # e = UserWarning("do_images currently not supported")
         # Registrar.registerError(e)
         # raise e
@@ -736,7 +833,7 @@ def main():
         for f in ls_cmp:
             if f not in images.keys():
                 Registrar.registerWarning("DELETING FROM REFLATTENED", f)
-                if do_delete_images:
+                if args.do_delete_images:
                     os.remove(os.path.join(imgDst,f))
 
         for img, data in images.items():
@@ -787,14 +884,14 @@ def main():
             # ------
 
             try:
-                if do_remeta_images:
+                if args.do_remeta_images:
                     metagator = MetaGator(imgRawPath)
             except Exception, e:
                 invalidImage(img, "error creating metagator: " + str(e))
                 continue
 
             try:
-                if do_remeta_images:
+                if args.do_remeta_images:
                     metagator.update_meta({
                         'title': title,
                         'description': description
@@ -806,7 +903,7 @@ def main():
             # RESIZE
             # ------
 
-            if do_resize_images:
+            if args.do_resize_images:
                 if not os.path.isfile(imgRawPath) :
                     invalidImage(img, "SOURCE FILE NOT FOUND: %s" % imgRawPath)
                     continue
@@ -833,7 +930,7 @@ def main():
                     image.thumbnail(thumbsize)
                     image.save(imgDstPath)
 
-                    if do_remeta_images:
+                    if args.do_remeta_images:
                         imgmeta = MetaGator(imgDstPath)
                         imgmeta.write_meta(title, description)
                         # print imgmeta.read_meta()
@@ -897,11 +994,11 @@ def main():
             categoryList.exportItems(catPath, ColData_Base.getColNames(categoryCols))
 
         #specials
-        if do_specials:
+        if args.do_specials:
             specialProducts = productParser.onspecial_products.values()
             if specialProducts:
                 flaName, flaExt = os.path.splitext(flaPath)
-                flsPath = os.path.join(outFolder , flaName+"-"+current_special+flaExt)
+                flsPath = os.path.join(outFolder , flaName+"-"+args.current_special+flaExt)
                 specialProductList = WooProdList(specialProducts)
                 specialProductList.exportItems(
                     flsPath,
@@ -910,7 +1007,7 @@ def main():
             specialVariations = productParser.onspecial_variations.values()
             if specialVariations:
                 flvName, flvExt = os.path.splitext(flvPath)
-                flvsPath = os.path.join(outFolder , flvName+"-"+current_special+flvExt)
+                flvsPath = os.path.join(outFolder , flvName+"-"+args.current_special+flvExt)
 
                 spVariationList = WooVarList(specialVariations)
                 spVariationList.exportItems(
@@ -995,15 +1092,15 @@ def main():
 
         with ProdSyncClient_WC(wcApiParams) as client:
             # try:
-            if do_categories:
+            if args.do_categories:
                 client.analyseRemoteCategories(apiProductParser)
 
             if Registrar.DEBUG_PROGRESS:
                 print "analysing WC API data"
-            client.analyseRemote(apiProductParser, limit=global_limit)
+            client.analyseRemote(apiProductParser, limit=args.download_limit)
             # except Exception, e:
             #     Registrar.registerError(e)
-            #     report_and_quit = True
+            #     args.report_and_quit = True
 
         # print apiProductParser.categories
     else:
@@ -1049,7 +1146,7 @@ def main():
     join_categories = OrderedDict()
 
     if do_sync:
-        if do_categories:
+        if args.do_categories:
             print "matching %d master categories with %d slave categories" % (
                  len(productParser.categories),
                  len(apiProductParser.categories)
@@ -1186,7 +1283,7 @@ def main():
                     mApiData['name'] = category.wooCatName
                     # print "uploading category: %s" % mApiData
                     # pprint(mApiData)
-                    if update_slave:
+                    if args.update_slave:
                         response = client.createItem(mApiData)
                         # print response
                         # print response.json()
@@ -1267,7 +1364,7 @@ def main():
 
             # print syncUpdate.tabulate()
 
-            if do_categories:
+            if args.do_categories:
                 categoryMatcher.clear()
                 categoryMatcher.processRegisters(sObject.categories, mObject.categories)
 
@@ -1353,7 +1450,7 @@ def main():
             if syncUpdate.sUpdated:
                 insort(slaveProductUpdates, syncUpdate)
 
-        if do_variations:
+        if args.do_variations:
 
             variationMatcher = VariationMatcher()
             variationMatcher.processRegisters(apiProductParser.variations, productParser.variations)
@@ -1405,7 +1502,7 @@ def main():
 
         # except Exception, e:
         #     Registrar.registerError(repr(e))
-        #     report_and_quit = True
+        #     args.report_and_quit = True
 
     #########################################
     # Write Report
@@ -1506,7 +1603,7 @@ def main():
             if matchingGroup.sections:
                 reporter.addGroup(matchingGroup)
 
-            if do_categories:
+            if args.do_categories:
                 matchingGroup = HtmlReporter.Group('category_matching', 'Category Matching Results')
                 if globalCategoryMatches:
                     matchingGroup.addSection(
@@ -1547,7 +1644,7 @@ def main():
                 if matchingGroup.sections:
                     reporter.addGroup(matchingGroup)
 
-            if do_variations:
+            if args.do_variations:
                 matchingGroup = HtmlReporter.Group('variation_matching', 'Variation Matching Results')
                 if globalVariationMatches:
                     matchingGroup.addSection(
@@ -1612,7 +1709,7 @@ def main():
 
             reporter.addGroup(syncingGroup)
 
-            if do_variations:
+            if args.do_variations:
                 syncingGroup = HtmlReporter.Group('variation_sync', 'Variation Syncing Results')
 
                 syncingGroup.addSection(
@@ -1636,9 +1733,9 @@ def main():
                 reporter.addGroup(syncingGroup)
 
 
-        report_cats = do_sync and do_categories
+        report_cats = do_sync and args.do_categories
         if report_cats:
-            "reporting cats. do_sync: %s, do_categories: %s" % (repr(do_sync), repr(do_categories))
+            "reporting cats. do_sync: %s, do_categories: %s" % (repr(do_sync), repr(args.do_categories))
             syncingGroup = HtmlReporter.Group('cats', 'Category Syncing Results')
 
             syncingGroup.addSection(
@@ -1734,7 +1831,7 @@ def main():
         resFile.write( reporter.getDocumentUnicode() )
 
 
-    if report_and_quit:
+    if args.report_and_quit:
         sys.exit(ExitStatus.success)
 
 
@@ -1743,11 +1840,11 @@ def main():
     #########################################
 
     allProductUpdates = slaveProductUpdates
-    if do_variations:
+    if args.do_variations:
         allProductUpdates += slaveVariationUpdates
-    if do_problematic:
+    if args.do_problematic:
         allProductUpdates += problematicProductUpdates
-        if do_variations:
+        if args.do_variations:
             allProductUpdates += problematicVariationUpdates
 
     slaveFailures = []
@@ -1762,7 +1859,7 @@ def main():
                 if Registrar.DEBUG_PROGRESS:
                     updateProgressCounter.maybePrintUpdate(count)
 
-                if update_slave and update.sUpdated :
+                if args.update_slave and update.sUpdated :
                     # print "attempting update to %s " % str(update)
 
                     try:
@@ -1787,7 +1884,7 @@ def main():
     #########################################
 
     shutil.copyfile(repPath, repWebPath)
-    if show_report:
+    if args.show_report:
         if webBrowser:
             os.environ['BROWSER'] = webBrowser
             # print "set browser environ to %s" % repr(webBrowser)
