@@ -586,48 +586,56 @@ def main():
     exclude_cols = []
 
     if not args.do_images:
-        exclude_cols.append('Images')
-        exclude_cols.append('imgsum')
+        exclude_cols.extend([
+            'Images',
+            'imgsum'
+        ])
 
     if not args.do_categories:
-        exclude_cols.append('catsum')
-        exclude_cols.append('catlist')
+        exclude_cols.extend([
+            'catsum',
+            'catlist'
+        ])  
 
     if not args.do_dyns:
-        exclude_cols.append('DYNCAT')
-        exclude_cols.append('DYNPROD')
-        exclude_cols.append('spsum')
-        exclude_cols.append('dprclist')
-        exclude_cols.append('dprplist')
-        exclude_cols.append('dprcIDlist')
-        exclude_cols.append('dprpIDlist')
-        exclude_cols.append('dprcsum')
-        exclude_cols.append('dprpsum')
-        exclude_cols.append('pricing_rules')
+        exclude_cols.extend([
+            'DYNCAT',
+            'DYNPROD',
+            'spsum',
+            'dprclist',
+            'dprplist',
+            'dprcIDlist',
+            'dprpIDlist',
+            'dprcsum',
+            'dprpsum',
+            'pricing_rules'
+        ])
 
     if not args.do_specials:
-        exclude_cols.append('SCHEDULE')
-        exclude_cols.append('sale_price')
-        exclude_cols.append('sale_price_dates_from')
-        exclude_cols.append('sale_price_dates_to')
-        exclude_cols.append('RNS')
-        exclude_cols.append('RNF')
-        exclude_cols.append('RNT')
-        exclude_cols.append('RPS')
-        exclude_cols.append('RPF')
-        exclude_cols.append('RPT')
-        exclude_cols.append('WNS')
-        exclude_cols.append('WNF')
-        exclude_cols.append('WNT')
-        exclude_cols.append('WPS')
-        exclude_cols.append('WPF')
-        exclude_cols.append('WPT')
-        exclude_cols.append('DNS')
-        exclude_cols.append('DNF')
-        exclude_cols.append('DNT')
-        exclude_cols.append('DPS')
-        exclude_cols.append('DPF')
-        exclude_cols.append('DPT')
+        exclude_cols.extend([
+            'SCHEDULE',
+            'sale_price',
+            'sale_price_dates_from',
+            'sale_price_dates_to',
+            'RNS',
+            'RNF',
+            'RNT',
+            'RPS',
+            'RPF',
+            'RPT',
+            'WNS',
+            'WNF',
+            'WNT',
+            'WPS',
+            'WPF',
+            'WPT',
+            'DNS',
+            'DNF',
+            'DNT',
+            'DPS',
+            'DPF',
+            'DPT'
+        ])
 
 
     ########################################
