@@ -380,10 +380,10 @@ def main():
     specials_group.add_argument('--current-special', 
         help='prefix of current special code',
         default=config.get('current_special', 'SP'))
-    specials_group.add_argument('--add-special-categories', 
-        help='add special items to special category', 
-        action="store_true", 
-        default=config.get('add_special_categories'))
+    # specials_group.add_argument('--add-special-categories', 
+    #     help='add special items to special category', 
+    #     action="store_true", 
+    #     default=config.get('add_special_categories'))
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-dyns', 
@@ -453,8 +453,9 @@ def main():
         #     do_specials = args.do_specials
         # if args.do_dyns is not None:
         #     do_dyns = args.do_dyns
-        if args.do_sync is not None:
-            do_sync = args.do_sync and args.download_slave
+
+        do_sync = args.do_sync and args.download_slave
+        add_special_categories = args.do_specials and args.current_special
         # if args.show_report is not None:
             # show_report = args.show_report
         # if args.print_report is not None:
