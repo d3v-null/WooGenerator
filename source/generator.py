@@ -455,7 +455,7 @@ def main():
         #     do_dyns = args.do_dyns
 
         do_sync = args.do_sync and args.download_slave
-        add_special_categories = args.do_specials and args.current_special
+        add_special_categories = args.do_specials and args.do_categories and args.current_special
         # if args.show_report is not None:
             # show_report = args.show_report
         # if args.print_report is not None:
@@ -569,7 +569,7 @@ def main():
     if args.current_special:
         CSVParse_Woo.specialsCategory = "Specials"
         CSVParse_Woo.current_special = args.current_special
-        CSVParse_Woo.add_special_categories = args.add_special_categories
+        CSVParse_Woo.add_special_categories = add_special_categories
 
     if not args.download_master:
         SyncClient_GDrive.skip_download = True
@@ -1331,9 +1331,9 @@ def main():
 
 
 
-        # print "product parser"
         # print productParser.toStrTree()
         if Registrar.DEBUG_CATS:
+            print "product parser"
             for key, category in productParser.categories.items():
                 print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
         if Registrar.DEBUG_CATS:

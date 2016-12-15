@@ -203,7 +203,7 @@ case "$sync_subject" in
         style_info "current special is ${current_special}"
         if [[ ! -z $current_special ]]
         then
-          sync_command+=('--add-special-categories')
+          # sync_command+=('--add-special-categories')
           sync_command+=('--current-special' "$current_special")
         fi
       fi
