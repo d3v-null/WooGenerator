@@ -15,19 +15,19 @@ from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
 from utils import HtmlReporter
 from csvparse_abstract import Registrar
-from csvparse_shop import ShopProdList, ShopObjList
+from csvparse_shop import ShopObjList # ShopProdList, 
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_api import CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
 from csvparse_dyn import CSVParse_Dyn
-from csvparse_flat import CSVParse_Special, CSVParse_WPSQLProd
-from csvparse_api import CSVParse_Woo_Api
+from csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
+# from csvparse_api import CSVParse_Woo_Api
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Prod, SyncUpdate_Prod_Woo, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo
+from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, , 
 from bisect import insort
 from matching import MatchList
 from tabulate import tabulate
@@ -35,8 +35,8 @@ import urlparse
 import webbrowser
 import re
 from pprint import pformat, pprint
-import time
-from copy import deepcopy, copy
+# import time
+# from copy import deepcopy, copy
 from exitstatus import ExitStatus
 
 from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
@@ -1129,7 +1129,7 @@ def main():
     #########################################
 
     sDeltaUpdates = []
-    mDeltaUpdates = []
+    # mDeltaUpdates = []
     slaveProductUpdates = []
     problematicProductUpdates = []
     slaveVariationUpdates = []
@@ -1521,15 +1521,15 @@ def main():
     with io.open(repPath, 'w+', encoding='utf8') as resFile:
         reporter = HtmlReporter()
 
-        basic_cols = ColData_Woo.getBasicCols()
-        csv_colnames = ColData_Woo.getColNames(
-            OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
-                # 'address_reason',
-                # 'name_reason',
-                # 'Edited Name',
-                # 'Edited Address',
-                # 'Edited Alt Address',
-            ]).items()))
+        # basic_cols = ColData_Woo.getBasicCols()
+        # csv_colnames = ColData_Woo.getColNames(
+        #     OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
+        #         # 'address_reason',
+        #         # 'name_reason',
+        #         # 'Edited Name',
+        #         # 'Edited Address',
+        #         # 'Edited Alt Address',
+        #     ]).items()))
 
         # print repr(basic_colnames)
         # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
@@ -1882,6 +1882,7 @@ def main():
                         #     'exception':repr(e)
                         # })
                         SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+                        slaveFailures.append(update)
                 # else:
                 #     print "no update made to %s " % str(update)
 
