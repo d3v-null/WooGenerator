@@ -51,7 +51,7 @@ import yaml
 # import MySQLdb
 # from sshtunnel import SSHTunnelForwarder
 
-testMode = False
+# testMode = False
 # testMode = True
 
 # program exit status
@@ -84,7 +84,7 @@ thumbsize = 1920, 1200
 
 def main():
 
-    global testMode, inFolder, outFolder, logFolder, srcFolder, \
+    global inFolder, outFolder, logFolder, srcFolder, \
         yamlPath, repPath, status
 
     ### Process YAML file for defaults ###
@@ -194,7 +194,7 @@ def main():
     parser.add_argument('--testmode', 
         help='Run in test mode with test servers',
         action='store_true',
-        default=testMode)
+        default=False)
 
 
     download_group = parser.add_argument_group('Download options')
@@ -419,12 +419,12 @@ def main():
             Registrar.DEBUG_PROGRESS = False
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
-        if args.testmode is not None:
-            testMode = args.testmode
-        if args.download_master is not None:
-            download_master = args.download_master
-        if args.download_slave is not None:
-            download_slave = args.download_slave
+        # if args.testmode is not None:
+        #     testMode = args.testmode
+        # if args.download_master is not None:
+        #     download_master = args.download_master
+        # if args.download_slave is not None:
+        #     download_slave = args.download_slave
         # slave_timeout = args.slave_timeout  
         # slave_limit = args.slave_limit
         # slave_offset = args.slave_offset
@@ -446,7 +446,7 @@ def main():
         # if args.do_dyns is not None:
         #     do_dyns = args.do_dyns
         if args.do_sync is not None:
-            do_sync = args.do_sync and download_slave
+            do_sync = args.do_sync and args.download_slave
         # if args.show_report is not None:
             # show_report = args.show_report
         # if args.print_report is not None:
@@ -503,7 +503,7 @@ def main():
     #process YAML file after determining mode
 
     with open(yamlPath) as stream:
-        optionNamePrefix = 'test_' if testMode else ''
+        optionNamePrefix = 'test_' if args.testmode else ''
         config = yaml.load(stream)
         wc_api_key = config.get(optionNamePrefix+'wc_api_key')
         wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
@@ -553,7 +553,7 @@ def main():
         CSVParse_Woo.current_special = args.current_special
         CSVParse_Woo.add_special_categories = args.add_special_categories
 
-    if not download_master:
+    if not args.download_master:
         SyncClient_GDrive.skip_download = True
 
     CSVParse_Woo.do_images = args.do_images
@@ -562,11 +562,11 @@ def main():
 
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
-        if testMode:
+        if args.testmode:
             print "testMode enabled"
         else:
             print "testMode disabled"
-        if not download_master:
+        if not args.download_master:
             print "no download_master"
         if not args.update_slave:
             print "not updating slave"
@@ -695,7 +695,7 @@ def main():
         else:
             productParserArgs['schema'] = schema
             productParserClass = CSVParse_Woo
-    if download_master:
+    if args.download_master:
         if Registrar.DEBUG_GDRIVE:
             Registrar.registerMessage("GDrive params: %s" % gDriveParams)
         with SyncClient_GDrive(gDriveParams) as client:
@@ -1084,7 +1084,7 @@ def main():
     # Attempt download API data
     #########################################
 
-    if download_slave:
+    if args.download_slave:
 
         apiProductParser = CSVParse_Woo_Api(
             **apiProductParserArgs
@@ -1524,7 +1524,7 @@ def main():
             ]).items()))
 
         # print repr(basic_colnames)
-        unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
+        # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
         if do_sync and (sDeltaUpdates):
@@ -1532,7 +1532,7 @@ def main():
             deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
 
             sDeltaList = ShopObjList(filter(None,
-                                [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
+                [deltaSyncUpdate.newSObject for deltaSyncUpdate in sDeltaUpdates]))
 
             deltaCols = ColData_Woo.getDeltaCols()
 
