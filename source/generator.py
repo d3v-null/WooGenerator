@@ -1170,15 +1170,14 @@ def main():
             categoryMatcher.clear()
             categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
 
-
-            validCategoryMatches = []
-            validCategoryMatches += categoryMatcher.pureMatches
-
             if Registrar.DEBUG_CATS:
                 if categoryMatcher.pureMatches:
                     Registrar.registerMessage("All Category matches:\n%s"%(
                         '\n'.join(map(str,categoryMatcher.matches))
                     ))
+
+            validCategoryMatches = []
+            validCategoryMatches += categoryMatcher.pureMatches
 
             if categoryMatcher.duplicateMatches:
                 # e = UserWarning(
@@ -1271,67 +1270,78 @@ def main():
                         newVal = warning['oldWinnerValue']
                         productParser.categories[update.MasterID][col] = newVal
 
-            # create categories that do not yet exist on slave
+            if Registrar.DEBUG_CATS:
+                Registrar.registerMessage("NEW CATEGORIES: %d" % (len(slavelessCategoryMatches)))
 
-            # print "PRINTING NEW CATEGORIES: %d" % (len(slavelessCategoryMatches))
+            if args.auto_create_new:
+                # create categories that do not yet exist on slave
 
-
-            # Registrar.DEBUG_API = True
-
-            with CatSyncClient_WC(wcApiParams) as client:
                 if Registrar.DEBUG_CATS:
-                    Registrar.registerMessage("created cat client")
-                new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
-                if Registrar.DEBUG_CATS:
-                    Registrar.registerMessage("new categories %s" % new_categories)
+                    Registrar.DEBUG_API = True
 
-                while new_categories:
-                    category = new_categories.pop(0)
-                    if category.parent:
-                        parent = category.parent
-                        if not parent.isRoot and not parent.WPID and parent in new_categories:
-                            new_categories.append(category)
-                            continue
+                with CatSyncClient_WC(wcApiParams) as client:
+                    if Registrar.DEBUG_CATS:
+                        Registrar.registerMessage("created cat client")
+                    new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
+                    if Registrar.DEBUG_CATS:
+                        Registrar.registerMessage("new categories %s" % new_categories)
 
-                    mApiData = category.toApiData(ColData_Woo, 'wp-api')
-                    for key in ['id', 'slug', 'sku']:
-                        if key in mApiData:
-                            del mApiData[key]
-                    mApiData['name'] = category.wooCatName
-                    # print "uploading category: %s" % mApiData
-                    # pprint(mApiData)
-                    if args.update_slave:
-                        response = client.createItem(mApiData)
-                        # print response
-                        # print response.json()
-                        responseApiData = response.json()
-                        responseApiData = responseApiData.get('product_category', responseApiData)
-                        apiProductParser.processApiCategory(responseApiData)
-                        api_cat_translation = OrderedDict()
-                        for key, data in ColData_Woo.getWPAPICategoryCols().items():
-                            try:
-                                wp_api_key = data['wp-api']['key']
-                            except IndexError:
-                                wp_api_key = key
-                            api_cat_translation[wp_api_key] = key
-                        # print "TRANSLATION: ", api_cat_translation
-                        categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
-                        # print "CATEGORY PARSER DATA: ", categoryParserData
+                    while new_categories:
+                        category = new_categories.pop(0)
+                        if category.parent:
+                            parent = category.parent
+                            if not parent.isRoot and not parent.WPID and parent in new_categories:
+                                new_categories.append(category)
+                                continue
 
-                        category.update(categoryParserData)
+                        mApiData = category.toApiData(ColData_Woo, 'wp-api')
+                        for key in ['id', 'slug', 'sku']:
+                            if key in mApiData:
+                                del mApiData[key]
+                        mApiData['name'] = category.wooCatName
+                        # print "uploading category: %s" % mApiData
+                        # pprint(mApiData)
+                        if args.update_slave:
+                            response = client.createItem(mApiData)
+                            # print response
+                            # print response.json()
+                            responseApiData = response.json()
+                            responseApiData = responseApiData.get('product_category', responseApiData)
+                            apiProductParser.processApiCategory(responseApiData)
+                            api_cat_translation = OrderedDict()
+                            for key, data in ColData_Woo.getWPAPICategoryCols().items():
+                                try:
+                                    wp_api_key = data['wp-api']['key']
+                                except IndexError:
+                                    wp_api_key = key
+                                api_cat_translation[wp_api_key] = key
+                            # print "TRANSLATION: ", api_cat_translation
+                            categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
+                            # print "CATEGORY PARSER DATA: ", categoryParserData
 
-                        # print "CATEGORY: ", category
+                            category.update(categoryParserData)
+
+                            # print "CATEGORY: ", category
+            elif slavelessCategoryMatches:
+                for slavelessCategoryMatch in slavelessCategoryMatches:
+                    e = UserWarning("category needs to be created: %s" % slavelessCategoryMatch.mObjects[0])
+                    Registrar.registerWarning(e)
+
+
+
 
         # print "product parser"
         # print productParser.toStrTree()
-        # for key, category in productParser.categories.items():
-        #     print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
-        # print "api product parser"
-        # print "there are %s categories registered" % len(apiProductParser.categories)
-        # print "there are %s children of root" % len(apiProductParser.rootData.children)
-        # print apiProductParser.toStrTree()
-        # for key, category in apiProductParser.categories.items():
-        #     print "%5s | %50s" % (key, category.title[:50])
+        if Registrar.DEBUG_CATS:
+            for key, category in productParser.categories.items():
+                print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
+        if Registrar.DEBUG_CATS:
+            print "api product parser info"
+            print "there are %s slave categories registered" % len(apiProductParser.categories)
+            print "there are %s children of API root" % len(apiProductParser.rootData.children)
+            print apiProductParser.toStrTree()
+            for key, category in apiProductParser.categories.items():
+                print "%5s | %50s" % (key, category.title[:50])
 
         # categoryMatcher = CategoryMatcher()
         # categoryMatcher.clear()
@@ -1525,9 +1535,6 @@ def main():
 
                 if syncUpdate.sUpdated:
                     insort(slaveVariationUpdates, syncUpdate)
-
-
-        print debugUtils.hashify("COMPLETED MERGE")
 
         # except Exception, e:
         #     Registrar.registerError(repr(e))
