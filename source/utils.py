@@ -2767,6 +2767,8 @@ class Registrar(object):
     DEBUG_MRO = False
     DEBUG_GDRIVE = False
     DEBUG_SPECIAL = False
+    DEBUG_CATS = False
+    DEBUG_VARS = False
 
     # def __init__(self):
         # self.objectIndexer = id

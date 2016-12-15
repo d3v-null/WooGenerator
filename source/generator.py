@@ -413,6 +413,7 @@ def main():
     group.add_argument('--debug-mro', action='store_true', dest='debug_mro')
     group.add_argument('--debug-gdrive', action='store_true', dest='debug_gdrive')
     group.add_argument('--debug-special', action='store_true', dest='debug_special')
+    group.add_argument('--debug-cats', action='store_true', dest='debug_cats')
 
     args = parser.parse_args()
     if args:
@@ -472,6 +473,10 @@ def main():
         # do_variations = args.do_variations
         # do_problematic = args.do_problematic
         # imgRawFolder = args.img_raw_folder
+
+        if args.auto_create_new:
+            raise UserWarning("auto-create not implemented yet")
+
         imgRawFolders = [args.img_raw_folder]
         if args.img_raw_extra_folder is not None:
             imgRawFolders.append(args.img_raw_extra_folder)
@@ -506,6 +511,8 @@ def main():
             Registrar.DEBUG_GDRIVE = args.debug_gdrive
         if args.debug_special is not None:
             Registrar.DEBUG_SPECIAL = args.debug_special
+        if args.debug_cats is not None:
+            Registrar.DEBUG_CATS = args.debug_cats
 
     #process YAML file after determining mode
 
@@ -1279,9 +1286,11 @@ def main():
             # Registrar.DEBUG_API = True
 
             with CatSyncClient_WC(wcApiParams) as client:
-                print "created client"
+                if Registrar.DEBUG_CATS:
+                    Registrar.registerMessage("created cat client")
                 new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
-                print new_categories
+                if Registrar.DEBUG_CATS:
+                    Registrar.registerMessage("new categories %s" % new_categories)
 
                 while new_categories:
                     category = new_categories.pop(0)
@@ -1401,14 +1410,18 @@ def main():
                     [slave_category.WPID for slave_category in sObject.categories.values() if slave_category.WPID]
                 )
 
-                # print "comparing categories of %s:\n%s\n%s\n%s\n%s"\
-                #     % (
-                #         mObject.codesum,
-                #         str(mObject.categories.values()),
-                #         str(sObject.categories.values()),
-                #         str(master_categories),
-                #         str(slave_categories),
-                #     )
+                if Registrar.DEBUG_CATS:
+                    Registrar.registerMessage(
+                        "comparing categories of %s:\n%s\n%s\n%s\n%s"\
+                        % (
+                            mObject.codesum,
+                            str(mObject.categories.values()),
+                            str(sObject.categories.values()),
+                            str(master_categories),
+                            str(slave_categories),
+                        )
+                    )
+
                 syncUpdate.oldMObject['catlist'] = list(master_categories)
                 syncUpdate.oldSObject['catlist'] = list(slave_categories)
 
@@ -1436,7 +1449,12 @@ def main():
                     updateParams['reason'] = 'identical'
                     syncUpdate.tieUpdate(**updateParams)
 
-                # print categoryMatcher.__repr__()
+                if Registrar.DEBUG_CATS:
+                    Registrar.registerMessage("category matches for update %d:\n%s" % (
+                        matchCount, 
+                        categoryMatcher.__repr__()
+                    ))
+
                 for cat_match in categoryMatcher.masterlessMatches:
                     sIndex = sObject.index
                     if delete_categories.get(sIndex) is None:
@@ -1453,7 +1471,8 @@ def main():
             if not syncUpdate.sUpdated:
                 continue
 
-            print syncUpdate.tabulate()
+            if Registrar.DEBUG_UPDATE:
+                Registrar.registerMessage("sync updates:\n%s" % syncUpdate.tabulate())
 
             if syncUpdate.sUpdated and syncUpdate.sDeltas:
                 insort(sDeltaUpdates, syncUpdate)
@@ -1469,7 +1488,9 @@ def main():
 
             variationMatcher = VariationMatcher()
             variationMatcher.processRegisters(apiProductParser.variations, productParser.variations)
-            print variationMatcher.__repr__()
+
+            if Registrar.DEBUG_VARS:
+                Registrar.registerMessage("variation matcher:\n%s" % variationMatcher.__repr__())
 
             globalVariationMatches.addMatches( variationMatcher.pureMatches)
             masterlessVariationMatches.addMatches( variationMatcher.masterlessMatches)
@@ -1502,7 +1523,8 @@ def main():
                 if not syncUpdate.sUpdated:
                     continue
 
-                print syncUpdate.tabulate()
+                if Registrar.DEBUG_VARS:
+                    Registrar.registerMessage("var update %d:\n%s" % (matchCount, syncUpdate.tabulate()))
 
                 if not syncUpdate.importantStatic:
                     insort(problematicVariationUpdates, syncUpdate)
