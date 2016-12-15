@@ -117,8 +117,8 @@ def main():
         #optional
         imgRawFolder = config.get('imgRawFolder')
         imgCmpFolder = config.get('imgCmpFolder')
-        fallback_schema = config.get('fallback_schema')
-        fallback_variant = config.get('fallback_variant')
+        # fallback_schema = config.get('fallback_schema')
+        # fallback_variant = config.get('fallback_variant')
 
         # ssh_user = config.get('ssh_user')
         # ssh_pass = config.get('ssh_pass')
@@ -197,7 +197,7 @@ def main():
         default=False)
 
 
-    download_group = parser.add_argument_group('Download options')
+    download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
     group.add_argument('--download-master', 
         help='download the master data from google',
@@ -219,6 +219,18 @@ def main():
     download_group.add_argument('--download-limit', 
         help='global limit of objects to download (for debugging)',
         type=int)
+    parser.add_argument('--schema', 
+        help='what schema to process the files as', 
+        default=config.get('fallback_schema'))
+    parser.add_argument('--variant', 
+        help='what variant of schema to process the files', 
+        default=config.get('fallback_variant'))
+    # parser.add_argument('--taxo-depth', 
+    #     help='what depth of taxonomy columns is used in the generator file', 
+    #     default=taxoDepth)
+    # parser.add_argument('--item-depth', 
+    #     help='what depth of item columns is used in the generator file', 
+    #     default=itemDepth)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
@@ -383,11 +395,6 @@ def main():
         action="store_false", 
         dest='do_dyns')
 
-    parser.add_argument('--schema', help='what schema to process the files as', default=fallback_schema)
-    parser.add_argument('--variant', help='what variant of schema to process the files', default=fallback_variant)
-    # parser.add_argument('--taxo-depth', help='what depth of taxonomy columns is used in the generator file', default=taxoDepth)
-    # parser.add_argument('--item-depth', help='what depth of item columns is used in the generator file', default=itemDepth)
-
     group = parser.add_argument_group('Debug options')
     group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
     group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
@@ -521,7 +528,7 @@ def main():
     if variant == "SOL":
         genPath = os.path.join(inFolder, 'generator-accessories.csv')
 
-    suffix = schema
+    suffix = args.schema
     if variant:
         suffix += "-" + variant
 
@@ -542,9 +549,9 @@ def main():
     # xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
     # objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
     # spoPath = os.path.join(outFolder , "specials-"+suffix+".html")
-    # wpaiFolder = os.path.join(webFolder, "images-"+schema)
+    # wpaiFolder = os.path.join(webFolder, "images-"+args.schema)
     # refFolder = wpaiFolder
-    imgDst = os.path.join(imgCmpFolder, "images-"+schema)
+    imgDst = os.path.join(imgCmpFolder, "images-"+args.schema)
 
     # maxDepth = taxoDepth + itemDepth
 
@@ -683,9 +690,9 @@ def main():
             # Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
 
 
-    if schema in myo_schemas:
+    if args.schema in myo_schemas:
         colDataClass = ColData_MYO
-    elif schema in woo_schemas:
+    elif args.schema in woo_schemas:
         colDataClass = ColData_Woo
     else:
         colDataClass = ColData_Base
@@ -693,21 +700,21 @@ def main():
         'cols': colDataClass.getImportCols(),
         'defaults': colDataClass.getDefaults(),
     })
-    if schema in myo_schemas:
+    if args.schema in myo_schemas:
         productParserClass = CSVParse_MYO
-    elif schema in woo_schemas:
-        if schema == "TT":
+    elif args.schema in woo_schemas:
+        if args.schema == "TT":
             productParserClass = CSVParse_TT
-        elif schema == "VT":
+        elif args.schema == "VT":
             productParserClass = CSVParse_VT
         else:
-            productParserArgs['schema'] = schema
+            productParserArgs['schema'] = args.schema
             productParserClass = CSVParse_Woo
     if args.download_master:
         if Registrar.DEBUG_GDRIVE:
             Registrar.registerMessage("GDrive params: %s" % gDriveParams)
         with SyncClient_GDrive(gDriveParams) as client:
-            if schema in woo_schemas:
+            if args.schema in woo_schemas:
                 if args.do_dyns:
                     Registrar.registerMessage("analysing dprc rules")
                     dynParser = CSVParse_Dyn()
@@ -734,7 +741,7 @@ def main():
                 print("analysing remote GDrive products")
             client.analyseRemote(productParser, genGID, genPath, limit=args.download_limit)
     else:
-        if schema in woo_schemas:
+        if args.schema in woo_schemas:
             if args.do_dyns:
                 Registrar.registerMessage("analysing dprc rules")
                 dynParser = CSVParse_Dyn()
@@ -764,7 +771,7 @@ def main():
 
     products = productParser.products
 
-    if schema in woo_schemas:
+    if args.schema in woo_schemas:
         attributes     = productParser.attributes
         vattributes    = productParser.vattributes
         categories     = productParser.categories
@@ -809,7 +816,7 @@ def main():
     # Images
     #########################################
 
-    if args.do_images and schema in woo_schemas:
+    if args.do_images and args.schema in woo_schemas:
         # e = UserWarning("do_images currently not supported")
         # Registrar.registerError(e)
         # raise e
@@ -960,11 +967,11 @@ def main():
     # Export Info to Spreadsheets
     #########################################
 
-    if schema in myo_schemas:
+    if args.schema in myo_schemas:
         product_cols = ColData_MYO.getProductCols()
         productList = MYOProdList(products.values())
         productList.exportItems(myoPath, ColData_Base.getColNames(product_cols))
-    elif schema in woo_schemas:
+    elif args.schema in woo_schemas:
         product_cols = ColData_Woo.getProductCols()
 
         for col in exclude_cols:
