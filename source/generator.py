@@ -115,7 +115,7 @@ def main():
         itemDepth = config.get('itemDepth')
 
         #optional
-        imgRawFolder = config.get('imgRawFolder')
+        # imgRawFolder = config.get('imgRawFolder')
         imgCmpFolder = config.get('imgCmpFolder')
         # fallback_schema = config.get('fallback_schema')
         # fallback_variant = config.get('fallback_variant')
@@ -362,7 +362,7 @@ def main():
         dest='do_remeta_images')
     images_group.add_argument('--img-raw-folder', 
         help='location of raw images',
-        default=imgRawFolder)
+        default=config.get('imgRawFolder'))
     images_group.add_argument('--img-raw-extra-folder', 
         help='location of additional raw images',
         default='')
@@ -462,8 +462,8 @@ def main():
         #     report_and_quit = args.report_and_quit
         # global_limit = args.download_limit
 
-        schema = args.schema
-        variant = args.variant
+        # schema = args.schema
+        # variant = args.variant
         # do_images = args.do_images
         # do_delete_images = args.do_delete_images
         # do_resize_images = args.do_resize_images
@@ -471,8 +471,8 @@ def main():
         # do_categories = args.do_categories
         # do_variations = args.do_variations
         # do_problematic = args.do_problematic
-        imgRawFolder = args.img_raw_folder
-        imgRawFolders = [imgRawFolder]
+        # imgRawFolder = args.img_raw_folder
+        imgRawFolders = [args.img_raw_folder]
         if args.img_raw_extra_folder is not None:
             imgRawFolders.append(args.img_raw_extra_folder)
 
@@ -522,15 +522,15 @@ def main():
     TimeUtils.setWpSrvOffset(wp_srv_offset)
     SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
-    if variant == "ACC":
+    if args.variant == "ACC":
         genPath = os.path.join(inFolder, 'generator-solution.csv')
 
-    if variant == "SOL":
+    if args.variant == "SOL":
         genPath = os.path.join(inFolder, 'generator-accessories.csv')
 
     suffix = args.schema
-    if variant:
-        suffix += "-" + variant
+    if args.variant:
+        suffix += "-" + args.variant
 
     flaPath = os.path.join(outFolder , "flattened-"+suffix+".csv")
     flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
