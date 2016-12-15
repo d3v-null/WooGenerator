@@ -417,12 +417,12 @@ def main():
 
     args = parser.parse_args()
     if args:
-        Registrar.registerMessage(pformat(args))
         if args.verbosity > 0:
             Registrar.DEBUG_PROGRESS = True
             Registrar.DEBUG_ERROR = True
         if args.verbosity > 1:
             Registrar.DEBUG_MESSAGE = True
+            Registrar.registerMessage("raw args: %s" % pformat(vars(args)))
         if args.quiet:
             Registrar.DEBUG_PROGRESS = False
             Registrar.DEBUG_ERROR = False
@@ -476,6 +476,9 @@ def main():
 
         if args.auto_create_new:
             raise UserWarning("auto-create not implemented yet")
+
+        if args.do_images and os.name == 'nt':
+            raise UserWarning("Images not implemented on all platforms yet")
 
         imgRawFolders = [args.img_raw_folder]
         if args.img_raw_extra_folder is not None:
@@ -573,17 +576,6 @@ def main():
     CSVParse_Woo.do_images = args.do_images
     CSVParse_Woo.do_dyns = args.do_dyns
     CSVParse_Woo.do_specials = args.do_specials
-
-    ### DISPLAY CONFIG ###
-    if Registrar.DEBUG_MESSAGE:
-        if args.testmode:
-            print "testMode enabled"
-        else:
-            print "testMode disabled"
-        if not args.download_master:
-            print "no download_master"
-        if not args.update_slave:
-            print "not updating slave"
 
     #
     # gDriveFsParams = {
@@ -690,12 +682,8 @@ def main():
         'taxoDepth': taxoDepth,
     }
 
-    # if Registrar.DEBUG_GEN:
-    if True:
-        for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
-            print( "%s: %s" % (thing, eval(thing)))
-            # Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
-
+    for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
+        Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
 
     if args.schema in myo_schemas:
         colDataClass = ColData_MYO
@@ -744,8 +732,8 @@ def main():
 
             productParser = productParserClass(**productParserArgs)
 
-            if Registrar.DEBUG_PROGRESS:
-                print("analysing remote GDrive products")
+            Registrar.registerProgress("analysing remote GDrive data")
+
             client.analyseRemote(productParser, genGID, genPath, limit=args.download_limit)
     else:
         if args.schema in woo_schemas:
@@ -772,8 +760,9 @@ def main():
                 productParserArgs['specials'] = specials
 
         productParser = productParserClass(**productParserArgs)
-        if Registrar.DEBUG_PROGRESS:
-            print("analysing local GDrive products")
+        
+        Registrar.registerProgress("analysing local GDrive data")
+
         productParser.analyseFile(genPath, limit=args.download_limit)
 
     products = productParser.products
@@ -784,6 +773,11 @@ def main():
         categories     = productParser.categories
         variations     = productParser.variations
         images         = productParser.images
+
+    for category_name, category_list in productParser.categories_name.items():
+        if len(category_list) < 2: continue
+        if listUtils.checkEqual([category.namesum for category in category_list]): continue
+        print "bad category: %50s | %d | %s" % (category_name[:50], len(category_list), str(category_list))
 
     if Registrar.errors:
         print "there were some errors that need to be reviewed before sync can happen"
@@ -796,10 +790,6 @@ def main():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-    for category_name, category_list in productParser.categories_name.items():
-        if len(category_list) < 2: continue
-        if listUtils.checkEqual([category.namesum for category in category_list]): continue
-        print "bad category: %50s | %d | %s" % (category_name[:50], len(category_list), str(category_list))
     #
     # print "printing bad product"
     # Registrar.DEBUG_GEN = True
@@ -824,13 +814,8 @@ def main():
     #########################################
 
     if args.do_images and args.schema in woo_schemas:
-        # e = UserWarning("do_images currently not supported")
-        # Registrar.registerError(e)
-        # raise e
 
-        print ""
-        print "Images:"
-        print "==========="
+        Registrar.registerProgress("processing images")
 
         def invalidImage(img_name, error):
             Registrar.registerError(error, img_name)
@@ -940,7 +925,9 @@ def main():
                             Registrar.registerMessage(img, "DESTINATION FILE NEWER: %s" % imgDstPath)
                         continue
 
-                print "resizing:", img
+                if Registrar.DEBUG_IMG:
+                    Registrar.registerMessage("resizing: %s" % img)
+
                 shutil.copy(imgRawPath, imgDstPath)
 
                 try:
@@ -973,6 +960,8 @@ def main():
     #########################################
     # Export Info to Spreadsheets
     #########################################
+
+    Registrar.registerProgress("Exporting info to spreadsheets")
 
     if args.schema in myo_schemas:
         product_cols = ColData_MYO.getProductCols()
@@ -1117,8 +1106,8 @@ def main():
             if args.do_categories:
                 client.analyseRemoteCategories(apiProductParser)
 
-            if Registrar.DEBUG_PROGRESS:
-                print "analysing WC API data"
+            Registrar.registerProgress("analysing WC API data")
+
             client.analyseRemote(apiProductParser, limit=args.download_limit)
             # except Exception, e:
             #     Registrar.registerError(e)
@@ -1141,6 +1130,8 @@ def main():
     #########################################
     # Attempt Matching
     #########################################
+
+    Registrar.registerProgress("Attempting matching")
 
     sDeltaUpdates = []
     # mDeltaUpdates = []
@@ -1169,10 +1160,11 @@ def main():
 
     if do_sync:
         if args.do_categories:
-            print "matching %d master categories with %d slave categories" % (
-                 len(productParser.categories),
-                 len(apiProductParser.categories)
-            )
+            if Registrar.DEBUG_CATS:
+                Registrar.registerMessage("matching %d master categories with %d slave categories" % (
+                     len(productParser.categories),
+                     len(apiProductParser.categories)
+                )) 
 
             categoryMatcher = CategoryMatcher()
             categoryMatcher.clear()
@@ -1182,10 +1174,11 @@ def main():
             validCategoryMatches = []
             validCategoryMatches += categoryMatcher.pureMatches
 
-            # if categoryMatcher.pureMatches:
-            #     print "ALL MATCHES"
-            #     print '\n'.join(map(str,categoryMatcher.matches))
-
+            if Registrar.DEBUG_CATS:
+                if categoryMatcher.pureMatches:
+                    Registrar.registerMessage("All Category matches:\n%s"%(
+                        '\n'.join(map(str,categoryMatcher.matches))
+                    ))
 
             if categoryMatcher.duplicateMatches:
                 # e = UserWarning(
@@ -1222,7 +1215,6 @@ def main():
                 )
                 Registrar.registerError(e)
                 # raise e
-            # quit()
 
             globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
             masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
@@ -1231,7 +1223,6 @@ def main():
             sync_cols = ColData_Woo.getWPAPICategoryCols()
 
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
-            # quit()
 
             for matchCount, match in enumerate(validCategoryMatches):
                 assert len(match.sObjects) == 1, "invalid number of slave objects in match"
@@ -1256,17 +1247,19 @@ def main():
                         slaveCategoryUpdates.append(syncUpdate)
 
             for update in masterCategoryUpdates:
-                # Registrar.registerMessage(
-                #     "performing update < %5s | %5s > = \n%100s, %100s " \
-                #     % (
-                #         update.MasterID,
-                #         update.SlaveID,
-                #         str(update.oldMObject),
-                #         str(update.oldSObject)
-                #     )
-                # )
+                if Registrar.DEBUG_UPDATE:
+                    Registrar.registerMessage(
+                        "performing update < %5s | %5s > = \n%100s, %100s " \
+                        % (
+                            update.MasterID,
+                            update.SlaveID,
+                            str(update.oldMObject),
+                            str(update.oldSObject)
+                        )
+                    )
                 if not update.MasterID in productParser.categories:
-                    print "couldn't fine pkey %s in productParser.categories" % update.MasterID
+                    e = UserWarning("couldn't fine pkey %s in productParser.categories" % update.MasterID)
+                    Registrar.registerError(e)
                     continue
                 for col, warnings in update.syncWarnings.items():
                     if not col == 'ID':
@@ -1534,7 +1527,6 @@ def main():
                     insort(slaveVariationUpdates, syncUpdate)
 
 
-
         print debugUtils.hashify("COMPLETED MERGE")
 
         # except Exception, e:
@@ -1545,7 +1537,7 @@ def main():
     # Write Report
     #########################################
 
-    print debugUtils.hashify("Write Report")
+    Registrar.registerProgress("Write Report")
 
     with io.open(repPath, 'w+', encoding='utf8') as resFile:
         reporter = HtmlReporter()
@@ -1886,7 +1878,7 @@ def main():
 
     slaveFailures = []
     if allProductUpdates:
-        print debugUtils.hashify("UPDATING %d RECORDS" % len(allProductUpdates))
+        Registrar.registerProgress("UPDATING %d RECORDS" % len(allProductUpdates))
 
         if Registrar.DEBUG_PROGRESS:
             updateProgressCounter = ProgressCounter(len(allProductUpdates))
@@ -1915,11 +1907,12 @@ def main():
                 # else:
                 #     print "no update made to %s " % str(update)
 
-        print debugUtils.hashify("COMPLETED UPDATES")
-
     #########################################
     # Display reports
     #########################################
+
+    Registrar.registerProgress("Displaying reports")
+
 
     shutil.copyfile(repPath, repWebPath)
     if args.show_report:

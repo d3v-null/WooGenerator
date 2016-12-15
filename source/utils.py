@@ -2913,6 +2913,11 @@ class Registrar(object):
         )
 
     @classmethod
+    def registerProgress(self, message):
+        if self.DEBUG_PROGRESS:
+            print debugUtils.hashify(message)
+
+    @classmethod
     def getMessageItems(self, verbosity=0):
         items = self.errors
         if verbosity > 0:
