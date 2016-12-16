@@ -560,6 +560,8 @@ class SyncClient_Rest(SyncClient_Abstract):
         data = dict([(key, value) for key, value in data.items()])
         assert 'name' in data, "name is required to create a category, instead provided with %s" \
                                 % (str(data))
+        if str(data.get('parent')) == str(-1):
+            del data['parent']
         service_endpoint = self.endpoint_plural
         endpoint_singular = self.endpoint_singular
         endpoint_singular = re.sub('/','_', endpoint_singular)
