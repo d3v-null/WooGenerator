@@ -16,8 +16,18 @@ class Match(object):
         return self._mObjects
 
     @property
+    def mObject(self):
+        assert self.mLen == 1
+        return self._mObjects[0]
+
+    @property
     def sObjects(self):
         return self._sObjects
+
+    @property
+    def sObject(self):
+        assert self.sLen == 1
+        return self._sObjects[0]
 
     @property
     def sLen(self):

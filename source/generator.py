@@ -258,6 +258,15 @@ def main():
     update_group.add_argument('--no-create-new', 
         help='do not create new items, print which need to be created',
         action="store_false", 
+        dest="auto_create_new")    
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--auto-delete-old', 
+        help='automatically delete old products if they don\'t exist any more',
+        action="store_true", 
+        default=config.get('auto_delete_old'))
+    update_group.add_argument('--no-delete-old', 
+        help='do not delete old items, print which need to be deleted',
+        action="store_false", 
         dest="auto_create_new")
     update_group.add_argument('--slave-timeout', 
         help='timeout when using the slave api', 
@@ -414,6 +423,7 @@ def main():
     group.add_argument('--debug-gdrive', action='store_true', dest='debug_gdrive')
     group.add_argument('--debug-special', action='store_true', dest='debug_special')
     group.add_argument('--debug-cats', action='store_true', dest='debug_cats')
+    group.add_argument('--debug-vars', action='store_true', dest='debug_vars')
 
     args = parser.parse_args()
     if args:
@@ -477,6 +487,8 @@ def main():
 
         if args.auto_create_new:
             raise UserWarning("auto-create not implemented yet")
+        if args.auto_delete_old:
+            raise UserWarning("auto-delete not implemented yet")
 
         if args.do_images and os.name == 'nt':
             raise UserWarning("Images not implemented on all platforms yet")
@@ -517,6 +529,8 @@ def main():
             Registrar.DEBUG_SPECIAL = args.debug_special
         if args.debug_cats is not None:
             Registrar.DEBUG_CATS = args.debug_cats
+        if args.debug_vars is not None:
+            Registrar.DEBUG_VARS = args.debug_vars
 
     #process YAML file after determining mode
 
@@ -795,9 +809,12 @@ def main():
     # print "printing bad product"
     # Registrar.DEBUG_GEN = True
     # for codesum, product in productParser.products.items():
-    #     if codesum in ['EBT-SPBLK', 'EBT-SPPNK']:
+    #     if codesum in ['CTKPP-TPPV']:
     #         print "product:\n"
     #         pprint(product.items())
+    #         print "product categories:\n"
+    #         pprint(product.categories)
+    #         quit()
     #         print "performing copy\n"
     #         product_copy = copy(product)
     #         print "copy:\n"
@@ -1379,10 +1396,8 @@ def main():
 
         for matchCount, match in enumerate(productMatcher.pureMatches):
             # print "processing match: %s" % match.tabulate()
-            assert len(match.mObjects) == 1
-            assert len(match.sObjects) == 1
-            mObject = match.mObjects[0]
-            sObject = match.sObjects[0]
+            mObject = match.mObject
+            sObject = match.sObject
 
             syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
 
@@ -1500,9 +1515,9 @@ def main():
             masterlessVariationMatches.addMatches( variationMatcher.masterlessMatches)
             slavelessVariationMatches.addMatches( variationMatcher.slavelessMatches)
 
-            sync_cols = ColData_Woo.getWPAPIVariableCols()
+            var_sync_cols = ColData_Woo.getWPAPIVariableCols()
             if Registrar.DEBUG_UPDATE:
-                Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
+                Registrar.registerMessage("var_sync_cols: %s" % repr(var_sync_cols))
 
             if variationMatcher.duplicateMatches:
                 e = UserWarning(
@@ -1514,14 +1529,12 @@ def main():
 
             for matchCount, match in enumerate(variationMatcher.pureMatches):
                 # print "processing match: %s" % match.tabulate()
-                assert len(match.mObjects) == 1
-                assert len(match.sObjects) == 1
-                mObject = match.mObjects[0]
-                sObject = match.sObjects[0]
+                mObject = match.mObject
+                sObject = match.sObject
 
                 syncUpdate = SyncUpdate_Var_Woo(mObject, sObject)
 
-                syncUpdate.update(sync_cols)
+                syncUpdate.update(var_sync_cols)
 
                 # Assumes that GDrive is read only, doesn't care about master updates
                 if not syncUpdate.sUpdated:
@@ -1536,6 +1549,35 @@ def main():
 
                 if syncUpdate.sUpdated:
                     insort(slaveVariationUpdates, syncUpdate)
+
+            for matchCount, match in enumerate(variationMatcher.slavelessMatches):
+                assert match.hasNoSlave
+                mObject = match.mObject
+
+                # syncUpdate = SyncUpdate_Var_Woo(mObject, None)
+
+                # syncUpdate.update(var_sync_cols)
+
+                if Registrar.DEBUG_VARS:
+                    Registrar.registerMessage("var create %d:\n%s" % (matchCount, mObject.identifier))
+
+                #TODO: figure out which attribute terms to add
+
+            for matchCount, match in enumerate(variationMatcher.slavelessMatches):
+                assert match.hasNoMaster
+                sObject = match.sObject
+
+                # syncUpdate = SyncUpdate_Var_Woo(None, sObject)
+
+                # syncUpdate.update(var_sync_cols)
+
+                if Registrar.DEBUG_VARS:
+                    Registrar.registerMessage("var delete: %d:\n%s" % (matchCount, sObject.identifier))
+
+                #TODO: figure out which attribute terms to delete
+
+
+
 
         # except Exception, e:
         #     Registrar.registerError(repr(e))

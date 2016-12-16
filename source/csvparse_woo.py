@@ -957,13 +957,13 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
             specials = objectData.specials
             objectData['spsum'] = '|'.join(specials)
-            if self.DEBUG_WOO:
+            if self.DEBUG_SPECIAL:
                 self.registerMessage("spsum of %s is %s"%(objectData.index, objectData.get('spsum')))
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
                 if special in self.specials.keys():
-                    if self.DEBUG_WOO:
+                    if self.DEBUG_SPECIAL:
                         self.registerMessage( "special %s exists!" % special )
 
                     if not objectData.isVariable :
@@ -974,13 +974,13 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         specialto = specialparams.end_time
 
                         if( not TimeUtils.hasHappenedYet(specialto) ):
-                            if self.DEBUG_WOO:
+                            if self.DEBUG_SPECIAL:
                                 self.registerMessage( "special %s is over: %s" % (special, specialto) )
                             continue
                         else:
                             specialfromString = TimeUtils.wpTimeToString(specialfrom)
                             specialtoString = TimeUtils.wpTimeToString(specialto)
-                            if self.DEBUG_WOO:
+                            if self.DEBUG_SPECIAL:
                                 self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
 
                         for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
@@ -1006,7 +1006,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                                             special_price = dollar
 
                                 if special_price:
-                                    if self.DEBUG_WOO:
+                                    if self.DEBUG_SPECIAL:
                                         self.registerMessage( "special %s price is %s " % (special, special_price) )
                                     tier_key = tier
                                     tier_from_key = tier[:-1]+"F"
@@ -1016,7 +1016,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                                         tier_from_key: TimeUtils.localToServerTime( specialfrom),
                                         tier_to_key: TimeUtils.localToServerTime(specialto)
                                     }.items():
-                                        if self.DEBUG_WOO:
+                                        if self.DEBUG_SPECIAL:
                                             self.registerMessage( "special %s setting objectData[ %s ] to %s " % (special, key, value) )
                                         objectData[key] = value
                                     # objectData[tier_key] = special_price
@@ -1080,10 +1080,58 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             if visible is "hidden":
                 objectData['catalog_visibility'] = "hidden"
 
+    def getSpecialCategory(self, name=None):
+        #TODO: Generate HTML Descriptions properly
+        if not name:
+            categoryName = self.specialsCategory 
+            searchData = {
+                self.objectContainer.titleKey:categoryName
+            }
+            result = self.findCategory(searchData)
+            if not result:
+                result = self.categoryContainer(
+                    {
+                        'HTML Description':'',
+                        'itemsum':categoryName,
+                        'ID':None,
+                        'title':categoryName,
+                        'slug':None
+                    },
+                    parent=self.rootData,
+                    meta=[categoryName, 'SP'],
+                    rowcount=self.rowcount
+                )
+                self.rowcount+=1
+            return result
+        else:
+            categoryName = name
+            searchData = {
+                self.objectContainer.titleKey:categoryName
+            }
+            result = self.findCategory(searchData)
+            if not result:
+                result = self.categoryContainer(
+                    {
+                        'HTML Description':'',
+                        'itemsum':categoryName,
+                        'ID':None,
+                        'title':categoryName,
+                        'slug':None
+                    },
+                    parent=self.getSpecialCategory(),
+                    meta=[categoryName],
+                    rowcount=self.rowcount
+                )
+                self.rowcount+=1
+            return result
+
+
     def postProcessCurrentSpecial(self, objectData):
+        #TODO: actually create special category objects register objects to those categories
         if objectData.isProduct:
             if objectData.has_special_fuzzy(self.current_special):
-                # print ("%s matches special %s"%(str(objectData), self.current_special))
+                if self.DEBUG_SPECIAL:
+                    self.registerMessage("%s matches special %s"%(str(objectData), self.current_special))
                 if self.add_special_categories:
                     objectData['catsum'] = "|".join(
                         filter(None,[
@@ -1092,6 +1140,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                             objectData.extraSpecialCategory
                         ])
                     )
+                    specialCategoryObject = self.getSpecialCategory()
+                    if self.DEBUG_SPECIAL:
+                        self.registerMessage("joining special category: %s" % specialCategoryObject.identifier)
+                    objectData.joinCategory(specialCategoryObject)
+                    extraSpecialCategoryObject = self.getSpecialCategory(objectData.extraSpecialCategory)
+                    if self.DEBUG_SPECIAL:
+                        self.registerMessage("joining extra special category: %s" % extraSpecialCategoryObject.identifier)
+                    objectData.joinCategory(extraSpecialCategoryObject)
                 if objectData.isVariation:
                     self.registerCurrentSpecialVariation(objectData)
                 else:
@@ -1103,14 +1159,16 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['weight', 'length', 'height', 'width']:
                 if not objectData.get(key):
-                    self.registerWarning("All products must have shipping: %s"%key, objectData)
+                    e = UserWarning("All products must have shipping: %s"%key)
+                    self.registerError(e, objectData)
                     break
 
     def postProcessPricing(self, objectData):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['WNR']:
                 if not objectData.get(key):
-                    self.registerWarning("All products must have pricing: %s"%key, objectData)
+                    e = UserWarning("All products must have pricing: %s"%key)
+                    self.registerWarning(e, objectData)
                     break
 
 
