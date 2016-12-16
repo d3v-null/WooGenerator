@@ -1143,11 +1143,13 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                     specialCategoryObject = self.getSpecialCategory()
                     if self.DEBUG_SPECIAL:
                         self.registerMessage("joining special category: %s" % specialCategoryObject.identifier)
-                    objectData.joinCategory(specialCategoryObject)
+                    self.registerJoinCategory(specialCategoryObject, objectData)
+                    assert specialCategoryObject.index in objectData.categories
                     extraSpecialCategoryObject = self.getSpecialCategory(objectData.extraSpecialCategory)
                     if self.DEBUG_SPECIAL:
                         self.registerMessage("joining extra special category: %s" % extraSpecialCategoryObject.identifier)
-                    objectData.joinCategory(extraSpecialCategoryObject)
+                    self.registerJoinCategory(extraSpecialCategoryObject, objectData)
+                    assert extraSpecialCategoryObject.index in objectData.categories
                 if objectData.isVariation:
                     self.registerCurrentSpecialVariation(objectData)
                 else:

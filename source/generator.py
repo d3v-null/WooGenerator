@@ -809,12 +809,11 @@ def main():
     # print "printing bad product"
     # Registrar.DEBUG_GEN = True
     # for codesum, product in productParser.products.items():
-    #     if codesum in ['CTKPP-TPPV']:
+    #     if codesum in ['TCSBT-S']:
     #         print "product:\n"
     #         pprint(product.items())
     #         print "product categories:\n"
     #         pprint(product.categories)
-    #         quit()
     #         print "performing copy\n"
     #         product_copy = copy(product)
     #         print "copy:\n"
@@ -1445,7 +1444,10 @@ def main():
                 syncUpdate.oldSObject['catlist'] = list(slave_categories)
 
                 if changeMatchList:
-                    assert master_categories != slave_categories, "should not be equal"
+                    assert \
+                        master_categories != slave_categories, \
+                        "if changeMatchList exists, then master_categories should not equal slave_categories.\nchangeMatchList: \n%s" % \
+                            "\n".join(map(pformat,changeMatchList))
                     updateParams['reason'] = 'updating'
                     # updateParams['subject'] = SyncUpdate.master_name
 
