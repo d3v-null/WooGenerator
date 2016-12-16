@@ -486,7 +486,8 @@ def main():
         # imgRawFolder = args.img_raw_folder
 
         if args.auto_create_new:
-            raise UserWarning("auto-create not implemented yet")
+            e = UserWarning("auto-create not fully implemented yet")
+            Registrar.registerWarning(e)
         if args.auto_delete_old:
             raise UserWarning("auto-delete not implemented yet")
 
@@ -1241,8 +1242,7 @@ def main():
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
             for matchCount, match in enumerate(validCategoryMatches):
-                assert len(match.sObjects) == 1, "invalid number of slave objects in match"
-                sObject = match.sObjects[0]
+                sObject = match.sObject
                 for mObject in match.mObjects:
                     # mObject = match.mObjects[0]
 
