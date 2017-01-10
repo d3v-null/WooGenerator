@@ -207,7 +207,10 @@ def main():
         help='Run in test mode with test servers',
         action='store_true',
         default=False)
-
+    group.add_argument('--livemode', 
+        help='Run the script on the live databases',
+        action='store_false', 
+        dest='testmode')
 
     download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
