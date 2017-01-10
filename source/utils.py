@@ -449,6 +449,11 @@ class SanitationUtils:
         return re.sub('[^a-z]', '', string.lower())
 
     @classmethod
+    def slugify(cls, string):
+        string = re.sub('[^a-z0-9 _]', '', string.lower())
+        return re.sub(' ', '_', string)
+
+    @classmethod
     def similarComparison(cls, string):
         return cls.compose(
             cls.toLower,

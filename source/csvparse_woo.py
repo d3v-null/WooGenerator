@@ -1100,11 +1100,12 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         'itemsum':categoryName,
                         'ID':None,
                         'title':categoryName,
-                        'slug':None
+                        'slug':SanitationUtils.slugify(categoryName)
                     },
                     parent=self.rootData,
                     meta=[categoryName, 'SP'],
-                    rowcount=self.rowcount
+                    rowcount=self.rowcount,
+                    row=[]
                 )
                 self.rowcount+=1
             return result
@@ -1121,11 +1122,12 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         'itemsum':categoryName,
                         'ID':None,
                         'title':categoryName,
-                        'slug':None
+                        'slug':SanitationUtils.slugify(categoryName)
                     },
                     parent=self.getSpecialCategory(),
                     meta=[categoryName],
-                    rowcount=self.rowcount
+                    rowcount=self.rowcount,
+                    row=[]
                 )
                 self.rowcount+=1
             return result

@@ -43,9 +43,15 @@ class testUnicodeCsvDialectUtils(TestCase):
         csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion('act_out')
         print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
 
+class testSanitationUtils(TestCase):
+    def test_slugify(self):
+        result = SanitationUtils.slugify("Tanbience Specials")
+        self.assertEqual(result, 'tanbience_specials')
+
 if __name__ == '__main__':
     # main()
 
     testSuite = TestSuite()
-    testSuite.addTest(testProgressCounter('test_stripURLHost'))
+    testSuite.addTest(testSanitationUtils('test_slugify'))
+    # testSuite.addTest(testProgressCounter('test_stripURLHost'))
     TextTestRunner().run(testSuite)
