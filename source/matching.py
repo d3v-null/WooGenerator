@@ -17,7 +17,8 @@ class Match(object):
 
     @property
     def mObject(self):
-        assert self.mLen == 1
+        assert self.mLen == 1, \
+            ".mObject assumes mObjects unique, instead it is %d long" % len(self._mObjects)
         return self._mObjects[0]
 
     @property
@@ -26,7 +27,8 @@ class Match(object):
 
     @property
     def sObject(self):
-        assert self.sLen == 1
+        assert self.sLen == 1, \
+            ".sObject assumes mObjects unique, instead it is %d long" % len(self._sObjects)
         return self._sObjects[0]
 
     @property
