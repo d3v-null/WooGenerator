@@ -82,6 +82,18 @@ zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
 thumbsize = 1920, 1200
 
 
+def checkWarnings():
+    if Registrar.errors:
+        print "there were some urgent errors that need to be reviewed before continuing"
+        Registrar.print_message_dict(0)
+        status = 65
+        status = ExitStatus.failure
+        print "\nexiting with status %s\n" % status
+        sys.exit(status)
+    elif Registrar.warnings:
+        print "there were some warnings that should be reviewed"
+        Registrar.print_message_dict(1)
+
 def main():
 
     global inFolder, outFolder, logFolder, srcFolder, \
@@ -795,18 +807,23 @@ def main():
         if listUtils.checkEqual([category.namesum for category in category_list]): continue
         print "bad category: %50s | %d | %s" % (category_name[:50], len(category_list), str(category_list))
 
-    if Registrar.errors:
-        print "there were some errors that need to be reviewed before sync can happen"
-        Registrar.print_message_dict(0)
-        status = 65
-        status = ExitStatus.failure
-        print "\nexiting with status %s\n" % status
-        sys.exit(status)
-    elif Registrar.warnings:
-        print "there were some warnings that should be reviewed"
-        Registrar.print_message_dict(1)
+    checkWarnings()
 
     #
+    # print "testing findCategory"
+    # for catIndex, catObject in productParser.categories.items():
+    #     if catObject.title == "Specials":
+    #         print "the specials category exists"
+    # Registrar.DEBUG_API = True
+    # searchResult = productParser.findCategory({'HTML Description': u'', 'parent_id': 0, 'ID': 1222, 'slug': u'specials', 'title': u'Specials'})
+    # print repr(searchResult)
+    # print "keys: %s" % str([
+    #     productParser.objectContainer.wpidKey,
+    #     productParser.objectContainer.slugKey,
+    #     productParser.objectContainer.titleKey,
+    #     productParser.objectContainer.namesumKey,
+    # ])
+
     # print "printing bad product"
     # Registrar.DEBUG_GEN = True
     # for codesum, product in productParser.products.items():
@@ -1160,6 +1177,8 @@ def main():
     masterCategoryUpdates = []
     slaveCategoryUpdates = []
     problematicCategoryUpdates = []
+
+    slaveProductCreations = []
     # productIndexFn = (lambda x: x.codesum)
     def productIndexFn(x): return x.codesum
     globalProductMatches = MatchList(indexFn=productIndexFn)
@@ -1299,7 +1318,7 @@ def main():
                 with CatSyncClient_WC(wcApiParams) as client:
                     if Registrar.DEBUG_CATS:
                         Registrar.registerMessage("created cat client")
-                    new_categories = [match.mObjects[0] for match in slavelessCategoryMatches]
+                    new_categories = [match.mObject for match in slavelessCategoryMatches]
                     if Registrar.DEBUG_CATS:
                         Registrar.registerMessage("new categories %s" % new_categories)
 
@@ -1329,13 +1348,13 @@ def main():
                             for key, data in ColData_Woo.getWPAPICategoryCols().items():
                                 try:
                                     wp_api_key = data['wp-api']['key']
-                                except IndexError:
+                                except (IndexError, TypeError):
                                     wp_api_key = key
                                 api_cat_translation[wp_api_key] = key
                             # print "TRANSLATION: ", api_cat_translation
                             categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
-                            # print "CATEGORY PARSER DATA: ", categoryParserData
-
+                            if Registrar.DEBUG_CATS:
+                                Registrar.registerMessage( "category being updated with parser data: %s" % categoryParserData)
                             category.update(categoryParserData)
 
                             # print "CATEGORY: ", category
@@ -1393,10 +1412,11 @@ def main():
             Registrar.registerError(e)
             raise e
 
-        for matchCount, match in enumerate(productMatcher.pureMatches):
-            # print "processing match: %s" % match.tabulate()
-            mObject = match.mObject
-            sObject = match.sObject
+        for prodMatchCount, prodMatch in enumerate(productMatcher.pureMatches):
+            if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
+                Registrar.registerMessage( "processing prodMatch: %s" % prodMatch.tabulate())
+            mObject = prodMatch.mObject
+            sObject = prodMatch.sObject
 
             syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
 
@@ -1529,10 +1549,10 @@ def main():
                 Registrar.registerError(e)
                 raise e
 
-            for matchCount, match in enumerate(variationMatcher.pureMatches):
-                # print "processing match: %s" % match.tabulate()
-                mObject = match.mObject
-                sObject = match.sObject
+            for varMatchCount, varMatch in enumerate(variationMatcher.pureMatches):
+                # print "processing varMatch: %s" % varMatch.tabulate()
+                mObject = varMatch.mObject
+                sObject = varMatch.sObject
 
                 syncUpdate = SyncUpdate_Var_Woo(mObject, sObject)
 
@@ -1543,7 +1563,7 @@ def main():
                     continue
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var update %d:\n%s" % (matchCount, syncUpdate.tabulate()))
+                    Registrar.registerMessage("var update %d:\n%s" % (varMatchCount, syncUpdate.tabulate()))
 
                 if not syncUpdate.importantStatic:
                     insort(problematicVariationUpdates, syncUpdate)
@@ -1552,34 +1572,44 @@ def main():
                 if syncUpdate.sUpdated:
                     insort(slaveVariationUpdates, syncUpdate)
 
-            for matchCount, match in enumerate(variationMatcher.slavelessMatches):
-                assert match.hasNoSlave
-                mObject = match.mObject
+            for varMatchCount, varMatch in enumerate(variationMatcher.slavelessMatches):
+                assert varMatch.hasNoSlave
+                mObject = varMatch.mObject
 
                 # syncUpdate = SyncUpdate_Var_Woo(mObject, None)
 
                 # syncUpdate.update(var_sync_cols)
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var create %d:\n%s" % (matchCount, mObject.identifier))
+                    Registrar.registerMessage("var create %d:\n%s" % (varMatchCount, mObject.identifier))
 
                 #TODO: figure out which attribute terms to add
 
-            for matchCount, match in enumerate(variationMatcher.slavelessMatches):
-                assert match.hasNoMaster
-                sObject = match.sObject
+            for varMatchCount, varMatch in enumerate(variationMatcher.masterlessMatches):
+                assert varMatch.hasNoMaster
+                sObject = varMatch.sObject
 
                 # syncUpdate = SyncUpdate_Var_Woo(None, sObject)
 
                 # syncUpdate.update(var_sync_cols)
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var delete: %d:\n%s" % (matchCount, sObject.identifier))
+                    Registrar.registerMessage("var delete: %d:\n%s" % (varMatchCount, sObject.identifier))
 
                 #TODO: figure out which attribute terms to delete
 
+        if args.auto_create_new:
+            for newProdCount, newProdMatch in enumerate(productMatcher.slavelessMatches):
+                mObject = newProdMatch.mObject
+                print "will create product %d: %s" % (newProdCount, mObject.identifier)
+                apiData = mObject.toApiData(ColData_Woo, 'wp-api')
+                for key in ['id', 'slug']:
+                    if key in apiData:
+                        del apiData[key]
+                print "has api data: %s" % pformat(apiData)
+                slaveProductCreations.append(apiData)
 
-
+    checkWarnings()
 
         # except Exception, e:
         #     Registrar.registerError(repr(e))
@@ -1915,6 +1945,7 @@ def main():
     if args.report_and_quit:
         sys.exit(ExitStatus.success)
 
+    checkWarnings()
 
     #########################################
     # Perform updates
@@ -1927,6 +1958,10 @@ def main():
         allProductUpdates += problematicProductUpdates
         if args.do_variations:
             allProductUpdates += problematicVariationUpdates
+
+    #don't perform updates if limit was set
+    if args.download_limit:
+        allProductUpdates = []
 
     slaveFailures = []
     if allProductUpdates:
