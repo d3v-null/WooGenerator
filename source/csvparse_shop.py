@@ -193,6 +193,12 @@ class ImportShopMixin(object):
                     if not 'meta' in apiData:
                         apiData['meta'] = {}
                     apiData['meta'][wp_api_key] = self[col]
+            if self.isVariable:
+                variations = []
+                for variation in self.variations.values():
+                    variationData = variation.toApiData(colData, api)
+                    variations.append(variationData)
+                apiData['variations'] = variations
         return apiData
 
 class ImportShopProductMixin(object):
