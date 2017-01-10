@@ -49,8 +49,8 @@ start_time = time.time()
 def timediff():
     return time.time() - start_time
 
-testMode = False
-# testMode = True
+# testMode = False
+testMode = True
 
 # good command: python source/merger.py -vv --skip-download-master --skip-download-slave --skip-update-master --skip-update-slave --skip-filter --do-sync --skip-post --livemode --limit=9000 --master-file=act_x_2016-08-01_15-02-35.csv --slave-file=act_x_2016-08-01_15-02-35.csv
 
@@ -83,6 +83,8 @@ def main():
     userFile = cardFile = emailFile = sinceM = sinceS = False
 
     ### OVERRIDE CONFIG WITH YAML FILE ###
+
+    config = {}
 
     with open(yamlPath) as stream:
         config = yaml.load(stream)
@@ -248,7 +250,7 @@ def main():
         if args.debug_utils is not None:
             Registrar.DEBUG_UTILS = args.debug_utils
         if args.debug_contact is not None:
-            Registrar.DEBUG_CONTACT = args.dest='debug_contact'
+            Registrar.DEBUG_CONTACT = args.debug_contact
 
         global_limit = args.limit
 
@@ -279,8 +281,8 @@ def main():
         m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
         m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
         tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
-        wp_user = config.get(optionNamePrefix+'wp_user', '')
-        wp_pass = config.get(optionNamePrefix+'wp_pass', '')
+        # wp_user = config.get(optionNamePrefix+'wp_user', '')
+        # wp_pass = config.get(optionNamePrefix+'wp_pass', '')
         store_url = config.get(optionNamePrefix+'store_url', '')
         wc_api_key = config.get(optionNamePrefix+'wc_api_key')
         wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
@@ -323,9 +325,9 @@ def main():
     fileSuffix = "_test" if testMode else ""
     fileSuffix += "_filter" if do_filter else ""
     m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
-    m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
+    # m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
     s_x_filename = "wp_x"+fileSuffix+"_"+importName+".csv"
-    remoteExportPath = os.path.join(remote_export_folder, m_x_filename)
+    # remoteExportPath = os.path.join(remote_export_folder, m_x_filename)
 
     if download_master:
         maPath = os.path.join(inFolder, m_x_filename)
@@ -344,7 +346,7 @@ def main():
         # saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
         saEncoding = "utf8"
 
-    moPath = os.path.join(outFolder, m_i_filename)
+    # moPath = os.path.join(outFolder, m_i_filename)
     repPath = os.path.join(outFolder, "usr_sync_report%s.html" % fileSuffix)
     WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
     masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
@@ -352,34 +354,29 @@ def main():
     slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
     mFailPath = os.path.join(outFolder, "act_fails%s.csv" % fileSuffix)
     sFailPath = os.path.join(outFolder, "wp_fails%s.csv" % fileSuffix)
-    sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
-    # pklPath = os.path.join(pklFolder, "parser_pickle.pkl" )
-    pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
+    # sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
+    # pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
     logPath = os.path.join(logFolder, "log_%s.txt" % importName)
     zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
 
     ### PROCESS OTHER CONFIG ###
 
     assert store_url, "store url must not be blank"
-    xmlrpc_uri = store_url + 'xmlrpc.php'
-    json_uri = store_url + 'wp-json/wp/v2'
+    # xmlrpc_uri = store_url + 'xmlrpc.php'
+    # json_uri = store_url + 'wp-json/wp/v2'
 
     actFields = ";".join(ColData_User.getACTImportCols())
 
-    jsonConnectParams = {
-        'json_uri': json_uri,
-        'wp_user': wp_user,
-        'wp_pass': wp_pass
-    }
+    # jsonConnectParams = {
+    #     'json_uri': json_uri,
+    #     'wp_user': wp_user,
+    #     'wp_pass': wp_pass
+    # }
 
     wcApiParams = {
         'api_key':wc_api_key,
         'api_secret':wc_api_secret,
         'url':store_url
-    }
-
-    sqlConnectParams = {
-
     }
 
     actConnectParams = {
@@ -516,7 +513,7 @@ def main():
         with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
             masterClient.analyseRemote(maParser, limit=global_limit)
     else:
-        maParser.analyseFile(maPath, dialect_suggestion='act_out')
+        maParser.analyseFile(maPath, dialect_suggestion='act_out', encoding=maEncoding)
 
     # CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
     #
@@ -531,7 +528,7 @@ def main():
     newMasters = MatchList()
     newSlaves = MatchList()
     anomalousParselists = {}
-    nonstaticUpdates = []
+    # nonstaticUpdates = []
     nonstaticSUpdates = []
     nonstaticMUpdates = []
     staticUpdates = []
