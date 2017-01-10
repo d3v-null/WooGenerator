@@ -297,6 +297,8 @@ class CSVParse_Woo_Mixin(object):
         ]:
             value = searchData.get(search_key)
             if value:
+                if Registrar.DEBUG_API:
+                    Registrar.registerMessage("checking search key %s" % search_key)
                 matching_categories = set()
                 for category_key, category in self.categories.items():
                     if category.get(search_key) == value:
@@ -611,6 +613,9 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         extraTaxoName = taxoAncestorNames[-2]
                     else:
                         extraTaxoName = taxoAncestorNames[0]
+
+                # TODO: This is some janky ass shit that needs to be put in a conf file
+
                 extraSuffix = 'Items'
                 if re.search('Sample', extraName, flags=re.I):
                     extraSuffix = 'Samples'
