@@ -29,6 +29,7 @@ import pymysql
 from simplejson import JSONDecodeError
 from sync_client import SyncClient_Abstract, AbstractServiceInterface
 from sync_client import SyncClient_WP
+from sync_client import SyncClient_WC
 
 # class TansyncWordpressJsonWrapper(WordpressJsonWrapper, AbstractServiceInterface):
 #     def _request(self, method_name, **kw):
@@ -110,8 +111,8 @@ from sync_client import SyncClient_WP
 #             raise Exception("No response from json api")
 #         return json_out
 
-# class UsrSyncClient_WC(SyncClient_WC):
-#     endpoint_singular = 'customer'
+class UsrSyncClient_WC(SyncClient_WC):
+    endpoint_singular = 'customer'
 
 class UsrSyncClient_WP(SyncClient_WP):
     endpoint_singular = 'user'

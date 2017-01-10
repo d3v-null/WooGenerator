@@ -38,7 +38,7 @@ from sshtunnel import SSHTunnelForwarder, check_address
 import io
 # import wordpress_xmlrpc
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
-from sync_client_user import UsrSyncClient_WC#, UsrSyncClient_JSON
+from sync_client_user import UsrSyncClient_WC #, UsrSyncClient_JSON
 from SyncUpdate import SyncUpdate, SyncUpdate_Usr
 from contact_objects import FieldGroup
 
@@ -52,7 +52,7 @@ def timediff():
 # testMode = False
 testMode = True
 
-# good command: python source/merger.py -vv --skip-download-master --skip-download-slave --skip-update-master --skip-update-slave --skip-filter --do-sync --skip-post --livemode --limit=9000 --master-file=act_x_2016-08-01_15-02-35.csv --slave-file=act_x_2016-08-01_15-02-35.csv
+# good testing command: python source/merger.py -vv --skip-download-master --skip-download-slave --skip-update-master --skip-update-slave --skip-filter --do-sync --skip-post --testmode --limit=9000 --master-file=act_x_2017-01-10_16-42-53.csv --slave-file=wp_x_test_2017-01-10_16-42-53.csv
 
 ### DEFAULT CONFIG ###
 
@@ -603,6 +603,19 @@ def main():
         denyAnomalousParselist("saParser.noemails", saParser.noemails)
 
         emailMatcher = NocardEmailMatcher(globalMatches.sIndices, globalMatches.mIndices)
+
+        # TODO: Delete this print
+
+        # saParser.nocards is singular
+        # maParser.emails is nonsingular
+
+        # print "saParser.nocards type", type(saParser.nocards)
+        # print "maParser.emails type", type(maParser.emails)
+        # print "saParser.nocards", str(saParser.nocards)[:100], '...'
+        # print "maParser.emails", str(maParser.emails)[:100], '...'
+        # print "saParser.nocards keys", str(saParser.nocards.keys())
+        # print "maParser.emails keys", str(maParser.emails.keys())
+
         emailMatcher.processRegisters(saParser.nocards, maParser.emails)
 
         newMasters.addMatches(emailMatcher.masterlessMatches)

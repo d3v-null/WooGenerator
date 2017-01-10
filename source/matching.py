@@ -304,6 +304,8 @@ class AbstractMatcher(Registrar):
 
     # saRegister is in nonsingular form. regkey => [slaveObjects]
     def processRegistersNonsingular(self, saRegister, maRegister):
+        """ Groups items in both registers by the result of applying the index function when both are nonsingular """
+
         # print "processing nonsingular register"
         mKeys = set(maRegister.keys())
 
@@ -320,16 +322,8 @@ class AbstractMatcher(Registrar):
 
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
-        """ Groups items in both registers by the result of applying the index function """
-        # print "processing singular register"
-        # mKeys = set(maRegister.keys())
-        # mKeys = OrderedDict()
-        # for regKey, regValue in maRegister:
-        #     mKeys.update({self.indexFn(regValue):regKey})
-        # mKeys = \
-        #     [(self.indexFn(regValue), regKey) for regKey, regValue in maRegister.items()]
+        """ Groups items in both registers by the result of applying the index function when both are singular """
 
-        # mKeys is a mapping from indexes of regValues to their corresponding regKeys in maRegister
         mKeys = OrderedDict()
         for regKey, regValue in maRegister.items():
             regIndex = self.indexFn(regValue)
@@ -355,32 +349,15 @@ class AbstractMatcher(Registrar):
                     sObjects.extend(self.retrieveObjects(saRegister, regKey))
             self.processMatch(mObjects, sObjects)
 
+    def processRegistersSingularNonSingular(self, saRegister, maRegister):
+        # make slave nonsingular and process both as nonsingular
+        saRegister = OrderedDict([(key, [value]) for key, value in saRegister.items()])
+        self.processRegistersNonsingular(saRegister, maRegister)
 
-        # self.registerMessage('mkeys: %s' % pformat(mKeys))
-
-        # print "mKeys", mKeys
-        # for regKey, regValue in saRegister.items():
-        #     self.registerMessage('analysing saRegisteritem (%s, %s)' % (regKey, regValue))
-        #     saObjects = [regValue]
-        #     regIndex = self.indexFn(regValue)
-        #     self.registerMessage('-> (%s)' % (regIndex))
-        #     maObjects = []
-        #     if regIndex in mKeys:
-        #         mRegKeys = mKeys[regIndex]
-        #         # print "removing key", regIndex, "from", mKeys
-        #         mKeys.pop(regIndex)
-        #         maObjects = []
-        #         for mRegKey in mRegKeys:
-        #             maObjects.extend(self.retrieveObjects(maRegister, mRegKey))
-        #     self.processMatch(maObjects, saObjects)
-        # for regIndex, regKeys in mKeys.items():
-        #     self.registerMessage('processing leftover maRegister item (%s, %s)' % (regIndex, regKeys))
-        #
-        #     saObjects = []
-        #     maObjects = []
-        #     for regKey in regKeys:
-        #         maObjects.extend(self.retrieveObjects(maRegister, regKey))
-        #     self.processMatch(maObjects, saObjects)
+    def processRegistersNonSingularSingular(self, saRegister, maRegister):
+        # make master nonsingular and process both as nonsingular
+        maRegister = OrderedDict([(key, [value]) for key, value in maRegister.items()])
+        self.processRegistersNonsingular(saRegister, maRegister)
 
     def retrieveObjectsNonsingular(self, register, key):
         # print "retrieving nonsingular object"
@@ -509,19 +486,29 @@ class FilteringMatcher(AbstractMatcher):
         self.fFilterFn = lambda x: x.index not in self.sMatchIndices
 
 class CardMatcher(FilteringMatcher):
+    @staticmethod
+    def cardIndexFn(x):
+        assert hasattr(x, 'MYOBID'), 'must be able to get MYOBID, instead type is %s' % type(x)
+        return x.MYOBID
+
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering CardMatcher __init__"
-        super(CardMatcher, self).__init__( lambda x: x.MYOBID, sMatchIndices, mMatchIndices  )
+        super(CardMatcher, self).__init__( self.cardIndexFn, sMatchIndices, mMatchIndices  )
 
 class EmailMatcher(FilteringMatcher):
+    @staticmethod
+    def emailIndexFn(x):
+        assert hasattr(x, 'email'), "must be able to get email, instead type is %s" % type(x)
+        return SanitationUtils.normalizeVal(x.email)
+
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering EmailMatcher __init__"
         super(EmailMatcher, self).__init__(
-            lambda x: SanitationUtils.normalizeVal(x.email),
+            self.emailIndexFn,
             sMatchIndices, mMatchIndices )
 
 class NocardEmailMatcher(EmailMatcher):
     def __init__(self, sMatchIndices = [], mMatchIndices = []):
         # print "entering NocardEmailMatcher __init__"
         super(NocardEmailMatcher, self).__init__( sMatchIndices, mMatchIndices )
-        self.processRegisters = self.processRegistersSingular
+        self.processRegisters = self.processRegistersSingularNonSingular

@@ -386,7 +386,7 @@ class CSVParse_User(CSVParse_Flat):
         ])
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        super(CSVParse_User, self).__init__(cols, defaults, limit)
+        super(CSVParse_User, self).__init__(cols, defaults, limit=limit)
         self.contact_schema = contact_schema
         self.filterItems = filterItems
         # self.itemIndexer = self.getUsername
