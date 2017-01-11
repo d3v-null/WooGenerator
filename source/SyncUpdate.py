@@ -839,7 +839,8 @@ class SyncUpdate_Usr(SyncUpdate):
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
         if updates == None: updates = OrderedDict()
-        SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
+        if self.DEBUG_UPDATE:
+            SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
         if col in self.colData.data.keys():
             data = self.colData.data[col]
             if data.get(self.s_meta_target):
