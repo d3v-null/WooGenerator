@@ -178,6 +178,8 @@ def findPCodeMatches(match):
 class MatchList(list):
     """ A sequence of Match objects indexed by an indexFn"""
 
+    check_indices = True
+
     def __init__(self, matches=None, indexFn = None):
         if(indexFn):
             self._indexFn = indexFn
@@ -213,7 +215,8 @@ class MatchList(list):
                 )
             matchSIndices.append(sIndex)
         if matchSIndices:
-            assert listUtils.checkEqual(matchSIndices), "all sIndices should be equal: %s" % matchSIndices
+            if self.check_indices:
+                assert listUtils.checkEqual(matchSIndices), "all sIndices should be equal: %s" % matchSIndices
             self.sIndices.append(matchSIndices[0])
         for mObject in match.mObjects:
             # Registrar.registerMessage('indexing master %s with %s : %s' \
@@ -226,7 +229,8 @@ class MatchList(list):
                 )
             matchMIndices.append(mIndex)
         if matchMIndices:
-            assert listUtils.checkEqual(matchMIndices), "all mIndices should be equal: %s" % matchMIndices
+            if self.check_indices:
+                assert listUtils.checkEqual(matchMIndices), "all mIndices should be equal: %s" % matchMIndices
             self.mIndices.append(matchMIndices[0])
         self.append(match)
 
@@ -259,6 +263,8 @@ class MatchList(list):
         else:
             return ""
 
+class ConflictingMatchList(MatchList):
+    check_indices = False
 
 
 class AbstractMatcher(Registrar):
@@ -310,13 +316,6 @@ class AbstractMatcher(Registrar):
     def processRegistersNonsingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are nonsingular """
 
-        Registrar.registerMessage(
-            "processing registers nonsingular: \n\t%s \n\t%s" % (
-                repr(saRegister),
-                repr(maRegister)
-            )
-        )
-
         # print "processing nonsingular register"
         mKeys = set(maRegister.keys())
 
@@ -334,13 +333,6 @@ class AbstractMatcher(Registrar):
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are singular """
-
-        Registrar.registerMessage(
-            "processing registers singular: \n\t%s \n\t%s" % (
-                repr(saRegister),
-                repr(maRegister)
-            )
-        )
 
         mKeys = OrderedDict()
         for regKey, regValue in maRegister.items():
@@ -425,6 +417,13 @@ class AbstractMatcher(Registrar):
             return objects
 
     def processMatch(self, maObjects, saObjects):
+        # Registrar.registerMessage(
+        #     "processing match: \n\t%s \n\t%s" % (
+        #         repr(maObjects),
+        #         repr(saObjects)
+        #     )
+        # )
+
         # print "processing match %s | %s" % (repr(maObjects), repr(saObjects))
         maObjects = self.mFilter(maObjects)
         for maObject in maObjects:
@@ -449,16 +448,16 @@ class AbstractMatcher(Registrar):
         # repr_str += "all matches:\n"
         # for match in self.matches:
         #     repr_str += " -> " + repr(match) + "\n"
-        repr_str += "pure matches:\n"
+        repr_str += "pure matches: (%d) \n" % len(self.pureMatches)
         for match in self.pureMatches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "masterless matches:\n"
+        repr_str += "masterless matches: (%d) \n" % len(self.masterlessMatches)
         for match in self.masterlessMatches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "slaveless matches:\n"
+        repr_str += "slaveless matches:(%d) \n" % len(self.slavelessMatches)
         for match in self.slavelessMatches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "duplicate matches:\n"
+        repr_str += "duplicate matches:(%d) \n" % len(self.duplicateMatches)
         for match in self.duplicateMatches:
             repr_str += " -> " + repr(match) + "\n"
         return repr_str

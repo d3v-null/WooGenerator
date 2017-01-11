@@ -8,7 +8,8 @@ import traceback
 # import shutil
 from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
 from utils import Registrar, debugUtils, ProgressCounter
-from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
+from matching import Match, MatchList, ConflictingMatchList
+from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
 from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
 # from contact_objects import ContactAddress
 from coldata import ColData_User
@@ -545,7 +546,7 @@ def main():
     slaveUpdates = []
     mDeltaUpdates = []
     sDeltaUpdates = []
-    emailConflictMatches = MatchList()
+    emailConflictMatches = ConflictingMatchList(indexFn=EmailMatcher.emailIndexFn)
 
     def denyAnomalousMatchList(matchListType, anomalousMatchList):
         try:
@@ -580,7 +581,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "username matches (%d)" % len(usernameMatcher.matches)
-            print repr(UsernameMatcher)
+            print repr(usernameMatcher)
 
         print debugUtils.hashify("processing cards")
         print timediff()
@@ -641,7 +642,6 @@ def main():
         print debugUtils.hashify("BEGINNING MERGE (%d)" % len(globalMatches))
         print timediff()
 
-
         syncCols = ColData_User.getSyncCols()
 
         if Registrar.DEBUG_PROGRESS:
@@ -681,7 +681,15 @@ def main():
                         mObjects = [mObject]
                         sObjects = [sObject] + saParser.emails[newEmail]
                         SanitationUtils.safePrint("duplicate emails", mObjects, sObjects)
-                        emailConflictMatches.addMatch(Match(mObjects, sObjects))
+                        try:
+                            emailConflictMatches.addMatch(Match(mObjects, sObjects))
+                        except Exception, e:
+                            SanitationUtils.safePrint(
+                                "something happened adding an email conflict, newEmail: %s ; exception: %s" % (
+                                    newEmail,
+                                    e
+                                )
+                            )
                         continue
 
             if(not syncUpdate.importantStatic):
