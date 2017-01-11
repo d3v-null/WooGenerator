@@ -131,40 +131,51 @@ def main():
     group.add_argument('--livemode', help='Run the script on the live databases',
                         action='store_false', dest='testmode')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--download-master', help='download the master data',
-                       action="store_true", default=config.get('download_master'))
-    group.add_argument('--skip-download-master', help='use the local master file instead\
-        of downloading the master data', action="store_false", dest='download_master')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--download-slave', help='download the slave data',
-                       action="store_true", default=config.get('download_slave'))
-    group.add_argument('--skip-download-slave', help='use the local slave file instead\
-        of downloading the slave data', action="store_false", dest='download_slave')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--update-master', help='update the master database',
-                       action="store_true", default=config.get('update_master'))
-    group.add_argument('--skip-update-master', help='don\'t update the master database',
-                       action="store_false", dest='update_master')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--update-slave', help='update the slave database',
-                       action="store_true", default=config.get('update_slave'))
-    group.add_argument('--skip-update-slave', help='don\'t update the slave database',
-                       action="store_false", dest='update_slave')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', help='sync the databases',
                        action="store_true", default=config.get('do_sync'))
     group.add_argument('--skip-sync', help='don\'t sync the databases',
                        action="store_false", dest='do_sync')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic', help='make problematic updates to the databases',
-                       action="store_true", default=config.get('do_problematic'))
-    group.add_argument('--skip-problematic', help='don\'t make problematic updates to the databases',
-                       action="store_false", dest='do_problematic')
-    group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-post', help='post process the contacts',
                        action="store_true", default=config.get('do_post'))
     group.add_argument('--skip-post', help='don\'t post process the contacts',
                        action="store_false", dest='do_post')
+
+    download_group = parser.add_argument_group('Import options')
+    group = download_group.add_mutually_exclusive_group()
+    group.add_argument('--download-master', help='download the master data',
+                       action="store_true", default=config.get('download_master'))
+    group.add_argument('--skip-download-master', help='use the local master file instead\
+        of downloading the master data', action="store_false", dest='download_master')
+    group = download_group.add_mutually_exclusive_group()
+    group.add_argument('--download-slave', help='download the slave data',
+                       action="store_true", default=config.get('download_slave'))
+    group.add_argument('--skip-download-slave', help='use the local slave file instead\
+        of downloading the slave data', action="store_false", dest='download_slave')
+
+    update_group = parser.add_argument_group('Update options')
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--update-master', help='update the master database',
+                       action="store_true", default=config.get('update_master'))
+    group.add_argument('--skip-update-master', help='don\'t update the master database',
+                       action="store_false", dest='update_master')
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--update-slave', help='update the slave database',
+                       action="store_true", default=config.get('update_slave'))
+    group.add_argument('--skip-update-slave', help='don\'t update the slave database',
+                       action="store_false", dest='update_slave')
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--do-problematic', help='make problematic updates to the databases',
+                       action="store_true", default=config.get('do_problematic'))
+    group.add_argument('--skip-problematic', help='don\'t make problematic updates to the databases',
+                       action="store_false", dest='do_problematic')
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--ask-before-update', help="ask before updating",
+                       action="store_true", default=True)
+    group.add_argument('--force-update', help="don't ask before updating",
+                       action="store_false", dest="ask_before_update")
 
     filter_group = parser.add_argument_group("Filter Options")
     group = filter_group.add_mutually_exclusive_group()
@@ -580,7 +591,7 @@ def main():
         globalMatches.addMatches( usernameMatcher.pureMatches)
 
         if(Registrar.DEBUG_MESSAGE):
-            print "username matches (%d)" % len(usernameMatcher.matches)
+            print "username matches (%d pure)" % len(usernameMatcher.pureMatches)
             # print repr(usernameMatcher)
 
         print debugUtils.hashify("processing cards")
@@ -599,7 +610,7 @@ def main():
         globalMatches.addMatches( cardMatcher.pureMatches)
 
         if(Registrar.DEBUG_MESSAGE):
-            print "card matches (%d)" % len(cardMatcher.matches)
+            print "card matches (%d pure)" % len(cardMatcher.pureMatches)
             # print repr(cardMatcher)
 
         # #for every email in slave, check that it exists in master
@@ -633,7 +644,7 @@ def main():
         globalMatches.addMatches(emailMatcher.pureMatches)
 
         if(Registrar.DEBUG_MESSAGE):
-            print "email matches (%d)" % len(emailMatcher.matches)
+            print "email matches (%d pure)" % (len(emailMatcher.pureMatches))
             # print repr(emailMatcher)
 
 
@@ -1045,6 +1056,14 @@ def main():
     slaveFailures = []
 
     if allUpdates:
+        Registrar.registerProgress("UPDATING %d RECORDS" % len(allUpdates))
+
+        if args.ask_before_update:
+            try:
+                input("Please read reports and press Enter to continue or ctrl-c to stop...")
+            except SyntaxError:
+                pass
+
         if Registrar.DEBUG_PROGRESS:
             updateProgressCounter = ProgressCounter(len(allUpdates))
 
@@ -1071,7 +1090,12 @@ def main():
                             'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
                             'exception':repr(e)
                         })
-                        SanitationUtils.safePrint("ERROR UPDATING MASTER (%s): %s" % (update.MasterID, repr(e) ) )
+                        Registrar.registerError("ERROR UPDATING MASTER (%s): %s\n%s" % (
+                            update.MasterID, 
+                            repr(e),
+                            traceback.format_exc()
+                        ) )
+
                         # continue
                 if update_slave and update.sUpdated :
                     try:
@@ -1085,7 +1109,11 @@ def main():
                             'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
                             'exception':repr(e)
                         })
-                        SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
+                        Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (
+                            update.SlaveID, 
+                            repr(e),
+                            traceback.format_exc() 
+                        ) )
 
     def outputFailures(failures, filePath):
         with open(filePath, 'w+') as outFile:

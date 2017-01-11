@@ -279,7 +279,7 @@ def main():
         help='automatically delete old products if they don\'t exist any more',
         action="store_true", 
         default=config.get('auto_delete_old'))
-    update_group.add_argument('--no-delete-old', 
+    group.add_argument('--no-delete-old', 
         help='do not delete old items, print which need to be deleted',
         action="store_false", 
         dest="auto_create_new")
@@ -292,6 +292,11 @@ def main():
     update_group.add_argument('--slave-offset', 
         help='offset when using the slave api (for debugging)', 
         default=config.get('slave_offset'))
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--ask-before-update', help="ask before updating",
+                       action="store_true", default=True)
+    group.add_argument('--force-update', help="don't ask before updating",
+                       action="store_false", dest="ask_before_update")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', 
@@ -1969,6 +1974,9 @@ def main():
     slaveFailures = []
     if allProductUpdates:
         Registrar.registerProgress("UPDATING %d RECORDS" % len(allProductUpdates))
+
+        if args.ask_before_update:
+            input("Please read reports and press Enter to continue or ctrl-c to stop...")
 
         if Registrar.DEBUG_PROGRESS:
             updateProgressCounter = ProgressCounter(len(allProductUpdates))
