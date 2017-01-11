@@ -2596,6 +2596,18 @@ class descriptorUtils:
         return property(getter, setter)
 
     @staticmethod
+    def safeNormalizedKeyProperty(key):
+        def getter(self):
+            assert key in self.keys(), "{} must be set before get in {}".format(key, repr(type(self)))
+            return SanitationUtils.normalizeVal(self[key])
+
+        def setter(self, value):
+            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(key, type(value))
+            self[key] = value
+
+        return property(getter, setter)
+
+    @staticmethod
     def kwargAliasProperty(key, handler):
         def getter(self):
             if self.properties_override:

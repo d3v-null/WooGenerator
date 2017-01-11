@@ -117,8 +117,9 @@ class ImportUser(ImportFlat):
     container = UsrObjList
 
     WPID = descriptorUtils.safeKeyProperty('Wordpress ID')
-    email = descriptorUtils.safeKeyProperty('E-mail')
-    # emails = descriptorUtils.safeKeyProperty('E-mails')
+    # TODO: does this break anything?
+    email = descriptorUtils.safeNormalizedKeyProperty('E-mail')
+    # email = descriptorUtils.safeKeyProperty('E-mail')
     MYOBID = descriptorUtils.safeKeyProperty('MYOB Card ID')
     username = descriptorUtils.safeKeyProperty('Wordpress Username')
     role = descriptorUtils.safeKeyProperty('Role')
@@ -426,6 +427,8 @@ class CSVParse_User(CSVParse_Flat):
         return SanitationUtils.sanitizeCell(cell)
 
     def registerEmail(self, objectData, email):
+        #TODO: does this line break anything?
+        email = SanitationUtils.normalizeVal(email)
         self.registerAnything(
             objectData,
             self.emails,
