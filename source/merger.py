@@ -115,7 +115,7 @@ def main():
         do_filter = config.get('do_filter')
         # do_problematic = config.get('do_problematic')
         # do_post = config.get('do_post')
-        do_sync = config.get('do_sync')
+        # do_sync = config.get('do_sync')
 
     ### OVERRIDE CONFIG WITH ARGPARSE ###
 
@@ -156,7 +156,7 @@ def main():
                        action="store_false", dest='do_filter')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', help='sync the databases',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('do_sync'))
     group.add_argument('--skip-sync', help='don\'t sync the databases',
                        action="store_false", dest='do_sync')
     group = parser.add_mutually_exclusive_group()
@@ -213,8 +213,8 @@ def main():
             update_master = args.update_master
         if args.do_filter is not None:
             do_filter = args.do_filter
-        if args.do_sync is not None:
-            do_sync = args.do_sync
+        # if args.do_sync is not None:
+        #     do_sync = args.do_sync
         # if args.do_problematic is not None:
         #     do_problematic = args.do_problematic
         # if args.do_post is not None:
@@ -305,7 +305,7 @@ def main():
             print "not updating slave"
         if not do_filter:
             print "not doing filter"
-        if not do_sync:
+        if not args.do_sync:
             print "not doing sync"
         if not args.do_post:
             print "not doing post"
@@ -558,7 +558,7 @@ def main():
             anomalousParselists[parselistType] = anomalousParselist
 
 
-    if do_sync:
+    if args.do_sync:
         # for every username in slave, check that it exists in master
         print debugUtils.hashify("processing usernames")
         print timediff()
@@ -827,7 +827,7 @@ def main():
 
         reporter.addGroup(sanitizingGroup)
 
-        if do_sync and (mDeltaUpdates + sDeltaUpdates):
+        if args.do_sync and (mDeltaUpdates + sDeltaUpdates):
 
             deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -877,7 +877,7 @@ def main():
                 sDeltaList.exportItems(slaveDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
 
 
-        report_matching = do_sync
+        report_matching = args.do_sync
         if report_matching:
 
             matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
@@ -975,7 +975,7 @@ def main():
 
             reporter.addGroup(matchingGroup)
 
-        report_sync = do_sync
+        report_sync = args.do_sync
         if report_sync:
             syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
 
