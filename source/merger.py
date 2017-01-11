@@ -108,11 +108,11 @@ def main():
         emailFile = config.get('emailFile')
         sinceM = config.get('sinceM')
         sinceS = config.get('sinceS')
-        download_slave = config.get('download_slave')
-        download_master = config.get('download_master')
-        update_slave = config.get('update_slave')
-        update_master = config.get('update_master')
-        do_filter = config.get('do_filter')
+        # download_slave = config.get('download_slave')
+        # download_master = config.get('download_master')
+        # update_slave = config.get('update_slave')
+        # update_master = config.get('update_master')
+        # do_filter = config.get('do_filter')
         # do_problematic = config.get('do_problematic')
         # do_post = config.get('do_post')
         # do_sync = config.get('do_sync')
@@ -131,29 +131,24 @@ def main():
                         action='store_false', dest='testmode')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--download-master', help='download the master data',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('download_master'))
     group.add_argument('--skip-download-master', help='use the local master file instead\
         of downloading the master data', action="store_false", dest='download_master')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--download-slave', help='download the slave data',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('download_slave'))
     group.add_argument('--skip-download-slave', help='use the local slave file instead\
         of downloading the slave data', action="store_false", dest='download_slave')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--update-master', help='update the master database',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('update_master'))
     group.add_argument('--skip-update-master', help='don\'t update the master database',
                        action="store_false", dest='update_master')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--update-slave', help='update the slave database',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('update_slave'))
     group.add_argument('--skip-update-slave', help='don\'t update the slave database',
                        action="store_false", dest='update_slave')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-filter', help='filter the databases',
-                       action="store_true", default=None)
-    group.add_argument('--skip-filter', help='don\'t filter the databases',
-                       action="store_false", dest='do_filter')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', help='sync the databases',
                        action="store_true", default=config.get('do_sync'))
@@ -170,23 +165,34 @@ def main():
     group.add_argument('--skip-post', help='don\'t post process the contacts',
                        action="store_false", dest='do_post')
 
+    filter_group = parser.add_argument_group("Filter Options")
+    group = filter_group.add_mutually_exclusive_group()
+    group.add_argument('--do-filter', help='filter the databases',
+                       action="store_true", default=config.get('do_filter'))
+    group.add_argument('--skip-filter', help='don\'t filter the databases',
+                       action="store_false", dest='do_filter')
+    filter_group.add_argument('--limit', type=int, help='global limit of objects to process')
+    filter_group.add_argument(
+        '--card-file', 
+        help='list of cards to filter on', 
+        default=config.get('cardFile')
+    )
+
     parser.add_argument('--m-ssh-host', help='location of master ssh server')
     parser.add_argument('--m-ssh-port', type=int, help='location of master ssh port')
-    parser.add_argument('--limit', type=int, help='global limit of objects to process')
     parser.add_argument('--master-file', help='location of master file')
     parser.add_argument('--slave-file', help='location of slave file')
-    parser.add_argument('--card-file')
 
-    group = parser.add_argument_group()
-    group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
-    group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
-    group.add_argument('--debug-update', action='store_true', dest='debug_update')
-    group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
-    group.add_argument('--debug-name', action='store_true', dest='debug_name')
-    group.add_argument('--debug-address', action='store_true', dest='debug_address')
-    group.add_argument('--debug-client', action='store_true', dest='debug_client')
-    group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
-    group.add_argument('--debug-contact', action='store_true', dest='debug_contact')
+    debug_group = parser.add_argument_group("Debug options")
+    debug_group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
+    debug_group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
+    debug_group.add_argument('--debug-update', action='store_true', dest='debug_update')
+    debug_group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
+    debug_group.add_argument('--debug-name', action='store_true', dest='debug_name')
+    debug_group.add_argument('--debug-address', action='store_true', dest='debug_address')
+    debug_group.add_argument('--debug-client', action='store_true', dest='debug_client')
+    debug_group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
+    debug_group.add_argument('--debug-contact', action='store_true', dest='debug_contact')
 
     args = parser.parse_args()
 
