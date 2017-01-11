@@ -92,6 +92,8 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._objList_type = 'User'
 
+    reportCols = ColData_User.getReportCols()
+
     def getSanitizer(self, tablefmt=None):
         if tablefmt is 'html':
             return SanitationUtils.sanitizeForXml
@@ -102,12 +104,8 @@ class UsrObjList(ObjList):
 
 
     def getReportCols(self):
-        report_cols = ColData_User.getReportCols()
-        # for exclude_col in ['E-mail','MYOB Card ID','Wordpress Username','Role']:
-        #     if exclude_col in report_cols:
-        #         del report_cols[exclude_col]
-
-        return report_cols
+        raise DeprecationWarning("getReportCols deprecated for .reportCols")
+        return self.reportCols
 
     @classmethod
     def getBasicCols(cls, self):
