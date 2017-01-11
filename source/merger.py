@@ -581,7 +581,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "username matches (%d)" % len(usernameMatcher.matches)
-            print repr(usernameMatcher)
+            # print repr(usernameMatcher)
 
         print debugUtils.hashify("processing cards")
         print timediff()
@@ -600,7 +600,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "card matches (%d)" % len(cardMatcher.matches)
-            print repr(cardMatcher)
+            # print repr(cardMatcher)
 
         # #for every email in slave, check that it exists in master
 
@@ -634,7 +634,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "email matches (%d)" % len(emailMatcher.matches)
-            print repr(emailMatcher)
+            # print repr(emailMatcher)
 
 
         # TODO: further sort emailMatcher
@@ -650,9 +650,9 @@ def main():
         for count, match in enumerate(globalMatches):
             if Registrar.DEBUG_PROGRESS:
                 syncProgressCounter.maybePrintUpdate(count)
-                print "examining globalMatch %d" % count
-                # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
-                print repr(match)
+                # print "examining globalMatch %d" % count
+                # # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
+                # print repr(match)
 
             mObject = match.mObjects[0]
             sObject = match.sObjects[0]
