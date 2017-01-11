@@ -530,6 +530,12 @@ class SyncClient_Rest(SyncClient_Abstract):
                         return
 
     def uploadChanges(self, pkey, data=None):
+        try:
+            pkey = int(pkey)
+        except ValueError:
+            e = UserWarning("Can't convert pkey %s to int" % pkey)
+            Registrar.registerError(e)
+            raise e
         super(SyncClient_Rest, self).uploadChanges(pkey)
         service_endpoint = '%s/%d' % (self.endpoint_plural,pkey)
         data = dict([(key, value) for key, value in data.items()])

@@ -131,8 +131,6 @@ def main():
     group.add_argument('--livemode', help='Run the script on the live databases',
                         action='store_false', dest='testmode')
     group = parser.add_mutually_exclusive_group()
-
-    group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-sync', help='sync the databases',
                        action="store_true", default=config.get('do_sync'))
     group.add_argument('--skip-sync', help='don\'t sync the databases',
@@ -486,7 +484,7 @@ def main():
             'remote_bind_address': SSHTunnelForwarderBindAddress,
         }
         PyMySqlConnectParams = {
-            'host' : 'localhost',
+            'host' : '127.0.0.1',
             'user' : db_user,
             'password': db_pass,
             'db'   : db_name,
@@ -495,8 +493,8 @@ def main():
             'tbl_prefix': tbl_prefix,
         }
 
-        print SSHTunnelForwarderParams
-        print PyMySqlConnectParams
+        print "SSHTunnelForwarderParams", SSHTunnelForwarderParams
+        print "PyMySqlConnectParams", PyMySqlConnectParams
 
         with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
             client.analyseRemote(saParser, limit=global_limit, filterItems=filterItems)
