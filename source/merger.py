@@ -113,8 +113,8 @@ def main():
         update_slave = config.get('update_slave')
         update_master = config.get('update_master')
         do_filter = config.get('do_filter')
-        do_problematic = config.get('do_problematic')
-        do_post = config.get('do_post')
+        # do_problematic = config.get('do_problematic')
+        # do_post = config.get('do_post')
         do_sync = config.get('do_sync')
 
     ### OVERRIDE CONFIG WITH ARGPARSE ###
@@ -161,12 +161,12 @@ def main():
                        action="store_false", dest='do_sync')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-problematic', help='make problematic updates to the databases',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('do_problematic'))
     group.add_argument('--skip-problematic', help='don\'t make problematic updates to the databases',
                        action="store_false", dest='do_problematic')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--do-post', help='post process the contacts',
-                       action="store_true", default=None)
+                       action="store_true", default=config.get('do_post'))
     group.add_argument('--skip-post', help='don\'t post process the contacts',
                        action="store_false", dest='do_post')
 
@@ -215,10 +215,10 @@ def main():
             do_filter = args.do_filter
         if args.do_sync is not None:
             do_sync = args.do_sync
-        if args.do_problematic is not None:
-            do_problematic = args.do_problematic
-        if args.do_post is not None:
-            do_post = args.do_post
+        # if args.do_problematic is not None:
+        #     do_problematic = args.do_problematic
+        # if args.do_post is not None:
+        #     do_post = args.do_post
         if args.m_ssh_port:
             m_ssh_port = args.m_ssh_port
         if args.m_ssh_host:
@@ -307,12 +307,12 @@ def main():
             print "not doing filter"
         if not do_sync:
             print "not doing sync"
-        if not do_post:
+        if not args.do_post:
             print "not doing post"
 
     ### PROCESS CLASS PARAMS ###
 
-    FieldGroup.do_post = do_post
+    FieldGroup.do_post = args.do_post
     SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
     TimeUtils.setWpSrvOffset(wp_srv_offset)
 
@@ -1015,7 +1015,7 @@ def main():
     #########################################
 
     allUpdates = staticUpdates
-    if do_problematic:
+    if args.do_problematic:
         allUpdates += problematicUpdates
 
     print debugUtils.hashify("Update databases (%d)" % len(allUpdates))
