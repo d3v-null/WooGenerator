@@ -269,6 +269,69 @@ case "$sync_subject" in
   'customers' )
     style_info "You have selected to sync customers"
     sync_command+=("python" "source/merger.py")
+
+    if ! $safe_defaults ; then
+      binary_prompt "has the ACT database been updated recently?" "y"
+      download_master_answer="$?"
+    fi
+
+    if [[ "$download_master_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--download-master')
+    else
+      sync_command+=('--skip-download-master')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "has the Wordpress database been updated recently?" "y"
+      download_slave_answer="$?"
+    fi
+
+    if [[ "$download_slave_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--download-master')
+    else
+      sync_command+=('--skip-download-master')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "Do you want to do a full analysis of the data?" "n"
+      do_post_answer="$?"
+    fi
+
+    if [[ "$do_post_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--do-post')
+    else
+      sync_command+=('--skip-post')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to automatically update Wordpress? (unsafe)" "n"
+      update_answer="$?"
+    fi
+    if [[ "$update_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--update-slave')
+    else
+      sync_command+=('--skip-update-slave')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to perform the updates in the report flagged as problematic?" "n"
+      update_problematic_answer="$?"
+    fi
+    if [[ "$update_problematic_answer" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('--do-problematic')
+    else
+      sync_command+=('--skip-problematic')
+    fi
+
+    if ! $safe_defaults ; then
+      binary_prompt "do you want to show verbose debugging information?" "n"
+      show_debug="$?"
+    fi
+    if [[ "$show_debug" == "$ANSWER_TRUE" ]] ; then
+      sync_command+=('-vv')
+    fi
+
+
     ;;
 esac
 
