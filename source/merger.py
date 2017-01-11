@@ -230,14 +230,14 @@ def main():
         if args.m_ssh_host:
             m_ssh_host = args.m_ssh_host
         if args.master_file is not None:
-            download_master = False
+            # download_master = False
             master_file = args.master_file
         if args.slave_file is not None:
-            download_slave = False
+            # download_slave = False
             slave_file = args.slave_file
         if args.card_file is not None:
             cardFile = args.card_file
-            do_filter = True
+            # do_filter = True
 
         if args.debug_abstract is not None:
             Registrar.DEBUG_ABSTRACT = args.debug_abstract
@@ -580,7 +580,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "username matches (%d)" % len(usernameMatcher.matches)
-        #     print usernameMatcher.matches.tabulate(tablefmt="simple")
+            print repr(UsernameMatcher)
 
         print debugUtils.hashify("processing cards")
         print timediff()
@@ -599,7 +599,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "card matches (%d)" % len(cardMatcher.matches)
-        #     print cardMatcher.matches.tabulate(tablefmt="simple")
+            print repr(cardMatcher)
 
         # #for every email in slave, check that it exists in master
 
@@ -615,6 +615,7 @@ def main():
         # saParser.nocards is singular
         # maParser.emails is nonsingular
 
+        #
         # print "saParser.nocards type", type(saParser.nocards)
         # print "maParser.emails type", type(maParser.emails)
         # print "saParser.nocards", str(saParser.nocards)[:100], '...'
@@ -632,7 +633,7 @@ def main():
 
         if(Registrar.DEBUG_MESSAGE):
             print "email matches (%d)" % len(emailMatcher.matches)
-        #     print emailMatcher.matches.tabulate(tablefmt="simple")
+            print repr(emailMatcher)
 
 
         # TODO: further sort emailMatcher
@@ -649,6 +650,9 @@ def main():
         for count, match in enumerate(globalMatches):
             if Registrar.DEBUG_PROGRESS:
                 syncProgressCounter.maybePrintUpdate(count)
+                print "examining globalMatch %d" % count
+                # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
+                print repr(match)
 
             mObject = match.mObjects[0]
             sObject = match.sObjects[0]
@@ -656,7 +660,9 @@ def main():
             syncUpdate = SyncUpdate_Usr(mObject, sObject)
             syncUpdate.update(syncCols)
 
-            # SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+            # if(Registrar.DEBUG_MESSAGE):
+            #     print "examining SyncUpdate"
+            #     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
             if syncUpdate.mUpdated and syncUpdate.mDeltas:
                 insort(mDeltaUpdates, syncUpdate)
@@ -743,7 +749,7 @@ def main():
         #     ('Edited Alt Address', {}),
         # ]))
         # print repr(basic_colnames)
-        unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
+        # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
         # print repr(unicode_colnames)
         # WPCsvWriter = DictWriter(WPresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
         # WPCsvWriter.writeheader()
@@ -838,10 +844,10 @@ def main():
             deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
 
             mDeltaList = UsrObjList(filter(None,
-                                [syncUpdate.newMObject for syncUpdate in mDeltaUpdates]))
+                                [update.newMObject for update in mDeltaUpdates]))
 
             sDeltaList = UsrObjList(filter(None,
-                                [syncUpdate.newSObject for syncUpdate in sDeltaUpdates]))
+                                [update.newSObject for update in sDeltaUpdates]))
 
             deltaCols = ColData_User.getDeltaCols()
 
@@ -960,7 +966,7 @@ def main():
             }
 
             for parselistType, parseList in anomalousParselists.items():
-                description = matchListInstructions.get(parselistType, parselistType)
+                description = parseListInstructions.get(parselistType, parselistType)
                 usrList  = UsrObjList()
                 for obj in parseList.values():
                     usrList.append(obj)

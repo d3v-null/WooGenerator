@@ -5,6 +5,8 @@ from collections import OrderedDict
 from pprint import pformat
 
 class Match(object):
+    """ A list of master objects and slave objects that match in sosme way """
+
     def __init__(self, mObjects = None, sObjects = None):
         self._mObjects = filter(None, mObjects) or []
         self._sObjects = filter(None, sObjects) or []
@@ -174,6 +176,8 @@ def findPCodeMatches(match):
     return match.findKeyMatches( lambda obj: obj.get('Postcode') or obj.get('Home Postcode') or '')
 
 class MatchList(list):
+    """ A sequence of Match objects indexed by an indexFn"""
+
     def __init__(self, matches=None, indexFn = None):
         if(indexFn):
             self._indexFn = indexFn
@@ -306,6 +310,13 @@ class AbstractMatcher(Registrar):
     def processRegistersNonsingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are nonsingular """
 
+        Registrar.registerMessage(
+            "processing registers nonsingular: \n\t%s \n\t%s" % (
+                repr(saRegister),
+                repr(maRegister)
+            )
+        )
+
         # print "processing nonsingular register"
         mKeys = set(maRegister.keys())
 
@@ -323,6 +334,13 @@ class AbstractMatcher(Registrar):
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are singular """
+
+        Registrar.registerMessage(
+            "processing registers singular: \n\t%s \n\t%s" % (
+                repr(saRegister),
+                repr(maRegister)
+            )
+        )
 
         mKeys = OrderedDict()
         for regKey, regValue in maRegister.items():
