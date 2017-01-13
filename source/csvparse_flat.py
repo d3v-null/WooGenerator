@@ -36,6 +36,9 @@ class ImportSpecial(ImportFlat):
     def __init__(self, data, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
+        for key in ["FROM", "TO"]:
+            if key not in data:
+                raise UserWarning("Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
         super(ImportSpecial, self).__init__(data, **kwargs)
         try:
             self.ID
