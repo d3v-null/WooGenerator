@@ -203,7 +203,8 @@ def main():
     group.add_argument("-v", "--verbosity", action="count",
                         help="increase output verbosity")
     group.add_argument("-q", "--quiet", action="store_true")
-    parser.add_argument('--testmode', 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--testmode', 
         help='Run in test mode with test servers',
         action='store_true',
         default=False)
@@ -859,6 +860,9 @@ def main():
     if args.do_images and args.schema in woo_schemas:
 
         Registrar.registerProgress("processing images")
+
+        if Registrar.DEBUG_IMG:
+            Registrar.registerMessage("Looking in folders: %s" % imgRawFolders)
 
         def invalidImage(img_name, error):
             Registrar.registerError(error, img_name)
