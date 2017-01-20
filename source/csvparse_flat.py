@@ -419,6 +419,7 @@ class CSVParse_User(CSVParse_Flat):
         self.usernames = OrderedDict()
         self.nousernames = OrderedDict()
         # self.companies = OrderedDict()
+        self.addresses = OrderedDict()
         self.filtered = OrderedDict()
         self.badName = OrderedDict()
         self.badAddress = OrderedDict()
@@ -546,6 +547,17 @@ class CSVParse_User(CSVParse_Flat):
     #         registerName = 'bademail'
     #     )
 
+    def registerAddress(self, objectData, address):
+        address_str = str(address)
+        if address_str:
+            self.registerAnything(
+                objectData,
+                self.addresses,
+                address_str,
+                singular = False,
+                registerName = 'address'
+            )
+
     def validateFilters(self, objectData):
         if self.filterItems:
             if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']:
@@ -609,6 +621,8 @@ class CSVParse_User(CSVParse_Flat):
                 reason = address.reason
                 assert reason, "there must be a reason that this address is invalid: " + address
                 self.registerBadAddress(objectData, address)
+            else:
+                self.registerAddress(objectData, address)
 
         name = objectData.name
         # print "NAME OF %s IS %s" % (repr(objectData), name.__str__(out_schema="flat"))

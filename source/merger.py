@@ -854,6 +854,35 @@ def main():
             UsrObjList(maParser.badName.values() + maParser.badAddress.values())\
                 .exportItems(masterResCsvPath, csv_colnames)
 
+        address_duplicates = {}
+        for address, objects in maParser.addresses.items():
+            print "analysing address %s " % address
+            for objectData in objects:
+                print " -> associated object: %s" % objectData
+            if len(objects) > 1:
+                # if there are more than one objects associated with an address, add to the duplicate addresses report
+                address_duplicates[address] = objects
+
+        if address_duplicates:
+            print "there are address duplicates"
+            sanitizingGroup.addSection(
+                HtmlReporter.Section(
+                    'address_duplicates',
+                    title='Duplicate %s Addresses' % MASTER_NAME.title(),
+                    description='%s addresses that appear in multiple records' % MASTER_NAME,
+                    data="<br/>".join([
+                        "<h4>%s</h4><p>%s</p>" % (
+                            address, 
+                            UsrObjList(objects).tabulate(
+                                cols=name_cols,
+                                tablefmt='html'
+                            )
+                        ) for address, objects in address_duplicates.items()
+                    ]) 
+                )
+            )
+
+
         reporter.addGroup(sanitizingGroup)
 
         if args.do_sync and (mDeltaUpdates + sDeltaUpdates):
