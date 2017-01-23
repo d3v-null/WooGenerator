@@ -121,6 +121,16 @@ class ColData_Base(object):
                 apiCategoryCols[col] = data
         return apiCategoryCols
 
+    @classmethod
+    def getWPAPIImportCols(cls, api='wp-api'):
+        exportCols = cls.getExportCols('import')
+        apiImportCols = OrderedDict()
+        for col, data in exportCols.items():
+            key = col
+            if api in data and 'key' in data[api]:
+                key = data[api]['key']
+            apiImportCols[key] = data
+        return apiImportCols
 
     @classmethod
     def getSyncCols(self):
@@ -1196,11 +1206,14 @@ class ColData_User(ColData_Base):
             'static':True,
             'basic':True,
         }),
-
         ('E-mail', {
             'wp': {
                 'meta': False,
                 'key': 'user_email'
+            },
+            'wp-api':{
+                'meta':False,
+                'key':'email'
             },
             'act':True,
             'import': True,
@@ -1220,6 +1233,10 @@ class ColData_User(ColData_Base):
                 'key': 'user_login',
                 'final': True
             },
+            'wp-api':{
+                'meta':False,
+                'key':'username'
+            },
             'act':True,
             'user':True,
             'report': True,
@@ -1236,6 +1253,10 @@ class ColData_User(ColData_Base):
                 'meta': False,
                 'key': 'ID',
                 'final': True
+            },
+            'wp-api':{
+                'key':'id',
+                'meta':False
             },
             'act':False,
             'user':True,
@@ -1292,6 +1313,10 @@ class ColData_User(ColData_Base):
                 'meta': False,
                 'key': 'display_name'
             },
+            'wp-api':{
+                'meta':False,
+                'key': 'name'
+            },
             'act': True,
             'mutable':True,
             'visible':True,
@@ -1307,6 +1332,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'first_name'
             },
+            'wp-api':{
+                'meta':True,
+                'key':'first_name'
+            },
             'act': True,
             'mutable':True,
             'visible':True,
@@ -1320,6 +1349,10 @@ class ColData_User(ColData_Base):
         }),
         ('Surname', {
             'wp': {
+                'meta': True,
+                'key': 'last_name'
+            },            
+            'wp-api': {
                 'meta': True,
                 'key': 'last_name'
             },
@@ -1807,6 +1840,19 @@ class ColData_User(ColData_Base):
             'user':True,
             'sync':True,
         }),
+        ('Tans Per Wk', {
+            'wp':{
+                'meta':True,
+                'key':'tans_per_wk'
+            },
+            'wp-api':{
+                'meta':True,
+                'key':'tans_per_wk'
+            },
+            'import':True,
+            'user':True,
+            'sync':True
+        })
 
         # ('E-mails', {
         #     'aliases': ['E-mail', 'Personal E-mail']
@@ -1927,6 +1973,10 @@ class ColData_User(ColData_Base):
             'wp': {
                 'meta': False,
                 'key': 'user_url'
+            },
+            'wp-api':{
+                'meta':False,
+                'key':'url'
             },
             'act':True,
             'label': 'user_url',
