@@ -13,7 +13,7 @@ from source.csvparse_flat import ImportUser, CSVParse_User
 
 class testUsrSyncClient(abstractSyncClientTestCase):
     yamlPath = "merger_config.yaml"
-    optionNamePrefix = 'dummy_'
+    optionNamePrefix = 'test_'
 
     def __init__(self, *args, **kwargs):
         super(testUsrSyncClient, self).__init__(*args, **kwargs)
@@ -283,13 +283,14 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     self.assertTrue(response)
     #     self.assertEqual(url, updated)
 
-    # def test_WC_read(self):
-    #     response = []
-    #     with UsrSyncClient_WC(self.wcApiParams) as client:
-    #         response = client.getIterator()
-    #     print tabulate(list(response)[:10], headers='keys')
-    #     print list(response)
-    #     self.assertTrue(response)
+    def test_WC_read(self):
+        response = []
+        with UsrSyncClient_WC(self.wcApiParams) as client:
+            response = client.getIterator()
+        print tabulate(list(response)[:10], headers='keys')
+        print list(response)
+        self.assertTrue(response)
+
     # def test_WC_Upload_bad(self):
     #     fields = {"user_email": "neil@technotan.com.au"}
     #
@@ -401,9 +402,9 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
 
 if __name__ == '__main__':
-    main()
-    # testSuite = unittest.TestSuite()
+    # main()
+    testSuite = unittest.TestSuite()
     # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Easy'))
     # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Hard'))
-    # testSuite.addTest(testUsrSyncClient('test_WP_READ'))
-    # unittest.TextTestRunner().run(testSuite)
+    testSuite.addTest(testUsrSyncClient('test_WP_READ'))
+    unittest.TextTestRunner().run(testSuite)

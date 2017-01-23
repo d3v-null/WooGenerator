@@ -59,7 +59,6 @@ class AbstractServiceInterface(object):
     def put(self, *args, **kwargs): raise NotImplementedError()
     def get(self, *args, **kwargs): raise NotImplementedError()
     def post(self, *args, **kwargs): raise NotImplementedError()
-    def put(self, *args, **kwargs): raise NotImplementedError()
     @property
     def version(self): raise NotImplementedError()
     # @property
