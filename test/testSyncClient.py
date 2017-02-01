@@ -9,7 +9,7 @@ from source.sync_client import *
 from source.sync_client_prod import *
 from source.sync_client_user import *
 from source.coldata import ColData_User, ColData_Woo
-from source.csvparse_flat import ImportUser
+from source.csvparse_user import ImportUser
 
 class abstractSyncClientTestCase(TestCase):
     yamlPath = "generator_config.yaml"

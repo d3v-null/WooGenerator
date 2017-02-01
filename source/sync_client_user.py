@@ -116,6 +116,10 @@ class UsrSyncClient_WC(SyncClient_WC):
 
 class UsrSyncClient_WP(SyncClient_WP):
     endpoint_singular = 'user'
+    
+    @property
+    def endpoint_plural(self):
+        return "%ss?context=edit" % self.endpoint_singular
 
 class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
     def __init__(self, connectParams, dbParams, fsParams):

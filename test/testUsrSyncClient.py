@@ -2,6 +2,7 @@ from os import sys, path
 import unittest
 from unittest import TestCase, main, skip
 from tabulate import tabulate
+from pprint import pprint
 
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -9,11 +10,12 @@ if __name__ == '__main__' and __package__ is None:
 from testSyncClient import abstractSyncClientTestCase
 from source.sync_client_user import *
 from source.coldata import ColData_User
-from source.csvparse_flat import ImportUser, CSVParse_User
+from source.csvparse_user import ImportUser, CSVParse_User, CSVParse_User_Api
 
 class testUsrSyncClient(abstractSyncClientTestCase):
     yamlPath = "merger_config.yaml"
     optionNamePrefix = 'test_'
+    # optionNamePrefix = 'dummy_'
 
     def __init__(self, *args, **kwargs):
         super(testUsrSyncClient, self).__init__(*args, **kwargs)
@@ -107,7 +109,6 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             'wp_user':wp_user,
             'wp_pass':wp_pass,
             'callback':wp_callback
-
         }
 
         # json_uri = store_url + 'wp-json/wp/v2'
@@ -375,13 +376,33 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     self.assertTrue(response)
     #     self.assertEqual(url, updated)
 
-    def test_WP_READ(self):
+    def test_WP_read(self):
         response = []
         with UsrSyncClient_WP(self.wpApiParams) as client:
             response = client.getIterator()
         print tabulate(list(response)[:10], headers='keys')
         print list(response)
         self.assertTrue(response)
+
+    def test_WP_iterator(self):
+        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+            iterator = slaveClient.getIterator('users?context=edit')
+            for page in iterator:
+                pprint(page)
+
+    def test_WP_analyse(self):
+        print "API Import cols: "
+        pprint(ColData_User.getWPAPIImportCols())
+
+        saParser = CSVParse_User_Api(
+            cols=ColData_User.getWPImportCols(),
+            defaults=ColData_User.getDefaults()
+        )
+
+        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+            slaveClient.analyseRemote(saParser)
+
+        print saParser.tabulate()
 
     # def test_SSH_download(self):
     #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
@@ -406,5 +427,8 @@ if __name__ == '__main__':
     testSuite = unittest.TestSuite()
     # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Easy'))
     # testSuite.addTest(testUsrSyncClient('test_JSON_Upload_Core_Hard'))
-    testSuite.addTest(testUsrSyncClient('test_WP_READ'))
+    # testSuite.addTest(testUsrSyncClient('test_WP_read'))
+    # testSuite.addTest(testUsrSyncClient('test_WC_read'))
+    # testSuite.addTest(testUsrSyncClient('test_WP_iterator'))
+    testSuite.addTest(testUsrSyncClient('test_WP_analyse'))
     unittest.TextTestRunner().run(testSuite)

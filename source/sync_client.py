@@ -4,7 +4,7 @@ import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
 from utils import ProgressCounter
-from csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
+from csvparse_user import CSVParse_User, UsrObjList #, ImportUser
 from coldata import ColData_User
 from tabulate import tabulate
 from itertools import chain
@@ -325,7 +325,7 @@ class SyncClient_Rest(SyncClient_Abstract):
             if Registrar.DEBUG_API:
                 Registrar.registerMessage("headers: %s" % str(headers))
 
-            if self.service.namespace == 'wp-api':
+            if self.service.namespace == 'wp-json':
                 total_pages_key = 'X-WP-TotalPages'
                 total_items_key = 'X-WP-Total'
             else:
@@ -449,6 +449,10 @@ class SyncClient_Rest(SyncClient_Abstract):
     mandatory_params = ['api_key', 'api_secret', 'url']
     default_version='wp/v2'
     default_namespace='wp-json'
+    # determines whether this version of the api does page nesting.
+    # Page without nesting: [object1, object2]
+    # page with nesting: ['objects':[object1, object2]]
+    page_nesting=True
 
     @property
     def endpoint_plural(self):
@@ -510,23 +514,30 @@ class SyncClient_Rest(SyncClient_Abstract):
         progressCounter = None
         for page in apiIterator:
             if progressCounter is None:
-                total_items = apiIterator.total_items
-                if limit:
+                total_items = 0
+                if apiIterator.total_items is not None:
+                    total_items = apiIterator.total_items
+                if limit is not None:
                     total_items = min(limit, total_items)
                 progressCounter = ProgressCounter(total_items)
             progressCounter.maybePrintUpdate(resultCount)
 
             # if Registrar.DEBUG_API:
             #     Registrar.registerMessage('processing page: %s' % str(page))
-            if self.endpoint_plural in page:
-                for page_item in page.get(self.endpoint_plural):
+            page_items = []
+            if self.page_nesting and self.endpoint_plural in page:
+                page_items = page.get(self.endpoint_plural)
+            else:
+                page_items = page
 
-                    parser.analyseWpApiObj(page_item)
-                    resultCount += 1
-                    if limit and resultCount > limit:
-                        if Registrar.DEBUG_API:
-                            Registrar.registerMessage('reached limit, exiting')
-                        return
+            for page_item in page_items:
+
+                parser.analyseWpApiObj(page_item)
+                resultCount += 1
+                if limit and resultCount > limit:
+                    if Registrar.DEBUG_API:
+                        Registrar.registerMessage('reached limit, exiting')
+                    return
 
     def uploadChanges(self, pkey, data=None):
         try:
@@ -590,3 +601,4 @@ class SyncClient_WC(SyncClient_Rest):
 
 class SyncClient_WP(SyncClient_Rest):
     mandatory_params = ['api_key', 'api_secret', 'url', 'wp_user', 'wp_pass', 'callback']
+    page_nesting=False

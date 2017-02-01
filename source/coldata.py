@@ -102,13 +102,20 @@ class ColData_Base(object):
 
     @classmethod
     def getWPAPIMetaCols(cls, api='wp-api'):
-        exportCols = cls.getExportCols(api)
+        # exportCols = cls.getExportCols(api)
         apiCols = OrderedDict()
-        for col, data in exportCols.items():
+        for col, data in cls.data.items():
             apiData = data.get(api, {})
             if hasattr(apiData, '__getitem__') \
-            and apiData.get('meta'):
-                apiCols[col] = data
+            and apiData.get('meta') is not None:
+                if apiData.get('meta'):
+                    apiCols[col] = data
+            else:
+                backupApiData = data.get('wp', {})
+                if hasattr(backupApiData, '__getitem__') \
+                and backupApiData.get('meta') is not None:
+                    if backupApiData.get('meta'):
+                        apiCols[col] = data
         return apiCols
 
 
@@ -1333,7 +1340,7 @@ class ColData_User(ColData_Base):
                 'key': 'first_name'
             },
             'wp-api':{
-                'meta':True,
+                'meta':False,
                 'key':'first_name'
             },
             'act': True,
@@ -1353,7 +1360,7 @@ class ColData_User(ColData_Base):
                 'key': 'last_name'
             },            
             'wp-api': {
-                'meta': True,
+                'meta': False,
                 'key': 'last_name'
             },
             'act': True,
@@ -1382,7 +1389,7 @@ class ColData_User(ColData_Base):
             'wp': {
                 'meta': True,
                 'key': 'name_suffix'
-            },
+            },            
             'act': True,
             'import': True,
             'visible':True,
@@ -1852,7 +1859,7 @@ class ColData_User(ColData_Base):
             'import':True,
             'user':True,
             'sync':True
-        })
+        }),
 
         # ('E-mails', {
         #     'aliases': ['E-mail', 'Personal E-mail']
