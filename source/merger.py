@@ -39,7 +39,7 @@ from sshtunnel import check_address
 import io
 # import wordpress_xmlrpc
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
-from sync_client_user import UsrSyncClient_WC #, UsrSyncClient_JSON
+from sync_client_user import UsrSyncClient_WP #, UsrSyncClient_WC, UsrSyncClient_JSON
 from SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 from contact_objects import FieldGroup
 
@@ -300,8 +300,13 @@ def main():
         # wp_user = config.get(optionNamePrefix+'wp_user', '')
         # wp_pass = config.get(optionNamePrefix+'wp_pass', '')
         store_url = config.get(optionNamePrefix+'store_url', '')
-        wc_api_key = config.get(optionNamePrefix+'wc_api_key')
-        wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
+        wp_user = config.get(optionNamePrefix+'wp_user')
+        wp_pass = config.get(optionNamePrefix+'wp_pass')
+        wp_callback = config.get(optionNamePrefix+'wp_callback')
+        wp_api_key = config.get(optionNamePrefix+'wp_api_key')
+        wp_api_secret = config.get(optionNamePrefix+'wp_api_secret')
+       #  wc_api_key = config.get(optionNamePrefix+'wc_api_key')
+       #  wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
         remote_export_folder = config.get(optionNamePrefix+'remote_export_folder', '')
 
 
@@ -389,10 +394,19 @@ def main():
     #     'wp_pass': wp_pass
     # }
 
-    wcApiParams = {
-        'api_key':wc_api_key,
-        'api_secret':wc_api_secret,
-        'url':store_url
+    # wcApiParams = {
+        # 'api_key':wc_api_key,
+        # 'api_secret':wc_api_secret,
+        # 'url':store_url
+    # }
+
+    wpApiParams = {
+        'api_key': wp_api_key,
+        'api_secret': wp_api_secret,
+        'url':store_url,
+        'wp_user':wp_user,
+        'wp_pass':wp_pass,
+        'callback':wp_callback
     }
 
     actConnectParams = {
@@ -1096,7 +1110,7 @@ def main():
 
         with \
             UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient, \
-            UsrSyncClient_WC(wcApiParams) as slaveClient:
+            UsrSyncClient_WP(wpApiParams) as slaveClient:
             # UsrSyncClient_JSON(jsonConnectParams) as slaveClient:
 
             for count, update in enumerate(allUpdates):
