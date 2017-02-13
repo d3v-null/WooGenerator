@@ -1,12 +1,12 @@
-import yaml
+# import yaml
 from collections import OrderedDict
-from utils import SanitationUtils, TimeUtils, Registrar, UnicodeCsvDialectUtils
+from utils import SanitationUtils, TimeUtils, Registrar #, UnicodeCsvDialectUtils
 from contact_objects import ContactAddress
 from coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
 from tabulate import tabulate
 from copy import deepcopy
 from matching import Match
-from csvparse_user import ImportUser
+# from csvparse_user import ImportUser
 from csvparse_abstract import ImportObject
 
 class SyncUpdate(Registrar):
@@ -294,7 +294,8 @@ class SyncUpdate(Registrar):
                             if rawTime:
                                 warning_fmtd[key] = TimeUtils.wpTimeToString(rawTime)
                         except Exception, e:
-                            pass
+                            if(e):
+                                pass
                     subjects[subject].append(warning_fmtd)
             tables = []
             for subject, warnings in subjects.items():
@@ -908,6 +909,45 @@ class SyncUpdate_Usr(SyncUpdate):
             pass
             if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
         return updates
+
+class SyncUpdate_Usr_Api(SyncUpdate_Usr):
+    s_meta_target = 'wp-api'
+
+    def getSlaveUpdatesNativeRecursive(self, col, updates=None):
+        if updates == None: updates = OrderedDict()
+        if self.DEBUG_UPDATE: self.registerMessage( u"checking %s : %s" % (unicode(col), self.colData.data.get(col)) )
+        if col in self.colData.data:
+            if self.DEBUG_UPDATE: self.registerMessage( u"col exists" )
+            data = self.colData.data[col]
+            if data.get(self.s_meta_target):
+                if self.DEBUG_UPDATE: self.registerMessage( u"wp-api exists" )
+                data_s = data.get(self.s_meta_target,{})
+                if not data_s.get('final') and data_s.get('key'):
+                    newVal = self.newSObject.get(col)
+                    newKey = col
+                    if 'key' in data_s:
+                        newKey = data_s.get('key')
+                    if data_s.get('meta'):
+                        if not 'meta' in updates :
+                            updates['meta'] = OrderedDict()
+                        updates['meta'][newKey] = newVal
+                    else:
+                        updates[newKey] = newVal
+                    if self.DEBUG_UPDATE: self.registerMessage( u"newval: %s" % repr(newVal) )
+                    if self.DEBUG_UPDATE: self.registerMessage( u"newkey: %s" % repr(newKey) )
+            if data.get('aliases'):
+                if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
+                data_aliases = data['aliases']
+                for alias in data_aliases:
+                    if self.sColSemiStatic(alias):
+                        if self.DEBUG_UPDATE: self.registerMessage( u"Alias semistatic" )
+                        continue
+                    else:
+                        updates = self.getSlaveUpdatesNativeRecursive(alias, updates)
+        else:
+            if self.DEBUG_UPDATE: self.registerMessage( u"col doesn't exist" )
+        return updates
+
 
 
 class SyncUpdate_Prod(SyncUpdate):

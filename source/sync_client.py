@@ -1,43 +1,45 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict, Iterable
+from collections import Iterable # OrderedDict,
 import os
 # import shutil
-from utils import SanitationUtils, TimeUtils, listUtils, debugUtils, Registrar
+from utils import Registrar #, SanitationUtils, TimeUtils, listUtils, debugUtils,
 from utils import ProgressCounter
-from csvparse_user import CSVParse_User, UsrObjList #, ImportUser
-from coldata import ColData_User
-from tabulate import tabulate
-from itertools import chain
+# from csvparse_user import UsrObjList #, ImportUser, CSVParse_User
+# from coldata import ColData_User
+# from tabulate import tabulate
+# from itertools import chain
 # from pprint import pprint
 # import sys
-from copy import deepcopy
-import unicodecsv
+# from copy import deepcopy
+# import unicodecsv
 # import pickle
-import dill as pickle
-import requests
-from bisect import insort
+# import dill as pickle
+# import requests
+# from bisect import insort
 import re
 import time
-import yaml
+# import yaml
 # import MySQLdb
-import paramiko
-from sshtunnel import SSHTunnelForwarder, check_address
-import io
+# import paramiko
+# from sshtunnel import SSHTunnelForwarder, check_address
+# import io
 # import wordpress_xmlrpc
-from wordpress_json import WordpressJsonWrapper, WordpressError
-import pymysql
+# from wordpress_json import WordpressJsonWrapper, WordpressError
+# import pymysql
 from simplejson import JSONDecodeError
 
-from requests import request, ConnectionError, ReadTimeout
-from json import dumps as jsonencode
+# from requests import request,
+from requests import ConnectionError, ReadTimeout
+# from json import dumps as jsonencode
 
 try:
-    from urllib.parse import urlencode, quote, unquote, parse_qs, parse_qsl, urlparse, urlunparse
-    from urllib.parse import ParseResult as URLParseResult
+    from urllib.parse import urlencode #, quote, unquote
+    from urllib.parse import urlparse #, urlunparse, parse_qs, parse_qsl,
+    # from urllib.parse import ParseResult as URLParseResult
 except ImportError:
-    from urllib import urlencode, quote, unquote
-    from urlparse import parse_qs, parse_qsl, urlparse, urlunparse
-    from urlparse import ParseResult as URLParseResult
+    from urllib import urlencode #, quote, unquote
+    from urlparse import urlparse #, parse_qs, parse_qsl, urlunparse
+    # from urlparse import ParseResult as URLParseResult
 
 import httplib2
 
@@ -49,7 +51,7 @@ from oauth2client import tools
 # from woocommerce import API
 from wordpress import API
 from wordpress.helpers import UrlUtils
-from simplejson.scanner import JSONDecodeError
+# from simplejson.scanner import JSONDecodeError
 
 class AbstractServiceInterface(object):
     """Defines the interface to an abstract service, gets rid of PEP8 warnings"""
@@ -547,15 +549,22 @@ class SyncClient_Rest(SyncClient_Abstract):
             Registrar.registerError(e)
             raise e
         super(SyncClient_Rest, self).uploadChanges(pkey)
-        service_endpoint = '%s/%d' % (self.endpoint_plural,pkey)
+        endpoint_parsed = urlparse(self.endpoint_plural)
+        service_endpoint = '%s/%d' % (endpoint_parsed.path, pkey)
+        if endpoint_parsed.query:
+            service_endpoint += '?%s' % endpoint_parsed.query
         data = dict([(key, value) for key, value in data.items()])
-        if self.service.version is not 'wc/v1':
+        # print "service version: %s, data:%s" % (self.service.version, data)
+        if re.match('wc/v[2-9]',   self.service.version ) :
             data = {self.endpoint_singular:data}
         if Registrar.DEBUG_API:
             Registrar.registerMessage("updating %s: %s" % (service_endpoint, data))
         response = self.service.put(service_endpoint, data)
         assert response.status_code not in [400,401], "API ERROR"
-        assert response.json(), "json should exist"
+        try:
+            assert response.json()
+        except:
+            raise UserWarning("json should exist, instead response was %s" % response.text)
         assert not isinstance(response.json(), int), "could not convert response to json: %s %s" % (str(response), str(response.json()))
         assert 'errors' not in response.json(), "response has errors: %s" % str(response.json()['errors'])
         return response

@@ -1,7 +1,7 @@
 # from __future__ import absolute_import
 from collections import OrderedDict
-from utils import listUtils, Registrar #, debugUtils
-import json
+from utils import listUtils #, Registrar #, debugUtils
+# import json
 
 class ColData_Base(object):
     data = OrderedDict()
