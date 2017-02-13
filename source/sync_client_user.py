@@ -14,7 +14,7 @@ from coldata import ColData_User
 import unicodecsv
 # import pickle
 # import dill as pickle
-import requests
+# import requests
 # from bisect import insort
 import re
 # import time
@@ -26,8 +26,8 @@ from sshtunnel import SSHTunnelForwarder #, check_address
 # import wordpress_xmlrpc
 # from wordpress_json import WordpressJsonWrapper, WordpressError
 import pymysql
-from simplejson import JSONDecodeError
-from sync_client import SyncClient_Abstract, AbstractServiceInterface
+# from simplejson import JSONDecodeError
+from sync_client import SyncClient_Abstract #, AbstractServiceInterface
 from sync_client import SyncClient_WP
 from sync_client import SyncClient_WC
 
