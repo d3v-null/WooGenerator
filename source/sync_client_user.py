@@ -116,7 +116,7 @@ class UsrSyncClient_WC(SyncClient_WC):
 
 class UsrSyncClient_WP(SyncClient_WP):
     endpoint_singular = 'user'
-    
+
     @property
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
@@ -169,6 +169,7 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
 
         if not fstat:
             exception = UserWarning("could not stat remote file")
+            raise exception
 
         # try:
         #     sftpClient = self.service.open_sftp()
@@ -410,7 +411,7 @@ class UsrSyncClient_SQL_WP(SyncClient_Abstract):
             cursor.execute(sql_select_modtime)
             headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
             results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
-            table = [headers] + results
+            # table = [headers] + results
             # print tabulate(table, headers='firstrow')
             # results = list(cursor)
             # if len(results) == 0:
