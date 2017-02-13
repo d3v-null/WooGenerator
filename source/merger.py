@@ -6,7 +6,7 @@ import unicodecsv
 import argparse
 import traceback
 # import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter, listUtils
+from utils import SanitationUtils, TimeUtils, HtmlReporter #,listUtils
 from utils import Registrar, debugUtils, ProgressCounter
 from matching import Match, MatchList, ConflictingMatchList
 from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
@@ -14,7 +14,7 @@ from csvparse_usr import CSVParse_User, UsrObjList #, ImportUser
 # from contact_objects import ContactAddress
 from coldata import ColData_User
 # from tabulate import tabulate
-from itertools import chain
+# from itertools import chain
 # from pprint import pprint
 # import sys
 # from copy import deepcopy
@@ -25,17 +25,17 @@ from bisect import insort
 import re
 import time
 import yaml
-import smtplib
+# import smtplib
 import zipfile
-import tempfile
-from email import encoders
-from email.message import Message
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
+# import tempfile
+# from email import encoders
+# from email.message import Message
+# from email.mime.base import MIMEBase
+# from email.mime.multipart import MIMEMultipart
 # import MySQLdb
 # import pymysql
 # import paramiko
-from sshtunnel import SSHTunnelForwarder, check_address
+from sshtunnel import check_address
 import io
 # import wordpress_xmlrpc
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
