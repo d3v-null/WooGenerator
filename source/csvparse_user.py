@@ -610,7 +610,7 @@ class CSVParse_User_Api(CSVParse_User):
         if 'meta' in apiData:
             meta_translation = OrderedDict()
             metaData = apiData['meta']
-            if Registrar.DEBUG_API: Registrar.registerMessage("meta data: %s" % pformat(ColData_User.getWPAPIMetaCols().items()))
+            # if Registrar.DEBUG_API: Registrar.registerMessage("meta data: %s" % pformat(ColData_User.getWPAPIMetaCols().items()))
             for col, col_data in ColData_User.getWPAPIMetaCols().items():
                 try:
                     if 'wp-api' in col_data:
@@ -623,7 +623,7 @@ class CSVParse_User_Api(CSVParse_User):
                 meta_translation[wp_api_key] = col
             if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation: %s" % pformat(meta_translation))
             meta_translation_result = cls.translateKeys(metaData, meta_translation)
-            if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation_result: %s" % pformat(meta_translation_result))
+            # if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation_result: %s" % pformat(meta_translation_result))
             parserData.update(**meta_translation_result)
 
         if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )
