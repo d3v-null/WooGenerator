@@ -40,7 +40,7 @@ import io
 # import wordpress_xmlrpc
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
 from sync_client_user import UsrSyncClient_WC #, UsrSyncClient_JSON
-from SyncUpdate import SyncUpdate, SyncUpdate_Usr
+from SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 from contact_objects import FieldGroup
 
 
@@ -666,7 +666,7 @@ def main():
             mObject = match.mObjects[0]
             sObject = match.sObjects[0]
 
-            syncUpdate = SyncUpdate_Usr(mObject, sObject)
+            syncUpdate = SyncUpdate_Usr_Api(mObject, sObject)
             syncUpdate.update(syncCols)
 
             # if(Registrar.DEBUG_MESSAGE):
