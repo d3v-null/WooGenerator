@@ -1,17 +1,21 @@
 from os import sys, path
-import unittest
-from unittest import TestCase, main, skip
-from tabulate import tabulate
+import random
+# import unittest
+import traceback
+from unittest import main #, skip, TestCase
+# from tabulate import tabulate
+from bisect import insort
 
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 from testSyncClient import abstractSyncClientTestCase
-from source.sync_client_user import *
+from source.utils import TimeUtils, Registrar, SanitationUtils
+from source.sync_client_user import UsrSyncClient_WP
 from source.coldata import ColData_User
-from source.csvparse_user import ImportUser, CSVParse_User, CSVParse_User_Api
+from source.csvparse_user import CSVParse_User, CSVParse_User_Api #, ImportUser
 from source.matching import UsernameMatcher, MatchList #, CardMatcher, NocardEmailMatcher, EmailMatcher
-import random
+from source.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
     yamlPath = "merger_config.yaml"
