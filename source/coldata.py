@@ -1281,6 +1281,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'act_role'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'act_role'
+            },
             # 'label': 'act_role',
             'act':True,
             'delta':True,
@@ -1358,7 +1362,7 @@ class ColData_User(ColData_Base):
             'wp': {
                 'meta': True,
                 'key': 'last_name'
-            },            
+            },
             'wp-api': {
                 'meta': False,
                 'key': 'last_name'
@@ -1379,6 +1383,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'middle_name'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'middle_name'
+            },
             'act': True,
             'import': True,
             'mutable':True,
@@ -1389,7 +1397,11 @@ class ColData_User(ColData_Base):
             'wp': {
                 'meta': True,
                 'key': 'name_suffix'
-            },            
+            },
+            'wp-api': {
+                'meta': True,
+                'key': 'name_suffix'
+            },
             'act': True,
             'import': True,
             'visible':True,
@@ -1398,6 +1410,10 @@ class ColData_User(ColData_Base):
         }),
         ('Name Prefix', {
             'wp': {
+                'meta': True,
+                'key': 'name_prefix'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'name_prefix'
             },
@@ -1412,12 +1428,20 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'name_notes'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'name_notes'
+            },
             'act': True,
             'import': True,
             'tracked':True,
         }),
         ('Spouse', {
             'wp': {
+                'meta': True,
+                'key': 'spouse'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'spouse'
             },
@@ -1430,12 +1454,20 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'nickname'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'nickname'
+            },
             'act': True,
             'import': True,
         }),
 
         ('Company', {
             'wp': {
+                'meta': True,
+                'key': 'billing_company'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'billing_company'
             },
@@ -1466,6 +1498,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'mobile_number'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'mobile_number'
+            },
             'act': True,
             # 'label':'mobile_number',
             'import':True,
@@ -1478,6 +1514,10 @@ class ColData_User(ColData_Base):
         }),
         ('Phone', {
             'wp': {
+                'meta': True,
+                'key': 'billing_phone'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'billing_phone'
             },
@@ -1496,6 +1536,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'fax_number'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'fax_number'
+            },
             'act':True,
             # 'label':'fax_number',
             'import':True,
@@ -1510,6 +1554,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'pref_mob'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'pref_mob'
+            },
             'act':True,
             # 'label':'pref_mob',
             'import':True,
@@ -1520,6 +1568,10 @@ class ColData_User(ColData_Base):
         }),
         ('Phone Preferred', {
             'wp': {
+                'meta': True,
+                'key': 'pref_tel'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'pref_tel'
             },
@@ -1560,6 +1612,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_address_1'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'billing_address_1'
+            },
             'act':True,
             # 'label':'billing_address_1',
             'import':True,
@@ -1575,6 +1631,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_address_2'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'billing_address_2'
+            },
             'act':True,
             # 'label':'billing_address_2',
             'import':True,
@@ -1587,6 +1647,10 @@ class ColData_User(ColData_Base):
         }),
         ('City', {
             'wp': {
+                'meta': True,
+                'key': 'billing_city'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'billing_city'
             },
@@ -1606,6 +1670,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_postcode'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'billing_postcode'
+            },
             'act':True,
             # 'label':'billing_postcode',
             'import':True,
@@ -1618,6 +1686,10 @@ class ColData_User(ColData_Base):
         }),
         ('State', {
             'wp': {
+                'meta': True,
+                'key': 'billing_state'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'billing_state'
             },
@@ -1634,6 +1706,10 @@ class ColData_User(ColData_Base):
         }),
         ('Country', {
             'wp': {
+                'meta': True,
+                'key': 'billing_country'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'billing_country'
             },
@@ -1662,6 +1738,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_address_1'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'shipping_address_1'
+            },
             'act':True,
             # 'label':'shipping_address_1',
             'import':True,
@@ -1673,6 +1753,10 @@ class ColData_User(ColData_Base):
         }),
         ('Home Address 2', {
             'wp': {
+                'meta': True,
+                'key': 'shipping_address_2'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'shipping_address_2'
             },
@@ -1690,6 +1774,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_city'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'shipping_city'
+            },
             'act':True,
             # 'label':'shipping_city',
             'import':True,
@@ -1701,6 +1789,10 @@ class ColData_User(ColData_Base):
         }),
         ('Home Postcode', {
             'wp': {
+                'meta': True,
+                'key': 'shipping_postcode'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'shipping_postcode'
             },
@@ -1717,6 +1809,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_country'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'shipping_country'
+            },
             'act':True,
             # 'label':'shipping_country',
             'import':True,
@@ -1728,6 +1824,10 @@ class ColData_User(ColData_Base):
         }),
         ('Home State', {
             'wp': {
+                'meta': True,
+                'key': 'shipping_state'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'shipping_state'
             },
@@ -1749,6 +1849,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'myob_customer_card_id'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'myob_customer_card_id'
+            },
             'act':True,
             'import':True,
             # 'report':True,
@@ -1759,6 +1863,10 @@ class ColData_User(ColData_Base):
         ('Client Grade', {
             'import':True,
             'wp': {
+                'meta': True,
+                'key': 'client_grade'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'client_grade'
             },
@@ -1776,6 +1884,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'direct_brand'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'direct_brand'
+            },
             'act':True,
             # 'label':'direct_brand',
             'user':True,
@@ -1785,6 +1897,10 @@ class ColData_User(ColData_Base):
         }),
         ('Agent', {
             'wp': {
+                'meta': True,
+                'key': 'agent'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'agent'
             },
@@ -1802,6 +1918,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'abn'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'abn'
+            },
             'act':True,
             # 'label':'abn',
             'import':True,
@@ -1813,6 +1933,10 @@ class ColData_User(ColData_Base):
         }),
         ('Business Type', {
             'wp': {
+                'meta': True,
+                'key': 'business_type'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'business_type'
             },
@@ -1829,6 +1953,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'how_hear_about'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'how_hear_about'
+            },
             'act':True,
             # 'label':'how_hear_about',
             'import':True,
@@ -1838,6 +1966,10 @@ class ColData_User(ColData_Base):
         }),
         ('Referred By', {
             'wp': {
+                'meta': True,
+                'key': 'referred_by'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'referred_by'
             },
@@ -1869,6 +2001,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'personal_email'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'personal_email'
+            },
             'act':True,
             # 'label':'personal_email',
             'import':True,
@@ -1889,12 +2025,20 @@ class ColData_User(ColData_Base):
                 'meta': False,
                 'key': 'user_registered'
             },
+            'wp-api': {
+                'meta': False,
+                'key': 'user_registered'
+            },
             'act':True,
             # 'report': True,
             # 'basic':True
         }),
         ('Edited in Act', {
             'wp': {
+                'meta': True,
+                'key': 'edited_in_act'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'edited_in_act'
             },
@@ -1914,6 +2058,10 @@ class ColData_User(ColData_Base):
         }),
         ('Last Sale', {
             'wp': {
+                'meta': True,
+                'key': 'act_last_sale'
+            },
+            'wp-api': {
                 'meta': True,
                 'key': 'act_last_sale'
             },
@@ -1937,6 +2085,10 @@ class ColData_User(ColData_Base):
                 'key': "facebook",
                 'meta': True
             },
+            'wp-api': {
+                'key': "facebook",
+                'meta': True
+            },
             'mutable':True,
             'visible':True,
             'contact':True,
@@ -1945,6 +2097,10 @@ class ColData_User(ColData_Base):
         }),
         ("Twitter Username", {
             'wp': {
+                'key': "twitter",
+                'meta': True
+            },
+            'wp-api': {
                 'key': "twitter",
                 'meta': True
             },
@@ -1959,6 +2115,10 @@ class ColData_User(ColData_Base):
                 'key': "gplus",
                 'meta': True
             },
+            'wp-api': {
+                'key': "gplus",
+                'meta': True
+            },
             'contact':True,
             'mutable':True,
             'visible':True,
@@ -1967,6 +2127,10 @@ class ColData_User(ColData_Base):
         }),
         ("Instagram Username", {
             'wp': {
+                'key': "instagram",
+                'meta': True
+            },
+            'wp-api': {
                 'key': "instagram",
                 'meta': True
             },
@@ -1995,6 +2159,10 @@ class ColData_User(ColData_Base):
 
         ("Added to mailing list", {
             'wp': {
+                'key': 'mailing_list',
+                'meta':True,
+            },
+            'wp-api': {
                 'key': 'mailing_list',
                 'meta':True,
             },
