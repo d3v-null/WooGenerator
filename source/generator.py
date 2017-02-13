@@ -15,7 +15,7 @@ from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
 from utils import HtmlReporter
 from csvparse_abstract import Registrar
-from csvparse_shop import ShopObjList # ShopProdList, 
+from csvparse_shop import ShopObjList # ShopProdList,
 from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_api import CSVParse_Woo_Api
@@ -27,7 +27,7 @@ from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
 from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, , 
+from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, ,
 from bisect import insort
 from matching import MatchList
 from tabulate import tabulate
@@ -204,94 +204,94 @@ def main():
                         help="increase output verbosity")
     group.add_argument("-q", "--quiet", action="store_true")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--testmode', 
+    group.add_argument('--testmode',
         help='Run in test mode with test servers',
         action='store_true',
         default=False)
-    group.add_argument('--livemode', 
+    group.add_argument('--livemode',
         help='Run the script on the live databases',
-        action='store_false', 
+        action='store_false',
         dest='testmode')
 
     download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-master', 
+    group.add_argument('--download-master',
         help='download the master data from google',
-        action="store_true", 
+        action="store_true",
         default=config.get('download_master'))
-    group.add_argument('--skip-download-master', 
-        help='use the local master file instead of downloading the master data', 
-        action="store_false", 
+    group.add_argument('--skip-download-master',
+        help='use the local master file instead of downloading the master data',
+        action="store_false",
         dest='download_master')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-slave', 
+    group.add_argument('--download-slave',
         help='download the slave data',
-        action="store_true", 
+        action="store_true",
         default=config.get('download_slave'))
-    group.add_argument('--skip-download-slave', 
-        help='use the local slave file instead of downloading the slave data', 
-        action="store_false", 
+    group.add_argument('--skip-download-slave',
+        help='use the local slave file instead of downloading the slave data',
+        action="store_false",
         dest='download_slave')
-    download_group.add_argument('--download-limit', 
+    download_group.add_argument('--download-limit',
         help='global limit of objects to download (for debugging)',
         type=int)
-    parser.add_argument('--schema', 
-        help='what schema to process the files as', 
+    parser.add_argument('--schema',
+        help='what schema to process the files as',
         default=config.get('fallback_schema'))
-    parser.add_argument('--variant', 
-        help='what variant of schema to process the files', 
+    parser.add_argument('--variant',
+        help='what variant of schema to process the files',
         default=config.get('fallback_variant'))
-    # parser.add_argument('--taxo-depth', 
-    #     help='what depth of taxonomy columns is used in the generator file', 
+    # parser.add_argument('--taxo-depth',
+    #     help='what depth of taxonomy columns is used in the generator file',
     #     default=taxoDepth)
-    # parser.add_argument('--item-depth', 
-    #     help='what depth of item columns is used in the generator file', 
+    # parser.add_argument('--item-depth',
+    #     help='what depth of item columns is used in the generator file',
     #     default=itemDepth)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--update-slave', 
+    group.add_argument('--update-slave',
         help='update the slave database in WooCommerce',
-        action="store_true", 
+        action="store_true",
         default=config.get('update_slave'))
-    group.add_argument('--skip-update-slave', 
+    group.add_argument('--skip-update-slave',
         help='don\'t update the slave database',
         action="store_false", dest='update_slave')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic', 
+    group.add_argument('--do-problematic',
         help='perform problematic updates anyway',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_problematic'))
-    group.add_argument('--skip-problematic', 
+    group.add_argument('--skip-problematic',
         help='protect data from problematic updates',
-        action="store_false", 
+        action="store_false",
         dest='do_problematic')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--auto-create-new', 
+    group.add_argument('--auto-create-new',
         help='automatically create new products if they don\'t exist yet',
-        action="store_true", 
+        action="store_true",
         default=config.get('auto_create_new'))
-    update_group.add_argument('--no-create-new', 
+    update_group.add_argument('--no-create-new',
         help='do not create new items, print which need to be created',
-        action="store_false", 
-        dest="auto_create_new")    
-    group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--auto-delete-old', 
-        help='automatically delete old products if they don\'t exist any more',
-        action="store_true", 
-        default=config.get('auto_delete_old'))
-    group.add_argument('--no-delete-old', 
-        help='do not delete old items, print which need to be deleted',
-        action="store_false", 
+        action="store_false",
         dest="auto_create_new")
-    update_group.add_argument('--slave-timeout', 
-        help='timeout when using the slave api', 
+    group = update_group.add_mutually_exclusive_group()
+    group.add_argument('--auto-delete-old',
+        help='automatically delete old products if they don\'t exist any more',
+        action="store_true",
+        default=config.get('auto_delete_old'))
+    group.add_argument('--no-delete-old',
+        help='do not delete old items, print which need to be deleted',
+        action="store_false",
+        dest="auto_create_new")
+    update_group.add_argument('--slave-timeout',
+        help='timeout when using the slave api',
         default=config.get('slave_timeout'))
-    update_group.add_argument('--slave-limit', 
-        help='limit per page when using the slave api', 
+    update_group.add_argument('--slave-limit',
+        help='limit per page when using the slave api',
         default=config.get('slave_limit'))
-    update_group.add_argument('--slave-offset', 
-        help='offset when using the slave api (for debugging)', 
+    update_group.add_argument('--slave-offset',
+        help='offset when using the slave api (for debugging)',
         default=config.get('slave_offset'))
     group = update_group.add_mutually_exclusive_group()
     group.add_argument('--ask-before-update', help="ask before updating",
@@ -300,129 +300,133 @@ def main():
                        action="store_false", dest="ask_before_update")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-sync', 
+    group.add_argument('--do-sync',
         help='sync the databases',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_sync'))
-    group.add_argument('--skip-sync', 
+    group.add_argument('--skip-sync',
         help='don\'t sync the databases',
-        action="store_false", 
+        action="store_false",
         dest='do_sync')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-categories', 
+    group.add_argument('--do-categories',
         help='sync categories',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_categories'))
-    group.add_argument('--skip-categories', 
+    group.add_argument('--skip-categories',
         help='don\'t sync categories',
         action="store_false",
         dest='do_categories')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-variations', 
+    group.add_argument('--do-variations',
         help='sync variations',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_variations'))
-    group.add_argument('--skip-variations', 
+    group.add_argument('--skip-variations',
         help='don\'t sync variations',
-        action="store_false", 
+        action="store_false",
         dest='do_variations')
 
     report_group = parser.add_argument_group('Report options')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--show-report', 
+    group.add_argument('--show-report',
         help='generate report files',
         action="store_true", default=config.get('show_report'))
-    group.add_argument('--skip-report', 
+    group.add_argument('--skip-report',
         help='don\'t generate report files',
-        action="store_false", 
+        action="store_false",
         dest='show_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--print-report', 
+    group.add_argument('--print-report',
         help='pirnt report in terminal',
-        action="store_true", 
+        action="store_true",
         default=config.get('show_report'))
-    group.add_argument('--skip-print-report', 
+    group.add_argument('--skip-print-report',
         help='don\'t print report in terminal',
-        action="store_false", 
+        action="store_false",
         dest='print_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--report-and-quit', 
+    group.add_argument('--report-and-quit',
         help='quit after generating report',
-        action="store_true", 
+        action="store_true",
         default=config.get('report_and_quit'))
 
     images_group = parser.add_argument_group('Image options')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-images', 
+    group.add_argument('--do-images',
         help='process images',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_images'))
-    group.add_argument('--skip-images', 
+    group.add_argument('--skip-images',
         help='don\'t process images',
-        action="store_false", 
+        action="store_false",
         dest='do_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-delete-images', 
+    group.add_argument('--do-delete-images',
         help='delete extra images in compressed folder',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_delete_images'))
-    group.add_argument('--skip-delete-images', 
+    group.add_argument('--skip-delete-images',
         help='protect images from deletion',
-        action="store_false", 
+        action="store_false",
         dest='do_delete_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-resize-images', 
+    group.add_argument('--do-resize-images',
         help='resize images in compressed folder',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_resize_images'))
-    group.add_argument('--skip-resize-images', 
+    group.add_argument('--skip-resize-images',
         help='protect images from resizing',
-        action="store_false", 
+        action="store_false",
         dest='do_resize_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-remeta-images', 
+    group.add_argument('--do-remeta-images',
         help='remeta images in compressed folder',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_remeta_images'))
-    group.add_argument('--skip-remeta-images', 
+    group.add_argument('--skip-remeta-images',
         help='protect images from resizing',
-        action="store_false", 
+        action="store_false",
         dest='do_remeta_images')
-    images_group.add_argument('--img-raw-folder', 
+    images_group.add_argument('--img-raw-folder',
         help='location of raw images',
         default=config.get('imgRawFolder'))
-    images_group.add_argument('--img-raw-extra-folder', 
+    images_group.add_argument('--img-raw-extra-folder',
         help='location of additional raw images',
         default='')
+    images_group.add_argument('--require-images',
+        help='require that all items have images',
+        type='bool',
+        default=True
 
     specials_group = parser.add_argument_group('Specials options')
     group = specials_group.add_mutually_exclusive_group()
-    group.add_argument('--do-specials', 
+    group.add_argument('--do-specials',
         help='process specials',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_specials'))
-    group.add_argument('--skip-specials', 
+    group.add_argument('--skip-specials',
         help='don\'t process specials',
-        action="store_false", 
+        action="store_false",
         dest='do_specials')
-    specials_group.add_argument('--current-special', 
+    specials_group.add_argument('--current-special',
         help='prefix of current special code',
         default=config.get('current_special', 'SP'))
-    # specials_group.add_argument('--add-special-categories', 
-    #     help='add special items to special category', 
-    #     action="store_true", 
+    # specials_group.add_argument('--add-special-categories',
+    #     help='add special items to special category',
+    #     action="store_true",
     #     default=config.get('add_special_categories'))
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-dyns', 
+    group.add_argument('--do-dyns',
         help='process dynamic pricing rules',
-        action="store_true", 
+        action="store_true",
         default=config.get('do_dyns'))
-    group.add_argument('--skip-dyns', 
+    group.add_argument('--skip-dyns',
         help='don\'t process dynamic pricing rules',
-        action="store_false", 
+        action="store_false",
         dest='do_dyns')
 
     debug_group = parser.add_argument_group('Debug options')
@@ -464,7 +468,7 @@ def main():
         #     download_master = args.download_master
         # if args.download_slave is not None:
         #     download_slave = args.download_slave
-        # slave_timeout = args.slave_timeout  
+        # slave_timeout = args.slave_timeout
         # slave_limit = args.slave_limit
         # slave_offset = args.slave_offset
 
@@ -638,7 +642,7 @@ def main():
         exclude_cols.extend([
             'catsum',
             'catlist'
-        ])  
+        ])
 
     if not args.do_dyns:
         exclude_cols.extend([
@@ -797,7 +801,7 @@ def main():
                 productParserArgs['specials'] = specials
 
         productParser = productParserClass(**productParserArgs)
-        
+
         Registrar.registerProgress("analysing local GDrive data")
 
         productParser.analyseFile(genPath, limit=args.download_limit)
@@ -1213,7 +1217,7 @@ def main():
                 Registrar.registerMessage("matching %d master categories with %d slave categories" % (
                      len(productParser.categories),
                      len(apiProductParser.categories)
-                )) 
+                ))
 
             categoryMatcher = CategoryMatcher()
             categoryMatcher.clear()
@@ -1504,7 +1508,7 @@ def main():
 
                 if Registrar.DEBUG_CATS:
                     Registrar.registerMessage("category matches for update %d:\n%s" % (
-                        matchCount, 
+                        matchCount,
                         categoryMatcher.__repr__()
                     ))
 
