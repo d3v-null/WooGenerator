@@ -1,6 +1,8 @@
+import os
 from os import sys, path
 import unittest
-from unittest import TestCase, main, skip
+from unittest import TestCase #, main, skip
+import yaml
 
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
