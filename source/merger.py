@@ -183,8 +183,8 @@ def main():
                        action="store_false", dest='do_filter')
     filter_group.add_argument('--limit', type=int, help='global limit of objects to process')
     filter_group.add_argument(
-        '--card-file', 
-        help='list of cards to filter on', 
+        '--card-file',
+        help='list of cards to filter on',
         default=config.get('cardFile')
     )
 
@@ -872,13 +872,13 @@ def main():
                     description='%s addresses that appear in multiple records' % MASTER_NAME,
                     data="<br/>".join([
                         "<h4>%s</h4><p>%s</p>" % (
-                            address, 
+                            address,
                             UsrObjList(objects).tabulate(
                                 cols=name_cols,
                                 tablefmt='html'
                             )
                         ) for address, objects in address_duplicates.items()
-                    ]) 
+                    ])
                 )
             )
 
@@ -1118,7 +1118,7 @@ def main():
                             'exception':repr(e)
                         })
                         Registrar.registerError("ERROR UPDATING MASTER (%s): %s\n%s" % (
-                            update.MasterID, 
+                            update.MasterID,
                             repr(e),
                             traceback.format_exc()
                         ) )
@@ -1137,9 +1137,9 @@ def main():
                             'exception':repr(e)
                         })
                         Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (
-                            update.SlaveID, 
+                            update.SlaveID,
                             repr(e),
-                            traceback.format_exc() 
+                            traceback.format_exc()
                         ) )
 
     def outputFailures(failures, filePath):
