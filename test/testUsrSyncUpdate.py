@@ -75,10 +75,11 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         master_bus_type = "Salon"
         master_client_grade = str(random.random())
+        master_uname = "neil"
 
         master_data = [map(unicode, row) for row in [
             ["E-mail","Role","First Name","Surname","Nick Name","Contact","Client Grade","Direct Brand","Agent","Birth Date","Mobile Phone","Fax","Company","Address 1","Address 2","City","Postcode","State","Country","Phone","Home Address 1","Home Address 2","Home City","Home Postcode","Home Country","Home State","MYOB Card ID","MYOB Customer Card ID","Web Site","ABN","Business Type","Referred By","Lead Source","Mobile Phone Preferred","Phone Preferred","Personal E-mail","Edited in Act","Wordpress Username","display_name","ID","updated"],
-            ["neil@technotan.com.au","ADMIN","Neil","Cunliffe-Williams","Neil Cunliffe-Williams","",master_client_grade,"TT","","",+61416160912,"","Laserphile","7 Grosvenor Road","","Bayswater",6053,"WA","AU","0416160912","7 Grosvenor Road","","Bayswater",6053,"AU","WA","","","http://technotan.com.au",32,master_bus_type,"","","","","","","wordpress","Neil",1,"2015-07-13 22:33:05"]
+            ["neil@technotan.com.au","ADMIN","Neil","Cunliffe-Williams","Neil Cunliffe-Williams","",master_client_grade,"TT","","",+61416160912,"","Laserphile","7 Grosvenor Road","","Bayswater",6053,"WA","AU","0416160912","7 Grosvenor Road","","Bayswater",6053,"AU","WA","","","http://technotan.com.au",32,master_bus_type,"","","","","","",master_uname,"Neil",1,"2015-07-13 22:33:05"]
         ]]
 
         maParser.analyseRows(master_data)
@@ -90,8 +91,8 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             defaults=ColData_User.getDefaults()
         )
 
-        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
-            slaveClient.analyseRemote(saParser)
+        with UsrSyncClient_WP(self.wpApiParams ) as slaveClient:
+            slaveClient.analyseRemote(saParser, search=master_uname)
 
         print "SLAVE RECORDS: \n", saParser.tabulate()
 
@@ -153,8 +154,9 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                         traceback.format_exc()
                     ) )
 
-        self.assertEqual(response_json['meta']['business_type'], master_bus_type)
-        self.assertEqual(response_json['meta']['client_grade'], master_client_grade)
+        self.assertTrue(response_json.get('meta'))
+        self.assertEqual(response_json.get('meta', {}).get('business_type'), master_bus_type)
+        self.assertEqual(response_json.get('meta', {}).get('client_grade'), master_client_grade)
 
 
 if __name__ == '__main__':

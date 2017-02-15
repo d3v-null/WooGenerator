@@ -455,6 +455,7 @@ class SyncClient_Rest(SyncClient_Abstract):
     # Page without nesting: [object1, object2]
     # page with nesting: ['objects':[object1, object2]]
     page_nesting=True
+    search_param=None
 
     @property
     def endpoint_plural(self):
@@ -507,12 +508,30 @@ class SyncClient_Rest(SyncClient_Abstract):
         # )
 
     #
-    def analyseRemote(self, parser, since=None, limit=None):
+    def analyseRemote(self, parser, since=None, limit=None, search=None):
         if since: pass #todo: implement since
+
         resultCount = 0
 
         # apiIterator = self.ApiIterator(self.service, self.endpoint_plural)
-        apiIterator = self.getIterator(self.endpoint_plural)
+        endpoint_plural = self.endpoint_plural
+        if self.search_param and search:
+            endpoint_parsed = urlparse(endpoint_plural)
+            endpoint_path, endpoint_query = endpoint_parsed.path, endpoint_parsed.query
+            additional_query = '%s=%s' % (self.search_param, search )
+            if endpoint_query:
+                endpoint_query += '&%s' % additional_query
+            else:
+                endpoint_query = additional_query
+            endpoint_plural = "%s?%s" % ( endpoint_path, endpoint_query )
+            # print "search_param and search exist, new endpoint: %s" % endpoint_plural
+            # quit()
+        else:
+            # print "search_param and search DNE, %s %s" % (self.search_param, search)
+            # quit()
+            pass
+
+        apiIterator = self.getIterator(endpoint_plural)
         progressCounter = None
         for page in apiIterator:
             if progressCounter is None:
@@ -611,3 +630,4 @@ class SyncClient_WC(SyncClient_Rest):
 class SyncClient_WP(SyncClient_Rest):
     mandatory_params = ['api_key', 'api_secret', 'url', 'wp_user', 'wp_pass', 'callback']
     page_nesting=False
+    search_param='search'
