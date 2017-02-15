@@ -220,7 +220,7 @@ class SyncUpdate(Registrar):
         assert 'col' in updateParams
         out = u""
         out += "SYNC %s:" % updateType
-        out += " | %s " % self.__str__()
+        out += " | %s " % SanitationUtils.coerceAscii(self)
         out += " | col:  %s" % updateParams['col']
         if 'subject' in updateParams:
             out += " | subj: %s " % updateParams['subject']
@@ -228,9 +228,9 @@ class SyncUpdate(Registrar):
             out += " | reas: %s " % updateParams['reason']
         if updateType in ['WARN', 'PROB']:
             if 'oldWinnerValue' in updateParams:
-                out += " | OLD: %s " % repr(updateParams['oldWinnerValue'].__str__())
+                out += " | OLD: %s " % SanitationUtils.coerceAscii(updateParams['oldWinnerValue'])
             if 'oldLoserValue' in updateParams:
-                out += " | NEW: %s " % repr(updateParams['oldLoserValue'].__str__())
+                out += " | NEW: %s " % SanitationUtils.coerceAscii(updateParams['oldLoserValue'])
         return out
 
     def addProblematicUpdate(self, **updateParams):
