@@ -2509,9 +2509,8 @@ class HtmlReporter(object):
             out = SanitationUtils.coerceUnicode( out )
             return out
 
-    groups = OrderedDict()
-
     def __init__(self, css=None):
+        self.groups = OrderedDict()
         self.css = css
 
     def addGroup( self, group):

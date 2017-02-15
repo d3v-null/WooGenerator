@@ -87,7 +87,7 @@ def main():
 
     config = {}
 
-    OLD_THRESHOLD = "2016-07-01 00:00:00"
+    OLD_THRESHOLD = "2014-01-01 00:00:00"
 
     with open(yamlPath) as stream:
         config = yaml.load(stream)
@@ -1075,9 +1075,23 @@ def main():
         if report_duplicates:
 
             dupCss = ".highlight_old {color: red;}"
-            dupReporter = HtmlReporter(css=css)
-
+            dupReporter = HtmlReporter(css=dupCss)
             duplicateGroup = HtmlReporter.Group('dup', 'Duplicate Results')
+
+            dup_cols = OrderedDict(basic_cols.items() + [
+                ('Create Date', {})
+            ])
+
+            # What we're doing here is analysing the duplicates we've seen so far, and 
+            # creating a list of all the potential objects to delete and WHY they should be deleted.
+
+            def global_index_fn(objectData):
+                assert hasattr(objectData, 'index'), "objectData should have index attr"
+                return objectData.index
+
+            for duplicateMatchlist in duplicateMatchlists:
+                pass
+                # do stuff here
 
             address_duplicates = {}
             for address, objects in maParser.addresses.items():
@@ -1108,7 +1122,7 @@ def main():
                             "<h4>%s</h4><p>%s</p>" % (
                                 address,
                                 UsrObjList(objects).tabulate(
-                                    cols=name_cols,
+                                    cols=dup_cols,
                                     tablefmt='html',
                                     highlight_rules=[('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))]
                                 )
