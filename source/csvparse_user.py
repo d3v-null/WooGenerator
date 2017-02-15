@@ -29,6 +29,12 @@ class UsrObjList(ObjList):
         raise DeprecationWarning("getReportCols deprecated for .reportCols")
         return self.reportCols
 
+    # def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
+    #     response = super(UsrObjList, self).tabulate(cols, tablefmt)
+    #     if tablefmt='html' and highlight_rules:
+    #         # todo: special highlighting stuff
+    #     return response
+
     @classmethod
     def getBasicCols(cls, self):
         return ColData_User.getBasicCols()
@@ -71,17 +77,35 @@ class ImportUser(ImportFlat):
         return TimeUtils.actStrptime(self.get('Edited in Act', 0))
 
     @property
+    def act_created(self):
+        return TimeUtils.actStrpdate(self.get('Create Date', 0))
+
+    @property
+    def wp_created(self):
+        return TimeUtils.wpStrptime(self.get('Wordpress Start Date', 0))
+
+    @property
     def wp_modtime(self):
         return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(self.get('Edited in Wordpress', 0) ))
 
     @property
     def last_sale(self):
-        return TimeUtils.actStrptime(self.get('Last Sale', 0))
+        return TimeUtils.actStrpdate(self.get('Last Sale', 0))
 
     @property
     def last_modtime(self):
-        times = [self.act_modtime, self.wp_modtime]
+        times = [self.act_modtime, self.wp_modtime, self.act_created, self.wp_created, self.last_sale]
         return max(times)
+
+    @property
+    def act_last_transation(self):
+        """ effective last sale (if no last sale, use act create date) """
+        response = self.last_sale
+        if not response:
+            response = self.act_created
+        assert response, "customer should always have a create (%s) or last sale (%s)" % (self.act_created, self.last_sale)
+        return response
+
 
     def __init__(self, data, **kwargs):
         super(ImportUser, self).__init__(data, **kwargs)
@@ -619,7 +643,7 @@ class CSVParse_User_Api(CSVParse_User):
                         wp_api_key = col_data['wp']['key']
                 except Exception:
                     wp_api_key = col
-                
+
                 meta_translation[wp_api_key] = col
             if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation: %s" % pformat(meta_translation))
             meta_translation_result = cls.translateKeys(metaData, meta_translation)

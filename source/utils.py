@@ -2355,6 +2355,7 @@ class TimeUtils:
     actSrvOffset = 0
 
     dateFormat = "%Y-%m-%d"
+    actDateFormat = "%d/%m/%Y"
     wpTimeFormat = "%Y-%m-%d %H:%M:%S"
     msTimeFormat = "%Y-%m-%d_%H-%M-%S"
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
@@ -2384,6 +2385,10 @@ class TimeUtils:
     @staticmethod
     def wpStrptime(string):
         return TimeUtils.starStrptime(string)
+
+    @staticmethod
+    def actStrpdate(string):
+        return TimeUtils.starStrptime(string, TimeUtils.actDateFormat)
 
     @staticmethod
     def gDriveStrpTime(string):
@@ -2506,13 +2511,16 @@ class HtmlReporter(object):
 
     groups = OrderedDict()
 
-    def __init__(self):
-        pass
+    def __init__(self, css=None):
+        self.css = css
 
     def addGroup( self, group):
         self.groups[group.classname] = group
 
     def getHead(self):
+        css = ''
+        if self.css:
+            css = "<style>" + self.css + "</style>"
         return """\
 <head>
     <meta charset="UTF-8">
@@ -2521,6 +2529,7 @@ class HtmlReporter(object):
 
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+""" + css + """
 </head>
 """
 

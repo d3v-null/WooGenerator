@@ -278,7 +278,7 @@ class AbstractMatcher(Registrar):
             # print "-> not indexFn"
             self.indexFn = (lambda x: x.index)
         self.processRegisters = self.processRegistersNonsingular
-        self.retrieveObjects = self.retrieveObjectsNonsingular
+        # self.retrieveObjects = self.retrieveObjectsNonsingular
         self.mFilterFn = None
         self.fFilterFn = None
         self.clear()

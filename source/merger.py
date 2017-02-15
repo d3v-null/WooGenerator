@@ -87,6 +87,8 @@ def main():
 
     config = {}
 
+    OLD_THRESHOLD = "2016-07-01 00:00:00"
+
     with open(yamlPath) as stream:
         config = yaml.load(stream)
 
@@ -116,7 +118,7 @@ def main():
         # do_filter = config.get('do_filter')
         # do_problematic = config.get('do_problematic')
         # do_post = config.get('do_post')
-        # do_sync = config.get('do_sync')
+        # do_sync = config.get('do_sync'
 
     ### OVERRIDE CONFIG WITH ARGPARSE ###
 
@@ -140,6 +142,8 @@ def main():
                        action="store_true", default=config.get('do_post'))
     group.add_argument('--skip-post', help='don\'t post process the contacts',
                        action="store_false", dest='do_post')
+    group.add_argument('--process-duplicates', help="do extra processing to figure out duplicates",
+                       default=False, action="store_true")
 
     download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
@@ -174,6 +178,8 @@ def main():
                        action="store_true", default=True)
     group.add_argument('--force-update', help="don't ask before updating",
                        action="store_false", dest="ask_before_update")
+
+
 
     filter_group = parser.add_argument_group("Filter Options")
     group = filter_group.add_mutually_exclusive_group()
@@ -369,6 +375,7 @@ def main():
 
     # moPath = os.path.join(outFolder, m_i_filename)
     repPath = os.path.join(outFolder, "usr_sync_report%s.html" % fileSuffix)
+    repdPath = os.path.join(outFolder, "usr_sync_report_duplicate%s.html" % fileSuffix)
     WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
     masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
     masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
@@ -557,6 +564,7 @@ def main():
     anomalousMatchLists = {}
     newMasters = MatchList()
     newSlaves = MatchList()
+    duplicateMatchlists = OrderedDict()
     anomalousParselists = {}
     # nonstaticUpdates = []
     nonstaticSUpdates = []
@@ -600,6 +608,9 @@ def main():
 
         denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
         denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
+
+        duplicateMatchlists['username'] = usernameMatcher.duplicateMatches
+
         globalMatches.addMatches( usernameMatcher.pureMatches)
 
         if(Registrar.DEBUG_MESSAGE):
@@ -618,6 +629,8 @@ def main():
 
         denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatches)
         denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
+
+        duplicateMatchlists['card'] = cardMatcher.duplicateMatches
 
         globalMatches.addMatches( cardMatcher.pureMatches)
 
@@ -650,10 +663,9 @@ def main():
         emailMatcher.processRegisters(saParser.nocards, maParser.emails)
 
         newMasters.addMatches(emailMatcher.masterlessMatches)
-
         newSlaves.addMatches(emailMatcher.slavelessMatches)
-
         globalMatches.addMatches(emailMatcher.pureMatches)
+        duplicateMatchlists['email'] = cardMatcher.duplicateMatches
 
         if(Registrar.DEBUG_MESSAGE):
             print "email matches (%d pure)" % (len(emailMatcher.pureMatches))
@@ -744,6 +756,8 @@ def main():
         print debugUtils.hashify("COMPLETED MERGE")
         print timediff()
 
+        # todo: process duplicates here
+
     #########################################
     # Write Report
     #########################################
@@ -752,7 +766,13 @@ def main():
     print timediff()
 
     with io.open(repPath, 'w+', encoding='utf8') as resFile:
-        reporter = HtmlReporter()
+
+        repdFile = None
+        if args.process_duplicates:
+            repdFile = io.open(repdPath, 'w+', encoding='utf8')
+
+        css = ""
+        reporter = HtmlReporter(css=css)
 
         basic_cols = ColData_User.getBasicCols()
         address_cols = OrderedDict(basic_cols.items() + [
@@ -867,35 +887,6 @@ def main():
         if maParser.badName or maParser.badAddress:
             UsrObjList(maParser.badName.values() + maParser.badAddress.values())\
                 .exportItems(masterResCsvPath, csv_colnames)
-
-        address_duplicates = {}
-        for address, objects in maParser.addresses.items():
-            print "analysing address %s " % address
-            for objectData in objects:
-                print " -> associated object: %s" % objectData
-            if len(objects) > 1:
-                # if there are more than one objects associated with an address, add to the duplicate addresses report
-                address_duplicates[address] = objects
-
-        if address_duplicates:
-            print "there are address duplicates"
-            sanitizingGroup.addSection(
-                HtmlReporter.Section(
-                    'address_duplicates',
-                    title='Duplicate %s Addresses' % MASTER_NAME.title(),
-                    description='%s addresses that appear in multiple records' % MASTER_NAME,
-                    data="<br/>".join([
-                        "<h4>%s</h4><p>%s</p>" % (
-                            address,
-                            UsrObjList(objects).tabulate(
-                                cols=name_cols,
-                                tablefmt='html'
-                            )
-                        ) for address, objects in address_duplicates.items()
-                    ])
-                )
-            )
-
 
         reporter.addGroup(sanitizingGroup)
 
@@ -1079,6 +1070,54 @@ def main():
             )
 
             reporter.addGroup(syncingGroup)
+
+        report_duplicates = args.process_duplicates
+        if report_duplicates:
+
+            dupCss = ".highlight_old {color: red;}"
+            dupReporter = HtmlReporter(css=css)
+
+            duplicateGroup = HtmlReporter.Group('dup', 'Duplicate Results')
+
+            address_duplicates = {}
+            for address, objects in maParser.addresses.items():
+                print "analysing address %s " % address
+                for objectData in objects:
+                    print " -> associated object: %s" % objectData
+                if len(objects) > 1:
+                    # if there are more than one objects associated with an address, add to the duplicate addresses report
+                    address_duplicates[address] = objects
+
+            if address_duplicates:
+                def fn_user_older_than_wp(wp_time):
+                    """ returns a function that checks if the user is older than a date given in wp_time format """
+                    wp_time_obj = TimeUtils.wpStrptime(wp_time)
+                    assert wp_time_obj, "should be valid time struct: %s" % wp_time
+                    def user_older_than(userData):
+                        user_time_obj = userData.act_last_transation
+                        return user_time_obj < wp_time_obj
+                    return user_older_than
+
+                print "there are address duplicates"
+                duplicateGroup.addSection(
+                    HtmlReporter.Section(
+                        'address_duplicates',
+                        title='Duplicate %s Addresses' % MASTER_NAME.title(),
+                        description='%s addresses that appear in multiple records' % MASTER_NAME,
+                        data="<br/>".join([
+                            "<h4>%s</h4><p>%s</p>" % (
+                                address,
+                                UsrObjList(objects).tabulate(
+                                    cols=name_cols,
+                                    tablefmt='html',
+                                    highlight_rules=[('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))]
+                                )
+                            ) for address, objects in address_duplicates.items()
+                        ])
+                    )
+                )
+            dupReporter.addGroup(duplicateGroup)
+            repdFile.write(dupReporter.getDocumentUnicode() )
 
         resFile.write( reporter.getDocumentUnicode() )
 

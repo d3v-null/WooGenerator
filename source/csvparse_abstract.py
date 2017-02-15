@@ -88,7 +88,7 @@ class ObjList(list, Registrar):
         else:
             return SanitationUtils.sanitizeForTable
 
-    def tabulate(self, cols=None, tablefmt=None):
+    def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
         objs = self.objects
         sanitizer = self.getSanitizer(tablefmt)
         # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
@@ -100,6 +100,15 @@ class ObjList(list, Registrar):
             table = []
             for obj in objs:
                 row = [obj.identifier]
+
+                # process highlighting rules
+                if highlight_rules:
+                    classes = []
+                    for highlight_class, rule in highlight_rules:
+                        if rule(obj):
+                            classes.append(highlight_class)
+                    row = [" ".join(classes)] + row
+
                 for col in cols.keys():
                     # if col == 'Address':
                     #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
@@ -114,9 +123,14 @@ class ObjList(list, Registrar):
             # print "table", table
             # SanitationUtils.safePrint(table)
             # return SanitationUtils.coerceUnicode(tabulate(table, headers=header, tablefmt=tablefmt))
-            return (tabulate(table, headers=header, tablefmt=tablefmt))
-            # print repr(table)
-            # print repr(table.encode('utf8'))
+            table_str = (tabulate(table, headers=header, tablefmt=tablefmt))
+            if highlight_rules and tablefmt=='html':
+                # print "table pre:", (table_str.encode('utf8'))
+                table_str = re.sub(r'<tr><td>([^<]*)</td>',r'<tr class="\1">',table_str)
+                # also delete first row
+                # print "table post:", (table_str.encode('utf8'))
+
+            return table_str
             # return table.encode('utf8')
         else:
             Registrar.registerWarning("cannot tabulate Objlist: there are no objects")
