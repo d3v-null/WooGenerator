@@ -315,71 +315,142 @@ class AbstractMatcher(Registrar):
     # saRegister is in nonsingular form. regkey => [slaveObjects]
     def processRegistersNonsingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are nonsingular """
+        # It's messy because we can't assume that our indexFn is the same as the indexFn of the register :(
+        # Properly index maRegister:
+        msIndexed = OrderedDict()
+        for regValues in maRegister.values():
+            for regValue in regValues:
+                regIndex = self.indexFn(regValue)
+                if not regIndex in msIndexed:
+                    msIndexed[regIndex] = ([], [])
+                msIndexed[regIndex][0].append(regValue)
 
-        # print "processing nonsingular register"
-        mKeys = set(maRegister.keys())
+        for regValues in saRegister.values():
+            for regValue in regValues:
+                regIndex = self.indexFn(regValue)
+                if not regIndex in msIndexed:
+                    msIndexed[regIndex] = ([], [])
+                msIndexed[regIndex][1].append(regValue)
 
-        for regKey, regValue in saRegister.items():
-            saObjects = regValue
-            maObjects = self.retrieveObjects(maRegister, regKey)
-            if regKey in mKeys:
-                mKeys.remove(regKey)
-            self.processMatch(maObjects, saObjects)
-        for mKey in mKeys:
-            saObjects = []
-            maObjects = self.retrieveObjects(maRegister, mKey)
-            self.processMatch(maObjects, saObjects)
+        for msValues in msIndexed.values():
+            self.processMatch(msValues[0], msValues[1])
+
+        # mKeys = set(maRegister.keys())
+        # for regKey, regValue in saRegister.items():
+        #     saObjects = regValue
+        #     maObjects = self.retrieveObjects(maRegister, regKey)
+        #     if regKey in mKeys:
+        #         mKeys.remove(regKey)
+        #     self.processMatch(maObjects, saObjects)
+        # for mKey in mKeys:
+        #     saObjects = []
+        #     maObjects = self.retrieveObjects(maRegister, mKey)
+        #     self.processMatch(maObjects, saObjects)
 
     # saRegister is in singular form. regIndex => slaveObject
     def processRegistersSingular(self, saRegister, maRegister):
         """ Groups items in both registers by the result of applying the index function when both are singular """
+        # again, complicated because can't assume we have the same indexFn as the registers
 
-        mKeys = OrderedDict()
-        for regKey, regValue in maRegister.items():
+        msIndexed = OrderedDict()
+        for regValue in maRegister.values():
             regIndex = self.indexFn(regValue)
-            if not regIndex in mKeys:
-                mKeys[regIndex] = []
-            mKeys[regIndex].append(regKey)
+            if not regIndex in msIndexed:
+                msIndexed[regIndex] = ([], [])
+            msIndexed[regIndex][0].append(regValue)
 
-        sKeys = OrderedDict()
-        for regKey, regValue in saRegister.items():
+        for regValue in saRegister.values():
             regIndex = self.indexFn(regValue)
-            if not regIndex in sKeys:
-                sKeys[regIndex] = []
-            sKeys[regIndex].append(regKey)
+            if not regIndex in msIndexed:
+                msIndexed[regIndex] = ([], [])
+            msIndexed[regIndex][1].append(regValue)
 
-        for regIndex in list(set(mKeys) | set(sKeys)):
-            mObjects = []
-            sObjects = []
-            if regIndex in mKeys:
-                for regKey in mKeys[regIndex]:
-                    mObjects.extend(self.retrieveObjects(maRegister, regKey))
-            if regIndex in sKeys:
-                for regKey in sKeys[regIndex]:
-                    sObjects.extend(self.retrieveObjects(saRegister, regKey))
-            self.processMatch(mObjects, sObjects)
+        for msValues in msIndexed.values():
+            self.processMatch(msValues[0], msValues[1])
+
+        # mKeys = OrderedDict()
+        # for regKey, regValue in maRegister.items():
+        #     regIndex = self.indexFn(regValue)
+        #     if not regIndex in mKeys:
+        #         mKeys[regIndex] = []
+        #     mKeys[regIndex].append(regKey)
+        #
+        # sKeys = OrderedDict()
+        # for regKey, regValue in saRegister.items():
+        #     regIndex = self.indexFn(regValue)
+        #     if not regIndex in sKeys:
+        #         sKeys[regIndex] = []
+        #     sKeys[regIndex].append(regKey)
+        #
+        # for regIndex in list(set(mKeys) | set(sKeys)):
+        #     mObjects = []
+        #     sObjects = []
+        #     if regIndex in mKeys:
+        #         for regKey in mKeys[regIndex]:
+        #             mObjects.extend(self.retrieveObjects(maRegister, regKey))
+        #     if regIndex in sKeys:
+        #         for regKey in sKeys[regIndex]:
+        #             sObjects.extend(self.retrieveObjects(saRegister, regKey))
+        #     self.processMatch(mObjects, sObjects)
 
     def processRegistersSingularNonSingular(self, saRegister, maRegister):
-        # make slave nonsingular and process both as nonsingular
-        saRegister = OrderedDict([(key, [value]) for key, value in saRegister.items()])
-        self.processRegistersNonsingular(saRegister, maRegister)
+        """ Master is nonsingular, slave is singular """
+        msIndexed = OrderedDict()
+        for regValues in maRegister.values():
+            for regValue in regValues:
+                regIndex = self.indexFn(regValue)
+                if not regIndex in msIndexed:
+                    msIndexed[regIndex] = ([], [])
+                msIndexed[regIndex][0].append(regValue)
+
+        for regValue in saRegister.values():
+            regIndex = self.indexFn(regValue)
+            if not regIndex in msIndexed:
+                msIndexed[regIndex] = ([], [])
+            msIndexed[regIndex][1].append(regValue)
+
+        for msValues in msIndexed.values():
+            self.processMatch(msValues[0], msValues[1])
+
+        # # make slave nonsingular and process both as nonsingular
+        # saRegister = OrderedDict([(key, [value]) for key, value in saRegister.items()])
+        # self.processRegistersNonsingular(saRegister, maRegister)
 
     def processRegistersNonSingularSingular(self, saRegister, maRegister):
-        # make master nonsingular and process both as nonsingular
-        maRegister = OrderedDict([(key, [value]) for key, value in maRegister.items()])
-        self.processRegistersNonsingular(saRegister, maRegister)
+        """ Master is singular, slave is nonsingular """
 
-    def retrieveObjectsNonsingular(self, register, key):
-        # print "retrieving nonsingular object"
-        return register.get(key, [])
+        msIndexed = OrderedDict()
+        for regValue in maRegister.values():
+            regIndex = self.indexFn(regValue)
+            if not regIndex in msIndexed:
+                msIndexed[regIndex] = ([], [])
+            msIndexed[regIndex][0].append(regValue)
 
-    def retrieveObjectsSingular(self, register, key):
-        # print "retrieving singular object"
-        regObject = register.get(key, [])
-        if(regObject):
-            return [regObject]
-        else:
-            return []
+        for regValues in saRegister.values():
+            for regValue in regValues:
+                regIndex = self.indexFn(regValue)
+                if not regIndex in msIndexed:
+                    msIndexed[regIndex] = ([], [])
+                msIndexed[regIndex][1].append(regValue)
+
+        for msValues in msIndexed.values():
+            self.processMatch(msValues[0], msValues[1])
+
+        # # make master nonsingular and process both as nonsingular
+        # maRegister = OrderedDict([(key, [value]) for key, value in maRegister.items()])
+        # self.processRegistersNonsingular(saRegister, maRegister)
+
+    # def retrieveObjectsNonsingular(self, register, key):
+    #     # print "retrieving nonsingular object"
+    #     return register.get(key, [])
+
+    # def retrieveObjectsSingular(self, register, key):
+    #     # print "retrieving singular object"
+    #     regObject = register.get(key, [])
+    #     if(regObject):
+    #         return [regObject]
+    #     else:
+    #         return []
 
     def get_match_type(self, match):
         return match.type
@@ -463,7 +534,7 @@ class AbstractMatcher(Registrar):
         return repr_str
 
 class ProductMatcher(AbstractMatcher):
-    # processRegisters = AbstractMatcher.processRegistersSingular
+    processRegisters = AbstractMatcher.processRegistersSingular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
     @staticmethod
     def productIndexFn(x):
@@ -472,13 +543,13 @@ class ProductMatcher(AbstractMatcher):
     def __init__(self):
         super(ProductMatcher, self).__init__( self.productIndexFn )
         self.processRegisters = self.processRegistersSingular
-        self.retrieveObjects = self.retrieveObjectsSingular
+        # self.retrieveObjects = self.retrieveObjectsSingular
 
 class VariationMatcher(ProductMatcher):
     pass
 
 class CategoryMatcher(AbstractMatcher):
-    # processRegisters = AbstractMatcher.processRegistersSingular
+    processRegisters = AbstractMatcher.processRegistersSingular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
     @staticmethod
     def categoryIndexFn(x):
@@ -487,7 +558,7 @@ class CategoryMatcher(AbstractMatcher):
     def __init__(self):
         super(CategoryMatcher, self).__init__( self.categoryIndexFn )
         self.processRegisters = self.processRegistersSingular
-        self.retrieveObjects = self.retrieveObjectsSingular
+        # self.retrieveObjects = self.retrieveObjectsSingular
 
 class UsernameMatcher(AbstractMatcher):
     def __init__(self):
