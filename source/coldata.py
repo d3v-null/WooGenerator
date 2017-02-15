@@ -1990,7 +1990,8 @@ class ColData_User(ColData_Base):
             },
             'import':True,
             'user':True,
-            'sync':True
+            'sync':True,
+            'default':''
         }),
 
         # ('E-mails', {
