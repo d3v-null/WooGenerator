@@ -20,6 +20,7 @@ from copy import deepcopy, copy
 # from time import time
 # import os
 from pprint import pformat
+import re
 
 class ObjList(list, Registrar):
     # supports_tablefmt = True
@@ -128,6 +129,7 @@ class ObjList(list, Registrar):
                 # print "table pre:", (table_str.encode('utf8'))
                 table_str = re.sub(r'<tr><td>([^<]*)</td>',r'<tr class="\1">',table_str)
                 # also delete first row
+                table_str = re.sub(r'<tr><th>\s*</th>', r'<tr>', table_str)
                 # print "table post:", (table_str.encode('utf8'))
 
             return table_str
