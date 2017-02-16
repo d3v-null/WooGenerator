@@ -1094,7 +1094,6 @@ def main():
                     # if there are more than one objects associated with an address, add to the duplicate addresses report
                     address_duplicates[address] = objects
                     duplicates.add_conflictors(objects, "address")
-                        
 
             for index, duplicate in duplicates.items():
                 print "duplicates for index: %s" % index
