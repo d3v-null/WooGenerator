@@ -3,6 +3,7 @@ with which it conflicts """
 
 from collections import OrderedDict
 from utils import SanitationUtils
+from tabulate import tabulate
 
 def object_glb_index_fn(objectData):
     assert hasattr(objectData, 'index'), \
@@ -24,7 +25,6 @@ class DuplicateObject(object):
     def __init__(self, objectData):
         super(DuplicateObject, self).__init__()
         self.objectData = objectData
-        self.coConflictors = set()
         self.reasons = OrderedDict()
 
     def __cmp__(self, other):
@@ -47,19 +47,18 @@ class DuplicateObject(object):
     def weighted_reason_count(self):
         if self.reasons:
             return sum([
-                reason_info.get('weighting', 1) * len(reason_info.get('coConflictors', []))\
+                reason_info.get('weighting', 1)\
                     for reason_info in self.reasons.values()
             ])
 
-    def add_reason(self, reason, coConflictors=None, weighting=1):
+    def add_reason(self, reason, weighting=1, details=None):
         if reason not in self.reasons:
             self.reasons[reason] = {
                 'weighting':weighting,
-                'coConflictors':set()
             }
-        if coConflictors:
-            self.coConflictors.update(coConflictors)
-            self.reasons[reason]['coConflictors'].update(coConflictors)
+        if details:
+            self.reasons[reason]['details'] = details
+
 
     def tabulate(self, cols, tablefmt):
         if not tablefmt:
@@ -67,7 +66,7 @@ class DuplicateObject(object):
         linedelim = "\n"
         if tablefmt == 'html':
             linedelim = '<br/>'
-        inner_title_fstr = "%10s | %10s | %3d | %3s"
+        inner_title_fstr = "%10s | %10s | %3d:%3s"
         title_fstr = "-> %s" % inner_title_fstr
         if tablefmt == 'html':
             title_fstr = "<h3>%s</h3>" % inner_title_fstr
@@ -78,17 +77,19 @@ class DuplicateObject(object):
             self.reason_count,
             self.weighted_reason_count,
         )
-        line_fstr = linedelim + "--> %s: %s"
-        if tablefmt == 'html':
-            line_fstr = "<p><strong>%s:</strong>"+linedelim+"%s</p>"
+
+        out += linedelim
+
+        reason_table = []
         for reason, reason_info in self.reasons.items():
-            out += line_fstr % (
+            reason_table.append([
                 reason,
-                ", ".join([
-                    SanitationUtils.coerceAscii(object_glb_index_fn(objectData)) \
-                        for objectData in list(reason_info['coConflictors'])
-                ])
-            )
+                reason_info['weighting'],
+                reason_info['details']
+            ])
+
+        out += tabulate(reason_table, tablefmt=tablefmt, headers=["Reason", "Weighting", "Details"])
+
         return out
 
 class Duplicates(OrderedDict):
@@ -101,11 +102,18 @@ class Duplicates(OrderedDict):
         assert isinstance(reason, str), "reason should be a string"
         for duplicateObject in conflictors:
             coConflictors = set(conflictors) - set(duplicateObject) # conflictors other than self
-            duplicateIndex = object_glb_index_fn(duplicateObject)
-            if duplicateIndex not in self:
-                self[duplicateIndex] = DuplicateObject(duplicateObject)
-            self[duplicateIndex].add_reason(reason, coConflictors, weighting)
+            duplicateDetails = ", ".join([
+                SanitationUtils.coerceAscii(object_glb_index_fn(objectData)) \
+                    for objectData in coConflictors
+            ])
+            self.add_conflictor(duplicateObject, reason, details=duplicateDetails, weighting=weighting)
 
+    def add_conflictor(self, conflictor, reason, weighting=1, details=None):
+        duplicateIndex = object_glb_index_fn(conflictor)
+        if duplicateIndex not in self:
+            self[duplicateIndex] = DuplicateObject(conflictor)
+        self[duplicateIndex].add_reason(reason, weighting, details)
+ 
     def tabulate(self, cols, tablefmt=None):
         if not tablefmt:
             tablefmt = 'html'

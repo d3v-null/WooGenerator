@@ -98,7 +98,7 @@ class ImportUser(ImportFlat):
         return max(times)
 
     @property
-    def act_last_transation(self):
+    def act_last_transaction(self):
         """ effective last sale (if no last sale, use act create date) """
         response = self.last_sale
         if not response:

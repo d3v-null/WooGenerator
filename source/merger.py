@@ -1073,6 +1073,20 @@ def main():
             # What we're doing here is analysing the duplicates we've seen so far, and 
             # creating a list of all the potential objects to delete and WHY they should be deleted.
 
+            def fn_user_older_than_wp(wp_time):
+                """ returns a function that checks if the user is older than a date given in wp_time format """
+                wp_time_obj = TimeUtils.wpStrptime(wp_time)
+                assert wp_time_obj, "should be valid time struct: %s" % wp_time
+                def user_older_than(userData):
+                    assert hasattr(userData, 'act_last_transaction'), \
+                        "user should have act_last_transaction attr: %s, %s" % (\
+                            type(userData),
+                            SanitationUtils.coerceAscii(userData)
+                        )
+                    user_time_obj = userData.act_last_transaction
+                    return user_time_obj < wp_time_obj
+                return user_older_than
+
             duplicates = Duplicates()
 
             for duplicateType, duplicateMatchlist in duplicateMatchlists.items():
@@ -1093,7 +1107,11 @@ def main():
                 if len(objects) > 1:
                     # if there are more than one objects associated with an address, add to the duplicate addresses report
                     address_duplicates[address] = objects
-                    duplicates.add_conflictors(objects, "address")
+                    duplicates.add_conflictors(objects, "address", weighting=0.1)
+
+            for objectData in maParser.objects.values():
+                if fn_user_older_than_wp(OLD_THRESHOLD)(objectData):
+                    duplicates.add_conflictor(objectData, "old", weighting=0.5, details=objectData.act_last_transaction)
 
             if Registrar.DEBUG_DUPLICATES:
                 print duplicates.tabulate({}, tablefmt='plain')
@@ -1151,16 +1169,6 @@ def main():
                 )
 
             if address_duplicates:
-                def fn_user_older_than_wp(wp_time):
-                    """ returns a function that checks if the user is older than a date given in wp_time format """
-                    wp_time_obj = TimeUtils.wpStrptime(wp_time)
-                    assert wp_time_obj, "should be valid time struct: %s" % wp_time
-                    def user_older_than(userData):
-                        assert hasattr(userData, 'act_last_transation'), \
-                            "user should have act_last_transaction attr"
-                        user_time_obj = userData.act_last_transation
-                        return user_time_obj < wp_time_obj
-                    return user_older_than
 
                 print "there are address duplicates"
                 duplicateGroup.addSection(
