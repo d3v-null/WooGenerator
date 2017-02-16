@@ -622,7 +622,7 @@ def main():
             # print repr(usernameMatcher)
 
         if Registrar.DEBUG_DUPLICATES and usernameMatcher.duplicateMatches:
-            Registrar.registerMessage("username duplicates: %s" % len(usernameMatcher.duplicateMatches))
+            print("username duplicates: %s" % len(usernameMatcher.duplicateMatches))
 
         print debugUtils.hashify("processing cards")
         print timediff()
@@ -646,7 +646,7 @@ def main():
             # print repr(cardMatcher)
 
         if Registrar.DEBUG_DUPLICATES and cardMatcher.duplicateMatches:
-            Registrar.registerMessage("card duplicates: %s" % len(cardMatcher.duplicateMatches))
+            print("card duplicates: %s" % len(cardMatcher.duplicateMatches))
 
         # #for every email in slave, check that it exists in master
 
@@ -669,7 +669,7 @@ def main():
             # print repr(emailMatcher)
 
         if Registrar.DEBUG_DUPLICATES and emailMatcher.duplicateMatches:
-            Registrar.registerMessage("email duplicates: %s" % len(emailMatcher.duplicateMatches))        
+            print("email duplicates: %s" % len(emailMatcher.duplicateMatches))        
 
         # TODO: further sort emailMatcher
 
