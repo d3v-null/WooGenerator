@@ -317,7 +317,7 @@ class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
 
-    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None, limit=None):
+    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None, limit=None, source=None):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         extra_cols = [
@@ -331,7 +331,7 @@ class CSVParse_User(CSVParse_Flat):
         ])
         cols = listUtils.combineLists( cols, extra_cols )
         defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        super(CSVParse_User, self).__init__(cols, defaults, limit=limit)
+        super(CSVParse_User, self).__init__(cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
         self.filterItems = filterItems
         # self.itemIndexer = self.getUsername

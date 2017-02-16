@@ -88,7 +88,8 @@ def main():
 
     config = {}
 
-    OLD_THRESHOLD = "2014-01-01 00:00:00"
+    OLD_THRESHOLD = "2012-01-01 00:00:00"
+    OLDISH_THRESHOLD = "2014-01-01 00:00:00"
 
     with open(yamlPath) as stream:
         config = yaml.load(stream)
@@ -492,7 +493,8 @@ def main():
         cols = ColData_User.getWPImportCols(),
         defaults = ColData_User.getDefaults(),
         filterItems = filterItems,
-        limit = global_limit
+        limit = global_limit,
+        source = SLAVE_NAME
     )
     if download_slave:
         SSHTunnelForwarderAddress = (ssh_host, ssh_port)
@@ -542,7 +544,8 @@ def main():
         defaults = ColData_User.getDefaults(),
         contact_schema = 'act',
         filterItems = filterItems,
-        limit = global_limit
+        limit = global_limit,
+        source = MASTER_NAME
     )
 
     print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
@@ -561,6 +564,12 @@ def main():
     # exit()
     # quit()
 
+    print "first maParser source:"
+    print maParser.objects.values()[0]['source']
+    print "first saParse source:"
+    print saParser.objects.values()[0]['source']
+
+    quit()
 
     # get matches
 
@@ -1111,7 +1120,12 @@ def main():
 
             for objectData in maParser.objects.values():
                 if fn_user_older_than_wp(OLD_THRESHOLD)(objectData):
-                    duplicates.add_conflictor(objectData, "old", weighting=0.5, details=objectData.act_last_transaction)
+                    details = TimeUtils.wpTimeToString(objectData.act_last_transaction)
+                    duplicates.add_conflictor(objectData, "last_transaction_old", 0.5, details)
+                elif fn_user_older_than_wp(OLDISH_THRESHOLD)(objectData):
+                    details = TimeUtils.wpTimeToString(objectData.act_last_transaction)
+                    duplicates.add_conflictor(objectData, "last_transaction_oldish", 0.2, details)
+
 
             if Registrar.DEBUG_DUPLICATES:
                 print duplicates.tabulate({}, tablefmt='plain')

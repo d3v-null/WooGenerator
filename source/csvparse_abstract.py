@@ -326,6 +326,7 @@ class CSVParse_Base(Registrar):
         self.defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
         self.objectIndexer = self.getObjectRowcount
         self.clearTransients()
+        self.source = kwargs.get('source')
 
     def __getstate__(self): return self.__dict__
     def __setstate__(self, d): self.__dict__.update(d)
@@ -395,6 +396,12 @@ class CSVParse_Base(Registrar):
                 rowData[col] = self.sanitizeCell(retrieved)
         return rowData
 
+    def getMandatoryData(self, **kwargs):
+        mandatoryData = OrderedDict()
+        if self.source:
+            mandatoryData['source'] = self.source
+        return mandatoryData
+
     def getNewObjContainer(self, allData, **kwargs):
         if kwargs:
             pass # gets rid of unused argument error
@@ -422,6 +429,8 @@ class CSVParse_Base(Registrar):
         if self.DEBUG_PARSER: self.registerMessage( "parserData: {}".format(parserData) )
         # allData = listUtils.combineOrderedDicts(parserData, defaultData)
         allData = listUtils.combineOrderedDicts(defaultData, parserData)
+        mandatoryData = self.getMandatoryData(**kwargs)
+        allData = listUtils.combineOrderedDicts(allData, mandatoryData)
         if self.DEBUG_PARSER: self.registerMessage( "allData: {}".format(allData) )
         container = self.getNewObjContainer(allData, **kwargs)
         if self.DEBUG_PARSER: self.registerMessage("container: {}".format(container.__name__))
