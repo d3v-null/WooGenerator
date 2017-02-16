@@ -210,6 +210,7 @@ def main():
     debug_group.add_argument('--debug-client', action='store_true', dest='debug_client')
     debug_group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
     debug_group.add_argument('--debug-contact', action='store_true', dest='debug_contact')
+    debug_group.add_argument('--debug-duplicates', action='store_true', dest='debug_duplicates')
 
     args = parser.parse_args()
 
@@ -274,6 +275,8 @@ def main():
             Registrar.DEBUG_UTILS = args.debug_utils
         if args.debug_contact is not None:
             Registrar.DEBUG_CONTACT = args.debug_contact
+        if args.debug_duplicates is not None:
+            Registrar.DEBUG_DUPLICATES = args.debug_duplicates
 
         global_limit = args.limit
 
@@ -618,6 +621,9 @@ def main():
             print "username matches (%d pure)" % len(usernameMatcher.pureMatches)
             # print repr(usernameMatcher)
 
+        if Registrar.DEBUG_DUPLICATES and usernameMatcher.duplicateMatches:
+            Registrar.registerMessage("username duplicates: %s" % len(usernameMatcher.duplicateMaters))
+
         print debugUtils.hashify("processing cards")
         print timediff()
 
@@ -639,6 +645,9 @@ def main():
             print "card matches (%d pure)" % len(cardMatcher.pureMatches)
             # print repr(cardMatcher)
 
+        if Registrar.DEBUG_DUPLICATES and cardMatcher.duplicateMatches:
+            Registrar.registerMessage("card duplicates: %s" % len(cardMatcher.duplicateMaters))
+
         # #for every email in slave, check that it exists in master
 
         print debugUtils.hashify("processing emails")
@@ -647,19 +656,6 @@ def main():
         denyAnomalousParselist("saParser.noemails", saParser.noemails)
 
         emailMatcher = NocardEmailMatcher(globalMatches.sIndices, globalMatches.mIndices)
-
-        # TODO: Delete this print
-
-        # saParser.nocards is singular
-        # maParser.emails is nonsingular
-
-        #
-        # print "saParser.nocards type", type(saParser.nocards)
-        # print "maParser.emails type", type(maParser.emails)
-        # print "saParser.nocards", str(saParser.nocards)[:100], '...'
-        # print "maParser.emails", str(maParser.emails)[:100], '...'
-        # print "saParser.nocards keys", str(saParser.nocards.keys())
-        # print "maParser.emails keys", str(maParser.emails.keys())
 
         emailMatcher.processRegisters(saParser.nocards, maParser.emails)
 
@@ -672,6 +668,8 @@ def main():
             print "email matches (%d pure)" % (len(emailMatcher.pureMatches))
             # print repr(emailMatcher)
 
+        if Registrar.DEBUG_DUPLICATES and emailMatcher.duplicateMatches:
+            Registrar.registerMessage("email duplicates: %s" % len(emailMatcher.duplicateMaters))        
 
         # TODO: further sort emailMatcher
 
@@ -1078,6 +1076,8 @@ def main():
             duplicates = Duplicates()
 
             for duplicateType, duplicateMatchlist in duplicateMatchlists.items():
+                print "checking duplicates of type %s" % duplicateType
+                print "len(duplicateMatchlist) %s" % len(duplicateMatchlist)
                 for match in duplicateMatchlist:
                     if match.mLen <= 1:
                         continue
@@ -1087,31 +1087,27 @@ def main():
 
             address_duplicates = {}
             for address, objects in maParser.addresses.items():
-                print "analysing address %s " % address
-                for objectData in objects:
-                    print " -> associated object: %s" % objectData
+                # print "analysing address %s " % address
+                # for objectData in objects:
+                    # print " -> associated object: %s" % objectData
                 if len(objects) > 1:
                     # if there are more than one objects associated with an address, add to the duplicate addresses report
                     address_duplicates[address] = objects
                     duplicates.add_conflictors(objects, "address")
 
-            for index, duplicate in duplicates.items():
-                print "duplicates for index: %s" % index
-                print "-> %10s | %10s | %3d | %3s | %s " % (
-                    duplicate.m_index, 
-                    duplicate.s_index,
-                    duplicate.reason_count,
-                    duplicate.weighted_reason_count,
-                    "; ".join(["%s: (%s)" % (
-                            reason,
-                            ", ".join([
-                                SanitationUtils.coerceAscii(object_glb_index_fn(objectData)) \
-                                    for objectData in list(reason_info['coConflictors'])
-                            ])
-                        ) for reason, reason_info in duplicate.reasons.items()
-                    ])
+            print duplicates.tabulate({}, tablefmt='plain')
+            if duplicates:
+                duplicateGroup.addSection(
+                    HtmlReporter.Section(
+                        'all duplicates',
+                        **{
+                            'title': 'All Duplicates',
+                            'description': "%s records are involved in duplicates" % (MASTER_NAME),
+                            'data': duplicates.tabulate(dup_cols, tablefmt='html'),
+                            'length': len(duplicates)
+                        }
+                    )
                 )
-
 
             if emailMatcher.duplicateMatches:
                 duplicateGroup.addSection(
@@ -1153,7 +1149,8 @@ def main():
                                     highlight_rules=[('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))]
                                 )
                             ) for address, objects in address_duplicates.items()
-                        ])
+                        ]),
+                        length=len(address_duplicates)
                     )
                 )
             dupReporter.addGroup(duplicateGroup)

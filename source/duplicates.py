@@ -27,6 +27,9 @@ class DuplicateObject(object):
         self.coConflictors = set()
         self.reasons = OrderedDict()
 
+    def __cmp__(self, other):
+        return cmp(self.weighted_reason_count, other.weighted_reason_count)
+
     @property
     def m_index(self):
         return object_m_index_fn(self.objectData)
@@ -59,7 +62,34 @@ class DuplicateObject(object):
             self.reasons[reason]['coConflictors'].update(coConflictors)
 
     def tabulate(self, cols, tablefmt):
-        pass
+        if not tablefmt:
+            tablefmt = 'html'
+        linedelim = "\n"
+        if tablefmt == 'html':
+            linedelim = '<br/>'
+        inner_title_fstr = "%10s | %10s | %3d | %3s"
+        title_fstr = "-> %s" % inner_title_fstr
+        if tablefmt == 'html':
+            title_fstr = "<h3>%s</h3>" % inner_title_fstr
+        # out = "-> %10s | %10s | %3d | %3s " % (
+        out = title_fstr % (
+            self.m_index, 
+            self.s_index,
+            self.reason_count,
+            self.weighted_reason_count,
+        )
+        line_fstr = linedelim + "--> %s: %s"
+        if tablefmt == 'html':
+            line_fstr = "<p><strong>%s:</strong>"+linedelim+"%s</p>"
+        for reason, reason_info in self.reasons.items():
+            out += line_fstr % (
+                reason,
+                ", ".join([
+                    SanitationUtils.coerceAscii(object_glb_index_fn(objectData)) \
+                        for objectData in list(reason_info['coConflictors'])
+                ])
+            )
+        return out
 
 class Duplicates(OrderedDict):
     """a dictionary of duplicates stored by index"""
@@ -76,8 +106,16 @@ class Duplicates(OrderedDict):
                 self[duplicateIndex] = DuplicateObject(duplicateObject)
             self[duplicateIndex].add_reason(reason, coConflictors, weighting)
 
-    def tabulate(self, cols, tablefmt):
-        pass
+    def tabulate(self, cols, tablefmt=None):
+        if not tablefmt:
+            tablefmt = 'html'
+        out = ""
+        linedelim = "\n"
+        if tablefmt == 'html': linedelim = '<br/>'
+        out += linedelim.join(
+            [duplicate.tabulate(cols, tablefmt) for duplicate in sorted(self.values(), reverse=True)]
+        )
+        return out
  
 
 
