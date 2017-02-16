@@ -662,7 +662,7 @@ def main():
         newMasters.addMatches(emailMatcher.masterlessMatches)
         newSlaves.addMatches(emailMatcher.slavelessMatches)
         globalMatches.addMatches(emailMatcher.pureMatches)
-        duplicateMatchlists['email'] = cardMatcher.duplicateMatches
+        duplicateMatchlists['email'] = emailMatcher.duplicateMatches
 
         if(Registrar.DEBUG_MESSAGE):
             print "email matches (%d pure)" % (len(emailMatcher.pureMatches))
@@ -957,9 +957,9 @@ def main():
 
             matchListInstructions = {
                 'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
-                'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
+                # 'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
                 'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
-                'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+                # 'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
             }
 
             for matchlistType, matchList in anomalousMatchLists.items():
@@ -1082,7 +1082,7 @@ def main():
                     if match.mLen <= 1:
                         continue
                         # only care about master duplicates at the moment
-                    duplicateObjects = set(match.mObjects)
+                    duplicateObjects = list(match.mObjects)
                     duplicates.add_conflictors(duplicateObjects, duplicateType)
 
             address_duplicates = {}
@@ -1095,7 +1095,8 @@ def main():
                     address_duplicates[address] = objects
                     duplicates.add_conflictors(objects, "address")
 
-            print duplicates.tabulate({}, tablefmt='plain')
+            if Registrar.DEBUG_DUPLICATES:
+                print duplicates.tabulate({}, tablefmt='plain')
             if duplicates:
                 duplicateGroup.addSection(
                     HtmlReporter.Section(
@@ -1118,6 +1119,33 @@ def main():
                             'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
                             'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
                             'length': len(emailMatcher.duplicateMatches)
+                        }
+                    )
+                )
+
+            matchListInstructions = {
+                # 'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
+                'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
+                # 'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
+                'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+            }
+
+            for matchlistType, matchList in anomalousMatchLists.items():
+                if not matchList:
+                    continue
+                description = matchListInstructions.get(matchlistType, matchlistType)
+                if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
+                    data = matchList.merge().tabulate(tablefmt="html")
+                else:
+                    data = matchList.tabulate(tablefmt="html")
+                matchingGroup.addSection(
+                    HtmlReporter.Section(
+                        matchlistType,
+                        **{
+                            # 'title': matchlistType.title(),
+                            'description': description,
+                            'data': data,
+                            'length': len(matchList)
                         }
                     )
                 )
