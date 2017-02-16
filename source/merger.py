@@ -42,6 +42,7 @@ from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
 from sync_client_user import UsrSyncClient_WP #, UsrSyncClient_WC, UsrSyncClient_JSON
 from SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 from contact_objects import FieldGroup
+from duplicates import Duplicates, object_glb_index_fn
 
 
 importName = TimeUtils.getMsTimeStamp()
@@ -955,17 +956,6 @@ def main():
                     }
                 )
             )
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    'email_duplicates',
-                    **{
-                        'title': 'Email Duplicates',
-                        'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
-                        'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
-                        'length': len(emailMatcher.duplicateMatches)
-                    }
-                )
-            )
 
             matchListInstructions = {
                 'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
@@ -1085,13 +1075,15 @@ def main():
             # What we're doing here is analysing the duplicates we've seen so far, and 
             # creating a list of all the potential objects to delete and WHY they should be deleted.
 
-            def global_index_fn(objectData):
-                assert hasattr(objectData, 'index'), "objectData should have index attr"
-                return objectData.index
+            duplicates = Duplicates()
 
-            for duplicateMatchlist in duplicateMatchlists:
-                pass
-                # do stuff here
+            for duplicateType, duplicateMatchlist in duplicateMatchlists.items():
+                for match in duplicateMatchlist:
+                    if match.mLen <= 1:
+                        continue
+                        # only care about master duplicates at the moment
+                    duplicateObjects = set(match.mObjects)
+                    duplicates.add_conflictors(duplicateObjects, duplicateType)
 
             address_duplicates = {}
             for address, objects in maParser.addresses.items():
@@ -1101,6 +1093,39 @@ def main():
                 if len(objects) > 1:
                     # if there are more than one objects associated with an address, add to the duplicate addresses report
                     address_duplicates[address] = objects
+                    duplicates.add_conflictors(objects, "address")
+                        
+
+            for index, duplicate in duplicates.items():
+                print "duplicates for index: %s" % index
+                print "-> %10s | %10s | %3d | %3s | %s " % (
+                    duplicate.m_index, 
+                    duplicate.s_index,
+                    duplicate.reason_count,
+                    duplicate.weighted_reason_count,
+                    "; ".join(["%s: (%s)" % (
+                            reason,
+                            ", ".join([
+                                SanitationUtils.coerceAscii(object_glb_index_fn(objectData)) \
+                                    for objectData in list(reason_info['coConflictors'])
+                            ])
+                        ) for reason, reason_info in duplicate.reasons.items()
+                    ])
+                )
+
+
+            if emailMatcher.duplicateMatches:
+                duplicateGroup.addSection(
+                    HtmlReporter.Section(
+                        'email_duplicates',
+                        **{
+                            'title': 'Email Duplicates',
+                            'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
+                            'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
+                            'length': len(emailMatcher.duplicateMatches)
+                        }
+                    )
+                )
 
             if address_duplicates:
                 def fn_user_older_than_wp(wp_time):
@@ -1108,6 +1133,8 @@ def main():
                     wp_time_obj = TimeUtils.wpStrptime(wp_time)
                     assert wp_time_obj, "should be valid time struct: %s" % wp_time
                     def user_older_than(userData):
+                        assert hasattr(userData, 'act_last_transation'), \
+                            "user should have act_last_transaction attr"
                         user_time_obj = userData.act_last_transation
                         return user_time_obj < wp_time_obj
                     return user_older_than

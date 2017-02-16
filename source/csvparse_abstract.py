@@ -205,12 +205,14 @@ class ImportObject(OrderedDict, Registrar):
                 self['_row'] = []
         super(ImportObject, self).__init__(*args, **kwargs)
 
+    def __hash__(self):
+        return hash(self.index)
 
     @property
     def row(self): return self._row
 
     @property
-    def rowcount(self): return self[self.rowcountKey]
+    def rowcount(self): return self.get(self.rowcountKey, 0)
 
     @property
     def index(self): return self.rowcount

@@ -109,11 +109,9 @@ ids that were deleted.txt
 
 html/*
 source/.DS_Store
-
 pocs/.DS_Store
-
 .DS_Store
-
 debug_out
-
 log
+input archive*.zip
+logs archive*.zip
