@@ -512,7 +512,7 @@ class SyncUpdate(Registrar):
         out_str += heading_fmt % self.__str__()
         out_str += info_delimeter.join([
             subtitle_fmt % "OLD",
-            oldMatch.tabulate(tablefmt)
+            oldMatch.tabulate(cols=None, tablefmt=tablefmt)
         ])
         out_str += info_delimeter
 
@@ -547,7 +547,7 @@ class SyncUpdate(Registrar):
         out_str += info_delimeter
         out_str += info_delimeter.join([
             subtitle_fmt % 'NEW',
-            newMatch.tabulate(tablefmt)
+            newMatch.tabulate(cols=None, tablefmt=tablefmt)
         ])
 
         return out_str
