@@ -396,7 +396,7 @@ def main():
         default=config.get('imgRawFolder'))
     images_group.add_argument('--img-raw-extra-folder',
         help='location of additional raw images',
-        default='')
+        default=config.get('imgRawExtraFolder'))
     images_group.add_argument('--require-images',
         help='require that all items have images',
         default=True)
