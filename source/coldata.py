@@ -2017,8 +2017,8 @@ class ColData_User(ColData_Base):
             'import': True,
             'act':True,
             'wp':False,
-            # 'report': True,
-            # 'basic':True
+            'report': True,
+            'basic':True
         }),
         ('Wordpress Start Date', {
             'import': True,
@@ -2069,7 +2069,7 @@ class ColData_User(ColData_Base):
             'act':True,
             'import': True,
             'basic':True,
-            # 'report': True
+            'report': True
         }),
 
         ('Social Media', {
