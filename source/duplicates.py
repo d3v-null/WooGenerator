@@ -60,7 +60,7 @@ class DuplicateObject(object):
             self.reasons[reason]['details'] = details
 
 
-    def tabulate(self, cols, tablefmt):
+    def tabulate(self, cols, tablefmt=None, highlight_rules=None):
         if not tablefmt:
             tablefmt = 'html'
         linedelim = "\n"
@@ -88,6 +88,9 @@ class DuplicateObject(object):
                 reason_info['details']
             ])
 
+        objContainer = self.objectData.containerize()
+        out += objContainer.tabulate(cols, tablefmt, highlight_rules)
+
         out += tabulate(reason_table, tablefmt=tablefmt, headers=["Reason", "Weighting", "Details"])
 
         return out
@@ -114,14 +117,14 @@ class Duplicates(OrderedDict):
             self[duplicateIndex] = DuplicateObject(conflictor)
         self[duplicateIndex].add_reason(reason, weighting, details)
  
-    def tabulate(self, cols, tablefmt=None):
+    def tabulate(self, cols, tablefmt=None, highlight_rules=None):
         if not tablefmt:
             tablefmt = 'html'
         out = ""
         linedelim = "\n"
         if tablefmt == 'html': linedelim = '<br/>'
         out += linedelim.join(
-            [duplicate.tabulate(cols, tablefmt) for duplicate in sorted(self.values(), reverse=True)]
+            [duplicate.tabulate(cols, tablefmt, highlight_rules) for duplicate in sorted(self.values(), reverse=True)[:100]]
         )
         return out
  
