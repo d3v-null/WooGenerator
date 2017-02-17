@@ -61,7 +61,13 @@ apt-cyg install libffi-devel
 Other dependencies
 ------------------
 
-sudo -H pip2 install --upgrade $(cat requirements.txt)
+make sure you are using python2:
+
+`python -c "import sys; print sys.version"` 
+
+Now you can install packages
+
+`sudo -H pip2 install --upgrade $(cat requirements.txt)`
 
 Todo: Are these still dependencies?
 ```
@@ -72,52 +78,67 @@ Todo: Are these still dependencies?
 
 Cygwin Packages
 ---------------
-apt-cyg install
-  cygwin-devel
-  exiv2
-  gcc-core
-  gexiv2
-  libboost_python-devel
-  libexiv2-devel
-  mingw64-i686-binutils
-  mingw64-i686-gcc-core
-  mingw64-i686-headers
-  mingw64-i686-openssl
-  mingw64-i686-pkg-config
-  mingw64-i686-runtime
-  mingw64-i686-windows-default-manifest
-  mingw64-i686-winpthreads
-  mingw64-i686-zlib
-  mingw64-x86_64-binutils
-  mingw64-x86_64-exiv2
-  mingw64-x86_64-gcc-core
-  mingw64-x86_64-headers
-  mingw64-x86_64-openssl
-  mingw64-x86_64-pkg-config
-  mingw64-x86_64-runtime
-  mingw64-x86_64-windows-default-manifest
-  mingw64-x86_64-winpthreads
-  mingw64-x86_64-zlib
-  openssh
-  openssl
-  openssl-devel
-  python
-  python-cffi
-  python-gi
-  python-imaging
-  python-ply
-  python-pycparser
-  rsync
-  scons
-  w32api-headers
-  w32api-runtime
+If you're running cygwin:
 
- Other Libraries
- ---------------
+```
+  apt-cyg install \
+    cygwin-devel \
+    exiv2 \
+    gcc-core \
+    gexiv2 \
+    libboost_python-devel \
+    libexiv2-devel \
+    mingw64-i686-binutils \
+    mingw64-i686-gcc-core \
+    mingw64-i686-headers \
+    mingw64-i686-openssl \
+    mingw64-i686-pkg-config \
+    mingw64-i686-runtime \
+    mingw64-i686-windows-default-manifest \
+    mingw64-i686-winpthreads \
+    mingw64-i686-zlib \
+    mingw64-x86_64-binutils \
+    mingw64-x86_64-exiv2 \
+    mingw64-x86_64-gcc-core \
+    mingw64-x86_64-headers \
+    mingw64-x86_64-openssl \
+    mingw64-x86_64-pkg-config \
+    mingw64-x86_64-runtime \
+    mingw64-x86_64-windows-default-manifest \
+    mingw64-x86_64-winpthreads \
+    mingw64-x86_64-zlib \
+    openssh \
+    openssl \
+    openssl-devel \
+    python \
+    python-cffi \
+    python-gi \
+    python-imaging \
+    python-ply \
+    python-pycparser \
+    rsync \
+    scons \
+    w32api-headers \
+    w32api-runtime \
+```
 
- Testing
- ----
+Other Libraries
+---------------
+
+Testing
+====
 to test X
 ```
-python test/testX.py
+  python test/testX.py
 ```
+
+Running
+====
+If you're syncing products:
+
+`python source/generator.py --help`
+
+If you're syncing users:
+
+`python source/merger.py --help`
+
