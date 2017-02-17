@@ -564,12 +564,12 @@ def main():
     # exit()
     # quit()
 
-    print "first maParser source:"
-    print maParser.objects.values()[0]['source']
-    print "first saParse source:"
-    print saParser.objects.values()[0]['source']
+    # print "first maParser source:"
+    # print maParser.objects.values()[0]['source']
+    # print "first saParse source:"
+    # print saParser.objects.values()[0]['source']
 
-    quit()
+    # quit()
 
     # get matches
 
@@ -991,19 +991,6 @@ def main():
                     )
                 )
 
-            data = emailConflictMatches.tabulate(tablefmt="html")
-            matchingGroup.addSection(
-                HtmlReporter.Section(
-                    "email conflicts",
-                    **{
-                        # 'title': matchlistType.title(),
-                        'description': "email conflicts",
-                        'data': data,
-                        'length': len(emailConflictMatches)
-                    }
-                )
-            )
-
             # print debugUtils.hashify("anomalous ParseLists: ")
 
             parseListInstructions = {
@@ -1071,28 +1058,47 @@ def main():
         report_duplicates = args.process_duplicates
         if report_duplicates:
 
-            dupCss = ".highlight_old {color: red;}"
+            dupCss = """
+.highlight_old {color: red !important; }
+.highlight_old {color: orange;}
+.highlight_master {background: lightblue !important;}
+.highlight_slave {background: lightpink !important;}
+            """
             dupReporter = HtmlReporter(css=dupCss)
             duplicateGroup = HtmlReporter.Group('dup', 'Duplicate Results')
 
+            basic_cols = ColData_User.getBasicCols()
             dup_cols = OrderedDict(basic_cols.items() + [
-                ('Create Date', {})
+                # ('Create Date', {}),
+                # ('Last Sale', {})
             ])
 
             # What we're doing here is analysing the duplicates we've seen so far, and 
             # creating a list of all the potential objects to delete and WHY they should be deleted.
+
+            def fn_obj_source_is(source):
+                def obj_source_is(objectData):
+                    objSource = objectData.get('source')
+                    if objSource and source == objSource:
+                        return True
+                return obj_source_is
 
             def fn_user_older_than_wp(wp_time):
                 """ returns a function that checks if the user is older than a date given in wp_time format """
                 wp_time_obj = TimeUtils.wpStrptime(wp_time)
                 assert wp_time_obj, "should be valid time struct: %s" % wp_time
                 def user_older_than(userData):
-                    assert hasattr(userData, 'act_last_transaction'), \
-                        "user should have act_last_transaction attr: %s, %s" % (\
-                            type(userData),
-                            SanitationUtils.coerceAscii(userData)
-                        )
-                    user_time_obj = userData.act_last_transaction
+                    if fn_obj_source_is(MASTER_NAME)(userData):
+                        assert hasattr(userData, 'act_last_transaction'), \
+                            "%s user should have act_last_transaction attr: %s, %s, source: %s" % (\
+                                MASTER_NAME,
+                                type(userData),
+                                SanitationUtils.coerceAscii(userData),
+                                userData.get('source')
+                            )
+                        user_time_obj = userData.act_last_transaction
+                    else:
+                        user_time_obj = userData.last_modtime
                     return user_time_obj < wp_time_obj
                 return user_older_than
 
@@ -1126,9 +1132,21 @@ def main():
                     details = TimeUtils.wpTimeToString(objectData.act_last_transaction)
                     duplicates.add_conflictor(objectData, "last_transaction_oldish", 0.2, details)
 
+            highlight_rules_master_slave = [
+                ('highlight_master', fn_obj_source_is(MASTER_NAME)),
+                ('highlight_slave', fn_obj_source_is(SLAVE_NAME))
+            ]
 
-            if Registrar.DEBUG_DUPLICATES:
-                print duplicates.tabulate({}, tablefmt='plain')
+            highlight_rules_old = [
+                ('highlight_oldish', fn_user_older_than_wp(OLDISH_THRESHOLD)),
+                ('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))
+            ]
+
+            highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
+
+
+            # if Registrar.DEBUG_DUPLICATES:
+                # print duplicates.tabulate({}, tablefmt='plain')
             if duplicates:
                 duplicateGroup.addSection(
                     HtmlReporter.Section(
@@ -1136,12 +1154,33 @@ def main():
                         **{
                             'title': 'All Duplicates',
                             'description': "%s records are involved in duplicates" % (MASTER_NAME),
-                            'data': duplicates.tabulate(dup_cols, tablefmt='html'),
+                            'data': duplicates.tabulate(dup_cols, tablefmt='html', highlight_rules=highlight_rules_all),
                             'length': len(duplicates)
                         }
                     )
                 )
 
+            emailConflictData = emailConflictMatches.tabulate(
+                cols=dup_cols,
+                tablefmt="html",
+                highlight_rules=highlight_rules_all
+            )
+            duplicateGroup.addSection(
+                HtmlReporter.Section(
+                    "email conflicts",
+                    **{
+                        # 'title': matchlistType.title(),
+                        'description': "email conflicts",
+                        'data': emailConflictData,
+                        'length': len(emailConflictMatches)
+                    }
+                )
+            )
+
+            emailDuplicateData = emailMatcher.duplicateMatches.tabulate(
+                tablefmt="html",
+                highlight_rules=highlight_rules_all
+            )
             if emailMatcher.duplicateMatches:
                 duplicateGroup.addSection(
                     HtmlReporter.Section(
@@ -1149,7 +1188,7 @@ def main():
                         **{
                             'title': 'Email Duplicates',
                             'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
-                            'data': emailMatcher.duplicateMatches.tabulate(tablefmt="html"),
+                            'data': emailDuplicateData,
                             'length': len(emailMatcher.duplicateMatches)
                         }
                     )
@@ -1169,7 +1208,7 @@ def main():
                 if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
                     data = matchList.merge().tabulate(tablefmt="html")
                 else:
-                    data = matchList.tabulate(tablefmt="html")
+                    data = matchList.tabulate(tablefmt="html", highlight_rules=highlight_rules_all)
                 matchingGroup.addSection(
                     HtmlReporter.Section(
                         matchlistType,
@@ -1196,7 +1235,7 @@ def main():
                                 UsrObjList(objects).tabulate(
                                     cols=dup_cols,
                                     tablefmt='html',
-                                    highlight_rules=[('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))]
+                                    highlight_rules=highlight_rules_old
                                 )
                             ) for address, objects in address_duplicates.items()
                         ]),
