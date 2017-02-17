@@ -95,6 +95,8 @@ class ObjList(list, Registrar):
         # sanitizer = (lambda x: str(x)) if tablefmt == 'html' else SanitationUtils.makeSafeOutput
         if objs:
             if not cols: cols = self.reportCols
+            assert isinstance(cols, dict), \
+                "cols should be a dict, found %s instead: %s" % (type(cols), repr(cols))
             header = [self.objList_type]
             for col in cols.keys():
                 header += [col]
@@ -265,6 +267,10 @@ class ImportObject(OrderedDict, Registrar):
             'rowcount': self.rowcount,
             'row':self.row[:]
         }
+
+    def containerize(self):
+        """ put self in a container by itself """
+        return self.container([self])
 
     def __getstate__(self): return self.__dict__
     def __setstate__(self, d): self.__dict__.update(d)
