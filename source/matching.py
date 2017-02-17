@@ -108,24 +108,23 @@ class Match(object):
     def __repr__(self):
         return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] )
 
-    def tabulate(self, tablefmt=None):
-        out  = ""
-        match_type = self.type
+    def containerize(self):
         print_headings = False
-        if match_type in ['duplicate']:
+        if self.type in ['duplicate']:
             if self.mObjects:
                 # out += "The following ACT records are diplicates"
                 if self.sObjects:
-                    print_headings = True
+                    pass
+                    # print_headings = True # we don't need to print headings any more :P
                     # out += " of the following WORDPRESS records"
             else:
                 assert self.sObjects
                 # out += "The following WORDPRESS records are duplicates"
-        elif match_type in ['masterless', 'slavelaveless']:
+        elif self.type in ['masterless', 'slavelaveless']:
             pass
-            # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[match_type]
+            # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[self.type]
         # out += "\n"
-
+        obj_container = None
         if self.mLen or self.sLen:
             gcs = self.gcs
             if gcs is not None and hasattr(gcs, 'container'):
@@ -163,7 +162,24 @@ class Match(object):
                 for sobj in sobjs:
                     # pprint(sobj)
                     obj_container.append(sobj)
-            out += obj_container.tabulate(tablefmt=tablefmt)
+        return obj_container
+
+    def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
+        out  = ""
+
+        obj_container = self.containerize()
+        if obj_container:
+            try:
+                out += obj_container.tabulate(cols=cols, tablefmt=tablefmt, highlight_rules=highlight_rules)
+            except TypeError as e:
+                print "obj_container could not tabulate: %s " % type(obj_container) 
+                raise e
+            except AssertionError as e:
+                print "could not tabulate\nmObjects:%s\nsObjects:%s" % (
+                    self.mObjects,
+                    self.sObjects
+                )
+                raise e
         else:
             out += 'EMPTY'
         # return SanitationUtils.coerceUnicode(out)
@@ -249,7 +265,7 @@ class MatchList(list):
 
         return Match(mObjects, sObjects)
 
-    def tabulate(self, tablefmt=None):
+    def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
         if(self):
             prefix, suffix = "", ""
             delimeter = "\n"
@@ -258,7 +274,8 @@ class MatchList(list):
                 prefix = '<div class="matchList">'
                 suffix = '</div>'
             return prefix + delimeter.join(
-                [SanitationUtils.coerceBytes(match.tabulate(tablefmt=tablefmt)) for match in self if match]
+                [SanitationUtils.coerceBytes(match.tabulate(cols=cols, tablefmt=tablefmt, highlight_rules=highlight_rules))\
+                 for match in self if match]
             ) + suffix
         else:
             return ""
