@@ -1,11 +1,13 @@
 from PIL import Image
 from PIL import PngImagePlugin
+# from pillow import Image
+# from pillow import PngImagePlugin
 from utils import SanitationUtils, Registrar
 # from pyexiv2.metadata import ImageMetadata
 import piexif
-import iptcinfo
+# import iptcinfo
 import os
-from time import time
+# from time import time
 
 class MetaGator(Registrar):
     def __init__(self, path):

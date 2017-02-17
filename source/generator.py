@@ -1,8 +1,9 @@
+
 # import re
 from collections import OrderedDict
 import os
 import shutil
-from PIL import Image
+# from PIL import Image
 # import time
 # import datetime
 import argparse
@@ -12,7 +13,7 @@ import io
 
 # from itertools import chain
 from metagator import MetaGator
-from utils import listUtils, SanitationUtils, TimeUtils, debugUtils, ProgressCounter
+from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter # debugUtils
 from utils import HtmlReporter
 from csvparse_abstract import Registrar
 from csvparse_shop import ShopObjList # ShopProdList,
@@ -398,8 +399,7 @@ def main():
         default='')
     images_group.add_argument('--require-images',
         help='require that all items have images',
-        type='bool',
-        default=True
+        default=True)
 
     specials_group = parser.add_argument_group('Specials options')
     group = specials_group.add_mutually_exclusive_group()
