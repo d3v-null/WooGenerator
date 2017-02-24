@@ -3,6 +3,7 @@ dill
 exitstatus
 google-api-python-client
 httplib2
+npyscreen
 kitchen
 paramiko
 pgi
