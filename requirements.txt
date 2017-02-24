@@ -18,6 +18,6 @@ sshtunnel
 tabulate
 unicodecsv
 uniqid
-urllib3  
+urllib3
 woocommerce
 wordpress_json
