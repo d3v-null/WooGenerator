@@ -26,7 +26,7 @@ from csvparse_dyn import CSVParse_Dyn
 from csvparse_special import CSVParse_Special
 # from csvparse_api import CSVParse_Woo_Api
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
-from sync_client import SyncClient_GDrive
+from sync_client import SyncClient_GDrive, SyncClient_Local
 from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from matching import ProductMatcher, CategoryMatcher, VariationMatcher
 from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, ,
@@ -618,9 +618,6 @@ def main():
         CSVParse_Woo.specialsCategory = "Specials"
         CSVParse_Woo.add_special_categories = add_special_categories
 
-    if not args.download_master:
-        SyncClient_GDrive.skip_download = True
-
     CSVParse_Woo.do_images = args.do_images
     CSVParse_Woo.do_dyns = args.do_dyns
     CSVParse_Woo.do_specials = args.do_specials
@@ -707,6 +704,9 @@ def main():
         'genFID': genFID,
     }
 
+    if not args.download_master:
+        gDriveParams['skip_download'] = True
+
     wcApiParams = {
         'api_key':wc_api_key,
         'api_secret':wc_api_secret,
@@ -753,67 +753,49 @@ def main():
         else:
             productParserArgs['schema'] = args.schema
             productParserClass = CSVParse_Woo
+
+    dynParser = CSVParse_Dyn()
+    specialParser = CSVParse_Special()
+
+    def analyse_parsers_with_client(client):
+        pass
+
     if args.download_master:
         if Registrar.DEBUG_GDRIVE:
             Registrar.registerMessage("GDrive params: %s" % gDriveParams)
-        with SyncClient_GDrive(gDriveParams) as client:
-            if args.schema in woo_schemas:
-                if args.do_dyns:
-                    Registrar.registerMessage("analysing dprc rules")
-                    dynParser = CSVParse_Dyn()
-                    client.analyseRemote(dynParser, dprcGID, dprcPath)
-                    dprcRules = dynParser.taxos
-                    productParserArgs['dprcRules'] = dprcRules
-
-                    Registrar.registerMessage("analysing dprp rules")
-                    dynParser.clearTransients()
-                    client.analyseRemote(dynParser, dprpGID, dprpPath)
-                    dprpRules = dynParser.taxos
-                    productParserArgs['dprpRules'] = dprpRules
-
-                if args.do_specials:
-                    Registrar.registerMessage("analysing specials")
-                    specialParser = CSVParse_Special()
-                    client.analyseRemote(specialParser, specGID, specPath)
-                    # productParserArgs['specialGroups'] = specialParser.ruleGroups
-                    if Registrar.DEBUG_SPECIAL:
-                        Registrar.registerMessage(specialParser.tabulate())
-                    productParserArgs['specialRules'] = specialParser.rules
-
-            productParser = productParserClass(**productParserArgs)
-
-            Registrar.registerProgress("analysing remote GDrive data")
-
-            client.analyseRemote(productParser, genGID, genPath, limit=args.download_limit)
+        client_class = SyncClient_GDrive
+        client_args = [gDriveParams]
     else:
+        client_class = SyncClient_Local
+        client_args = []
+    #
+    with client_class(*client_args) as client:
         if args.schema in woo_schemas:
             if args.do_dyns:
                 Registrar.registerMessage("analysing dprc rules")
-                dynParser = CSVParse_Dyn()
-                dynParser.analyseFile(dprcPath)
+                client.analyseRemote(dynParser, dprcPath, gid=dprcGID)
                 dprcRules = dynParser.taxos
                 productParserArgs['dprcRules'] = dprcRules
 
                 Registrar.registerMessage("analysing dprp rules")
                 dynParser.clearTransients()
-                dynParser.analyseFile(dprpPath)
+                client.analyseRemote(dynParser, dprpPath, gid=dprpGID)
                 dprpRules = dynParser.taxos
                 productParserArgs['dprpRules'] = dprpRules
 
             if args.do_specials:
                 Registrar.registerMessage("analysing specials")
-                specialParser = CSVParse_Special()
-                specialParser.analyseFile(specPath)
-                specials = specialParser.objects
+                client.analyseRemote(specialParser, specPath, gid=specGID)
+                # productParserArgs['specialGroups'] = specialParser.ruleGroups
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("Specials: %s" % pformat(specials.keys()))
-                productParserArgs['specials'] = specials
+                    Registrar.registerMessage(specialParser.tabulate())
+                productParserArgs['specialRules'] = specialParser.rules
 
         productParser = productParserClass(**productParserArgs)
 
-        Registrar.registerProgress("analysing local GDrive data")
+        Registrar.registerProgress("analysing remote GDrive data")
 
-        productParser.analyseFile(genPath, limit=args.download_limit)
+        client.analyseRemote(productParser, genPath, gid=genGID, limit=args.download_limit)
 
     products = productParser.products
 

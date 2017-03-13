@@ -3097,6 +3097,32 @@ class UnicodeCsvDialectUtils(object):
         out += " | SWS: %s" % repr(dialect.skipinitialspace)
         return out
 
+    @classmethod
+    def dialect_unicode_to_bytestr(cls, dialect):
+        for attr in [
+            'delimeter',
+            'quotechar',
+            'doublequote',
+            'escapechar',
+            'quotechar',
+            'quoting',
+        ]:
+            if isinstance(getattr(dialect, attr), unicode):
+                setattr(
+                    dialect,
+                    attr,
+                    SanitationUtils.coerceBytes(getattr(dialect, attr))
+                )
+        return dialect
+
+    @classmethod
+    def get_dialect_from_sample(cls, sample, suggestion):
+        byte_sample = SanitationUtils.coerceBytes(sample)
+        csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
+        if not csvdialect:
+            return cls.get_dialect_from_suggestion(suggestion)
+        return csvdialect
+
 class FileUtils(object):
     @classmethod
     def getFileName(cls, path):

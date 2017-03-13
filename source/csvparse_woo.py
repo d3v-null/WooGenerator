@@ -354,7 +354,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
     do_specials = True
     do_dyns = True
-    current_special = None
     specialsCategory = None
     add_special_categories = False
 
@@ -420,6 +419,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         self.dprcRules = kwargs.pop('dprcRules', {})
         self.dprpRules = kwargs.pop('dprpRules', {})
         self.specialRules = kwargs.pop('specialRules', {})
+        self.current_special = kwargs.pop('currentSpecialGroup', None)
         # self.specialGroups = kwargs.pop('specialGroups', {})
         if not kwargs.get('metaWidth'): kwargs['metaWidth'] = 2
         if not kwargs.get('itemDepth'): kwargs['itemDepth'] = 2

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from collections import Iterable # OrderedDict,
 import os
+# import tempfile
+import codecs
 # import shutil
-from utils import Registrar #, SanitationUtils, TimeUtils, listUtils, debugUtils,
+from utils import Registrar, SanitationUtils #, TimeUtils, listUtils, debugUtils,
 from utils import ProgressCounter
 # from csvparse_user import UsrObjList #, ImportUser, CSVParse_User
 # from coldata import ColData_User
@@ -27,6 +29,8 @@ import time
 # from wordpress_json import WordpressJsonWrapper, WordpressError
 # import pymysql
 from simplejson import JSONDecodeError
+from StringIO import StringIO
+from contextlib import closing
 
 # from requests import request,
 from requests import ConnectionError, ReadTimeout
@@ -175,14 +179,28 @@ class SyncClient_Abstract(Registrar):
             assert pkey, "must have a valid primary key"
             assert self.connectionReady, "connection should be ready"
 
+class SyncClient_Local(SyncClient_Abstract):
+    """ Designed to act like a GDrive client but work on a local file instead """
+    def __init__(self):
+        pass
+
+    def __exit__(self, exit_type, value, traceback):
+        pass
+
+    def analyseRemote(self, parser, outPath=None, limit=None, **kwargs):
+        return parser.analyseFile(outPath, limit=limit)
+        # outEncoding='utf8'
+        # with codecs.open(outPath, mode='rbU', encoding=outEncoding) as outFile:
+        #     return parser.analyseStream(outFile, limit=limit, encoding=outEncoding)
+
 class SyncClient_GDrive(SyncClient_Abstract):
-    skip_download = None
     service_builder = discovery.build
 
     def __init__(self, gdriveParams):
         for key in ['credentials_dir', 'credentials_file', 'client_secret_file',
                     'scopes', 'app_name']:
             assert key in gdriveParams, "key %s should be specified" % key
+        self.skip_download = gdriveParams.pop('skip_download', None)
         self.gdriveParams = gdriveParams
         credentials = self.get_credentials()
         auth_http = credentials.authorize(httplib2.Http())
@@ -251,13 +269,10 @@ class SyncClient_GDrive(SyncClient_Abstract):
             resp, content = self.service._http.request(download_url)
             if resp.status == 200:
                 self.registerMessage('Status: %s' % resp)
-                return content
+                if content:
+                    return SanitationUtils.coerceUnicode(content)
             else:
                 self.registerError('An error occurred: %s' % resp)
-                return None
-        else:
-            return None
-            # The file doesn't have any content stored on Drive.
 
     def get_gm_modtime(self, gid=None):
         if gid: pass #gets rid of annoying warnings
@@ -265,33 +280,36 @@ class SyncClient_GDrive(SyncClient_Abstract):
 
         return time.strptime(modifiedDate, '%Y-%m-%dT%H:%M:%S.%fZ')
 
-    def analyseRemote(self, parser, gid=None, outPath=None, limit=None):
-        if not outPath:
-            outPath = '/tmp/' + gid + '.csv'
-
-        if Registrar.DEBUG_GDRIVE:
-            Registrar.registerMessage( "Downloading gid %s to: %s" % (gid, outPath) )
+    def analyseRemote(self, parser, outPath=None, limit=None, **kwargs):
+        gid = kwargs.pop('gid', None)
 
         if not self.skip_download:
-            # try:
-            #     assert os.path.isfile(outPath)
-            #     local_timestamp = os.path.getmtime(outPath)
-            # except:
-            #     local_timestamp = 0
-            # local_gmtime = time.gmtime(local_timestamp)
-            #
-            # remote_gmtime = get_gm_modtime(gid)
-            #
-            # print "local / remote gmtime", local_gmtime, remote_gmtime
-
-            # if local_gmtime < remote_gmtime:
+            if Registrar.DEBUG_GDRIVE:
+                message = "Downloading spreadsheet"
+                if gid:
+                    message += " with gid %s" % gid
+                if outPath:
+                    message += " to: %s" % outPath
+                Registrar.registerMessage( message )
 
             content = self.download_file_content_csv(gid)
-            if content:
-                with open(outPath, 'w') as outFile:
+            if not content:
+                return
+            if outPath:
+                outEncoding='utf8'
+                with codecs.open(outPath, encoding=outEncoding, mode='w') as outFile:
                     outFile.write(content)
-                    Registrar.registerMessage( "downloaded %s" % outFile)
-        parser.analyseFile(outPath, limit=limit)
+                parser.analyseFile(outPath, limit=limit, encoding=outEncoding)
+            else:
+                with closing(StringIO(content)) as contentStream:
+                    parser.analyseStream(contentStream, limit=limit)
+
+            if Registrar.DEBUG_GDRIVE:
+                message = "downloaded contents of spreadsheet"
+                if gid:
+                    message += ' with gid %s' % gid
+                if outFile:
+                    message += ' to file %s' % outPath
 
 class SyncClient_Rest(SyncClient_Abstract):
     class ApiIterator(Iterable):

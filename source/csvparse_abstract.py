@@ -465,9 +465,6 @@ class CSVParse_Base(Registrar):
         # self.registerObject(objectData)
 
     def analyseRows(self, unicode_rows, fileName="rows", limit=None):
-        limit = None
-        if hasattr(self, 'limit'):
-            limit = self.limit
         if limit and isinstance(limit, int):
             unicode_rows = list(unicode_rows)[:limit]
         if self.DEBUG_PROGRESS:
@@ -478,7 +475,7 @@ class CSVParse_Base(Registrar):
                 for row in unicode_rows:
                     rows.append(row)
             except Exception, e:
-                raise Exception("could not append row %d, %s: \n\t%s" % (len(rows), str(e), rows[-1]))
+                raise Exception("could not append row %d, %s: \n\t%s" % (len(rows), str(e), repr(rows[-1:])))
             rowlen = len(rows)
             self.progressCounter = ProgressCounter(rowlen)
             unicode_rows = rows
@@ -535,30 +532,61 @@ class CSVParse_Base(Registrar):
         if self.DEBUG_PARSER:
             self.registerMessage("Completed analysis")
 
-    def analyseFile(self, fileName, encoding=None, dialect_suggestion=None, limit=None):
+    def analyseStream(self, byte_file_obj, streamName=None, encoding=None, dialect_suggestion=None, limit=None):
+        """ may want to revert back to this commit if things break:
+        https://github.com/derwentx/WooGenerator/commit/c4fabf83d5b4d1e0a4d3ff755cd8eadf1433d253 """
+
+        if hasattr(self, 'rowcount') and self.rowcount > 1:
+            raise UserWarning('rowcount should be 0. Make sure clearTransients is being called on ancestors')
         if encoding is None:
             encoding = "utf8"
-        if self.DEBUG_PARSER:
-            self.registerMessage("Analysing file: {0}, encoding: {1}".format(fileName, encoding))
-        with open(fileName, 'rbU') as byte_file_obj:
-            # I can't imagine this having any problems
-            byte_sample = byte_file_obj.read(1000)
-            byte_file_obj.seek(0)
 
-            if dialect_suggestion:
-                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect_suggestion)
+        if streamName is None:
+            if hasattr(byte_file_obj, 'name'):
+                streamName = byte_file_obj.name
             else:
-                try:
-                    csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
-                    assert csvdialect.delimiter ==',', "sanity test"
-                except Exception:
-                    csvdialect = UnicodeCsvDialectUtils.default_dialect
+                streamName = 'stream'
 
-            if self.DEBUG_PARSER:
-                self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+        if self.DEBUG_PARSER:
+            self.registerMessage("Analysing stream: {0}, encoding: {1}".format(streamName, encoding))
 
-            unicodecsvreader = unicodecsv.reader(byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
-            return self.analyseRows(unicodecsvreader, fileName)
+        # I can't imagine this having any problems
+        byte_sample = SanitationUtils.coerceBytes(byte_file_obj.read(1000))
+        byte_file_obj.seek(0)
+
+        if dialect_suggestion:
+            csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect_suggestion)
+        else:
+            csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
+            assert \
+                csvdialect.delimiter == ',' and isinstance(csvdialect.delimiter, str)
+            # try:
+            #     csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
+            #     assert csvdialect.delimiter ==',', "sanity test"
+            #     assert isinstance(csvdialect.delimiter, str)
+            # except AssertionError:
+            #     csvdialect = UnicodeCsvDialectUtils.default_dialect
+
+        if self.DEBUG_PARSER:
+            self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+
+        unicodecsvreader = unicodecsv.reader(
+            byte_file_obj,
+            dialect=csvdialect,
+            encoding=encoding,
+            strict=True
+        )
+        return self.analyseRows(unicodecsvreader, fileName=streamName, limit=limit)
+
+    def analyseFile(self, fileName, encoding=None, dialect_suggestion=None, limit=None):
+        with open(fileName, 'rbU') as byte_file_obj:
+            return self.analyseStream(
+                byte_file_obj,
+                streamName=fileName,
+                encoding=encoding,
+                dialect_suggestion=dialect_suggestion,
+                limit=limit
+            )
         return None
 
     @classmethod
