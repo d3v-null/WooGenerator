@@ -2369,7 +2369,8 @@ class AddressUtils:
 
 
 class TimeUtils:
-    wpSrvOffset = 0
+    _override_time = None
+    _wpSrvOffset = 0
     actSrvOffset = 0
 
     dateFormat = "%Y-%m-%d"
@@ -2379,8 +2380,34 @@ class TimeUtils:
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
     gDriveTimeFormat = "%Y-%m-%d %H:%M:%S"
 
-    @staticmethod
-    def starStrptime(string, fmt = wpTimeFormat ):
+
+    @classmethod
+    def set_override_time(cls, time_struct=None):
+        """ sets the override time to a local time struct or removes override """
+        if time_struct:
+            assert isinstance(time_struct, time.struct_time)
+        cls._override_time = time_struct
+
+    @classmethod
+    def current_loctstruct(cls):
+        """ returns the current local time as a time.struct_time or the
+        struct_time that was set to override the curren time """
+        if cls._override_time:
+            return cls._override_time
+        else:
+            return time.gmtime()
+
+    @classmethod
+    def current_tsecs(cls):
+        """ Returns the curren time in number of seconds since the epoch or the
+        time that was set to override """
+        if cls._override_time:
+            return time.mktime(cls._override_time)
+        else:
+            return time.time()
+
+    @classmethod
+    def starStrptime(cls, string, fmt = wpTimeFormat ):
         string = SanitationUtils.coerceUnicode(string)
         if(string):
             try:
@@ -2392,8 +2419,8 @@ class TimeUtils:
         return 0
 
     @classmethod
-    def setWpSrvOffset(_class, offset):
-        _class.wpSrvOffset = offset
+    def setWpSrvOffset(cls, offset):
+        cls._wpSrvOffset = offset
 
     @staticmethod
     def actStrptime(string):
@@ -2416,65 +2443,44 @@ class TimeUtils:
     def wpTimeToString(t, fmt = wpTimeFormat):
         return time.strftime(fmt, time.localtime(t))
 
-    @staticmethod
-    def hasHappenedYet(t):
+    @classmethod
+    def hasHappenedYet(cls, t):
         assert isinstance(t, (int, float)), "param must be an int not %s"% type(t)
-        return t >= time.time()
+        return t >= cls.current_tsecs()
 
-    @staticmethod
-    def localToServerTime(t, timezoneOffset = time.timezone):
+    @classmethod
+    def localToServerTime(cls, t, timezoneOffset = time.timezone):
         return int(t - timezoneOffset)
 
-    @staticmethod
-    def serverToLocalTime(t, timezoneOffset = time.timezone):
+    @classmethod
+    def serverToLocalTime(cls, t, timezoneOffset = time.timezone):
         return int(t + timezoneOffset)
 
-    @staticmethod
-    def wpServerToLocalTime(t):
-        return TimeUtils.serverToLocalTime(t, TimeUtils.wpSrvOffset)
+    @classmethod
+    def wpServerToLocalTime(cls, t):
+        return cls.serverToLocalTime(t, cls._wpSrvOffset)
 
-    @staticmethod
-    def actServerToLocalTime(t):
-        return TimeUtils.serverToLocalTime(t, TimeUtils.actSrvOffset)
+    @classmethod
+    def actServerToLocalTime(cls, t):
+        return cls.serverToLocalTime(t, cls.actSrvOffset)
 
-    @staticmethod
-    def getDateStamp():
-        return time.strftime(TimeUtils.dateFormat)
+    @classmethod
+    def getDateStamp(cls, t=None):
+        if not t:
+            t=cls.current_loctstruct()
+        return time.strftime(cls.dateFormat, t)
 
-    @staticmethod
-    def getMsTimeStamp():
-        return time.strftime(TimeUtils.msTimeFormat)
+    @classmethod
+    def getMsTimeStamp(cls, t=None):
+        if not t:
+            t=cls.current_loctstruct()
+        return time.strftime(cls.msTimeFormat, t)
 
-    @staticmethod
-    def getTimeStamp():
-        return time.strftime(TimeUtils.wpTimeFormat)
-
-
-
-# def testTimeUtils():
-#     TimeUtils.setWpSrvOffset(-7200)
-#     inTime = "2016-05-06 16:07:00"
-#     print TimeUtils.wpStrptime(inTime)
-#     print TimeUtils.wpTimeToString(TimeUtils.wpStrptime(inTime))
-#     print TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(inTime)))
-
-    # gTime = TimeUtils.gDriveStrpTime("14/02/2016")
-    # print "gTime", gTime
-    # sTime = TimeUtils.localToServerTime(gTime)
-    # print "sTime", sTime
-
-    # print TimeUtils.wpTimeToString(1455379200)
-
-    # t1 = TimeUtils.actStrptime("29/08/2014 9:45:08 AM")
-    # t2 = TimeUtils.actStrptime("26/10/2015 11:08:31 AM")
-    # t3 = TimeUtils.wpStrptime("2015-07-13 22:33:05")
-    # t4 = TimeUtils.wpStrptime("2015-12-18 16:03:37")
-    # print [
-    #     (t1, TimeUtils.wpTimeToString(t1)),
-    #     (t2, TimeUtils.wpTimeToString(t2)),
-    #     (t3, TimeUtils.wpTimeToString(t3)),
-    #     (t4, TimeUtils.wpTimeToString(t4))
-    # ]
+    @classmethod
+    def getTimeStamp(cls, t=None):
+        if not t:
+            t=cls.current_loctstruct()
+        return time.strftime(cls.wpTimeFormat, t)
 
 class HtmlReporter(object):
     """docstring for htmlReporter"""
