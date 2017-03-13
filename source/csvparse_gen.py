@@ -430,14 +430,6 @@ class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin): #, CSVParse_Shop):
         subs = OrderedDict([(' \xe2\x80\x94 ', ' ')])
         return SanitationUtils.shorten(SanitationUtils.compileRegex(subs), subs, item)
 
-    def depth(self, row):
-        for i, cell in enumerate(row):
-            if cell:
-                return i
-            if i >= self.maxDepth:
-                return -1
-        return -1
-
     def getKwargs(self, allData, container, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')

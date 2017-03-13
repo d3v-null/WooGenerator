@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-# from pprint import pprint
+from pprint import pprint, pformat
 import contextlib
 from collections import namedtuple, OrderedDict
 
@@ -27,7 +27,8 @@ class WooGenerator(npyscreen.NPSAppManaged):
         self.addForm(
             self.__class__.PRODUCTS_FORM_ID,
             ProductsForm,
-            name="Products"
+            name="Products",
+            cycle_widgets=True
         )
 
         self.addForm(
@@ -41,7 +42,6 @@ class WooGenerator(npyscreen.NPSAppManaged):
             ConfirmForm,
             name='Confirmation'
         )
-
 
 class SyncForm(npyscreen.ActionFormV2):
     BUTTON_META = OrderedDict( [
@@ -60,6 +60,10 @@ class SyncForm(npyscreen.ActionFormV2):
     ])
 
     IGNORE_BUTTONS = []
+
+    def __init__(self, *args, **kwargs):
+        super(SyncForm, self).__init__(*args, **kwargs)
+        self.command_particles = OrderedDict()
 
     def create_control_buttons(self):
         current_b_offset = 1
@@ -92,18 +96,18 @@ class SyncForm(npyscreen.ActionFormV2):
 
             current_r_offset += 4 + len(button_text)
 
-
-
-
     def find_cancel_button(self):
         assert npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT in self.__class__.BUTTONS
         button_index = self.__class__.BUTTONS.index(npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT)
         self.editw = len(self._widgets__) - 2 - button_index
 
-
     def on_cancel(self):
         logging.info("performing cancel")
         self.parentApp.switchFormPrevious()
+
+    def on_ok(self):
+        logging.info("performing ok")
+        self.parentApp.switchForm(WooGenerator.CONFIRM_FORM_ID)
 
     welcomeLines = [
     ]
@@ -129,13 +133,17 @@ class SyncForm(npyscreen.ActionFormV2):
                 self.addSingleLine(line, **kwargs)
 
     def addSimpleQuestion(self, name=None, help_str=None, default=None,
-                          answers=None, indent=1):
+                          answers=None, indent=1, cmd_particles=None):
 
         if answers is None:
             answers=["No", "Yes"]
 
         if not name:
             name=""
+
+        if cmd_particles:
+            # self.command_particles[name] =
+            pass
 
         if help_str:
             self.addParagraph(
@@ -146,7 +154,7 @@ class SyncForm(npyscreen.ActionFormV2):
         if default is None:
             default=1
 
-        return self.add(
+        widgetObj = self.add(
             npyscreen.SelectOne,
             scroll_exit=True,
             name=name,
@@ -155,8 +163,18 @@ class SyncForm(npyscreen.ActionFormV2):
             max_height=len(answers) + 1
         )
 
+        logging.info("added widgetObj:\n%s\n%s", pformat( widgetObj ),
+                     pformat((widgetObj.name)))
+
+        return widgetObj
+
     def create(self):
         self.addParagraph(self.welcomeLines)
+
+    @property
+    def activeParticles(self):
+        #todo: complete this
+        pass
 
 class ProductsForm(SyncForm):
     # welcomeLines = [
@@ -181,12 +199,14 @@ class ProductsForm(SyncForm):
         self.download_master = self.addSimpleQuestion(
             name="Download Master",
             help_str="Has the Google Drive Spreadsheet Been updated recently?",
+            cmd_particles=['--skip-download-master', '--download-master'],
             default=1
         )
 
         self.generate_report = self.addSimpleQuestion(
             name="Generate Report",
             help_str="Would you like to generate a sync report? (slow)",
+            cmd_particles=['--skip-report', '--show-report'],
             default=0
         )
 
@@ -197,6 +217,11 @@ class ProductsForm(SyncForm):
                 "No Specials",
                 "Auto Next Special",
                 "All Future Specials"
+            ],
+            cmd_particles=[
+                '--skip-specials',
+                '--latest-special',
+                '--future-specials'
             ],
                      # "Override"],
             default=0
@@ -218,13 +243,15 @@ class ProductsForm(SyncForm):
         self.process_categories = self.addSimpleQuestion(
             name="Process Categories",
             help_str="Would you like to process categories?",
-            default=0
+            default=0,
+            cmd_particles=['--skip-categories', '--do-categories']
         )
 
         self.process_variations = self.addSimpleQuestion(
             name="Process Variations",
             help_str="Would you like to process variations?",
-            default=0
+            default=0,
+            cmd_particles=['--skip-variations','--do-variations']
         )
 
 class CustomersForm(SyncForm):
@@ -237,22 +264,65 @@ class CustomersForm(SyncForm):
         super(CustomersForm, self).create()
 
 class ConfirmForm(SyncForm):
-    pass
+    def create(self):
+        self.command_out = self.add(
+            npyscreen.TitleFixedText,
+            name="Command",
+            value="cmd:"
+        )
+
+    def beforeEditing(self):
+        welcomeForm = self.parentApp.getForm('MAIN')
+        if welcomeForm:
+            command_particles = ['python']
+            activeFormID = welcomeForm.sync_subject.activeFormID
+            activeForm = self.parentApp.getForm(activeFormID)
+            logging.info("active form widgets: ")
+            for widget in activeForm._widgets_by_id:
+                if hasattr(widget, "name"):
+                    logging.info("name: %20s | %s", widget.name, widget)
+                else:
+                    logging.info("no name: %s", pformat(dir(widget)))
+            if not activeForm:
+                self.command_out.value = "no active form"
+                return
+            elif activeFormID == 'PRODUCTS':
+                command_particles.append('source/generator.py')
+            elif activeFormID == 'CUSTOMERS':
+                command_particles.append('source/merger.py')
+            else:
+                self.command_out.value = "unknown activeFormID"
+                return
+            newActiveParticles = activeForm.activeParticles
+            if newActiveParticles:
+                command_particles.extend(newActiveParticles)
+            self.command_out.value =' '.join(command_particles)
 
 class FormSwitcher(npyscreen.MultiLineAction):
     def __init__(self, *args, **kwargs):
-        self.formOptions = kwargs.get('formOptions', OrderedDict)
+        self.formOptions = kwargs.pop('formOptions', OrderedDict)
         kwargs.update(
             values=self.formOptions.keys()
         )
+        self._activeFormName = kwargs.get('value')
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):
+        super(FormSwitcher, self).actionHighlighted(act_on_this, key_press)
+        self._activeFormName = act_on_this
         logging.info("actionHighlighted: %s %s", act_on_this, key_press)
         next_form = self.formOptions.get(act_on_this)
         logging.info("setting next form to %s" , next_form)
         self.parent.parentApp.setNextForm(next_form)
         self.parent.parentApp.switchFormNow()
+
+    @property
+    def activeFormID(self):
+        return self.formOptions.get(self._activeFormName)
+
+    @property
+    def activeForm(self):
+        return self.parent.parentApp.getForm(self.activeFormID)
 
 
 class WelcomeForm(SyncForm):

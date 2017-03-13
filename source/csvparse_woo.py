@@ -419,7 +419,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         self.catMapping = listUtils.combineOrderedDicts( kwargs.pop('catMapping', {}), extra_catMaps )
         self.dprcRules = kwargs.pop('dprcRules', {})
         self.dprpRules = kwargs.pop('dprpRules', {})
-        self.specials = kwargs.pop('specials', {})
+        self.specialRules = kwargs.pop('specialRules', {})
+        # self.specialGroups = kwargs.pop('specialGroups', {})
         if not kwargs.get('metaWidth'): kwargs['metaWidth'] = 2
         if not kwargs.get('itemDepth'): kwargs['itemDepth'] = 2
         if not kwargs.get('taxoDepth'): kwargs['taxoDepth'] = 2
@@ -967,16 +968,18 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
             for special in specials:
                 # print "--> all specials: ", self.specials.keys()
-                if special in self.specials.keys():
+                if special in self.specialRules.keys():
                     if self.DEBUG_SPECIAL:
                         self.registerMessage( "special %s exists!" % special )
 
                     if not objectData.isVariable :
 
-                        specialparams = self.specials[special]
+                        specialparams = self.specialRules[special]
 
                         specialfrom = specialparams.start_time
+                        assert specialfrom, "special should have from: %s" % dict(specialparams)
                         specialto = specialparams.end_time
+                        assert specialto, "special should have to: %s" % dict(specialparams)
 
                         if( not TimeUtils.hasHappenedYet(specialto) ):
                             if self.DEBUG_SPECIAL:
@@ -1088,7 +1091,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     def getSpecialCategory(self, name=None):
         #TODO: Generate HTML Descriptions properly
         if not name:
-            categoryName = self.specialsCategory 
+            categoryName = self.specialsCategory
             searchData = {
                 self.objectContainer.titleKey:categoryName
             }

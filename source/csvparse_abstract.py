@@ -22,6 +22,8 @@ from copy import deepcopy, copy
 from pprint import pformat
 import re
 
+BLANK_CELL = ''
+
 class ObjList(list, Registrar):
     # supports_tablefmt = True
     objList_type = 'objects'
@@ -357,14 +359,19 @@ class CSVParse_Base(Registrar):
 
     def analyseHeader(self, row):
         # if self.DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
+        sanitizedRow = [self.sanitizeCell(cell) for cell in row]
         for col in self.cols:
-            if( col in row ):
-                self.indices[col] = row.index(col)
-            # elif( '\xef\xbb\xbf'+col in row ):
-            #     self.indices[col] = row.index('\xef\xbb\xbf'+col)
+            sanitizedCol = self.sanitizeCell(col)
+            if sanitizedCol in sanitizedRow:
+                self.indices[col] = sanitizedRow.index(sanitizedCol)
+                continue
+            if self.indices[col]:
+                if self.DEBUG_ABSTRACT:
+                    self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
             else:
-                self.registerError('Could not find index of %s in %s' % (str(col), str(row)) )
-            if self.DEBUG_ABSTRACT: self.registerMessage( "indices [%s] = %s" % (col, self.indices.get(col)))
+                self.registerError('Could not find index of %s -> %s in %s' % (repr(col), repr(sanitizedCol), repr(sanitizedRow)) )
+        if not self.indices:
+            raise UserWarning("could not find any indices")
 
     def retrieveColFromRow(self, col, row):
         # if self.DEBUG_PARSER: print "retrieveColFromRow | col: ", col

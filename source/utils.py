@@ -445,6 +445,24 @@ class SanitationUtils:
         )(cell)
 
     @classmethod
+    def sanitizeSpecialCell(cls, cell):
+        return cls.compose(
+            cls.removeLeadingDollarWhiteSpace,
+            cls.removeLeadingPercentWhiteSpace,
+            # cls.removeLoneDashes,
+            # cls.stripExtraWhitespace,
+            cls.removeThousandsSeparator,
+            cls.removeLoneWhiteSpace,
+            cls.stripLeadingWhitespace,
+            cls.stripTailingWhitespace,
+            cls.sanitizeNewlines,
+            cls.stripTailingNewline,
+            cls.stripLeadingNewline,
+            cls.removeNULL,
+            cls.coerceUnicode
+        )(cell)
+
+    @classmethod
     def sanitizeClass(cls, string):
         return re.sub('[^a-z]', '', string.lower())
 
@@ -733,7 +751,7 @@ class SanitationUtils:
         return base64.standard_b64decode(b64_str)
 
 def testSanitationUtils():
-    # pass
+    pass
 
     # obj = {
     #     'key': SanitationUtils.coerceBytes(" 👌 ashdfk"),
@@ -752,18 +770,18 @@ def testSanitationUtils():
     # obj_decoded = SanitationUtils.decodeJSON(obj_json_decoded)
     # print obj_decoded
 
-    fields = {
-        u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
-        'user_url': "http://www.laserphile.com/asd",
-        'first_name': 'noo-dle',
-        'user_login': "admin"
-    }
-
-    SanitationUtils.safePrint( fields, repr(fields) )
-    fields_json = SanitationUtils.encodeJSON(fields)
-    SanitationUtils.safePrint( fields_json, repr(fields_json) )
-    fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
-    SanitationUtils.safePrint( fields_json_base64, repr(fields_json_base64) )
+    # fields = {
+    #     u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+    #     'user_url': "http://www.laserphile.com/asd",
+    #     'first_name': 'noo-dle',
+    #     'user_login': "admin"
+    # }
+    #
+    # SanitationUtils.safePrint( fields, repr(fields) )
+    # fields_json = SanitationUtils.encodeJSON(fields)
+    # SanitationUtils.safePrint( fields_json, repr(fields_json) )
+    # fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
+    # SanitationUtils.safePrint( fields_json_base64, repr(fields_json_base64) )
 
 
     # should be   eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm/wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
@@ -2324,29 +2342,29 @@ class AddressUtils:
                 return number, rest
         return None, address
 
-def testAddressUtils():
-    # SanitationUtils.clearStartRegex = "<START>"
-    # SanitationUtils.clearFinishRegex = "<FINISH>"
-    # print repr(AddressUtils.addressTokenRegex)
-
-    # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
-
-    # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
-    # print SanitationUtils.unicodeToByte(u"\u00FC ASD")
-    # print "addressTokenRegex", AddressUtils.addressTokenRegex
-    # print "thoroughfareRegex", AddressUtils.thoroughfareRegex
-    # print "subunitRegex", AddressUtils.subunitRegex
-    # print "floorLevelRegex", AddressUtils.floorLevelRegex
-    # print "stateRegex", AddressUtils.stateRegex
-    # print "delimeterRegex", AddressUtils.delimeterRegex
-
-    # print AddressUtils.getSubunit("SHOP 4 A")
-    # print AddressUtils.getFloor("LEVEL 8")
-    print AddressUtils.tokenizeAddress("BROADWAY FAIR SHOPPING CTR")
-    print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING CTR")
-    print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING")
-    print NameUtils.getMultiName("BROADWAY")
-
+# def testAddressUtils():
+#     # SanitationUtils.clearStartRegex = "<START>"
+#     # SanitationUtils.clearFinishRegex = "<FINISH>"
+#     # print repr(AddressUtils.addressTokenRegex)
+#
+#     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
+#
+#     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
+#     # print SanitationUtils.unicodeToByte(u"\u00FC ASD")
+#     # print "addressTokenRegex", AddressUtils.addressTokenRegex
+#     # print "thoroughfareRegex", AddressUtils.thoroughfareRegex
+#     # print "subunitRegex", AddressUtils.subunitRegex
+#     # print "floorLevelRegex", AddressUtils.floorLevelRegex
+#     # print "stateRegex", AddressUtils.stateRegex
+#     # print "delimeterRegex", AddressUtils.delimeterRegex
+#
+#     # print AddressUtils.getSubunit("SHOP 4 A")
+#     # print AddressUtils.getFloor("LEVEL 8")
+#     print AddressUtils.tokenizeAddress("BROADWAY FAIR SHOPPING CTR")
+#     print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING CTR")
+#     print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING")
+#     print NameUtils.getMultiName("BROADWAY")
+#
 
 
 
@@ -2433,12 +2451,12 @@ class TimeUtils:
 
 
 
-def testTimeUtils():
-    TimeUtils.setWpSrvOffset(-7200)
-    inTime = "2016-05-06 16:07:00"
-    print TimeUtils.wpStrptime(inTime)
-    print TimeUtils.wpTimeToString(TimeUtils.wpStrptime(inTime))
-    print TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(inTime)))
+# def testTimeUtils():
+#     TimeUtils.setWpSrvOffset(-7200)
+#     inTime = "2016-05-06 16:07:00"
+#     print TimeUtils.wpStrptime(inTime)
+#     print TimeUtils.wpTimeToString(TimeUtils.wpStrptime(inTime))
+#     print TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(inTime)))
 
     # gTime = TimeUtils.gDriveStrpTime("14/02/2016")
     # print "gTime", gTime

@@ -22,7 +22,8 @@ from csvparse_woo import WooCatList, WooProdList, WooVarList
 from csvparse_api import CSVParse_Woo_Api
 from csvparse_myo import CSVParse_MYO, MYOProdList
 from csvparse_dyn import CSVParse_Dyn
-from csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
+# from csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
+from csvparse_special import CSVParse_Special
 # from csvparse_api import CSVParse_Woo_Api
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive
@@ -411,6 +412,11 @@ def main():
         help='don\'t process specials',
         action="store_false",
         dest='do_specials')
+    specials_group.add_argument('--specials-mode',
+        help='Select which mode to process the specials in',
+        choices=['override', 'auto_next', 'all_future'],
+        default='override'
+    )
     specials_group.add_argument('--current-special',
         help='prefix of current special code',
         default=config.get('current_special', 'SP'))
@@ -606,9 +612,10 @@ def main():
 
     # maxDepth = taxoDepth + itemDepth
 
-    if args.current_special:
+    if args.do_specials:
+        if args.current_special:
+            CSVParse_Woo.current_special = args.current_special
         CSVParse_Woo.specialsCategory = "Specials"
-        CSVParse_Woo.current_special = args.current_special
         CSVParse_Woo.add_special_categories = add_special_categories
 
     if not args.download_master:
@@ -768,8 +775,10 @@ def main():
                     Registrar.registerMessage("analysing specials")
                     specialParser = CSVParse_Special()
                     client.analyseRemote(specialParser, specGID, specPath)
-                    specials = specialParser.objects
-                    productParserArgs['specials'] = specials
+                    # productParserArgs['specialGroups'] = specialParser.ruleGroups
+                    if Registrar.DEBUG_SPECIAL:
+                        Registrar.registerMessage(specialParser.tabulate())
+                    productParserArgs['specialRules'] = specialParser.rules
 
             productParser = productParserClass(**productParserArgs)
 
