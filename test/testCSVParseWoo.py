@@ -1,51 +1,22 @@
-from os import sys, path
-from time import sleep
+import os
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
-from source.sync_client_prod import *
+from context import source
 from source.coldata import ColData_Woo
 from source.csvparse_woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
+from source.utils import TimeUtils, Registrar, SanitationUtils
 
+from .. import tests_datadir
 
-class testCSVParseWoo(TestCase):
+class TestCSVParseWoo(TestCase):
 
     def setUp(self):
-        try:
-            os.stat('source')
-            os.chdir('source')
-        except:
-            pass
-
-        yamlPath = "generator_config.yaml"
-
         importName = TimeUtils.getMsTimeStamp()
-        inFolder = "../input/"
-        outFolder = "../output/"
 
-        with open(yamlPath) as stream:
-            config = yaml.load(stream)
-            optionNamePrefix = 'test_'
-            optionNamePrefix = ''
-
-            if 'inFolder' in config.keys():
-                inFolder = config['inFolder']
-            if 'outFolder' in config.keys():
-                outFolder = config['outFolder']
-            if 'logFolder' in config.keys():
-                logFolder = config['logFolder']
-
-            taxoDepth = config.get('taxoDepth')
-            itemDepth = config.get('itemDepth')
-
-        self.genPath = inFolder + "generator.csv"
+        self.genPath = os.path.join(tests_datadir, "generator.csv")
 
         self.productParserArgs = {
             'importName': importName,
-            'itemDepth': itemDepth,
-            'taxoDepth': taxoDepth,
             'cols': ColData_Woo.getImportCols(),
             'defaults': ColData_Woo.getDefaults(),
         }
@@ -112,8 +83,8 @@ class testCSVParseWoo(TestCase):
 
 
 if __name__ == '__main__':
-    # main()
+    main()
 
-    testSuite = TestSuite()
-    testSuite.addTest(testCSVParseWoo('testCSVParseTT'))
-    TextTestRunner().run(testSuite)
+    # testSuite = TestSuite()
+    # testSuite.addTest(TestCSVParseWoo('testCSVParseTT'))
+    # TextTestRunner().run(testSuite)

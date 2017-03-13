@@ -1,0 +1,23 @@
+#Generator file info
+
+master_name: GDrive
+slave_name: WooCommerce
+
+taxoDepth: 3
+itemDepth: 2
+
+myo_schemas:
+    - MY
+
+woo_schemas:
+    - CA
+    - CB
+
+fallback_schema: CA
+
+add_special_categories: false
+show_report: true
+do_images: false
+do_delete_images: false
+do_resize_images: false
+download_master: false
