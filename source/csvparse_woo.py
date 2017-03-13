@@ -357,8 +357,6 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     specialsCategory = None
     add_special_categories = False
 
-
-
     @property
     def containers(self):
         return {
@@ -419,7 +417,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         self.dprcRules = kwargs.pop('dprcRules', {})
         self.dprpRules = kwargs.pop('dprpRules', {})
         self.specialRules = kwargs.pop('specialRules', {})
-        self.current_special = kwargs.pop('currentSpecialGroup', None)
+        self.currentSpecialGroups = kwargs.pop('currentSpecialGroups', None)
         # self.specialGroups = kwargs.pop('specialGroups', {})
         if not kwargs.get('metaWidth'): kwargs['metaWidth'] = 2
         if not kwargs.get('itemDepth'): kwargs['itemDepth'] = 2
@@ -1138,32 +1136,34 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
     def postProcessCurrentSpecial(self, objectData):
         #TODO: actually create special category objects register objects to those categories
-        if objectData.isProduct:
-            if objectData.has_special_fuzzy(self.current_special):
-                if self.DEBUG_SPECIAL:
-                    self.registerMessage("%s matches special %s"%(str(objectData), self.current_special))
-                if self.add_special_categories:
-                    objectData['catsum'] = "|".join(
-                        filter(None,[
-                            objectData.get('catsum', ""),
-                            self.specialsCategory,
-                            objectData.extraSpecialCategory
-                        ])
-                    )
-                    specialCategoryObject = self.getSpecialCategory()
+        if objectData.isProduct and self.currentSpecialGroups:
+            for special_group in self.currentSpecialGroups:
+                if objectData.has_special_fuzzy(special_group):
                     if self.DEBUG_SPECIAL:
-                        self.registerMessage("joining special category: %s" % specialCategoryObject.identifier)
-                    self.registerJoinCategory(specialCategoryObject, objectData)
-                    assert specialCategoryObject.index in objectData.categories
-                    extraSpecialCategoryObject = self.getSpecialCategory(objectData.extraSpecialCategory)
-                    if self.DEBUG_SPECIAL:
-                        self.registerMessage("joining extra special category: %s" % extraSpecialCategoryObject.identifier)
-                    self.registerJoinCategory(extraSpecialCategoryObject, objectData)
-                    assert extraSpecialCategoryObject.index in objectData.categories
-                if objectData.isVariation:
-                    self.registerCurrentSpecialVariation(objectData)
-                else:
-                    self.registerCurrentSpecialProduct(objectData)
+                        self.registerMessage("%s matches special %s"%(str(objectData), special_group))
+                    if self.add_special_categories:
+                        objectData['catsum'] = "|".join(
+                            filter(None,[
+                                objectData.get('catsum', ""),
+                                self.specialsCategory,
+                                objectData.extraSpecialCategory
+                            ])
+                        )
+                        specialCategoryObject = self.getSpecialCategory()
+                        if self.DEBUG_SPECIAL:
+                            self.registerMessage("joining special category: %s" % specialCategoryObject.identifier)
+                        self.registerJoinCategory(specialCategoryObject, objectData)
+                        assert specialCategoryObject.index in objectData.categories
+                        extraSpecialCategoryObject = self.getSpecialCategory(objectData.extraSpecialCategory)
+                        if self.DEBUG_SPECIAL:
+                            self.registerMessage("joining extra special category: %s" % extraSpecialCategoryObject.identifier)
+                        self.registerJoinCategory(extraSpecialCategoryObject, objectData)
+                        assert extraSpecialCategoryObject.index in objectData.categories
+                    if objectData.isVariation:
+                        self.registerCurrentSpecialVariation(objectData)
+                    else:
+                        self.registerCurrentSpecialProduct(objectData)
+                    break
             # else:
                 # print ("%s does not match special %s | %s"%(str(objectData), self.current_special, str(objectData.splist)))
 

@@ -757,8 +757,7 @@ def main():
     dynParser = CSVParse_Dyn()
     specialParser = CSVParse_Special()
 
-    def analyse_parsers_with_client(client):
-        pass
+
 
     if args.download_master:
         if Registrar.DEBUG_GDRIVE:
@@ -786,10 +785,21 @@ def main():
             if args.do_specials:
                 Registrar.registerMessage("analysing specials")
                 client.analyseRemote(specialParser, specPath, gid=specGID)
-                # productParserArgs['specialGroups'] = specialParser.ruleGroups
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.registerMessage(specialParser.tabulate())
                 productParserArgs['specialRules'] = specialParser.rules
+
+                if args.do_categories:
+                    # determine current specials
+
+                    currentSpecialGroups = specialParser.determine_current_special_groups(
+                        specials_mode=args.special_mode,
+                        specialGroups=specialParser.ruleGroups,
+                        current_special=args.current_special
+                    )
+                    if currentSpecialGroups:
+                        productParserArgs['currentSpecialGroups'] = currentSpecialGroups
+                        productParserArgs['add_special_categories'] = args.add_special_categories
 
         productParser = productParserClass(**productParserArgs)
 

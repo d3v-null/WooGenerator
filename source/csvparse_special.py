@@ -169,7 +169,30 @@ class CSVParse_Special(CSVParse_Tree):
             registerName = 'rules'
         )
 
+    def auto_next(self):
+        """ return the next future rule """
+        # TODO: this and test case
+        pass
 
+    def all_future(self):
+        """ return all future rules """
+        # TODO: this and test case
+        return []
+
+    #
+    def determine_current_special_groups(self, specials_mode, current_special=None):
+        # modes: ['override', 'auto_next', 'all_future']
+        if specials_mode == 'override':
+            if current_special and current_special in self.ruleGroups.keys():
+                return [self.ruleGroups[current_special]]
+        elif specials_mode == 'auto_next':
+            auto_next = self.auto_next()
+            if auto_next: return [auto_next]
+        elif specials_mode == 'all_future':
+            all_future = self.all_future()
+            if all_future:
+                return all_future
+        return []
 
     @classmethod
     def getObjectID(cls, objectData):
