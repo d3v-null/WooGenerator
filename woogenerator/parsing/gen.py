@@ -11,9 +11,9 @@ Should be dimensionally agnostic (doesn't know if using flat or tree type) but i
 from collections import OrderedDict
 
 from woogenerator.utils import descriptorUtils, SanitationUtils, listUtils, Registrar
-from woogenerator.parsing.csvparse_abstract import ObjList, ImportObject, CSVParse_Base
-from woogenerator.parsing.csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
-from woogenerator.parsing.csvparse_flat import ImportFlat
+from woogenerator.parsing.abstract import ObjList, ImportObject, CSVParse_Base
+from woogenerator.parsing.tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
+from woogenerator.parsing.flat import ImportFlat
 
 
 # class GenProdList(ProdList):

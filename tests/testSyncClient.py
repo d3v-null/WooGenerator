@@ -10,7 +10,7 @@ from woogenerator.sync_client import SyncClient_GDrive
 from woogenerator.sync_client_prod import ProdSyncClient_WC
 from woogenerator.sync_client_user import UsrSyncClient_WP
 from woogenerator.coldata import ColData_User, ColData_Woo
-from woogenerator.parsing.csvparse_user import ImportUser
+from woogenerator.parsing.user import ImportUser
 from woogenerator.utils import Registrar, TimeUtils
 
 class abstractSyncClientTestCase(TestCase):

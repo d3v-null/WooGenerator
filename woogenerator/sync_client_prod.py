@@ -4,7 +4,7 @@ from collections import OrderedDict
 # import shutil
 from utils import SanitationUtils
 # from utils import ProgressCounter, TimeUtils, listUtils, debugUtils, Registrar
-# from parsing.csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
+# from parsing.flat import CSVParse_User, UsrObjList #, ImportUser
 # from coldata import ColData_User
 # from tabulate import tabulate
 # from itertools import chain

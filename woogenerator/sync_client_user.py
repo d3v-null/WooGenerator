@@ -4,7 +4,7 @@ import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, Registrar #, listUtils #, debugUtils
 from utils import ProgressCounter, UnicodeCsvDialectUtils
-# from parsing.csvparse_flat import CSVParse_User #, UsrObjList #, ImportUser
+# from parsing.flat import CSVParse_User #, UsrObjList #, ImportUser
 from coldata import ColData_User
 # from tabulate import tabulate
 # from itertools import chain

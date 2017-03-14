@@ -1,3 +1,5 @@
+from __init__ import MODULE_PATH, MODULE_LOCATION
+
 from pprint import pprint
 from collections import OrderedDict
 import os
@@ -10,7 +12,7 @@ from utils import SanitationUtils, TimeUtils, HtmlReporter #,listUtils
 from utils import Registrar, debugUtils, ProgressCounter
 from matching import Match, MatchList, ConflictingMatchList
 from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
-from parsing.csvparse_user import CSVParse_User, UsrObjList #, ImportUser
+from parsing.user import CSVParse_User, UsrObjList #, ImportUser
 # from contact_objects import ContactAddress
 from coldata import ColData_User
 # from tabulate import tabulate
@@ -62,17 +64,17 @@ testMode = True
 
 # things that need global scope
 
-os.chdir(os.path.dirname(sys.argv[0]))
+os.chdir(MODULE_LOCATION)
 
-inFolder = "../input/"
-outFolder = "../output/"
-logFolder = "../logs/"
-srcFolder = "../source/"
-pklFolder = "../pickles/"
+inFolder = "input/"
+outFolder = "output/"
+logFolder = "logs/"
+srcFolder = MODULE_PATH
+pklFolder = "pickles/"
 
-yamlPath = "merger_config.yaml"
 
 repPath = ''
+yamlPath = os.path.join(srcFolder, "merger_config.yaml")
 mFailPath = os.path.join(outFolder, "act_fails.csv")
 sFailPath = os.path.join(outFolder, "wp_fails.csv" )
 logPath = os.path.join(logFolder, "log_%s.txt" % importName)
@@ -678,7 +680,7 @@ def main():
             # print repr(emailMatcher)
 
         if Registrar.DEBUG_DUPLICATES and emailMatcher.duplicateMatches:
-            print("email duplicates: %s" % len(emailMatcher.duplicateMatches))        
+            print("email duplicates: %s" % len(emailMatcher.duplicateMatches))
 
         # TODO: further sort emailMatcher
 
@@ -1073,7 +1075,7 @@ def main():
                 # ('Last Sale', {})
             ])
 
-            # What we're doing here is analysing the duplicates we've seen so far, and 
+            # What we're doing here is analysing the duplicates we've seen so far, and
             # creating a list of all the potential objects to delete and WHY they should be deleted.
 
             def fn_obj_source_is(source):

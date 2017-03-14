@@ -9,7 +9,7 @@ from context import woogenerator
 from woogenerator.SyncUpdate import *
 from woogenerator import coldata
 from woogenerator.coldata import ColData_User
-from woogenerator.parsing.csvparse_user import ImportUser, CSVParse_User
+from woogenerator.parsing.user import ImportUser, CSVParse_User
 from woogenerator.contact_objects import FieldGroup
 
 

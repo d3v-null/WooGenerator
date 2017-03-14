@@ -5,8 +5,8 @@ from pprint import pformat # pprint
 from woogenerator.coldata import ColData_User #, ColData_Woo
 from woogenerator.contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
 from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
-from woogenerator.parsing.csvparse_abstract import ObjList
-from woogenerator.parsing.csvparse_flat import ImportFlat, CSVParse_Flat
+from woogenerator.parsing.abstract import ObjList
+from woogenerator.parsing.flat import ImportFlat, CSVParse_Flat
 
 
 class UsrObjList(ObjList):

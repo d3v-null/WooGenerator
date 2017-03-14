@@ -3,9 +3,9 @@ from collections import OrderedDict
 
 from woogenerator.utils import listUtils, SanitationUtils
 from woogenerator.coldata import ColData_MYO
-from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree
-from woogenerator.parsing.csvparse_shop import ImportShopProductMixin, ShopProdList
-# from woogenerator.parsing.csvparse_abstract import ObjList
+from woogenerator.parsing.gen import CSVParse_Gen_Tree
+from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
+# from woogenerator.parsing.abstract import ObjList
 
 class CSVParse_MYO(CSVParse_Gen_Tree):
     productContainer = ImportShopProductMixin

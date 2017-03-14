@@ -3,7 +3,7 @@ import unittest
 from unittest import TestCase, main, skip
 
 from context import woogenerator
-from woogenerator.parsing.csvparse_user import ImportUser
+from woogenerator.parsing.user import ImportUser
 
 class testUsrObj(TestCase):
     def setUp(self):

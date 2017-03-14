@@ -9,7 +9,7 @@ from context import woogenerator
 from testSyncClient import abstractSyncClientTestCase
 from woogenerator.sync_client_user import UsrSyncClient_SQL_WP, UsrSyncClient_SSH_ACT, UsrSyncClient_WC, UsrSyncClient_WP
 from woogenerator.coldata import ColData_User
-from woogenerator.parsing.csvparse_user import ImportUser, CSVParse_User, CSVParse_User_Api
+from woogenerator.parsing.user import ImportUser, CSVParse_User, CSVParse_User_Api
 from woogenerator.utils import TimeUtils, Registrar
 
 @skip('no config file yet')

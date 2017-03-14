@@ -4,7 +4,7 @@ from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 from context import woogenerator
 from context import get_testdata, tests_datadir
 from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.csvparse_special import CSVParse_Special, SpecialGruopList, SpecialRuleList
+from woogenerator.parsing.special import CSVParse_Special, SpecialGruopList, SpecialRuleList
 from woogenerator.utils import SanitationUtils, Registrar
 
 

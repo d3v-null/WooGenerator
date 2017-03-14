@@ -2,7 +2,7 @@ import yaml
 import os
 import paramiko
 from coldata import ColData_User
-from parsing.csvparse_flat import CSVParse_User, UsrObjList
+from parsing.flat import CSVParse_User, UsrObjList
 from utils import TimeUtils, SanitationUtils
 from itertools import chain
 

@@ -4,7 +4,7 @@ import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, HtmlReporter
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
-from parsing.csvparse_flat import CSVParse_User, UsrObjList #, ImportUser
+from parsing.flat import CSVParse_User, UsrObjList #, ImportUser
 from contact_objects import ContactAddress
 import codecs
 from coldata import ColData_User

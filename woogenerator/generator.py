@@ -1,8 +1,11 @@
+from __init__ import MODULE_PATH, MODULE_LOCATION
 
 # import re
 from collections import OrderedDict
 import os
 import shutil
+import sys
+import yaml
 # from PIL import Image
 # import time
 # import datetime
@@ -10,26 +13,6 @@ import argparse
 import traceback
 import zipfile
 import io
-
-# from itertools import chain
-from metagator import MetaGator
-from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter # debugUtils
-from utils import HtmlReporter
-from parsing.csvparse_abstract import Registrar
-from parsing.csvparse_shop import ShopObjList # ShopProdList,
-from parsing.csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
-from parsing.csvparse_woo import WooCatList, WooProdList, WooVarList
-from parsing.csvparse_api import CSVParse_Woo_Api
-from parsing.csvparse_myo import CSVParse_MYO, MYOProdList
-from parsing.csvparse_dyn import CSVParse_Dyn
-# from parsing.csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
-from parsing.csvparse_special import CSVParse_Special
-# from parsing.csvparse_api import CSVParse_Woo_Api
-from coldata import ColData_Woo, ColData_MYO , ColData_Base
-from sync_client import SyncClient_GDrive, SyncClient_Local
-from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
-from matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, ,
 from bisect import insort
 from matching import MatchList
 from tabulate import tabulate
@@ -37,21 +20,28 @@ import urlparse
 import webbrowser
 import re
 from pprint import pformat, pprint
-# import time
-# from copy import deepcopy, copy
 from exitstatus import ExitStatus
 
 from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
 from httplib2 import ServerNotFoundError
 
-
-# import xml.etree.ElementTree as ET
-# import rsync
-import sys
-import yaml
-# import re
-# import MySQLdb
-# from sshtunnel import SSHTunnelForwarder
+# from .. import utils, metagator, coldata, sync_client, sync_client_prod, matching
+from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter # debugUtils
+from utils import HtmlReporter, Registrar
+from metagator import MetaGator
+# from parsing.api import CSVParse_Woo_Api
+from coldata import ColData_Woo, ColData_MYO , ColData_Base
+from sync_client import SyncClient_GDrive, SyncClient_Local
+from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
+from matching import ProductMatcher, CategoryMatcher, VariationMatcher
+from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, ,
+from parsing.shop import ShopObjList # ShopProdList,
+from parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
+from parsing.woo import WooCatList, WooProdList, WooVarList
+from parsing.api import CSVParse_Woo_Api
+from parsing.myo import CSVParse_MYO, MYOProdList
+from parsing.dyn import CSVParse_Dyn
+from parsing.special import CSVParse_Special
 
 # testMode = False
 # testMode = True
@@ -65,12 +55,12 @@ status=0
 
 # things that need global scope
 
-inFolder = "../input/"
-outFolder = "../output/"
-logFolder = "../logs/"
-srcFolder = "../source"
+inFolder = "input/"
+outFolder = "output/"
+logFolder = "logs/"
+srcFolder = MODULE_LOCATION
 
-os.chdir('source')
+os.chdir(MODULE_PATH)
 
 yamlPath = "generator_config.yaml"
 

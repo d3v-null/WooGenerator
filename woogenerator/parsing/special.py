@@ -1,10 +1,10 @@
 from collections import OrderedDict
 
 from woogenerator.utils import listUtils, descriptorUtils, TimeUtils, Registrar, SanitationUtils
-from woogenerator.parsing.csvparse_abstract import BLANK_CELL
-from woogenerator.parsing.csvparse_tree import CSVParse_Tree
-from woogenerator.parsing.csvparse_tree import TaxoList, ItemList
-from woogenerator.parsing.csvparse_tree import ImportTreeItem, ImportTreeObject, ImportTreeTaxo
+from woogenerator.parsing.abstract import BLANK_CELL
+from woogenerator.parsing.tree import CSVParse_Tree
+from woogenerator.parsing.tree import TaxoList, ItemList
+from woogenerator.parsing.tree import ImportTreeItem, ImportTreeObject, ImportTreeTaxo
 
 class SpecialGruopList(TaxoList):
     pass

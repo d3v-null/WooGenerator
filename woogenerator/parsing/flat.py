@@ -1,6 +1,6 @@
 
 from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
-from woogenerator.parsing.csvparse_abstract import CSVParse_Base, ImportObject, ObjList
+from woogenerator.parsing.abstract import CSVParse_Base, ImportObject, ObjList
 
 usrs_per_file = 1000
 

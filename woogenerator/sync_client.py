@@ -6,7 +6,7 @@ import codecs
 # import shutil
 from utils import Registrar, SanitationUtils #, TimeUtils, listUtils, debugUtils,
 from utils import ProgressCounter
-# from parsing.csvparse_user import UsrObjList #, ImportUser, CSVParse_User
+# from parsing.user import UsrObjList #, ImportUser, CSVParse_User
 # from coldata import ColData_User
 # from tabulate import tabulate
 # from itertools import chain

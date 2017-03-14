@@ -5,14 +5,14 @@ import re
 
 from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
 from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.csvparse_abstract import ObjList, CSVParse_Base
-from woogenerator.parsing.csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
-from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
-from woogenerator.parsing.csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
-from woogenerator.parsing.csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
-from woogenerator.parsing.csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from woogenerator.parsing.csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
-from woogenerator.parsing.csvparse_flat import CSVParse_Flat, ImportFlat
+from woogenerator.parsing.abstract import ObjList, CSVParse_Base
+from woogenerator.parsing.tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
+from woogenerator.parsing.gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
+from woogenerator.parsing.gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
+from woogenerator.parsing.shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
+from woogenerator.parsing.shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
+from woogenerator.parsing.shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
+from woogenerator.parsing.flat import CSVParse_Flat, ImportFlat
 
 
 class WooProdList(ItemList):
