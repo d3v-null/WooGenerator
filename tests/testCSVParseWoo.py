@@ -24,10 +24,10 @@ class TestCSVParseWoo(TestCase):
         for var in ['self.productParserArgs']:
             print var, eval(var)
 
-        Registrar.DEBUG_PROGRESS = True
-        Registrar.DEBUG_MESSAGE = True
-        Registrar.DEBUG_ERROR = True
-        Registrar.DEBUG_WARN = True
+        # Registrar.DEBUG_PROGRESS = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_WARN = True
         # Registrar.DEBUG_SHOP = True
         # Registrar.DEBUG_MRO = True
         # Registrar.DEBUG_TREE = True

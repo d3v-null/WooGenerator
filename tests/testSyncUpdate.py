@@ -6,16 +6,18 @@ import StringIO
 import yaml
 
 from context import woogenerator
-from woogenerator import SyncUpdate
+from context import get_testdata, tests_datadir
+from woogenerator.SyncUpdate import SyncUpdate_Usr
 from woogenerator import coldata
 from woogenerator.coldata import ColData_User
-from woogenerator.csvparse_flat import ImportUser, CSVParse_User
+from woogenerator.csvparse_user import ImportUser, CSVParse_User
 from woogenerator.contact_objects import FieldGroup
 
 
-class testSyncUpdate(TestCase):
+class testSyncUpdate_Usr(TestCase):
     def setUp(self):
-        yamlPath = "source/merger_config.yaml"
+        # yamlPath = "source/merger_config.yaml"
+        yamlPath = os.path.join(tests_datadir, "generator_config_test.yaml")
 
         with open(yamlPath) as stream:
             config = yaml.load(stream)
@@ -24,15 +26,16 @@ class testSyncUpdate(TestCase):
             SLAVE_NAME = config.get('slave_name', 'SLAVE')
             DEFAULT_LAST_SYNC = config.get('default_last_sync')
 
-        SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+        SyncUpdate_Usr.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
         # FieldGroup.performPost = True
-        FieldGroup.DEBUG_WARN = True
-        FieldGroup.DEBUG_MESSAGE = True
-        FieldGroup.DEBUG_ERROR = True
-        SyncUpdate.DEBUG_WARN = True
-        SyncUpdate.DEBUG_MESSAGE = True
-        SyncUpdate.DEBUG_ERROR = True
+        # FieldGroup.DEBUG_WARN = True
+        # FieldGroup.DEBUG_MESSAGE = True
+        # FieldGroup.DEBUG_ERROR = True
+        # SyncUpdate_Usr.DEBUG_WARN = True
+        # SyncUpdate_Usr.DEBUG_MESSAGE = True
+        # SyncUpdate_Usr.DEBUG_ERROR = True
+
 
         self.usrMN1 = ImportUser(
             {
@@ -44,8 +47,8 @@ class testSyncUpdate(TestCase):
                 'Edited Name': '10/11/2015 12:55:00 PM',
                 'Edited in Act': '11/11/2015 6:45:00 AM',
             },
-            1,
-            [],
+            row=[],
+            rowcount=1
         )
 
         self.usrSN1 = ImportUser(
@@ -57,9 +60,10 @@ class testSyncUpdate(TestCase):
                 'Surname': 'Jackson',
                 'Edited Name': '2015-11-10 12:45:03',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMN2 = ImportUser(
@@ -71,9 +75,10 @@ class testSyncUpdate(TestCase):
                 'Surname': 'Smith',
                 'Edited Name': '10/11/2015 12:45:00 PM',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
+                '_row':[]
             },
-            1,
-            [],
+            rowcount=1,
+            row=[],
         )
 
         self.usrSN2 = ImportUser(
@@ -85,9 +90,10 @@ class testSyncUpdate(TestCase):
                 'Surname': 'Jackson',
                 'Edited Name': '2015-11-10 12:55:03',
                 'Edited in Wordpress': '2015-11-11 6:45:00',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMD1 = ImportUser(
@@ -98,9 +104,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:45:00 AM',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrSD1 = ImportUser(
@@ -111,9 +118,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMD2 = ImportUser(
@@ -124,9 +132,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrSD2 = ImportUser(
@@ -137,9 +146,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:45:00',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMD2a = ImportUser(
@@ -147,9 +157,10 @@ class testSyncUpdate(TestCase):
                 'MYOB Card ID': 'C000128',
                 'Role': 'WN',
                 'Edited in Act': '31/03/2016 12:41:43 PM',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrSD2a = ImportUser(
@@ -157,9 +168,10 @@ class testSyncUpdate(TestCase):
                 'MYOB Card ID': 'C000128',
                 'Role': 'RN',
                 'Wordpress ID': '3684',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMD3 = ImportUser(
@@ -170,9 +182,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrSD3 = ImportUser(
@@ -183,9 +196,10 @@ class testSyncUpdate(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrMD4 = ImportUser(
@@ -201,9 +215,10 @@ class testSyncUpdate(TestCase):
                 'First Name': '',
                 'Surname': 'NEIL',
                 'Edited in Act': '16/05/2016 11:20:22 AM',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         self.usrSD4 = ImportUser(
@@ -219,27 +234,28 @@ class testSyncUpdate(TestCase):
                 'First Name': 'NEIL',
                 'Surname': 'CUNLIFFE-WILLIAMS',
                 'Edited in Wordpress': '2016-05-10 16:36:30',
+                '_row':[]
             },
-            2,
-            [],
+            rowcount=2,
+            row=[],
         )
 
         print "set up complete"
 
     def test_mNameColUpdate(self):
-        syncUpdate = SyncUpdate(self.usrMN1, self.usrSN1)
+        syncUpdate = SyncUpdate_Usr(self.usrMN1, self.usrSN1)
         syncUpdate.update(ColData_User.getSyncCols())
         self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
         self.assertEqual(syncUpdate.syncWarnings.get('Name')[0].get('subject'), syncUpdate.master_name)
 
     def test_sNameColUpdate(self):
-        syncUpdate = SyncUpdate(self.usrMN2, self.usrSN2)
+        syncUpdate = SyncUpdate_Usr(self.usrMN2, self.usrSN2)
         syncUpdate.update(ColData_User.getSyncCols())
         self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
         self.assertEqual(syncUpdate.syncWarnings.get('Name')[0].get('subject'), syncUpdate.slave_name)
 
     def test_mDeltas(self):
-        syncUpdate = SyncUpdate(self.usrMD1, self.usrSD1)
+        syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD1)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.mDeltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
@@ -249,7 +265,7 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newMObject.get(ColData_User.deltaCol('Role')), 'WN')
 
     def test_sDeltas(self):
-        syncUpdate = SyncUpdate(self.usrMD2, self.usrSD2)
+        syncUpdate = SyncUpdate_Usr(self.usrMD2, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.sDeltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
@@ -259,7 +275,7 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newSObject.get('Role'), 'RN')
         self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), 'WN')
 
-        syncUpdate = SyncUpdate(self.usrMD2a, self.usrSD2a)
+        syncUpdate = SyncUpdate_Usr(self.usrMD2a, self.usrSD2a)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.sDeltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
@@ -270,7 +286,7 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), 'RN')
 
     def test_mDeltasB(self):
-        syncUpdate = SyncUpdate(self.usrMD3, self.usrSD2)
+        syncUpdate = SyncUpdate_Usr(self.usrMD3, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.sDeltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
@@ -281,7 +297,7 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newMObject.get(ColData_User.deltaCol('Role')), '')
 
     def test_sDeltasB(self):
-        syncUpdate = SyncUpdate(self.usrMD1, self.usrSD3)
+        syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD3)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.sDeltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
@@ -292,7 +308,7 @@ class testSyncUpdate(TestCase):
         self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), '')
 
     def test_doubleNames(self):
-        syncUpdate = SyncUpdate(self.usrMD4, self.usrSD4)
+        syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
         print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
         print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
@@ -327,7 +343,7 @@ class testSyncUpdate(TestCase):
 
         mUsr = maParser.emails['neil@technotan.com.au'][0]
 
-        syncUpdate = SyncUpdate(mUsr, sUsr)
+        syncUpdate = SyncUpdate_Usr(mUsr, sUsr)
         syncUpdate.update(ColData_User.getSyncCols())
         print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
         print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
@@ -337,7 +353,7 @@ class testSyncUpdate(TestCase):
         print syncUpdate.getMasterUpdates()
 
     def test_similarURL(self):
-        syncUpdate = SyncUpdate(self.usrMD4, self.usrSD4)
+        syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
         # print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Web Site']
         # print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Web Site']
@@ -351,10 +367,10 @@ class testSyncUpdate(TestCase):
 
 
 if __name__ == '__main__':
-    # main()
-    doubleNameTestSuite = unittest.TestSuite()
-    doubleNameTestSuite.addTest(testSyncUpdate('test_doubleNames2'))
-    unittest.TextTestRunner().run(doubleNameTestSuite)
+    main()
+    # doubleNameTestSuite = unittest.TestSuite()
+    # doubleNameTestSuite.addTest(testSyncUpdate_Usr('test_mNameColUpdate'))
+    # unittest.TextTestRunner().run(doubleNameTestSuite)
     # result = unittest.TestResult()
     # result = doubleNameTestSuite.run(result)
     # print repr(result)

@@ -115,8 +115,8 @@ class ImportUser(ImportFlat):
                 self[key] = val
             elif(not self.get(key)):
                 self[key] = ""
-            if(self.DEBUG_FLAT): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
-        if(self.DEBUG_FLAT): self.registerMessage("data:" + repr(data))
+            if(self.DEBUG_USR): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
+        if(self.DEBUG_USR): self.registerMessage("data:" + repr(data))
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
@@ -504,18 +504,18 @@ class CSVParse_User(CSVParse_Flat):
     def validateFilters(self, objectData):
         if self.filterItems:
             if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']:
-                if self.DEBUG_FLAT: self.registerMessage("could not register object %s because did not match role" % objectData.__repr__() )
+                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not match role" % objectData.__repr__() )
                 return False
             if 'sinceM' in self.filterItems.keys() and objectData.act_modtime < self.filterItems['sinceM']:
-                if self.DEBUG_FLAT: self.registerMessage("could not register object %s because did not meet sinceM condition" % objectData.__repr__() )
+                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet sinceM condition" % objectData.__repr__() )
                 return False
             if 'sinceS' in self.filterItems.keys() and objectData.wp_modtime < self.filterItems['sinceS']:
-                if self.DEBUG_FLAT: self.registerMessage("could not register object %s because did not meet sinceS condition" % objectData.__repr__() )
+                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet sinceS condition" % objectData.__repr__() )
                 return False
             if objectData.username in self.filterItems.get('users', []): return True
             if objectData.MYOBID in self.filterItems.get('cards', []): return True
             if objectData.email in self.filterItems.get('emails', []): return True
-            if self.DEBUG_FLAT: self.registerMessage("could not register object %s because did not meet users, cards or emails conditions" % objectData.__repr__() )
+            if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet users, cards or emails conditions" % objectData.__repr__() )
             return False
         else:
             return True
@@ -530,7 +530,7 @@ class CSVParse_User(CSVParse_Flat):
         if email and SanitationUtils.stringIsEmail(email) :
             self.registerEmail(objectData, email)
         else:
-            if(self.DEBUG_FLAT): self.registerWarning("invalid email address: %s"%email)
+            if(self.DEBUG_USR): self.registerWarning("invalid email address: %s"%email)
             self.registerNoEmail(objectData)
 
         role = objectData.role
@@ -550,11 +550,11 @@ class CSVParse_User(CSVParse_Flat):
         if username:
             self.registerUsername(objectData, username)
         else:
-            if(self.DEBUG_FLAT): self.registerWarning("invalid username: %s"%username)
+            if(self.DEBUG_USR): self.registerWarning("invalid username: %s"%username)
             self.registerNoUsername(objectData)
 
         # company = objectData['Company']
-        # # if self.DEBUG_FLAT: SanitationUtils.safePrint(repr(objectData), company)
+        # # if self.DEBUG_USR: SanitationUtils.safePrint(repr(objectData), company)
         # if company:
         #     self.registerCompany(objectData, company)
 

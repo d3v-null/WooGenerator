@@ -4,16 +4,17 @@ from unittest import TestCase, main, skip
 from tabulate import tabulate
 from pprint import pprint
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+from context import woogenerator
 
 from testSyncClient import abstractSyncClientTestCase
-from source.sync_client_user import *
-from source.coldata import ColData_User
-from source.csvparse_user import ImportUser, CSVParse_User, CSVParse_User_Api
+from woogenerator.sync_client_user import UsrSyncClient_SQL_WP, UsrSyncClient_SSH_ACT, UsrSyncClient_WC, UsrSyncClient_WP
+from woogenerator.coldata import ColData_User
+from woogenerator.csvparse_user import ImportUser, CSVParse_User, CSVParse_User_Api
+from woogenerator.utils import TimeUtils, Registrar
 
+@skip('no config file yet')
 class testUsrSyncClient(abstractSyncClientTestCase):
-    yamlPath = "merger_config.yaml"
+    # yamlPath = "merger_config.yaml"
     optionNamePrefix = 'test_'
     # optionNamePrefix = 'dummy_'
 
@@ -157,7 +158,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         # Registrar.DEBUG_GEN = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_WOO = True
-        Registrar.DEBUG_API = True
+        # Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
 

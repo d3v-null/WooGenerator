@@ -9,6 +9,7 @@ class testProgressCounter(TestCase):
     def setUp(self):
         self.progressCounter = ProgressCounter(100, 1)
 
+    @skip("takes too long")
     def test_carriageReturn(self):
         self.progressCounter.maybePrintUpdate(1)
         sleep(1)

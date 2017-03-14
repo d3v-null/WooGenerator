@@ -10,12 +10,13 @@ if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 from testSyncClient import abstractSyncClientTestCase
-from source.utils import TimeUtils, Registrar, SanitationUtils
-from source.sync_client_user import UsrSyncClient_WP
-from source.coldata import ColData_User
-from source.csvparse_user import CSVParse_User, CSVParse_User_Api #, ImportUser
-from source.matching import UsernameMatcher, MatchList #, CardMatcher, NocardEmailMatcher, EmailMatcher
-from source.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
+from context import woogenerator
+from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
+from woogenerator.sync_client_user import UsrSyncClient_WP
+from woogenerator.coldata import ColData_User
+from woogenerator.csvparse_user import CSVParse_User, CSVParse_User_Api #, ImportUser
+from woogenerator.matching import UsernameMatcher, MatchList #, CardMatcher, NocardEmailMatcher, EmailMatcher
+from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
     yamlPath = "merger_config.yaml"
@@ -56,7 +57,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             'callback':wp_callback
         }
 
-        Registrar.DEBUG_UPDATE = True
+        # Registrar.DEBUG_UPDATE = True
 
     def setUp(self):
         super(testUsrSyncUpdate, self).setUp()

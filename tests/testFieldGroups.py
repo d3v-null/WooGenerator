@@ -8,8 +8,8 @@ from woogenerator.contact_objects import FieldGroup, SocialMediaFields, ContactA
 class testFieldGroups(TestCase):
     def setUp(self):
         # FieldGroup.DEBUG_MESSAGE = True
-        FieldGroup.DEBUG_WARN = True
-        FieldGroup.DEBUG_ERROR = True
+        # FieldGroup.DEBUG_WARN = True
+        # FieldGroup.DEBUG_ERROR = True
         FieldGroup.performPost = True
 
 class testContactAddress(testFieldGroups):

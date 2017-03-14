@@ -18,7 +18,7 @@ class TestCSVParseSpecialV2(TestCase):
             # 'importName':importName
         }
 
-        Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_MESSAGE = True
 
     def test_basic(self):
         specialParser = CSVParse_Special(
