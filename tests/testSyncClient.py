@@ -1,37 +1,27 @@
 import os
 from os import sys, path
 import unittest
-from unittest import TestCase #, main, skip
 import yaml
+from unittest import TestCase #, main, skip
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
-from source.sync_client import *
-from source.sync_client_prod import *
-from source.sync_client_user import *
-from source.coldata import ColData_User, ColData_Woo
-from source.csvparse_user import ImportUser
+from context import woogenerator
+from context import get_testdata, tests_datadir
+from woogenerator.sync_client import SyncClient_GDrive
+from woogenerator.sync_client_prod import ProdSyncClient_WC
+from woogenerator.sync_client_user import UsrSyncClient_WP
+from woogenerator.coldata import ColData_User, ColData_Woo
+from woogenerator.csvparse_user import ImportUser
+from woogenerator.utils import Registrar, TimeUtils
 
 class abstractSyncClientTestCase(TestCase):
-    yamlPath = "generator_config.yaml"
+    # yamlPath = "generator_config.yaml"
+    yamlPath = os.path.join(tests_datadir, 'generator_config_test.yaml')
     optionNamePrefix = 'test_'
     # optionNamePrefix = ''
 
     def processConfig(self, config): raise NotImplementedError()
 
     def setUp(self):
-        try:
-            #if you can't stat source
-            os.stat('source')
-        except OSError:
-            #then you must be in source
-            tail = os.path.split(os.getcwd())[1]
-            assert tail == 'source'
-        else:
-            #else pls go to source
-            os.chdir('source')
-
         self.importName = TimeUtils.getMsTimeStamp()
 
         with open(self.yamlPath) as stream:
@@ -168,8 +158,8 @@ class testSyncClient(abstractSyncClientTestCase):
 
 
 if __name__ == '__main__':
-    # main()
-    testSuite = unittest.TestSuite()
+    unittest.main()
+    # testSuite = unittest.TestSuite()
     # testSuite.addTest(testSyncClient('test_UsrSyncClient_WP_Read'))
-    testSuite.addTest(testSyncClient('test_ProdSyncClient_WC_Read'))
-    unittest.TextTestRunner().run(testSuite)
+    # testSuite.addTest(testSyncClient('test_ProdSyncClient_WC_Read'))
+    # unittest.TextTestRunner().run(testSuite)

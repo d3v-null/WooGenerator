@@ -381,4 +381,3 @@ if __name__ == "__main__":
         wgApp.run()
     except npyscreen.NotEnoughSpaceForWidget as e:
         print "not enough space for widget, try resizing terminal.", e
-

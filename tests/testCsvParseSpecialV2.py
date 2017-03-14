@@ -1,12 +1,12 @@
 import os
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
-from context import source
-from source.coldata import ColData_Woo
-from source.csvparse_special import CSVParse_Special, SpecialGruopList, SpecialRuleList
-from source.utils import SanitationUtils, Registrar
-
+from context import woogenerator
 from context import get_testdata, tests_datadir
+from woogenerator.coldata import ColData_Woo
+from woogenerator.csvparse_special import CSVParse_Special, SpecialGruopList, SpecialRuleList
+from woogenerator.utils import SanitationUtils, Registrar
+
 
 class TestCSVParseSpecialV2(TestCase):
     def setUp(self):
@@ -42,7 +42,6 @@ class TestCSVParseSpecialV2(TestCase):
                 child = special.children[0]
                 self.assertEqual(index, child.index)
         self.assertTrue(isSingularChild)
-
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,218 @@
+master_name: ACT
+slave_name: WORDPRESS
+default_last_sync: 2015-05-29 04:33:40
+#merge_mode: sync
+merge_mode: merge
+download_slave: true
+download_master: true
+update_master: false
+update_slave: false
+do_post: false
+do_filter: false
+do_sync: true
+do_problematic: true
+report_email: derwentx@gmail.com
+
+master_file: act_x_2017-02-16_10-28-20.csv
+slave_file: wp_x_test_2017-02-16_13-24-29.csv
+
+# these filter params are used with the --do-filter switch
+# cardFile: email_conflict_cards.txt
+cardFile: C001964.txt
+# emailFile: email_conflict_emails.txt
+# emailFile: emails_confilcts.txt
+# sinceM: 2016-03-11
+
+#wp api
+
+###########################################
+# Test creds for Local WoooCommerce setup #
+###########################################
+
+#test_wp_api_key: kGUDYhYPNTTq
+#test_wp_api_secret: 44fhpRsd0yo5deHaUSTZUtHgamrKwARzV8JUgTbGu61qrI0i
+#test_wp_user: woocommerce
+#test_wp_pass: woocommerce
+#test_wp_callback: http://127.0.0.1/oauth1_callback
+#test_wc_api_key: ck_0297450a41484f27184d1a8a3275f9bab5b69143
+#test_wc_api_secret: cs_68ef2cf6a708e1c6b30bfb2a38dc948b16bf46c0
+#test_store_url: http://ich.local:8888/woocommerce/
+
+############################
+# Test creds for Technotea #
+############################
+
+test_wp_api_key: dYuuYtXDU29k
+test_wp_api_secret: EVrkN3oCJc7Kz4RWQB5COxwNXBznIHT9JuKGZCSFeGyXTDRc
+test_wp_user: neil
+test_wp_pass: Stretch@6164
+test_wp_callback: http://127.0.0.1/oauth1_callback
+test_wc_api_key: ck_204e2f68c5ca4d3be966b7e5da7a48cac1a75104
+test_wc_api_secret: cs_bcb080a472a2bbded7dc421c63cbe031a91241f5
+test_store_url: http://technotea.com.au/
+
+dummy_wp_api_key: LCLwTOfxoXGh
+dummy_wp_api_secret: k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq
+dummy_wp_user: wordpress
+dummy_wp_pass: wordpress
+dummy_wp_callback: http://127.0.0.1:8888/wordpress
+
+# wp_api_key: ck_7d8ce77042dddb2406c7a2003ea2ff53f07497cd
+# wp_api_secret: cs_0030085c77b08b0474b9ccd4b98c3a052730adff
+# wc_api_key: ck_e7788208a72367740b4d3108f3f77cffea5e8ac0
+# wc_api_secret: cs_e7dc2fec8bd046269912aea160f922280e9fe77f
+# store_url: http://www.technotan.com.au/
+
+# wc_api_key: ck_236bf6228ff6b6afac83a7ae9ae3711ec340aedd
+# wc_api_secret: cs_107a45200509a5d65062c16b9669d8b5b0c0ec06
+# store_url: http://www.technotea.com.au/
+wc_api_key: ck_204e2f68c5ca4d3be966b7e5da7a48cac1a75104
+wc_api_secret: cs_bcb080a472a2bbded7dc421c63cbe031a91241f5
+store_url: http://technotea.com.au/
+
+
+dummy_wc_api_key: ck_681c2be361e415519dce4b65ee981682cda78bc6
+dummy_wc_api_secret: cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877
+# dummy_api_version: v3
+dummy_store_url: http://ich.local:8888/wordpress/
+
+
+# test_ssh_user: derwent
+# test_ssh_pass: LaserPhile3141
+# # test_ssh_host: minimac.ddns.me
+# # test_ssh_port: 11122
+# test_ssh_host: minimac.local
+# test_ssh_port: 22
+# test_remote_bind_port: 3306
+# test_db_user: wordpress
+# test_db_pass: opensesami
+# test_db_name: wordpress
+# test_db_host: .
+# test_tbl_prefix: wp_
+# test_wp_user: neil
+# test_wp_pass: Stretch6164
+# test_store_url: http://minimac.ddns.me:11182/
+# test_store_url: http://minimac.local:11182/
+# test_store_url: http://www.technotea.com.au/
+
+# test_ssh_user: derwent
+# test_ssh_pass: LaserPhile3141
+# test_ssh_host: 127.0.0.1
+# test_remote_bind_host: 127.0.0.1
+# test_remote_bind_port: 8889
+# test_db_user: wp1502
+# test_db_pass: j2pBby6wnhMEp5KQ
+# test_db_name: wp1502
+# test_db_host: 127.0.0.1
+# test_tbl_prefix: wp1502_
+# test_wp_user: admin
+# test_wp_pass: admin
+# test_store_url: http://ich.ddns.me:8888/wordpress/
+
+test_ssh_user: technoto
+test_ssh_pass: pek-pealg-ai
+test_ssh_host: sv5.cyanweb.com.au
+test_remote_bind_port: 3306
+test_db_user: technoto_wpress
+test_db_pass: wuts-em-bav-
+test_db_name: technoto_wpress
+test_db_charset: utf8mb4
+test_wp_srv_offset: -7200
+test_tbl_prefix: tt6164_
+# test_store_url: http://technotea.com.au/
+# test_wp_user: neil
+# test_wp_pass: Stretch@6164
+
+# test_m_ssh_user: TechnoAdmin
+# test_m_ssh_pass: Br0nzie
+# test_m_ssh_host: mail.technotan.com.au
+# test_m_ssh_port: 10122
+# # test_act_srv_offest: 0
+# test_m_x_cmd: ~/act_usr_exp/ActToday.Technotan.Export.exe
+# test_m_i_cmd: ~/act_usr_exp/ActToday.Technotan.Import.exe
+# test_m_db_user: Neil
+# test_m_db_pass: nepal
+# test_m_db_name: TestDB2
+# test_m_db_host: .
+
+test_m_ssh_user: cyg_server
+test_m_ssh_pass: epoxy-silver-mac
+test_m_ssh_host: mail.technotan.com.au
+test_m_ssh_port: 10122
+# test_act_srv_offest: 0
+test_remote_export_folder: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/
+test_m_x_cmd: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/ActToday.Technotan.Export.exe
+test_m_i_cmd: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/ActToday.Technotan.Import.exe
+test_m_db_user: Neil
+test_m_db_pass: nepal
+test_m_db_name: TestDB2
+test_m_db_host: .
+
+# test_m_ssh_user: TechnoAdmin
+# test_m_ssh_pass: Br0nzie
+# test_m_ssh_host: mail.technotan.com.au
+# test_m_ssh_port: 10122
+# test_m_x_cmd: ~/act_usr_exp/ActToday.Technotan.Export.exe
+# test_m_i_cmd: ~/act_usr_exp/ActToday.Technotan.Import.exe
+# test_m_db_user: Neil
+# test_m_db_pass: nepal
+# test_m_db_name: Technotan
+# test_m_db_host: .
+
+# ssh_user: technoto
+# ssh_pass: pek-pealg-ai
+# ssh_host: sv5.cyanweb.com.au
+# remote_bind_port: 3306
+# db_user: technoto_wpress
+# db_pass: wuts-em-bav-
+# db_name: technoto_wpress
+# db_charset: utf8mb4
+# wp_srv_offset: -7200
+# tbl_prefix: tt6164_
+# store_url: http://technotea.com.au/
+# wp_user: neil
+# wp_pass: Stretch@6164
+
+ssh_user: technota
+ssh_pass: R1jMU2T4
+ssh_host: sv5.cyanweb.com.au
+# ssh_port: 22
+# remote_bind_host: 127.0.0.1
+remote_bind_port: 3306
+db_user: technota_woocomm
+db_pass: iv-teeg-yoi-
+db_name: technota_woocommerce
+# db_host: .
+db_charset: utf8mb4
+tbl_prefix: tt6164_
+# store_url: http://technotan.com.au/
+# wp_user: neil
+# wp_pass: Stretch@6164
+
+smtp_host: mail.technotan.com.au
+smtp_port: 25
+smtp_user: webmaster
+smtp_pass: Technotan1
+
+# m_ssh_user: TechnoAdmin
+# m_ssh_pass: Br0nzie
+# m_ssh_host: mail.technotan.com.au
+# m_ssh_port: 10122
+# m_x_cmd: ~/act_usr_exp/ActToday.Technotan.Export.exe
+# m_i_cmd: ~/act_usr_exp/ActToday.Technotan.Import.exe
+# m_db_user: Neil
+# m_db_pass: nepal
+# m_db_name: Technotan
+# m_db_host: TECHNODC1
+
+m_ssh_user: cyg_server
+m_ssh_pass: epoxy-silver-mac
+m_ssh_host: mail.technotan.com.au
+m_ssh_port: 10122
+remote_export_folder: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/
+m_x_cmd: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/ActToday.Technotan.Export.exe
+m_i_cmd: /cygdrive/d/ACTDATA/ScheduledTasks/user_export/ActToday.Technotan.Import.exe
+m_db_user: Neil
+m_db_pass: nepal
+m_db_name: Technotan
+m_db_host: TECHNODC1

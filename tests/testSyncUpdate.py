@@ -3,14 +3,14 @@ from os import sys, path
 from unittest import TestCase, main, skip
 import unittest
 import StringIO
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+import yaml
 
-from source.SyncUpdate import *
-from source import coldata
-from source.coldata import ColData_User
-from source.csvparse_flat import ImportUser, CSVParse_User
-from source.contact_objects import FieldGroup
+from context import woogenerator
+from woogenerator import SyncUpdate
+from woogenerator import coldata
+from woogenerator.coldata import ColData_User
+from woogenerator.csvparse_flat import ImportUser, CSVParse_User
+from woogenerator.contact_objects import FieldGroup
 
 
 class testSyncUpdate(TestCase):

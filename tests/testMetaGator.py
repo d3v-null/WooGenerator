@@ -1,15 +1,16 @@
+import os
+from time import time
 from os import sys, path
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
-from source.metagator import *
+from context import woogenerator
+from context import get_testdata, tests_datadir
+from woogenerator.metagator import MetaGator
 
 class testMetaGator(TestCase):
     def setUp(self):
-        self.work_dir = "/Users/Derwent/Dropbox/Technotan"
-        assert os.path.isdir(self.work_dir)
+        self.work_dir = tests_datadir
+        # assert os.path.isdir(self.work_dir)
         self.newmeta = {
             'title': u'TITLE \xa9 \u2014',
             'description': time()

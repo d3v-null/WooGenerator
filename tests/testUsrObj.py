@@ -1,10 +1,9 @@
 from os import sys, path
 import unittest
 from unittest import TestCase, main, skip
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from source.csvparse_flat import *
+from context import woogenerator
+from woogenerator.csvparse_user import ImportUser
 
 class testUsrObj(TestCase):
     def setUp(self):

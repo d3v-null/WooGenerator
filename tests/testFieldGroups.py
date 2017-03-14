@@ -1,14 +1,13 @@
 from os import sys, path
 import unittest
 from unittest import TestCase, main, skip
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-from source.contact_objects import *
+from context import woogenerator
+from woogenerator.contact_objects import FieldGroup, SocialMediaFields, ContactAddress, ContactName
 
 class testFieldGroups(TestCase):
     def setUp(self):
-        FieldGroup.DEBUG_MESSAGE = True
+        # FieldGroup.DEBUG_MESSAGE = True
         FieldGroup.DEBUG_WARN = True
         FieldGroup.DEBUG_ERROR = True
         FieldGroup.performPost = True
@@ -556,8 +555,8 @@ class testSocialMediaGroup(testFieldGroups):
         self.assertEqual(sm['Instagram Username'], '@insta')
 
 if __name__ == '__main__':
-    # main()
+    main()
 
-    testSuite = unittest.TestSuite()
-    testSuite.addTest(testSocialMediaGroup('test_print'))
-    unittest.TextTestRunner().run(testSuite)
+    # testSuite = unittest.TestSuite()
+    # testSuite.addTest(testSocialMediaGroup('test_print'))
+    # unittest.TextTestRunner().run(testSuite)

@@ -1,19 +1,19 @@
 import os
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
-from context import source
-from source.coldata import ColData_Woo
-from source.csvparse_woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
-from source.utils import TimeUtils, Registrar, SanitationUtils
+from context import woogenerator
+from woogenerator.coldata import ColData_Woo
+from woogenerator.csvparse_woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
+from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
-from .. import tests_datadir
+from context import tests_datadir
 
 class TestCSVParseWoo(TestCase):
 
     def setUp(self):
         importName = TimeUtils.getMsTimeStamp()
 
-        self.genPath = os.path.join(tests_datadir, "generator.csv")
+        self.genPath = os.path.join(tests_datadir, "generator_sample.csv")
 
         self.productParserArgs = {
             'importName': importName,

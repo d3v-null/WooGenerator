@@ -1,8 +1,8 @@
 import time
 import unittest
 
-from context import source
-from source.utils import TimeUtils
+from context import woogenerator
+from woogenerator.utils import TimeUtils
 
 class testUtilsTime(unittest.TestCase):
     def setUp(self):

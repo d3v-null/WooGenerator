@@ -2,10 +2,8 @@ from os import sys, path
 from time import sleep
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
-from source.utils import *
+from context import woogenerator
+from woogenerator.utils import ProgressCounter, SanitationUtils, UnicodeCsvDialectUtils
 
 class testProgressCounter(TestCase):
     def setUp(self):
@@ -49,9 +47,9 @@ class testSanitationUtils(TestCase):
         self.assertEqual(result, 'tanbience_specials')
 
 if __name__ == '__main__':
-    # main()
+    main()
 
-    testSuite = TestSuite()
-    testSuite.addTest(testSanitationUtils('test_slugify'))
+    # testSuite = TestSuite()
+    # testSuite.addTest(testSanitationUtils('test_slugify'))
     # testSuite.addTest(testProgressCounter('test_stripURLHost'))
-    TextTestRunner().run(testSuite)
+    # TextTestRunner().run(testSuite)

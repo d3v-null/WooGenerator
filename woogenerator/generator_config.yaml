@@ -1,0 +1,112 @@
+#Generator file info
+
+master_name: GDrive
+slave_name: WooCommerce
+
+taxoDepth: 3
+itemDepth: 2
+
+myo_schemas:
+    - MY
+
+woo_schemas:
+    - TT
+    - VT
+    - TS
+
+fallback_schema: TT
+fallback_variant:
+
+
+# Raw Image Sources
+imgRawFolder: /Users/Derwent/Dropbox/TechnoTan/flattened/
+imgRawExtraFolder: /Users/Derwent/Dropbox/VuTan/Website/Images\ &\ Logos/flattened/
+
+# Compressed Image Destication
+imgCmpFolder: /Users/Derwent/Documents/TechnoTan/compressed/
+
+# Location of webserver files
+webFolder: /Applications/MAMP/htdocs/
+
+# web Location to point to for reports
+
+webAddress: http://ich.local:8888/
+# webAddress: http://192.168.0.101:18080/
+
+webBrowser: firefox
+
+ssh_user: derwent
+ssh_pass: LaserPhile3141
+ssh_host: minimac.local
+ssh_port: 22
+remote_bind_host: 127.0.0.1
+remote_bind_port: 3306
+db_user: wordpress
+db_pass: opensesami
+db_name: wordpress
+tbl_prefix: wp_
+
+#wp api
+# wc_api_key: ck_e7788208a72367740b4d3108f3f77cffea5e8ac0
+# wc_api_secret: cs_e7dc2fec8bd046269912aea160f922280e9fe77f
+# store_url: http://www.technotan.com.au/
+
+wc_api_key: ck_204e2f68c5ca4d3be966b7e5da7a48cac1a75104
+wc_api_secret: cs_bcb080a472a2bbded7dc421c63cbe031a91241f5
+store_url: http://technotea.com.au/
+
+test_wc_api_key: ck_0297450a41484f27184d1a8a3275f9bab5b69143
+test_wc_api_secret: cs_68ef2cf6a708e1c6b30bfb2a38dc948b16bf46c0
+test_store_url: http://ich.local:8888/woocommerce/
+
+dummy_wc_api_key: ck_681c2be361e415519dce4b65ee981682cda78bc6
+dummy_wc_api_secret: cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877
+dummy_wp_api_key: LCLwTOfxoXGh
+dummy_wp_api_secret: k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq
+dummy_wp_user: wordpress
+dummy_wp_pass: wordpress
+dummy_wp_callback: http://127.0.0.1:8888/wordpress
+dummy_store_url: http://ich.local:8888/wordpress/
+
+#gdrive api
+gdrive_scopes: https://spreadsheets.google.com/feeds https://docs.google.com/feeds
+gdrive_client_secret_file: client_secret.json
+gdrive_app_name: Laserphile WooGenerator Drive API
+
+#File ID of generator file
+genFID: 1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM
+
+#GIDs of each tab
+genGID: 784188347
+dprcGID: 1804075366
+dprpGID: 122203075
+# specGID: 429573553 # old specials
+specGID: 850198035 # new specials format
+usGID: 836642938
+xsGID: 931696965
+
+#OAuth credentials
+gdrive_oauth_clientID: 66307899970-0stmod3gm9j4lrnsg11ccmffv5v1c4h6.apps.googleusercontent.com
+gdrive_oauth_clientSecret: BpAfZhCULTB48MAfF2jhOf2K
+gdrive_credentials_dir: ~/.credentials
+gdrive_credentials_file: drive-woogenerator.json
+
+# ssh_user: technota
+# ssh_pass: R1jMU2T4
+# ssh_host: sv5.cyanweb.com.au
+# ssh_port: 22
+# remote_bind_host: 127.0.0.1
+# remote_bind_port: 3306
+# db_user: technota
+# db_pass: iv-teeg-yoi-
+# db_name: technota_woocommerce
+# tbl_prefix: wp_
+
+
+current_special: EOFY2016
+add_special_categories: false
+show_report: true
+do_images: false
+do_delete_images: false
+do_resize_images: false
+download_master: false

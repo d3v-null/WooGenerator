@@ -1,22 +1,20 @@
 from os import sys, path
 from collections import OrderedDict
 from time import sleep
+import random
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 from tabulate import tabulate
 
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
 from testSyncClient import abstractSyncClientTestCase
-from source.sync_client_prod import *
-from source.coldata import ColData_Woo
-from source.csvparse_abstract import ObjList
-# from source.csvparse_gen import ProdList
-from source.csvparse_shop import ShopProdList, ShopCatList
-from source.csvparse_woo import ImportWooProduct, CSVParse_Woo
-from source.csvparse_api import CSVParse_Woo_Api
-from source.utils import SanitationUtils, TimeUtils, Registrar
-import random
+from context import woogenerator
+from woogenerator.sync_client_prod import ProdSyncClient_WC
+from woogenerator.coldata import ColData_Woo
+from woogenerator.csvparse_abstract import ObjList
+# from woogenerator.csvparse_gen import ProdList
+from woogenerator.csvparse_shop import ShopProdList, ShopCatList
+from woogenerator.csvparse_woo import ImportWooProduct, CSVParse_Woo
+from woogenerator.csvparse_api import CSVParse_Woo_Api
+from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 
 class testProdSyncClient(abstractSyncClientTestCase):
     def __init__(self, *args, **kwargs):
