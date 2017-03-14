@@ -1,15 +1,6 @@
-# from csvparse_woo import ImportWooProduct
-# from copy import deepcopy
-# from collections import OrderedDict
-# from coldata import ColData_User, ColData_Woo
-# from contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
-from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
-from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
-# import os
-# import time
-# from pprint import pprint
-# import operator
-# import re
+
+from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
+from woogenerator.parsing.csvparse_abstract import CSVParse_Base, ImportObject, ObjList
 
 usrs_per_file = 1000
 

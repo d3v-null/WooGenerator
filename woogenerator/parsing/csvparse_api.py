@@ -1,21 +1,23 @@
-"""Introduces woo structure to shop classes"""
-from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
-from csvparse_abstract import ObjList, CSVParse_Base
-from csvparse_tree import ItemList, TaxoList, ImportTreeObject
-from csvparse_tree import CSVParse_Tree, CSVParse_Tree_Mixin
-from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem
-from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenObject, CSVParse_Gen_Mixin
-from csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
-from csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin
-from csvparse_flat import CSVParse_Flat, ImportFlat
-from csvparse_woo import CSVParse_Woo_Mixin, ImportWooMixin
-from coldata import ColData_Woo
-
+"""Introduces woo api structure to shop classes"""
 from collections import OrderedDict
 import bisect
 import time
 from pprint import pformat
+
+from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, PHPUtils
+from woogenerator.utils import Registrar, descriptorUtils
+from woogenerator.coldata import ColData_Woo
+from woogenerator.parsing.csvparse_abstract import ObjList, CSVParse_Base
+from woogenerator.parsing.csvparse_tree import ItemList, TaxoList, ImportTreeObject
+from woogenerator.parsing.csvparse_tree import CSVParse_Tree, CSVParse_Tree_Mixin
+from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree, ImportGenItem
+from woogenerator.parsing.csvparse_gen import ImportGenTaxo, ImportGenObject
+from woogenerator.parsing.csvparse_gen import ImportGenObject, CSVParse_Gen_Mixin
+from woogenerator.parsing.csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
+from woogenerator.parsing.csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
+from woogenerator.parsing.csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin
+from woogenerator.parsing.csvparse_flat import CSVParse_Flat, ImportFlat
+from woogenerator.parsing.csvparse_woo import CSVParse_Woo_Mixin, ImportWooMixin
 
 class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     def __init__(self, *args, **kwargs):

@@ -14,7 +14,7 @@ from context import woogenerator
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 from woogenerator.sync_client_user import UsrSyncClient_WP
 from woogenerator.coldata import ColData_User
-from woogenerator.csvparse_user import CSVParse_User, CSVParse_User_Api #, ImportUser
+from woogenerator.parsing.csvparse_user import CSVParse_User, CSVParse_User_Api #, ImportUser
 from woogenerator.matching import UsernameMatcher, MatchList #, CardMatcher, NocardEmailMatcher, EmailMatcher
 from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 

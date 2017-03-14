@@ -9,11 +9,11 @@ from testSyncClient import abstractSyncClientTestCase
 from context import woogenerator
 from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from woogenerator.coldata import ColData_Woo
-from woogenerator.csvparse_abstract import ObjList
-# from woogenerator.csvparse_gen import ProdList
-from woogenerator.csvparse_shop import ShopProdList, ShopCatList
-from woogenerator.csvparse_woo import ImportWooProduct, CSVParse_Woo
-from woogenerator.csvparse_api import CSVParse_Woo_Api
+from woogenerator.parsing.csvparse_abstract import ObjList
+# from woogenerator.parsing.csvparse_gen import ProdList
+from woogenerator.parsing.csvparse_shop import ShopProdList, ShopCatList
+from woogenerator.parsing.csvparse_woo import ImportWooProduct, CSVParse_Woo
+from woogenerator.parsing.csvparse_api import CSVParse_Woo_Api
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 
 @skip("have not created config file yet")

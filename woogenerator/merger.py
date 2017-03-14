@@ -10,7 +10,7 @@ from utils import SanitationUtils, TimeUtils, HtmlReporter #,listUtils
 from utils import Registrar, debugUtils, ProgressCounter
 from matching import Match, MatchList, ConflictingMatchList
 from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
-from csvparse_user import CSVParse_User, UsrObjList #, ImportUser
+from parsing.csvparse_user import CSVParse_User, UsrObjList #, ImportUser
 # from contact_objects import ContactAddress
 from coldata import ColData_User
 # from tabulate import tabulate

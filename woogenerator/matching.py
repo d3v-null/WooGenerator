@@ -1,5 +1,5 @@
-from csvparse_abstract import ImportObject, ObjList
-# from csvparse_flat import UsrObjList #, ImportUser
+from parsing.csvparse_abstract import ImportObject, ObjList
+# from parsing.csvparse_flat import UsrObjList #, ImportUser
 from utils import SanitationUtils, Registrar, InheritenceUtils, listUtils
 from collections import OrderedDict
 from pprint import pformat

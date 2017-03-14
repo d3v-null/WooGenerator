@@ -1,12 +1,12 @@
-from copy import deepcopy
 from collections import OrderedDict
-from coldata import ColData_User, ColData_Woo
-from contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
-from csvparse_abstract import ObjList
-from utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
-from pprint import pprint, pformat
+from pprint import pformat # pprint
+# from copy import deepcopy
 
-from csvparse_flat import ImportFlat, CSVParse_Flat
+from woogenerator.coldata import ColData_User #, ColData_Woo
+from woogenerator.contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
+from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
+from woogenerator.parsing.csvparse_abstract import ObjList
+from woogenerator.parsing.csvparse_flat import ImportFlat, CSVParse_Flat
 
 
 class UsrObjList(ObjList):

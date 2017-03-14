@@ -10,7 +10,7 @@ from context import get_testdata, tests_datadir
 from woogenerator.SyncUpdate import SyncUpdate_Usr
 from woogenerator import coldata
 from woogenerator.coldata import ColData_User
-from woogenerator.csvparse_user import ImportUser, CSVParse_User
+from woogenerator.parsing.csvparse_user import ImportUser, CSVParse_User
 from woogenerator.contact_objects import FieldGroup
 
 

@@ -2,14 +2,15 @@
 Introduces the shop products and categories interfaces to CSV Parser classes
 """
 
-from csvparse_abstract import CSVParse_Base, ImportObject, ObjList
-from csvparse_tree import ItemList, TaxoList
-from csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
-from csvparse_gen import ImportGenMixin, ImportGenObject
-from collections import OrderedDict
-from utils import descriptorUtils, SanitationUtils, Registrar
-from coldata import ColData_Prod, ColData_Woo
 import bisect
+from collections import OrderedDict
+
+from woogenerator.utils import descriptorUtils, SanitationUtils, Registrar
+from woogenerator.coldata import ColData_Prod, ColData_Woo
+from woogenerator.parsing.csvparse_abstract import CSVParse_Base, ImportObject, ObjList
+from woogenerator.parsing.csvparse_tree import ItemList, TaxoList
+from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
+from woogenerator.parsing.csvparse_gen import ImportGenMixin, ImportGenObject
 
 class ShopProdList(ItemList):
     "Container for shop products"

@@ -4,7 +4,7 @@ import yaml
 import os
 import time
 from coldata import ColData_User
-from csvparse_flat import CSVParse_User
+from parsing.csvparse_flat import CSVParse_User
 from collections import OrderedDict
 
 srcFolder = "../source/"

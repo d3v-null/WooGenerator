@@ -9,11 +9,11 @@ Should be dimensionally agnostic (doesn't know if using flat or tree type) but i
 """
 
 from collections import OrderedDict
-from utils import descriptorUtils, SanitationUtils, listUtils, Registrar
-from csvparse_abstract import ObjList, ImportObject, CSVParse_Base
-from csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
-# from csvparse_shop import ImportShop, ProdList, CSVParse_Shop
-from csvparse_flat import ImportFlat
+
+from woogenerator.utils import descriptorUtils, SanitationUtils, listUtils, Registrar
+from woogenerator.parsing.csvparse_abstract import ObjList, ImportObject, CSVParse_Base
+from woogenerator.parsing.csvparse_tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
+from woogenerator.parsing.csvparse_flat import ImportFlat
 
 
 # class GenProdList(ProdList):

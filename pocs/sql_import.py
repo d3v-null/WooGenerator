@@ -5,11 +5,11 @@ import os
 import time
 # from itertools import chain
 from utils import listUtils, SanitationUtils, UnicodeDictWriter
-from csvparse_abstract import Registrar
-from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
-from csvparse_myo import CSVParse_MYO
-from csvparse_dyn import CSVParse_Dyn
-from csvparse_flat import CSVParse_Special
+from parsing.csvparse_abstract import Registrar
+from parsing.csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
+from parsing.csvparse_myo import CSVParse_MYO
+from parsing.csvparse_dyn import CSVParse_Dyn
+from parsing.csvparse_flat import CSVParse_Special
 from coldata import ColData_Woo
 import yaml
 import MySQLdb

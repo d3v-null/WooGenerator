@@ -15,16 +15,16 @@ import io
 from metagator import MetaGator
 from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter # debugUtils
 from utils import HtmlReporter
-from csvparse_abstract import Registrar
-from csvparse_shop import ShopObjList # ShopProdList,
-from csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
-from csvparse_woo import WooCatList, WooProdList, WooVarList
-from csvparse_api import CSVParse_Woo_Api
-from csvparse_myo import CSVParse_MYO, MYOProdList
-from csvparse_dyn import CSVParse_Dyn
-# from csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
-from csvparse_special import CSVParse_Special
-# from csvparse_api import CSVParse_Woo_Api
+from parsing.csvparse_abstract import Registrar
+from parsing.csvparse_shop import ShopObjList # ShopProdList,
+from parsing.csvparse_woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
+from parsing.csvparse_woo import WooCatList, WooProdList, WooVarList
+from parsing.csvparse_api import CSVParse_Woo_Api
+from parsing.csvparse_myo import CSVParse_MYO, MYOProdList
+from parsing.csvparse_dyn import CSVParse_Dyn
+# from parsing.csvparse_flat import CSVParse_Special #, CSVParse_WPSQLProd
+from parsing.csvparse_special import CSVParse_Special
+# from parsing.csvparse_api import CSVParse_Woo_Api
 from coldata import ColData_Woo, ColData_MYO , ColData_Base
 from sync_client import SyncClient_GDrive, SyncClient_Local
 from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC

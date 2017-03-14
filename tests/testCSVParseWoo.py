@@ -3,7 +3,7 @@ from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
 from context import woogenerator
 from woogenerator.coldata import ColData_Woo
-from woogenerator.csvparse_woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
+from woogenerator.parsing.csvparse_woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
 from context import tests_datadir

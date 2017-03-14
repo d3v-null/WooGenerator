@@ -1,17 +1,19 @@
 """Introduces woo structure to shop classes"""
-from utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
-from csvparse_abstract import ObjList, CSVParse_Base
-from csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
-from csvparse_gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
-from csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
-from csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
-from csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
-from csvparse_flat import CSVParse_Flat, ImportFlat
-from coldata import ColData_Woo
 from collections import OrderedDict
 import time
 import re
+
+from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
+from woogenerator.coldata import ColData_Woo
+from woogenerator.parsing.csvparse_abstract import ObjList, CSVParse_Base
+from woogenerator.parsing.csvparse_tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
+from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
+from woogenerator.parsing.csvparse_gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
+from woogenerator.parsing.csvparse_shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
+from woogenerator.parsing.csvparse_shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
+from woogenerator.parsing.csvparse_shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
+from woogenerator.parsing.csvparse_flat import CSVParse_Flat, ImportFlat
+
 
 class WooProdList(ItemList):
     reportCols = ColData_Woo.getProductCols()

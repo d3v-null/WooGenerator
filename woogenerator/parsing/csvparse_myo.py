@@ -1,11 +1,11 @@
-from csvparse_gen import CSVParse_Gen_Tree
-from csvparse_shop import ImportShopProductMixin, ShopProdList
-from csvparse_abstract import ObjList
-from utils import listUtils, SanitationUtils
-from collections import OrderedDict
-from coldata import ColData_MYO
 import time
-import os
+from collections import OrderedDict
+
+from woogenerator.utils import listUtils, SanitationUtils
+from woogenerator.coldata import ColData_MYO
+from woogenerator.parsing.csvparse_gen import CSVParse_Gen_Tree
+from woogenerator.parsing.csvparse_shop import ImportShopProductMixin, ShopProdList
+# from woogenerator.parsing.csvparse_abstract import ObjList
 
 class CSVParse_MYO(CSVParse_Gen_Tree):
     productContainer = ImportShopProductMixin

@@ -8,19 +8,15 @@ Here be dragons. Some of the design decisions are pretty bizarre, so please have
 through before changing anything. Sorry about that.
 """
 
-
-# from pprint import pprint
 from collections import OrderedDict
-from utils import listUtils, SanitationUtils, Registrar, ProgressCounter
-from utils import UnicodeCsvDialectUtils
 from tabulate import tabulate
 import unicodecsv
-# from coldata import ColData_User
 from copy import deepcopy, copy
-# from time import time
-# import os
 from pprint import pformat
 import re
+
+from woogenerator.utils import listUtils, SanitationUtils, Registrar, ProgressCounter
+from woogenerator.utils import UnicodeCsvDialectUtils
 
 BLANK_CELL = ''
 

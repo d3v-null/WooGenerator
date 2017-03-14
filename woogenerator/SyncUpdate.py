@@ -6,8 +6,8 @@ from coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
 from tabulate import tabulate
 from copy import deepcopy
 from matching import Match
-# from csvparse_user import ImportUser
-from csvparse_abstract import ImportObject
+# from parsing.csvparse_user import ImportUser
+from parsing.csvparse_abstract import ImportObject
 
 class SyncUpdate(Registrar):
     colData = ColData_Base
