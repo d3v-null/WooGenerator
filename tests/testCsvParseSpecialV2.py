@@ -1,11 +1,12 @@
 import os
+import time
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
 from woogenerator.coldata import ColData_Woo
 from woogenerator.parsing.special import CSVParse_Special, SpecialGruopList, SpecialRuleList
-from woogenerator.utils import SanitationUtils, Registrar
+from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
 
 
 class TestCSVParseSpecialV2(TestCase):
@@ -42,6 +43,49 @@ class TestCSVParseSpecialV2(TestCase):
                 child = special.children[0]
                 self.assertEqual(index, child.index)
         self.assertTrue(isSingularChild)
+
+    def test_determine_groups(self):
+        specialParser = CSVParse_Special(
+            **self.specialParserArgs
+        )
+
+        specialParser.analyseFile(self.specPath)
+
+        overrideGroups = specialParser.determine_current_special_groups(
+            'override',
+            'EOFY2016'
+        )
+        self.assertEquals(overrideGroups, [specialParser.ruleGroups.get('EOFY2016')])
+
+        TimeUtils.set_override_time(time.strptime("2018-01-01", TimeUtils.dateFormat))
+
+        autoNextGroups = specialParser.determine_current_special_groups(
+            'auto_next'
+        )
+        self.assertEquals(autoNextGroups, [])
+
+        TimeUtils.set_override_time(time.strptime("2016-08-11", TimeUtils.dateFormat))
+
+        autoNextGroups = specialParser.determine_current_special_groups(
+            'auto_next'
+        )
+        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('SP2016-08-12')])
+
+        TimeUtils.set_override_time(time.strptime("2016-06-11", TimeUtils.dateFormat))
+
+        autoNextGroups = specialParser.determine_current_special_groups(
+            'auto_next'
+        )
+        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
+
+        TimeUtils.set_override_time(time.strptime("2016-06-13", TimeUtils.dateFormat))
+
+        autoNextGroups = specialParser.determine_current_special_groups(
+            'auto_next'
+        )
+        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
+
+        print overrideGroups
 
 if __name__ == '__main__':
     main()
