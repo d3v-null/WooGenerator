@@ -74,23 +74,33 @@ class ImportUser(ImportFlat):
 
     @property
     def act_modtime(self):
-        return TimeUtils.actStrpMktime(self.get('Edited in Act', 0))
+        time_str = self.get('Edited in Act')
+        if time_str:
+            return TimeUtils.actStrpMktime(time_str)
 
     @property
     def act_created(self):
-        return TimeUtils.actStrpMkdate(self.get('Create Date', 0))
+        time_str = self.get('Create Date')
+        if time_str:
+            return TimeUtils.actStrpMkdate(time_str)
 
     @property
     def wp_created(self):
-        return TimeUtils.wpStrpMktime(self.get('Wordpress Start Date', 0))
+        time_str = self.get('Wordpress Start Date')
+        if time_str:
+            return TimeUtils.wpStrpMktime(time_str)
 
     @property
     def wp_modtime(self):
-        return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(self.get('Edited in Wordpress', 0) ))
+        time_str = self.get('Edited in Wordpress')
+        if time_str:
+            return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(time_str))
 
     @property
     def last_sale(self):
-        return TimeUtils.actStrpMkdate(self.get('Last Sale', 0))
+        time_str = self.get('Last Sale')
+        if time_str:
+            return TimeUtils.actStrpMkdate(time_str)
 
     @property
     def last_modtime(self):

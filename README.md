@@ -3,28 +3,28 @@
 Generates WooCommerce friendly CSV files from a Google Drive spreadsheet of products
 
 ***!!! Warning !!!***
-I've tried to make this codebase as modular as possible, but in reality there is 
-so much TechnoTan specific code that it would take quite a bit of modification 
-to get this to work on another site. 
+I've tried to make this codebase as modular as possible, but in reality there is
+so much TechnoTan specific code that it would take quite a bit of modification
+to get this to work on another site.
 
-I really suggest not modifying this until you fully understand what's going on. 
-There is a lot of nasty code in here because it was one of my first major Python 
+I really suggest not modifying this until you fully understand what's going on.
+There is a lot of nasty code in here because it was one of my first major Python
 projects.
 
 How it works
 ====
-source/generator.py downloads products from the Google Drive spreadsheet, parses the 
-products, and creates a csv file that can be imported in to WooCommerce. 
+source/generator.py downloads products from the Google Drive spreadsheet, parses the
+products, and creates a csv file that can be imported in to WooCommerce.
 
-The "Meridian Product Heirarchy" spreadsheet is in a custom tree-like format 
+The "Meridian Product Heirarchy" spreadsheet is in a custom tree-like format
 created specifically for this project. The spreadsheet was designed in a way
 that minmized redundancy since the product codes and names for entire categories
-were being changed regularly while they were being created. The resulting 
+were being changed regularly while they were being created. The resulting
 format is quite difficult to parse since it is a hybrid of a tree-like structure
 and a flat file database that contains all the information for generating product
 categories, and variable products / subproducts with different information
 pertaining to each different website / database in the single file. This means
-that depending on how the sheet is parsed, it can give you information about 
+that depending on how the sheet is parsed, it can give you information about
 products pertaining to MYOB, TechnoTan, VuTan etc. where the same product has
 slightly different properties in each database.
 
@@ -34,7 +34,7 @@ to analyse the spreadsheet for each database. These are as follows:
 | Class | Usage |
 | --- | --- |
 | `myo.CSVParse_MYO` | All meridian products for MYOB |
-| `woo.CSVParse_TT` | All TechnoTan products for WooCommerce | 
+| `woo.CSVParse_TT` | All TechnoTan products for WooCommerce |
 | `woo.CSVParse_VT` | All VuTan products for WooCommerce |
 
 
@@ -63,7 +63,7 @@ Other dependencies
 
 make sure you are using python2:
 
-`python -c "import sys; print sys.version"` 
+`python -c "import sys; print sys.version"`
 
 Now you can install packages
 
@@ -129,7 +129,7 @@ Testing
 ====
 to test X
 ```
-  python test/testX.py
+    python -m unittest discover tests
 ```
 
 Running
@@ -141,4 +141,3 @@ If you're syncing products:
 If you're syncing users:
 
 `python source/merger.py --help`
-

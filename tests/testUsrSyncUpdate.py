@@ -19,7 +19,7 @@ from woogenerator.matching import UsernameMatcher, MatchList #, CardMatcher, Noc
 from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
-    yamlPath = "merger_config.yaml"
+    # yamlPath = "merger_config.yaml"
     optionNamePrefix = 'test_'
 
     def __init__(self, *args, **kwargs):

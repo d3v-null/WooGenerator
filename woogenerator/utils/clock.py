@@ -41,8 +41,9 @@ class TimeUtils:
     @classmethod
     def starStrpMktime(cls, string, fmt = wpTimeFormat ):
         """ takes a time string and a format, returns number of seconds since epoch """
-        string = SanitationUtils.coerceUnicode(string)
         if(string):
+            assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+            string = SanitationUtils.coerceUnicode(string)
             try:
                 tstruct = time.strptime(string, fmt)
                 if(tstruct):
@@ -66,19 +67,16 @@ class TimeUtils:
     @classmethod
     def wpStrpMktime(cls, string):
         """ takes a wp formatted time string (eg. "2015-07-13 22:33:05"), returns number of seconds since epoch """
-        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
         return cls.starStrpMktime(string)
 
     @classmethod
     def actStrpMkdate(cls, string):
         """ takes an act formatted date string (eg. "13/07/2015"), returns number of seconds since epoch """
-        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
         return cls.starStrpMktime(string, cls.actDateFormat)
 
     @classmethod
-    def gDriveStrpTime(cls, string):
+    def gDriveStrpMkTime(cls, string):
         """ takes a gDrive formatted time string (eg. "2016-07-13 22:33:05"), returns number of seconds since epoch """
-        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
         return cls.starStrpMktime(string, cls.gDriveTimeFormat)
 
     @classmethod

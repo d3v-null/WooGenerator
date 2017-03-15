@@ -23,12 +23,12 @@ class ImportSpecialMixin(object):
 
     def init_from_to(self, data):
         if self.startTimeRawKey in data:
-            data[self.startTimeKey] = TimeUtils.gDriveStrpTime(data[self.startTimeRawKey])
+            data[self.startTimeKey] = TimeUtils.gDriveStrpMkTime(data[self.startTimeRawKey])
         else:
             data[self.startTimeKey] = BLANK_CELL
 
         if self.endTimeRawKey in data:
-            data[self.endTimeKey] = TimeUtils.gDriveStrpTime(data[self.endTimeRawKey])
+            data[self.endTimeKey] = TimeUtils.gDriveStrpMkTime(data[self.endTimeRawKey])
         else:
             data[self.endTimeKey] = BLANK_CELL
 
