@@ -85,7 +85,6 @@ class TestCSVParseSpecialV2(TestCase):
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
-        print "autoNextGroups, 2016-08-11", autoNextGroups
         self.assertEquals(autoNextGroups, [])
 
         TimeUtils.set_override_time(time.strptime("2016-08-11", TimeUtils.dateFormat))
@@ -93,7 +92,6 @@ class TestCSVParseSpecialV2(TestCase):
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
-        print "autoNextGroups, 2016-08-11", autoNextGroups
         self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('SP2016-08-12')])
 
         TimeUtils.set_override_time(time.strptime("2016-06-11", TimeUtils.dateFormat))

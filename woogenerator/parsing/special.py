@@ -1,3 +1,4 @@
+import time
 from collections import OrderedDict
 
 from woogenerator.utils import listUtils, descriptorUtils, TimeUtils, Registrar, SanitationUtils
@@ -114,7 +115,7 @@ class CSVParse_Special(CSVParse_Tree):
 
     def __init__(self, cols=None, defaults=None):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            Registrar.registerMessage(' ')
         if cols is None:
             cols = []
         if defaults is None:
@@ -149,7 +150,7 @@ class CSVParse_Special(CSVParse_Tree):
         self.registerTaxo = self.registerRuleGroup
 
     def clearTransients(self):
-        if Registrar.DEBUG_MRO:
+        if self.DEBUG_MRO:
             Registrar.registerMessage(' ')
         super(CSVParse_Special, self).clearTransients()
         self.ruleGroups = OrderedDict()
@@ -184,37 +185,67 @@ class CSVParse_Special(CSVParse_Tree):
     def auto_next(self):
         """ return the next future rule """
         all_future = self.all_future()
+        response = None
         if all_future:
             # TODO: may have to sort this
-            return all_future[0]
+            response = all_future[0]
+        if Registrar.DEBUG_SPECIAL:
+            Registrar.registerMessage("returning %s" % (response))
+        return response
 
     def all_future(self):
         """ return all future rules """
-        if self.DEBUG_SPECIAL:
-            self.registerMessage("entering all_future")
+        # if True or Registrar.DEBUG_SPECIAL:
+            # print("entering all_future")
         all_future = []
         for specialIndex, specialGroup in self.ruleGroups.items():
             if specialGroup.hasFinished:
-                if self.DEBUG_SPECIAL:
-                    self.registerMessage("specialGroup has finished: %s" % specialIndex)
                 continue
+                # if True or Registrar.DEBUG_SPECIAL:
+                #     print("specialGroup has finished: %s ended: %s, currently %s" % \
+                #           (
+                #               specialIndex,
+                #               TimeUtils.wpTimeToString(specialGroup.end_time),
+                #               TimeUtils.wpTimeToString(TimeUtils.current_tsecs())
+                #           )
+                #     )
+                # continue
+            else:
+                pass
+                # if True or Registrar.DEBUG_SPECIAL:
+                #     print("specialGroup has not finished: %s ends %s, currently %s" % \
+                #           (
+                #               specialIndex,
+                #               TimeUtils.wpTimeToString(specialGroup.end_time),
+                #               TimeUtils.wpTimeToString(TimeUtils.current_tsecs())
+                #           )
+                #     )
             all_future.append(specialGroup)
+        # if True or Registrar.DEBUG_SPECIAL:
+        #     print("returning %s" % (all_future))
+        all_future = sorted(all_future, cmp=(lambda sa, sb: cmp(sa.start_time, sb.end_time)))
         return all_future
 
     #
     def determine_current_special_groups(self, specials_mode, current_special=None):
+        TimeUtils.set_override_time(time.strptime("2016-08-12", TimeUtils.dateFormat))
         # modes: ['override', 'auto_next', 'all_future']
+        if Registrar.DEBUG_SPECIAL:
+            Registrar.registerMessage("starting")
+        response = []
         if specials_mode == 'override':
             if current_special and current_special in self.ruleGroups.keys():
-                return [self.ruleGroups[current_special]]
+                response = [self.ruleGroups[current_special]]
         elif specials_mode == 'auto_next':
             auto_next = self.auto_next()
-            if auto_next: return [auto_next]
+            if auto_next: response = [auto_next]
         elif specials_mode == 'all_future':
             all_future = self.all_future()
             if all_future:
-                return all_future
-        return []
+                response = all_future
+        if Registrar.DEBUG_SPECIAL:
+            Registrar.registerMessage("returning %s <- %s, %s" % (response, specials_mode, current_special))
+        return response
 
     @classmethod
     def getObjectID(cls, objectData):

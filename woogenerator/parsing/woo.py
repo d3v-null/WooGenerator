@@ -13,6 +13,7 @@ from woogenerator.parsing.shop import ImportShopMixin, ImportShopProductMixin, I
 from woogenerator.parsing.shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
 from woogenerator.parsing.shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
 from woogenerator.parsing.flat import CSVParse_Flat, ImportFlat
+from woogenerator.parsing.special import ImportSpecialGroup
 
 
 class WooProdList(ItemList):
@@ -61,7 +62,11 @@ class ImportWooMixin(object):
         return special in map(SanitationUtils.normalizeVal, self.specials)
 
     def has_special_fuzzy(self, special):
-        for sp in map(SanitationUtils.normalizeVal, self.specials):
+        if isinstance(special, ImportSpecialGroup):
+            special = special.ID
+        for sp in [
+            SanitationUtils.normalizeVal(special) for special in self.specials
+        ]:
             if special in sp:
                 return True
 

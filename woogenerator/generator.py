@@ -21,6 +21,7 @@ import webbrowser
 import re
 from pprint import pformat, pprint
 from exitstatus import ExitStatus
+import time
 
 from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
 from httplib2 import ServerNotFoundError
@@ -55,9 +56,9 @@ status=0
 
 # things that need global scope
 
-inFolder = "input/"
-outFolder = "output/"
-logFolder = "logs/"
+inFolder = "../input/"
+outFolder = "../output/"
+logFolder = "../logs/"
 srcFolder = MODULE_LOCATION
 
 os.chdir(MODULE_PATH)
@@ -776,19 +777,31 @@ def main():
                 Registrar.registerMessage("analysing specials")
                 client.analyseRemote(specialParser, specPath, gid=specGID)
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage(specialParser.tabulate())
+                    Registrar.registerMessage("all specials: %s" % specialParser.tabulate())
                 productParserArgs['specialRules'] = specialParser.rules
+
+                specialParser.DEBUG_SPECIAL = True
+                specialParser.DEBUG_MESSAGE = True
+
+                allFutureGroups = specialParser.all_future()
+                # print "allFutureGroups: %s" % allFutureGroups
+
+                currentSpecialGroups = specialParser.determine_current_special_groups(
+                    specials_mode=args.specials_mode,
+                    current_special=args.current_special
+                )
+                if Registrar.DEBUG_SPECIAL:
+                    Registrar.registerMessage("currentSpecialGroups: %s" % currentSpecialGroups)
+
+                # print "specialParser.DEBUG_SPECIAL: %s" % repr(specialParser.DEBUG_SPECIAL)
+                # print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
 
                 if args.do_categories:
                     # determine current specials
 
-                    currentSpecialGroups = specialParser.determine_current_special_groups(
-                        specials_mode=args.special_mode,
-                        current_special=args.current_special
-                    )
                     if currentSpecialGroups:
                         productParserArgs['currentSpecialGroups'] = currentSpecialGroups
-                        productParserArgs['add_special_categories'] = args.add_special_categories
+                        productParserArgs['add_special_categories'] = add_special_categories
 
         productParser = productParserClass(**productParserArgs)
 
@@ -1047,25 +1060,30 @@ def main():
 
         #specials
         if args.do_specials:
-            specialProducts = productParser.onspecial_products.values()
-            if specialProducts:
-                flaName, flaExt = os.path.splitext(flaPath)
-                flsPath = os.path.join(outFolder , flaName+"-"+args.current_special+flaExt)
-                specialProductList = WooProdList(specialProducts)
-                specialProductList.exportItems(
-                    flsPath,
-                    productColnames
-                )
-            specialVariations = productParser.onspecial_variations.values()
-            if specialVariations:
-                flvName, flvExt = os.path.splitext(flvPath)
-                flvsPath = os.path.join(outFolder , flvName+"-"+args.current_special+flvExt)
+            # current_special = args.current_special
+            current_special = None
+            if productParser.currentSpecialGroups:
+                current_special = productParser.currentSpecialGroups[0].ID
+            if current_special:
+                specialProducts = productParser.onspecial_products.values()
+                if specialProducts:
+                    flaName, flaExt = os.path.splitext(flaPath)
+                    flsPath = os.path.join(outFolder , flaName+"-"+current_special+flaExt)
+                    specialProductList = WooProdList(specialProducts)
+                    specialProductList.exportItems(
+                        flsPath,
+                        productColnames
+                    )
+                specialVariations = productParser.onspecial_variations.values()
+                if specialVariations:
+                    flvName, flvExt = os.path.splitext(flvPath)
+                    flvsPath = os.path.join(outFolder , flvName+"-"+current_special+flvExt)
 
-                spVariationList = WooVarList(specialVariations)
-                spVariationList.exportItems(
-                    flvsPath,
-                    variationColNames
-                )
+                    spVariationList = WooVarList(specialVariations)
+                    spVariationList.exportItems(
+                        flvsPath,
+                        variationColNames
+                    )
 
         #Updated
         updatedProducts = productParser.updated_products.values()
@@ -2041,6 +2059,7 @@ if __name__ == '__main__':
         Registrar.registerError(traceback.format_exc())
     except IOError:
         status=74
+        print "cwd: %s" % os.getcwd()
         Registrar.registerError(traceback.format_exc())
     except UserWarning:
         status=65
