@@ -44,12 +44,35 @@ class TestCSVParseSpecialV2(TestCase):
                 self.assertEqual(index, child.index)
         self.assertTrue(isSingularChild)
 
+    def test_has_happened_yet(self):
+        specialParser = CSVParse_Special(
+            **self.specialParserArgs
+        )
+
+        specialParser.analyseFile(self.specPath)
+
+        Registrar.DEBUG_SPECIAL = True
+        Registrar.DEBUG_MESSAGE = True
+
+        TimeUtils.set_override_time(time.strptime("2018-01-01", TimeUtils.dateFormat))
+
+        eofySpecial = specialParser.ruleGroups.get('EOFY2016')
+        # print "start time", eofySpecial.start_time
+        # print "override", TimeUtils.current_tsecs()
+        self.assertLess(eofySpecial.start_time, TimeUtils.current_tsecs())
+        self.assertTrue(eofySpecial.hasStarted)
+        self.assertTrue(eofySpecial.hasFinished)
+        self.assertFalse(eofySpecial.isActive)
+
     def test_determine_groups(self):
         specialParser = CSVParse_Special(
             **self.specialParserArgs
         )
 
         specialParser.analyseFile(self.specPath)
+
+        # Registrar.DEBUG_SPECIAL = True
+        # Registrar.DEBUG_MESSAGE = True
 
         overrideGroups = specialParser.determine_current_special_groups(
             'override',
@@ -62,6 +85,7 @@ class TestCSVParseSpecialV2(TestCase):
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
+        print "autoNextGroups, 2016-08-11", autoNextGroups
         self.assertEquals(autoNextGroups, [])
 
         TimeUtils.set_override_time(time.strptime("2016-08-11", TimeUtils.dateFormat))
@@ -69,6 +93,7 @@ class TestCSVParseSpecialV2(TestCase):
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
+        print "autoNextGroups, 2016-08-11", autoNextGroups
         self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('SP2016-08-12')])
 
         TimeUtils.set_override_time(time.strptime("2016-06-11", TimeUtils.dateFormat))
@@ -85,7 +110,6 @@ class TestCSVParseSpecialV2(TestCase):
         )
         self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
 
-        print overrideGroups
 
 if __name__ == '__main__':
     main()

@@ -33,7 +33,7 @@ class SyncUpdate(Registrar):
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
         self.oldMObject = oldMObject
         self.oldSObject = oldSObject
-        self.tTime = TimeUtils.wpStrptime(lastSync)
+        self.tTime = TimeUtils.wpStrpMktime(lastSync)
 
         self.newSObject = None
         self.newMObject = None
@@ -91,10 +91,10 @@ class SyncUpdate(Registrar):
             return self.slave_name if(sTime >= mTime) else self.master_name
 
     def parseMTime(self, rawMTime):
-        return TimeUtils.actServerToLocalTime(TimeUtils.actStrptime(rawMTime))
+        return TimeUtils.actServerToLocalTime(TimeUtils.actStrpMktime(rawMTime))
 
     def parseSTime(self, rawSTime):
-        return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrptime(rawSTime))
+        return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(rawSTime))
 
     # def getWinnerKey(self, key):
     #     # if self.syncWarnings and key in self.syncWarnings.keys():

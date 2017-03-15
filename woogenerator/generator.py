@@ -784,7 +784,6 @@ def main():
 
                     currentSpecialGroups = specialParser.determine_current_special_groups(
                         specials_mode=args.special_mode,
-                        specialGroups=specialParser.ruleGroups,
                         current_special=args.current_special
                     )
                     if currentSpecialGroups:

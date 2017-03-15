@@ -65,6 +65,18 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     def index(self):
         return self.ID
 
+    @property
+    def hasStarted(self):
+        return not TimeUtils.hasHappenedYet(self.start_time)
+
+    @property
+    def hasFinished(self):
+        return not TimeUtils.hasHappenedYet(self.end_time)
+
+    @property
+    def isActive(self):
+        return self.hasStarted and not self.hasFinished
+
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
     ruleCode = descriptorUtils.safeKeyProperty(ImportSpecialMixin.ruleCodeKey)
     verifyMetaKeys = [
@@ -171,13 +183,23 @@ class CSVParse_Special(CSVParse_Tree):
 
     def auto_next(self):
         """ return the next future rule """
-        # TODO: this and test case
-        pass
+        all_future = self.all_future()
+        if all_future:
+            # TODO: may have to sort this
+            return all_future[0]
 
     def all_future(self):
         """ return all future rules """
-        # TODO: this and test case
-        return []
+        if self.DEBUG_SPECIAL:
+            self.registerMessage("entering all_future")
+        all_future = []
+        for specialIndex, specialGroup in self.ruleGroups.items():
+            if specialGroup.hasFinished:
+                if self.DEBUG_SPECIAL:
+                    self.registerMessage("specialGroup has finished: %s" % specialIndex)
+                continue
+            all_future.append(specialGroup)
+        return all_future
 
     #
     def determine_current_special_groups(self, specials_mode, current_special=None):

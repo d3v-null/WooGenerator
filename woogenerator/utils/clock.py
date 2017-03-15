@@ -13,7 +13,6 @@ class TimeUtils:
     actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
     gDriveTimeFormat = "%Y-%m-%d %H:%M:%S"
 
-
     @classmethod
     def set_override_time(cls, time_struct=None):
         """ sets the override time to a local time struct or removes override """
@@ -40,7 +39,8 @@ class TimeUtils:
             return time.time()
 
     @classmethod
-    def starStrptime(cls, string, fmt = wpTimeFormat ):
+    def starStrpMktime(cls, string, fmt = wpTimeFormat ):
+        """ takes a time string and a format, returns number of seconds since epoch """
         string = SanitationUtils.coerceUnicode(string)
         if(string):
             try:
@@ -53,33 +53,47 @@ class TimeUtils:
 
     @classmethod
     def setWpSrvOffset(cls, offset):
+        """ changes the offset (secs) """
+        assert isinstance(offset, (int, float)), "param must be a number not %s"% type(offset)
         cls._wpSrvOffset = offset
 
     @classmethod
-    def actStrptime(cls, string):
-        return cls.starStrptime(string, cls.actTimeFormat)
-
-    # 2015-07-13 22:33:05
-    @classmethod
-    def wpStrptime(cls, string):
-        return cls.starStrptime(string)
+    def actStrpMktime(cls, string):
+        """ takes an act formatted time string, returns number of seconds since epoch """
+        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+        return cls.starStrpMktime(string, cls.actTimeFormat)
 
     @classmethod
-    def actStrpdate(cls, string):
-        return cls.starStrptime(string, cls.actDateFormat)
+    def wpStrpMktime(cls, string):
+        """ takes a wp formatted time string (eg. "2015-07-13 22:33:05"), returns number of seconds since epoch """
+        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+        return cls.starStrpMktime(string)
+
+    @classmethod
+    def actStrpMkdate(cls, string):
+        """ takes an act formatted date string (eg. "13/07/2015"), returns number of seconds since epoch """
+        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+        return cls.starStrpMktime(string, cls.actDateFormat)
 
     @classmethod
     def gDriveStrpTime(cls, string):
-        return cls.starStrptime(string, cls.gDriveTimeFormat)
+        """ takes a gDrive formatted time string (eg. "2016-07-13 22:33:05"), returns number of seconds since epoch """
+        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+        return cls.starStrpMktime(string, cls.gDriveTimeFormat)
 
     @classmethod
-    def wpTimeToString(t, fmt = wpTimeFormat):
-        return time.strftime(fmt, time.localtime(t))
+    def wpTimeToString(cls, secs, fmt = wpTimeFormat):
+        """ takes the nubmer of seconds since epoch and converts to wp formatted local time string """
+        secs = float(secs)
+        assert isinstance(secs, (int, float)), "param must be a number not %s"% type(secs)
+        return time.strftime(fmt, time.localtime(secs))
 
     @classmethod
-    def hasHappenedYet(cls, t):
-        assert isinstance(t, (int, float)), "param must be an int not %s"% type(t)
-        return t >= cls.current_tsecs()
+    def hasHappenedYet(cls, secs):
+        """ takes seconds since epoch, determines if has happened yet according to overrides """
+        secs = float(secs)
+        assert isinstance(secs, (int, float)), "param must be a number not %s"% type(secs)
+        return secs >= cls.current_tsecs()
 
     @classmethod
     def localToServerTime(cls, t, timezoneOffset = time.timezone):

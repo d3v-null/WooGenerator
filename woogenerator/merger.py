@@ -477,9 +477,9 @@ def main():
                     ))
                     raise e
         if sinceM:
-            filterItems['sinceM'] = TimeUtils.wpStrptime(sinceM)
+            filterItems['sinceM'] = TimeUtils.wpStrpMktime(sinceM)
         if sinceS:
-            filterItems['sinceS'] = TimeUtils.wpStrptime(sinceS)
+            filterItems['sinceS'] = TimeUtils.wpStrpMktime(sinceS)
     else:
         filterItems = None
 
@@ -1087,7 +1087,7 @@ def main():
 
             def fn_user_older_than_wp(wp_time):
                 """ returns a function that checks if the user is older than a date given in wp_time format """
-                wp_time_obj = TimeUtils.wpStrptime(wp_time)
+                wp_time_obj = TimeUtils.wpStrpMktime(wp_time)
                 assert wp_time_obj, "should be valid time struct: %s" % wp_time
                 def user_older_than(userData):
                     if fn_obj_source_is(MASTER_NAME)(userData):
