@@ -1,13 +1,17 @@
-""" Provides GUI for syncing products and customers """
 # -*- coding: utf-8 -*-
+""" Provides GUI for syncing products and customers """
 import os
+import sys
 import logging
+import traceback
+from copy import deepcopy
 # from pprint import pprint
 from pprint import pformat
 import contextlib
 from collections import namedtuple, OrderedDict
 from utils import overrides
-# import weakref
+import generator
+import merger
 
 import npyscreen
 # from npyscreen import NPSAppManaged
@@ -15,6 +19,7 @@ import npyscreen
 # from npyscreen import TitleText, TitleSelectOne, MultiLine, MultiLineEdit
 
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
+logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
 
 class WooGenerator(npyscreen.NPSAppManaged):
     """ GUI Application for WooGenerator """
@@ -48,8 +53,57 @@ class WooGenerator(npyscreen.NPSAppManaged):
             name='Confirmation'
         )
 
+    @property
+    def forms(self):
+        """ exposes the private forms dictionary """
+        return self._Forms
+
+    @property
+    def command_script(self):
+        """
+        Return the script selected by the user
+        """
+        confirm_form = self.getForm(self.__class__.CONFIRM_FORM_ID)
+        if not confirm_form:
+            return
+        cmd_out_widget = confirm_form.command_script
+        if not cmd_out_widget:
+            return
+        return cmd_out_widget.value
+    @property
+    def command_args(self):
+        """
+        Return the args specified by the user as displayed on config screen
+        """
+        confirm_form = self.getForm(self.__class__.CONFIRM_FORM_ID)
+        if not confirm_form:
+            return
+        cmd_out_widget = confirm_form.command_args
+        if not cmd_out_widget:
+            return
+        return cmd_out_widget.value
+
 class SyncSelectOne(npyscreen.SelectOne):
     """ Widget which tracks command particle info """
+    def __init__(self, *args, **kwargs):
+        command_particles = kwargs.pop('cmd_particles', [])
+        if command_particles:
+            assert len(command_particles) == len(kwargs['values'])
+        super(SyncSelectOne, self).__init__(*args, **kwargs)
+        self.command_particles = command_particles
+
+    @property
+    def active_particle(self):
+        """
+        returns that active particle of this widget given the user selection
+        """
+        logging.debug(
+            "getting active particle. value: %s "
+        )
+        answer_index = self.value[0]
+        if self.command_particles \
+        and len(self.command_particles) > answer_index:
+            return self.command_particles[answer_index]
 
 class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
     """ Form used in by WooGenerator app """
@@ -70,11 +124,15 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
 
     IGNORE_BUTTONS = []
 
+    welcomeLines = [
+    ]
+
     def __init__(self, *args, **kwargs):
         self.editw = None
         super(SyncForm, self).__init__(*args, **kwargs)
         self.command_particles = OrderedDict()
 
+    @overrides(npyscreen.ActionFormV2)
     def create_control_buttons(self):
         current_b_offset = 1
         current_r_offset = 6
@@ -123,9 +181,6 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
     def on_ok(self):
         logging.info("performing ok")
         self.parentApp.switchForm(WooGenerator.CONFIRM_FORM_ID)
-
-    welcomeLines = [
-    ]
 
     def add_single_line(self, line, **kwargs):
         """ Add a single line of text as a npyscreen.Textfield widget """
@@ -178,9 +233,6 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
             kwargs['value'] = 1
         if 'name' not in kwargs:
             kwargs['name'] = ''
-        if kwargs['command_particles']:
-            # self.command_particles[name] =
-            pass
 
         if help_str:
             self.add_paragraph(
@@ -191,7 +243,7 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
         widget_ref = self.add(
             SyncSelectOne,
             scroll_exit=True,
-            max_height=len(kwargs['values']) + 1
+            max_height=len(kwargs['values']) + 1,
             **kwargs
         )
 
@@ -213,16 +265,29 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
 
     @property
     def active_particles(self):
-        """ returns the active particles given the widget selections """
-        # TODO: Complete this
-        # for widget_id, widget in self.widgets_by_id:
-        pass
+        """
+        returns an iterator of the active particles given the widget
+        selections
+        """
+        for _, widget in self.widgets_by_id.items():
+            if isinstance(widget, SyncSelectOne):
+                logging.warning(
+                    "found compatible widget: %s, value: %s, particles:  %s",
+                    widget.name,
+                    widget.value,
+                    widget.command_particles
+                )
+                active_particle = widget.active_particle
+                if active_particle:
+                    yield widget.active_particle
 
 
 class ProductsForm(SyncForm):
     """ A form for specifying product syncing parameters """
 
-    BUTTON_META = SyncForm.BUTTON_META
+    BUTTON_META = OrderedDict(
+        SyncForm.BUTTON_META.items()
+    )
     BUTTON_META['ok_button']['text'] = 'Next'
 
     @contextlib.contextmanager
@@ -306,18 +371,27 @@ class CustomersForm(SyncForm):
 
 class ConfirmForm(SyncForm):
     """ Form for confirming sync parameters """
+    BUTTON_META = deepcopy(SyncForm.BUTTON_META)
+    BUTTON_META['ok_button']['text'] = 'Go!'
+
     def create(self):
-        self.command_out = self.add(
+        self.command_script = self.add(
             npyscreen.TitleFixedText,
-            name="Command",
-            value="cmd:"
+            name="Script",
+            value=""
+        )
+        self.command_args = self.add(
+            npyscreen.TitleFixedText,
+            name="Arguments",
+            value=""
         )
 
-    @overrides(npyscreen.Form)
-    def beforeEditing(self): # pylint: disable=invalid-name,missing-docstring
+    @overrides(npyscreen.fm_form_edit_loop.FormNewEditLoop)
+    def pre_edit_loop(self): # pylint: disable=invalid-name,missing-docstring
         welcome_form = self.parentApp.getForm('MAIN')
         if welcome_form:
-            command_particles = ['python']
+            command_particles = []
+            # command_particles.append('python')
             active_form_id = welcome_form.sync_subject.active_form_id
             active_form = self.parentApp.getForm(active_form_id)
             logging.info("active form widgets: ")
@@ -325,21 +399,25 @@ class ConfirmForm(SyncForm):
                 if hasattr(widget, "name"):
                     logging.info("name: %20s | %s", widget.name, widget)
                 else:
-                    logging.info("no name: %s", pformat(dir(widget)))
+                    logging.info("no name: %s", widget)
             if not active_form:
-                self.command_out.value = "no active form"
+                self.command_script.value = "no active form"
                 return
             elif active_form_id == 'PRODUCTS':
-                command_particles.append('source/generator.py')
+                self.command_script.value = 'generator.py'
             elif active_form_id == 'CUSTOMERS':
-                command_particles.append('source/merger.py')
+                self.command_script.value = 'merger.py'
             else:
-                self.command_out.value = "unknown active_form_id"
+                self.command_script.value = "unknown active_form_id"
                 return
             new_active_particles = active_form.active_particles
             if new_active_particles:
-                command_particles.extend(new_active_particles)
-            self.command_out.value = ' '.join(command_particles)
+                command_particles.extend(list(new_active_particles))
+            self.command_args.value = ' '.join(command_particles)
+
+    def on_ok(self):
+        logging.info("performing ok")
+        self.parentApp.setNextForm(None)
 
 class FormSwitcher(npyscreen.MultiLineAction):
     """ Widget that selects which form to go to next """
@@ -410,8 +488,8 @@ class WelcomeForm(SyncForm):
         ]
         welcomeLines = [
             ' '.join([tanLine, syncLine]) \
-                for tanLine in tanLines \
-                for syncLine in syncLines
+                for tanLine, syncLine in \
+                zip(tanLines, syncLines)
         ]
     welcomeLines += [
         "",
@@ -420,6 +498,8 @@ class WelcomeForm(SyncForm):
         "What would you like to sync?",
         ""
     ]
+
+    # logging.debug("welcomeLines: %s", welcomeLines)
 
     IGNORE_BUTTONS = ["ok_button"]
 
@@ -447,13 +527,18 @@ class WelcomeForm(SyncForm):
 
 def main():
     """ Main method for gui """
-    logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
-    logging.debug("NEW START\n\n")
     wg_app = WooGenerator()
     try:
         wg_app.run()
     except npyscreen.NotEnoughSpaceForWidget as exc:
         print "not enough space for widget, try resizing terminal.", exc
+        traceback.print_exception(*sys.exc_info())
+    print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
+    if wg_app.command_script == 'generator.py':
+        print "running generator with args: %s" % wg_app.command_args
+        generator.main(override_args=wg_app.command_args)
+
 
 if __name__ == "__main__":
+    logging.debug("\n\nEntering main!")
     main()

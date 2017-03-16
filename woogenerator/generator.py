@@ -1,42 +1,47 @@
-from __init__ import MODULE_PATH, MODULE_LOCATION
+# pylint: disable=too-many-lines
+"""
+Module for generating woocommerce csv import files from Google Drive Data
 
-# import re
+TODO:
+    reduce file length
+"""
+
 from collections import OrderedDict
 import os
 import shutil
 import sys
-import yaml
-# from PIL import Image
-# import time
-# import datetime
-import argparse
 import traceback
 import zipfile
 import io
 from bisect import insort
-from matching import MatchList
-from tabulate import tabulate
 import urlparse
 import webbrowser
 import re
 from pprint import pformat, pprint
-from exitstatus import ExitStatus
-import time
-
+# import time
+import argparse
+import yaml
+from tabulate import tabulate
 from requests.exceptions import ReadTimeout, ConnectTimeout, ConnectionError
 from httplib2 import ServerNotFoundError
+from PIL import Image
 
-# from .. import utils, metagator, coldata, sync_client, sync_client_prod, matching
-from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter # debugUtils
+from exitstatus import ExitStatus
+
+from __init__ import MODULE_PATH, MODULE_LOCATION
+
+from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter
 from utils import HtmlReporter, Registrar
 from metagator import MetaGator
 # from parsing.api import CSVParse_Woo_Api
-from coldata import ColData_Woo, ColData_MYO , ColData_Base
+from coldata import ColData_Woo, ColData_MYO, ColData_Base
 from sync_client import SyncClient_GDrive, SyncClient_Local
 from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
+from matching import MatchList
 from matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo, SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo #SyncUpdate_Prod, ,
-from parsing.shop import ShopObjList # ShopProdList,
+from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo
+from SyncUpdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
+from parsing.shop import ShopObjList  # ShopProdList,
 from parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from parsing.woo import WooCatList, WooProdList, WooVarList
 from parsing.api import CSVParse_Woo_Api
@@ -44,42 +49,17 @@ from parsing.myo import CSVParse_MYO, MYOProdList
 from parsing.dyn import CSVParse_Dyn
 from parsing.special import CSVParse_Special
 
-# testMode = False
-# testMode = True
 
-# program exit status
-status=0
+def check_warnings():
+    """
+    Check if there have been any errors or warnings registered in Registrar.
 
-### DEFAULT CONFIG ###
-
-# paths are relative to source file
-
-# things that need global scope
-
-inFolder = "../input/"
-outFolder = "../output/"
-logFolder = "../logs/"
-srcFolder = MODULE_LOCATION
-
-os.chdir(MODULE_PATH)
-
-yamlPath = "generator_config.yaml"
-
-importName = TimeUtils.getMsTimeStamp()
-repPath = ''
-mFailPath = os.path.join(outFolder, "gdrive_fails.csv")
-sFailPath = os.path.join(outFolder, "wp_fails.csv" )
-logPath = os.path.join(logFolder, "log_%s.txt" % importName)
-zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
-
-thumbsize = 1920, 1200
-
-
-def checkWarnings():
+    Raise approprriate exceptions if needed
+    """
     if Registrar.errors:
-        print "there were some urgent errors that need to be reviewed before continuing"
+        print("there were some urgent errors "
+              "that need to be reviewed before continuing")
         Registrar.print_message_dict(0)
-        status = 65
         status = ExitStatus.failure
         print "\nexiting with status %s\n" % status
         sys.exit(status)
@@ -87,328 +67,276 @@ def checkWarnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-def main():
 
-    global inFolder, outFolder, logFolder, srcFolder, \
-        yamlPath, repPath, status
-
-    ### Process YAML file for defaults ###
-
-    config = {}
-
-    with open(yamlPath) as stream:
-        config = yaml.load(stream)
-        #overrides
-        if 'inFolder' in config.keys():
-            inFolder = config['inFolder']
-        if 'outFolder' in config.keys():
-            outFolder = config['outFolder']
-        if 'logFolder' in config.keys():
-            logFolder = config['logFolder']
-
-        #mandatory
-        merge_mode = config.get('merge_mode', 'sync')
-        MASTER_NAME = config.get('master_name', 'MASTER')
-        SLAVE_NAME = config.get('slave_name', 'SLAVE')
-        DEFAULT_LAST_SYNC = config.get('default_last_sync')
-        webFolder = config.get('webFolder')
-        webAddress = config.get('webAddress')
-        webBrowser = config.get('webBrowser')
-        myo_schemas = config.get('myo_schemas')
-        woo_schemas = config.get('woo_schemas')
-        taxoDepth = config.get('taxoDepth')
-        itemDepth = config.get('itemDepth')
-
-        #optional
-        # imgRawFolder = config.get('imgRawFolder')
-        imgCmpFolder = config.get('imgCmpFolder')
-        # fallback_schema = config.get('fallback_schema')
-        # fallback_variant = config.get('fallback_variant')
-
-        # ssh_user = config.get('ssh_user')
-        # ssh_pass = config.get('ssh_pass')
-        # ssh_host = config.get('ssh_host')
-        # ssh_port = config.get('ssh_port', 22)
-        # remote_bind_host = config.get('remote_bind_host', '127.0.0.1')
-        # remote_bind_port = config.get('remote_bind_port', 3306)
-        # db_user = config.get('db_user')
-        # db_pass = config.get('db_pass')
-        # db_name = config.get('db_name')
-        # tbl_prefix = config.get('tbl_prefix', '')
-
-        gdrive_scopes = config.get('gdrive_scopes')
-        gdrive_client_secret_file = config.get('gdrive_client_secret_file')
-        gdrive_app_name = config.get('gdrive_app_name')
-        gdrive_oauth_clientID = config.get('gdrive_oauth_clientID')
-        gdrive_oauth_clientSecret = config.get('gdrive_oauth_clientSecret')
-        gdrive_credentials_dir = config.get('gdrive_credentials_dir')
-        gdrive_credentials_file = config.get('gdrive_credentials_file')
-        genFID = config.get('genFID')
-        genGID = config.get('genGID')
-        dprcGID = config.get('dprcGID')
-        dprpGID = config.get('dprpGID')
-        specGID = config.get('specGID')
-        # usGID = config.get('usGID')
-        # xsGID = config.get('xsGID')
-
-        # skip_google_download = config.get('skip_google_download')
-        # show_report = config.get('show_report')
-        # print_report = config.get('show_report')
-        # report_and_quit = config.get('report_and_quit')
-        # do_images = config.get('do_images')
-        # do_specials = config.get('do_specials')
-        # do_dyns = config.get('do_dyns')
-        # do_sync = config.get('do_sync')
-        # do_categories = config.get('do_categories')
-        # do_variations = config.get('do_variations')
-        # do_delete_images = config.get('do_delete_images')
-        # do_resize_images = config.get('do_resize_images')
-        # do_remeta_images = config.get('do_remeta_images')
-
-        # current_special = config.get('current_special')
-        # add_special_categories = config.get('add_special_categories')
-        # download_master = config.get('download_master')
-        # download_slave = config.get('download_slave')
-        # update_slave = config.get('update_slave')
-        # do_problematic = config.get('do_problematic')
-        # auto_create_new = config.get('auto_create_new')
-
-        # slave_timeout = config.get('slave_timeout')
-        # slave_limit = config.get('slave_limit')
-        # slave_offset = config.get('slave_offset')
-
-    #mandatory params
-    assert all([inFolder, outFolder, logFolder, woo_schemas, myo_schemas, taxoDepth, itemDepth])
-
-    genPath = os.path.join(inFolder, 'generator.csv')
-    dprcPath= os.path.join(inFolder, 'DPRC.csv')
-    dprpPath= os.path.join(inFolder, 'DPRP.csv')
-    specPath= os.path.join(inFolder, 'specials.csv')
-    # usPath  = os.path.join(inFolder, 'US.csv')
-    # xsPath  = os.path.join(inFolder, 'XS.csv')
-
-    # sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
-
-    ### GET SHELL ARGS ###
-
-    parser = argparse.ArgumentParser(description = 'Generate Import files from Google Drive')
+def make_parser(config):  # pylint: disable=too-many-statements
+    """ creates the argument parser, using defaults from config """
+    parser = argparse.ArgumentParser(
+        description='Generate Import files from Google Drive')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-v", "--verbosity", action="count",
-                        help="increase output verbosity")
+    group.add_argument(
+        "-v", "--verbosity", action="count", help="increase output verbosity")
     group.add_argument("-q", "--quiet", action="store_true")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--testmode',
+    group.add_argument(
+        '--testmode',
         help='Run in test mode with test servers',
         action='store_true',
         default=False)
-    group.add_argument('--livemode',
+    group.add_argument(
+        '--livemode',
         help='Run the script on the live databases',
         action='store_false',
         dest='testmode')
 
     download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-master',
+    group.add_argument(
+        '--download-master',
         help='download the master data from google',
         action="store_true",
         default=config.get('download_master'))
-    group.add_argument('--skip-download-master',
-        help='use the local master file instead of downloading the master data',
+    group.add_argument(
+        '--skip-download-master',
+        help=('use the local master file'
+              'instead of downloading the master data'),
         action="store_false",
         dest='download_master')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-slave',
+    group.add_argument(
+        '--download-slave',
         help='download the slave data',
         action="store_true",
         default=config.get('download_slave'))
-    group.add_argument('--skip-download-slave',
+    group.add_argument(
+        '--skip-download-slave',
         help='use the local slave file instead of downloading the slave data',
         action="store_false",
         dest='download_slave')
-    download_group.add_argument('--download-limit',
+    download_group.add_argument(
+        '--download-limit',
         help='global limit of objects to download (for debugging)',
         type=int)
-    parser.add_argument('--schema',
+    parser.add_argument(
+        '--schema',
         help='what schema to process the files as',
         default=config.get('fallback_schema'))
-    parser.add_argument('--variant',
+    parser.add_argument(
+        '--variant',
         help='what variant of schema to process the files',
         default=config.get('fallback_variant'))
-    # parser.add_argument('--taxo-depth',
-    #     help='what depth of taxonomy columns is used in the generator file',
-    #     default=taxoDepth)
-    # parser.add_argument('--item-depth',
-    #     help='what depth of item columns is used in the generator file',
-    #     default=itemDepth)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--update-slave',
+    group.add_argument(
+        '--update-slave',
         help='update the slave database in WooCommerce',
         action="store_true",
         default=config.get('update_slave'))
-    group.add_argument('--skip-update-slave',
+    group.add_argument(
+        '--skip-update-slave',
         help='don\'t update the slave database',
-        action="store_false", dest='update_slave')
+        action="store_false",
+        dest='update_slave')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic',
+    group.add_argument(
+        '--do-problematic',
         help='perform problematic updates anyway',
         action="store_true",
         default=config.get('do_problematic'))
-    group.add_argument('--skip-problematic',
+    group.add_argument(
+        '--skip-problematic',
         help='protect data from problematic updates',
         action="store_false",
         dest='do_problematic')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--auto-create-new',
+    group.add_argument(
+        '--auto-create-new',
         help='automatically create new products if they don\'t exist yet',
         action="store_true",
         default=config.get('auto_create_new'))
-    update_group.add_argument('--no-create-new',
+    update_group.add_argument(
+        '--no-create-new',
         help='do not create new items, print which need to be created',
         action="store_false",
         dest="auto_create_new")
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--auto-delete-old',
+    group.add_argument(
+        '--auto-delete-old',
         help='automatically delete old products if they don\'t exist any more',
         action="store_true",
         default=config.get('auto_delete_old'))
-    group.add_argument('--no-delete-old',
+    group.add_argument(
+        '--no-delete-old',
         help='do not delete old items, print which need to be deleted',
         action="store_false",
         dest="auto_create_new")
-    update_group.add_argument('--slave-timeout',
+    update_group.add_argument(
+        '--slave-timeout',
         help='timeout when using the slave api',
         default=config.get('slave_timeout'))
-    update_group.add_argument('--slave-limit',
+    update_group.add_argument(
+        '--slave-limit',
         help='limit per page when using the slave api',
         default=config.get('slave_limit'))
-    update_group.add_argument('--slave-offset',
+    update_group.add_argument(
+        '--slave-offset',
         help='offset when using the slave api (for debugging)',
         default=config.get('slave_offset'))
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--ask-before-update', help="ask before updating",
-                       action="store_true", default=True)
-    group.add_argument('--force-update', help="don't ask before updating",
-                       action="store_false", dest="ask_before_update")
+    group.add_argument(
+        '--ask-before-update',
+        help="ask before updating",
+        action="store_true",
+        default=True)
+    group.add_argument(
+        '--force-update',
+        help="don't ask before updating",
+        action="store_false",
+        dest="ask_before_update")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-sync',
+    group.add_argument(
+        '--do-sync',
         help='sync the databases',
         action="store_true",
         default=config.get('do_sync'))
-    group.add_argument('--skip-sync',
+    group.add_argument(
+        '--skip-sync',
         help='don\'t sync the databases',
         action="store_false",
         dest='do_sync')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-categories',
+    group.add_argument(
+        '--do-categories',
         help='sync categories',
         action="store_true",
         default=config.get('do_categories'))
-    group.add_argument('--skip-categories',
+    group.add_argument(
+        '--skip-categories',
         help='don\'t sync categories',
         action="store_false",
         dest='do_categories')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-variations',
+    group.add_argument(
+        '--do-variations',
         help='sync variations',
         action="store_true",
         default=config.get('do_variations'))
-    group.add_argument('--skip-variations',
+    group.add_argument(
+        '--skip-variations',
         help='don\'t sync variations',
         action="store_false",
         dest='do_variations')
 
     report_group = parser.add_argument_group('Report options')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--show-report',
+    group.add_argument(
+        '--show-report',
         help='generate report files',
-        action="store_true", default=config.get('show_report'))
-    group.add_argument('--skip-report',
+        action="store_true",
+        default=config.get('show_report'))
+    group.add_argument(
+        '--skip-report',
         help='don\'t generate report files',
         action="store_false",
         dest='show_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--print-report',
+    group.add_argument(
+        '--print-report',
         help='pirnt report in terminal',
         action="store_true",
         default=config.get('show_report'))
-    group.add_argument('--skip-print-report',
+    group.add_argument(
+        '--skip-print-report',
         help='don\'t print report in terminal',
         action="store_false",
         dest='print_report')
     group = report_group.add_mutually_exclusive_group()
-    group.add_argument('--report-and-quit',
+    group.add_argument(
+        '--report-and-quit',
         help='quit after generating report',
         action="store_true",
         default=config.get('report_and_quit'))
 
     images_group = parser.add_argument_group('Image options')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-images',
+    group.add_argument(
+        '--do-images',
         help='process images',
         action="store_true",
         default=config.get('do_images'))
-    group.add_argument('--skip-images',
+    group.add_argument(
+        '--skip-images',
         help='don\'t process images',
         action="store_false",
         dest='do_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-delete-images',
+    group.add_argument(
+        '--do-delete-images',
         help='delete extra images in compressed folder',
         action="store_true",
         default=config.get('do_delete_images'))
-    group.add_argument('--skip-delete-images',
+    group.add_argument(
+        '--skip-delete-images',
         help='protect images from deletion',
         action="store_false",
         dest='do_delete_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-resize-images',
+    group.add_argument(
+        '--do-resize-images',
         help='resize images in compressed folder',
         action="store_true",
         default=config.get('do_resize_images'))
-    group.add_argument('--skip-resize-images',
+    group.add_argument(
+        '--skip-resize-images',
         help='protect images from resizing',
         action="store_false",
         dest='do_resize_images')
     group = images_group.add_mutually_exclusive_group()
-    group.add_argument('--do-remeta-images',
+    group.add_argument(
+        '--do-remeta-images',
         help='remeta images in compressed folder',
         action="store_true",
         default=config.get('do_remeta_images'))
-    group.add_argument('--skip-remeta-images',
+    group.add_argument(
+        '--skip-remeta-images',
         help='protect images from resizing',
         action="store_false",
         dest='do_remeta_images')
-    images_group.add_argument('--img-raw-folder',
+    images_group.add_argument(
+        '--img-raw-folder',
         help='location of raw images',
         default=config.get('imgRawFolder'))
-    images_group.add_argument('--img-raw-extra-folder',
+    images_group.add_argument(
+        '--img-raw-extra-folder',
         help='location of additional raw images',
         default=config.get('imgRawExtraFolder'))
-    images_group.add_argument('--require-images',
+    images_group.add_argument(
+        '--require-images',
         help='require that all items have images',
         default=True)
 
     specials_group = parser.add_argument_group('Specials options')
     group = specials_group.add_mutually_exclusive_group()
-    group.add_argument('--do-specials',
+    group.add_argument(
+        '--do-specials',
         help='process specials',
         action="store_true",
         default=config.get('do_specials'))
-    group.add_argument('--skip-specials',
+    group.add_argument(
+        '--skip-specials',
         help='don\'t process specials',
         action="store_false",
         dest='do_specials')
-    specials_group.add_argument('--specials-mode',
+    specials_group.add_argument(
+        '--specials-mode',
         help='Select which mode to process the specials in',
         choices=['override', 'auto_next', 'all_future'],
-        default='override'
-    )
-    specials_group.add_argument('--current-special',
+        default='override')
+    specials_group.add_argument(
+        '--current-special',
         help='prefix of current special code',
         default=config.get('current_special', 'SP'))
     # specials_group.add_argument('--add-special-categories',
@@ -417,37 +345,132 @@ def main():
     #     default=config.get('add_special_categories'))
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-dyns',
+    group.add_argument(
+        '--do-dyns',
         help='process dynamic pricing rules',
         action="store_true",
         default=config.get('do_dyns'))
-    group.add_argument('--skip-dyns',
+    group.add_argument(
+        '--skip-dyns',
         help='don\'t process dynamic pricing rules',
         action="store_false",
         dest='do_dyns')
 
     debug_group = parser.add_argument_group('Debug options')
-    debug_group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
-    debug_group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
-    debug_group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
-    debug_group.add_argument('--debug-client', action='store_true', dest='debug_client')
-    debug_group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
-    debug_group.add_argument('--debug-gen', action='store_true', dest='debug_gen')
-    debug_group.add_argument('--debug-myo', action='store_true', dest='debug_myo')
-    debug_group.add_argument('--debug-tree', action='store_true', dest='debug_tree')
-    debug_group.add_argument('--debug-woo', action='store_true', dest='debug_woo')
-    debug_group.add_argument('--debug-name', action='store_true', dest='debug_name')
-    debug_group.add_argument('--debug-img', action='store_true', dest='debug_img')
-    debug_group.add_argument('--debug-api', action='store_true', dest='debug_api')
-    debug_group.add_argument('--debug-shop', action='store_true', dest='debug_shop')
-    debug_group.add_argument('--debug-update', action='store_true', dest='debug_update')
-    debug_group.add_argument('--debug-mro', action='store_true', dest='debug_mro')
-    debug_group.add_argument('--debug-gdrive', action='store_true', dest='debug_gdrive')
-    debug_group.add_argument('--debug-special', action='store_true', dest='debug_special')
-    debug_group.add_argument('--debug-cats', action='store_true', dest='debug_cats')
-    debug_group.add_argument('--debug-vars', action='store_true', dest='debug_vars')
+    debug_group.add_argument(
+        '--debug-abstract', action='store_true', dest='debug_abstract')
+    debug_group.add_argument(
+        '--debug-parser', action='store_true', dest='debug_parser')
+    debug_group.add_argument(
+        '--debug-flat', action='store_true', dest='debug_flat')
+    debug_group.add_argument(
+        '--debug-client', action='store_true', dest='debug_client')
+    debug_group.add_argument(
+        '--debug-utils', action='store_true', dest='debug_utils')
+    debug_group.add_argument(
+        '--debug-gen', action='store_true', dest='debug_gen')
+    debug_group.add_argument(
+        '--debug-myo', action='store_true', dest='debug_myo')
+    debug_group.add_argument(
+        '--debug-tree', action='store_true', dest='debug_tree')
+    debug_group.add_argument(
+        '--debug-woo', action='store_true', dest='debug_woo')
+    debug_group.add_argument(
+        '--debug-name', action='store_true', dest='debug_name')
+    debug_group.add_argument(
+        '--debug-img', action='store_true', dest='debug_img')
+    debug_group.add_argument(
+        '--debug-api', action='store_true', dest='debug_api')
+    debug_group.add_argument(
+        '--debug-shop', action='store_true', dest='debug_shop')
+    debug_group.add_argument(
+        '--debug-update', action='store_true', dest='debug_update')
+    debug_group.add_argument(
+        '--debug-mro', action='store_true', dest='debug_mro')
+    debug_group.add_argument(
+        '--debug-gdrive', action='store_true', dest='debug_gdrive')
+    debug_group.add_argument(
+        '--debug-special', action='store_true', dest='debug_special')
+    debug_group.add_argument(
+        '--debug-cats', action='store_true', dest='debug_cats')
+    debug_group.add_argument(
+        '--debug-vars', action='store_true', dest='debug_vars')
 
-    args = parser.parse_args()
+    return parser
+
+
+def main(override_args=None, settings=None):  # pylint: disable=too-many-statements
+    """ The main function for generator """
+    if not settings:
+        settings = argparse.Namespace()
+    if not hasattr(settings, 'yaml_path'):
+        settings.yaml_path = "generator_config.yaml"
+
+    # Process YAML file for defaults
+
+    config = {}
+
+    with open(settings.yaml_path) as stream:
+        config = yaml.load(stream)
+
+        # overrides
+        if 'inFolder' in config.keys():
+            settings.in_folder = config['inFolder']
+        if 'outFolder' in config.keys():
+            settings.out_folder = config['outFolder']
+        if 'logFolder' in config.keys():
+            settings.log_folder = config['logFolder']
+
+        # mandatory
+        settings.merge_mode = config.get('merge_mode', 'sync')
+        settings.master_name = config.get('master_name', 'MASTER')
+        settings.slave_name = config.get('slave_name', 'SLAVE')
+        settings.default_last_sync = config.get('default_last_sync')
+        settings.web_folder = config.get('webFolder')
+        settings.web_address = config.get('webAddress')
+        settings.web_browser = config.get('webBrowser')
+        settings.myo_schemas = config.get('myo_schemas')
+        settings.woo_schemas = config.get('woo_schemas')
+        settings.taxo_depth = config.get('taxoDepth')
+        settings.item_depth = config.get('itemDepth')
+
+        settings.img_cmp_folder = config.get('imgCmpFolder')
+
+        settings.gdrive_scopes = config.get('gdrive_scopes')
+        settings.gdrive_client_secret_file = config.get(
+            'gdrive_client_secret_file')
+        settings.gdrive_app_name = config.get('gdrive_app_name')
+        settings.gdrive_oauth_client_id = config.get('gdrive_oauth_clientID')
+        settings.gdrive_oauth_client_secret = config.get(
+            'gdrive_oauth_clientSecret')
+        settings.gdrive_credentials_dir = config.get('gdrive_credentials_dir')
+        settings.gdrive_credentials_file = config.get(
+            'gdrive_credentials_file')
+        settings.gen_fid = config.get('genFID')
+        settings.gen_gid = config.get('genGID')
+        settings.dprc_gid = config.get('dprcGID')
+        settings.dprp_gid = config.get('dprpGID')
+        settings.spec_gid = config.get('specGID')
+
+    assert all([
+        settings.in_folder, settings.out_folder, settings.log_folder,
+        settings.woo_schemas, settings.myo_schemas, settings.taxo_depth,
+        settings.item_depth
+    ])
+
+    settings.gen_path = os.path.join(settings.in_folder, 'generator.csv')
+    settings.dprc_path = os.path.join(settings.in_folder, 'DPRC.csv')
+    settings.dprp_path = os.path.join(settings.in_folder, 'DPRP.csv')
+    settings.spec_path = os.path.join(settings.in_folder, 'specials.csv')
+
+    ### GET SHELL ARGS ###
+
+    parser = make_parser(config)
+
+    parser_override = []
+    if override_args:
+        parser_override = override_args.split(' ')
+    args = parser.parse_args(*parser_override)
     if args:
         if args.verbosity > 0:
             Registrar.DEBUG_PROGRESS = True
@@ -459,66 +482,22 @@ def main():
             Registrar.DEBUG_PROGRESS = False
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
-        # if args.testmode is not None:
-        #     testMode = args.testmode
-        # if args.download_master is not None:
-        #     download_master = args.download_master
-        # if args.download_slave is not None:
-        #     download_slave = args.download_slave
-        # slave_timeout = args.slave_timeout
-        # slave_limit = args.slave_limit
-        # slave_offset = args.slave_offset
-
-        # if args.update_slave is not None:
-        #     update_slave = args.update_slave
-        # if args.current_special:
-        #     current_special = args.current_special
-        # if args.add_special_categories:
-        #     add_special_categories = args.add_special_categories
-        # if args.taxo_depth:
-        #     taxoDepth = args.taxo_depth
-        # if args.item_depth:
-        #     itemDepth = args.item_depth
-        # if args.do_images is not None:
-        #     do_images = args.do_images
-        # if args.do_specials is not None:
-        #     do_specials = args.do_specials
-        # if args.do_dyns is not None:
-        #     do_dyns = args.do_dyns
 
         do_sync = args.do_sync and args.download_slave
         add_special_categories = args.do_specials and args.do_categories and args.current_special
-        # if args.show_report is not None:
-            # show_report = args.show_report
-        # if args.print_report is not None:
-        #     print_report = args.print_report
-        # if args.report_and_quit is not None:
-        #     report_and_quit = args.report_and_quit
-        # global_limit = args.download_limit
-
-        # schema = args.schema
-        # variant = args.variant
-        # do_images = args.do_images
-        # do_delete_images = args.do_delete_images
-        # do_resize_images = args.do_resize_images
-        # do_resize_images = args.do_resize_images
-        # do_categories = args.do_categories
-        # do_variations = args.do_variations
-        # do_problematic = args.do_problematic
-        # imgRawFolder = args.img_raw_folder
 
         if args.auto_create_new:
-            e = UserWarning("auto-create not fully implemented yet")
-            Registrar.registerWarning(e)
+            exc = UserWarning("auto-create not fully implemented yet")
+            Registrar.registerWarning(exc)
         if args.auto_delete_old:
             raise UserWarning("auto-delete not implemented yet")
 
         if args.do_images and os.name == 'nt':
             raise UserWarning("Images not implemented on all platforms yet")
 
-        imgRawFolders = [args.img_raw_folder]
+        settings.img_raw_folders = [args.img_raw_folder]
         if args.img_raw_extra_folder is not None:
-            imgRawFolders.append(args.img_raw_extra_folder)
+            settings.img_raw_folders.append(args.img_raw_extra_folder)
 
         if args.debug_abstract is not None:
             Registrar.DEBUG_ABSTRACT = args.debug_abstract
@@ -555,53 +534,57 @@ def main():
         if args.debug_vars is not None:
             Registrar.DEBUG_VARS = args.debug_vars
 
-    #process YAML file after determining mode
+    # process YAML file after determining mode
 
-    with open(yamlPath) as stream:
-        optionNamePrefix = 'test_' if args.testmode else ''
+    with open(settings.yaml_path) as stream:
+        option_name_prefix = 'test_' if args.testmode else ''
         config = yaml.load(stream)
-        wc_api_key = config.get(optionNamePrefix+'wc_api_key')
-        wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
-        wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-        store_url = config.get(optionNamePrefix+'store_url', '')
+        settings.wc_api_key = config.get(option_name_prefix + 'wc_api_key')
+        settings.wc_api_secret = config.get(option_name_prefix +
+                                            'wc_api_secret')
+        settings.wp_srv_offset = config.get(
+            option_name_prefix + 'wp_srv_offset', 0)
+        store_url = config.get(option_name_prefix + 'store_url', '')
 
-    ### PROCESS CONFIG ###
+    # PROCESS CONFIG
 
-    TimeUtils.setWpSrvOffset(wp_srv_offset)
-    SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+    TimeUtils.setWpSrvOffset(settings.wp_srv_offset)
+    SyncUpdate.setGlobals(settings.master_name, settings.slave_name,
+                          settings.merge_mode, settings.default_last_sync)
 
     if args.variant == "ACC":
-        genPath = os.path.join(inFolder, 'generator-solution.csv')
+        settings.gen_path = os.path.join(settings.in_folder,
+                                         'generator-solution.csv')
 
     if args.variant == "SOL":
-        genPath = os.path.join(inFolder, 'generator-accessories.csv')
+        settings.gen_path = os.path.join(settings.in_folder,
+                                         'generator-accessories.csv')
 
     suffix = args.schema
     if args.variant:
         suffix += "-" + args.variant
 
-    flaPath = os.path.join(outFolder , "flattened-"+suffix+".csv")
-    flvPath = os.path.join(outFolder , "flattened-variations-"+suffix+".csv")
-    catPath = os.path.join(outFolder , "categories-"+suffix+".csv")
-    myoPath = os.path.join(outFolder , "myob-"+suffix+".csv")
-    # bunPath = os.path.join(outFolder , "bundles-"+suffix+".csv")
-    repName = "prod_sync_report%s.html" % suffix
-    repPath = os.path.join(outFolder, repName)
-    repWebPath = os.path.join(webFolder, repName)
-    repWebLink = urlparse.urljoin(webAddress, repName)
+    settings.fla_path = os.path.join(settings.out_folder,
+                                     "flattened-" + suffix + ".csv")
+    settings.flv_path = os.path.join(settings.out_folder,
+                                     "flattened-variations-" + suffix + ".csv")
+    settings.cat_path = os.path.join(settings.out_folder,
+                                     "categories-" + suffix + ".csv")
+    settings.myo_path = os.path.join(settings.out_folder,
+                                     "myob-" + suffix + ".csv")
+    # bunPath = os.path.join(settings.out_folder , "bundles-"+suffix+".csv")
+    settings.rep_name = "prod_sync_report%s.html" % suffix
+    settings.rep_path = os.path.join(settings.out_folder, settings.rep_name)
+    settings.rep_web_path = os.path.join(settings.web_folder,
+                                         settings.rep_name)
+    settings.rep_web_link = urlparse.urljoin(settings.web_address,
+                                             settings.rep_name)
 
-    # masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % suffix)
-    # masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % suffix)
-    slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % suffix)
+    settings.slave_delta_csv_path = os.path.join(
+        settings.out_folder, "delta_report_wp%s.csv" % suffix)
 
-    # xmlPath = os.path.join(outFolder , "items-"+suffix+".xml")
-    # objPath = os.path.join(webFolder, "objects-"+suffix+".xml")
-    # spoPath = os.path.join(outFolder , "specials-"+suffix+".html")
-    # wpaiFolder = os.path.join(webFolder, "images-"+args.schema)
-    # refFolder = wpaiFolder
-    imgDst = os.path.join(imgCmpFolder, "images-"+args.schema)
-
-    # maxDepth = taxoDepth + itemDepth
+    settings.img_dst = os.path.join(settings.img_cmp_folder,
+                                    "images-" + args.schema)
 
     if args.do_specials:
         if args.current_special:
@@ -613,289 +596,229 @@ def main():
     CSVParse_Woo.do_dyns = args.do_dyns
     CSVParse_Woo.do_specials = args.do_specials
 
-    #
-    # gDriveFsParams = {
-    #     'csvPaths': {
-    #         'gen': genPath,
-    #         'dprc': dprcPath,
-    #         'dprp': dprpPath,
-    #         'spec': specPath,
-    #         'us': usPath,
-    #         'xs': xsPath,
-    #     }
-    # }
-
     exclude_cols = []
 
     if not args.do_images:
-        exclude_cols.extend([
-            'Images',
-            'imgsum'
-        ])
+        exclude_cols.extend(['Images', 'imgsum'])
 
     if not args.do_categories:
-        exclude_cols.extend([
-            'catsum',
-            'catlist'
-        ])
+        exclude_cols.extend(['catsum', 'catlist'])
 
     if not args.do_dyns:
         exclude_cols.extend([
-            'DYNCAT',
-            'DYNPROD',
-            'spsum',
-            'dprclist',
-            'dprplist',
-            'dprcIDlist',
-            'dprpIDlist',
-            'dprcsum',
-            'dprpsum',
-            'pricing_rules'
+            'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
+            'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
         ])
 
     if not args.do_specials:
         exclude_cols.extend([
-            'SCHEDULE',
-            'sale_price',
-            'sale_price_dates_from',
-            'sale_price_dates_to',
-            'RNS',
-            'RNF',
-            'RNT',
-            'RPS',
-            'RPF',
-            'RPT',
-            'WNS',
-            'WNF',
-            'WNT',
-            'WPS',
-            'WPF',
-            'WPT',
-            'DNS',
-            'DNF',
-            'DNT',
-            'DPS',
-            'DPF',
-            'DPT'
+            'SCHEDULE', 'sale_price', 'sale_price_dates_from',
+            'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
+            'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
+            'DPS', 'DPF', 'DPT'
         ])
-
 
     ########################################
     # Create Product Parser object
     ########################################
 
-    gDriveParams = {
-        'scopes': gdrive_scopes,
-        'client_secret_file': gdrive_client_secret_file,
-        'app_name': gdrive_app_name,
-        'oauth_clientID': gdrive_oauth_clientID,
-        'oauth_clientSecret': gdrive_oauth_clientSecret,
-        'credentials_dir': gdrive_credentials_dir,
-        'credentials_file': gdrive_credentials_file,
-        'genFID': genFID,
+    settings.g_drive_params = {
+        'scopes': settings.gdrive_scopes,
+        'client_secret_file': settings.gdrive_client_secret_file,
+        'app_name': settings.gdrive_app_name,
+        'oauth_clientID': settings.gdrive_oauth_client_id,
+        'oauth_clientSecret': settings.gdrive_oauth_client_secret,
+        'credentials_dir': settings.gdrive_credentials_dir,
+        'credentials_file': settings.gdrive_credentials_file,
+        'genFID': settings.gen_fid,
     }
 
     if not args.download_master:
-        gDriveParams['skip_download'] = True
+        settings.g_drive_params['skip_download'] = True
 
-    wcApiParams = {
-        'api_key':wc_api_key,
-        'api_secret':wc_api_secret,
-        'url':store_url,
-        'timeout':args.slave_timeout,
-        'offset':args.slave_offset,
-        'limit':args.slave_limit
+    settings.wc_api_params = {
+        'api_key': settings.wc_api_key,
+        'api_secret': settings.wc_api_secret,
+        'url': store_url,
+        'timeout': args.slave_timeout,
+        'offset': args.slave_offset,
+        'limit': args.slave_limit
     }
 
-    apiProductParserArgs = {
-        'importName': importName,
-        'itemDepth': itemDepth,
-        'taxoDepth': taxoDepth,
+    settings.api_product_parser_args = {
+        'importName': settings.import_name,
+        'itemDepth': settings.item_depth,
+        'taxoDepth': settings.taxo_depth,
         'cols': ColData_Woo.getImportCols(),
         'defaults': ColData_Woo.getDefaults(),
     }
 
-    productParserArgs = {
-        'importName': importName,
-        'itemDepth': itemDepth,
-        'taxoDepth': taxoDepth,
+    settings.product_parser_args = {
+        'importName': settings.import_name,
+        'itemDepth': settings.item_depth,
+        'taxoDepth': settings.taxo_depth,
     }
 
-    for thing in ['gDriveParams', 'wcApiParams', 'apiProductParserArgs', 'productParserArgs']:
-        Registrar.registerMessage( "%s: %s" % (thing, eval(thing)))
+    for thing in [
+            'g_drive_params', 'wc_api_params', 'api_product_parser_args',
+            'product_parser_args'
+    ]:
+        Registrar.registerMessage("%s: %s" % (thing, getattr(settings, thing)))
 
-    if args.schema in myo_schemas:
-        colDataClass = ColData_MYO
-    elif args.schema in woo_schemas:
-        colDataClass = ColData_Woo
+    if args.schema in settings.myo_schemas:
+        col_data_class = ColData_MYO
+    elif args.schema in settings.woo_schemas:
+        col_data_class = ColData_Woo
     else:
-        colDataClass = ColData_Base
-    productParserArgs.update(**{
-        'cols': colDataClass.getImportCols(),
-        'defaults': colDataClass.getDefaults(),
+        col_data_class = ColData_Base
+    settings.product_parser_args.update(**{
+        'cols':
+        col_data_class.getImportCols(),
+        'defaults':
+        col_data_class.getDefaults(),
     })
-    if args.schema in myo_schemas:
-        productParserClass = CSVParse_MYO
-    elif args.schema in woo_schemas:
+    if args.schema in settings.myo_schemas:
+        product_parser_class = CSVParse_MYO
+    elif args.schema in settings.woo_schemas:
         if args.schema == "TT":
-            productParserClass = CSVParse_TT
+            product_parser_class = CSVParse_TT
         elif args.schema == "VT":
-            productParserClass = CSVParse_VT
+            product_parser_class = CSVParse_VT
         else:
-            productParserArgs['schema'] = args.schema
-            productParserClass = CSVParse_Woo
+            settings.product_parser_args['schema'] = args.schema
+            product_parser_class = CSVParse_Woo
 
-    dynParser = CSVParse_Dyn()
-    specialParser = CSVParse_Special()
-
-
+    dyn_parser = CSVParse_Dyn()
+    special_parser = CSVParse_Special()
 
     if args.download_master:
         if Registrar.DEBUG_GDRIVE:
-            Registrar.registerMessage("GDrive params: %s" % gDriveParams)
+            Registrar.registerMessage("GDrive params: %s" %
+                                      settings.g_drive_params)
         client_class = SyncClient_GDrive
-        client_args = [gDriveParams]
+        client_args = [settings.g_drive_params]
     else:
         client_class = SyncClient_Local
         client_args = []
     #
     with client_class(*client_args) as client:
-        if args.schema in woo_schemas:
+        if args.schema in settings.woo_schemas:
             if args.do_dyns:
                 Registrar.registerMessage("analysing dprc rules")
-                client.analyseRemote(dynParser, dprcPath, gid=dprcGID)
-                dprcRules = dynParser.taxos
-                productParserArgs['dprcRules'] = dprcRules
+                client.analyseRemote(
+                    dyn_parser, settings.dprc_path, gid=settings.dprc_gid)
+                dprc_rules = dyn_parser.taxos
+                settings.product_parser_args['dprcRules'] = dprc_rules
 
                 Registrar.registerMessage("analysing dprp rules")
-                dynParser.clearTransients()
-                client.analyseRemote(dynParser, dprpPath, gid=dprpGID)
-                dprpRules = dynParser.taxos
-                productParserArgs['dprpRules'] = dprpRules
+                dyn_parser.clearTransients()
+                client.analyseRemote(
+                    dyn_parser, settings.dprp_path, gid=settings.dprp_gid)
+                dprp_rules = dyn_parser.taxos
+                settings.product_parser_args['dprpRules'] = dprp_rules
 
             if args.do_specials:
                 Registrar.registerMessage("analysing specials")
-                client.analyseRemote(specialParser, specPath, gid=specGID)
+                client.analyseRemote(
+                    special_parser, settings.spec_path, gid=settings.spec_gid)
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("all specials: %s" % specialParser.tabulate())
-                productParserArgs['specialRules'] = specialParser.rules
+                    Registrar.registerMessage("all specials: %s" %
+                                              special_parser.tabulate())
+                settings.product_parser_args[
+                    'specialRules'] = special_parser.rules
 
-                specialParser.DEBUG_SPECIAL = True
-                specialParser.DEBUG_MESSAGE = True
+                special_parser.DEBUG_SPECIAL = True
+                special_parser.DEBUG_MESSAGE = True
 
-                allFutureGroups = specialParser.all_future()
-                # print "allFutureGroups: %s" % allFutureGroups
-
-                currentSpecialGroups = specialParser.determine_current_special_groups(
+                # all_future_groups = special_parser.all_future()
+                # print "all_future_groups: %s" % all_future_groups
+                current_special_groups = special_parser.determine_current_special_groups(
                     specials_mode=args.specials_mode,
-                    current_special=args.current_special
-                )
+                    current_special=args.current_special)
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("currentSpecialGroups: %s" % currentSpecialGroups)
+                    Registrar.registerMessage("current_special_groups: %s" %
+                                              current_special_groups)
 
-                # print "specialParser.DEBUG_SPECIAL: %s" % repr(specialParser.DEBUG_SPECIAL)
-                # print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
+                # print "special_parser.DEBUG_SPECIAL: %s" % repr(special_parser.DEBUG_SPECIAL)
+                # print "Registrar.DEBUG_SPECIAL: %s" %
+                # repr(Registrar.DEBUG_SPECIAL)
 
                 if args.do_categories:
                     # determine current specials
 
-                    if currentSpecialGroups:
-                        productParserArgs['currentSpecialGroups'] = currentSpecialGroups
-                        productParserArgs['add_special_categories'] = add_special_categories
+                    if current_special_groups:
+                        settings.product_parser_args[
+                            'currentSpecialGroups'] = current_special_groups
+                        settings.product_parser_args[
+                            'add_special_categories'] = add_special_categories
 
-        productParser = productParserClass(**productParserArgs)
+        product_parser = product_parser_class(**settings.product_parser_args)
 
         Registrar.registerProgress("analysing remote GDrive data")
 
-        client.analyseRemote(productParser, genPath, gid=genGID, limit=args.download_limit)
+        client.analyseRemote(
+            product_parser,
+            settings.gen_path,
+            gid=settings.gen_gid,
+            limit=args.download_limit)
 
-    products = productParser.products
+    products = product_parser.products
 
-    if args.schema in woo_schemas:
-        attributes     = productParser.attributes
-        vattributes    = productParser.vattributes
-        categories     = productParser.categories
-        variations     = productParser.variations
-        images         = productParser.images
+    if args.schema in settings.woo_schemas:
+        attributes = product_parser.attributes
+        vattributes = product_parser.vattributes
+        categories = product_parser.categories
+        variations = product_parser.variations
+        images = product_parser.images
 
-    for category_name, category_list in productParser.categories_name.items():
-        if len(category_list) < 2: continue
-        if listUtils.checkEqual([category.namesum for category in category_list]): continue
-        print "bad category: %50s | %d | %s" % (category_name[:50], len(category_list), str(category_list))
+    for category_name, category_list in product_parser.categories_name.items():
+        if len(category_list) < 2:
+            continue
+        if listUtils.checkEqual(
+                [category.namesum for category in category_list]):
+            continue
+        print "bad category: %50s | %d | %s" % (
+            category_name[:50], len(category_list), str(category_list))
 
-    checkWarnings()
-
-    #
-    # print "testing findCategory"
-    # for catIndex, catObject in productParser.categories.items():
-    #     if catObject.title == "Specials":
-    #         print "the specials category exists"
-    # Registrar.DEBUG_API = True
-    # searchResult = productParser.findCategory({'HTML Description': u'', 'parent_id': 0, 'ID': 1222, 'slug': u'specials', 'title': u'Specials'})
-    # print repr(searchResult)
-    # print "keys: %s" % str([
-    #     productParser.objectContainer.wpidKey,
-    #     productParser.objectContainer.slugKey,
-    #     productParser.objectContainer.titleKey,
-    #     productParser.objectContainer.namesumKey,
-    # ])
-
-    # print "printing bad product"
-    # Registrar.DEBUG_GEN = True
-    # for codesum, product in productParser.products.items():
-    #     if codesum in ['TCSBT-S']:
-    #         print "product:\n"
-    #         pprint(product.items())
-    #         print "product categories:\n"
-    #         pprint(product.categories)
-    #         print "performing copy\n"
-    #         product_copy = copy(product)
-    #         print "copy:\n"
-    #         pprint(product_copy.items())
-    #         print "performing deepcopy\n"
-    #         product_copy = deepcopy(product)
-    #         print "deep copy:\n"
-    #         pprint(product_copy.items())
-    #         quit()
-    #
-    # quit()
+    check_warnings()
 
     #########################################
     # Images
     #########################################
 
-    if args.do_images and args.schema in woo_schemas:
+    if args.do_images and args.schema in settings.woo_schemas:
 
         Registrar.registerProgress("processing images")
 
         if Registrar.DEBUG_IMG:
-            Registrar.registerMessage("Looking in folders: %s" % imgRawFolders)
+            Registrar.registerMessage("Looking in folders: %s" %
+                                      settings.img_raw_folders)
 
-        def invalidImage(img_name, error):
+        def invalid_image(img_name, error):
             Registrar.registerError(error, img_name)
             images[img_name].invalidate(error)
 
         ls_raw = {}
-        for folder in imgRawFolders:
+        for folder in settings.img_raw_folders:
             if folder:
                 ls_raw[folder] = os.listdir(folder)
 
-        def getRawImage(img_name):
-            for path in imgRawFolders:
+        def get_raw_image(img_name):
+            for path in settings.img_raw_folders:
                 if path and img_name in ls_raw[path]:
                     return os.path.join(path, img_name)
             raise IOError("no image named %s found" % str(img_name))
 
-        if not os.path.exists(imgDst):
-            os.makedirs(imgDst)
+        if not os.path.exists(settings.img_dst):
+            os.makedirs(settings.img_dst)
 
-        #list of images in compressed directory
-        ls_cmp = os.listdir(imgDst)
-        for f in ls_cmp:
-            if f not in images.keys():
-                Registrar.registerWarning("DELETING FROM REFLATTENED", f)
+        # list of images in compressed directory
+        ls_cmp = os.listdir(settings.img_dst)
+        for fname in ls_cmp:
+            if fname not in images.keys():
+                Registrar.registerWarning("DELETING FROM REFLATTENED", fname)
                 if args.do_delete_images:
-                    os.remove(os.path.join(imgDst,f))
+                    os.remove(os.path.join(settings.img_dst, fname))
 
         for img, data in images.items():
             if not data.products:
@@ -903,42 +826,38 @@ def main():
                 # we only care about product images atm
             if Registrar.DEBUG_IMG:
                 if data.categories:
-                    Registrar.registerMessage(
-                        "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum) for taxo in data.categories]),
-                        img
-                    )
-
-                # if data.items:
-                #     Registrar.registerMessage(
-                #         "Associated Items: " + str([(item.rowcount, item.codesum) for item in data.items]),
-                #         img
-                #     )
+                    Registrar.registerMessage("Associated Taxos: " + str(
+                        [(taxo.rowcount, taxo.codesum)
+                         for taxo in data.categories]), img)
 
                 if data.products:
-                    Registrar.registerMessage(
-                        "Associated Products: " + str([(item.rowcount, item.codesum) for item in data.products]),
-                        img
-                    )
+                    Registrar.registerMessage("Associated Products: " + str([
+                        (item.rowcount, item.codesum) for item in data.products
+                    ]), img)
 
             try:
-                imgRawPath = getRawImage(img)
-            except Exception as e:
-                invalidImage(img, UserWarning("could not get raw image: %s " % repr(e)))
+                img_raw_path = get_raw_image(img)
+            except Exception as exc:
+                invalid_image(
+                    img,
+                    UserWarning("could not get raw image: %s " % repr(exc)))
                 continue
 
-            name, ext = os.path.splitext(img)
-            if(not name):
-                invalidImage(img, UserWarning("could not extract name"))
+            name, _ = os.path.splitext(img)
+            if not name:
+                invalid_image(img, UserWarning("could not extract name"))
                 continue
 
             try:
                 title, description = data.title, data.description
-            except Exception as e:
-                invalidImage(img, "could not get title or description: "+str(e) )
+            except Exception as exc:
+                invalid_image(
+                    img, "could not get title or description: " + str(exc))
                 continue
 
             if Registrar.DEBUG_IMG:
-                Registrar.registerMessage("title: %s | description: %s" % (title, description), img)
+                Registrar.registerMessage("title: %s | description: %s" %
+                                          (title, description), img)
 
             # ------
             # REMETA
@@ -946,9 +865,9 @@ def main():
 
             try:
                 if args.do_remeta_images:
-                    metagator = MetaGator(imgRawPath)
-            except Exception, e:
-                invalidImage(img, "error creating metagator: " + str(e))
+                    metagator = MetaGator(img_raw_path)
+            except Exception, exc:
+                invalid_image(img, "error creating metagator: " + str(exc))
                 continue
 
             try:
@@ -957,49 +876,54 @@ def main():
                         'title': title,
                         'description': description
                     })
-            except Exception as e:
-                invalidImage(img, "error updating meta: " + str(e))
+            except Exception as exc:
+                invalid_image(img, "error updating meta: " + str(exc))
 
             # ------
             # RESIZE
             # ------
 
             if args.do_resize_images:
-                if not os.path.isfile(imgRawPath) :
-                    invalidImage(img, "SOURCE FILE NOT FOUND: %s" % imgRawPath)
+                if not os.path.isfile(img_raw_path):
+                    invalid_image(img,
+                                  "SOURCE FILE NOT FOUND: %s" % img_raw_path)
                     continue
 
-                imgDstPath = os.path.join(imgDst, img)
-                if os.path.isfile(imgDstPath) :
-                    imgSrcMod = max(os.path.getmtime(imgRawPath), os.path.getctime(imgRawPath))
-                    imgDstMod = os.path.getmtime(imgDstPath)
-                    # print "image mod (src, dst): ", imgSrcMod, imgdstmod
-                    if imgDstMod > imgSrcMod:
+                img_dst_path = os.path.join(settings.img_dst, img)
+                if os.path.isfile(img_dst_path):
+                    img_src_mod = max(
+                        os.path.getmtime(img_raw_path),
+                        os.path.getctime(img_raw_path))
+                    img_dst_mod = os.path.getmtime(img_dst_path)
+                    # print "image mod (src, dst): ", img_src_mod, imgdstmod
+                    if img_dst_mod > img_src_mod:
                         if Registrar.DEBUG_IMG:
-                            Registrar.registerMessage(img, "DESTINATION FILE NEWER: %s" % imgDstPath)
+                            Registrar.registerMessage(
+                                img,
+                                "DESTINATION FILE NEWER: %s" % img_dst_path)
                         continue
 
                 if Registrar.DEBUG_IMG:
                     Registrar.registerMessage("resizing: %s" % img)
 
-                shutil.copy(imgRawPath, imgDstPath)
+                shutil.copy(img_raw_path, img_dst_path)
 
                 try:
-                    # imgmeta = MetaGator(imgDstPath)
+                    # imgmeta = MetaGator(img_dst_path)
                     # imgmeta.write_meta(title, description)
                     # print imgmeta.read_meta()
 
-                    image = Image.open(imgDstPath)
-                    image.thumbnail(thumbsize)
-                    image.save(imgDstPath)
+                    image = Image.open(img_dst_path)
+                    image.thumbnail(settings.thumbsize)
+                    image.save(img_dst_path)
 
                     if args.do_remeta_images:
-                        imgmeta = MetaGator(imgDstPath)
+                        imgmeta = MetaGator(img_dst_path)
                         imgmeta.write_meta(title, description)
                         # print imgmeta.read_meta()
 
-                except Exception as e:
-                    invalidImage(img, "could not resize: " + str(e))
+                except Exception as exc:
+                    invalid_image(img, "could not resize: " + str(exc))
                     continue
 
         # # ------
@@ -1009,182 +933,121 @@ def main():
         # if not os.path.exists(wpaiFolder):
         #     os.makedirs(wpaiFolder)
         #
-        # rsync.main([os.path.join(imgDst,'*'), wpaiFolder])
+        # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
-    #########################################
-    # Export Info to Spreadsheets
-    #########################################
+        #########################################
+        # Export Info to Spreadsheets
+        #########################################
 
     Registrar.registerProgress("Exporting info to spreadsheets")
 
-    if args.schema in myo_schemas:
+    if args.schema in settings.myo_schemas:
         product_cols = ColData_MYO.getProductCols()
-        productList = MYOProdList(products.values())
-        productList.exportItems(myoPath, ColData_Base.getColNames(product_cols))
-    elif args.schema in woo_schemas:
+        product_list = MYOProdList(products.values())
+        product_list.exportItems(settings.myo_path,
+                                 ColData_Base.getColNames(product_cols))
+    elif args.schema in settings.woo_schemas:
         product_cols = ColData_Woo.getProductCols()
 
         for col in exclude_cols:
             if col in product_cols:
                 del product_cols[col]
 
-        attributeCols = ColData_Woo.getAttributeCols(attributes, vattributes)
-        productColnames = ColData_Base.getColNames( listUtils.combineOrderedDicts( product_cols, attributeCols))
+        attribute_cols = ColData_Woo.getAttributeCols(attributes, vattributes)
+        product_colnames = ColData_Base.getColNames(
+            listUtils.combineOrderedDicts(product_cols, attribute_cols))
 
-        productList = WooProdList(products.values())
-        productList.exportItems(flaPath, productColnames)
+        product_list = WooProdList(products.values())
+        product_list.exportItems(settings.fla_path, product_colnames)
 
-        #variations
+        # variations
 
-        variationCols = ColData_Woo.getVariationCols()
+        variation_cols = ColData_Woo.getVariationCols()
 
-        attributeMetaCols = ColData_Woo.getAttributeMetaCols(vattributes)
-        variationColNames = ColData_Base.getColNames(
-            listUtils.combineOrderedDicts( variationCols, attributeMetaCols)
-        )
+        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(vattributes)
+        variation_col_names = ColData_Base.getColNames(
+            listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
 
         if variations:
-            variationList = WooVarList(variations.values())
-            variationList.exportItems(
-                flvPath,
-                variationColNames
-            )
-
+            variation_list = WooVarList(variations.values())
+            variation_list.exportItems(settings.flv_path, variation_col_names)
 
         if categories:
-            #categories
-            categoryCols = ColData_Woo.getCategoryCols()
+            # categories
+            category_cols = ColData_Woo.getCategoryCols()
 
-            categoryList = WooCatList(categories.values())
-            categoryList.exportItems(catPath, ColData_Base.getColNames(categoryCols))
+            category_list = WooCatList(categories.values())
+            category_list.exportItems(settings.cat_path,
+                                      ColData_Base.getColNames(category_cols))
 
-        #specials
+        # specials
         if args.do_specials:
             # current_special = args.current_special
             current_special = None
-            if productParser.currentSpecialGroups:
-                current_special = productParser.currentSpecialGroups[0].ID
+            if product_parser.currentSpecialGroups:
+                current_special = product_parser.currentSpecialGroups[0].ID
             if current_special:
-                specialProducts = productParser.onspecial_products.values()
-                if specialProducts:
-                    flaName, flaExt = os.path.splitext(flaPath)
-                    flsPath = os.path.join(outFolder , flaName+"-"+current_special+flaExt)
-                    specialProductList = WooProdList(specialProducts)
-                    specialProductList.exportItems(
-                        flsPath,
-                        productColnames
-                    )
-                specialVariations = productParser.onspecial_variations.values()
-                if specialVariations:
-                    flvName, flvExt = os.path.splitext(flvPath)
-                    flvsPath = os.path.join(outFolder , flvName+"-"+current_special+flvExt)
+                special_products = product_parser.onspecial_products.values()
+                if special_products:
+                    fla_name, fla_ext = os.path.splitext(settings.fla_path)
+                    fls_path = os.path.join(
+                        settings.out_folder,
+                        fla_name + "-" + current_special + fla_ext)
+                    special_product_list = WooProdList(special_products)
+                    special_product_list.exportItems(fls_path,
+                                                     product_colnames)
+                special_variations = product_parser.onspecial_variations.values(
+                )
+                if special_variations:
+                    flv_name, flv_ext = os.path.splitext(settings.flv_path)
+                    flvs_path = os.path.join(
+                        settings.out_folder,
+                        flv_name + "-" + current_special + flv_ext)
 
-                    spVariationList = WooVarList(specialVariations)
-                    spVariationList.exportItems(
-                        flvsPath,
-                        variationColNames
-                    )
+                    sp_variation_list = WooVarList(special_variations)
+                    sp_variation_list.exportItems(flvs_path,
+                                                  variation_col_names)
 
-        #Updated
-        updatedProducts = productParser.updated_products.values()
-        if updatedProducts:
-            flaName, flaExt = os.path.splitext(flaPath)
-            fluPath = os.path.join(outFolder , flaName+"-Updated"+flaExt)
+        updated_products = product_parser.updated_products.values()
+        if updated_products:
+            fla_name, fla_ext = os.path.splitext(settings.fla_path)
+            flu_path = os.path.join(settings.out_folder,
+                                    fla_name + "-Updated" + fla_ext)
 
-            updatedProductList = WooProdList(updatedProducts)
-            updatedProductList.exportItems(
-                fluPath,
-                productColnames
-            )
+            updated_product_list = WooProdList(updated_products)
+            updated_product_list.exportItems(flu_path, product_colnames)
 
-        #updatedVariations
-        updatedVariations = productParser.updated_variations.values()
+        updated_variations = product_parser.updated_variations.values()
 
-        if updatedVariations:
-            flvName, flvExt = os.path.splitext(flvPath)
-            flvuPath = os.path.join(outFolder , flvName+"-Updated"+flvExt)
+        if updated_variations:
+            flv_name, flv_ext = os.path.splitext(settings.flv_path)
+            flvu_path = os.path.join(settings.out_folder,
+                                     flv_name + "-Updated" + flv_ext)
 
-            updatedVariationsList = WooVarList(updatedVariations)
-            updatedVariationsList.exportItems(
-                flvuPath,
-                variationColNames
-            )
+            updated_variations_list = WooVarList(updated_variations)
+            updated_variations_list.exportItems(flvu_path, variation_col_names)
 
-
-        #pricingRule
-        # pricingRuleProducts = filter(
-        #     hasPricingRule,
-        #     products.values()[:]
-        # )
-        # if pricingRuleProducts:
-        #     flaName, flaExt = os.path.splitext(flaPath)
-        #     flpPath = os.path.join(outFolder , flaName+"-pricing_rules"+flaExt)
-        #     exportItemsCSV(
-        #         flpPath,
-        #         ColData_Base.getColNames(
-        #             listUtils.combineOrderedDicts(product_cols, attributeCols)
-        #         ),
-        #         pricingRuleProducts
-        #     )
-        #
-        # pricingCols = ColData_Woo.getPricingCols()
-        # print 'pricingCols: ', pricingCols.keys()
-        # shippingCols = ColData_Woo.getShippingCols()
-        # print 'shippingCols: ', shippingCols.keys()
-        # inventoryCols = ColData_Woo.getInventoryCols()
-        # print 'inventoryCols: ', inventoryCols.keys()
-        # print 'categoryCols: ', categoryCols.keys()
-        #
-        # #export items XML
-        # exportProductsXML(
-        #     [xmlPath, objPath],
-        #     products,
-        #     product_cols,
-        #     variationCols = variationCols,
-        #     categoryCols = categoryCols,
-        #     attributeCols = attributeCols,
-        #     attributeMetaCols = attributeMetaCols,
-        #     pricingCols = pricingCols,
-        #     shippingCols = shippingCols,
-        #     inventoryCols = inventoryCols,
-        #     imageData = images
-        # )
-
-    #########################################
-    # Attempt download API data
-    #########################################
+        #########################################
+        # Attempt download API data
+        #########################################
 
     if args.download_slave:
 
-        apiProductParser = CSVParse_Woo_Api(
-            **apiProductParserArgs
-        )
+        api_product_parser = CSVParse_Woo_Api(
+            **settings.api_product_parser_args)
 
-        with ProdSyncClient_WC(wcApiParams) as client:
+        with ProdSyncClient_WC(settings.wc_api_params) as client:
             # try:
             if args.do_categories:
-                client.analyseRemoteCategories(apiProductParser)
+                client.analyseRemoteCategories(api_product_parser)
 
             Registrar.registerProgress("analysing WC API data")
 
-            client.analyseRemote(apiProductParser, limit=args.download_limit)
-            # except Exception, e:
-            #     Registrar.registerError(e)
-            #     args.report_and_quit = True
+            client.analyseRemote(api_product_parser, limit=args.download_limit)
 
-        # print apiProductParser.categories
+        # print api_product_parser.categories
     else:
-        apiProductParser = None
-
-    # print productParser.toStrTree()
-    # print apiProductParser.toStrTree()
-    # quit()
-    # quit()
-
-    # print "API PRODUCTS"
-    # print ShopProdList(apiProductParser.products.values()).tabulate()
-
-    # CSVParse_Woo_Api.printBasicColumns(apiProductParser.products.values())
+        api_product_parser = None
 
     #########################################
     # Attempt Matching
@@ -1192,146 +1055,145 @@ def main():
 
     Registrar.registerProgress("Attempting matching")
 
-    sDeltaUpdates = []
+    s_delta_updates = []
     # mDeltaUpdates = []
-    slaveProductUpdates = []
-    problematicProductUpdates = []
-    slaveVariationUpdates = []
-    problematicVariationUpdates = []
-    masterCategoryUpdates = []
-    slaveCategoryUpdates = []
-    problematicCategoryUpdates = []
+    slave_product_updates = []
+    problematic_product_updates = []
+    slave_variation_updates = []
+    problematic_variation_updates = []
+    master_category_updates = []
+    slave_category_updates = []
+    problematic_category_updates = []
 
-    slaveProductCreations = []
-    # productIndexFn = (lambda x: x.codesum)
-    def productIndexFn(x): return x.codesum
-    globalProductMatches = MatchList(indexFn=productIndexFn)
-    masterlessProductMatches = MatchList(indexFn=productIndexFn)
-    slavelessProductMatches = MatchList(indexFn=productIndexFn)
-    globalVariationMatches = MatchList(indexFn=productIndexFn)
-    masterlessVariationMatches = MatchList(indexFn=productIndexFn)
-    slavelessVariationMatches = MatchList(indexFn=productIndexFn)
-    def categoryIndexFn(x): return x.title
-    # categoryIndexFn = (lambda x: x.title)
-    globalCategoryMatches = MatchList(indexFn=categoryIndexFn)
-    masterlessCategoryMatches = MatchList(indexFn=categoryIndexFn)
-    slavelessCategoryMatches = MatchList(indexFn=categoryIndexFn)
+    slave_product_creations = []
+
+    # product_index_fn = (lambda x: x.codesum)
+    def product_index_fn(product):
+        return product.codesum
+
+    global_product_matches = MatchList(indexFn=product_index_fn)
+    masterless_product_matches = MatchList(indexFn=product_index_fn)
+    slaveless_product_matches = MatchList(indexFn=product_index_fn)
+    global_variation_matches = MatchList(indexFn=product_index_fn)
+    masterless_variation_matches = MatchList(indexFn=product_index_fn)
+    slaveless_variation_matches = MatchList(indexFn=product_index_fn)
+
+    def category_index_fn(category):
+        return category.title
+
+    # category_index_fn = (lambda x: x.title)
+    global_category_matches = MatchList(indexFn=category_index_fn)
+    masterless_category_matches = MatchList(indexFn=category_index_fn)
+    slaveless_category_matches = MatchList(indexFn=category_index_fn)
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
     if do_sync:
         if args.do_categories:
             if Registrar.DEBUG_CATS:
-                Registrar.registerMessage("matching %d master categories with %d slave categories" % (
-                     len(productParser.categories),
-                     len(apiProductParser.categories)
-                ))
+                Registrar.registerMessage(
+                    "matching %d master categories with %d slave categories" %
+                    (len(product_parser.categories),
+                     len(api_product_parser.categories)))
 
-            categoryMatcher = CategoryMatcher()
-            categoryMatcher.clear()
-            categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
+            category_matcher = CategoryMatcher()
+            category_matcher.clear()
+            category_matcher.processRegisters(api_product_parser.categories,
+                                              product_parser.categories)
 
             if Registrar.DEBUG_CATS:
-                if categoryMatcher.pureMatches:
-                    Registrar.registerMessage("All Category matches:\n%s"%(
-                        '\n'.join(map(str,categoryMatcher.matches))
-                    ))
+                if category_matcher.pureMatches:
+                    Registrar.registerMessage("All Category matches:\n%s" % (
+                        '\n'.join(map(str, category_matcher.matches))))
 
-            validCategoryMatches = []
-            validCategoryMatches += categoryMatcher.pureMatches
+            valid_category_matches = []
+            valid_category_matches += category_matcher.pureMatches
 
-            if categoryMatcher.duplicateMatches:
-                # e = UserWarning(
-                #     "categories couldn't be synchronized because of ambiguous names:\n%s"\
-                #     % '\n'.join(map(str,categoryMatcher.duplicateMatches))
-                # )
-                # Registrar.registerError(e)
-                # raise e
-                # taxoSums = []
-                invalidCategoryMatches = []
-                for match in categoryMatcher.duplicateMatches:
-                    masterTaxoSums = [cat.namesum for cat in match.mObjects]
-                    if all(masterTaxoSums) \
-                    and listUtils.checkEqual(masterTaxoSums) \
-                    and not len(match.sObjects) > 1:
-                        validCategoryMatches.append(match)
+            if category_matcher.duplicateMatches:
+
+                invalid_category_matches = []
+                for match in category_matcher.duplicateMatches:
+                    master_taxo_sums = [cat.namesum for cat in match.mObjects]
+                    if all(master_taxo_sums) \
+                            and listUtils.checkEqual(master_taxo_sums) \
+                            and not len(match.sObjects) > 1:
+                        valid_category_matches.append(match)
                     else:
-                        invalidCategoryMatches.append(match)
-                if invalidCategoryMatches:
-                    e = UserWarning(
-                        "categories couldn't be synchronized because of ambiguous names:\n%s"\
-                        % '\n'.join(map(str,invalidCategoryMatches))
-                    )
-                    Registrar.registerError(e)
-                    raise e
+                        invalid_category_matches.append(match)
+                if invalid_category_matches:
+                    exc = UserWarning(
+                        "categories couldn't be synchronized because of ambiguous names:\n%s"
+                        % '\n'.join(map(str, invalid_category_matches)))
+                    Registrar.registerError(exc)
+                    raise exc
 
-            if categoryMatcher.slavelessMatches and categoryMatcher.masterlessMatches:
-                e = UserWarning(
-                    "You may want to fix up the following categories before syncing:\n%s\n%s"\
-                    % (
-                        '\n'.join(map(str,categoryMatcher.slavelessMatches)),
-                        '\n'.join(map(str,categoryMatcher.masterlessMatches))
-                    )
-                )
-                Registrar.registerError(e)
-                # raise e
+            if category_matcher.slavelessMatches and category_matcher.masterlessMatches:
+                exc = UserWarning(
+                    "You may want to fix up the following categories before syncing:\n%s\n%s"
+                    %
+                    ('\n'.join(map(str, category_matcher.slavelessMatches)),
+                     '\n'.join(map(str, category_matcher.masterlessMatches))))
+                Registrar.registerError(exc)
+                # raise exc
 
-            globalCategoryMatches.addMatches( categoryMatcher.pureMatches)
-            masterlessCategoryMatches.addMatches( categoryMatcher.masterlessMatches)
-            slavelessCategoryMatches.addMatches( categoryMatcher.slavelessMatches)
+            global_category_matches.addMatches(category_matcher.pureMatches)
+            masterless_category_matches.addMatches(
+                category_matcher.masterlessMatches)
+            slaveless_category_matches.addMatches(
+                category_matcher.slavelessMatches)
 
             sync_cols = ColData_Woo.getWPAPICategoryCols()
 
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
-            for matchCount, match in enumerate(validCategoryMatches):
-                sObject = match.sObject
-                for mObject in match.mObjects:
+            for match in enumerate(valid_category_matches):
+                s_object = match.sObject
+                for m_object in match.mObjects:
                     # mObject = match.mObjects[0]
 
-                    syncUpdate = SyncUpdate_Cat_Woo(mObject, sObject)
+                    sync_update = SyncUpdate_Cat_Woo(m_object, s_object)
 
-                    syncUpdate.update(sync_cols)
+                    sync_update.update(sync_cols)
 
-                    # print syncUpdate.tabulate()
+                    # print sync_update.tabulate()
 
-                    if not syncUpdate.importantStatic:
-                        insort(problematicCategoryUpdates, syncUpdate)
+                    if not sync_update.importantStatic:
+                        insort(problematic_category_updates, sync_update)
                         continue
 
-                    if syncUpdate.mUpdated:
-                        masterCategoryUpdates.append(syncUpdate)
+                    if sync_update.mUpdated:
+                        master_category_updates.append(sync_update)
 
-                    if syncUpdate.sUpdated:
-                        slaveCategoryUpdates.append(syncUpdate)
+                    if sync_update.sUpdated:
+                        slave_category_updates.append(sync_update)
 
-            for update in masterCategoryUpdates:
+            for update in master_category_updates:
                 if Registrar.DEBUG_UPDATE:
                     Registrar.registerMessage(
-                        "performing update < %5s | %5s > = \n%100s, %100s " \
-                        % (
-                            update.MasterID,
-                            update.SlaveID,
-                            str(update.oldMObject),
-                            str(update.oldSObject)
-                        )
-                    )
-                if not update.MasterID in productParser.categories:
-                    e = UserWarning("couldn't fine pkey %s in productParser.categories" % update.MasterID)
-                    Registrar.registerError(e)
+                        "performing update < %5s | %5s > = \n%100s, %100s " %
+                        (update.MasterID, update.SlaveID,
+                         str(update.oldMObject), str(update.oldSObject)))
+                if not update.MasterID in product_parser.categories:
+                    exc = UserWarning(
+                        "couldn't fine pkey %s in product_parser.categories" %
+                        update.MasterID)
+                    Registrar.registerError(exc)
                     continue
                 for col, warnings in update.syncWarnings.items():
                     if not col == 'ID':
                         continue
                     for warning in warnings:
-                        if not warning['subject'] == update.opposite_src(update.master_name):
+                        if not warning['subject'] == update.opposite_src(
+                                update.master_name):
                             continue
 
-                        newVal = warning['oldWinnerValue']
-                        productParser.categories[update.MasterID][col] = newVal
+                        new_val = warning['oldWinnerValue']
+                        product_parser.categories[update.MasterID][
+                            col] = new_val
 
             if Registrar.DEBUG_CATS:
-                Registrar.registerMessage("NEW CATEGORIES: %d" % (len(slavelessCategoryMatches)))
+                Registrar.registerMessage("NEW CATEGORIES: %d" %
+                                          (len(slaveless_category_matches)))
 
             if args.auto_create_new:
                 # create categories that do not yet exist on slave
@@ -1339,12 +1201,15 @@ def main():
                 if Registrar.DEBUG_CATS:
                     Registrar.DEBUG_API = True
 
-                with CatSyncClient_WC(wcApiParams) as client:
+                with CatSyncClient_WC(settings.wc_api_params) as client:
                     if Registrar.DEBUG_CATS:
                         Registrar.registerMessage("created cat client")
-                    new_categories = [match.mObject for match in slavelessCategoryMatches]
+                    new_categories = [
+                        match.mObject for match in slaveless_category_matches
+                    ]
                     if Registrar.DEBUG_CATS:
-                        Registrar.registerMessage("new categories %s" % new_categories)
+                        Registrar.registerMessage("new categories %s" %
+                                                  new_categories)
 
                     while new_categories:
                         category = new_categories.pop(0)
@@ -1354,71 +1219,78 @@ def main():
                                 new_categories.append(category)
                                 continue
 
-                        mApiData = category.toApiData(ColData_Woo, 'wp-api')
+                        m_api_data = category.toApiData(ColData_Woo, 'wp-api')
                         for key in ['id', 'slug', 'sku']:
-                            if key in mApiData:
-                                del mApiData[key]
-                        mApiData['name'] = category.wooCatName
-                        # print "uploading category: %s" % mApiData
-                        # pprint(mApiData)
+                            if key in m_api_data:
+                                del m_api_data[key]
+                        m_api_data['name'] = category.wooCatName
+                        # print "uploading category: %s" % m_api_data
+                        # pprint(m_api_data)
                         if args.update_slave:
-                            response = client.createItem(mApiData)
+                            response = client.createItem(m_api_data)
                             # print response
                             # print response.json()
-                            responseApiData = response.json()
-                            responseApiData = responseApiData.get('product_category', responseApiData)
-                            apiProductParser.processApiCategory(responseApiData)
+                            response_api_data = response.json()
+                            response_api_data = response_api_data.get(
+                                'product_category', response_api_data)
+                            api_product_parser.processApiCategory(
+                                response_api_data)
                             api_cat_translation = OrderedDict()
-                            for key, data in ColData_Woo.getWPAPICategoryCols().items():
+                            for key, data in ColData_Woo.getWPAPICategoryCols(
+                            ).items():
                                 try:
                                     wp_api_key = data['wp-api']['key']
                                 except (IndexError, TypeError):
                                     wp_api_key = key
                                 api_cat_translation[wp_api_key] = key
                             # print "TRANSLATION: ", api_cat_translation
-                            categoryParserData = apiProductParser.translateKeys(responseApiData, api_cat_translation)
+                            category_parser_data = api_product_parser.translateKeys(
+                                response_api_data, api_cat_translation)
                             if Registrar.DEBUG_CATS:
-                                Registrar.registerMessage( "category being updated with parser data: %s" % categoryParserData)
-                            category.update(categoryParserData)
+                                Registrar.registerMessage(
+                                    "category being updated with parser data: %s"
+                                    % category_parser_data)
+                            category.update(category_parser_data)
 
                             # print "CATEGORY: ", category
-            elif slavelessCategoryMatches:
-                for slavelessCategoryMatch in slavelessCategoryMatches:
-                    e = UserWarning("category needs to be created: %s" % slavelessCategoryMatch.mObjects[0])
-                    Registrar.registerWarning(e)
+            elif slaveless_category_matches:
+                for slaveless_category_match in slaveless_category_matches:
+                    exc = UserWarning("category needs to be created: %s" %
+                                      slaveless_category_match.mObjects[0])
+                    Registrar.registerWarning(exc)
 
-
-
-
-        # print productParser.toStrTree()
+        # print product_parser.toStrTree()
         if Registrar.DEBUG_CATS:
             print "product parser"
-            for key, category in productParser.categories.items():
-                print "%5s | %50s | %s" % (key, category.title[:50], category.WPID)
+            for key, category in product_parser.categories.items():
+                print "%5s | %50s | %s" % (key, category.title[:50],
+                                           category.WPID)
         if Registrar.DEBUG_CATS:
             print "api product parser info"
-            print "there are %s slave categories registered" % len(apiProductParser.categories)
-            print "there are %s children of API root" % len(apiProductParser.rootData.children)
-            print apiProductParser.toStrTree()
-            for key, category in apiProductParser.categories.items():
+            print "there are %s slave categories registered" % len(
+                api_product_parser.categories)
+            print "there are %s children of API root" % len(
+                api_product_parser.rootData.children)
+            print api_product_parser.toStrTree()
+            for key, category in api_product_parser.categories.items():
                 print "%5s | %50s" % (key, category.title[:50])
 
         # categoryMatcher = CategoryMatcher()
         # categoryMatcher.clear()
-        # categoryMatcher.processRegisters(apiProductParser.categories, productParser.categories)
-
+        # categoryMatcher.processRegisters(api_product_parser.categories, product_parser.categories)
 
         # print "PRINTING NEW SYNCING PROUCTS"
 
         # SYNC PRODUCTS
 
-        productMatcher = ProductMatcher()
-        productMatcher.processRegisters(apiProductParser.products, productParser.products)
-        # print productMatcher.__repr__()
+        product_matcher = ProductMatcher()
+        product_matcher.processRegisters(api_product_parser.products,
+                                        product_parser.products)
+        # print product_matcher.__repr__()
 
-        globalProductMatches.addMatches( productMatcher.pureMatches)
-        masterlessProductMatches.addMatches( productMatcher.masterlessMatches)
-        slavelessProductMatches.addMatches( productMatcher.slavelessMatches)
+        global_product_matches.addMatches(product_matcher.pureMatches)
+        masterless_product_matches.addMatches(product_matcher.masterlessMatches)
+        slaveless_product_matches.addMatches(product_matcher.slavelessMatches)
 
         sync_cols = ColData_Woo.getWPAPICols()
         if Registrar.DEBUG_UPDATE:
@@ -1428,82 +1300,87 @@ def main():
             if col in sync_cols:
                 del sync_cols[col]
 
-        if productMatcher.duplicateMatches:
-            e = UserWarning(
-                "products couldn't be synchronized because of ambiguous SKUs:%s"\
-                % '\n'.join(map(str,productMatcher.duplicateMatches))
-            )
-            Registrar.registerError(e)
-            raise e
+        if product_matcher.duplicateMatches:
+            exc = UserWarning(
+                "products couldn't be synchronized because of ambiguous SKUs:%s"
+                % '\n'.join(map(str, product_matcher.duplicateMatches)))
+            Registrar.registerError(exc)
+            raise exc
 
-        for prodMatchCount, prodMatch in enumerate(productMatcher.pureMatches):
+        for _, prod_match in enumerate(product_matcher.pureMatches):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-                Registrar.registerMessage( "processing prodMatch: %s" % prodMatch.tabulate())
-            mObject = prodMatch.mObject
-            sObject = prodMatch.sObject
+                Registrar.registerMessage("processing prod_match: %s" %
+                                          prod_match.tabulate())
+            m_object = prod_match.mObject
+            s_object = prod_match.sObject
 
-            syncUpdate = SyncUpdate_Prod_Woo(mObject, sObject)
+            sync_update = SyncUpdate_Prod_Woo(m_object, s_object)
 
-            assert not mObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
-            assert not sObject.isVariation #, "gcs %s is not variation but object is" % repr(gcs)
-            syncUpdate.update(sync_cols)
+            # , "gcs %s is not variation but object is" % repr(gcs)
+            assert not m_object.isVariation
+            # , "gcs %s is not variation but object is" % repr(gcs)
+            assert not s_object.isVariation
+            sync_update.update(sync_cols)
 
-            # print syncUpdate.tabulate()
+            # print sync_update.tabulate()
 
             if args.do_categories:
-                categoryMatcher.clear()
-                categoryMatcher.processRegisters(sObject.categories, mObject.categories)
+                category_matcher.clear()
+                category_matcher.processRegisters(s_object.categories,
+                                                  m_object.categories)
 
-                updateParams = {
-                    'col':'catlist',
-                    'data':{
+                update_params = {
+                    'col': 'catlist',
+                    'data': {
                         # 'sync'
                     },
-                    'subject': syncUpdate.master_name
+                    'subject': sync_update.master_name
                 }
 
-                changeMatchList = categoryMatcher.masterlessMatches
-                changeMatchList.addMatches(categoryMatcher.slavelessMatches)
+                change_match_list = category_matcher.masterlessMatches
+                change_match_list.addMatches(category_matcher.slavelessMatches)
 
-                master_categories = set(
-                    [master_category.WPID for master_category in mObject.categories.values() if master_category.WPID]
-                )
-                slave_categories =  set(
-                    [slave_category.WPID for slave_category in sObject.categories.values() if slave_category.WPID]
-                )
+                master_categories = set([
+                    master_category.WPID
+                    for master_category in m_object.categories.values()
+                    if master_category.WPID
+                ])
+                slave_categories = set([
+                    slave_category.WPID
+                    for slave_category in s_object.categories.values()
+                    if slave_category.WPID
+                ])
 
                 if Registrar.DEBUG_CATS:
                     Registrar.registerMessage(
-                        "comparing categories of %s:\n%s\n%s\n%s\n%s"\
-                        % (
-                            mObject.codesum,
-                            str(mObject.categories.values()),
-                            str(sObject.categories.values()),
-                            str(master_categories),
-                            str(slave_categories),
-                        )
-                    )
+                        "comparing categories of %s:\n%s\n%s\n%s\n%s" %
+                        (m_object.codesum, str(m_object.categories.values()),
+                         str(s_object.categories.values()),
+                         str(master_categories), str(slave_categories), ))
 
-                syncUpdate.oldMObject['catlist'] = list(master_categories)
-                syncUpdate.oldSObject['catlist'] = list(slave_categories)
+                sync_update.oldMObject['catlist'] = list(master_categories)
+                sync_update.oldSObject['catlist'] = list(slave_categories)
 
-                if changeMatchList:
+                if change_match_list:
                     assert \
                         master_categories != slave_categories, \
-                        "if changeMatchList exists, then master_categories should not equal slave_categories.\nchangeMatchList: \n%s" % \
-                            "\n".join(map(pformat,changeMatchList))
-                    updateParams['reason'] = 'updating'
-                    # updateParams['subject'] = SyncUpdate.master_name
+                        ("if change_match_list exists, then master_categories "
+                         "should not equal slave_categories.\nchange_match_list: \n%s") % \
+                        "\n".join(map(pformat, change_match_list))
+                    update_params['reason'] = 'updating'
+                    # update_params['subject'] = SyncUpdate.master_name
 
-                    # master_categories = [category.wooCatName for category in changeMatchList.merge().mObjects]
-                    # slave_categories =  [category.wooCatName for category in changeMatchList.merge().sObjects]
+                    # master_categories = [category.wooCatName for category \
+                    #                      in change_match_list.merge().mObjects]
+                    # slave_categories =  [category.wooCatName for category \
+                    #                      in change_match_list.merge().sObjects]
 
-                    syncUpdate.loserUpdate(**updateParams)
-                    # syncUpdate.newMObject['catlist'] = master_categories
-                    # syncUpdate.newSObject['catlist'] = master_categories
+                    sync_update.loserUpdate(**update_params)
+                    # sync_update.newMObject['catlist'] = master_categories
+                    # sync_update.newSObject['catlist'] = master_categories
 
-                    # updateParams['oldLoserValue'] = slave_categories
-                    # updateParams['oldWinnerValue'] = master_categories
+                    # update_params['oldLoserValue'] = slave_categories
+                    # update_params['oldWinnerValue'] = master_categories
                 else:
                     assert\
                         master_categories == slave_categories, \
@@ -1511,133 +1388,146 @@ def main():
                             repr(master_categories),
                             repr(slave_categories)
                         )
-                    updateParams['reason'] = 'identical'
-                    syncUpdate.tieUpdate(**updateParams)
+                    update_params['reason'] = 'identical'
+                    sync_update.tieUpdate(**update_params)
 
                 if Registrar.DEBUG_CATS:
-                    Registrar.registerMessage("category matches for update %d:\n%s" % (
-                        matchCount,
-                        categoryMatcher.__repr__()
-                    ))
+                    Registrar.registerMessage(
+                        "category matches for update:\n%s" % (
+                            category_matcher.__repr__()))
 
-                for cat_match in categoryMatcher.masterlessMatches:
-                    sIndex = sObject.index
-                    if delete_categories.get(sIndex) is None:
-                        delete_categories[sIndex] = MatchList()
-                    delete_categories[sIndex].append(cat_match)
-                for cat_match in categoryMatcher.slavelessMatches:
-                    sIndex = sObject.index
-                    if join_categories.get(sIndex) is None:
-                        join_categories[sIndex] = MatchList()
-                    join_categories[sIndex].append(cat_match)
+                for cat_match in category_matcher.masterlessMatches:
+                    s_index = s_object.index
+                    if delete_categories.get(s_index) is None:
+                        delete_categories[s_index] = MatchList()
+                    delete_categories[s_index].append(cat_match)
+                for cat_match in category_matcher.slavelessMatches:
+                    s_index = s_object.index
+                    if join_categories.get(s_index) is None:
+                        join_categories[s_index] = MatchList()
+                    join_categories[s_index].append(cat_match)
 
-
-            # Assumes that GDrive is read only, doesn't care about master updates
-            if not syncUpdate.sUpdated:
+            # Assumes that GDrive is read only, doesn't care about master
+            # updates
+            if not sync_update.sUpdated:
                 continue
 
             if Registrar.DEBUG_UPDATE:
-                Registrar.registerMessage("sync updates:\n%s" % syncUpdate.tabulate())
+                Registrar.registerMessage("sync updates:\n%s" %
+                                          sync_update.tabulate())
 
-            if syncUpdate.sUpdated and syncUpdate.sDeltas:
-                insort(sDeltaUpdates, syncUpdate)
+            if sync_update.sUpdated and sync_update.sDeltas:
+                insort(s_delta_updates, sync_update)
 
-            if not syncUpdate.importantStatic:
-                insort(problematicProductUpdates, syncUpdate)
+            if not sync_update.importantStatic:
+                insort(problematic_product_updates, sync_update)
                 continue
 
-            if syncUpdate.sUpdated:
-                insort(slaveProductUpdates, syncUpdate)
+            if sync_update.sUpdated:
+                insort(slave_product_updates, sync_update)
 
         if args.do_variations:
 
-            variationMatcher = VariationMatcher()
-            variationMatcher.processRegisters(apiProductParser.variations, productParser.variations)
+            variation_matcher = VariationMatcher()
+            variation_matcher.processRegisters(api_product_parser.variations,
+                                               product_parser.variations)
 
             if Registrar.DEBUG_VARS:
-                Registrar.registerMessage("variation matcher:\n%s" % variationMatcher.__repr__())
+                Registrar.registerMessage("variation matcher:\n%s" %
+                                          variation_matcher.__repr__())
 
-            globalVariationMatches.addMatches( variationMatcher.pureMatches)
-            masterlessVariationMatches.addMatches( variationMatcher.masterlessMatches)
-            slavelessVariationMatches.addMatches( variationMatcher.slavelessMatches)
+            global_variation_matches.addMatches(variation_matcher.pureMatches)
+            masterless_variation_matches.addMatches(
+                variation_matcher.masterlessMatches)
+            slaveless_variation_matches.addMatches(
+                variation_matcher.slavelessMatches)
 
             var_sync_cols = ColData_Woo.getWPAPIVariableCols()
             if Registrar.DEBUG_UPDATE:
-                Registrar.registerMessage("var_sync_cols: %s" % repr(var_sync_cols))
+                Registrar.registerMessage("var_sync_cols: %s" %
+                                          repr(var_sync_cols))
 
-            if variationMatcher.duplicateMatches:
-                e = UserWarning(
-                    "variations couldn't be synchronized because of ambiguous SKUs:%s"\
-                    % '\n'.join(map(str,variationMatcher.duplicateMatches))
-                )
-                Registrar.registerError(e)
-                raise e
+            if variation_matcher.duplicateMatches:
+                exc = UserWarning(
+                    "variations couldn't be synchronized because of ambiguous SKUs:%s"
+                    % '\n'.join(map(str, variation_matcher.duplicateMatches)))
+                Registrar.registerError(exc)
+                raise exc
 
-            for varMatchCount, varMatch in enumerate(variationMatcher.pureMatches):
-                # print "processing varMatch: %s" % varMatch.tabulate()
-                mObject = varMatch.mObject
-                sObject = varMatch.sObject
+            for var_match_count, var_match in enumerate(
+                    variation_matcher.pureMatches):
+                # print "processing var_match: %s" % var_match.tabulate()
+                m_object = var_match.mObject
+                s_object = var_match.sObject
 
-                syncUpdate = SyncUpdate_Var_Woo(mObject, sObject)
+                sync_update = SyncUpdate_Var_Woo(m_object, s_object)
 
-                syncUpdate.update(var_sync_cols)
+                sync_update.update(var_sync_cols)
 
-                # Assumes that GDrive is read only, doesn't care about master updates
-                if not syncUpdate.sUpdated:
+                # Assumes that GDrive is read only, doesn't care about master
+                # updates
+                if not sync_update.sUpdated:
                     continue
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var update %d:\n%s" % (varMatchCount, syncUpdate.tabulate()))
+                    Registrar.registerMessage("var update %d:\n%s" % (
+                        var_match_count, sync_update.tabulate()))
 
-                if not syncUpdate.importantStatic:
-                    insort(problematicVariationUpdates, syncUpdate)
+                if not sync_update.importantStatic:
+                    insort(problematic_variation_updates, sync_update)
                     continue
 
-                if syncUpdate.sUpdated:
-                    insort(slaveVariationUpdates, syncUpdate)
+                if sync_update.sUpdated:
+                    insort(slave_variation_updates, sync_update)
 
-            for varMatchCount, varMatch in enumerate(variationMatcher.slavelessMatches):
-                assert varMatch.hasNoSlave
-                mObject = varMatch.mObject
+            for var_match_count, var_match in enumerate(
+                    variation_matcher.slavelessMatches):
+                assert var_match.hasNoSlave
+                m_object = var_match.mObject
 
-                # syncUpdate = SyncUpdate_Var_Woo(mObject, None)
+                # sync_update = SyncUpdate_Var_Woo(mObject, None)
 
-                # syncUpdate.update(var_sync_cols)
-
-                if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var create %d:\n%s" % (varMatchCount, mObject.identifier))
-
-                #TODO: figure out which attribute terms to add
-
-            for varMatchCount, varMatch in enumerate(variationMatcher.masterlessMatches):
-                assert varMatch.hasNoMaster
-                sObject = varMatch.sObject
-
-                # syncUpdate = SyncUpdate_Var_Woo(None, sObject)
-
-                # syncUpdate.update(var_sync_cols)
+                # sync_update.update(var_sync_cols)
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var delete: %d:\n%s" % (varMatchCount, sObject.identifier))
+                    Registrar.registerMessage("var create %d:\n%s" % (
+                        var_match_count, m_object.identifier))
 
-                #TODO: figure out which attribute terms to delete
+                # TODO: figure out which attribute terms to add
+
+            for var_match_count, var_match in enumerate(
+                    variation_matcher.masterlessMatches):
+                assert var_match.hasNoMaster
+                s_object = var_match.sObject
+
+                # sync_update = SyncUpdate_Var_Woo(None, sObject)
+
+                # sync_update.update(var_sync_cols)
+
+                if Registrar.DEBUG_VARS:
+                    Registrar.registerMessage("var delete: %d:\n%s" % (
+                        var_match_count, s_object.identifier))
+
+                # TODO: figure out which attribute terms to delete
 
         if args.auto_create_new:
-            for newProdCount, newProdMatch in enumerate(productMatcher.slavelessMatches):
-                mObject = newProdMatch.mObject
-                print "will create product %d: %s" % (newProdCount, mObject.identifier)
-                apiData = mObject.toApiData(ColData_Woo, 'wp-api')
+            for new_prod_count, new_prod_match in enumerate(
+                    product_matcher.slavelessMatches):
+                m_object = new_prod_match.mObject
+                print "will create product %d: %s" % (new_prod_count,
+                                                      m_object.identifier)
+                api_data = m_object.toApiData(ColData_Woo, 'wp-api')
                 for key in ['id', 'slug']:
-                    if key in apiData:
-                        del apiData[key]
-                print "has api data: %s" % pformat(apiData)
-                slaveProductCreations.append(apiData)
+                    if key in api_data:
+                        del api_data[key]
+                print "has api data: %s" % pformat(api_data)
+                slave_product_creations.append(api_data)
 
-    checkWarnings()
+    check_warnings()
 
-        # except Exception, e:
-        #     Registrar.registerError(repr(e))
-        #     args.report_and_quit = True
+    # except Exception, exc:
+    #     Registrar.registerError(repr(exc))
+    #     args.report_and_quit = True
 
     #########################################
     # Write Report
@@ -1645,7 +1535,7 @@ def main():
 
     Registrar.registerProgress("Write Report")
 
-    with io.open(repPath, 'w+', encoding='utf8') as resFile:
+    with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
         # basic_cols = ColData_Woo.getBasicCols()
@@ -1662,298 +1552,348 @@ def main():
         # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
-        if do_sync and (sDeltaUpdates):
+        if do_sync and (s_delta_updates):
 
-            deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
+            delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
-            sDeltaList = ShopObjList(filter(None,
-                [deltaSyncUpdate.newSObject for deltaSyncUpdate in sDeltaUpdates]))
+            s_delta_list = ShopObjList(
+                filter(None, [
+                    deltaSyncUpdate.newSObject
+                    for deltaSyncUpdate in s_delta_updates
+                ]))
 
-            deltaCols = ColData_Woo.getDeltaCols()
+            delta_cols = ColData_Woo.getDeltaCols()
 
-            allDeltaCols = OrderedDict(
-                ColData_Woo.getBasicCols().items() +
-                ColData_Woo.nameCols(deltaCols.keys()+deltaCols.values()).items()
-            )
+            all_delta_cols = OrderedDict(
+                ColData_Woo.getBasicCols().items() + ColData_Woo.nameCols(
+                    delta_cols.keys() + delta_cols.values()).items())
 
-            if sDeltaList:
-                deltaGroup.addSection(
+            if s_delta_list:
+                delta_group.addSection(
                     HtmlReporter.Section(
                         's_deltas',
-                        title = '%s Changes List' % SLAVE_NAME.title(),
-                        description = '%s records that have changed important fields' % SLAVE_NAME,
-                        data = sDeltaList.tabulate(
-                            cols=allDeltaCols,
-                            tablefmt='html'),
-                        length = len(sDeltaList)
-                    )
-                )
+                        title='%s Changes List' % settings.slave_name.title(),
+                        description='%s records that have changed important fields'
+                        % settings.slave_name,
+                        data=s_delta_list.tabulate(
+                            cols=all_delta_cols, tablefmt='html'),
+                        length=len(s_delta_list)))
 
-            reporter.addGroup(deltaGroup)
+            reporter.addGroup(delta_group)
 
-            if sDeltaList:
-                sDeltaList.exportItems(slaveDeltaCsvPath, ColData_Woo.getColNames(allDeltaCols))
+            if s_delta_list:
+                s_delta_list.exportItems(
+                    settings.slave_delta_csv_path,
+                    ColData_Woo.getColNames(all_delta_cols))
 
         #
         report_matching = do_sync
         if report_matching:
 
-            matchingGroup = HtmlReporter.Group('product_matching', 'Product Matching Results')
-            if globalProductMatches:
-                matchingGroup.addSection(
+            matching_group = HtmlReporter.Group('product_matching',
+                                                'Product Matching Results')
+            if global_product_matches:
+                matching_group.addSection(
                     HtmlReporter.Section(
                         'perfect_product_matches',
                         **{
-                            'title': 'Perfect Matches',
-                            'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                            'data': globalProductMatches.tabulate(tablefmt="html"),
-                            'length': len(globalProductMatches)
-                        }
-                    )
-                )
-            if masterlessProductMatches:
-                matchingGroup.addSection(
+                            'title':
+                            'Perfect Matches',
+                            'description':
+                            "%s records match well with %s" % (
+                                settings.slave_name, settings.master_name),
+                            'data':
+                            global_product_matches.tabulate(tablefmt="html"),
+                            'length':
+                            len(global_product_matches)
+                        }))
+            if masterless_product_matches:
+                matching_group.addSection(
                     HtmlReporter.Section(
                         'masterless_product_matches',
                         **{
-                            'title': 'Masterless matches',
-                            'description': "matches are masterless",
-                            'data': masterlessProductMatches.tabulate(tablefmt="html"),
-                            'length': len(masterlessProductMatches)
-                        }
-                    )
-                )
-            if slavelessProductMatches:
-                matchingGroup.addSection(
+                            'title':
+                            'Masterless matches',
+                            'description':
+                            "matches are masterless",
+                            'data':
+                            masterless_product_matches.tabulate(
+                                tablefmt="html"),
+                            'length':
+                            len(masterless_product_matches)
+                        }))
+            if slaveless_product_matches:
+                matching_group.addSection(
                     HtmlReporter.Section(
                         'slaveless_product_matches',
                         **{
-                            'title': 'Slaveless matches',
-                            'description': "matches are slaveless",
-                            'data': slavelessProductMatches.tabulate(tablefmt="html"),
-                            'length': len(slavelessProductMatches)
-                        }
-                    )
-                )
-            if matchingGroup.sections:
-                reporter.addGroup(matchingGroup)
+                            'title':
+                            'Slaveless matches',
+                            'description':
+                            "matches are slaveless",
+                            'data':
+                            slaveless_product_matches.tabulate(
+                                tablefmt="html"),
+                            'length':
+                            len(slaveless_product_matches)
+                        }))
+            if matching_group.sections:
+                reporter.addGroup(matching_group)
 
             if args.do_categories:
-                matchingGroup = HtmlReporter.Group('category_matching', 'Category Matching Results')
-                if globalCategoryMatches:
-                    matchingGroup.addSection(
+                matching_group = HtmlReporter.Group(
+                    'category_matching', 'Category Matching Results')
+                if global_category_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'perfect_category_matches',
                             **{
-                                'title': 'Perfect Matches',
-                                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                                'data': globalCategoryMatches.tabulate(tablefmt="html"),
-                                'length': len(globalCategoryMatches)
-                            }
-                        )
-                    )
-                if masterlessCategoryMatches:
-                    matchingGroup.addSection(
+                                'title':
+                                'Perfect Matches',
+                                'description':
+                                "%s records match well with %s" % (
+                                    settings.slave_name, settings.master_name),
+                                'data':
+                                global_category_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(global_category_matches)
+                            }))
+                if masterless_category_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'masterless_category_matches',
                             **{
-                                'title': 'Masterless matches',
-                                'description': "matches are masterless",
-                                'data': masterlessCategoryMatches.tabulate(tablefmt="html"),
-                                'length': len(masterlessCategoryMatches)
-                            }
-                        )
-                    )
-                if slavelessCategoryMatches:
-                    matchingGroup.addSection(
+                                'title':
+                                'Masterless matches',
+                                'description':
+                                "matches are masterless",
+                                'data':
+                                masterless_category_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(masterless_category_matches)
+                            }))
+                if slaveless_category_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'slaveless_category_matches',
                             **{
-                                'title': 'Slaveless matches',
-                                'description': "matches are slaveless",
-                                'data': slavelessCategoryMatches.tabulate(tablefmt="html"),
-                                'length': len(slavelessCategoryMatches)
-                            }
-                        )
-                    )
-                if matchingGroup.sections:
-                    reporter.addGroup(matchingGroup)
+                                'title':
+                                'Slaveless matches',
+                                'description':
+                                "matches are slaveless",
+                                'data':
+                                slaveless_category_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(slaveless_category_matches)
+                            }))
+                if matching_group.sections:
+                    reporter.addGroup(matching_group)
 
             if args.do_variations:
-                matchingGroup = HtmlReporter.Group('variation_matching', 'Variation Matching Results')
-                if globalVariationMatches:
-                    matchingGroup.addSection(
+                matching_group = HtmlReporter.Group(
+                    'variation_matching', 'Variation Matching Results')
+                if global_variation_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'perfect_variation_matches',
                             **{
-                                'title': 'Perfect Matches',
-                                'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                                'data': globalVariationMatches.tabulate(tablefmt="html"),
-                                'length': len(globalVariationMatches)
-                            }
-                        )
-                    )
-                if masterlessVariationMatches:
-                    matchingGroup.addSection(
+                                'title':
+                                'Perfect Matches',
+                                'description':
+                                "%s records match well with %s" % (
+                                    settings.slave_name, settings.master_name),
+                                'data':
+                                global_variation_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(global_variation_matches)
+                            }))
+                if masterless_variation_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'masterless_variation_matches',
                             **{
-                                'title': 'Masterless matches',
-                                'description': "matches are masterless",
-                                'data': masterlessVariationMatches.tabulate(tablefmt="html"),
-                                'length': len(masterlessVariationMatches)
-                            }
-                        )
-                    )
-                if slavelessVariationMatches:
-                    matchingGroup.addSection(
+                                'title':
+                                'Masterless matches',
+                                'description':
+                                "matches are masterless",
+                                'data':
+                                masterless_variation_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(masterless_variation_matches)
+                            }))
+                if slaveless_variation_matches:
+                    matching_group.addSection(
                         HtmlReporter.Section(
                             'slaveless_variation_matches',
                             **{
-                                'title': 'Slaveless matches',
-                                'description': "matches are slaveless",
-                                'data': slavelessVariationMatches.tabulate(tablefmt="html"),
-                                'length': len(slavelessVariationMatches)
-                            }
-                        )
-                    )
-                if matchingGroup.sections:
-                    reporter.addGroup(matchingGroup)
+                                'title':
+                                'Slaveless matches',
+                                'description':
+                                "matches are slaveless",
+                                'data':
+                                slaveless_variation_matches.tabulate(
+                                    tablefmt="html"),
+                                'length':
+                                len(slaveless_variation_matches)
+                            }))
+                if matching_group.sections:
+                    reporter.addGroup(matching_group)
 
         report_sync = do_sync
         if report_sync:
-            syncingGroup = HtmlReporter.Group('prod_sync', 'Product Syncing Results')
+            syncing_group = HtmlReporter.Group('prod_sync',
+                                               'Product Syncing Results')
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
-                    (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_product_updates"),
-                    description = SLAVE_NAME + " items will be updated",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveProductUpdates ]),
-                    length = len(slaveProductUpdates)
-                )
-            )
+                    (SanitationUtils.makeSafeClass(settings.slave_name) +
+                     "_product_updates"),
+                    description=settings.slave_name + " items will be updated",
+                    data='<hr>'.join([
+                        update.tabulate(tablefmt="html")
+                        for update in slave_product_updates
+                    ]),
+                    length=len(slave_product_updates)))
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
                     "problematic_product_updates",
-                    description = "items can't be merged because they are too dissimilar",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicProductUpdates ]),
-                    length = len(problematicProductUpdates)
-                )
-            )
+                    description="items can't be merged because they are too dissimilar",
+                    data='<hr>'.join([
+                        update.tabulate(tablefmt="html")
+                        for update in problematic_product_updates
+                    ]),
+                    length=len(problematic_product_updates)))
 
-            reporter.addGroup(syncingGroup)
+            reporter.addGroup(syncing_group)
 
             if args.do_variations:
-                syncingGroup = HtmlReporter.Group('variation_sync', 'Variation Syncing Results')
+                syncing_group = HtmlReporter.Group('variation_sync',
+                                                   'Variation Syncing Results')
 
-                syncingGroup.addSection(
+                syncing_group.addSection(
                     HtmlReporter.Section(
-                        (SanitationUtils.makeSafeClass(SLAVE_NAME) + "_variation_updates"),
-                        description = SLAVE_NAME + " items will be updated",
-                        data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveVariationUpdates ]),
-                        length = len(slaveVariationUpdates)
-                    )
-                )
+                        (SanitationUtils.makeSafeClass(settings.slave_name) +
+                         "_variation_updates"),
+                        description=settings.slave_name +
+                        " items will be updated",
+                        data='<hr>'.join([
+                            update.tabulate(tablefmt="html")
+                            for update in slave_variation_updates
+                        ]),
+                        length=len(slave_variation_updates)))
 
-                syncingGroup.addSection(
+                syncing_group.addSection(
                     HtmlReporter.Section(
                         "problematic_variation_updates",
-                        description = "items can't be merged because they are too dissimilar",
-                        data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicVariationUpdates ]),
-                        length = len(problematicVariationUpdates)
-                    )
-                )
+                        description="items can't be merged because they are too dissimilar",
+                        data='<hr>'.join([
+                            update.tabulate(tablefmt="html")
+                            for update in problematic_variation_updates
+                        ]),
+                        length=len(problematic_variation_updates)))
 
-                reporter.addGroup(syncingGroup)
-
+                reporter.addGroup(syncing_group)
 
         report_cats = do_sync and args.do_categories
         if report_cats:
-            "reporting cats. do_sync: %s, do_categories: %s" % (repr(do_sync), repr(args.do_categories))
-            syncingGroup = HtmlReporter.Group('cats', 'Category Syncing Results')
+            # "reporting cats. do_sync: %s, do_categories: %s" % (
+            #     repr(do_sync), repr(args.do_categories))
+            syncing_group = HtmlReporter.Group('cats',
+                                               'Category Syncing Results')
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
                     ('delete_categories'),
-                    description = "%s items will leave categories" % SLAVE_NAME,
-                    data = tabulate(
+                    description="%s items will leave categories" %
+                    settings.slave_name,
+                    data=tabulate(
                         [
                             [
                                 index,
-                                # apiProductParser.products[index],
-                                # apiProductParser.products[index].categories,
-                                # ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                                ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                                # api_product_parser.products[index],
+                                # api_product_parser.products[index].categories,
+                                # ", ".join(category.wooCatName \
+                                #           for category in matches.merge().mObjects),
+                                ", ".join(category.wooCatName
+                                          for category in matches.merge()
+                                          .sObjects)
                             ] for index, matches in delete_categories.items()
                         ],
-                        tablefmt="html"
-                    ),
-                    length = len(delete_categories)
+                        tablefmt="html"),
+                    length=len(delete_categories)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
                     #         for index, match in delete_categories.items()
                     #     ]
                     # )
-                )
+                ))
+
+            delete_categories_ns_data = tabulate(
+                [
+                    [
+                        index,
+                        # api_product_parser.products[index],
+                        # api_product_parser.products[index].categories,
+                        # ", ".join(category.wooCatName for category in matches.merge().mObjects),
+                        ", ".join(category.wooCatName for category in matches.merge().sObjects\
+                                  if not re.search('Specials', category.wooCatName))
+                    ] for index, matches in delete_categories.items()
+                ],
+                tablefmt="html"
             )
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
                     ('delete_categories_not_specials'),
-                    description = "%s items will leave categories" % SLAVE_NAME,
-                    data = tabulate(
-                        [
-                            [
-                                index,
-                                # apiProductParser.products[index],
-                                # apiProductParser.products[index].categories,
-                                # ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                                ", ".join(category.wooCatName for category in matches.merge().sObjects\
-                                if not re.search('Specials', category.wooCatName))
-                            ] for index, matches in delete_categories.items()
-                        ],
-                        tablefmt="html"
-                    ),
-                    length = len(delete_categories)
+                    description="%s items will leave categories" %
+                    settings.slave_name,
+                    data=delete_categories_ns_data,
+                    length=len(delete_categories)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
                     #         for index, match in delete_categories.items()
                     #     ]
                     # )
-                )
-            )
+                ))
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
                     ('join_categories'),
-                    description = "%s items will join categories" % SLAVE_NAME,
-                    data = tabulate(
+                    description="%s items will join categories" %
+                    settings.slave_name,
+                    data=tabulate(
                         [
                             [
                                 index,
-                                # apiProductParser.products[index],
-                                # apiProductParser.products[index].categories,
-                                ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                                # ", ".join(category.wooCatName for category in matches.merge().sObjects)
+                                # api_product_parser.products[index],
+                                # api_product_parser.products[index].categories,
+                                ", ".join(category.wooCatName
+                                          for category in matches.merge()
+                                          .mObjects),
+                                # ", ".join(category.wooCatName \
+                                #           for category in matches.merge().sObjects)
                             ] for index, matches in join_categories.items()
                         ],
-                        tablefmt="html"
-                    ),
-                    length = len(join_categories)
+                        tablefmt="html"),
+                    length=len(join_categories)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
                     #         for index, match in delete_categories.items()
                     #     ]
                     # )
-                )
-            )
+                ))
 
-            reporter.addGroup(syncingGroup)
+            reporter.addGroup(syncing_group)
 
         if not reporter.groups:
-            emptyGroup = HtmlReporter.Group('empty', 'Nothing to report')
-            # emptyGroup.addSection(
+            empty_group = HtmlReporter.Group('empty', 'Nothing to report')
+            # empty_group.addSection(
             #     HtmlReporter.Section(
             #         ('empty'),
             #         data = ''
@@ -1961,138 +1901,159 @@ def main():
             #     )
             # )
             Registrar.registerMessage('nothing to report')
-            reporter.addGroup(emptyGroup)
+            reporter.addGroup(empty_group)
 
-        resFile.write( reporter.getDocumentUnicode() )
-
+        res_file.write(reporter.getDocumentUnicode())
 
     if args.report_and_quit:
         sys.exit(ExitStatus.success)
 
-    checkWarnings()
+    check_warnings()
 
     #########################################
     # Perform updates
     #########################################
 
-    allProductUpdates = slaveProductUpdates
+    all_product_updates = slave_product_updates
     if args.do_variations:
-        allProductUpdates += slaveVariationUpdates
+        all_product_updates += slave_variation_updates
     if args.do_problematic:
-        allProductUpdates += problematicProductUpdates
+        all_product_updates += problematic_product_updates
         if args.do_variations:
-            allProductUpdates += problematicVariationUpdates
+            all_product_updates += problematic_variation_updates
 
-    #don't perform updates if limit was set
+    # don't perform updates if limit was set
     if args.download_limit:
-        allProductUpdates = []
+        all_product_updates = []
 
-    slaveFailures = []
-    if allProductUpdates:
-        Registrar.registerProgress("UPDATING %d RECORDS" % len(allProductUpdates))
+    slave_failures = []
+    if all_product_updates:
+        Registrar.registerProgress("UPDATING %d RECORDS" %
+                                   len(all_product_updates))
 
         if args.ask_before_update:
-            input("Please read reports and press Enter to continue or ctrl-c to stop...")
+            input(
+                "Please read reports and press Enter to continue or ctrl-c to stop..."
+            )
 
         if Registrar.DEBUG_PROGRESS:
-            updateProgressCounter = ProgressCounter(len(allProductUpdates))
+            update_progress_counter = ProgressCounter(len(all_product_updates))
 
-        with ProdSyncClient_WC(wcApiParams) as slaveClient:
-            for count, update in enumerate(allProductUpdates):
+        with ProdSyncClient_WC(settings.wc_api_params) as slave_client:
+            for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
-                    updateProgressCounter.maybePrintUpdate(count)
+                    update_progress_counter.maybePrintUpdate(count)
 
-                if args.update_slave and update.sUpdated :
+                if args.update_slave and update.sUpdated:
                     # print "attempting update to %s " % str(update)
 
                     try:
-                        update.updateSlave(slaveClient)
-                    except Exception, e:
-                        # slaveFailures.append({
+                        update.updateSlave(slave_client)
+                    except Exception, exc:
+                        # slave_failures.append({
                         #     'update':update,
                         #     'master':SanitationUtils.coerceUnicode(update.newMObject),
                         #     'slave':SanitationUtils.coerceUnicode(update.newSObject),
                         #     'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
                         #     'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                        #     'exception':repr(e)
+                        #     'exception':repr(exc)
                         # })
-                        SanitationUtils.safePrint("ERROR UPDATING SLAVE (%s): %s" % (update.SlaveID, repr(e) ) )
-                        slaveFailures.append(update)
+                        SanitationUtils.safePrint(
+                            "ERROR UPDATING SLAVE (%s): %s" %
+                            (update.SlaveID, repr(exc)))
+                        slave_failures.append(update)
                 # else:
                 #     print "no update made to %s " % str(update)
 
-    #########################################
-    # Display reports
-    #########################################
+                #########################################
+                # Display reports
+                #########################################
 
     Registrar.registerProgress("Displaying reports")
 
-
-    shutil.copyfile(repPath, repWebPath)
+    shutil.copyfile(settings.rep_path, settings.rep_web_path)
     if args.show_report:
-        if webBrowser:
-            os.environ['BROWSER'] = webBrowser
+        if settings.web_browser:
+            os.environ['BROWSER'] = settings.web_browser
             # print "set browser environ to %s" % repr(webBrowser)
-        # print "moved file from %s to %s" % (repPath, repWebPath)
+        # print "moved file from %s to %s" % (settings.rep_path, repWebPath)
 
-        webbrowser.open(repWebLink)
+        webbrowser.open(settings.rep_web_link)
     else:
-        print "open this link to view report %s" % repWebLink
+        print "open this link to view report %s" % settings.rep_web_link
 
 
-    # for sku, product in apiProductParser.products.items():
-    #     print sku
-    #
-    #     if sku in productParser.products:
-    #         print 'sku match found'
-    #     else:
-    #         print 'sku_match not found'
+def catch_main():
+    settings = argparse.Namespace()
 
+    settings.in_folder = "../input/"
+    settings.out_folder = "../output/"
+    settings.log_folder = "../logs/"
+    settings.src_folder = MODULE_LOCATION
 
-if __name__ == '__main__':
+    os.chdir(MODULE_PATH)
+
+    settings.import_name = TimeUtils.getMsTimeStamp()
+    settings.rep_path = ''
+    settings.m_fail_path = os.path.join(settings.out_folder,
+                                        "gdrive_fails.csv")
+    settings.s_fail_path = os.path.join(settings.out_folder, "wp_fails.csv")
+    settings.log_path = os.path.join(settings.log_folder,
+                                     "log_%s.txt" % settings.import_name)
+    settings.zip_path = os.path.join(settings.log_folder,
+                                     "zip_%s.zip" % settings.import_name)
+
+    settings.thumbsize = 1920, 1200
+
+    status = 0
     try:
-        main()
+        main(settings=settings)
     except SystemExit:
         exit()
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
-        status=69 #service unavailable
+        status = 69  # service unavailable
         Registrar.registerError(traceback.format_exc())
     except IOError:
-        status=74
+        status = 74
         print "cwd: %s" % os.getcwd()
         Registrar.registerError(traceback.format_exc())
     except UserWarning:
-        status=65
+        status = 65
         Registrar.registerError(traceback.format_exc())
     except:
-        status=1
+        status = 1
         Registrar.registerError(traceback.format_exc())
 
-    with io.open(logPath, 'w+', encoding='utf8') as logFile:
+    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.getMessageItems(1).items():
             print source
-            logFile.writelines([SanitationUtils.coerceUnicode(source)])
-            logFile.writelines(
-                [SanitationUtils.coerceUnicode(message) for message in messages]
-            )
+            log_file.writelines([SanitationUtils.coerceUnicode(source)])
+            log_file.writelines([
+                SanitationUtils.coerceUnicode(message) for message in messages
+            ])
             for message in messages:
-                pprint( message, indent=4, width=80, depth=2)
+                pprint(message, indent=4, width=80, depth=2)
 
     #########################################
     # zip reports
     #########################################
 
-    files_to_zip = [mFailPath, sFailPath, repPath]
+    files_to_zip = [
+        settings.m_fail_path, settings.s_fail_path, settings.rep_path
+    ]
 
-    with zipfile.ZipFile(zipPath, 'w') as zipFile:
+    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)
-                zipFile.write(file_to_zip)
-            except Exception as e:
-                if(e):
-                    pass
-        Registrar.registerMessage('wrote file %s' % zipPath)
+                zip_file.write(file_to_zip)
+            except:
+                pass
+        Registrar.registerMessage('wrote file %s' % settings.zip_path)
 
     # print "\nexiting with status %s \n" % status
     sys.exit(status)
+
+
+if __name__ == '__main__':
+    catch_main()
