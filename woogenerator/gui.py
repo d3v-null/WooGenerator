@@ -1,9 +1,13 @@
+""" Provides GUI for syncing products and customers """
 # -*- coding: utf-8 -*-
 import os
 import logging
-from pprint import pprint, pformat
+# from pprint import pprint
+from pprint import pformat
 import contextlib
 from collections import namedtuple, OrderedDict
+from utils import overrides
+# import weakref
 
 import npyscreen
 # from npyscreen import NPSAppManaged
@@ -13,6 +17,7 @@ import npyscreen
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
 
 class WooGenerator(npyscreen.NPSAppManaged):
+    """ GUI Application for WooGenerator """
     PRODUCTS_FORM_ID = "PRODUCTS"
     CUSTOMERS_FORM_ID = 'CUSTOMERS'
     CONFIRM_FORM_ID = 'CONFIRM'
@@ -43,25 +48,30 @@ class WooGenerator(npyscreen.NPSAppManaged):
             name='Confirmation'
         )
 
-class SyncForm(npyscreen.ActionFormV2):
-    BUTTON_META = OrderedDict( [
-            (
-                'ok_button',{
-                    'text':npyscreen.ActionFormV2.OK_BUTTON_TEXT,
-                    'type':npyscreen.ActionFormV2.OKBUTTON_TYPE,
-                }
-            ),
-            (
-                'cancel_button',{
-                    'text':npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT,
-                    'type':npyscreen.ActionFormV2.CANCELBUTTON_TYPE
-                }
-            )
+class SyncSelectOne(npyscreen.SelectOne):
+    """ Widget which tracks command particle info """
+
+class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
+    """ Form used in by WooGenerator app """
+    BUTTON_META = OrderedDict([
+        (
+            'ok_button', {
+                'text':npyscreen.ActionFormV2.OK_BUTTON_TEXT,
+                'type':npyscreen.ActionFormV2.OKBUTTON_TYPE,
+            }
+        ),
+        (
+            'cancel_button', {
+                'text':npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT,
+                'type':npyscreen.ActionFormV2.CANCELBUTTON_TYPE
+            }
+        )
     ])
 
     IGNORE_BUTTONS = []
 
     def __init__(self, *args, **kwargs):
+        self.editw = None
         super(SyncForm, self).__init__(*args, **kwargs)
         self.command_particles = OrderedDict()
 
@@ -98,11 +108,12 @@ class SyncForm(npyscreen.ActionFormV2):
 
     @property
     def widgets_by_id(self):
+        """ exposes the protected _widgets_by_id dict """
         return self._widgets_by_id
 
     def find_cancel_button(self):
-        assert npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT in self.__class__.BUTTONS
-        button_index = self.__class__.BUTTONS.index(npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT)
+        assert 'cancel_button' in self.__class__.BUTTON_META
+        button_index = self.__class__.BUTTON_META.keys().index('cancel_button')
         self.editw = len(self._widgets__) - 2 - button_index
 
     def on_cancel(self):
@@ -116,7 +127,8 @@ class SyncForm(npyscreen.ActionFormV2):
     welcomeLines = [
     ]
 
-    def addSingleLine(self, line, **kwargs):
+    def add_single_line(self, line, **kwargs):
+        """ Add a single line of text as a npyscreen.Textfield widget """
         field_kwargs = dict(
             editable=False,
             value=line
@@ -127,70 +139,95 @@ class SyncForm(npyscreen.ActionFormV2):
             **field_kwargs
         )
 
-    def addParagraph(self, lines, **kwargs):
+    def add_paragraph(self, lines, **kwargs):
+        """ adds a list of lines as npyscreen.Textfield widgets with optional
+        padding parameter """
         padding = kwargs.pop('padding', 1)
         if lines:
             if lines[-1] and padding:
-                for i in range(padding):
+                for _ in range(padding):
                     lines.append('')
             for line in lines:
-                self.addSingleLine(line, **kwargs)
+                self.add_single_line(line, **kwargs)
 
-    def addSimpleQuestion(self, name=None, help_str=None, default=None,
-                          answers=None, indent=1, cmd_particles=None):
+    def add_simple_question(self, help_str=None, **kwargs):
+        """
+        Add a simple question widget (SyncWidget).
 
-        if answers is None:
-            answers=["No", "Yes"]
+        Arguments:
+            help_str (str):
+                Question asked to user
+            values (list[str]):
+                Answers to chose from
+                Default: ["No", "Yes"]
+            value (int):
+                index of default answer
+                Default: 1
+            name (str):
+                Name of widget
+            command_particles (list[str]):
+                list of particles that are generated for each answer
 
-        if not name:
-            name=""
+        Return:
+            :class:`weakref`: reference to widget created
+        """
 
-        if cmd_particles:
+        if 'values' not in kwargs:
+            kwargs['values'] = ["No", "Yes"]
+        if 'value' not in kwargs:
+            kwargs['value'] = 1
+        if 'name' not in kwargs:
+            kwargs['name'] = ''
+        if kwargs['command_particles']:
             # self.command_particles[name] =
             pass
 
         if help_str:
-            self.addParagraph(
-                [ help_str ],
+            self.add_paragraph(
+                [help_str],
                 padding=0
             )
 
-        if default is None:
-            default=1
-
-        widgetObj = self.add(
-            npyscreen.SelectOne,
+        widget_ref = self.add(
+            SyncSelectOne,
             scroll_exit=True,
-            name=name,
-            values=answers,
-            value=default,
-            max_height=len(answers) + 1
+            max_height=len(kwargs['values']) + 1
+            **kwargs
         )
 
-        logging.info("added widgetObj:\n%s\n%s", pformat( widgetObj ),
-                     pformat((widgetObj.name)))
+        logging.info(
+            "added widgetObj:\n%s\n%s",
+            pformat((widget_ref)),
+            pformat((widget_ref.name))
+        )
 
-        return widgetObj
+        for widget_id, widget_proxy in self.widgets_by_id.items():
+            if widget_proxy == widget_ref:
+                logging.info("found widget ID: %s", widget_id)
+
+
+        return widget_ref
 
     def create(self):
-        self.addParagraph(self.welcomeLines)
+        self.add_paragraph(self.welcomeLines)
 
     @property
-    def activeParticles(self):
-        #todo: complete this
+    def active_particles(self):
+        """ returns the active particles given the widget selections """
+        # TODO: Complete this
+        # for widget_id, widget in self.widgets_by_id:
         pass
 
+
 class ProductsForm(SyncForm):
-    # welcomeLines = [
-    #     "PRODUCTS",
-    #     ""
-    # ]
+    """ A form for specifying product syncing parameters """
 
     BUTTON_META = SyncForm.BUTTON_META
     BUTTON_META['ok_button']['text'] = 'Next'
 
     @contextlib.contextmanager
-    def increaseIndent(self):
+    def increase_indent(self):
+        """ Context manager for increasing indent of widget """
         self.current_indent += 1
         yield
         self.current_indent -= 1
@@ -200,40 +237,39 @@ class ProductsForm(SyncForm):
 
         super(ProductsForm, self).create()
 
-        self.download_master = self.addSimpleQuestion(
+        self.download_master = self.add_simple_question(
             name="Download Master",
             help_str="Has the Google Drive Spreadsheet Been updated recently?",
             cmd_particles=['--skip-download-master', '--download-master'],
-            default=1
+            value=1
         )
 
-        self.generate_report = self.addSimpleQuestion(
+        self.generate_report = self.add_simple_question(
             name="Generate Report",
             help_str="Would you like to generate a sync report? (slow)",
             cmd_particles=['--skip-report', '--show-report'],
-            default=0
+            value=0
         )
 
-        self.process_specials = self.addSimpleQuestion(
+        self.process_specials = self.add_simple_question(
             name="Process Specials",
             help_str="How would you like to process specials?",
-            answers=[
+            values=[
                 "No Specials",
                 "Auto Next Special",
-                "All Future Specials"
+                # "All Future Specials"
             ],
             cmd_particles=[
                 '--skip-specials',
-                '--latest-special',
-                '--future-specials'
+                '--specials-mode=\'auto_next\'',
+                # '--future-specials'
             ],
-                     # "Override"],
-            default=0
+            value=0
         )
 
-        # with self.increaseIndent():
+        # with self.increase_indent():
         #     # indent process_specials questions
-        #     self.addParagraph(
+        #     self.add_paragraph(
         #         ["What is the specials override?"],
         #         hidden=True
         #     )
@@ -244,21 +280,22 @@ class ProductsForm(SyncForm):
         #         hidden=True
         #     )
 
-        self.process_categories = self.addSimpleQuestion(
+        self.process_categories = self.add_simple_question(
             name="Process Categories",
             help_str="Would you like to process categories?",
-            default=0,
+            value=0,
             cmd_particles=['--skip-categories', '--do-categories']
         )
 
-        self.process_variations = self.addSimpleQuestion(
+        self.process_variations = self.add_simple_question(
             name="Process Variations",
             help_str="Would you like to process variations?",
-            default=0,
-            cmd_particles=['--skip-variations','--do-variations']
+            value=0,
+            cmd_particles=['--skip-variations', '--do-variations']
         )
 
 class CustomersForm(SyncForm):
+    """ Form for specifying customer sync parameters """
     welcomeLines = [
         "CUSTOMERS"
     ]
@@ -268,6 +305,7 @@ class CustomersForm(SyncForm):
         super(CustomersForm, self).create()
 
 class ConfirmForm(SyncForm):
+    """ Form for confirming sync parameters """
     def create(self):
         self.command_out = self.add(
             npyscreen.TitleFixedText,
@@ -275,61 +313,66 @@ class ConfirmForm(SyncForm):
             value="cmd:"
         )
 
-    def beforeEditing(self):
-        welcomeForm = self.parentApp.getForm('MAIN')
-        if welcomeForm:
+    @overrides(npyscreen.Form)
+    def beforeEditing(self): # pylint: disable=invalid-name,missing-docstring
+        welcome_form = self.parentApp.getForm('MAIN')
+        if welcome_form:
             command_particles = ['python']
-            activeFormID = welcomeForm.sync_subject.activeFormID
-            activeForm = self.parentApp.getForm(activeFormID)
+            active_form_id = welcome_form.sync_subject.active_form_id
+            active_form = self.parentApp.getForm(active_form_id)
             logging.info("active form widgets: ")
-            for widget in activeForm.widgets_by_id:
+            for widget in active_form.widgets_by_id:
                 if hasattr(widget, "name"):
                     logging.info("name: %20s | %s", widget.name, widget)
                 else:
                     logging.info("no name: %s", pformat(dir(widget)))
-            if not activeForm:
+            if not active_form:
                 self.command_out.value = "no active form"
                 return
-            elif activeFormID == 'PRODUCTS':
+            elif active_form_id == 'PRODUCTS':
                 command_particles.append('source/generator.py')
-            elif activeFormID == 'CUSTOMERS':
+            elif active_form_id == 'CUSTOMERS':
                 command_particles.append('source/merger.py')
             else:
-                self.command_out.value = "unknown activeFormID"
+                self.command_out.value = "unknown active_form_id"
                 return
-            newActiveParticles = activeForm.activeParticles
-            if newActiveParticles:
-                command_particles.extend(newActiveParticles)
-            self.command_out.value =' '.join(command_particles)
+            new_active_particles = active_form.active_particles
+            if new_active_particles:
+                command_particles.extend(new_active_particles)
+            self.command_out.value = ' '.join(command_particles)
 
 class FormSwitcher(npyscreen.MultiLineAction):
+    """ Widget that selects which form to go to next """
     def __init__(self, *args, **kwargs):
-        self.formOptions = kwargs.pop('formOptions', OrderedDict)
+        self.form_options = kwargs.pop('form_options', OrderedDict)
         kwargs.update(
-            values=self.formOptions.keys()
+            values=self.form_options.keys()
         )
-        self._activeFormName = kwargs.get('value')
+        self._activeFormName = kwargs.get('value') # pylint: disable=invalid-name
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):
         super(FormSwitcher, self).actionHighlighted(act_on_this, key_press)
         self._activeFormName = act_on_this
         logging.info("actionHighlighted: %s %s", act_on_this, key_press)
-        next_form = self.formOptions.get(act_on_this)
-        logging.info("setting next form to %s" , next_form)
+        next_form = self.form_options.get(act_on_this)
+        logging.info("setting next form to %s", next_form)
         self.parent.parentApp.setNextForm(next_form)
         self.parent.parentApp.switchFormNow()
 
     @property
-    def activeFormID(self):
-        return self.formOptions.get(self._activeFormName)
+    def active_form_id(self):
+        """ Returns the form name selected by the user """
+        return self.form_options.get(self._activeFormName)
 
     @property
-    def activeForm(self):
-        return self.parent.parentApp.getForm(self.activeFormID)
+    def active_form(self):
+        """ Returns a reference to the form selected by the user """
+        return self.parent.parentApp.getForm(self.active_form_id)
 
 
 class WelcomeForm(SyncForm):
+    """ Main form used by WooGenerator app where user selects the sync type """
     if os.name == 'nt':
         welcomeLines = [
             r" _______ _______ __   _ _______ __   __ __   _ _______",
@@ -365,15 +408,15 @@ class WelcomeForm(SyncForm):
             "██          ██      ██  ██      ██  ██   █   ██ ██          ██ ",
             "██████████████      ██████      ██████    ██████ ██████████████ ",
         ]
-        welcomeLines = map(
-            (lambda *args: ' '.join(args)),
-            tanLines,
-            syncLines
-        )
+        welcomeLines = [
+            ' '.join([tanLine, syncLine]) \
+                for tanLine in tanLines \
+                for syncLine in syncLines
+        ]
     welcomeLines += [
-        "" ,
-        "Welcome to the TanSync Utility." ,
-        "" ,
+        "",
+        "Welcome to the TanSync Utility.",
+        "",
         "What would you like to sync?",
         ""
     ]
@@ -391,9 +434,9 @@ class WelcomeForm(SyncForm):
             FormSwitcher,
             scroll_exit=True,
             name="Sync Type",
-            formOptions=OrderedDict( [
-                    ( 'products', WooGenerator.PRODUCTS_FORM_ID),
-                    ('customers', WooGenerator.CUSTOMERS_FORM_ID)
+            form_options=OrderedDict([
+                ('products', WooGenerator.PRODUCTS_FORM_ID),
+                ('customers', WooGenerator.CUSTOMERS_FORM_ID)
             ])
         )
 
@@ -402,10 +445,15 @@ class WelcomeForm(SyncForm):
         self.parentApp.setNextForm(None)
         self.parentApp.switchFormNow()
 
-if __name__ == "__main__":
+def main():
+    """ Main method for gui """
     logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
-    wgApp = WooGenerator()
+    logging.debug("NEW START\n\n")
+    wg_app = WooGenerator()
     try:
-        wgApp.run()
-    except npyscreen.NotEnoughSpaceForWidget as e:
-        print "not enough space for widget, try resizing terminal.", e
+        wg_app.run()
+    except npyscreen.NotEnoughSpaceForWidget as exc:
+        print "not enough space for widget, try resizing terminal.", exc
+
+if __name__ == "__main__":
+    main()
