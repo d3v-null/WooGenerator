@@ -326,7 +326,7 @@ class FormSwitcher(npyscreen.MultiLineAction):
 
 
 class WelcomeForm(SyncForm):
-    if os.name != 'nt':
+    if os.name == 'nt':
         welcomeLines = [
             r" _______ _______ __   _ _______ __   __ __   _ _______",
             r"    |    |_____| | \  | |______   \_/   | \  | |      ",
