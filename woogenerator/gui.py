@@ -96,6 +96,10 @@ class SyncForm(npyscreen.ActionFormV2):
 
             current_r_offset += 4 + len(button_text)
 
+    @property
+    def widgets_by_id(self):
+        return self._widgets_by_id
+
     def find_cancel_button(self):
         assert npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT in self.__class__.BUTTONS
         button_index = self.__class__.BUTTONS.index(npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT)
@@ -278,7 +282,7 @@ class ConfirmForm(SyncForm):
             activeFormID = welcomeForm.sync_subject.activeFormID
             activeForm = self.parentApp.getForm(activeFormID)
             logging.info("active form widgets: ")
-            for widget in activeForm._widgets_by_id:
+            for widget in activeForm.widgets_by_id:
                 if hasattr(widget, "name"):
                     logging.info("name: %20s | %s", widget.name, widget)
                 else:
