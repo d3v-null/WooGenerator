@@ -397,6 +397,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
 
     return parser
 
+
 def populate_parsers(settings):
     """
     Creates and populates the various parsers
@@ -503,6 +504,173 @@ def populate_parsers(settings):
 
         return parsers
 
+def process_images(settings, parsers):
+    """
+    Process the images information in from the parsers
+    """
+
+    Registrar.registerProgress("processing images")
+
+    if Registrar.DEBUG_IMG:
+        Registrar.registerMessage("Looking in folders: %s" %
+                                  settings.img_raw_folders)
+
+    def invalid_image(img_name, error):
+        """ Register error globally and attribute to image """
+        Registrar.registerError(error, img_name)
+        parsers.product.images[img_name].invalidate(error)
+
+    ls_raw = {}
+    for folder in settings.img_raw_folders:
+        if folder:
+            ls_raw[folder] = os.listdir(folder)
+
+    def get_raw_image(img_name):
+        """
+        finds the path of the image in the raw image folders
+
+        Args:
+            img_name (str):
+                the name of the file to search for
+
+        Returns:
+            The path of the image within the raw image folders
+
+        Raises:
+            IOError: file could not be found
+        """
+        for path in settings.img_raw_folders:
+            if path and img_name in ls_raw[path]:
+                return os.path.join(path, img_name)
+        raise IOError("no image named %s found" % str(img_name))
+
+    if not os.path.exists(settings.img_dst):
+        os.makedirs(settings.img_dst)
+
+    # list of images in compressed directory
+    ls_cmp = os.listdir(settings.img_dst)
+    for fname in ls_cmp:
+        if fname not in parsers.product.images.keys():
+            Registrar.registerWarning("DELETING FROM REFLATTENED", fname)
+            if settings.do_delete_images:
+                os.remove(os.path.join(settings.img_dst, fname))
+
+    for img, data in parsers.product.images.items():
+        if not data.products:
+            continue
+            # we only care about product images atm
+        if Registrar.DEBUG_IMG:
+            if data.categories:
+                Registrar.registerMessage("Associated Taxos: " + str(
+                    [(taxo.rowcount, taxo.codesum)
+                     for taxo in data.categories]), img)
+
+            if data.products:
+                Registrar.registerMessage("Associated Products: " + str([
+                    (item.rowcount, item.codesum) for item in data.products
+                ]), img)
+
+        try:
+            img_raw_path = get_raw_image(img)
+        except IOError as exc:
+            invalid_image(
+                img,
+                UserWarning("could not get raw image: %s " % repr(exc)))
+            continue
+
+        name, _ = os.path.splitext(img)
+        if not name:
+            invalid_image(img, UserWarning("could not extract name"))
+            continue
+
+        try:
+            title, description = data.title, data.description
+        except AttributeError as exc:
+            invalid_image(
+                img, "could not get title or description: " + str(exc))
+            continue
+
+        if Registrar.DEBUG_IMG:
+            Registrar.registerMessage("title: %s | description: %s" %
+                                      (title, description), img)
+
+        # ------
+        # REMETA
+        # ------
+
+        try:
+            if settings.do_remeta_images:
+                metagator = MetaGator(img_raw_path)
+        except Exception, exc:
+            invalid_image(img, "error creating metagator: " + str(exc))
+            continue
+
+        try:
+            if settings.do_remeta_images:
+                metagator.update_meta({
+                    'title': title,
+                    'description': description
+                })
+        except Exception as exc:
+            invalid_image(img, "error updating meta: " + str(exc))
+
+        # ------
+        # RESIZE
+        # ------
+
+        if settings.do_resize_images:
+            if not os.path.isfile(img_raw_path):
+                invalid_image(img,
+                              "SOURCE FILE NOT FOUND: %s" % img_raw_path)
+                continue
+
+            img_dst_path = os.path.join(settings.img_dst, img)
+            if os.path.isfile(img_dst_path):
+                img_src_mod = max(
+                    os.path.getmtime(img_raw_path),
+                    os.path.getctime(img_raw_path))
+                img_dst_mod = os.path.getmtime(img_dst_path)
+                # print "image mod (src, dst): ", img_src_mod, imgdstmod
+                if img_dst_mod > img_src_mod:
+                    if Registrar.DEBUG_IMG:
+                        Registrar.registerMessage(
+                            img,
+                            "DESTINATION FILE NEWER: %s" % img_dst_path)
+                    continue
+
+            if Registrar.DEBUG_IMG:
+                Registrar.registerMessage("resizing: %s" % img)
+
+            shutil.copy(img_raw_path, img_dst_path)
+
+            try:
+                # imgmeta = MetaGator(img_dst_path)
+                # imgmeta.write_meta(title, description)
+                # print imgmeta.read_meta()
+
+                image = Image.open(img_dst_path)
+                image.thumbnail(settings.thumbsize)
+                image.save(img_dst_path)
+
+                if settings.do_remeta_images:
+                    imgmeta = MetaGator(img_dst_path)
+                    imgmeta.write_meta(title, description)
+                    # print imgmeta.read_meta()
+
+            except IOError as exc:
+                invalid_image(img, "could not resize: " + str(exc))
+                continue
+
+    # # ------
+    # # RSYNC
+    # # ------
+    #
+    # if not os.path.exists(wpaiFolder):
+    #     os.makedirs(wpaiFolder)
+    #
+    # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
+
+
 def main(override_args=None, settings=None):
     """ The main function for generator """
     if not settings:
@@ -574,6 +742,7 @@ def main(override_args=None, settings=None):
     parser_override = []
     if override_args:
         parser_override = override_args.split(' ')
+
     args = argparser.parse_args(*parser_override)
     if args:
         if args.verbosity > 0:
@@ -589,17 +758,30 @@ def main(override_args=None, settings=None):
 
         settings.schema = args.schema
         settings.download_master = args.download_master
-        settings.do_sync = args.do_sync and args.download_slave
+        settings.download_slave = args.download_slave
+        settings.do_sync = args.do_sync and settings.download_slave
         settings.do_categories = args.do_categories
         settings.do_dyns = args.do_dyns
         settings.do_specials = args.do_specials
+        settings.do_variations = args.do_variations
         settings.do_images = args.do_images
+        settings.do_remeta_images = args.do_remeta_images
+        settings.do_resize_images = args.do_resize_images
+        settings.do_delete_images = args.do_delete_images
         settings.current_special = args.current_special
         settings.add_special_categories = settings.do_specials and settings.do_categories
         settings.download_limit = args.download_limit
         settings.specials_mode = args.specials_mode
+        settings.slave_timeout = args.slave_timeout
+        settings.auto_create_new = args.auto_create_new
+        settings.update_slave = args.update_slave
+        settings.report_and_quit = args.report_and_quit
+        settings.do_problematic = args.do_problematic
+        settings.ask_before_update = args.ask_before_update
+        settings.show_report = args.show_report
 
-        if args.auto_create_new:
+
+        if settings.auto_create_new:
             exc = UserWarning("auto-create not fully implemented yet")
             Registrar.registerWarning(exc)
         if args.auto_delete_old:
@@ -753,7 +935,7 @@ def main(override_args=None, settings=None):
         'api_key': settings.wc_api_key,
         'api_secret': settings.wc_api_secret,
         'url': store_url,
-        'timeout': args.slave_timeout,
+        'timeout': settings.slave_timeout,
         'offset': args.slave_offset,
         'limit': args.slave_limit
     }
@@ -777,8 +959,7 @@ def main(override_args=None, settings=None):
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.checkEqual(
-                [category.namesum for category in category_list]):
+        if listUtils.checkEqual([category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
             category_name[:50], len(category_list), str(category_list))
@@ -790,173 +971,11 @@ def main(override_args=None, settings=None):
     #########################################
 
     if settings.do_images and settings.schema in settings.woo_schemas:
+        process_images(settings, parsers)
 
-        Registrar.registerProgress("processing images")
-
-        if Registrar.DEBUG_IMG:
-            Registrar.registerMessage("Looking in folders: %s" %
-                                      settings.img_raw_folders)
-
-        def invalid_image(img_name, error):
-            """ Register error globally and attribute to image """
-            Registrar.registerError(error, img_name)
-            parsers.product.images[img_name].invalidate(error)
-
-        ls_raw = {}
-        for folder in settings.img_raw_folders:
-            if folder:
-                ls_raw[folder] = os.listdir(folder)
-
-        def get_raw_image(img_name):
-            """
-            finds the path of the image in the raw image folders
-
-            Args:
-                img_name (str):
-                    the name of the file to search for
-
-            Returns:
-                The path of the image within the raw image folders
-
-            Raises:
-                IOError: file could not be found
-            """
-            for path in settings.img_raw_folders:
-                if path and img_name in ls_raw[path]:
-                    return os.path.join(path, img_name)
-            raise IOError("no image named %s found" % str(img_name))
-
-        if not os.path.exists(settings.img_dst):
-            os.makedirs(settings.img_dst)
-
-        # list of images in compressed directory
-        ls_cmp = os.listdir(settings.img_dst)
-        for fname in ls_cmp:
-            if fname not in parsers.product.images.keys():
-                Registrar.registerWarning("DELETING FROM REFLATTENED", fname)
-                if args.do_delete_images:
-                    os.remove(os.path.join(settings.img_dst, fname))
-
-        for img, data in parsers.product.images.items():
-            if not data.products:
-                continue
-                # we only care about product images atm
-            if Registrar.DEBUG_IMG:
-                if data.categories:
-                    Registrar.registerMessage("Associated Taxos: " + str(
-                        [(taxo.rowcount, taxo.codesum)
-                         for taxo in data.categories]), img)
-
-                if data.products:
-                    Registrar.registerMessage("Associated Products: " + str([
-                        (item.rowcount, item.codesum) for item in data.products
-                    ]), img)
-
-            try:
-                img_raw_path = get_raw_image(img)
-            except IOError as exc:
-                invalid_image(
-                    img,
-                    UserWarning("could not get raw image: %s " % repr(exc)))
-                continue
-
-            name, _ = os.path.splitext(img)
-            if not name:
-                invalid_image(img, UserWarning("could not extract name"))
-                continue
-
-            try:
-                title, description = data.title, data.description
-            except AttributeError as exc:
-                invalid_image(
-                    img, "could not get title or description: " + str(exc))
-                continue
-
-            if Registrar.DEBUG_IMG:
-                Registrar.registerMessage("title: %s | description: %s" %
-                                          (title, description), img)
-
-            # ------
-            # REMETA
-            # ------
-
-            try:
-                if args.do_remeta_images:
-                    metagator = MetaGator(img_raw_path)
-            except Exception, exc:
-                invalid_image(img, "error creating metagator: " + str(exc))
-                continue
-
-            try:
-                if args.do_remeta_images:
-                    metagator.update_meta({
-                        'title': title,
-                        'description': description
-                    })
-            except Exception as exc:
-                invalid_image(img, "error updating meta: " + str(exc))
-
-            # ------
-            # RESIZE
-            # ------
-
-            if args.do_resize_images:
-                if not os.path.isfile(img_raw_path):
-                    invalid_image(img,
-                                  "SOURCE FILE NOT FOUND: %s" % img_raw_path)
-                    continue
-
-                img_dst_path = os.path.join(settings.img_dst, img)
-                if os.path.isfile(img_dst_path):
-                    img_src_mod = max(
-                        os.path.getmtime(img_raw_path),
-                        os.path.getctime(img_raw_path))
-                    img_dst_mod = os.path.getmtime(img_dst_path)
-                    # print "image mod (src, dst): ", img_src_mod, imgdstmod
-                    if img_dst_mod > img_src_mod:
-                        if Registrar.DEBUG_IMG:
-                            Registrar.registerMessage(
-                                img,
-                                "DESTINATION FILE NEWER: %s" % img_dst_path)
-                        continue
-
-                if Registrar.DEBUG_IMG:
-                    Registrar.registerMessage("resizing: %s" % img)
-
-                shutil.copy(img_raw_path, img_dst_path)
-
-                try:
-                    # imgmeta = MetaGator(img_dst_path)
-                    # imgmeta.write_meta(title, description)
-                    # print imgmeta.read_meta()
-
-                    image = Image.open(img_dst_path)
-                    image.thumbnail(settings.thumbsize)
-                    image.save(img_dst_path)
-
-
-
-                    if args.do_remeta_images:
-                        imgmeta = MetaGator(img_dst_path)
-                        imgmeta.write_meta(title, description)
-                        # print imgmeta.read_meta()
-
-                except IOError as exc:
-                    invalid_image(img, "could not resize: " + str(exc))
-                    continue
-
-        # # ------
-        # # RSYNC
-        # # ------
-        #
-        # if not os.path.exists(wpaiFolder):
-        #     os.makedirs(wpaiFolder)
-        #
-        # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
-
-        #########################################
-        # Export Info to Spreadsheets
-        #########################################
+    #########################################
+    # Export Info to Spreadsheets
+    #########################################
 
     Registrar.registerProgress("Exporting info to spreadsheets")
 
@@ -972,7 +991,8 @@ def main(override_args=None, settings=None):
             if col in product_cols:
                 del product_cols[col]
 
-        attribute_cols = ColData_Woo.getAttributeCols(parsers.product.attributes, parsers.product.vattributes)
+        attribute_cols = ColData_Woo.getAttributeCols(
+            parsers.product.attributes, parsers.product.vattributes)
         product_colnames = ColData_Base.getColNames(
             listUtils.combineOrderedDicts(product_cols, attribute_cols))
 
@@ -983,7 +1003,8 @@ def main(override_args=None, settings=None):
 
         variation_cols = ColData_Woo.getVariationCols()
 
-        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(parsers.product.vattributes)
+        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(
+            parsers.product.vattributes)
         variation_col_names = ColData_Base.getColNames(
             listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
 
@@ -1050,7 +1071,7 @@ def main(override_args=None, settings=None):
         # Attempt download API data
         #########################################
 
-    if args.download_slave:
+    if settings.download_slave:
 
         api_product_parser = CSVParse_Woo_Api(
             **settings.api_product_parser_args)
@@ -1062,7 +1083,8 @@ def main(override_args=None, settings=None):
 
             Registrar.registerProgress("analysing WC API data")
 
-            client.analyseRemote(api_product_parser, limit=settings.download_limit)
+            client.analyseRemote(
+                api_product_parser, limit=settings.download_limit)
 
         # print api_product_parser.categories
     else:
@@ -1216,7 +1238,7 @@ def main(override_args=None, settings=None):
                 Registrar.registerMessage("NEW CATEGORIES: %d" %
                                           (len(slaveless_category_matches)))
 
-            if args.auto_create_new:
+            if settings.auto_create_new:
                 # create categories that do not yet exist on slave
 
                 if Registrar.DEBUG_CATS:
@@ -1247,7 +1269,7 @@ def main(override_args=None, settings=None):
                         m_api_data['name'] = category.wooCatName
                         # print "uploading category: %s" % m_api_data
                         # pprint(m_api_data)
-                        if args.update_slave:
+                        if settings.update_slave:
                             response = client.createItem(m_api_data)
                             # print response
                             # print response.json()
@@ -1310,7 +1332,8 @@ def main(override_args=None, settings=None):
         # print product_matcher.__repr__()
 
         global_product_matches.addMatches(product_matcher.pureMatches)
-        masterless_product_matches.addMatches(product_matcher.masterlessMatches)
+        masterless_product_matches.addMatches(
+            product_matcher.masterlessMatches)
         slaveless_product_matches.addMatches(product_matcher.slavelessMatches)
 
         sync_cols = ColData_Woo.getWPAPICols()
@@ -1447,7 +1470,7 @@ def main(override_args=None, settings=None):
             if sync_update.sUpdated:
                 insort(slave_product_updates, sync_update)
 
-        if args.do_variations:
+        if settings.do_variations:
 
             variation_matcher = VariationMatcher()
             variation_matcher.processRegisters(api_product_parser.variations,
@@ -1531,7 +1554,7 @@ def main(override_args=None, settings=None):
 
                 # TODO: figure out which attribute terms to delete
 
-        if args.auto_create_new:
+        if settings.auto_create_new:
             for new_prod_count, new_prod_match in enumerate(
                     product_matcher.slavelessMatches):
                 m_object = new_prod_match.mObject
@@ -1548,7 +1571,7 @@ def main(override_args=None, settings=None):
 
     # except Exception, exc:
     #     Registrar.registerError(repr(exc))
-    #     args.report_and_quit = True
+    #     settings.report_and_quit = True
 
     #########################################
     # Write Report
@@ -1715,7 +1738,7 @@ def main(override_args=None, settings=None):
                 if matching_group.sections:
                     reporter.addGroup(matching_group)
 
-            if args.do_variations:
+            if settings.do_variations:
                 matching_group = HtmlReporter.Group(
                     'variation_matching', 'Variation Matching Results')
                 if global_variation_matches:
@@ -1795,7 +1818,7 @@ def main(override_args=None, settings=None):
 
             reporter.addGroup(syncing_group)
 
-            if args.do_variations:
+            if settings.do_variations:
                 syncing_group = HtmlReporter.Group('variation_sync',
                                                    'Variation Syncing Results')
 
@@ -1928,7 +1951,7 @@ def main(override_args=None, settings=None):
 
         res_file.write(reporter.getDocumentUnicode())
 
-    if args.report_and_quit:
+    if settings.report_and_quit:
         sys.exit(ExitStatus.success)
 
     check_warnings()
@@ -1938,11 +1961,11 @@ def main(override_args=None, settings=None):
     #########################################
 
     all_product_updates = slave_product_updates
-    if args.do_variations:
+    if settings.do_variations:
         all_product_updates += slave_variation_updates
-    if args.do_problematic:
+    if settings.do_problematic:
         all_product_updates += problematic_product_updates
-        if args.do_variations:
+        if settings.do_variations:
             all_product_updates += problematic_variation_updates
 
     # don't perform updates if limit was set
@@ -1954,7 +1977,7 @@ def main(override_args=None, settings=None):
         Registrar.registerProgress("UPDATING %d RECORDS" %
                                    len(all_product_updates))
 
-        if args.ask_before_update:
+        if settings.ask_before_update:
             input(
                 "Please read reports and press Enter to continue or ctrl-c to stop..."
             )
@@ -1967,7 +1990,7 @@ def main(override_args=None, settings=None):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybePrintUpdate(count)
 
-                if args.update_slave and update.sUpdated:
+                if settings.update_slave and update.sUpdated:
                     # print "attempting update to %s " % str(update)
 
                     try:
@@ -1995,7 +2018,7 @@ def main(override_args=None, settings=None):
     Registrar.registerProgress("Displaying reports")
 
     shutil.copyfile(settings.rep_path, settings.rep_web_path)
-    if args.show_report:
+    if settings.show_report:
         if settings.web_browser:
             os.environ['BROWSER'] = settings.web_browser
             # print "set browser environ to %s" % repr(webBrowser)
