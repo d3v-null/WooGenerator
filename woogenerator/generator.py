@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 """
 Module for generating woocommerce csv import files from Google Drive Data
 
@@ -68,7 +67,7 @@ def check_warnings():
         Registrar.print_message_dict(1)
 
 
-def make_parser(config):  # pylint: disable=too-many-statements
+def make_argparser(config):  # pylint: disable=too-many-statements
     """ creates the argument parser, using defaults from config """
     parser = argparse.ArgumentParser(
         description='Generate Import files from Google Drive')
@@ -398,8 +397,113 @@ def make_parser(config):  # pylint: disable=too-many-statements
 
     return parser
 
+def populate_parsers(settings):
+    """
+    Creates and populates the various parsers
+    """
+    for thing in [
+            'g_drive_params', 'wc_api_params', 'api_product_parser_args',
+            'product_parser_args'
+    ]:
+        Registrar.registerMessage("%s: %s" % (thing, getattr(settings, thing)))
 
-def main(override_args=None, settings=None):  # pylint: disable=too-many-statements
+    if settings.schema in settings.myo_schemas:
+        col_data_class = ColData_MYO
+    elif settings.schema in settings.woo_schemas:
+        col_data_class = ColData_Woo
+    else:
+        col_data_class = ColData_Base
+    settings.product_parser_args.update(**{
+        'cols':
+        col_data_class.getImportCols(),
+        'defaults':
+        col_data_class.getDefaults(),
+    })
+    if settings.schema in settings.myo_schemas:
+        product_parser_class = CSVParse_MYO
+    elif settings.schema in settings.woo_schemas:
+        if settings.schema == "TT":
+            product_parser_class = CSVParse_TT
+        elif settings.schema == "VT":
+            product_parser_class = CSVParse_VT
+        else:
+            settings.product_parser_args['schema'] = settings.schema
+            product_parser_class = CSVParse_Woo
+
+    parsers = argparse.Namespace()
+
+    parsers.dyn = CSVParse_Dyn()
+    parsers.special = CSVParse_Special()
+
+    if settings.download_master:
+        if Registrar.DEBUG_GDRIVE:
+            Registrar.registerMessage("GDrive params: %s" %
+                                      settings.g_drive_params)
+        client_class = SyncClient_GDrive
+        client_args = [settings.g_drive_params]
+    else:
+        client_class = SyncClient_Local
+        client_args = []
+    #
+    with client_class(*client_args) as client:
+        if settings.schema in settings.woo_schemas:
+            if settings.do_dyns:
+                Registrar.registerMessage("analysing dprc rules")
+                client.analyseRemote(
+                    parsers.dyn, settings.dprc_path, gid=settings.dprc_gid)
+                settings.product_parser_args['dprcRules'] = parsers.dyn.taxos
+
+                Registrar.registerMessage("analysing dprp rules")
+                parsers.dyn.clearTransients()
+                client.analyseRemote(
+                    parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
+                settings.product_parser_args['dprpRules'] = parsers.dyn.taxos
+
+            if settings.do_specials:
+                Registrar.registerMessage("analysing specials")
+                client.analyseRemote(
+                    parsers.special, settings.spec_path, gid=settings.spec_gid)
+                if Registrar.DEBUG_SPECIAL:
+                    Registrar.registerMessage("all specials: %s" %
+                                              parsers.special.tabulate())
+                settings.product_parser_args[
+                    'specialRules'] = parsers.special.rules
+
+                # all_future_groups = parsers.special.all_future()
+                # print "all_future_groups: %s" % all_future_groups
+                current_special_groups = parsers.special.determine_current_special_groups(
+                    specials_mode=settings.specials_mode,
+                    current_special=settings.current_special)
+                if Registrar.DEBUG_SPECIAL:
+                    Registrar.registerMessage("current_special_groups: %s" %
+                                              current_special_groups)
+
+                # print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
+                # print "Registrar.DEBUG_SPECIAL: %s" %
+                # repr(Registrar.DEBUG_SPECIAL)
+
+                if settings.do_categories:
+                    # determine current specials
+
+                    if current_special_groups:
+                        settings.product_parser_args[
+                            'currentSpecialGroups'] = current_special_groups
+                        settings.product_parser_args[
+                            'add_special_categories'] = settings.add_special_categories
+
+        parsers.product = product_parser_class(**settings.product_parser_args)
+
+        Registrar.registerProgress("analysing product data")
+
+        client.analyseRemote(
+            parsers.product,
+            settings.gen_path,
+            gid=settings.gen_gid,
+            limit=settings.download_limit)
+
+        return parsers
+
+def main(override_args=None, settings=None):
     """ The main function for generator """
     if not settings:
         settings = argparse.Namespace()
@@ -465,12 +569,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
     ### GET SHELL ARGS ###
 
-    parser = make_parser(config)
+    argparser = make_argparser(config)
 
     parser_override = []
     if override_args:
         parser_override = override_args.split(' ')
-    args = parser.parse_args(*parser_override)
+    args = argparser.parse_args(*parser_override)
     if args:
         if args.verbosity > 0:
             Registrar.DEBUG_PROGRESS = True
@@ -483,8 +587,17 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
 
-        do_sync = args.do_sync and args.download_slave
-        add_special_categories = args.do_specials and args.do_categories and args.current_special
+        settings.schema = args.schema
+        settings.download_master = args.download_master
+        settings.do_sync = args.do_sync and args.download_slave
+        settings.do_categories = args.do_categories
+        settings.do_dyns = args.do_dyns
+        settings.do_specials = args.do_specials
+        settings.do_images = args.do_images
+        settings.current_special = args.current_special
+        settings.add_special_categories = settings.do_specials and settings.do_categories
+        settings.download_limit = args.download_limit
+        settings.specials_mode = args.specials_mode
 
         if args.auto_create_new:
             exc = UserWarning("auto-create not fully implemented yet")
@@ -492,7 +605,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         if args.auto_delete_old:
             raise UserWarning("auto-delete not implemented yet")
 
-        if args.do_images and os.name == 'nt':
+        if settings.do_images and os.name == 'nt':
             raise UserWarning("Images not implemented on all platforms yet")
 
         settings.img_raw_folders = [args.img_raw_folder]
@@ -560,7 +673,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         settings.gen_path = os.path.join(settings.in_folder,
                                          'generator-accessories.csv')
 
-    suffix = args.schema
+    suffix = settings.schema
     if args.variant:
         suffix += "-" + args.variant
 
@@ -584,33 +697,33 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         settings.out_folder, "delta_report_wp%s.csv" % suffix)
 
     settings.img_dst = os.path.join(settings.img_cmp_folder,
-                                    "images-" + args.schema)
+                                    "images-" + settings.schema)
 
-    if args.do_specials:
-        if args.current_special:
-            CSVParse_Woo.current_special = args.current_special
+    if settings.do_specials:
+        if settings.current_special:
+            CSVParse_Woo.current_special = settings.current_special
         CSVParse_Woo.specialsCategory = "Specials"
-        CSVParse_Woo.add_special_categories = add_special_categories
+        CSVParse_Woo.add_special_categories = settings.add_special_categories
 
-    CSVParse_Woo.do_images = args.do_images
-    CSVParse_Woo.do_dyns = args.do_dyns
-    CSVParse_Woo.do_specials = args.do_specials
+    CSVParse_Woo.do_images = settings.do_images
+    CSVParse_Woo.do_dyns = settings.do_dyns
+    CSVParse_Woo.do_specials = settings.do_specials
 
     exclude_cols = []
 
-    if not args.do_images:
+    if not settings.do_images:
         exclude_cols.extend(['Images', 'imgsum'])
 
-    if not args.do_categories:
+    if not settings.do_categories:
         exclude_cols.extend(['catsum', 'catlist'])
 
-    if not args.do_dyns:
+    if not settings.do_dyns:
         exclude_cols.extend([
             'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
             'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
         ])
 
-    if not args.do_specials:
+    if not settings.do_specials:
         exclude_cols.extend([
             'SCHEDULE', 'sale_price', 'sale_price_dates_from',
             'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
@@ -633,7 +746,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         'genFID': settings.gen_fid,
     }
 
-    if not args.download_master:
+    if not settings.download_master:
         settings.g_drive_params['skip_download'] = True
 
     settings.wc_api_params = {
@@ -659,119 +772,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         'taxoDepth': settings.taxo_depth,
     }
 
-    for thing in [
-            'g_drive_params', 'wc_api_params', 'api_product_parser_args',
-            'product_parser_args'
-    ]:
-        Registrar.registerMessage("%s: %s" % (thing, getattr(settings, thing)))
+    parsers = populate_parsers(settings)
 
-    if args.schema in settings.myo_schemas:
-        col_data_class = ColData_MYO
-    elif args.schema in settings.woo_schemas:
-        col_data_class = ColData_Woo
-    else:
-        col_data_class = ColData_Base
-    settings.product_parser_args.update(**{
-        'cols':
-        col_data_class.getImportCols(),
-        'defaults':
-        col_data_class.getDefaults(),
-    })
-    if args.schema in settings.myo_schemas:
-        product_parser_class = CSVParse_MYO
-    elif args.schema in settings.woo_schemas:
-        if args.schema == "TT":
-            product_parser_class = CSVParse_TT
-        elif args.schema == "VT":
-            product_parser_class = CSVParse_VT
-        else:
-            settings.product_parser_args['schema'] = args.schema
-            product_parser_class = CSVParse_Woo
-
-    dyn_parser = CSVParse_Dyn()
-    special_parser = CSVParse_Special()
-
-    if args.download_master:
-        if Registrar.DEBUG_GDRIVE:
-            Registrar.registerMessage("GDrive params: %s" %
-                                      settings.g_drive_params)
-        client_class = SyncClient_GDrive
-        client_args = [settings.g_drive_params]
-    else:
-        client_class = SyncClient_Local
-        client_args = []
-    #
-    with client_class(*client_args) as client:
-        if args.schema in settings.woo_schemas:
-            if args.do_dyns:
-                Registrar.registerMessage("analysing dprc rules")
-                client.analyseRemote(
-                    dyn_parser, settings.dprc_path, gid=settings.dprc_gid)
-                dprc_rules = dyn_parser.taxos
-                settings.product_parser_args['dprcRules'] = dprc_rules
-
-                Registrar.registerMessage("analysing dprp rules")
-                dyn_parser.clearTransients()
-                client.analyseRemote(
-                    dyn_parser, settings.dprp_path, gid=settings.dprp_gid)
-                dprp_rules = dyn_parser.taxos
-                settings.product_parser_args['dprpRules'] = dprp_rules
-
-            if args.do_specials:
-                Registrar.registerMessage("analysing specials")
-                client.analyseRemote(
-                    special_parser, settings.spec_path, gid=settings.spec_gid)
-                if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("all specials: %s" %
-                                              special_parser.tabulate())
-                settings.product_parser_args[
-                    'specialRules'] = special_parser.rules
-
-                special_parser.DEBUG_SPECIAL = True
-                special_parser.DEBUG_MESSAGE = True
-
-                # all_future_groups = special_parser.all_future()
-                # print "all_future_groups: %s" % all_future_groups
-                current_special_groups = special_parser.determine_current_special_groups(
-                    specials_mode=args.specials_mode,
-                    current_special=args.current_special)
-                if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("current_special_groups: %s" %
-                                              current_special_groups)
-
-                # print "special_parser.DEBUG_SPECIAL: %s" % repr(special_parser.DEBUG_SPECIAL)
-                # print "Registrar.DEBUG_SPECIAL: %s" %
-                # repr(Registrar.DEBUG_SPECIAL)
-
-                if args.do_categories:
-                    # determine current specials
-
-                    if current_special_groups:
-                        settings.product_parser_args[
-                            'currentSpecialGroups'] = current_special_groups
-                        settings.product_parser_args[
-                            'add_special_categories'] = add_special_categories
-
-        product_parser = product_parser_class(**settings.product_parser_args)
-
-        Registrar.registerProgress("analysing remote GDrive data")
-
-        client.analyseRemote(
-            product_parser,
-            settings.gen_path,
-            gid=settings.gen_gid,
-            limit=args.download_limit)
-
-    products = product_parser.products
-
-    if args.schema in settings.woo_schemas:
-        attributes = product_parser.attributes
-        vattributes = product_parser.vattributes
-        categories = product_parser.categories
-        variations = product_parser.variations
-        images = product_parser.images
-
-    for category_name, category_list in product_parser.categories_name.items():
+    for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
         if listUtils.checkEqual(
@@ -786,7 +789,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
     # Images
     #########################################
 
-    if args.do_images and args.schema in settings.woo_schemas:
+    if settings.do_images and settings.schema in settings.woo_schemas:
 
         Registrar.registerProgress("processing images")
 
@@ -795,8 +798,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                                       settings.img_raw_folders)
 
         def invalid_image(img_name, error):
+            """ Register error globally and attribute to image """
             Registrar.registerError(error, img_name)
-            images[img_name].invalidate(error)
+            parsers.product.images[img_name].invalidate(error)
 
         ls_raw = {}
         for folder in settings.img_raw_folders:
@@ -804,6 +808,19 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                 ls_raw[folder] = os.listdir(folder)
 
         def get_raw_image(img_name):
+            """
+            finds the path of the image in the raw image folders
+
+            Args:
+                img_name (str):
+                    the name of the file to search for
+
+            Returns:
+                The path of the image within the raw image folders
+
+            Raises:
+                IOError: file could not be found
+            """
             for path in settings.img_raw_folders:
                 if path and img_name in ls_raw[path]:
                     return os.path.join(path, img_name)
@@ -815,12 +832,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         # list of images in compressed directory
         ls_cmp = os.listdir(settings.img_dst)
         for fname in ls_cmp:
-            if fname not in images.keys():
+            if fname not in parsers.product.images.keys():
                 Registrar.registerWarning("DELETING FROM REFLATTENED", fname)
                 if args.do_delete_images:
                     os.remove(os.path.join(settings.img_dst, fname))
 
-        for img, data in images.items():
+        for img, data in parsers.product.images.items():
             if not data.products:
                 continue
                 # we only care about product images atm
@@ -837,7 +854,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
             try:
                 img_raw_path = get_raw_image(img)
-            except Exception as exc:
+            except IOError as exc:
                 invalid_image(
                     img,
                     UserWarning("could not get raw image: %s " % repr(exc)))
@@ -850,7 +867,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
             try:
                 title, description = data.title, data.description
-            except Exception as exc:
+            except AttributeError as exc:
                 invalid_image(
                     img, "could not get title or description: " + str(exc))
                 continue
@@ -917,12 +934,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                     image.thumbnail(settings.thumbsize)
                     image.save(img_dst_path)
 
+
+
                     if args.do_remeta_images:
                         imgmeta = MetaGator(img_dst_path)
                         imgmeta.write_meta(title, description)
                         # print imgmeta.read_meta()
 
-                except Exception as exc:
+                except IOError as exc:
                     invalid_image(img, "could not resize: " + str(exc))
                     continue
 
@@ -941,53 +960,53 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
     Registrar.registerProgress("Exporting info to spreadsheets")
 
-    if args.schema in settings.myo_schemas:
+    if settings.schema in settings.myo_schemas:
         product_cols = ColData_MYO.getProductCols()
-        product_list = MYOProdList(products.values())
+        product_list = MYOProdList(parsers.product.products.values())
         product_list.exportItems(settings.myo_path,
                                  ColData_Base.getColNames(product_cols))
-    elif args.schema in settings.woo_schemas:
+    elif settings.schema in settings.woo_schemas:
         product_cols = ColData_Woo.getProductCols()
 
         for col in exclude_cols:
             if col in product_cols:
                 del product_cols[col]
 
-        attribute_cols = ColData_Woo.getAttributeCols(attributes, vattributes)
+        attribute_cols = ColData_Woo.getAttributeCols(parsers.product.attributes, parsers.product.vattributes)
         product_colnames = ColData_Base.getColNames(
             listUtils.combineOrderedDicts(product_cols, attribute_cols))
 
-        product_list = WooProdList(products.values())
+        product_list = WooProdList(parsers.product.products.values())
         product_list.exportItems(settings.fla_path, product_colnames)
 
         # variations
 
         variation_cols = ColData_Woo.getVariationCols()
 
-        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(vattributes)
+        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(parsers.product.vattributes)
         variation_col_names = ColData_Base.getColNames(
             listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
 
-        if variations:
-            variation_list = WooVarList(variations.values())
+        if parsers.product.variations:
+            variation_list = WooVarList(parsers.product.variations.values())
             variation_list.exportItems(settings.flv_path, variation_col_names)
 
-        if categories:
+        if parsers.product.categories:
             # categories
             category_cols = ColData_Woo.getCategoryCols()
 
-            category_list = WooCatList(categories.values())
+            category_list = WooCatList(parsers.product.categories.values())
             category_list.exportItems(settings.cat_path,
                                       ColData_Base.getColNames(category_cols))
 
         # specials
-        if args.do_specials:
-            # current_special = args.current_special
+        if settings.do_specials:
+            # current_special = settings.current_special
             current_special = None
-            if product_parser.currentSpecialGroups:
-                current_special = product_parser.currentSpecialGroups[0].ID
+            if parsers.product.currentSpecialGroups:
+                current_special = parsers.product.currentSpecialGroups[0].ID
             if current_special:
-                special_products = product_parser.onspecial_products.values()
+                special_products = parsers.product.onspecial_products.values()
                 if special_products:
                     fla_name, fla_ext = os.path.splitext(settings.fla_path)
                     fls_path = os.path.join(
@@ -996,7 +1015,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                     special_product_list = WooProdList(special_products)
                     special_product_list.exportItems(fls_path,
                                                      product_colnames)
-                special_variations = product_parser.onspecial_variations.values(
+                special_variations = parsers.product.onspecial_variations.values(
                 )
                 if special_variations:
                     flv_name, flv_ext = os.path.splitext(settings.flv_path)
@@ -1008,7 +1027,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                     sp_variation_list.exportItems(flvs_path,
                                                   variation_col_names)
 
-        updated_products = product_parser.updated_products.values()
+        updated_products = parsers.product.updated_products.values()
         if updated_products:
             fla_name, fla_ext = os.path.splitext(settings.fla_path)
             flu_path = os.path.join(settings.out_folder,
@@ -1017,7 +1036,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
             updated_product_list = WooProdList(updated_products)
             updated_product_list.exportItems(flu_path, product_colnames)
 
-        updated_variations = product_parser.updated_variations.values()
+        updated_variations = parsers.product.updated_variations.values()
 
         if updated_variations:
             flv_name, flv_ext = os.path.splitext(settings.flv_path)
@@ -1038,12 +1057,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
         with ProdSyncClient_WC(settings.wc_api_params) as client:
             # try:
-            if args.do_categories:
+            if settings.do_categories:
                 client.analyseRemoteCategories(api_product_parser)
 
             Registrar.registerProgress("analysing WC API data")
 
-            client.analyseRemote(api_product_parser, limit=args.download_limit)
+            client.analyseRemote(api_product_parser, limit=settings.download_limit)
 
         # print api_product_parser.categories
     else:
@@ -1069,6 +1088,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
     # product_index_fn = (lambda x: x.codesum)
     def product_index_fn(product):
+        """ return the codesum of the product """
         return product.codesum
 
     global_product_matches = MatchList(indexFn=product_index_fn)
@@ -1079,6 +1099,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
     slaveless_variation_matches = MatchList(indexFn=product_index_fn)
 
     def category_index_fn(category):
+        """ return the title of the category """
         return category.title
 
     # category_index_fn = (lambda x: x.title)
@@ -1088,18 +1109,18 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
-    if do_sync:
-        if args.do_categories:
+    if settings.do_sync:
+        if settings.do_categories:
             if Registrar.DEBUG_CATS:
                 Registrar.registerMessage(
                     "matching %d master categories with %d slave categories" %
-                    (len(product_parser.categories),
+                    (len(parsers.product.categories),
                      len(api_product_parser.categories)))
 
             category_matcher = CategoryMatcher()
             category_matcher.clear()
             category_matcher.processRegisters(api_product_parser.categories,
-                                              product_parser.categories)
+                                              parsers.product.categories)
 
             if Registrar.DEBUG_CATS:
                 if category_matcher.pureMatches:
@@ -1173,9 +1194,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                         "performing update < %5s | %5s > = \n%100s, %100s " %
                         (update.MasterID, update.SlaveID,
                          str(update.oldMObject), str(update.oldSObject)))
-                if not update.MasterID in product_parser.categories:
+                if not update.MasterID in parsers.product.categories:
                     exc = UserWarning(
-                        "couldn't fine pkey %s in product_parser.categories" %
+                        "couldn't fine pkey %s in parsers.product.categories" %
                         update.MasterID)
                     Registrar.registerError(exc)
                     continue
@@ -1188,7 +1209,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                             continue
 
                         new_val = warning['oldWinnerValue']
-                        product_parser.categories[update.MasterID][
+                        parsers.product.categories[update.MasterID][
                             col] = new_val
 
             if Registrar.DEBUG_CATS:
@@ -1259,10 +1280,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                                       slaveless_category_match.mObjects[0])
                     Registrar.registerWarning(exc)
 
-        # print product_parser.toStrTree()
+        # print parsers.product.toStrTree()
         if Registrar.DEBUG_CATS:
             print "product parser"
-            for key, category in product_parser.categories.items():
+            for key, category in parsers.product.categories.items():
                 print "%5s | %50s | %s" % (key, category.title[:50],
                                            category.WPID)
         if Registrar.DEBUG_CATS:
@@ -1277,7 +1298,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
         # categoryMatcher = CategoryMatcher()
         # categoryMatcher.clear()
-        # categoryMatcher.processRegisters(api_product_parser.categories, product_parser.categories)
+        # categoryMatcher.processRegisters(api_product_parser.categories, parsers.product.categories)
 
         # print "PRINTING NEW SYNCING PROUCTS"
 
@@ -1285,7 +1306,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
         product_matcher = ProductMatcher()
         product_matcher.processRegisters(api_product_parser.products,
-                                        product_parser.products)
+                                         parsers.product.products)
         # print product_matcher.__repr__()
 
         global_product_matches.addMatches(product_matcher.pureMatches)
@@ -1324,7 +1345,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
             # print sync_update.tabulate()
 
-            if args.do_categories:
+            if settings.do_categories:
                 category_matcher.clear()
                 category_matcher.processRegisters(s_object.categories,
                                                   m_object.categories)
@@ -1430,7 +1451,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
             variation_matcher = VariationMatcher()
             variation_matcher.processRegisters(api_product_parser.variations,
-                                               product_parser.variations)
+                                               parsers.product.variations)
 
             if Registrar.DEBUG_VARS:
                 Registrar.registerMessage("variation matcher:\n%s" %
@@ -1552,15 +1573,17 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
         # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
-        if do_sync and (s_delta_updates):
+        if settings.do_sync and (s_delta_updates):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
             s_delta_list = ShopObjList(
-                filter(None, [
-                    deltaSyncUpdate.newSObject
-                    for deltaSyncUpdate in s_delta_updates
-                ]))
+                [
+                    delta_sync_update.newSObject
+                    for delta_sync_update in s_delta_updates \
+                    if delta_sync_update.newSObject
+                ]
+            )
 
             delta_cols = ColData_Woo.getDeltaCols()
 
@@ -1587,7 +1610,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                     ColData_Woo.getColNames(all_delta_cols))
 
         #
-        report_matching = do_sync
+        report_matching = settings.do_sync
         if report_matching:
 
             matching_group = HtmlReporter.Group('product_matching',
@@ -1640,7 +1663,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
             if matching_group.sections:
                 reporter.addGroup(matching_group)
 
-            if args.do_categories:
+            if settings.do_categories:
                 matching_group = HtmlReporter.Group(
                     'category_matching', 'Category Matching Results')
                 if global_category_matches:
@@ -1744,7 +1767,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
                 if matching_group.sections:
                     reporter.addGroup(matching_group)
 
-        report_sync = do_sync
+        report_sync = settings.do_sync
         if report_sync:
             syncing_group = HtmlReporter.Group('prod_sync',
                                                'Product Syncing Results')
@@ -1800,10 +1823,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
                 reporter.addGroup(syncing_group)
 
-        report_cats = do_sync and args.do_categories
+        report_cats = settings.do_sync and settings.do_categories
         if report_cats:
-            # "reporting cats. do_sync: %s, do_categories: %s" % (
-            #     repr(do_sync), repr(args.do_categories))
+            # "reporting cats. settings.do_sync: %s, do_categories: %s" % (
+            #     repr(settings.do_sync), repr(settings.do_categories))
             syncing_group = HtmlReporter.Group('cats',
                                                'Category Syncing Results')
 
@@ -1923,7 +1946,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
             all_product_updates += problematic_variation_updates
 
     # don't perform updates if limit was set
-    if args.download_limit:
+    if settings.download_limit:
         all_product_updates = []
 
     slave_failures = []
@@ -1984,6 +2007,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-stateme
 
 
 def catch_main():
+    """
+    Run the main function within a try statement and attempt to analyse failure
+    """
+
     settings = argparse.Namespace()
 
     settings.in_folder = "../input/"
