@@ -398,7 +398,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     return parser
 
 
-def populate_parsers(settings):
+def populate_master_parsers(settings):
     """
     Creates and populates the various parsers
     """
@@ -670,6 +670,97 @@ def process_images(settings, parsers):
     #
     # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
+def export_parsers(settings, parsers):
+
+    Registrar.registerProgress("Exporting info to spreadsheets")
+
+    if settings.schema in settings.myo_schemas:
+        product_cols = ColData_MYO.getProductCols()
+        product_list = MYOProdList(parsers.product.products.values())
+        product_list.exportItems(settings.myo_path,
+                                 ColData_Base.getColNames(product_cols))
+    elif settings.schema in settings.woo_schemas:
+        product_cols = ColData_Woo.getProductCols()
+
+        for col in settings.exclude_cols:
+            if col in product_cols:
+                del product_cols[col]
+
+        attribute_cols = ColData_Woo.getAttributeCols(
+            parsers.product.attributes, parsers.product.vattributes)
+        product_colnames = ColData_Base.getColNames(
+            listUtils.combineOrderedDicts(product_cols, attribute_cols))
+
+        product_list = WooProdList(parsers.product.products.values())
+        product_list.exportItems(settings.fla_path, product_colnames)
+
+        # variations
+
+        variation_cols = ColData_Woo.getVariationCols()
+
+        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(
+            parsers.product.vattributes)
+        variation_col_names = ColData_Base.getColNames(
+            listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
+
+        if parsers.product.variations:
+            variation_list = WooVarList(parsers.product.variations.values())
+            variation_list.exportItems(settings.flv_path, variation_col_names)
+
+        if parsers.product.categories:
+            # categories
+            category_cols = ColData_Woo.getCategoryCols()
+
+            category_list = WooCatList(parsers.product.categories.values())
+            category_list.exportItems(settings.cat_path,
+                                      ColData_Base.getColNames(category_cols))
+
+        # specials
+        if settings.do_specials:
+            # current_special = settings.current_special
+            current_special = None
+            if parsers.product.currentSpecialGroups:
+                current_special = parsers.product.currentSpecialGroups[0].ID
+            if current_special:
+                special_products = parsers.product.onspecial_products.values()
+                if special_products:
+                    fla_name, fla_ext = os.path.splitext(settings.fla_path)
+                    fls_path = os.path.join(
+                        settings.out_folder,
+                        fla_name + "-" + current_special + fla_ext)
+                    special_product_list = WooProdList(special_products)
+                    special_product_list.exportItems(fls_path,
+                                                     product_colnames)
+                special_variations = parsers.product.onspecial_variations.values(
+                )
+                if special_variations:
+                    flv_name, flv_ext = os.path.splitext(settings.flv_path)
+                    flvs_path = os.path.join(
+                        settings.out_folder,
+                        flv_name + "-" + current_special + flv_ext)
+
+                    sp_variation_list = WooVarList(special_variations)
+                    sp_variation_list.exportItems(flvs_path,
+                                                  variation_col_names)
+
+        updated_products = parsers.product.updated_products.values()
+        if updated_products:
+            fla_name, fla_ext = os.path.splitext(settings.fla_path)
+            flu_path = os.path.join(settings.out_folder,
+                                    fla_name + "-Updated" + fla_ext)
+
+            updated_product_list = WooProdList(updated_products)
+            updated_product_list.exportItems(flu_path, product_colnames)
+
+        updated_variations = parsers.product.updated_variations.values()
+
+        if updated_variations:
+            flv_name, flv_ext = os.path.splitext(settings.flv_path)
+            flvu_path = os.path.join(settings.out_folder,
+                                     flv_name + "-Updated" + flv_ext)
+
+            updated_variations_list = WooVarList(updated_variations)
+            updated_variations_list.exportItems(flvu_path, variation_col_names)
 
 def main(override_args=None, settings=None):
     """ The main function for generator """
@@ -891,22 +982,22 @@ def main(override_args=None, settings=None):
     CSVParse_Woo.do_dyns = settings.do_dyns
     CSVParse_Woo.do_specials = settings.do_specials
 
-    exclude_cols = []
+    settings.exclude_cols = []
 
     if not settings.do_images:
-        exclude_cols.extend(['Images', 'imgsum'])
+        settings.exclude_cols.extend(['Images', 'imgsum'])
 
     if not settings.do_categories:
-        exclude_cols.extend(['catsum', 'catlist'])
+        settings.exclude_cols.extend(['catsum', 'catlist'])
 
     if not settings.do_dyns:
-        exclude_cols.extend([
+        settings.exclude_cols.extend([
             'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
             'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
         ])
 
     if not settings.do_specials:
-        exclude_cols.extend([
+        settings.exclude_cols.extend([
             'SCHEDULE', 'sale_price', 'sale_price_dates_from',
             'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
             'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
@@ -954,7 +1045,7 @@ def main(override_args=None, settings=None):
         'taxoDepth': settings.taxo_depth,
     }
 
-    parsers = populate_parsers(settings)
+    parsers = populate_master_parsers(settings)
 
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
@@ -977,99 +1068,11 @@ def main(override_args=None, settings=None):
     # Export Info to Spreadsheets
     #########################################
 
-    Registrar.registerProgress("Exporting info to spreadsheets")
+    export_parsers(settings, parsers)
 
-    if settings.schema in settings.myo_schemas:
-        product_cols = ColData_MYO.getProductCols()
-        product_list = MYOProdList(parsers.product.products.values())
-        product_list.exportItems(settings.myo_path,
-                                 ColData_Base.getColNames(product_cols))
-    elif settings.schema in settings.woo_schemas:
-        product_cols = ColData_Woo.getProductCols()
-
-        for col in exclude_cols:
-            if col in product_cols:
-                del product_cols[col]
-
-        attribute_cols = ColData_Woo.getAttributeCols(
-            parsers.product.attributes, parsers.product.vattributes)
-        product_colnames = ColData_Base.getColNames(
-            listUtils.combineOrderedDicts(product_cols, attribute_cols))
-
-        product_list = WooProdList(parsers.product.products.values())
-        product_list.exportItems(settings.fla_path, product_colnames)
-
-        # variations
-
-        variation_cols = ColData_Woo.getVariationCols()
-
-        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(
-            parsers.product.vattributes)
-        variation_col_names = ColData_Base.getColNames(
-            listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
-
-        if parsers.product.variations:
-            variation_list = WooVarList(parsers.product.variations.values())
-            variation_list.exportItems(settings.flv_path, variation_col_names)
-
-        if parsers.product.categories:
-            # categories
-            category_cols = ColData_Woo.getCategoryCols()
-
-            category_list = WooCatList(parsers.product.categories.values())
-            category_list.exportItems(settings.cat_path,
-                                      ColData_Base.getColNames(category_cols))
-
-        # specials
-        if settings.do_specials:
-            # current_special = settings.current_special
-            current_special = None
-            if parsers.product.currentSpecialGroups:
-                current_special = parsers.product.currentSpecialGroups[0].ID
-            if current_special:
-                special_products = parsers.product.onspecial_products.values()
-                if special_products:
-                    fla_name, fla_ext = os.path.splitext(settings.fla_path)
-                    fls_path = os.path.join(
-                        settings.out_folder,
-                        fla_name + "-" + current_special + fla_ext)
-                    special_product_list = WooProdList(special_products)
-                    special_product_list.exportItems(fls_path,
-                                                     product_colnames)
-                special_variations = parsers.product.onspecial_variations.values(
-                )
-                if special_variations:
-                    flv_name, flv_ext = os.path.splitext(settings.flv_path)
-                    flvs_path = os.path.join(
-                        settings.out_folder,
-                        flv_name + "-" + current_special + flv_ext)
-
-                    sp_variation_list = WooVarList(special_variations)
-                    sp_variation_list.exportItems(flvs_path,
-                                                  variation_col_names)
-
-        updated_products = parsers.product.updated_products.values()
-        if updated_products:
-            fla_name, fla_ext = os.path.splitext(settings.fla_path)
-            flu_path = os.path.join(settings.out_folder,
-                                    fla_name + "-Updated" + fla_ext)
-
-            updated_product_list = WooProdList(updated_products)
-            updated_product_list.exportItems(flu_path, product_colnames)
-
-        updated_variations = parsers.product.updated_variations.values()
-
-        if updated_variations:
-            flv_name, flv_ext = os.path.splitext(settings.flv_path)
-            flvu_path = os.path.join(settings.out_folder,
-                                     flv_name + "-Updated" + flv_ext)
-
-            updated_variations_list = WooVarList(updated_variations)
-            updated_variations_list.exportItems(flvu_path, variation_col_names)
-
-        #########################################
-        # Attempt download API data
-        #########################################
+    #########################################
+    # Attempt download API data
+    #########################################
 
     if settings.download_slave:
 
@@ -1318,13 +1321,6 @@ def main(override_args=None, settings=None):
             for key, category in api_product_parser.categories.items():
                 print "%5s | %50s" % (key, category.title[:50])
 
-        # categoryMatcher = CategoryMatcher()
-        # categoryMatcher.clear()
-        # categoryMatcher.processRegisters(api_product_parser.categories, parsers.product.categories)
-
-        # print "PRINTING NEW SYNCING PROUCTS"
-
-        # SYNC PRODUCTS
 
         product_matcher = ProductMatcher()
         product_matcher.processRegisters(api_product_parser.products,
@@ -1340,7 +1336,7 @@ def main(override_args=None, settings=None):
         if Registrar.DEBUG_UPDATE:
             Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
 
-        for col in exclude_cols:
+        for col in settings.exclude_cols:
             if col in sync_cols:
                 del sync_cols[col]
 
