@@ -1,67 +1,106 @@
-from parsing.abstract import ImportObject, ObjList
-# from parsing.flat import UsrObjList #, ImportUser
-from utils import SanitationUtils, Registrar, InheritenceUtils, listUtils
+"""
+Utilities for matching lists of parsing.abstract.ImportObjects
+"""
 from collections import OrderedDict
-from pprint import pformat
+
+from woogenerator.parsing.abstract import ImportObject, ObjList
+from woogenerator.utils import SanitationUtils, Registrar, InheritenceUtils, listUtils
+
 
 class Match(object):
     """ A list of master objects and slave objects that match in sosme way """
 
-    def __init__(self, mObjects = None, sObjects = None):
-        self._mObjects = filter(None, mObjects) or []
-        self._sObjects = filter(None, sObjects) or []
-        for _object in self._mObjects + self._sObjects:
+    def __init__(self, m_objects=None, s_objects=None):
+        self._m_objects = filter(None, m_objects) or []
+        self._s_objects = filter(None, s_objects) or []
+        for _object in self._m_objects + self._s_objects:
             assert isinstance(_object, ImportObject)
 
     @property
-    def mObjects(self):
-        return self._mObjects
+    def m_objects(self):
+        """
+        return a list of master objects associated with match
+        """
+        return self._m_objects
 
     @property
-    def mObject(self):
-        assert self.mLen == 1, \
-            ".mObject assumes mObjects unique, instead it is %d long" % len(self._mObjects)
-        return self._mObjects[0]
+    def m_object(self):
+        """
+        return the singular master object associated with match
+
+        Raises:
+            AssertionError: if m_objects is not singular
+        """
+        assert self.m_len == 1, \
+            ".m_object assumes m_objects unique, instead it is %d long" % len(self._m_objects)
+        return self._m_objects[0]
 
     @property
-    def sObjects(self):
-        return self._sObjects
+    def s_objects(self):
+        """
+        return a list of slave objects associated with match
+        """
+        return self._s_objects
 
     @property
-    def sObject(self):
-        assert self.sLen == 1, \
-            ".sObject assumes mObjects unique, instead it is %d long" % len(self._sObjects)
-        return self._sObjects[0]
+    def s_object(self):
+        """
+        return the singular slave object associated with match
+
+        Raises:
+            AssertionError: if s_objects is not singular
+        """
+        assert self.s_len == 1, \
+            ".s_object assumes s_objects unique, instead it is %d long" % len(self._s_objects)
+        return self._s_objects[0]
 
     @property
-    def sLen(self):
-        return len(self._sObjects)
+    def s_len(self):
+        """
+        return the number of slave objects in the match
+        """
+        return len(self._s_objects)
 
     @property
-    def mLen(self):
-        return len(self._mObjects)
+    def m_len(self):
+        """
+        return the number of master objects in the match
+        """
+        return len(self._m_objects)
 
     @property
-    def isSingular(self):
-        return self.mLen <= 1 and self.sLen <= 1
+    def is_singular(self):
+        """
+        return true if there is less than one master and slave in the match
+        """
+        return self.m_len <= 1 and self.s_len <= 1
 
     @property
-    def hasNoMaster(self):
-        return self.mLen == 0
+    def has_no_master(self):
+        """
+        return true if the match is masterless
+        """
+        return self.m_len == 0
 
     @property
-    def hasNoSlave(self):
-        return self.sLen == 0
+    def has_no_slave(self):
+        """
+        return true if the match is slaveless
+        """
+        return self.s_len == 0
 
     @property
     def type(self):
-        if(self.isSingular):
-            if(self.hasNoMaster):
-                if(not self.hasNoSlave):
+        """
+        return the match type of the match
+        """
+        if self.is_singular:
+            if self.has_no_master:
+                if not self.has_no_slave:
                     return 'masterless'
                 else:
                     return 'empty'
-            elif(self.hasNoSlave):
+            elif self.has_no_slave:
                 return 'slaveless'
             else:
                 return 'pure'
@@ -70,92 +109,116 @@ class Match(object):
 
     @property
     def gcs(self):
-        """Greatest common subset"""
-        if self.mLen or self.sLen:
-            # Registrar.registerMessage("getting GCS of %s" % (self.mObjects + self.sObjects))
-            return InheritenceUtils.gcs(*(self.mObjects + self.sObjects))
+        """
+        Return the Greatest Common Subset of classes of the master and slave
+        objects in the match
+        """
+        if self.m_len or self.s_len:
+            # Registrar.registerMessage("getting GCS of %s" % (self.m_objects + self.s_objects))
+            return InheritenceUtils.gcs(*(self.m_objects + self.s_objects))
         else:
             return None
 
+    def add_s_object(self, s_object):
+        """
+        add a slave object to the match
+        """
+        if s_object not in self.s_objects:
+            self.s_objects.append(s_object)
 
-    def addSObject(self, sObject):
-        if sObject not in self.sObjects: self.sObjects.append(sObject)
+    def add_m_object(self, m_object):
+        """
+        add a master object to the match
+        """
+        if m_object not in self.m_objects:
+            self.m_objects.append(m_object)
 
-    def addMObject(self, mObject):
-        if mObject not in self.mObjects: self.mObjects.append(mObject)
+    def find_key_matches(self, key_fn):
+        """
+        Split this match into smaller matches based on the results of applying
+        key_fn to the objects in this match
 
-    def findKeyMatches(self, keyFn):
-        kMatches = {}
-        for sObject in self.sObjects:
-            value = keyFn(sObject)
-            if not value in kMatches.keys():
-                kMatches[value] = Match()
-            kMatches[value].addSObject(sObject)
-            # for mObject in self.mObjects:
-            #     if keyFn(mObject) == value:
-            #         kMatches[value].addMObject(mObject)
-        for mObject in self.mObjects:
-            value = keyFn(mObject)
-            if not value in kMatches.keys():
-                kMatches[value] = Match()
-            kMatches[value].addMObject(mObject)
-        return kMatches
+        Arguments:
+            key_fn (function):
+                takes a parsing.abstract.ImportObject and returns a key used
+                for mapping
 
-    def WooObjListRepr(self, objs):
+        Returns:
+            A dictionary of Match objects sorted by the output of key_fn
+        """
+
+        k_matches = {}
+        for s_object in self.s_objects:
+            value = key_fn(s_object)
+            if not value in k_matches.keys():
+                k_matches[value] = Match()
+            k_matches[value].add_s_object(s_object)
+            # for m_object in self.m_objects:
+            #     if key_fn(m_object) == value:
+            #         kMatches[value].add_m_object(m_object)
+        for m_object in self.m_objects:
+            value = key_fn(m_object)
+            if not value in k_matches.keys():
+                k_matches[value] = Match()
+            k_matches[value].add_m_object(m_object)
+        return k_matches
+
+    @classmethod
+    def woo_obj_list_repr(cls, objs):
+        """
+        Return a representation of objs suitable for woo_obj_list
+        """
         length = len(objs)
-        return "({0}) [{1:^100s}]".format(len(objs), ",".join(map(lambda obj: obj.__repr__()[:200/length], objs)))
+        return "({0}) [{1:^100s}]".format(
+            len(objs),
+            ','.join([obj.__repr__()[:200 / length] for obj in objs])
+        )
+            # ",".join(map(lambda obj: obj.__repr__()[:200 / length], objs)))
 
     def __repr__(self):
-        return " | ".join( [self.WooObjListRepr(self.mObjects), self.WooObjListRepr(self.sObjects)] )
+        return " | ".join([
+            self.woo_obj_list_repr(self.m_objects),
+            self.woo_obj_list_repr(self.s_objects)
+        ])
 
-    def containerize(self):
+    def containerize(self): # pylint: disable=too-many-branches
+        """
+        Return the objects within the match wrapped in the best possible container
+        determined by the container attribute of the gcs of their classes
+        """
         print_headings = False
         if self.type in ['duplicate']:
-            if self.mObjects:
+            if self.m_objects:
                 # out += "The following ACT records are diplicates"
-                if self.sObjects:
+                if self.s_objects:
                     pass
                     # print_headings = True # we don't need to print headings any more :P
                     # out += " of the following WORDPRESS records"
             else:
-                assert self.sObjects
+                assert self.s_objects
                 # out += "The following WORDPRESS records are duplicates"
         elif self.type in ['masterless', 'slavelaveless']:
             pass
-            # out += "The following records do not exist in %s" % {'masterless':'ACT', 'slaveless':'WORDPRESS'}[self.type]
-        # out += "\n"
         obj_container = None
-        if self.mLen or self.sLen:
+        if self.m_len or self.s_len:
             gcs = self.gcs
             if gcs is not None and hasattr(gcs, 'container'):
-                obj_container = gcs.container(indexer=(lambda x: x.identifier))
-                # else:
-                    # container = None
-                    # if hasattr(gcs, 'container'):
-                    #     container = gcs.container
-                    # Registrar.registerError("could not create GCS %s, container: %s | %s" % (repr(gcs), repr(container), str(e)))
-                    # obj_container = ObjList()
-                # Registrar.registerMessage(
-                #     "tabulating with container: %s because of gcs %s" \
-                #     % (type(obj_container), gcs)
-                # )
+                obj_container = gcs.container(indexer=(
+                    lambda import_object: import_object.identifier))
             else:
-                obj_container = ObjList(indexer=(lambda x: x.identifier))
-                # Registrar.registerMessage(
-                #     "tabulating with container: %s because no gcs" \
-                #     % (type(obj_container))
-                # )
-            if self.mObjects:
-                mobjs = self.mObjects[:]
-                if(print_headings):
+                obj_container = ObjList(indexer=(
+                    lambda import_object: import_object.identifier))
+            if self.m_objects:
+                mobjs = self.m_objects[:]
+                if print_headings:
                     heading = gcs({}, rowcount='M')
                     # heading = ImportObject({}, rowcount='M')
                     mobjs = [heading] + mobjs
-                for mobj in mobjs :
+                for mobj in mobjs:
                     obj_container.append(mobj)
-            if self.sObjects:
-                sobjs = self.sObjects[:]
-                if(print_headings):
+            if self.s_objects:
+                sobjs = self.s_objects[:]
+                if print_headings:
                     heading = gcs({}, rowcount='S')
                     # heading = ImportObject({}, rowcount='S')
                     sobjs = [heading] + sobjs
@@ -165,370 +228,389 @@ class Match(object):
         return obj_container
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
-        out  = ""
+        """
+        Returns a string that contains a representation of the match in the
+        table format specified
+        """
+        out = ""
 
         obj_container = self.containerize()
         if obj_container:
             try:
-                out += obj_container.tabulate(cols=cols, tablefmt=tablefmt, highlight_rules=highlight_rules)
-            except TypeError as e:
-                print "obj_container could not tabulate: %s " % type(obj_container) 
-                raise e
-            except AssertionError as e:
-                print "could not tabulate\nmObjects:%s\nsObjects:%s" % (
-                    self.mObjects,
-                    self.sObjects
-                )
-                raise e
+                out += obj_container.tabulate(
+                    cols=cols,
+                    tablefmt=tablefmt,
+                    highlight_rules=highlight_rules)
+            except TypeError as exc:
+                print "obj_container could not tabulate: %s " % type(
+                    obj_container)
+                raise exc
+            except AssertionError as exc:
+                print "could not tabulate\nm_objects:%s\ns_objects:%s" % (
+                    self.m_objects, self.s_objects)
+                raise exc
         else:
             out += 'EMPTY'
         # return SanitationUtils.coerceUnicode(out)
-        return (out)
+        return out
 
-def findCardMatches(match):
-    return match.findKeyMatches( lambda obj: obj.MYOBID or '')
 
-def findPCodeMatches(match):
-    return match.findKeyMatches( lambda obj: obj.get('Postcode') or obj.get('Home Postcode') or '')
+def find_card_matches(match):
+    """
+    find within the match, matches on an objects card
+    """
+    return match.find_key_matches(lambda obj: obj.MYOBID or '')
+
+
+def find_p_code_matches(match):
+    """
+    find within the match, matches based on an objects postcode
+    """
+    return match.find_key_matches(
+        lambda obj: obj.get('Postcode') or obj.get('Home Postcode') or '')
+
 
 class MatchList(list):
-    """ A sequence of Match objects indexed by an indexFn"""
+    """ A sequence of Match objects indexed by an index_fn"""
 
     check_indices = True
 
-    def __init__(self, matches=None, indexFn = None):
-        if(indexFn):
-            self._indexFn = indexFn
+    def __init__(self, matches=None, index_fn=None):
+        super(MatchList, self).__init__()
+        if index_fn:
+            self._index_fn = index_fn
         else:
-            self._indexFn = (lambda x: x.index)
-        self._sIndices = []
-        self._mIndices = []
-        if(matches):
+            self._index_fn = (lambda import_object: import_object.index)
+        self._s_indices = []
+        self._m_indices = []
+        if matches:
             for match in matches:
                 assert isinstance(match, Match)
-                self.addMatch(match)
+                self.add_match(match)
 
     @property
-    def sIndices(self):
-        return self._sIndices
+    def s_indices(self):
+        """
+        Return the list of slave indices in all of the matches
+        """
+        return self._s_indices
 
     @property
-    def mIndices(self):
-        return self._mIndices
+    def m_indices(self):
+        """
+        Return the list of master indices in all of the matches
+        """
+        return self._m_indices
 
-    def addMatch(self, match):
+    def add_match(self, match):
+        """
+        Adds a match to the list
+        """
         # Registrar.registerMessage("adding match: %s" % str(match))
-        matchSIndices = []
-        matchMIndices = []
-        for sObject in match.sObjects:
+        match_s_indices = []
+        match_m_indices = []
+        for s_object in match.s_objects:
             # Registrar.registerMessage('indexing slave %s with %s : %s' \
-            #                         % (sObject, repr(self._indexFn), sIndex))
-            sIndex = self._indexFn(sObject)
+            #                         % (s_object, repr(self._index_fn), s_index))
+            s_index = self._index_fn(s_object)
             assert \
-                sIndex not in self.sIndices, \
-                "can't add match sObject %s : sIndex %s already in sIndices: %s \n %s \n all matches: \n%s ;\n probably ambiguous category names" % (
-                    str(sObject), str(sIndex), str(self.sIndices), str(match), str('\n'.join(map(str,self)))
+                s_index not in self.s_indices, \
+                ("can't add match s_object %s : s_index %s already in s_indices: %s \n"
+                 "%s \n all matches: \n%s ;\n probably ambiguous category names") % \
+                (
+                    str(s_object), str(s_index), str(self.s_indices), str(
+                        match), str('\n'.join(map(str, self)))
                 )
-            matchSIndices.append(sIndex)
-        if matchSIndices:
+            match_s_indices.append(s_index)
+        if match_s_indices:
             if self.check_indices:
-                assert listUtils.checkEqual(matchSIndices), "all sIndices should be equal: %s" % matchSIndices
-            self.sIndices.append(matchSIndices[0])
-        for mObject in match.mObjects:
+                assert listUtils.checkEqual(
+                    match_s_indices
+                ), "all s_indices should be equal: %s" % match_s_indices
+            self.s_indices.append(match_s_indices[0])
+        for m_object in match.m_objects:
             # Registrar.registerMessage('indexing master %s with %s : %s' \
-                                    # % (sObject, repr(self._indexFn), sIndex))
-            mIndex = self._indexFn(mObject)
+            # % (s_object, repr(self._index_fn), s_index))
+            m_index = self._index_fn(m_object)
             assert \
-                mIndex not in self.mIndices, \
-                "can't add match mObject %s : mIndex %s already in mIndices: %s \n %s \n all matches: %s" % (
-                    str(mObject), str(mIndex), str(self.mIndices), str(match), str('\n'.join(map(str,self)))
+                m_index not in self.m_indices, \
+                ("can't add match m_object %s : m_index %s already in m_indices: %s \n"
+                 "%s \n all matches: %s") % \
+                (
+                    str(m_object), str(m_index), str(self.m_indices), str(
+                        match), str('\n'.join(map(str, self)))
                 )
-            matchMIndices.append(mIndex)
-        if matchMIndices:
+            match_m_indices.append(m_index)
+        if match_m_indices:
             if self.check_indices:
-                assert listUtils.checkEqual(matchMIndices), "all mIndices should be equal: %s" % matchMIndices
-            self.mIndices.append(matchMIndices[0])
+                assert listUtils.checkEqual(
+                    match_m_indices
+                ), "all m_indices should be equal: %s" % match_m_indices
+            self.m_indices.append(match_m_indices[0])
         self.append(match)
 
-    def addMatches(self, matches):
+    def add_matches(self, matches):
+        """
+        Add a sequence of matches to the matches
+        """
         for match in matches:
-            self.addMatch(match)
+            self.add_match(match)
 
     def merge(self):
-        mObjects = []
-        sObjects = []
+        """
+        Combine the matches into a single Match object
+        """
+        m_objects = []
+        s_objects = []
         for match in self:
-            for mObj in match.mObjects:
-                mObjects.append(mObj)
-            for sObj in match.sObjects:
-                sObjects.append(sObj)
+            for m_obj in match.m_objects:
+                m_objects.append(m_obj)
+            for s_obj in match.s_objects:
+                s_objects.append(s_obj)
 
-        return Match(mObjects, sObjects)
+        return Match(m_objects, s_objects)
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
-        if(self):
+        """
+        Returns a string that contains a representation of the match in the
+        table format specified
+        """
+        if self:
             prefix, suffix = "", ""
             delimeter = "\n"
             if tablefmt == 'html':
                 delimeter = ''
                 prefix = '<div class="matchList">'
                 suffix = '</div>'
-            return prefix + delimeter.join(
-                [SanitationUtils.coerceBytes(match.tabulate(cols=cols, tablefmt=tablefmt, highlight_rules=highlight_rules))\
-                 for match in self if match]
-            ) + suffix
+            return prefix + delimeter.join([
+                SanitationUtils.coerceBytes(
+                    match.tabulate(
+                        cols=cols,
+                        tablefmt=tablefmt,
+                        highlight_rules=highlight_rules)) for match in self
+                if match
+            ]) + suffix
         else:
             return ""
 
+
 class ConflictingMatchList(MatchList):
+    """
+    A MatchList that does not checks indices when adding a match
+    """
+    # TODO: what is this useful for?
     check_indices = False
 
 
 class AbstractMatcher(Registrar):
-    def __init__(self, indexFn = None):
+    """
+    Abstract class that performs matching operations on a given type of ImportObject
+    """
+
+    def __init__(self, index_fn=None):
         super(AbstractMatcher, self).__init__()
-        # print "entering AbstractMatcher __init__"
-        if(indexFn):
-            # print "-> indexFn"
-            self.indexFn = indexFn
+        if index_fn:
+            self.index_fn = index_fn
         else:
-            # print "-> not indexFn"
-            self.indexFn = (lambda x: x.index)
-        self.processRegisters = self.processRegistersNonsingular
+            self.index_fn = (lambda import_object: import_object.index)
+        self.process_registers = self.process_registers_nonsingular
         # self.retrieveObjects = self.retrieveObjectsNonsingular
-        self.mFilterFn = None
-        self.fFilterFn = None
+        self.m_filter_fn = None
+        self.f_filter_fn = None
         self.clear()
 
     def clear(self):
+        """
+        Initialize the matcher
+        """
         self._matches = {
-            'all': MatchList(indexFn=self.indexFn),
-            'pure': MatchList(indexFn=self.indexFn),
-            'slaveless': MatchList(indexFn=self.indexFn),
-            'masterless': MatchList(indexFn=self.indexFn),
-            'duplicate': MatchList(indexFn=self.indexFn)
+            'all': MatchList(index_fn=self.index_fn),
+            'pure': MatchList(index_fn=self.index_fn),
+            'slaveless': MatchList(index_fn=self.index_fn),
+            'masterless': MatchList(index_fn=self.index_fn),
+            'duplicate': MatchList(index_fn=self.index_fn)
         }
 
     @property
     def matches(self):
+        """ return all match lists """
         return self._matches['all']
 
     @property
-    def pureMatches(self):
+    def pure_matches(self):
+        """ return all matches that contain no more than one slave or master """
         return self._matches['pure']
 
     @property
-    def slavelessMatches(self):
+    def slaveless_matches(self):
+        """ return all matches that contain no slaves """
         return self._matches['slaveless']
 
     @property
-    def masterlessMatches(self):
+    def masterless_matches(self):
+        """ return all matches that contain no masters """
         return self._matches['masterless']
 
     @property
-    def duplicateMatches(self):
+    def duplicate_matches(self):
+        """ return all matches that contain more than one master or slave """
         return self._matches['duplicate']
 
-    # saRegister is in nonsingular form. regkey => [slaveObjects]
-    def processRegistersNonsingular(self, saRegister, maRegister):
-        """ Groups items in both registers by the result of applying the index function when both are nonsingular """
-        # It's messy because we can't assume that our indexFn is the same as the indexFn of the register :(
-        # Properly index maRegister:
-        msIndexed = OrderedDict()
-        for regValues in maRegister.values():
-            for regValue in regValues:
-                regIndex = self.indexFn(regValue)
-                if not regIndex in msIndexed:
-                    msIndexed[regIndex] = ([], [])
-                msIndexed[regIndex][0].append(regValue)
+    # sa_register is in nonsingular form. regkey => [slaveObjects]
+    def process_registers_nonsingular(self, sa_register, ma_register):
+        """
+        Groups items in both registers by the result of applying the index function when
+        both are nonsingular
 
-        for regValues in saRegister.values():
-            for regValue in regValues:
-                regIndex = self.indexFn(regValue)
-                if not regIndex in msIndexed:
-                    msIndexed[regIndex] = ([], [])
-                msIndexed[regIndex][1].append(regValue)
+        It's messy because we can't assume that our index_fn is the same as the
+        index_fn of the register :(
 
-        for msValues in msIndexed.values():
-            self.processMatch(msValues[0], msValues[1])
+        """
+        # TODO: optimize register processing
+        ms_indexed = OrderedDict()
+        for reg_values in ma_register.values():
+            for reg_value in reg_values:
+                reg_index = self.index_fn(reg_value)
+                if not reg_index in ms_indexed:
+                    ms_indexed[reg_index] = ([], [])
+                ms_indexed[reg_index][0].append(reg_value)
 
-        # mKeys = set(maRegister.keys())
-        # for regKey, regValue in saRegister.items():
-        #     saObjects = regValue
-        #     maObjects = self.retrieveObjects(maRegister, regKey)
-        #     if regKey in mKeys:
-        #         mKeys.remove(regKey)
-        #     self.processMatch(maObjects, saObjects)
-        # for mKey in mKeys:
-        #     saObjects = []
-        #     maObjects = self.retrieveObjects(maRegister, mKey)
-        #     self.processMatch(maObjects, saObjects)
+        for reg_values in sa_register.values():
+            for reg_value in reg_values:
+                reg_index = self.index_fn(reg_value)
+                if not reg_index in ms_indexed:
+                    ms_indexed[reg_index] = ([], [])
+                ms_indexed[reg_index][1].append(reg_value)
 
-    # saRegister is in singular form. regIndex => slaveObject
-    def processRegistersSingular(self, saRegister, maRegister):
-        """ Groups items in both registers by the result of applying the index function when both are singular """
-        # again, complicated because can't assume we have the same indexFn as the registers
+        for ms_values in ms_indexed.values():
+            self.process_match(ms_values[0], ms_values[1])
 
-        msIndexed = OrderedDict()
-        for regValue in maRegister.values():
-            regIndex = self.indexFn(regValue)
-            if not regIndex in msIndexed:
-                msIndexed[regIndex] = ([], [])
-            msIndexed[regIndex][0].append(regValue)
+    def process_registers_singular(self, sa_register, ma_register):
+        """
+        Groups items in both registers by the result of applying the index function when
+        both are singular
 
-        for regValue in saRegister.values():
-            regIndex = self.indexFn(regValue)
-            if not regIndex in msIndexed:
-                msIndexed[regIndex] = ([], [])
-            msIndexed[regIndex][1].append(regValue)
+        again, complicated because can't assume we have the same index_fn as the registers
+        """
+        # TODO: optimize register processing
 
-        for msValues in msIndexed.values():
-            self.processMatch(msValues[0], msValues[1])
+        ms_indexed = OrderedDict()
+        for reg_value in ma_register.values():
+            reg_index = self.index_fn(reg_value)
+            if not reg_index in ms_indexed:
+                ms_indexed[reg_index] = ([], [])
+            ms_indexed[reg_index][0].append(reg_value)
 
-        # mKeys = OrderedDict()
-        # for regKey, regValue in maRegister.items():
-        #     regIndex = self.indexFn(regValue)
-        #     if not regIndex in mKeys:
-        #         mKeys[regIndex] = []
-        #     mKeys[regIndex].append(regKey)
-        #
-        # sKeys = OrderedDict()
-        # for regKey, regValue in saRegister.items():
-        #     regIndex = self.indexFn(regValue)
-        #     if not regIndex in sKeys:
-        #         sKeys[regIndex] = []
-        #     sKeys[regIndex].append(regKey)
-        #
-        # for regIndex in list(set(mKeys) | set(sKeys)):
-        #     mObjects = []
-        #     sObjects = []
-        #     if regIndex in mKeys:
-        #         for regKey in mKeys[regIndex]:
-        #             mObjects.extend(self.retrieveObjects(maRegister, regKey))
-        #     if regIndex in sKeys:
-        #         for regKey in sKeys[regIndex]:
-        #             sObjects.extend(self.retrieveObjects(saRegister, regKey))
-        #     self.processMatch(mObjects, sObjects)
+        for reg_value in sa_register.values():
+            reg_index = self.index_fn(reg_value)
+            if not reg_index in ms_indexed:
+                ms_indexed[reg_index] = ([], [])
+            ms_indexed[reg_index][1].append(reg_value)
 
-    def processRegistersSingularNonSingular(self, saRegister, maRegister):
+        for ms_values in ms_indexed.values():
+            self.process_match(ms_values[0], ms_values[1])
+
+    def process_registers_singular_ns(self, sa_register, ma_register):
         """ Master is nonsingular, slave is singular """
-        msIndexed = OrderedDict()
-        for regValues in maRegister.values():
-            for regValue in regValues:
-                regIndex = self.indexFn(regValue)
-                if not regIndex in msIndexed:
-                    msIndexed[regIndex] = ([], [])
-                msIndexed[regIndex][0].append(regValue)
+        ms_indexed = OrderedDict()
+        for reg_values in ma_register.values():
+            for reg_value in reg_values:
+                reg_index = self.index_fn(reg_value)
+                if not reg_index in ms_indexed:
+                    ms_indexed[reg_index] = ([], [])
+                ms_indexed[reg_index][0].append(reg_value)
 
-        for regValue in saRegister.values():
-            regIndex = self.indexFn(regValue)
-            if not regIndex in msIndexed:
-                msIndexed[regIndex] = ([], [])
-            msIndexed[regIndex][1].append(regValue)
+        for reg_value in sa_register.values():
+            reg_index = self.index_fn(reg_value)
+            if not reg_index in ms_indexed:
+                ms_indexed[reg_index] = ([], [])
+            ms_indexed[reg_index][1].append(reg_value)
 
-        for msValues in msIndexed.values():
-            self.processMatch(msValues[0], msValues[1])
+        for ms_values in ms_indexed.values():
+            self.process_match(ms_values[0], ms_values[1])
 
-        # # make slave nonsingular and process both as nonsingular
-        # saRegister = OrderedDict([(key, [value]) for key, value in saRegister.items()])
-        # self.processRegistersNonsingular(saRegister, maRegister)
-
-    def processRegistersNonSingularSingular(self, saRegister, maRegister):
+    def process_registers_ns_singular(self, sa_register, ma_register):
         """ Master is singular, slave is nonsingular """
 
-        msIndexed = OrderedDict()
-        for regValue in maRegister.values():
-            regIndex = self.indexFn(regValue)
-            if not regIndex in msIndexed:
-                msIndexed[regIndex] = ([], [])
-            msIndexed[regIndex][0].append(regValue)
+        ms_indexed = OrderedDict()
+        for reg_value in ma_register.values():
+            reg_index = self.index_fn(reg_value)
+            if not reg_index in ms_indexed:
+                ms_indexed[reg_index] = ([], [])
+            ms_indexed[reg_index][0].append(reg_value)
 
-        for regValues in saRegister.values():
-            for regValue in regValues:
-                regIndex = self.indexFn(regValue)
-                if not regIndex in msIndexed:
-                    msIndexed[regIndex] = ([], [])
-                msIndexed[regIndex][1].append(regValue)
+        for reg_values in sa_register.values():
+            for reg_value in reg_values:
+                reg_index = self.index_fn(reg_value)
+                if not reg_index in ms_indexed:
+                    ms_indexed[reg_index] = ([], [])
+                ms_indexed[reg_index][1].append(reg_value)
 
-        for msValues in msIndexed.values():
-            self.processMatch(msValues[0], msValues[1])
+        for ms_values in ms_indexed.values():
+            self.process_match(ms_values[0], ms_values[1])
 
-        # # make master nonsingular and process both as nonsingular
-        # maRegister = OrderedDict([(key, [value]) for key, value in maRegister.items()])
-        # self.processRegistersNonsingular(saRegister, maRegister)
-
-    # def retrieveObjectsNonsingular(self, register, key):
-    #     # print "retrieving nonsingular object"
-    #     return register.get(key, [])
-
-    # def retrieveObjectsSingular(self, register, key):
-    #     # print "retrieving singular object"
-    #     regObject = register.get(key, [])
-    #     if(regObject):
-    #         return [regObject]
-    #     else:
-    #         return []
-
-    def get_match_type(self, match):
+    @classmethod
+    def get_match_type(cls, match):
+        """ Return the type of a given match """
         return match.type
 
-    def addMatch(self, match, match_type):
-        try:
-            self._matches[match_type].addMatch(match)
-        # except Exception as e:
-        finally:
-            pass
-            # self.registerWarning( "could not add match to %s matches %s" % (
-            #     match_type,
-            #     SanitationUtils.coerceUnicode(repr(e))
-            # ))
-            # raise e
-        try:
-            self._matches['all'].addMatch(match)
-        # except Exception as e:
-        finally:
-            pass
-            # self.registerWarning( "could not add match to matches %s" % (
-            #     SanitationUtils.coerceUnicode(repr(e))
-            # ))
+    def add_match(self, match, match_type):
+        """ Add a match to the instances correct match list """
+        self._matches[match_type].add_match(match)
+        # try:
+        # except Exception as exc:
+        # finally:
+        # pass
+        # self.registerWarning( "could not add match to %s matches %s" % (
+        #     match_type,
+        #     SanitationUtils.coerceUnicode(repr(exc))
+        # ))
+        # raise exc
+        self._matches['all'].add_match(match)
+        # try:
+        # except Exception as exc:
+        # finally:
 
-    def mFilter(self, objects):
-        if self.mFilterFn:
-            return filter(self.mFilterFn, objects)
+    # pass
+    # self.registerWarning( "could not add match to matches %s" % (
+    #     SanitationUtils.coerceUnicode(repr(exc))
+    # ))
+
+    def m_filter(self, objects):
+        """ perform the master filter on the objects """
+        if self.m_filter_fn:
+            return filter(self.m_filter_fn, objects)
         else:
             return objects
 
-    def sFilter(self, objects):
-        if self.fFilterFn:
-            return filter(self.fFilterFn, objects)
+    def s_filter(self, objects):
+        """ perform the slave filter on the objects """
+        if self.f_filter_fn:
+            return filter(self.f_filter_fn, objects)
         else:
             return objects
 
-    def processMatch(self, maObjects, saObjects):
-        # Registrar.registerMessage(
-        #     "processing match: \n\t%s \n\t%s" % (
-        #         repr(maObjects),
-        #         repr(saObjects)
-        #     )
-        # )
-
-        # print "processing match %s | %s" % (repr(maObjects), repr(saObjects))
-        maObjects = self.mFilter(maObjects)
-        for maObject in maObjects:
+    def process_match(self, ma_objects, sa_objects):
+        """
+        Process a list of master and slave objects as if they were from a match
+        """
+        # print "processing match %s | %s" % (repr(ma_objects), repr(sa_objects))
+        ma_objects = self.m_filter(ma_objects)
+        for ma_object in ma_objects:
             assert \
-                isinstance(maObject, ImportObject), \
-                "maObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" \
-                % (type(maObject), maObjects, self.__repr__())
-        saObjects = self.sFilter(saObjects)
-        for saObject in saObjects:
+                issubclass(type(ma_object), ImportObject), \
+                "ma_object must subclass ImportObject, not %s \n objects: %s \n self: %s" \
+                % (type(ma_object), ma_objects, self.__repr__())
+        sa_objects = self.s_filter(sa_objects)
+        for sa_object in sa_objects:
             assert \
-                isinstance(saObject, ImportObject), \
-                "saObject must be instance of ImportObject, not %s \n objects: %s \n self: %s" \
-                % (type(saObject), saObjects, self.__repr__())
-        match = Match(maObjects, saObjects)
+                issubclass(type(sa_object), ImportObject), \
+                "sa_object must subclass ImportObject, not %s \n objects: %s \n self: %s" \
+                % (type(sa_object), sa_objects, self.__repr__())
+        match = Match(ma_objects, sa_objects)
         match_type = self.get_match_type(match)
-        if(match_type and match_type != 'empty'):
-            self.addMatch(match, match_type)
+        if match_type and match_type != 'empty':
+            self.add_match(match, match_type)
             # print "match_type: ", match_type
 
     def __repr__(self):
@@ -536,84 +618,149 @@ class AbstractMatcher(Registrar):
         # repr_str += "all matches:\n"
         # for match in self.matches:
         #     repr_str += " -> " + repr(match) + "\n"
-        repr_str += "pure matches: (%d) \n" % len(self.pureMatches)
-        for match in self.pureMatches:
+        repr_str += "pure matches: (%d) \n" % len(self.pure_matches)
+        for match in self.pure_matches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "masterless matches: (%d) \n" % len(self.masterlessMatches)
-        for match in self.masterlessMatches:
+        repr_str += "masterless matches: (%d) \n" % len(
+            self.masterless_matches)
+        for match in self.masterless_matches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "slaveless matches:(%d) \n" % len(self.slavelessMatches)
-        for match in self.slavelessMatches:
+        repr_str += "slaveless matches:(%d) \n" % len(self.slaveless_matches)
+        for match in self.slaveless_matches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "duplicate matches:(%d) \n" % len(self.duplicateMatches)
-        for match in self.duplicateMatches:
+        repr_str += "duplicate matches:(%d) \n" % len(self.duplicate_matches)
+        for match in self.duplicate_matches:
             repr_str += " -> " + repr(match) + "\n"
         return repr_str
 
+
 class ProductMatcher(AbstractMatcher):
-    processRegisters = AbstractMatcher.processRegistersSingular
+    """
+    Matcher class for ImportProducts
+    """
+    process_registers = AbstractMatcher.process_registers_singular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+
     @staticmethod
-    def productIndexFn(x):
-        return x.codesum
+    def product_index_fn(product_object):
+        """ the product index function for the class """
+        return product_object.codesum
 
     def __init__(self):
-        super(ProductMatcher, self).__init__( self.productIndexFn )
-        self.processRegisters = self.processRegistersSingular
+        super(ProductMatcher, self).__init__(self.product_index_fn)
+        self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
+
 
 class VariationMatcher(ProductMatcher):
+    """
+    Matcher class for variations
+    """
     pass
 
+
 class CategoryMatcher(AbstractMatcher):
-    processRegisters = AbstractMatcher.processRegistersSingular
+    """
+    Matcher class for categories
+    """
+    process_registers = AbstractMatcher.process_registers_singular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+
     @staticmethod
-    def categoryIndexFn(x):
-        return x.wooCatName
+    def category_index_fn(product_object):
+        """ the category index function for the class """
+        return product_object.wooCatName
 
     def __init__(self):
-        super(CategoryMatcher, self).__init__( self.categoryIndexFn )
-        self.processRegisters = self.processRegistersSingular
+        super(CategoryMatcher, self).__init__(self.category_index_fn)
+        self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
 
+
 class UsernameMatcher(AbstractMatcher):
+    """
+    Matcher class for Users, matches on username
+    """
+
     def __init__(self):
-        super(UsernameMatcher, self).__init__( lambda x: x.username )
+        super(UsernameMatcher,
+              self).__init__(lambda user_object: user_object.username)
+
 
 class FilteringMatcher(AbstractMatcher):
-    def __init__(self, indexFn, sMatchIndices = [], mMatchIndices = []):
+    """
+    Matching class that only process ImportObjects if their indices are contained
+    in a list of allowed indices
+    """
+
+    def __init__(self, index_fn, s_match_indices=None, m_match_indices=None):
+        if not s_match_indices:
+            s_match_indices = []
+        if not m_match_indices:
+            m_match_indices = []
         # print "entering FilteringMatcher __init__"
-        super(FilteringMatcher, self).__init__( indexFn )
-        self.sMatchIndices = sMatchIndices
-        self.mMatchIndices = mMatchIndices
-        self.mFilterFn = lambda x: x.index not in self.mMatchIndices
-        self.fFilterFn = lambda x: x.index not in self.sMatchIndices
+        super(FilteringMatcher, self).__init__(index_fn)
+        self.s_match_indices = s_match_indices
+        self.m_match_indices = m_match_indices
+        self.m_filter_fn = lambda user_object: user_object.index not in self.m_match_indices
+        self.f_filter_fn = lambda user_object: user_object.index not in self.s_match_indices
+
 
 class CardMatcher(FilteringMatcher):
-    @staticmethod
-    def cardIndexFn(x):
-        assert hasattr(x, 'MYOBID'), 'must be able to get MYOBID, instead type is %s' % type(x)
-        return x.MYOBID
+    """
+    A matching class for `parsing.user.UserImportOBject`s that indexes on card
+    """
 
-    def __init__(self, sMatchIndices = [], mMatchIndices = []):
-        # print "entering CardMatcher __init__"
-        super(CardMatcher, self).__init__( self.cardIndexFn, sMatchIndices, mMatchIndices  )
+    @staticmethod
+    def card_index_fn(user_object):
+        """ the card index function for the class """
+        assert \
+            hasattr(user_object, 'MYOBID'), \
+            'must be able to get MYOBID, instead type is %s' % type(user_object)
+        return user_object.MYOBID
+
+    def __init__(self, s_match_indices=None, m_match_indices=None):
+        if not m_match_indices:
+            m_match_indices = []
+        if not s_match_indices:
+            s_match_indices = []
+        super(CardMatcher, self).__init__(self.card_index_fn, s_match_indices,
+                                          m_match_indices)
+
 
 class EmailMatcher(FilteringMatcher):
-    @staticmethod
-    def emailIndexFn(x):
-        assert hasattr(x, 'email'), "must be able to get email, instead type is %s" % type(x)
-        return SanitationUtils.normalizeVal(x.email)
+    """
+    A matching class for `parsing.user.UserImportOBject`s that indexes on Email
+    """
 
-    def __init__(self, sMatchIndices = [], mMatchIndices = []):
-        # print "entering EmailMatcher __init__"
-        super(EmailMatcher, self).__init__(
-            self.emailIndexFn,
-            sMatchIndices, mMatchIndices )
+    @staticmethod
+    def email_index_fn(user_object):
+        """ the email index function for the class """
+        assert \
+            hasattr(user_object, 'email'), \
+            "must be able to get email, instead type is %s" % type(user_object)
+        return SanitationUtils.normalizeVal(user_object.email)
+
+    def __init__(self, s_match_indices=None, m_match_indices=None):
+        if not s_match_indices:
+            s_match_indices = []
+        if not m_match_indices:
+            m_match_indices = []
+        super(EmailMatcher, self).__init__(self.email_index_fn,
+                                           s_match_indices, m_match_indices)
+
 
 class NocardEmailMatcher(EmailMatcher):
-    def __init__(self, sMatchIndices = [], mMatchIndices = []):
-        # print "entering NocardEmailMatcher __init__"
-        super(NocardEmailMatcher, self).__init__( sMatchIndices, mMatchIndices )
-        self.processRegisters = self.processRegistersSingularNonSingular
+    """
+    A matching class for `parsing.user.UserImportOBject`s that have no card which
+    indexes on email
+    """
+
+    def __init__(self, s_match_indices=None, m_match_indices=None):
+        if not s_match_indices:
+            s_match_indices = []
+        if not m_match_indices:
+            m_match_indices = []
+        super(NocardEmailMatcher, self).__init__(s_match_indices,
+                                                 m_match_indices)
+        self.process_registers = self.process_registers_singular_ns

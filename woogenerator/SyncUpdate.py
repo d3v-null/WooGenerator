@@ -77,8 +77,8 @@ class SyncUpdate(Registrar):
     # def winner(self): return self.winner
 
     # def colBlank(self, col):
-    #     mValue = (mObject.get(col) or "")
-    #     sValue = (sObject.get(col) or "")
+    #     mValue = (m_object.get(col) or "")
+    #     sValue = (s_object.get(col) or "")
     #     return (not mValue and not sValue)
 
     def getWinnerName(self, mTime, sTime):

@@ -102,18 +102,18 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         # Matching
         usernameMatcher = UsernameMatcher()
-        usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
-        globalMatches.addMatches( usernameMatcher.pureMatches)
+        usernameMatcher.process_registers(saParser.usernames, maParser.usernames)
+        globalMatches.add_matches( usernameMatcher.pure_matches)
 
-        print "username matches (%d pure)" % len(usernameMatcher.pureMatches)
+        print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
 
         syncCols = ColData_User.getSyncCols()
 
         for count, match in enumerate(globalMatches):
-            mObject = match.mObjects[0]
-            sObject = match.sObjects[0]
+            m_object = match.m_objects[0]
+            s_object = match.s_objects[0]
 
-            syncUpdate = SyncUpdate_Usr_Api(mObject, sObject)
+            syncUpdate = SyncUpdate_Usr_Api(m_object, s_object)
             syncUpdate.update(syncCols)
 
             print "SyncUpdate: ", syncUpdate.tabulate()

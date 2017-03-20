@@ -1,9 +1,8 @@
+# pylint: disable=too-many-lines
 """
 Module for generating woocommerce csv import files from Google Drive Data
-
-TODO:
-    reduce file length
 """
+# TODO: fix too-many-lines
 
 from collections import OrderedDict
 import os
@@ -17,7 +16,7 @@ import urlparse
 import webbrowser
 import re
 from pprint import pformat, pprint
-# import time
+import time
 import argparse
 import yaml
 from tabulate import tabulate
@@ -28,26 +27,30 @@ from PIL import Image
 from exitstatus import ExitStatus
 
 from __init__ import MODULE_PATH, MODULE_LOCATION
+from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter
+from woogenerator.utils import HtmlReporter, Registrar
+from woogenerator.metagator import MetaGator
+from woogenerator.coldata import ColData_Woo, ColData_MYO, ColData_Base
+from woogenerator.sync_client import SyncClient_GDrive, SyncClient_Local
+from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
+from woogenerator.matching import MatchList
+from woogenerator.matching import ProductMatcher, CategoryMatcher, VariationMatcher
+from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo
+from woogenerator.SyncUpdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
+from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
+from woogenerator.parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
+from woogenerator.parsing.woo import WooCatList, WooProdList, WooVarList
+from woogenerator.parsing.api import CSVParse_Woo_Api
+from woogenerator.parsing.myo import CSVParse_MYO, MYOProdList
+from woogenerator.parsing.dyn import CSVParse_Dyn
+from woogenerator.parsing.special import CSVParse_Special
 
-from utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter
-from utils import HtmlReporter, Registrar
-from metagator import MetaGator
-# from parsing.api import CSVParse_Woo_Api
-from coldata import ColData_Woo, ColData_MYO, ColData_Base
-from sync_client import SyncClient_GDrive, SyncClient_Local
-from sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
-from matching import MatchList
-from matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo
-from SyncUpdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
-from parsing.shop import ShopObjList  # ShopProdList,
-from parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
-from parsing.woo import WooCatList, WooProdList, WooVarList
-from parsing.api import CSVParse_Woo_Api
-from parsing.myo import CSVParse_MYO, MYOProdList
-from parsing.dyn import CSVParse_Dyn
-from parsing.special import CSVParse_Special
 
+def timediff(settings):
+    """
+    return the difference in time since the start time according to settings
+    """
+    return time.time() - settings.start_time
 
 def check_warnings():
     """
@@ -69,6 +72,7 @@ def check_warnings():
 
 def make_argparser(config):  # pylint: disable=too-many-statements
     """ creates the argument parser, using defaults from config """
+    # todo: fix too-many-statements
     parser = argparse.ArgumentParser(
         description='Generate Import files from Google Drive')
     group = parser.add_mutually_exclusive_group()
@@ -398,10 +402,12 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     return parser
 
 
-def populate_master_parsers(settings):
+def populate_master_parsers(settings): # pylint: disable=too-many-branches,too-many-statements
     """
     Creates and populates the various parsers
     """
+    # TODO: fix too-many-branches,too-many-statements
+
     for thing in [
             'g_drive_params', 'wc_api_params', 'api_product_parser_args',
             'product_parser_args'
@@ -504,10 +510,12 @@ def populate_master_parsers(settings):
 
         return parsers
 
-def process_images(settings, parsers):
+
+def process_images(settings, parsers): #pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """
     Process the images information in from the parsers
     """
+    # TODO: fix too-many-statements,too-many-branches,too-many-statements
 
     Registrar.registerProgress("processing images")
 
@@ -561,9 +569,10 @@ def process_images(settings, parsers):
             # we only care about product images atm
         if Registrar.DEBUG_IMG:
             if data.categories:
-                Registrar.registerMessage("Associated Taxos: " + str(
-                    [(taxo.rowcount, taxo.codesum)
-                     for taxo in data.categories]), img)
+                Registrar.registerMessage(
+                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum)
+                                                for taxo in data.categories]),
+                    img)
 
             if data.products:
                 Registrar.registerMessage("Associated Products: " + str([
@@ -574,8 +583,7 @@ def process_images(settings, parsers):
             img_raw_path = get_raw_image(img)
         except IOError as exc:
             invalid_image(
-                img,
-                UserWarning("could not get raw image: %s " % repr(exc)))
+                img, UserWarning("could not get raw image: %s " % repr(exc)))
             continue
 
         name, _ = os.path.splitext(img)
@@ -586,8 +594,8 @@ def process_images(settings, parsers):
         try:
             title, description = data.title, data.description
         except AttributeError as exc:
-            invalid_image(
-                img, "could not get title or description: " + str(exc))
+            invalid_image(img,
+                          "could not get title or description: " + str(exc))
             continue
 
         if Registrar.DEBUG_IMG:
@@ -620,8 +628,7 @@ def process_images(settings, parsers):
 
         if settings.do_resize_images:
             if not os.path.isfile(img_raw_path):
-                invalid_image(img,
-                              "SOURCE FILE NOT FOUND: %s" % img_raw_path)
+                invalid_image(img, "SOURCE FILE NOT FOUND: %s" % img_raw_path)
                 continue
 
             img_dst_path = os.path.join(settings.img_dst, img)
@@ -634,8 +641,7 @@ def process_images(settings, parsers):
                 if img_dst_mod > img_src_mod:
                     if Registrar.DEBUG_IMG:
                         Registrar.registerMessage(
-                            img,
-                            "DESTINATION FILE NEWER: %s" % img_dst_path)
+                            img, "DESTINATION FILE NEWER: %s" % img_dst_path)
                     continue
 
             if Registrar.DEBUG_IMG:
@@ -670,7 +676,10 @@ def process_images(settings, parsers):
     #
     # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
-def export_parsers(settings, parsers):
+
+def export_parsers(settings, parsers): #pylint: disable=too-many-branches,too-many-statements,too-many-locals
+    """ Export key information from the parsers to spreadsheets """
+    # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
     Registrar.registerProgress("Exporting info to spreadsheets")
 
@@ -762,8 +771,11 @@ def export_parsers(settings, parsers):
             updated_variations_list = WooVarList(updated_variations)
             updated_variations_list.exportItems(flvu_path, variation_col_names)
 
-def main(override_args=None, settings=None):
+
+def main(override_args=None, settings=None): #pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """ The main function for generator """
+    # TODO: too-many-locals,too-many-branches,too-many-statements
+
     if not settings:
         settings = argparse.Namespace()
     if not hasattr(settings, 'yaml_path'):
@@ -870,7 +882,6 @@ def main(override_args=None, settings=None):
         settings.do_problematic = args.do_problematic
         settings.ask_before_update = args.ask_before_update
         settings.show_report = args.show_report
-
 
         if settings.auto_create_new:
             exc = UserWarning("auto-create not fully implemented yet")
@@ -1050,7 +1061,8 @@ def main(override_args=None, settings=None):
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.checkEqual([category.namesum for category in category_list]):
+        if listUtils.checkEqual(
+            [category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
             category_name[:50], len(category_list), str(category_list))
@@ -1116,25 +1128,26 @@ def main(override_args=None, settings=None):
         """ return the codesum of the product """
         return product.codesum
 
-    global_product_matches = MatchList(indexFn=product_index_fn)
-    masterless_product_matches = MatchList(indexFn=product_index_fn)
-    slaveless_product_matches = MatchList(indexFn=product_index_fn)
-    global_variation_matches = MatchList(indexFn=product_index_fn)
-    masterless_variation_matches = MatchList(indexFn=product_index_fn)
-    slaveless_variation_matches = MatchList(indexFn=product_index_fn)
+    global_product_matches = MatchList(index_fn=product_index_fn)
+    masterless_product_matches = MatchList(index_fn=product_index_fn)
+    slaveless_product_matches = MatchList(index_fn=product_index_fn)
+    global_variation_matches = MatchList(index_fn=product_index_fn)
+    masterless_variation_matches = MatchList(index_fn=product_index_fn)
+    slaveless_variation_matches = MatchList(index_fn=product_index_fn)
 
     def category_index_fn(category):
         """ return the title of the category """
         return category.title
 
     # category_index_fn = (lambda x: x.title)
-    global_category_matches = MatchList(indexFn=category_index_fn)
-    masterless_category_matches = MatchList(indexFn=category_index_fn)
-    slaveless_category_matches = MatchList(indexFn=category_index_fn)
+    global_category_matches = MatchList(index_fn=category_index_fn)
+    masterless_category_matches = MatchList(index_fn=category_index_fn)
+    slaveless_category_matches = MatchList(index_fn=category_index_fn)
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
-    if settings.do_sync:
+    if settings.do_sync: #pylint: diable=too-many-nested-blocks
+        # TODO: fix too-many-nested-blocks
         if settings.do_categories:
             if Registrar.DEBUG_CATS:
                 Registrar.registerMessage(
@@ -1144,25 +1157,25 @@ def main(override_args=None, settings=None):
 
             category_matcher = CategoryMatcher()
             category_matcher.clear()
-            category_matcher.processRegisters(api_product_parser.categories,
-                                              parsers.product.categories)
+            category_matcher.process_registers(api_product_parser.categories,
+                                               parsers.product.categories)
 
             if Registrar.DEBUG_CATS:
-                if category_matcher.pureMatches:
+                if category_matcher.pure_matches:
                     Registrar.registerMessage("All Category matches:\n%s" % (
                         '\n'.join(map(str, category_matcher.matches))))
 
             valid_category_matches = []
-            valid_category_matches += category_matcher.pureMatches
+            valid_category_matches += category_matcher.pure_matches
 
-            if category_matcher.duplicateMatches:
+            if category_matcher.duplicate_matches:
 
                 invalid_category_matches = []
-                for match in category_matcher.duplicateMatches:
-                    master_taxo_sums = [cat.namesum for cat in match.mObjects]
+                for match in category_matcher.duplicate_matches:
+                    master_taxo_sums = [cat.namesum for cat in match.m_objects]
                     if all(master_taxo_sums) \
                             and listUtils.checkEqual(master_taxo_sums) \
-                            and not len(match.sObjects) > 1:
+                            and not len(match.s_objects) > 1:
                         valid_category_matches.append(match)
                     else:
                         invalid_category_matches.append(match)
@@ -1173,29 +1186,29 @@ def main(override_args=None, settings=None):
                     Registrar.registerError(exc)
                     raise exc
 
-            if category_matcher.slavelessMatches and category_matcher.masterlessMatches:
+            if category_matcher.slaveless_matches and category_matcher.masterless_matches:
                 exc = UserWarning(
                     "You may want to fix up the following categories before syncing:\n%s\n%s"
                     %
-                    ('\n'.join(map(str, category_matcher.slavelessMatches)),
-                     '\n'.join(map(str, category_matcher.masterlessMatches))))
+                    ('\n'.join(map(str, category_matcher.slaveless_matches)),
+                     '\n'.join(map(str, category_matcher.masterless_matches))))
                 Registrar.registerError(exc)
                 # raise exc
 
-            global_category_matches.addMatches(category_matcher.pureMatches)
-            masterless_category_matches.addMatches(
-                category_matcher.masterlessMatches)
-            slaveless_category_matches.addMatches(
-                category_matcher.slavelessMatches)
+            global_category_matches.add_matches(category_matcher.pure_matches)
+            masterless_category_matches.add_matches(
+                category_matcher.masterless_matches)
+            slaveless_category_matches.add_matches(
+                category_matcher.slaveless_matches)
 
             sync_cols = ColData_Woo.getWPAPICategoryCols()
 
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
             for match in enumerate(valid_category_matches):
-                s_object = match.sObject
-                for m_object in match.mObjects:
-                    # mObject = match.mObjects[0]
+                s_object = match.s_object
+                for m_object in match.m_objects:
+                    # m_object = match.m_objects[0]
 
                     sync_update = SyncUpdate_Cat_Woo(m_object, s_object)
 
@@ -1251,7 +1264,7 @@ def main(override_args=None, settings=None):
                     if Registrar.DEBUG_CATS:
                         Registrar.registerMessage("created cat client")
                     new_categories = [
-                        match.mObject for match in slaveless_category_matches
+                        match.m_object for match in slaveless_category_matches
                     ]
                     if Registrar.DEBUG_CATS:
                         Registrar.registerMessage("new categories %s" %
@@ -1302,7 +1315,7 @@ def main(override_args=None, settings=None):
             elif slaveless_category_matches:
                 for slaveless_category_match in slaveless_category_matches:
                     exc = UserWarning("category needs to be created: %s" %
-                                      slaveless_category_match.mObjects[0])
+                                      slaveless_category_match.m_objects[0])
                     Registrar.registerWarning(exc)
 
         # print parsers.product.toStrTree()
@@ -1321,16 +1334,16 @@ def main(override_args=None, settings=None):
             for key, category in api_product_parser.categories.items():
                 print "%5s | %50s" % (key, category.title[:50])
 
-
         product_matcher = ProductMatcher()
-        product_matcher.processRegisters(api_product_parser.products,
-                                         parsers.product.products)
+        product_matcher.process_registers(api_product_parser.products,
+                                          parsers.product.products)
         # print product_matcher.__repr__()
 
-        global_product_matches.addMatches(product_matcher.pureMatches)
-        masterless_product_matches.addMatches(
-            product_matcher.masterlessMatches)
-        slaveless_product_matches.addMatches(product_matcher.slavelessMatches)
+        global_product_matches.add_matches(product_matcher.pure_matches)
+        masterless_product_matches.add_matches(
+            product_matcher.masterless_matches)
+        slaveless_product_matches.add_matches(
+            product_matcher.slaveless_matches)
 
         sync_cols = ColData_Woo.getWPAPICols()
         if Registrar.DEBUG_UPDATE:
@@ -1340,19 +1353,19 @@ def main(override_args=None, settings=None):
             if col in sync_cols:
                 del sync_cols[col]
 
-        if product_matcher.duplicateMatches:
+        if product_matcher.duplicate_matches:
             exc = UserWarning(
                 "products couldn't be synchronized because of ambiguous SKUs:%s"
-                % '\n'.join(map(str, product_matcher.duplicateMatches)))
+                % '\n'.join(map(str, product_matcher.duplicate_matches)))
             Registrar.registerError(exc)
             raise exc
 
-        for _, prod_match in enumerate(product_matcher.pureMatches):
+        for _, prod_match in enumerate(product_matcher.pure_matches):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
                 Registrar.registerMessage("processing prod_match: %s" %
                                           prod_match.tabulate())
-            m_object = prod_match.mObject
-            s_object = prod_match.sObject
+            m_object = prod_match.m_object
+            s_object = prod_match.s_object
 
             sync_update = SyncUpdate_Prod_Woo(m_object, s_object)
 
@@ -1366,8 +1379,8 @@ def main(override_args=None, settings=None):
 
             if settings.do_categories:
                 category_matcher.clear()
-                category_matcher.processRegisters(s_object.categories,
-                                                  m_object.categories)
+                category_matcher.process_registers(s_object.categories,
+                                                   m_object.categories)
 
                 update_params = {
                     'col': 'catlist',
@@ -1377,8 +1390,9 @@ def main(override_args=None, settings=None):
                     'subject': sync_update.master_name
                 }
 
-                change_match_list = category_matcher.masterlessMatches
-                change_match_list.addMatches(category_matcher.slavelessMatches)
+                change_match_list = category_matcher.masterless_matches
+                change_match_list.add_matches(
+                    category_matcher.slaveless_matches)
 
                 master_categories = set([
                     master_category.WPID
@@ -1411,9 +1425,9 @@ def main(override_args=None, settings=None):
                     # update_params['subject'] = SyncUpdate.master_name
 
                     # master_categories = [category.wooCatName for category \
-                    #                      in change_match_list.merge().mObjects]
+                    #                      in change_match_list.merge().m_objects]
                     # slave_categories =  [category.wooCatName for category \
-                    #                      in change_match_list.merge().sObjects]
+                    #                      in change_match_list.merge().s_objects]
 
                     sync_update.loserUpdate(**update_params)
                     # sync_update.newMObject['catlist'] = master_categories
@@ -1436,12 +1450,12 @@ def main(override_args=None, settings=None):
                         "category matches for update:\n%s" % (
                             category_matcher.__repr__()))
 
-                for cat_match in category_matcher.masterlessMatches:
+                for cat_match in category_matcher.masterless_matches:
                     s_index = s_object.index
                     if delete_categories.get(s_index) is None:
                         delete_categories[s_index] = MatchList()
                     delete_categories[s_index].append(cat_match)
-                for cat_match in category_matcher.slavelessMatches:
+                for cat_match in category_matcher.slaveless_matches:
                     s_index = s_object.index
                     if join_categories.get(s_index) is None:
                         join_categories[s_index] = MatchList()
@@ -1469,36 +1483,37 @@ def main(override_args=None, settings=None):
         if settings.do_variations:
 
             variation_matcher = VariationMatcher()
-            variation_matcher.processRegisters(api_product_parser.variations,
-                                               parsers.product.variations)
+            variation_matcher.process_registers(api_product_parser.variations,
+                                                parsers.product.variations)
 
             if Registrar.DEBUG_VARS:
                 Registrar.registerMessage("variation matcher:\n%s" %
                                           variation_matcher.__repr__())
 
-            global_variation_matches.addMatches(variation_matcher.pureMatches)
-            masterless_variation_matches.addMatches(
-                variation_matcher.masterlessMatches)
-            slaveless_variation_matches.addMatches(
-                variation_matcher.slavelessMatches)
+            global_variation_matches.add_matches(
+                variation_matcher.pure_matches)
+            masterless_variation_matches.add_matches(
+                variation_matcher.masterless_matches)
+            slaveless_variation_matches.add_matches(
+                variation_matcher.slaveless_matches)
 
             var_sync_cols = ColData_Woo.getWPAPIVariableCols()
             if Registrar.DEBUG_UPDATE:
                 Registrar.registerMessage("var_sync_cols: %s" %
                                           repr(var_sync_cols))
 
-            if variation_matcher.duplicateMatches:
+            if variation_matcher.duplicate_matches:
                 exc = UserWarning(
                     "variations couldn't be synchronized because of ambiguous SKUs:%s"
-                    % '\n'.join(map(str, variation_matcher.duplicateMatches)))
+                    % '\n'.join(map(str, variation_matcher.duplicate_matches)))
                 Registrar.registerError(exc)
                 raise exc
 
             for var_match_count, var_match in enumerate(
-                    variation_matcher.pureMatches):
+                    variation_matcher.pure_matches):
                 # print "processing var_match: %s" % var_match.tabulate()
-                m_object = var_match.mObject
-                s_object = var_match.sObject
+                m_object = var_match.m_object
+                s_object = var_match.s_object
 
                 sync_update = SyncUpdate_Var_Woo(m_object, s_object)
 
@@ -1521,11 +1536,11 @@ def main(override_args=None, settings=None):
                     insort(slave_variation_updates, sync_update)
 
             for var_match_count, var_match in enumerate(
-                    variation_matcher.slavelessMatches):
-                assert var_match.hasNoSlave
-                m_object = var_match.mObject
+                    variation_matcher.slaveless_matches):
+                assert var_match.has_no_slave
+                m_object = var_match.m_object
 
-                # sync_update = SyncUpdate_Var_Woo(mObject, None)
+                # sync_update = SyncUpdate_Var_Woo(m_object, None)
 
                 # sync_update.update(var_sync_cols)
 
@@ -1536,11 +1551,11 @@ def main(override_args=None, settings=None):
                 # TODO: figure out which attribute terms to add
 
             for var_match_count, var_match in enumerate(
-                    variation_matcher.masterlessMatches):
-                assert var_match.hasNoMaster
-                s_object = var_match.sObject
+                    variation_matcher.masterless_matches):
+                assert var_match.has_no_master
+                s_object = var_match.s_object
 
-                # sync_update = SyncUpdate_Var_Woo(None, sObject)
+                # sync_update = SyncUpdate_Var_Woo(None, s_object)
 
                 # sync_update.update(var_sync_cols)
 
@@ -1552,8 +1567,8 @@ def main(override_args=None, settings=None):
 
         if settings.auto_create_new:
             for new_prod_count, new_prod_match in enumerate(
-                    product_matcher.slavelessMatches):
-                m_object = new_prod_match.mObject
+                    product_matcher.slaveless_matches):
+                m_object = new_prod_match.m_object
                 print "will create product %d: %s" % (new_prod_count,
                                                       m_object.identifier)
                 api_data = m_object.toApiData(ColData_Woo, 'wp-api')
@@ -1861,10 +1876,10 @@ def main(override_args=None, settings=None):
                                 # api_product_parser.products[index],
                                 # api_product_parser.products[index].categories,
                                 # ", ".join(category.wooCatName \
-                                #           for category in matches.merge().mObjects),
+                                #           for category in matches.merge().m_objects),
                                 ", ".join(category.wooCatName
                                           for category in matches.merge()
-                                          .sObjects)
+                                          .s_objects)
                             ] for index, matches in delete_categories.items()
                         ],
                         tablefmt="html"),
@@ -1882,8 +1897,8 @@ def main(override_args=None, settings=None):
                         index,
                         # api_product_parser.products[index],
                         # api_product_parser.products[index].categories,
-                        # ", ".join(category.wooCatName for category in matches.merge().mObjects),
-                        ", ".join(category.wooCatName for category in matches.merge().sObjects\
+                        # ", ".join(category.wooCatName for category in matches.merge().m_objects),
+                        ", ".join(category.wooCatName for category in matches.merge().s_objects\
                                   if not re.search('Specials', category.wooCatName))
                     ] for index, matches in delete_categories.items()
                 ],
@@ -1917,9 +1932,9 @@ def main(override_args=None, settings=None):
                                 # api_product_parser.products[index].categories,
                                 ", ".join(category.wooCatName
                                           for category in matches.merge()
-                                          .mObjects),
+                                          .m_objects),
                                 # ", ".join(category.wooCatName \
-                                #           for category in matches.merge().sObjects)
+                                #           for category in matches.merge().s_objects)
                             ] for index, matches in join_categories.items()
                         ],
                         tablefmt="html"),
@@ -2025,7 +2040,8 @@ def main(override_args=None, settings=None):
         print "open this link to view report %s" % settings.rep_web_link
 
 
-def catch_main():
+def catch_main():  #pylint: disable=too-many-statements,too-many-branches
+    # TODO: fix too-many-statements,too-many-branches
     """
     Run the main function within a try statement and attempt to analyse failure
     """
@@ -2048,7 +2064,7 @@ def catch_main():
                                      "log_%s.txt" % settings.import_name)
     settings.zip_path = os.path.join(settings.log_folder,
                                      "zip_%s.zip" % settings.import_name)
-
+    settings.yaml_path = "generator_config.yaml"
     settings.thumbsize = 1920, 1200
 
     status = 0

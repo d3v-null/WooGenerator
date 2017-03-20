@@ -1,14 +1,12 @@
+#pylint: disable=too-many-lines
 """
 Module for updating woocommerce and ACT databases from ACT import file
-
-TODO:
-    reduce file length
 """
+# TODO: Fix too-many-lines
 
 from pprint import pprint
 from collections import OrderedDict
 import os
-# import sys
 import traceback
 from bisect import insort
 import re
@@ -22,18 +20,17 @@ import argparse
 from sshtunnel import check_address
 
 from __init__ import MODULE_PATH, MODULE_LOCATION
-from utils import SanitationUtils, TimeUtils, HtmlReporter
-from utils import Registrar, debugUtils, ProgressCounter
-from matching import Match, MatchList, ConflictingMatchList
-from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
-from parsing.user import CSVParse_User, UsrObjList
-from coldata import ColData_User
-
-from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
-from sync_client_user import UsrSyncClient_WP  #, UsrSyncClient_WC, UsrSyncClient_JSON
-from SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
-from contact_objects import FieldGroup
-from duplicates import Duplicates  #, object_glb_index_fn
+from woogenerator.utils import SanitationUtils, TimeUtils, HtmlReporter
+from woogenerator.utils import Registrar, debugUtils, ProgressCounter
+from woogenerator.matching import Match, MatchList, ConflictingMatchList
+from woogenerator.matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
+from woogenerator.parsing.user import CSVParse_User, UsrObjList
+from woogenerator.coldata import ColData_User
+from woogenerator.sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
+from woogenerator.sync_client_user import UsrSyncClient_WP
+from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.contact_objects import FieldGroup
+from woogenerator.duplicates import Duplicates
 
 
 def timediff(settings):
@@ -43,10 +40,11 @@ def timediff(settings):
     return time.time() - settings.start_time
 
 
-def main(settings):
+def main(settings):  #pylint: disable=too-many-branches,too-many-locals
     """
     Using the settings object, attempt to perform the specified functions
     """
+    # TODO: fix too-many-branches,too-many-locals
 
     ### OVERRIDE CONFIG WITH YAML FILE ###
 
@@ -657,7 +655,7 @@ def main(settings):
     m_delta_updates = []
     s_delta_updates = []
     email_conflict_matches = ConflictingMatchList(
-        indexFn=EmailMatcher.emailIndexFn)
+        index_fn=EmailMatcher.email_index_fn)
 
     def deny_anomalous_match_list(match_list_type, anomalous_match_list):
         """ add the matchlist to the list of anomalous match lists if it is not empty """
@@ -675,34 +673,36 @@ def main(settings):
             # print "could not deny anomalous parse list", parselist_type, exc
             anomalous_parselists[parselist_type] = anomalous_parselist
 
-    if args.do_sync:
+    if args.do_sync:  # pylint: disable=too-many-nested-blocks
         # for every username in slave, check that it exists in master
+        # TODO: fix too-many-nested-blocks
+
         print debugUtils.hashify("processing usernames")
         print timediff(settings)
 
         deny_anomalous_parselist('saParser.nousernames', sa_parser.nousernames)
 
         username_matcher = UsernameMatcher()
-        username_matcher.processRegisters(sa_parser.usernames,
-                                          ma_parser.usernames)
+        username_matcher.process_registers(sa_parser.usernames,
+                                           ma_parser.usernames)
 
-        deny_anomalous_match_list('usernameMatcher.slavelessMatches',
-                                  username_matcher.slavelessMatches)
-        deny_anomalous_match_list('usernameMatcher.duplicateMatches',
-                                  username_matcher.duplicateMatches)
+        deny_anomalous_match_list('usernameMatcher.slaveless_matches',
+                                  username_matcher.slaveless_matches)
+        deny_anomalous_match_list('usernameMatcher.duplicate_matches',
+                                  username_matcher.duplicate_matches)
 
-        duplicate_matchlists['username'] = username_matcher.duplicateMatches
+        duplicate_matchlists['username'] = username_matcher.duplicate_matches
 
-        global_matches.addMatches(username_matcher.pureMatches)
+        global_matches.add_matches(username_matcher.pure_matches)
 
         if Registrar.DEBUG_MESSAGE:
             print "username matches (%d pure)" % len(
-                username_matcher.pureMatches)
+                username_matcher.pure_matches)
             # print repr(usernameMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and username_matcher.duplicateMatches:
+        if Registrar.DEBUG_DUPLICATES and username_matcher.duplicate_matches:
             print("username duplicates: %s" %
-                  len(username_matcher.duplicateMatches))
+                  len(username_matcher.duplicate_matches))
 
         print debugUtils.hashify("processing cards")
         print timediff(settings)
@@ -711,25 +711,25 @@ def main(settings):
 
         deny_anomalous_parselist('maParser.nocards', ma_parser.nocards)
 
-        card_matcher = CardMatcher(global_matches.sIndices,
-                                   global_matches.mIndices)
-        card_matcher.processRegisters(sa_parser.cards, ma_parser.cards)
+        card_matcher = CardMatcher(global_matches.s_indices,
+                                   global_matches.m_indices)
+        card_matcher.process_registers(sa_parser.cards, ma_parser.cards)
 
-        deny_anomalous_match_list('cardMatcher.duplicateMatches',
-                                  card_matcher.duplicateMatches)
-        deny_anomalous_match_list('cardMatcher.masterlessMatches',
-                                  card_matcher.masterlessMatches)
+        deny_anomalous_match_list('cardMatcher.duplicate_matches',
+                                  card_matcher.duplicate_matches)
+        deny_anomalous_match_list('cardMatcher.masterless_matches',
+                                  card_matcher.masterless_matches)
 
-        duplicate_matchlists['card'] = card_matcher.duplicateMatches
+        duplicate_matchlists['card'] = card_matcher.duplicate_matches
 
-        global_matches.addMatches(card_matcher.pureMatches)
+        global_matches.add_matches(card_matcher.pure_matches)
 
         if Registrar.DEBUG_MESSAGE:
-            print "card matches (%d pure)" % len(card_matcher.pureMatches)
+            print "card matches (%d pure)" % len(card_matcher.pure_matches)
             # print repr(cardMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and card_matcher.duplicateMatches:
-            print "card duplicates: %s" % len(card_matcher.duplicateMatches)
+        if Registrar.DEBUG_DUPLICATES and card_matcher.duplicate_matches:
+            print "card duplicates: %s" % len(card_matcher.duplicate_matches)
 
         # #for every email in slave, check that it exists in master
 
@@ -738,22 +738,22 @@ def main(settings):
 
         deny_anomalous_parselist("saParser.noemails", sa_parser.noemails)
 
-        email_matcher = NocardEmailMatcher(global_matches.sIndices,
-                                           global_matches.mIndices)
+        email_matcher = NocardEmailMatcher(global_matches.s_indices,
+                                           global_matches.m_indices)
 
-        email_matcher.processRegisters(sa_parser.nocards, ma_parser.emails)
+        email_matcher.process_registers(sa_parser.nocards, ma_parser.emails)
 
-        new_masters.addMatches(email_matcher.masterlessMatches)
-        new_slaves.addMatches(email_matcher.slavelessMatches)
-        global_matches.addMatches(email_matcher.pureMatches)
-        duplicate_matchlists['email'] = email_matcher.duplicateMatches
+        new_masters.add_matches(email_matcher.masterless_matches)
+        new_slaves.add_matches(email_matcher.slaveless_matches)
+        global_matches.add_matches(email_matcher.pure_matches)
+        duplicate_matchlists['email'] = email_matcher.duplicate_matches
 
         if Registrar.DEBUG_MESSAGE:
-            print "email matches (%d pure)" % (len(email_matcher.pureMatches))
+            print "email matches (%d pure)" % (len(email_matcher.pure_matches))
             # print repr(emailMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and email_matcher.duplicateMatches:
-            print "email duplicates: %s" % len(email_matcher.duplicateMatches)
+        if Registrar.DEBUG_DUPLICATES and email_matcher.duplicate_matches:
+            print "email duplicates: %s" % len(email_matcher.duplicate_matches)
 
         # TODO: further sort emailMatcher
 
@@ -772,8 +772,8 @@ def main(settings):
                 # # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
                 # print repr(match)
 
-            m_object = match.mObjects[0]
-            s_object = match.sObjects[0]
+            m_object = match.m_objects[0]
+            s_object = match.s_objects[0]
 
             sync_update = SyncUpdate_Usr_Api(m_object, s_object)
             sync_update.update(sync_cols)
@@ -801,7 +801,7 @@ def main(settings):
                         SanitationUtils.safePrint("duplicate emails",
                                                   m_objects, s_objects)
                         try:
-                            email_conflict_matches.addMatch(
+                            email_conflict_matches.add_match(
                                 Match(m_objects, s_objects))
                         except Exception, exc:
                             SanitationUtils.safePrint(
@@ -1006,10 +1006,10 @@ def main(settings):
                     }))
 
             match_list_instructions = {
-                'cardMatcher.masterlessMatches':
+                'cardMatcher.masterless_matches':
                 '%s records do not have a corresponding CARD ID in %s (deleted?)'
                 % (settings.slave_name, settings.master_name),
-                'usernameMatcher.slavelessMatches':
+                'usernameMatcher.slaveless_matches':
                 '%s records have no USERNAMEs in %s' %
                 (settings.master_name, settings.slave_name),
             }
@@ -1178,10 +1178,10 @@ def main(settings):
                 print "checking duplicates of type %s" % duplicate_type
                 print "len(duplicate_matchlist) %s" % len(duplicate_matchlist)
                 for match in duplicate_matchlist:
-                    if match.mLen <= 1:
+                    if match.m_len <= 1:
                         continue
                         # only care about master duplicates at the moment
-                    duplicate_objects = list(match.mObjects)
+                    duplicate_objects = list(match.m_objects)
                     duplicates.add_conflictors(duplicate_objects,
                                                duplicate_type)
 
@@ -1191,7 +1191,8 @@ def main(settings):
                 # for object_data in objects:
                 # print " -> associated object: %s" % object_data
                 if len(objects) > 1:
-                    # if there are more than one objects associated with an address, add to the duplicate addresses report
+                    # if there are more than one objects associated with an address,
+                    # add to the duplicate addresses report
                     address_duplicates[address] = objects
                     duplicates.add_conflictors(
                         objects, "address", weighting=0.1)
@@ -1253,9 +1254,9 @@ def main(settings):
                         'length': len(email_conflict_matches)
                     }))
 
-            email_duplicate_data = email_matcher.duplicateMatches.tabulate(
+            email_duplicate_data = email_matcher.duplicate_matches.tabulate(
                 tablefmt="html", highlight_rules=highlight_rules_all)
-            if email_matcher.duplicateMatches:
+            if email_matcher.duplicate_matches:
                 duplicate_group.addSection(
                     HtmlReporter.Section('email_duplicates', **{
                         'title':
@@ -1266,14 +1267,14 @@ def main(settings):
                         'data':
                         email_duplicate_data,
                         'length':
-                        len(email_matcher.duplicateMatches)
+                        len(email_matcher.duplicate_matches)
                     }))
 
             match_list_instructions = {
-                'cardMatcher.duplicateMatches':
+                'cardMatcher.duplicate_matches':
                 '%s records have multiple CARD IDs in %s' %
                 (settings.slave_name, settings.master_name),
-                'usernameMatcher.duplicateMatches':
+                'usernameMatcher.duplicate_matches':
                 '%s records have multiple USERNAMEs in %s' %
                 (settings.slave_name, settings.master_name)
             }
