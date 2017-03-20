@@ -28,7 +28,7 @@ from woogenerator.parsing.user import CSVParse_User, UsrObjList
 from woogenerator.coldata import ColData_User
 from woogenerator.sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
 from woogenerator.sync_client_user import UsrSyncClient_WP
-from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
 
@@ -384,9 +384,9 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
     ### PROCESS CLASS PARAMS ###
 
     FieldGroup.do_post = args.do_post
-    SyncUpdate.setGlobals(settings.master_name, settings.slave_name,
+    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
                           settings.merge_mode, settings.default_last_sync)
-    TimeUtils.setWpSrvOffset(wp_srv_offset)
+    TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
     ### SET UP DIRECTORIES ###
 
@@ -524,9 +524,9 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
         if settings.since_m:
-            filter_items['sinceM'] = TimeUtils.wpStrpMktime(settings.since_m)
+            filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings.since_m)
         if settings.since_s:
-            filter_items['sinceS'] = TimeUtils.wpStrpMktime(settings.since_s)
+            filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings.since_s)
     else:
         filter_items = None
 
@@ -1149,7 +1149,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                 return a function that checks if the user is older than a date given
                 in wp_time format
                 """
-                wp_time_obj = TimeUtils.wpStrpMktime(wp_time)
+                wp_time_obj = TimeUtils.wp_strp_mktime(wp_time)
                 assert wp_time_obj, "should be valid time struct: %s" % wp_time
 
                 def user_older_than(user_data):
@@ -1199,12 +1199,12 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
 
             for object_data in ma_parser.objects.values():
                 if fn_user_older_than_wp(old_threshold)(object_data):
-                    details = TimeUtils.wpTimeToString(
+                    details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
                     duplicates.add_conflictor(
                         object_data, "last_transaction_old", 0.5, details)
                 elif fn_user_older_than_wp(oldish_threshold)(object_data):
-                    details = TimeUtils.wpTimeToString(
+                    details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
                     duplicates.add_conflictor(
                         object_data, "last_transaction_oldish", 0.2, details)
@@ -1452,7 +1452,7 @@ def catch_main():
 
     os.chdir(MODULE_PATH)
 
-    settings.import_name = TimeUtils.getMsTimeStamp()
+    settings.import_name = TimeUtils.get_ms_timestamp()
     settings.start_time = time.time()
 
     settings.test_mode = True

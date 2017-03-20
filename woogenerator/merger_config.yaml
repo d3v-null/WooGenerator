@@ -1,6 +1,6 @@
 master_name: ACT
 slave_name: WORDPRESS
-default_last_sync: 2015-05-29 04:33:40
+default_last_sync: !!str 2015-05-29 04:33:40
 #merge_mode: sync
 merge_mode: merge
 download_slave: true

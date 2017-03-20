@@ -11,7 +11,7 @@ from context import tests_datadir
 class TestCSVParseWoo(TestCase):
 
     def setUp(self):
-        importName = TimeUtils.getMsTimeStamp()
+        importName = TimeUtils.get_ms_timestamp()
 
         self.genPath = os.path.join(tests_datadir, "generator_sample.csv")
 

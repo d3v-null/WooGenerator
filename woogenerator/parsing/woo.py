@@ -986,13 +986,13 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                         specialto = specialparams.end_time
                         assert specialto, "special should have to: %s" % dict(specialparams)
 
-                        if( not TimeUtils.hasHappenedYet(specialto) ):
+                        if( not TimeUtils.has_happened_yet(specialto) ):
                             if self.DEBUG_SPECIAL:
                                 self.registerMessage( "special %s is over: %s" % (special, specialto) )
                             continue
                         else:
-                            specialfromString = TimeUtils.wpTimeToString(specialfrom)
-                            specialtoString = TimeUtils.wpTimeToString(specialto)
+                            specialfromString = TimeUtils.wp_time_to_string(specialfrom)
+                            specialtoString = TimeUtils.wp_time_to_string(specialto)
                             if self.DEBUG_SPECIAL:
                                 self.registerMessage( "special %s is from %s (%s) to %s (%s)" % (special, specialfrom, specialfromString, specialto, specialtoString) )
 
@@ -1053,7 +1053,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 'sale_price_dates_to': objectData.get('RNT')
             }.items():
                 if value is not None:
-                    objectData[key] = TimeUtils.wpTimeToString(TimeUtils.serverToLocalTime(value))
+                    objectData[key] = TimeUtils.wp_time_to_string(TimeUtils.server_to_local_time(value))
             # objectData['price'] = objectData.get('RNR')
             # objectData['sale_price'] = objectData.get('RNS')
             # objectData['sale_price_dates_from'] = objectData.get('RNF')

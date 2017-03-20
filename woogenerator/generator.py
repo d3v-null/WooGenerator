@@ -35,8 +35,8 @@ from woogenerator.sync_client import SyncClient_GDrive, SyncClient_Local
 from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from woogenerator.matching import MatchList
 from woogenerator.matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Cat_Woo
-from woogenerator.SyncUpdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
+from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Cat_Woo
+from woogenerator.syncupdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
 from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
 from woogenerator.parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
 from woogenerator.parsing.woo import WooCatList, WooProdList, WooVarList
@@ -51,6 +51,7 @@ def timediff(settings):
     return the difference in time since the start time according to settings
     """
     return time.time() - settings.start_time
+
 
 def check_warnings():
     """
@@ -402,7 +403,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     return parser
 
 
-def populate_master_parsers(settings): # pylint: disable=too-many-branches,too-many-statements
+def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-many-statements
     """
     Creates and populates the various parsers
     """
@@ -511,7 +512,7 @@ def populate_master_parsers(settings): # pylint: disable=too-many-branches,too-m
         return parsers
 
 
-def process_images(settings, parsers): #pylint: disable=too-many-statements,too-many-branches,too-many-locals
+def process_images(settings, parsers):  #pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """
     Process the images information in from the parsers
     """
@@ -677,7 +678,7 @@ def process_images(settings, parsers): #pylint: disable=too-many-statements,too-
     # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
 
-def export_parsers(settings, parsers): #pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def export_parsers(settings, parsers):  #pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """ Export key information from the parsers to spreadsheets """
     # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
@@ -772,7 +773,7 @@ def export_parsers(settings, parsers): #pylint: disable=too-many-branches,too-ma
             updated_variations_list.exportItems(flvu_path, variation_col_names)
 
 
-def main(override_args=None, settings=None): #pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """ The main function for generator """
     # TODO: too-many-locals,too-many-branches,too-many-statements
 
@@ -945,8 +946,8 @@ def main(override_args=None, settings=None): #pylint: disable=too-many-locals,to
 
     # PROCESS CONFIG
 
-    TimeUtils.setWpSrvOffset(settings.wp_srv_offset)
-    SyncUpdate.setGlobals(settings.master_name, settings.slave_name,
+    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
+    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
                           settings.merge_mode, settings.default_last_sync)
 
     if args.variant == "ACC":
@@ -1061,8 +1062,7 @@ def main(override_args=None, settings=None): #pylint: disable=too-many-locals,to
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.checkEqual(
-            [category.namesum for category in category_list]):
+        if listUtils.checkEqual([category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
             category_name[:50], len(category_list), str(category_list))
@@ -1146,7 +1146,7 @@ def main(override_args=None, settings=None): #pylint: disable=too-many-locals,to
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
-    if settings.do_sync: #pylint: diable=too-many-nested-blocks
+    if settings.do_sync:  #pylint: disable=too-many-nested-blocks
         # TODO: fix too-many-nested-blocks
         if settings.do_categories:
             if Registrar.DEBUG_CATS:
@@ -1231,7 +1231,7 @@ def main(override_args=None, settings=None): #pylint: disable=too-many-locals,to
                     Registrar.registerMessage(
                         "performing update < %5s | %5s > = \n%100s, %100s " %
                         (update.MasterID, update.SlaveID,
-                         str(update.oldMObject), str(update.oldSObject)))
+                         str(update.old_m_object), str(update.oldSObject)))
                 if not update.MasterID in parsers.product.categories:
                     exc = UserWarning(
                         "couldn't fine pkey %s in parsers.product.categories" %
@@ -1412,7 +1412,7 @@ def main(override_args=None, settings=None): #pylint: disable=too-many-locals,to
                          str(s_object.categories.values()),
                          str(master_categories), str(slave_categories), ))
 
-                sync_update.oldMObject['catlist'] = list(master_categories)
+                sync_update.old_m_object['catlist'] = list(master_categories)
                 sync_update.oldSObject['catlist'] = list(slave_categories)
 
                 if change_match_list:
@@ -2055,7 +2055,7 @@ def catch_main():  #pylint: disable=too-many-statements,too-many-branches
 
     os.chdir(MODULE_PATH)
 
-    settings.import_name = TimeUtils.getMsTimeStamp()
+    settings.import_name = TimeUtils.get_ms_timestamp()
     settings.rep_path = ''
     settings.m_fail_path = os.path.join(settings.out_folder,
                                         "gdrive_fails.csv")

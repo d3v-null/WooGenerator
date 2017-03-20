@@ -7,7 +7,7 @@ import yaml
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
-from woogenerator.SyncUpdate import SyncUpdate_Usr
+from woogenerator.syncupdate import SyncUpdate_Usr
 from woogenerator import coldata
 from woogenerator.coldata import ColData_User
 from woogenerator.parsing.user import ImportUser, CSVParse_User
@@ -26,7 +26,7 @@ class testSyncUpdate_Usr(TestCase):
             SLAVE_NAME = config.get('slave_name', 'SLAVE')
             DEFAULT_LAST_SYNC = config.get('default_last_sync')
 
-        SyncUpdate_Usr.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+        SyncUpdate_Usr.set_globals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
         # FieldGroup.performPost = True
         # FieldGroup.DEBUG_WARN = True
@@ -310,7 +310,7 @@ class testSyncUpdate_Usr(TestCase):
     def test_doubleNames(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
-        print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
+        print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Contact']
         print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
         print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
         print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
@@ -345,7 +345,7 @@ class testSyncUpdate_Usr(TestCase):
 
         syncUpdate = SyncUpdate_Usr(mUsr, sUsr)
         syncUpdate.update(ColData_User.getSyncCols())
-        print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Contact']
+        print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Contact']
         print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
         print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
         print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
@@ -355,7 +355,7 @@ class testSyncUpdate_Usr(TestCase):
     def test_similarURL(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
-        # print "master old: ", syncUpdate.oldMObject['Name'], '|', syncUpdate.oldMObject['Web Site']
+        # print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Web Site']
         # print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Web Site']
         # print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Web Site']
         # print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Web Site']

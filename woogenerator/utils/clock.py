@@ -1,7 +1,16 @@
+"""
+Utilities for time-related tasks
+"""
 import time
+import datetime
+from numbers import Number
 from core import SanitationUtils
 
-class TimeUtils:
+
+class TimeUtils(object):
+    """
+    Utilities for time-related tasks
+    """
     _override_time = None
     _wpSrvOffset = 0
     actSrvOffset = 0
@@ -39,90 +48,121 @@ class TimeUtils:
             return time.time()
 
     @classmethod
-    def starStrpMktime(cls, string, fmt = wpTimeFormat ):
+    def star_strp_mktime(cls, string, fmt=wpTimeFormat):
+        # type: (basestring, basestring) -> int
         """ takes a time string and a format, returns number of seconds since epoch """
-        if(string):
-            assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
+        if string:
+            if isinstance(string, datetime.datetime):
+                # sometimes yaml does strings as datetime.datetime
+                string.microsecond = 0
+                string = str(string)
             string = SanitationUtils.coerceUnicode(string)
-            try:
-                tstruct = time.strptime(string, fmt)
-                if(tstruct):
-                    return time.mktime(tstruct)
-            except:
-                pass
+            tstruct = time.strptime(string, fmt)
+            if tstruct:
+                return time.mktime(tstruct)
         return 0
 
     @classmethod
-    def setWpSrvOffset(cls, offset):
+    def set_wp_srv_offset(cls, offset):
         """ changes the offset (secs) """
-        assert isinstance(offset, (int, float)), "param must be a number not %s"% type(offset)
+        assert isinstance(offset, (int, float)), "param must be a number not %s" % type(offset)
         cls._wpSrvOffset = offset
 
     @classmethod
-    def actStrpMktime(cls, string):
+    def act_strp_mktime(cls, string):
         """ takes an act formatted time string, returns number of seconds since epoch """
-        assert isinstance(string, (str, unicode)), "param must be a string not %s"% type(string)
-        return cls.starStrpMktime(string, cls.actTimeFormat)
+        assert isinstance(string, basestring), "param must be a string not %s" % type(string)
+        return cls.star_strp_mktime(string, cls.actTimeFormat)
 
     @classmethod
-    def wpStrpMktime(cls, string):
-        """ takes a wp formatted time string (eg. "2015-07-13 22:33:05"), returns number of seconds since epoch """
-        return cls.starStrpMktime(string)
+    def wp_strp_mktime(cls, string):
+        """ takes a wp formatted time string (eg. "2015-07-13 22:33:05"),
+        returns number of seconds since epoch """
+        return cls.star_strp_mktime(string)
 
     @classmethod
-    def actStrpMkdate(cls, string):
-        """ takes an act formatted date string (eg. "13/07/2015"), returns number of seconds since epoch """
-        return cls.starStrpMktime(string, cls.actDateFormat)
+    def act_strp_mkdate(cls, string):
+        """ takes an act formatted date string (eg. "13/07/2015"),
+        returns number of seconds since epoch """
+        return cls.star_strp_mktime(string, cls.actDateFormat)
 
     @classmethod
-    def gDriveStrpMkTime(cls, string):
-        """ takes a gDrive formatted time string (eg. "2016-07-13 22:33:05"), returns number of seconds since epoch """
-        return cls.starStrpMktime(string, cls.gDriveTimeFormat)
+    def g_drive_strp_mk_time(cls, string):
+        """ takes a gDrive formatted time string (eg. "2016-07-13 22:33:05"),
+        returns number of seconds since epoch """
+        return cls.star_strp_mktime(string, cls.gDriveTimeFormat)
 
     @classmethod
-    def wpTimeToString(cls, secs, fmt = wpTimeFormat):
-        """ takes the nubmer of seconds since epoch and converts to wp formatted local time string """
+    def wp_time_to_string(cls, secs, fmt=None):
+        """ takes the nubmer of seconds since epoch,
+        converts to wp formatted local time string """
+        if not fmt:
+            fmt = cls.wpTimeFormat
+        assert isinstance(secs, (Number, basestring)), \
+            "param must be a number or string not %s" % type(secs)
         secs = float(secs)
-        assert isinstance(secs, (int, float)), "param must be a number not %s"% type(secs)
         return time.strftime(fmt, time.localtime(secs))
 
     @classmethod
-    def hasHappenedYet(cls, secs):
+    def has_happened_yet(cls, secs):
         """ takes seconds since epoch, determines if has happened yet according to overrides """
+        assert isinstance(secs, (Number, basestring)), \
+            "param must be a number or string not %s" % type(secs)
         secs = float(secs)
-        assert isinstance(secs, (int, float)), "param must be a number not %s"% type(secs)
         return secs >= cls.current_tsecs()
 
     @classmethod
-    def localToServerTime(cls, t, timezoneOffset = time.timezone):
-        return int(t - timezoneOffset)
+    def local_to_server_time(cls, time_int, timezone_offset=time.timezone):
+        """
+        takes a time in local time (int), and an offset (int)
+        returns the time in server time (int)
+        """
+        return int(time_int - timezone_offset)
 
     @classmethod
-    def serverToLocalTime(cls, t, timezoneOffset = time.timezone):
-        return int(t + timezoneOffset)
+    def server_to_local_time(cls, time_int, timezone_offset=time.timezone):
+        """
+        takes a time in server time (int), and an offset (int)
+        returns the time in local time (int)
+        """
+        return int(time_int + timezone_offset)
 
     @classmethod
-    def wpServerToLocalTime(cls, t):
-        return cls.serverToLocalTime(t, cls._wpSrvOffset)
+    def wp_server_to_local_time(cls, time_int):
+        """
+        takes a time in wp server time (int),
+        returns the time in local time (int)
+        """
+        return cls.server_to_local_time(time_int, cls._wpSrvOffset)
 
     @classmethod
-    def actServerToLocalTime(cls, t):
-        return cls.serverToLocalTime(t, cls.actSrvOffset)
+    def act_server_to_local_time(cls, time_int):
+        """
+        takes a time in act server time (int),
+        returns the time in local time (int)
+        """
+        return cls.server_to_local_time(time_int, cls.actSrvOffset)
 
     @classmethod
-    def getDateStamp(cls, t=None):
-        if not t:
-            t=cls.current_loctstruct()
-        return time.strftime(cls.dateFormat, t)
+    def get_datestamp(cls, time_struct=None):
+        """
+        Get current datestamp string
+        """
+        if not time_struct:
+            time_struct = cls.current_loctstruct()
+        return time.strftime(cls.dateFormat, time_struct)
 
     @classmethod
-    def getMsTimeStamp(cls, t=None):
-        if not t:
-            t=cls.current_loctstruct()
-        return time.strftime(cls.msTimeFormat, t)
-
-    @classmethod
-    def getTimeStamp(cls, t=None):
-        if not t:
-            t=cls.current_loctstruct()
-        return time.strftime(cls.wpTimeFormat, t)
+    def get_ms_timestamp(cls, time_struct=None):
+        """
+        Get current MS friendly timestamp string
+        """
+        if not time_struct:
+            time_struct = cls.current_loctstruct()
+        return time.strftime(cls.msTimeFormat, time_struct)
+    #
+    # @classmethod
+    # def get_timestamp(cls, time_struct=None):
+    #     if not time_struct:
+    #         time_struct = cls.current_loctstruct()
+    #     return time.strftime(cls.wpTimeFormat, time_struct)

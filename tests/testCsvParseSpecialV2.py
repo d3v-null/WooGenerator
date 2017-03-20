@@ -11,7 +11,7 @@ from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
 
 class TestCSVParseSpecialV2(TestCase):
     def setUp(self):
-        # importName = TimeUtils.getMsTimeStamp()
+        # importName = TimeUtils.get_ms_timestamp()
 
         self.specPath = os.path.join(tests_datadir, "specials_v2.csv")
 

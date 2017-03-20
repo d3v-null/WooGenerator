@@ -39,7 +39,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
         # taxoDepth = config.get('taxoDepth')
         # itemDepth = config.get('itemDepth')
 
-        TimeUtils.setWpSrvOffset(wp_srv_offset)
+        TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
         # json_uri = store_url + 'wp-json/wp/v2'z
 

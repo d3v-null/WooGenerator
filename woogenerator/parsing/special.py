@@ -23,12 +23,12 @@ class ImportSpecialMixin(object):
 
     def init_from_to(self, data):
         if self.startTimeRawKey in data:
-            data[self.startTimeKey] = TimeUtils.gDriveStrpMkTime(data[self.startTimeRawKey])
+            data[self.startTimeKey] = TimeUtils.g_drive_strp_mk_time(data[self.startTimeRawKey])
         else:
             data[self.startTimeKey] = BLANK_CELL
 
         if self.endTimeRawKey in data:
-            data[self.endTimeKey] = TimeUtils.gDriveStrpMkTime(data[self.endTimeRawKey])
+            data[self.endTimeKey] = TimeUtils.g_drive_strp_mk_time(data[self.endTimeRawKey])
         else:
             data[self.endTimeKey] = BLANK_CELL
 
@@ -68,11 +68,11 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
 
     @property
     def hasStarted(self):
-        return not TimeUtils.hasHappenedYet(self.start_time)
+        return not TimeUtils.has_happened_yet(self.start_time)
 
     @property
     def hasFinished(self):
-        return not TimeUtils.hasHappenedYet(self.end_time)
+        return not TimeUtils.has_happened_yet(self.end_time)
 
     @property
     def isActive(self):
@@ -205,8 +205,8 @@ class CSVParse_Special(CSVParse_Tree):
                 #     print("specialGroup has finished: %s ended: %s, currently %s" % \
                 #           (
                 #               specialIndex,
-                #               TimeUtils.wpTimeToString(specialGroup.end_time),
-                #               TimeUtils.wpTimeToString(TimeUtils.current_tsecs())
+                #               TimeUtils.wp_time_to_string(specialGroup.end_time),
+                #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
                 #           )
                 #     )
                 # continue
@@ -216,8 +216,8 @@ class CSVParse_Special(CSVParse_Tree):
                 #     print("specialGroup has not finished: %s ends %s, currently %s" % \
                 #           (
                 #               specialIndex,
-                #               TimeUtils.wpTimeToString(specialGroup.end_time),
-                #               TimeUtils.wpTimeToString(TimeUtils.current_tsecs())
+                #               TimeUtils.wp_time_to_string(specialGroup.end_time),
+                #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
                 #           )
                 #     )
             all_future.append(specialGroup)

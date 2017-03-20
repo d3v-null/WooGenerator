@@ -1,15 +1,25 @@
-# import yaml
-from collections import OrderedDict
-from utils import SanitationUtils, TimeUtils, Registrar #, UnicodeCsvDialectUtils
-from contact_objects import ContactAddress
-from coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
-from tabulate import tabulate
-from copy import deepcopy
-from matching import Match
-# from parsing.user import ImportUser
-from parsing.abstract import ImportObject
+#pylint: disable=too-many-lines
+"""
+Utilites for storing and performing operations on pending updates
+"""
+# TODO: fix too-many-lines
 
-class SyncUpdate(Registrar):
+from collections import OrderedDict
+from copy import deepcopy
+from tabulate import tabulate
+
+from woogenerator.utils import SanitationUtils, TimeUtils, Registrar #, UnicodeCsvDialectUtils
+from woogenerator.contact_objects import ContactAddress
+from woogenerator.coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
+from woogenerator.matching import Match
+from woogenerator.parsing.abstract import ImportObject
+
+class SyncUpdate(Registrar): #pylint: disable=too-many-instance-attributes,too-many-public-methods
+    """
+    Stores information about and performs operations on a pending update
+    """
+    # TODO: fix too-many-instance-attributes,too-many-public-methods
+
     colData = ColData_Base
     master_name = None
     slave_name = None
@@ -18,22 +28,27 @@ class SyncUpdate(Registrar):
     m_meta_target = 'act'
 
     @classmethod
-    def setGlobals(cls, master_name, slave_name, merge_mode, default_lastSync):
+    def set_globals(cls, master_name, slave_name, merge_mode, default_last_sync):
+        """
+        sets the class attributes to those specified in the user config
+        """
+        # TODO: Fix this awful mess
+
         cls.master_name = master_name
         cls.slave_name = slave_name
         cls.merge_mode = merge_mode
-        cls.default_lastSync = default_lastSync
+        cls.default_last_sync = default_last_sync
 
     def __init__(self, oldMObject, oldSObject, lastSync=None):
         super(SyncUpdate, self).__init__()
-        for oldObject in oldMObject, oldSObject:
-            assert isinstance(oldObject, ImportObject)
+        for old_object in oldMObject, oldSObject:
+            assert isinstance(old_object, ImportObject)
         if not lastSync:
-            lastSync = self.default_lastSync
+            lastSync = self.default_last_sync
         # print "Creating SyncUpdate: ", oldMObject.__repr__(), oldSObject.__repr__()
         self.oldMObject = oldMObject
         self.oldSObject = oldSObject
-        self.tTime = TimeUtils.wpStrpMktime(lastSync)
+        self.tTime = TimeUtils.wp_strp_mktime(lastSync)
 
         self.newSObject = None
         self.newMObject = None
@@ -91,10 +106,10 @@ class SyncUpdate(Registrar):
             return self.slave_name if(sTime >= mTime) else self.master_name
 
     def parseMTime(self, rawMTime):
-        return TimeUtils.actServerToLocalTime(TimeUtils.actStrpMktime(rawMTime))
+        return TimeUtils.act_server_to_local_time(TimeUtils.act_strp_mktime(rawMTime))
 
     def parseSTime(self, rawSTime):
-        return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(rawSTime))
+        return TimeUtils.wp_server_to_local_time(TimeUtils.wp_strp_mktime(rawSTime))
 
     # def getWinnerKey(self, key):
     #     # if self.syncWarnings and key in self.syncWarnings.keys():
@@ -292,7 +307,7 @@ class SyncUpdate(Registrar):
                         try:
                             rawTime = int(warning[key])
                             if rawTime:
-                                warning_fmtd[key] = TimeUtils.wpTimeToString(rawTime)
+                                warning_fmtd[key] = TimeUtils.wp_time_to_string(rawTime)
                         except Exception, e:
                             if(e):
                                 pass
@@ -821,9 +836,9 @@ class SyncUpdate_Usr(SyncUpdate):
     def getInfoComponents(self, info_fmt="%s"):
         info_components = super(SyncUpdate_Usr, self).getInfoComponents(info_fmt)
         info_components += [
-            (info_fmt % ("Last Sale", TimeUtils.wpTimeToString(self.bTime))) if self.bTime else "No Last Sale",
-            (info_fmt % ("%s Mod Time" % self.master_name, TimeUtils.wpTimeToString(self.mTime))) if self.mMod else "%s Not Modded" % self.master_name,
-            (info_fmt % ("%s Mod Time" % self.slave_name, TimeUtils.wpTimeToString(self.sTime))) if self.sMod else "%s Not Modded" % self.slave_name
+            (info_fmt % ("Last Sale", TimeUtils.wp_time_to_string(self.bTime))) if self.bTime else "No Last Sale",
+            (info_fmt % ("%s Mod Time" % self.master_name, TimeUtils.wp_time_to_string(self.mTime))) if self.mMod else "%s Not Modded" % self.master_name,
+            (info_fmt % ("%s Mod Time" % self.slave_name, TimeUtils.wp_time_to_string(self.sTime))) if self.sMod else "%s Not Modded" % self.slave_name
         ]
         for tracking_name, cols in self.colData.getACTTrackedCols().items():
             col = cols[0]
@@ -832,9 +847,9 @@ class SyncUpdate_Usr(SyncUpdate):
             if mColModTime or sColModTime:
                 info_components.append(info_fmt % (tracking_name, '%s: %s; %s: %s' % (
                     self.master_name,
-                    TimeUtils.wpTimeToString(mColModTime),
+                    TimeUtils.wp_time_to_string(mColModTime),
                     self.slave_name,
-                    TimeUtils.wpTimeToString(sColModTime),
+                    TimeUtils.wp_time_to_string(sColModTime),
                 )))
         return info_components
 

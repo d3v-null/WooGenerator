@@ -11,8 +11,8 @@ inFolder = "../input/"
 remoteExportFolder = "act_usr_exp/"
 yamlPath = "merger_config.yaml"
 
-importName = TimeUtils.getMsTimeStamp()
-dateStamp = TimeUtils.getDateStamp()
+importName = TimeUtils.get_ms_timestamp()
+dateStamp = TimeUtils.get_datestamp()
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)

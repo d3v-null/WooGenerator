@@ -22,7 +22,7 @@ class abstractSyncClientTestCase(TestCase):
     def processConfig(self, config): raise NotImplementedError()
 
     def setUp(self):
-        self.importName = TimeUtils.getMsTimeStamp()
+        self.importName = TimeUtils.get_ms_timestamp()
 
         with open(self.yamlPath) as stream:
             config = yaml.load(stream)

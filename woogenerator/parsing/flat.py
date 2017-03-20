@@ -36,8 +36,8 @@ class ImportSpecial(ImportFlat):
         except:
             raise UserWarning('ID exist for Special to be valid')
 
-        self['start_time'] = TimeUtils.gDriveStrpMkTime(self['FROM'])
-        self['end_time'] = TimeUtils.gDriveStrpMkTime(self['TO'])
+        self['start_time'] = TimeUtils.g_drive_strp_mk_time(self['FROM'])
+        self['end_time'] = TimeUtils.g_drive_strp_mk_time(self['TO'])
 
     @property
     def index(self):

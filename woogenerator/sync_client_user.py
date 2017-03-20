@@ -367,9 +367,9 @@ class UsrSyncClient_SQL_WP(SyncClient_Abstract):
         sm_where_clauses = []
 
         if since:
-            since_t = TimeUtils.wpServerToLocalTime( TimeUtils.wpStrpMktime(since))
+            since_t = TimeUtils.wp_server_to_local_time( TimeUtils.wp_strp_mktime(since))
             assert since_t, "Time should be valid format, got %s" % since
-            since_s = TimeUtils.wpTimeToString(since_t)
+            since_s = TimeUtils.wp_time_to_string(since_t)
 
             sm_where_clauses.append( "tu.`time` > '%s'" % since_s )
 

@@ -37,7 +37,7 @@ class ObjList(list, Registrar):
             self.registerMessage('ObjList')
         self.indexer = indexer if indexer else (lambda x: x.index)
         self.supported_type = ImportObject
-        # self._objList_type = 'objects'
+        # self._obj_list_type = 'objects'
         # self._objects = []
         self.indices = []
         if objects:
@@ -52,7 +52,7 @@ class ObjList(list, Registrar):
 
     # @property
     # def objList_type(self):
-    #     return self._objList_type
+    #     return self._obj_list_type
 
     # @property
     # def indices(self):

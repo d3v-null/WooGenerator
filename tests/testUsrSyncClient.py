@@ -72,7 +72,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         wp_callback = config.get(self.optionNamePrefix+'wp_callback')
         remote_export_folder = config.get(self.optionNamePrefix+'remote_export_folder', '')
 
-        TimeUtils.setWpSrvOffset(wp_srv_offset)
+        TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
         actFields = ";".join(ColData_User.getACTImportCols())
 

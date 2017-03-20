@@ -16,7 +16,7 @@ from woogenerator.sync_client_user import UsrSyncClient_WP
 from woogenerator.coldata import ColData_User
 from woogenerator.parsing.user import CSVParse_User, CSVParse_User_Api #, ImportUser
 from woogenerator.matching import UsernameMatcher, MatchList #, CardMatcher, NocardEmailMatcher, EmailMatcher
-from woogenerator.SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
     # yamlPath = "merger_config.yaml"
@@ -44,8 +44,8 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         SLAVE_NAME = config.get('slave_name', 'SLAVE')
         DEFAULT_LAST_SYNC = config.get('default_last_sync')
 
-        TimeUtils.setWpSrvOffset(wp_srv_offset)
-        SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+        TimeUtils.set_wp_srv_offset(wp_srv_offset)
+        SyncUpdate.set_globals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
 
         self.wpApiParams = {

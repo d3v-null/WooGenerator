@@ -1,18 +1,27 @@
+"""
+Containers and parsers for processing user data
+"""
+
 from collections import OrderedDict
-from pprint import pformat # pprint
+from pprint import pformat  # pprint
 # from copy import deepcopy
 
-from woogenerator.coldata import ColData_User #, ColData_Woo
-from woogenerator.contact_objects import ContactAddress, ContactName, ContactPhones, SocialMediaFields
+from woogenerator.coldata import ColData_User  #, ColData_Woo
+from woogenerator.contact_objects import ContactAddress, ContactName
+from woogenerator.contact_objects import ContactPhones, SocialMediaFields
 from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.flat import ImportFlat, CSVParse_Flat
 
 
 class UsrObjList(ObjList):
+    """
+    A list of `ImportUser` objects
+    """
+
     def __init__(self, objects=None, indexer=None):
         super(UsrObjList, self).__init__(objects, indexer=None)
-        self._objList_type = 'User'
+        self._obj_list_type = 'User'
 
     reportCols = ColData_User.getReportCols()
 
@@ -24,20 +33,10 @@ class UsrObjList(ObjList):
         else:
             return super(UsrObjList, self).getSanitizer(tablefmt)
 
-
-    def getReportCols(self):
-        raise DeprecationWarning("getReportCols deprecated for .reportCols")
-        return self.reportCols
-
-    # def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
-    #     response = super(UsrObjList, self).tabulate(cols, tablefmt)
-    #     if tablefmt='html' and highlight_rules:
-    #         # todo: special highlighting stuff
-    #     return response
-
     @classmethod
     def getBasicCols(cls, self):
         return ColData_User.getBasicCols()
+
 
 class ImportUser(ImportFlat):
     container = UsrObjList
@@ -55,56 +54,68 @@ class ImportUser(ImportFlat):
     name = descriptorUtils.safeKeyProperty('Name')
 
     aliasMapping = {
-        'Address': ['Address 1', 'Address 2', 'City', 'Postcode', 'State',
-                    'Country'],
-        'Home Address': ['Home Address 1', 'Home Address 2', 'Home City',
-                         'Home Postcode', 'Home State', 'Home Country'],
-        'Name': ['Name Prefix', 'First Name', 'Middle Name', 'Surname',
-                 'Name Suffix', 'Company', 'Memo', 'Contact'],
+        'Address':
+        ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
+        'Home Address': [
+            'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
+            'Home State', 'Home Country'
+        ],
+        'Name': [
+            'Name Prefix', 'First Name', 'Middle Name', 'Surname',
+            'Name Suffix', 'Company', 'Memo', 'Contact'
+        ],
         'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
-        'Social Media': ['Facebook Username', 'Twitter Username',
-                         'GooglePlus Username', 'Instagram Username',
-                         ],
-                        #  'Web Site'],
+        'Social Media': [
+            'Facebook Username',
+            'Twitter Username',
+            'GooglePlus Username',
+            'Instagram Username',
+        ],
+        #  'Web Site'],
         # 'E-mails': ['E-mail', 'Personal E-mail']
     }
 
     @property
-    def index(self): return "%s | %s" % (self.WPID, self.MYOBID)
+    def index(self):
+        return "%s | %s" % (self.WPID, self.MYOBID)
 
     @property
     def act_modtime(self):
         time_str = self.get('Edited in Act')
         if time_str:
-            return TimeUtils.actStrpMktime(time_str)
+            return TimeUtils.act_strp_mktime(time_str)
 
     @property
     def act_created(self):
         time_str = self.get('Create Date')
         if time_str:
-            return TimeUtils.actStrpMkdate(time_str)
+            return TimeUtils.act_strp_mktime(time_str)
 
     @property
     def wp_created(self):
         time_str = self.get('Wordpress Start Date')
         if time_str:
-            return TimeUtils.wpStrpMktime(time_str)
+            return TimeUtils.wp_strp_mktime(time_str)
 
     @property
     def wp_modtime(self):
         time_str = self.get('Edited in Wordpress')
         if time_str:
-            return TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(time_str))
+            return TimeUtils.wp_server_to_local_time(
+                TimeUtils.wp_strp_mktime(time_str))
 
     @property
     def last_sale(self):
         time_str = self.get('Last Sale')
         if time_str:
-            return TimeUtils.actStrpMkdate(time_str)
+            return TimeUtils.act_strp_mkdate(time_str)
 
     @property
     def last_modtime(self):
-        times = [self.act_modtime, self.wp_modtime, self.act_created, self.wp_created, self.last_sale]
+        times = [
+            self.act_modtime, self.wp_modtime, self.act_created,
+            self.wp_created, self.last_sale
+        ]
         return max(times)
 
     @property
@@ -113,20 +124,25 @@ class ImportUser(ImportFlat):
         response = self.last_sale
         if not response:
             response = self.act_created
-        assert response, "customer should always have a create (%s) or last sale (%s)" % (self.act_created, self.last_sale)
+        assert response, "customer should always have a create (%s) or last sale (%s)" % (
+            self.act_created, self.last_sale)
         return response
-
 
     def __init__(self, data, **kwargs):
         super(ImportUser, self).__init__(data, **kwargs)
-        for key in ['E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role', 'contact_schema', 'Wordpress ID']:
+        for key in [
+                'E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role',
+                'contact_schema', 'Wordpress ID'
+        ]:
             val = kwargs.get(key, "")
-            if(val):
+            if (val):
                 self[key] = val
-            elif(not self.get(key)):
+            elif (not self.get(key)):
                 self[key] = ""
-            if(self.DEBUG_USR): self.registerMessage("key: {key}, value: {val}".format(key=key, val=self[key]))
-        if(self.DEBUG_USR): self.registerMessage("data:" + repr(data))
+            if (self.DEBUG_USR):
+                self.registerMessage(
+                    "key: {key}, value: {val}".format(key=key, val=self[key]))
+        if (self.DEBUG_USR): self.registerMessage("data:" + repr(data))
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
@@ -158,9 +174,7 @@ class ImportUser(ImportFlat):
             }.items()
         ]))
 
-        self['Name'] = ContactName(
-            **name_kwargs
-        )
+        self['Name'] = ContactName(**name_kwargs)
 
         assert self['Name'] is not None, \
                'contact is missing mandatory fields: something went wrong'
@@ -179,9 +193,7 @@ class ImportUser(ImportFlat):
             }.items()
         ]))
 
-        self['Address'] = ContactAddress(
-            **address_kwargs
-        )
+        self['Address'] = ContactAddress(**address_kwargs)
 
         # print "ADDRESS: ", self['Address']
 
@@ -198,9 +210,7 @@ class ImportUser(ImportFlat):
             }.items()
         ]))
 
-        self['Home Address'] = ContactAddress(
-            **alt_address_kwargs
-        )
+        self['Home Address'] = ContactAddress(**alt_address_kwargs)
 
         # print "HOME ADDRESS: ", self['Home Address']
 
@@ -215,9 +225,7 @@ class ImportUser(ImportFlat):
             }.items()
         ]))
 
-        self['Phone Numbers'] = ContactPhones(
-            **phone_kwargs
-        )
+        self['Phone Numbers'] = ContactPhones(**phone_kwargs)
 
         social_media_kwargs = OrderedDict(filter(None, [\
             ((key, data.get(value)) if data.get(value) else None) for key, value in\
@@ -230,21 +238,23 @@ class ImportUser(ImportFlat):
             }.items()
         ]))
 
-        self['Social Media'] = SocialMediaFields(
-            **social_media_kwargs
-        )
+        self['Social Media'] = SocialMediaFields(**social_media_kwargs)
 
         emails = []
         if data.get('E-mail'):
-            emails = listUtils.combineLists(emails, SanitationUtils.findallEmails(data['E-mail']))
+            emails = listUtils.combineLists(
+                emails, SanitationUtils.findallEmails(data['E-mail']))
         if data.get('Personal E-mail'):
-            emails = listUtils.combineLists(emails, SanitationUtils.findallEmails(data.get('Personal E-mail')))
+            emails = listUtils.combineLists(
+                emails,
+                SanitationUtils.findallEmails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
         self['Personal E-mail'] = ', '.join(emails)
 
         urls = []
         if data.get('Web Site'):
-            urls = listUtils.combineLists(urls, SanitationUtils.findallURLs(data['Web Site']))
+            urls = listUtils.combineLists(
+                urls, SanitationUtils.findallURLs(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
@@ -253,25 +263,30 @@ class ImportUser(ImportFlat):
         #     ]))
 
         if not self['Address'].valid or not self['Home Address'].valid:
-            self['address_reason'] = '\n'.join(filter(None, [
-                'ADDRESS: ' + self['Address'].reason if not self['Address'].valid else None,
-                'HOME ADDRESS: ' + self['Home Address'].reason if not self['Home Address'].valid else None
-            ]))
+            self['address_reason'] = '\n'.join(
+                filter(None, [
+                    'ADDRESS: ' + self['Address'].reason if not self['Address']
+                    .valid else None, 'HOME ADDRESS: ' + self['Home Address']
+                    .reason if not self['Home Address'].valid else None
+                ]))
 
         if not self['Name'].valid:
-            self['name_reason'] = '\n'.join(filter(None, [
-                self['Name'].reason,
-            ]))
+            self['name_reason'] = '\n'.join(
+                filter(None, [
+                    self['Name'].reason,
+                ]))
 
         if not self['Phone Numbers'].valid:
-            self['phone_reason'] = '\n'.join(filter(None, [
-                self['Phone Numbers'].reason,
-            ]))
+            self['phone_reason'] = '\n'.join(
+                filter(None, [
+                    self['Phone Numbers'].reason,
+                ]))
 
         if not self['Social Media'].valid:
-            self['social_reason'] = '\n'.join(filter(None, [
-                self['Social Media'].reason,
-            ]))
+            self['social_reason'] = '\n'.join(
+                filter(None, [
+                    self['Social Media'].reason,
+                ]))
 
     def refreshContactObjects(self):
         pass
@@ -292,9 +307,10 @@ class ImportUser(ImportFlat):
         # if key is 'Name': print "setting Name to ", val
         super(ImportUser, self).__setitem__(key, val)
         # if key is 'Name':
-            # print self.__getitem__(key)
 
-    def get(self, key, default = None):
+    # print self.__getitem__(key)
+
+    def get(self, key, default=None):
         for alias, keys in self.aliasMapping.items():
             if key in keys and self[alias]:
                 return self[alias][key]
@@ -309,7 +325,9 @@ class ImportUser(ImportFlat):
 
     def addressesActLike(self):
         actLike = True
-        for address in filter(None, map(lambda key: self.get(key), ['Address', 'Home Address'])):
+        for address in filter(None,
+                              map(lambda key: self.get(key),
+                                  ['Address', 'Home Address'])):
             if address.schema and address.schema != 'act':
                 actLike = False
         return actLike
@@ -318,16 +336,22 @@ class ImportUser(ImportFlat):
         return self.username == self.MYOBID
 
     def __repr__(self):
-        return "<%s> %s | %s | %s | %s | %s" % (self.index, self.email, self.MYOBID, self.role, self.username, self.WPID)
-
-
+        return "<%s> %s | %s | %s | %s | %s" % (
+            self.index, self.email, self.MYOBID, self.role, self.username,
+            self.WPID)
 
 
 class CSVParse_User(CSVParse_Flat):
 
     objectContainer = ImportUser
 
-    def __init__(self, cols=[], defaults = {}, contact_schema = None, filterItems = None, limit=None, source=None):
+    def __init__(self,
+                 cols=[],
+                 defaults={},
+                 contact_schema=None,
+                 filterItems=None,
+                 limit=None,
+                 source=None):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         extra_cols = [
@@ -335,13 +359,14 @@ class CSVParse_User(CSVParse_Flat):
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
             # 'post_status'
         ]
-        extra_defaults =  OrderedDict([
+        extra_defaults = OrderedDict([
             # ('post_status', 'publish'),
             # ('last_import', importName),
         ])
-        cols = listUtils.combineLists( cols, extra_cols )
-        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        super(CSVParse_User, self).__init__(cols, defaults, limit=limit, source=source)
+        cols = listUtils.combineLists(cols, extra_cols)
+        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
+        super(CSVParse_User, self).__init__(
+            cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
         self.filterItems = filterItems
         # self.itemIndexer = self.getUsername
@@ -388,72 +413,56 @@ class CSVParse_User(CSVParse_Flat):
             objectData,
             self.emails,
             email,
-            singular = False,
-            registerName = 'emails'
-        )
+            singular=False,
+            registerName='emails')
 
     def registerNoEmail(self, objectData):
         self.registerAnything(
             objectData,
             self.noemails,
             objectData.index,
-            singular = True,
-            registerName = 'noemails'
-        )
+            singular=True,
+            registerName='noemails')
 
     def registerRole(self, objectData, role):
         self.registerAnything(
-            objectData,
-            self.roles,
-            role,
-            singular = False,
-            registerName = 'roles'
-        )
+            objectData, self.roles, role, singular=False, registerName='roles')
 
     def registerNoRole(self, objectData):
         self.registerAnything(
             objectData,
             self.noroles,
             objectData.index,
-            singular = True,
-            registerName = 'noroles'
-        )
+            singular=True,
+            registerName='noroles')
 
     def registerCard(self, objectData, card):
         self.registerAnything(
-            objectData,
-            self.cards,
-            card,
-            singular = False,
-            registerName = 'cards'
-        )
+            objectData, self.cards, card, singular=False, registerName='cards')
 
     def registerNoCard(self, objectData):
         self.registerAnything(
             objectData,
             self.nocards,
             objectData.index,
-            singular = True,
-            registerName = 'nocards'
-        )
+            singular=True,
+            registerName='nocards')
 
     def registerUsername(self, objectData, username):
         self.registerAnything(
             objectData,
             self.usernames,
             username,
-            singular = False,
-            registerName = 'usernames'
-        )
+            singular=False,
+            registerName='usernames')
 
     def registerNoUsername(self, objectData):
         self.registerAnything(
             objectData,
             self.nousernames,
             objectData.index,
-            singular = True,
-            registerName = 'nousernames'
-        )
+            singular=True,
+            registerName='nousernames')
 
     # def registerCompany(self, objectData, company):
     #     self.registerAnything(
@@ -469,27 +478,24 @@ class CSVParse_User(CSVParse_Flat):
             objectData,
             self.filtered,
             objectData.index,
-            singular = True,
-            registerName = 'filtered'
-        )
+            singular=True,
+            registerName='filtered')
 
     def registerBadAddress(self, objectData, address):
         self.registerAnything(
             objectData,
             self.badAddress,
             objectData.index,
-            singular = True,
-            registerName = 'badaddress'
-        )
+            singular=True,
+            registerName='badaddress')
 
     def registerBadName(self, objectData, name):
         self.registerAnything(
             objectData,
             self.badName,
             objectData.index,
-            singular = True,
-            registerName = 'badname'
-        )
+            singular=True,
+            registerName='badname')
 
     # def registerBadEmail(self, objectData, name):
     #     self.registerAnything(
@@ -507,29 +513,45 @@ class CSVParse_User(CSVParse_Flat):
                 objectData,
                 self.addresses,
                 address_str,
-                singular = False,
-                registerName = 'address'
-            )
+                singular=False,
+                registerName='address')
 
     def validateFilters(self, objectData):
         if self.filterItems:
-            if 'roles' in self.filterItems.keys() and objectData.role not in self.filterItems['roles']:
-                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not match role" % objectData.__repr__() )
+            if 'roles' in self.filterItems.keys(
+            ) and objectData.role not in self.filterItems['roles']:
+                if self.DEBUG_USR:
+                    self.registerMessage(
+                        "could not register object %s because did not match role"
+                        % objectData.__repr__())
                 return False
-            if 'sinceM' in self.filterItems.keys() and objectData.act_modtime < self.filterItems['sinceM']:
-                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet sinceM condition" % objectData.__repr__() )
+            if 'sinceM' in self.filterItems.keys(
+            ) and objectData.act_modtime < self.filterItems['sinceM']:
+                if self.DEBUG_USR:
+                    self.registerMessage(
+                        "could not register object %s because did not meet sinceM condition"
+                        % objectData.__repr__())
                 return False
-            if 'sinceS' in self.filterItems.keys() and objectData.wp_modtime < self.filterItems['sinceS']:
-                if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet sinceS condition" % objectData.__repr__() )
+            if 'sinceS' in self.filterItems.keys(
+            ) and objectData.wp_modtime < self.filterItems['sinceS']:
+                if self.DEBUG_USR:
+                    self.registerMessage(
+                        "could not register object %s because did not meet sinceS condition"
+                        % objectData.__repr__())
                 return False
-            if objectData.username in self.filterItems.get('users', []): return True
-            if objectData.MYOBID in self.filterItems.get('cards', []): return True
-            if objectData.email in self.filterItems.get('emails', []): return True
-            if self.DEBUG_USR: self.registerMessage("could not register object %s because did not meet users, cards or emails conditions" % objectData.__repr__() )
+            if objectData.username in self.filterItems.get('users', []):
+                return True
+            if objectData.MYOBID in self.filterItems.get('cards', []):
+                return True
+            if objectData.email in self.filterItems.get('emails', []):
+                return True
+            if self.DEBUG_USR:
+                self.registerMessage(
+                    "could not register object %s because did not meet users, cards or emails conditions"
+                    % objectData.__repr__())
             return False
         else:
             return True
-
 
     def registerObject(self, objectData):
         if not self.validateFilters(objectData):
@@ -537,10 +559,11 @@ class CSVParse_User(CSVParse_Flat):
             return
 
         email = objectData.email
-        if email and SanitationUtils.stringIsEmail(email) :
+        if email and SanitationUtils.stringIsEmail(email):
             self.registerEmail(objectData, email)
         else:
-            if(self.DEBUG_USR): self.registerWarning("invalid email address: %s"%email)
+            if (self.DEBUG_USR):
+                self.registerWarning("invalid email address: %s" % email)
             self.registerNoEmail(objectData)
 
         role = objectData.role
@@ -560,7 +583,8 @@ class CSVParse_User(CSVParse_Flat):
         if username:
             self.registerUsername(objectData, username)
         else:
-            if(self.DEBUG_USR): self.registerWarning("invalid username: %s"%username)
+            if (self.DEBUG_USR):
+                self.registerWarning("invalid username: %s" % username)
             self.registerNoUsername(objectData)
 
         # company = objectData['Company']
@@ -593,7 +617,8 @@ class CSVParse_User(CSVParse_Flat):
         super(CSVParse_User, self).registerObject(objectData)
 
     def getKwargs(self, allData, container, **kwargs):
-        kwargs = super(CSVParse_User, self).getKwargs(allData, container, **kwargs)
+        kwargs = super(CSVParse_User, self).getKwargs(allData, container, **
+                                                      kwargs)
         if not 'contact_schema' in kwargs.keys():
             kwargs['contact_schema'] = self.contact_schema
         return kwargs
@@ -618,6 +643,7 @@ class CSVParse_User(CSVParse_Flat):
     #     objectData = super(CSVParse_Flat, self).analyseRow(row, objectData)
     #     return objectData
 
+
 class CSVParse_User_Api(CSVParse_User):
     @classmethod
     def getParserData(cls, **kwargs):
@@ -625,7 +651,7 @@ class CSVParse_User_Api(CSVParse_User):
         Gets data ready for the parser, in this case from apiData
         """
         parserData = OrderedDict()
-        apiData = kwargs.get('apiData',{})
+        apiData = kwargs.get('apiData', {})
         print "apiData before: %s" % str(apiData)
         apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
                         for key, value in apiData.items()])
@@ -638,7 +664,9 @@ class CSVParse_User_Api(CSVParse_User):
             except:
                 wp_api_key = col
             core_translation[wp_api_key] = col
-        if Registrar.DEBUG_API: Registrar.registerMessage("core_translation: %s" % pformat(core_translation))
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage("core_translation: %s" %
+                                      pformat(core_translation))
         parserData.update(**cls.translateKeys(apiData, core_translation))
 
         if 'meta' in apiData:
@@ -655,18 +683,21 @@ class CSVParse_User_Api(CSVParse_User):
                     wp_api_key = col
 
                 meta_translation[wp_api_key] = col
-            if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation: %s" % pformat(meta_translation))
-            meta_translation_result = cls.translateKeys(metaData, meta_translation)
+            if Registrar.DEBUG_API:
+                Registrar.registerMessage("meta_translation: %s" %
+                                          pformat(meta_translation))
+            meta_translation_result = cls.translateKeys(metaData,
+                                                        meta_translation)
             # if Registrar.DEBUG_API: Registrar.registerMessage("meta_translation_result: %s" % pformat(meta_translation_result))
             parserData.update(**meta_translation_result)
 
-        if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage(
+                "parserData: {}".format(pformat(parserData)))
         return parserData
 
     def analyseWpApiObj(self, apiData):
-        kwargs = {
-            'apiData':apiData
-        }
+        kwargs = {'apiData': apiData}
         objectData = self.newObject(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
             self.registerMessage("CONSTRUCTED: %s" % objectData.identifier)

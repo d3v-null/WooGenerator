@@ -6,7 +6,7 @@ import yaml
 
 from context import woogenerator
 
-from woogenerator.SyncUpdate import *
+from woogenerator.syncupdate import *
 from woogenerator import coldata
 from woogenerator.coldata import ColData_User
 from woogenerator.parsing.user import ImportUser, CSVParse_User

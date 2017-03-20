@@ -29,34 +29,34 @@ class testUtilsTime(unittest.TestCase):
         self.overrideTimeSecs = time.mktime(self.overrideTimeStruct)
 
     def test_easy(self):
-        TimeUtils.setWpSrvOffset(self.srvOffset)
-        inTimeSecsResult = TimeUtils.wpStrpMktime(self.inTimeStr)
+        TimeUtils.set_wp_srv_offset(self.srvOffset)
+        inTimeSecsResult = TimeUtils.wp_strp_mktime(self.inTimeStr)
         self.assertEqual(inTimeSecsResult, self.inTimeSecs)
         self.assertEqual(
-            TimeUtils.wpTimeToString(inTimeSecsResult),
+            TimeUtils.wp_time_to_string(inTimeSecsResult),
             self.inTimeStr
         )
 
     def test_srvOffset(self):
         self.assertEqual(
-            TimeUtils.wpTimeToString(TimeUtils.wpServerToLocalTime(TimeUtils.wpStrpMktime(self.inTimeStr))),
+            TimeUtils.wp_time_to_string(TimeUtils.wp_server_to_local_time(TimeUtils.wp_strp_mktime(self.inTimeStr))),
             self.inTimeStrOffset
         )
 
     def test_formats(self):
         for test, expected in self.actTimeTests:
             self.assertEqual(
-                TimeUtils.wpTimeToString(TimeUtils.actStrpMktime(test)),
+                TimeUtils.wp_time_to_string(TimeUtils.act_strp_mktime(test)),
                 expected
             )
         for test in self.wpTimeTests:
             self.assertEqual(
-                TimeUtils.wpTimeToString(TimeUtils.wpStrpMktime(test)),
+                TimeUtils.wp_time_to_string(TimeUtils.wp_strp_mktime(test)),
                 test
             )
 
         self.assertEqual(
-            TimeUtils.getDateStamp(time.localtime(TimeUtils.actStrpMkdate(self.actDateStr))),
+            TimeUtils.get_datestamp(time.localtime(TimeUtils.act_strp_mktime(self.actDateStr))),
             self.wpDateStr
         )
 
@@ -65,8 +65,8 @@ class testUtilsTime(unittest.TestCase):
 
         self.assertEqual(TimeUtils.current_tsecs(), self.overrideTimeSecs)
 
-        self.assertFalse(TimeUtils.hasHappenedYet(self.overrideTimeSecs-1))
-        self.assertTrue(TimeUtils.hasHappenedYet(self.overrideTimeSecs+1))
+        self.assertFalse(TimeUtils.has_happened_yet(self.overrideTimeSecs-1))
+        self.assertTrue(TimeUtils.has_happened_yet(self.overrideTimeSecs+1))
 
 if __name__ == '__main__':
     unittest.main()
