@@ -1,120 +1,82 @@
-from __init__ import MODULE_PATH, MODULE_LOCATION
+"""
+Module for updating woocommerce and ACT databases from ACT import file
+
+TODO:
+    reduce file length
+"""
 
 from pprint import pprint
 from collections import OrderedDict
 import os
-import sys
-import unicodecsv
-import argparse
-import traceback
-# import shutil
-from utils import SanitationUtils, TimeUtils, HtmlReporter #,listUtils
-from utils import Registrar, debugUtils, ProgressCounter
-from matching import Match, MatchList, ConflictingMatchList
-from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
-from parsing.user import CSVParse_User, UsrObjList #, ImportUser
-# from contact_objects import ContactAddress
-from coldata import ColData_User
-# from tabulate import tabulate
-# from itertools import chain
-# from pprint import pprint
 # import sys
-# from copy import deepcopy
-# import unicodecsv
-# import pickle
-# import dill as pickle
+import traceback
 from bisect import insort
 import re
 import time
-import yaml
-# import smtplib
 import zipfile
-# import tempfile
-# from email import encoders
-# from email.message import Message
-# from email.mime.base import MIMEBase
-# from email.mime.multipart import MIMEMultipart
-# import MySQLdb
-# import pymysql
-# import paramiko
-from sshtunnel import check_address
 import io
-# import wordpress_xmlrpc
+
+import yaml
+import unicodecsv
+import argparse
+from sshtunnel import check_address
+
+from __init__ import MODULE_PATH, MODULE_LOCATION
+from utils import SanitationUtils, TimeUtils, HtmlReporter
+from utils import Registrar, debugUtils, ProgressCounter
+from matching import Match, MatchList, ConflictingMatchList
+from matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
+from parsing.user import CSVParse_User, UsrObjList
+from coldata import ColData_User
+
 from sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
-from sync_client_user import UsrSyncClient_WP #, UsrSyncClient_WC, UsrSyncClient_JSON
+from sync_client_user import UsrSyncClient_WP  #, UsrSyncClient_WC, UsrSyncClient_JSON
 from SyncUpdate import SyncUpdate, SyncUpdate_Usr_Api
 from contact_objects import FieldGroup
-from duplicates import Duplicates, object_glb_index_fn
+from duplicates import Duplicates  #, object_glb_index_fn
 
 
-importName = TimeUtils.getMsTimeStamp()
-start_time = time.time()
-
-def timediff():
-    return time.time() - start_time
-
-# testMode = False
-testMode = True
-
-# good testing command: python source/merger.py -vv --skip-download-master --skip-download-slave --skip-update-master --skip-update-slave --skip-filter --do-sync --skip-post --testmode --limit=9000 --master-file=act_x_2017-01-10_16-42-53.csv --slave-file=wp_x_test_2017-01-10_16-42-53.csv
-
-### DEFAULT CONFIG ###
-
-# paths are relative to source file
-
-# things that need global scope
-
-os.chdir(MODULE_LOCATION)
-
-inFolder = "input/"
-outFolder = "output/"
-logFolder = "logs/"
-srcFolder = MODULE_PATH
-pklFolder = "pickles/"
+def timediff(settings):
+    """
+    return the difference in time since the start time according to settings
+    """
+    return time.time() - settings.start_time
 
 
-repPath = ''
-yamlPath = os.path.join(srcFolder, "merger_config.yaml")
-mFailPath = os.path.join(outFolder, "act_fails.csv")
-sFailPath = os.path.join(outFolder, "wp_fails.csv" )
-logPath = os.path.join(logFolder, "log_%s.txt" % importName)
-zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
-
-def main():
-    global testMode, inFolder, outFolder, logFolder, srcFolder, pklFolder, \
-        yamlPath, repPath, mFailPath, sFailPath, logPath, zipPath
-
-    userFile = cardFile = emailFile = sinceM = sinceS = False
+def main(settings):
+    """
+    Using the settings object, attempt to perform the specified functions
+    """
 
     ### OVERRIDE CONFIG WITH YAML FILE ###
 
     config = {}
 
-    OLD_THRESHOLD = "2012-01-01 00:00:00"
-    OLDISH_THRESHOLD = "2014-01-01 00:00:00"
+    old_threshold = "2012-01-01 00:00:00"
+    oldish_threshold = "2014-01-01 00:00:00"
 
-    with open(yamlPath) as stream:
+    with open(settings.yaml_path) as stream:
         config = yaml.load(stream)
 
         if 'inFolder' in config.keys():
-            inFolder = config['inFolder']
+            settings.in_folder = config['inFolder']
         if 'outFolder' in config.keys():
-            outFolder = config['outFolder']
+            settings.out_folder = config['outFolder']
         if 'logFolder' in config.keys():
-            logFolder = config['logFolder']
+            settings.log_folder = config['logFolder']
 
         #mandatory
-        merge_mode = config.get('merge_mode', 'sync')
-        MASTER_NAME = config.get('master_name', 'MASTER')
-        SLAVE_NAME = config.get('slave_name', 'SLAVE')
-        DEFAULT_LAST_SYNC = config.get('default_last_sync')
-        master_file = config.get('master_file', '')
-        slave_file = config.get('slave_file', '')
-        userFile = config.get('userFile')
-        cardFile = config.get('cardFile')
-        emailFile = config.get('emailFile')
-        sinceM = config.get('sinceM')
-        sinceS = config.get('sinceS')
+        settings.merge_mode = config.get('merge_mode', 'sync')
+        settings.master_name = config.get('master_name', 'MASTER')
+        settings.slave_name = config.get('slave_name', 'SLAVE')
+        settings.default_last_sync = config.get('default_last_sync')
+        settings.master_file = config.get('master_file', '')
+        settings.slave_file = config.get('slave_file', '')
+        settings.user_file = config.get('userFile')
+        settings.card_file = config.get('cardFile')
+        settings.email_file = config.get('emailFile')
+        settings.since_m = config.get('sinceM')
+        settings.since_s = config.get('sinceS')
         # download_slave = config.get('download_slave')
         # download_master = config.get('download_master')
         # update_slave = config.get('update_slave')
@@ -126,94 +88,169 @@ def main():
 
     ### OVERRIDE CONFIG WITH ARGPARSE ###
 
-    parser = argparse.ArgumentParser(description = 'Merge contact records between two databases')
+    parser = argparse.ArgumentParser(
+        description='Merge contact records between two databases')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-v", "--verbosity", action="count",
-                        help="increase output verbosity")
+    group.add_argument(
+        "-v", "--verbosity", action="count", help="increase output verbosity")
     group.add_argument("-q", "--quiet", action="store_true")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--testmode', help='Run in test mode with test databases',
-                        action='store_true', default=None)
-    group.add_argument('--livemode', help='Run the script on the live databases',
-                        action='store_false', dest='testmode')
+    group.add_argument(
+        '--testmode',
+        help='Run in test mode with test databases',
+        action='store_true',
+        default=None)
+    group.add_argument(
+        '--livemode',
+        help='Run the script on the live databases',
+        action='store_false',
+        dest='testmode')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-sync', help='sync the databases',
-                       action="store_true", default=config.get('do_sync'))
-    group.add_argument('--skip-sync', help='don\'t sync the databases',
-                       action="store_false", dest='do_sync')
+    group.add_argument(
+        '--do-sync',
+        help='sync the databases',
+        action="store_true",
+        default=config.get('do_sync'))
+    group.add_argument(
+        '--skip-sync',
+        help='don\'t sync the databases',
+        action="store_false",
+        dest='do_sync')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--do-post', help='post process the contacts',
-                       action="store_true", default=config.get('do_post'))
-    group.add_argument('--skip-post', help='don\'t post process the contacts',
-                       action="store_false", dest='do_post')
-    group.add_argument('--process-duplicates', help="do extra processing to figure out duplicates",
-                       default=False, action="store_true")
+    group.add_argument(
+        '--do-post',
+        help='post process the contacts',
+        action="store_true",
+        default=config.get('do_post'))
+    group.add_argument(
+        '--skip-post',
+        help='don\'t post process the contacts',
+        action="store_false",
+        dest='do_post')
+    group.add_argument(
+        '--process-duplicates',
+        help="do extra processing to figure out duplicates",
+        default=False,
+        action="store_true")
 
     download_group = parser.add_argument_group('Import options')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-master', help='download the master data',
-                       action="store_true", default=config.get('download_master'))
-    group.add_argument('--skip-download-master', help='use the local master file instead\
-        of downloading the master data', action="store_false", dest='download_master')
+    group.add_argument(
+        '--download-master',
+        help='download the master data',
+        action="store_true",
+        default=config.get('download_master'))
+    group.add_argument(
+        '--skip-download-master',
+        help='use the local master file instead\
+        of downloading the master data',
+        action="store_false",
+        dest='download_master')
     group = download_group.add_mutually_exclusive_group()
-    group.add_argument('--download-slave', help='download the slave data',
-                       action="store_true", default=config.get('download_slave'))
-    group.add_argument('--skip-download-slave', help='use the local slave file instead\
-        of downloading the slave data', action="store_false", dest='download_slave')
+    group.add_argument(
+        '--download-slave',
+        help='download the slave data',
+        action="store_true",
+        default=config.get('download_slave'))
+    group.add_argument(
+        '--skip-download-slave',
+        help='use the local slave file instead\
+        of downloading the slave data',
+        action="store_false",
+        dest='download_slave')
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--update-master', help='update the master database',
-                       action="store_true", default=config.get('update_master'))
-    group.add_argument('--skip-update-master', help='don\'t update the master database',
-                       action="store_false", dest='update_master')
+    group.add_argument(
+        '--update-master',
+        help='update the master database',
+        action="store_true",
+        default=config.get('update_master'))
+    group.add_argument(
+        '--skip-update-master',
+        help='don\'t update the master database',
+        action="store_false",
+        dest='update_master')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--update-slave', help='update the slave database',
-                       action="store_true", default=config.get('update_slave'))
-    group.add_argument('--skip-update-slave', help='don\'t update the slave database',
-                       action="store_false", dest='update_slave')
+    group.add_argument(
+        '--update-slave',
+        help='update the slave database',
+        action="store_true",
+        default=config.get('update_slave'))
+    group.add_argument(
+        '--skip-update-slave',
+        help='don\'t update the slave database',
+        action="store_false",
+        dest='update_slave')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--do-problematic', help='make problematic updates to the databases',
-                       action="store_true", default=config.get('do_problematic'))
-    group.add_argument('--skip-problematic', help='don\'t make problematic updates to the databases',
-                       action="store_false", dest='do_problematic')
+    group.add_argument(
+        '--do-problematic',
+        help='make problematic updates to the databases',
+        action="store_true",
+        default=config.get('do_problematic'))
+    group.add_argument(
+        '--skip-problematic',
+        help='don\'t make problematic updates to the databases',
+        action="store_false",
+        dest='do_problematic')
     group = update_group.add_mutually_exclusive_group()
-    group.add_argument('--ask-before-update', help="ask before updating",
-                       action="store_true", default=True)
-    group.add_argument('--force-update', help="don't ask before updating",
-                       action="store_false", dest="ask_before_update")
-
-
+    group.add_argument(
+        '--ask-before-update',
+        help="ask before updating",
+        action="store_true",
+        default=True)
+    group.add_argument(
+        '--force-update',
+        help="don't ask before updating",
+        action="store_false",
+        dest="ask_before_update")
 
     filter_group = parser.add_argument_group("Filter Options")
     group = filter_group.add_mutually_exclusive_group()
-    group.add_argument('--do-filter', help='filter the databases',
-                       action="store_true", default=config.get('do_filter'))
-    group.add_argument('--skip-filter', help='don\'t filter the databases',
-                       action="store_false", dest='do_filter')
-    filter_group.add_argument('--limit', type=int, help='global limit of objects to process')
+    group.add_argument(
+        '--do-filter',
+        help='filter the databases',
+        action="store_true",
+        default=config.get('do_filter'))
+    group.add_argument(
+        '--skip-filter',
+        help='don\'t filter the databases',
+        action="store_false",
+        dest='do_filter')
+    filter_group.add_argument(
+        '--limit', type=int, help='global limit of objects to process')
     filter_group.add_argument(
         '--card-file',
         help='list of cards to filter on',
-        default=config.get('cardFile')
-    )
+        default=config.get('cardFile'))
 
     parser.add_argument('--m-ssh-host', help='location of master ssh server')
-    parser.add_argument('--m-ssh-port', type=int, help='location of master ssh port')
+    parser.add_argument(
+        '--m-ssh-port', type=int, help='location of master ssh port')
     parser.add_argument('--master-file', help='location of master file')
     parser.add_argument('--slave-file', help='location of slave file')
 
     debug_group = parser.add_argument_group("Debug options")
-    debug_group.add_argument('--debug-abstract', action='store_true', dest='debug_abstract')
-    debug_group.add_argument('--debug-parser', action='store_true', dest='debug_parser')
-    debug_group.add_argument('--debug-update', action='store_true', dest='debug_update')
-    debug_group.add_argument('--debug-flat', action='store_true', dest='debug_flat')
-    debug_group.add_argument('--debug-name', action='store_true', dest='debug_name')
-    debug_group.add_argument('--debug-address', action='store_true', dest='debug_address')
-    debug_group.add_argument('--debug-client', action='store_true', dest='debug_client')
-    debug_group.add_argument('--debug-utils', action='store_true', dest='debug_utils')
-    debug_group.add_argument('--debug-contact', action='store_true', dest='debug_contact')
-    debug_group.add_argument('--debug-duplicates', action='store_true', dest='debug_duplicates')
+    debug_group.add_argument(
+        '--debug-abstract', action='store_true', dest='debug_abstract')
+    debug_group.add_argument(
+        '--debug-parser', action='store_true', dest='debug_parser')
+    debug_group.add_argument(
+        '--debug-update', action='store_true', dest='debug_update')
+    debug_group.add_argument(
+        '--debug-flat', action='store_true', dest='debug_flat')
+    debug_group.add_argument(
+        '--debug-name', action='store_true', dest='debug_name')
+    debug_group.add_argument(
+        '--debug-address', action='store_true', dest='debug_address')
+    debug_group.add_argument(
+        '--debug-client', action='store_true', dest='debug_client')
+    debug_group.add_argument(
+        '--debug-utils', action='store_true', dest='debug_utils')
+    debug_group.add_argument(
+        '--debug-contact', action='store_true', dest='debug_contact')
+    debug_group.add_argument(
+        '--debug-duplicates', action='store_true', dest='debug_duplicates')
 
     args = parser.parse_args()
 
@@ -229,7 +266,7 @@ def main():
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
         if args.testmode is not None:
-            testMode = args.testmode
+            settings.test_mode = args.testmode
         if args.download_slave is not None:
             download_slave = args.download_slave
         if args.download_master is not None:
@@ -247,17 +284,17 @@ def main():
         # if args.do_post is not None:
         #     do_post = args.do_post
         if args.m_ssh_port:
-            m_ssh_port = args.m_ssh_port
+            settings.m_ssh_port = args.m_ssh_port
         if args.m_ssh_host:
-            m_ssh_host = args.m_ssh_host
+            settings.m_ssh_host = args.m_ssh_host
         if args.master_file is not None:
             # download_master = False
-            master_file = args.master_file
+            settings.master_file = args.master_file
         if args.slave_file is not None:
             # download_slave = False
-            slave_file = args.slave_file
+            settings.slave_file = args.slave_file
         if args.card_file is not None:
-            cardFile = args.card_file
+            settings.card_file = args.card_file
             # do_filter = True
 
         if args.debug_abstract is not None:
@@ -285,50 +322,52 @@ def main():
 
     # api config
 
-    with open(yamlPath) as stream:
-        optionNamePrefix = 'test_' if testMode else ''
+    with open(settings.yaml_path) as stream:
+        option_name_prefix = 'test_' if settings.test_mode else ''
         config = yaml.load(stream)
-        ssh_user = config.get(optionNamePrefix+'ssh_user')
-        ssh_pass = config.get(optionNamePrefix+'ssh_pass')
-        ssh_host = config.get(optionNamePrefix+'ssh_host')
-        ssh_port = config.get(optionNamePrefix+'ssh_port', 22)
-        m_ssh_user = config.get(optionNamePrefix+'m_ssh_user')
-        m_ssh_pass = config.get(optionNamePrefix+'m_ssh_pass')
-        m_ssh_host = config.get(optionNamePrefix+'m_ssh_host')
-        m_ssh_port = config.get(optionNamePrefix+'m_ssh_port', 22)
-        remote_bind_host = config.get(optionNamePrefix+'remote_bind_host', '127.0.0.1')
-        remote_bind_port = config.get(optionNamePrefix+'remote_bind_port', 3306)
-        db_user = config.get(optionNamePrefix+'db_user')
-        db_pass = config.get(optionNamePrefix+'db_pass')
-        db_name = config.get(optionNamePrefix+'db_name')
-        db_charset = config.get(optionNamePrefix+'db_charset', 'utf8mb4')
-        wp_srv_offset = config.get(optionNamePrefix+'wp_srv_offset', 0)
-        m_db_user = config.get(optionNamePrefix+'m_db_user')
-        m_db_pass = config.get(optionNamePrefix+'m_db_pass')
-        m_db_name = config.get(optionNamePrefix+'m_db_name')
-        m_db_host = config.get(optionNamePrefix+'m_db_host')
-        m_x_cmd = config.get(optionNamePrefix+'m_x_cmd')
-        m_i_cmd = config.get(optionNamePrefix+'m_i_cmd')
-        tbl_prefix = config.get(optionNamePrefix+'tbl_prefix', '')
+        settings.ssh_user = config.get(option_name_prefix + 'ssh_user')
+        settings.ssh_pass = config.get(option_name_prefix + 'ssh_pass')
+        settings.ssh_host = config.get(option_name_prefix + 'ssh_host')
+        settings.ssh_port = config.get(option_name_prefix + 'ssh_port', 22)
+        settings.m_ssh_user = config.get(option_name_prefix + 'm_ssh_user')
+        settings.m_ssh_pass = config.get(option_name_prefix + 'm_ssh_pass')
+        settings.m_ssh_host = config.get(option_name_prefix + 'm_ssh_host')
+        settings.m_ssh_port = config.get(option_name_prefix + 'm_ssh_port', 22)
+        settings.remote_bind_host = config.get(
+            option_name_prefix + 'remote_bind_host', '127.0.0.1')
+        settings.remote_bind_port = config.get(
+            option_name_prefix + 'remote_bind_port', 3306)
+        db_user = config.get(option_name_prefix + 'db_user')
+        db_pass = config.get(option_name_prefix + 'db_pass')
+        db_name = config.get(option_name_prefix + 'db_name')
+        db_charset = config.get(option_name_prefix + 'db_charset', 'utf8mb4')
+        wp_srv_offset = config.get(option_name_prefix + 'wp_srv_offset', 0)
+        m_db_user = config.get(option_name_prefix + 'm_db_user')
+        m_db_pass = config.get(option_name_prefix + 'm_db_pass')
+        m_db_name = config.get(option_name_prefix + 'm_db_name')
+        m_db_host = config.get(option_name_prefix + 'm_db_host')
+        settings.m_x_cmd = config.get(option_name_prefix + 'm_x_cmd')
+        settings.m_i_cmd = config.get(option_name_prefix + 'm_i_cmd')
+        tbl_prefix = config.get(option_name_prefix + 'tbl_prefix', '')
         # wp_user = config.get(optionNamePrefix+'wp_user', '')
         # wp_pass = config.get(optionNamePrefix+'wp_pass', '')
-        store_url = config.get(optionNamePrefix+'store_url', '')
-        wp_user = config.get(optionNamePrefix+'wp_user')
-        wp_pass = config.get(optionNamePrefix+'wp_pass')
-        wp_callback = config.get(optionNamePrefix+'wp_callback')
-        wp_api_key = config.get(optionNamePrefix+'wp_api_key')
-        wp_api_secret = config.get(optionNamePrefix+'wp_api_secret')
-       #  wc_api_key = config.get(optionNamePrefix+'wc_api_key')
-       #  wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
-        remote_export_folder = config.get(optionNamePrefix+'remote_export_folder', '')
-
+        store_url = config.get(option_name_prefix + 'store_url', '')
+        wp_user = config.get(option_name_prefix + 'wp_user')
+        wp_pass = config.get(option_name_prefix + 'wp_pass')
+        wp_callback = config.get(option_name_prefix + 'wp_callback')
+        wp_api_key = config.get(option_name_prefix + 'wp_api_key')
+        wp_api_secret = config.get(option_name_prefix + 'wp_api_secret')
+        #  wc_api_key = config.get(optionNamePrefix+'wc_api_key')
+        #  wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
+        settings.remote_export_folder = config.get(
+            option_name_prefix + 'remote_export_folder', '')
 
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
-        if testMode:
-            print "testMode enabled"
+        if settings.test_mode:
+            print "test_mode enabled"
         else:
-            print "testMode disabled"
+            print "test_mode disabled"
         if not download_slave:
             print "no download_slave"
         if not download_master:
@@ -347,52 +386,62 @@ def main():
     ### PROCESS CLASS PARAMS ###
 
     FieldGroup.do_post = args.do_post
-    SyncUpdate.setGlobals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+    SyncUpdate.setGlobals(settings.master_name, settings.slave_name,
+                          settings.merge_mode, settings.default_last_sync)
     TimeUtils.setWpSrvOffset(wp_srv_offset)
 
     ### SET UP DIRECTORIES ###
 
-    for path in (inFolder, outFolder, logFolder, srcFolder, pklFolder):
+    for path in (settings.in_folder, settings.out_folder, settings.log_folder,
+                 settings.src_folder, settings.pkl_folder):
         if not os.path.exists(path):
             os.mkdir(path)
 
-    fileSuffix = "_test" if testMode else ""
-    fileSuffix += "_filter" if do_filter else ""
-    m_x_filename = "act_x"+fileSuffix+"_"+importName+".csv"
-    # m_i_filename = "act_i"+fileSuffix+"_"+importName+".csv"
-    s_x_filename = "wp_x"+fileSuffix+"_"+importName+".csv"
-    # remoteExportPath = os.path.join(remote_export_folder, m_x_filename)
+    file_suffix = "_test" if settings.test_mode else ""
+    file_suffix += "_filter" if do_filter else ""
+    m_x_filename = "act_x" + file_suffix + "_" + settings.import_name + ".csv"
+    # m_i_filename = "act_i"+file_suffix+"_"+importName+".csv"
+    s_x_filename = "wp_x" + file_suffix + "_" + settings.import_name + ".csv"
+    # remoteExportPath = os.path.join(settings.remote_export_folder, m_x_filename)
 
     if download_master:
-        maPath = os.path.join(inFolder, m_x_filename)
-        maEncoding = "utf-8"
+        ma_path = os.path.join(settings.in_folder, m_x_filename)
+        ma_encoding = "utf-8"
     else:
-        # maPath = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
-        maPath = os.path.join(inFolder, master_file)
-        # maPath = os.path.join(inFolder, "500-act-records-edited.csv")
-        # maPath = os.path.join(inFolder, "500-act-records.csv")
-        maEncoding = "utf8"
+        # ma_path = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
+        ma_path = os.path.join(settings.in_folder, settings.master_file)
+        # ma_path = os.path.join(inFolder, "500-act-records-edited.csv")
+        # ma_path = os.path.join(inFolder, "500-act-records.csv")
+        ma_encoding = "utf8"
     if download_slave:
-        saPath = os.path.join(inFolder, s_x_filename)
-        saEncoding = "utf8"
+        sa_path = os.path.join(settings.in_folder, s_x_filename)
+        sa_encoding = "utf8"
     else:
-        saPath = os.path.join(inFolder, slave_file)
-        # saPath = os.path.join(inFolder, "500-wp-records-edited.csv")
-        saEncoding = "utf8"
+        sa_path = os.path.join(settings.in_folder, settings.slave_file)
+        # sa_path = os.path.join(inFolder, "500-wp-records-edited.csv")
+        sa_encoding = "utf8"
 
     # moPath = os.path.join(outFolder, m_i_filename)
-    repPath = os.path.join(outFolder, "usr_sync_report%s.html" % fileSuffix)
-    repdPath = os.path.join(outFolder, "usr_sync_report_duplicate%s.html" % fileSuffix)
-    WPresCsvPath = os.path.join(outFolder, "sync_report_wp%s.csv" % fileSuffix)
-    masterResCsvPath = os.path.join(outFolder, "sync_report_act%s.csv" % fileSuffix)
-    masterDeltaCsvPath = os.path.join(outFolder, "delta_report_act%s.csv" % fileSuffix)
-    slaveDeltaCsvPath = os.path.join(outFolder, "delta_report_wp%s.csv" % fileSuffix)
-    mFailPath = os.path.join(outFolder, "act_fails%s.csv" % fileSuffix)
-    sFailPath = os.path.join(outFolder, "wp_fails%s.csv" % fileSuffix)
+    settings.rep_path = os.path.join(settings.out_folder,
+                                     "usr_sync_report%s.html" % file_suffix)
+    repd_path = os.path.join(settings.out_folder,
+                             "usr_sync_report_duplicate%s.html" % file_suffix)
+    w_pres_csv_path = os.path.join(settings.out_folder,
+                                   "sync_report_wp%s.csv" % file_suffix)
+    master_res_csv_path = os.path.join(settings.out_folder,
+                                       "sync_report_act%s.csv" % file_suffix)
+    master_delta_csv_path = os.path.join(
+        settings.out_folder, "delta_report_act%s.csv" % file_suffix)
+    slave_delta_csv_path = os.path.join(settings.out_folder,
+                                        "delta_report_wp%s.csv" % file_suffix)
+    settings.m_fail_path = os.path.join(settings.out_folder,
+                                        "act_fails%s.csv" % file_suffix)
+    settings.s_fail_path = os.path.join(settings.out_folder,
+                                        "wp_fails%s.csv" % file_suffix)
     # sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
-    # pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % fileSuffix )
-    logPath = os.path.join(logFolder, "log_%s.txt" % importName)
-    zipPath = os.path.join(logFolder, "zip_%s.zip" % importName)
+    # pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % file_suffix )
+    # settings.log_path = os.path.join(settings.log_folder, "log_%s.txt" % settings.import_name)
+    # settings.zip_path = os.path.join(settings.log_folder, "zip_%s.zip" % settings.import_name)
 
     ### PROCESS OTHER CONFIG ###
 
@@ -400,7 +449,7 @@ def main():
     # xmlrpc_uri = store_url + 'xmlrpc.php'
     # json_uri = store_url + 'wp-json/wp/v2'
 
-    actFields = ";".join(ColData_User.getACTImportCols())
+    settings.act_fields = ";".join(ColData_User.getACTImportCols())
 
     # jsonConnectParams = {
     #     'json_uri': json_uri,
@@ -409,131 +458,142 @@ def main():
     # }
 
     # wcApiParams = {
-        # 'api_key':wc_api_key,
-        # 'api_secret':wc_api_secret,
-        # 'url':store_url
+    # 'api_key':wc_api_key,
+    # 'api_secret':wc_api_secret,
+    # 'url':store_url
     # }
 
-    wpApiParams = {
+    wp_api_params = {
         'api_key': wp_api_key,
         'api_secret': wp_api_secret,
-        'url':store_url,
-        'wp_user':wp_user,
-        'wp_pass':wp_pass,
-        'callback':wp_callback
+        'url': store_url,
+        'wp_user': wp_user,
+        'wp_pass': wp_pass,
+        'callback': wp_callback
     }
 
-    actConnectParams = {
-        'hostname':    m_ssh_host,
-        'port':        m_ssh_port,
-        'username':    m_ssh_user,
-        'password':    m_ssh_pass,
+    act_connect_params = {
+        'hostname': settings.m_ssh_host,
+        'port': settings.m_ssh_port,
+        'username': settings.m_ssh_user,
+        'password': settings.m_ssh_pass,
     }
 
-    actDbParams = {
-        'db_x_exe':m_x_cmd,
-        'db_i_exe':m_i_cmd,
+    act_db_params = {
+        'db_x_exe': settings.m_x_cmd,
+        'db_i_exe': settings.m_i_cmd,
         'db_name': m_db_name,
         'db_host': m_db_host,
         'db_user': m_db_user,
         'db_pass': m_db_pass,
-        'fields' : actFields,
+        'fields': settings.act_fields,
     }
-    if sinceM: actDbParams['since'] = sinceM
+    if settings.since_m:
+        act_db_params['since'] = settings.since_m
 
-    fsParams = {
-        'importName': importName,
-        'remote_export_folder': remote_export_folder,
-        'inFolder': inFolder,
-        'outFolder': outFolder
+    fs_params = {
+        'importName': settings.import_name,
+        'remote_export_folder': settings.remote_export_folder,
+        'inFolder': settings.in_folder,
+        'outFolder': settings.out_folder
     }
 
     #########################################
     # Prepare Filter Data
     #########################################
 
-    print debugUtils.hashify("PREPARE FILTER DATA"), timediff()
+    print debugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
 
     if do_filter:
-        filterFiles = {
-            'users': userFile,
-            'emails': emailFile,
-            'cards': cardFile,
+        filter_files = {
+            'users': settings.user_file,
+            'emails': settings.email_file,
+            'cards': settings.card_file,
         }
-        filterItems = {}
-        for key, filterFile in filterFiles.items():
-            if filterFile:
+        filter_items = {}
+        for key, filter_file in filter_files.items():
+            if filter_file:
                 try:
-                    with open(os.path.join(inFolder,filterFile) ) as filterFileObj:
-                        filterItems[key] = [\
+                    with open(os.path.join(settings.in_folder,
+                                           filter_file)) as filter_file_obj:
+                        filter_items[key] = [\
                             re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)\
-                            for line in filterFileObj\
+                            for line in filter_file_obj\
                         ]
-                except IOError, e:
-                    SanitationUtils.safePrint("could not open %s file [%s] from %s" % (
-                        key,
-                        filterFile,
-                        unicode(os.getcwd())
-                    ))
-                    raise e
-        if sinceM:
-            filterItems['sinceM'] = TimeUtils.wpStrpMktime(sinceM)
-        if sinceS:
-            filterItems['sinceS'] = TimeUtils.wpStrpMktime(sinceS)
+                except IOError, exc:
+                    SanitationUtils.safePrint(
+                        "could not open %s file [%s] from %s" % (
+                            key, filter_file, unicode(os.getcwd())))
+                    raise exc
+        if settings.since_m:
+            filter_items['sinceM'] = TimeUtils.wpStrpMktime(settings.since_m)
+        if settings.since_s:
+            filter_items['sinceS'] = TimeUtils.wpStrpMktime(settings.since_s)
     else:
-        filterItems = None
+        filter_items = None
 
-    print filterItems
+    print filter_items
 
     #########################################
     # Download / Generate Slave Parser Object
     #########################################
 
-    print debugUtils.hashify("Download / Generate Slave Parser Object"), timediff()
+    print debugUtils.hashify(
+        "Download / Generate Slave Parser Object"), timediff(settings)
 
-    saParser = CSVParse_User(
-        cols = ColData_User.getWPImportCols(),
-        defaults = ColData_User.getDefaults(),
-        filterItems = filterItems,
-        limit = global_limit,
-        source = SLAVE_NAME
-    )
+    sa_parser = CSVParse_User(
+        cols=ColData_User.getWPImportCols(),
+        defaults=ColData_User.getDefaults(),
+        filterItems=filter_items,
+        limit=global_limit,
+        source=settings.slave_name)
     if download_slave:
-        SSHTunnelForwarderAddress = (ssh_host, ssh_port)
-        SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
-        for host in ['SSHTunnelForwarderAddress', 'SSHTunnelForwarderBindAddress']:
+        settings.ssh_tunnel_forwarder_address = (settings.ssh_host,
+                                                 settings.ssh_port)
+        settings.ssh_tunnel_forwarder_b_address = (settings.remote_bind_host,
+                                                   settings.remote_bind_port)
+        for host in [
+                'ssh_tunnel_forwarder_address',
+                'ssh_tunnel_forwarder_bind_address'
+        ]:
             try:
-                check_address(eval(host))
-            except Exception, e:
-                assert not e, "Host must be valid: %s [%s = %s]" % (str(e), host, repr(eval(host)))
-        SSHTunnelForwarderParams = {
-            'ssh_address_or_host':SSHTunnelForwarderAddress,
-            'ssh_password':ssh_pass,
-            'ssh_username':ssh_user,
-            'remote_bind_address': SSHTunnelForwarderBindAddress,
+                check_address(getattr(settings, host))
+            except AttributeError:
+                Registrar.registerError("host not specified in settings: %s" %
+                                        host)
+            except Exception as exc:
+                raise UserWarning("Host must be valid: %s [%s = %s]" % (
+                    str(exc), host, repr(getattr(settings, host))))
+        ssh_tunnel_forwarder_params = {
+            'ssh_address_or_host': settings.ssh_tunnel_forwarder_address,
+            'ssh_password': settings.ssh_pass,
+            'ssh_username': settings.ssh_user,
+            'remote_bind_address': settings.ssh_tunnel_forwarder_b_address,
         }
-        PyMySqlConnectParams = {
-            'host' : '127.0.0.1',
-            'user' : db_user,
+        py_my_sql_connect_params = {
+            'host': '127.0.0.1',
+            'user': db_user,
             'password': db_pass,
-            'db'   : db_name,
+            'db': db_name,
             'charset': db_charset,
             'use_unicode': True,
             'tbl_prefix': tbl_prefix,
         }
 
-        print "SSHTunnelForwarderParams", SSHTunnelForwarderParams
-        print "PyMySqlConnectParams", PyMySqlConnectParams
+        print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
+        print "PyMySqlConnectParams", py_my_sql_connect_params
 
-        with UsrSyncClient_SQL_WP(SSHTunnelForwarderParams, PyMySqlConnectParams) as client:
-            client.analyseRemote(saParser, limit=global_limit, filterItems=filterItems)
+        with UsrSyncClient_SQL_WP(ssh_tunnel_forwarder_params,
+                                  py_my_sql_connect_params) as client:
+            client.analyseRemote(
+                sa_parser, limit=global_limit, filterItems=filter_items)
 
-            saParser.getObjList().exportItems(os.path.join(inFolder, s_x_filename),
-                                              ColData_User.getWPImportColNames())
+            sa_parser.getObjList().exportItems(
+                os.path.join(settings.in_folder, s_x_filename),
+                ColData_User.getWPImportColNames())
 
     else:
-        saParser.analyseFile(saPath, saEncoding)
-
+        sa_parser.analyseFile(sa_path, sa_encoding)
 
     # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 
@@ -541,25 +601,29 @@ def main():
     # Generate and Analyse ACT CSV files using shell
     #########################################
 
-    maParser = CSVParse_User(
-        cols = ColData_User.getACTImportCols(),
-        defaults = ColData_User.getDefaults(),
-        contact_schema = 'act',
-        filterItems = filterItems,
-        limit = global_limit,
-        source = MASTER_NAME
-    )
+    ma_parser = CSVParse_User(
+        cols=ColData_User.getACTImportCols(),
+        defaults=ColData_User.getDefaults(),
+        contact_schema='act',
+        filterItems=filter_items,
+        limit=global_limit,
+        source=settings.master_name)
 
-    print debugUtils.hashify("Generate and Analyse ACT data"), timediff()
+    print debugUtils.hashify("Generate and Analyse ACT data"), timediff(
+        settings)
 
     if download_master:
-        for thing in ['m_x_cmd', 'm_i_cmd', 'remote_export_folder', 'actFields']:
-            assert eval(thing), "missing mandatory command component '%s'" % thing
+        for thing in [
+                'm_x_cmd', 'm_i_cmd', 'remote_export_folder', 'act_fields'
+        ]:
+            assert getattr(settings, thing), "settings must specify %s" % thing
 
-        with UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient:
-            masterClient.analyseRemote(maParser, limit=global_limit)
+        with UsrSyncClient_SSH_ACT(act_connect_params, act_db_params,
+                                   fs_params) as master_client:
+            master_client.analyseRemote(ma_parser, limit=global_limit)
     else:
-        maParser.analyseFile(maPath, dialect_suggestion='act_out', encoding=maEncoding)
+        ma_parser.analyseFile(
+            ma_path, dialect_suggestion='act_out', encoding=ma_encoding)
 
     # CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
     #
@@ -575,211 +639,220 @@ def main():
 
     # get matches
 
-    globalMatches = MatchList()
-    anomalousMatchLists = {}
-    newMasters = MatchList()
-    newSlaves = MatchList()
-    duplicateMatchlists = OrderedDict()
-    anomalousParselists = {}
-    # nonstaticUpdates = []
-    nonstaticSUpdates = []
-    nonstaticMUpdates = []
-    staticUpdates = []
+    global_matches = MatchList()
+    anomalous_match_lists = {}
+    new_masters = MatchList()
+    new_slaves = MatchList()
+    duplicate_matchlists = OrderedDict()
+    anomalous_parselists = {}
+    # nonstatic_updates = []
+    nonstatic_s_updates = []
+    nonstatic_m_updates = []
+    static_updates = []
     # staticSUpdates = []
     # staticMUpdates = []
-    problematicUpdates = []
-    masterUpdates = []
-    slaveUpdates = []
-    mDeltaUpdates = []
-    sDeltaUpdates = []
-    emailConflictMatches = ConflictingMatchList(indexFn=EmailMatcher.emailIndexFn)
+    problematic_updates = []
+    master_updates = []
+    slave_updates = []
+    m_delta_updates = []
+    s_delta_updates = []
+    email_conflict_matches = ConflictingMatchList(
+        indexFn=EmailMatcher.emailIndexFn)
 
-    def denyAnomalousMatchList(matchListType, anomalousMatchList):
+    def deny_anomalous_match_list(match_list_type, anomalous_match_list):
+        """ add the matchlist to the list of anomalous match lists if it is not empty """
         try:
-            assert not anomalousMatchList
-        except AssertionError as e:
-            # print "could not deny anomalous match list", matchListType,  e
-            if(e): pass
-            anomalousMatchLists[matchListType] = anomalousMatchList
+            assert not anomalous_match_list
+        except AssertionError:
+            # print "could not deny anomalous match list", match_list_type,  exc
+            anomalous_match_lists[match_list_type] = anomalous_match_list
 
-    def denyAnomalousParselist(parselistType, anomalousParselist):
+    def deny_anomalous_parselist(parselist_type, anomalous_parselist):
+        """ add the parselist to the list of anomalous parse lists if it is not empty """
         try:
-            assert not anomalousParselist
-        except AssertionError as e:
-            if(e): pass
-            # print "could not deny anomalous parse list", parselistType, e
-            anomalousParselists[parselistType] = anomalousParselist
-
+            assert not anomalous_parselist
+        except AssertionError:
+            # print "could not deny anomalous parse list", parselist_type, exc
+            anomalous_parselists[parselist_type] = anomalous_parselist
 
     if args.do_sync:
         # for every username in slave, check that it exists in master
         print debugUtils.hashify("processing usernames")
-        print timediff()
+        print timediff(settings)
 
-        denyAnomalousParselist( 'saParser.nousernames', saParser.nousernames )
+        deny_anomalous_parselist('saParser.nousernames', sa_parser.nousernames)
 
-        usernameMatcher = UsernameMatcher()
-        usernameMatcher.processRegisters(saParser.usernames, maParser.usernames)
+        username_matcher = UsernameMatcher()
+        username_matcher.processRegisters(sa_parser.usernames,
+                                          ma_parser.usernames)
 
-        denyAnomalousMatchList('usernameMatcher.slavelessMatches', usernameMatcher.slavelessMatches)
-        denyAnomalousMatchList('usernameMatcher.duplicateMatches', usernameMatcher.duplicateMatches)
+        deny_anomalous_match_list('usernameMatcher.slavelessMatches',
+                                  username_matcher.slavelessMatches)
+        deny_anomalous_match_list('usernameMatcher.duplicateMatches',
+                                  username_matcher.duplicateMatches)
 
-        duplicateMatchlists['username'] = usernameMatcher.duplicateMatches
+        duplicate_matchlists['username'] = username_matcher.duplicateMatches
 
-        globalMatches.addMatches( usernameMatcher.pureMatches)
+        global_matches.addMatches(username_matcher.pureMatches)
 
-        if(Registrar.DEBUG_MESSAGE):
-            print "username matches (%d pure)" % len(usernameMatcher.pureMatches)
+        if Registrar.DEBUG_MESSAGE:
+            print "username matches (%d pure)" % len(
+                username_matcher.pureMatches)
             # print repr(usernameMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and usernameMatcher.duplicateMatches:
-            print("username duplicates: %s" % len(usernameMatcher.duplicateMatches))
+        if Registrar.DEBUG_DUPLICATES and username_matcher.duplicateMatches:
+            print("username duplicates: %s" %
+                  len(username_matcher.duplicateMatches))
 
         print debugUtils.hashify("processing cards")
-        print timediff()
+        print timediff(settings)
 
         #for every card in slave not already matched, check that it exists in master
 
-        denyAnomalousParselist( 'maParser.nocards', maParser.nocards )
+        deny_anomalous_parselist('maParser.nocards', ma_parser.nocards)
 
-        cardMatcher = CardMatcher( globalMatches.sIndices, globalMatches.mIndices )
-        cardMatcher.processRegisters( saParser.cards, maParser.cards )
+        card_matcher = CardMatcher(global_matches.sIndices,
+                                   global_matches.mIndices)
+        card_matcher.processRegisters(sa_parser.cards, ma_parser.cards)
 
-        denyAnomalousMatchList('cardMatcher.duplicateMatches', cardMatcher.duplicateMatches)
-        denyAnomalousMatchList('cardMatcher.masterlessMatches', cardMatcher.masterlessMatches)
+        deny_anomalous_match_list('cardMatcher.duplicateMatches',
+                                  card_matcher.duplicateMatches)
+        deny_anomalous_match_list('cardMatcher.masterlessMatches',
+                                  card_matcher.masterlessMatches)
 
-        duplicateMatchlists['card'] = cardMatcher.duplicateMatches
+        duplicate_matchlists['card'] = card_matcher.duplicateMatches
 
-        globalMatches.addMatches( cardMatcher.pureMatches)
+        global_matches.addMatches(card_matcher.pureMatches)
 
-        if(Registrar.DEBUG_MESSAGE):
-            print "card matches (%d pure)" % len(cardMatcher.pureMatches)
+        if Registrar.DEBUG_MESSAGE:
+            print "card matches (%d pure)" % len(card_matcher.pureMatches)
             # print repr(cardMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and cardMatcher.duplicateMatches:
-            print("card duplicates: %s" % len(cardMatcher.duplicateMatches))
+        if Registrar.DEBUG_DUPLICATES and card_matcher.duplicateMatches:
+            print "card duplicates: %s" % len(card_matcher.duplicateMatches)
 
         # #for every email in slave, check that it exists in master
 
         print debugUtils.hashify("processing emails")
-        print timediff()
+        print timediff(settings)
 
-        denyAnomalousParselist("saParser.noemails", saParser.noemails)
+        deny_anomalous_parselist("saParser.noemails", sa_parser.noemails)
 
-        emailMatcher = NocardEmailMatcher(globalMatches.sIndices, globalMatches.mIndices)
+        email_matcher = NocardEmailMatcher(global_matches.sIndices,
+                                           global_matches.mIndices)
 
-        emailMatcher.processRegisters(saParser.nocards, maParser.emails)
+        email_matcher.processRegisters(sa_parser.nocards, ma_parser.emails)
 
-        newMasters.addMatches(emailMatcher.masterlessMatches)
-        newSlaves.addMatches(emailMatcher.slavelessMatches)
-        globalMatches.addMatches(emailMatcher.pureMatches)
-        duplicateMatchlists['email'] = emailMatcher.duplicateMatches
+        new_masters.addMatches(email_matcher.masterlessMatches)
+        new_slaves.addMatches(email_matcher.slavelessMatches)
+        global_matches.addMatches(email_matcher.pureMatches)
+        duplicate_matchlists['email'] = email_matcher.duplicateMatches
 
-        if(Registrar.DEBUG_MESSAGE):
-            print "email matches (%d pure)" % (len(emailMatcher.pureMatches))
+        if Registrar.DEBUG_MESSAGE:
+            print "email matches (%d pure)" % (len(email_matcher.pureMatches))
             # print repr(emailMatcher)
 
-        if Registrar.DEBUG_DUPLICATES and emailMatcher.duplicateMatches:
-            print("email duplicates: %s" % len(emailMatcher.duplicateMatches))
+        if Registrar.DEBUG_DUPLICATES and email_matcher.duplicateMatches:
+            print "email duplicates: %s" % len(email_matcher.duplicateMatches)
 
         # TODO: further sort emailMatcher
 
-        print debugUtils.hashify("BEGINNING MERGE (%d)" % len(globalMatches))
-        print timediff()
+        print debugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
+        print timediff(settings)
 
-        syncCols = ColData_User.getSyncCols()
+        sync_cols = ColData_User.getSyncCols()
 
         if Registrar.DEBUG_PROGRESS:
-            syncProgressCounter = ProgressCounter(len(globalMatches))
+            sync_progress_counter = ProgressCounter(len(global_matches))
 
-        for count, match in enumerate(globalMatches):
+        for count, match in enumerate(global_matches):
             if Registrar.DEBUG_PROGRESS:
-                syncProgressCounter.maybePrintUpdate(count)
+                sync_progress_counter.maybePrintUpdate(count)
                 # print "examining globalMatch %d" % count
                 # # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
                 # print repr(match)
 
-            mObject = match.mObjects[0]
-            sObject = match.sObjects[0]
+            m_object = match.mObjects[0]
+            s_object = match.sObjects[0]
 
-            syncUpdate = SyncUpdate_Usr_Api(mObject, sObject)
-            syncUpdate.update(syncCols)
+            sync_update = SyncUpdate_Usr_Api(m_object, s_object)
+            sync_update.update(sync_cols)
 
             # if(Registrar.DEBUG_MESSAGE):
             #     print "examining SyncUpdate"
             #     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
-            if syncUpdate.mUpdated and syncUpdate.mDeltas:
-                insort(mDeltaUpdates, syncUpdate)
+            if sync_update.mUpdated and sync_update.mDeltas:
+                insort(m_delta_updates, sync_update)
 
-            if syncUpdate.sUpdated and syncUpdate.sDeltas:
-                insort(sDeltaUpdates, syncUpdate)
+            if sync_update.sUpdated and sync_update.sDeltas:
+                insort(s_delta_updates, sync_update)
 
-            if not syncUpdate:
+            if not sync_update:
                 continue
 
-            if syncUpdate.sUpdated:
-                syncSlaveUpdates = syncUpdate.getSlaveUpdates()
-                if 'E-mail' in syncSlaveUpdates:
-                    newEmail = syncSlaveUpdates['E-mail']
-                    if newEmail in saParser.emails:
-                        mObjects = [mObject]
-                        sObjects = [sObject] + saParser.emails[newEmail]
-                        SanitationUtils.safePrint("duplicate emails", mObjects, sObjects)
+            if sync_update.sUpdated:
+                sync_slave_updates = sync_update.getSlaveUpdates()
+                if 'E-mail' in sync_slave_updates:
+                    new_email = sync_slave_updates['E-mail']
+                    if new_email in sa_parser.emails:
+                        m_objects = [m_object]
+                        s_objects = [s_object] + sa_parser.emails[new_email]
+                        SanitationUtils.safePrint("duplicate emails",
+                                                  m_objects, s_objects)
                         try:
-                            emailConflictMatches.addMatch(Match(mObjects, sObjects))
-                        except Exception, e:
+                            email_conflict_matches.addMatch(
+                                Match(m_objects, s_objects))
+                        except Exception, exc:
                             SanitationUtils.safePrint(
-                                "something happened adding an email conflict, newEmail: %s ; exception: %s" % (
-                                    newEmail,
-                                    e
-                                )
-                            )
+                                ("something happened adding an email "
+                                 "conflict, new_email: %s ; exception: %s") %
+                                (new_email, exc))
                         continue
 
-            if(not syncUpdate.importantStatic):
-                if(syncUpdate.mUpdated and syncUpdate.sUpdated):
-                    if(syncUpdate.sMod):
-                        insort(problematicUpdates, syncUpdate)
+            if not sync_update.importantStatic:
+                if sync_update.mUpdated and sync_update.sUpdated:
+                    if sync_update.sMod:
+                        insort(problematic_updates, sync_update)
                         continue
-                elif(syncUpdate.mUpdated and not syncUpdate.sUpdated):
-                    insort(nonstaticMUpdates, syncUpdate)
-                    if(syncUpdate.sMod):
-                        insort(problematicUpdates, syncUpdate)
+                elif sync_update.mUpdated and not sync_update.sUpdated:
+                    insort(nonstatic_m_updates, sync_update)
+                    if sync_update.sMod:
+                        insort(problematic_updates, sync_update)
                         continue
-                elif(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-                    insort(nonstaticSUpdates, syncUpdate)
-                    if(syncUpdate.sMod):
-                        insort(problematicUpdates, syncUpdate)
+                elif sync_update.sUpdated and not sync_update.mUpdated:
+                    insort(nonstatic_s_updates, sync_update)
+                    if sync_update.sMod:
+                        insort(problematic_updates, sync_update)
                         continue
 
-            if(syncUpdate.sUpdated or syncUpdate.mUpdated):
-                insort(staticUpdates, syncUpdate)
-                if(syncUpdate.mUpdated and syncUpdate.sUpdated):
-                    insort(masterUpdates, syncUpdate)
-                    insort(slaveUpdates, syncUpdate)
-                if(syncUpdate.mUpdated and not syncUpdate.sUpdated):
-                    insort(masterUpdates, syncUpdate)
-                if(syncUpdate.sUpdated and not syncUpdate.mUpdated):
-                    insort(slaveUpdates, syncUpdate)
+            if sync_update.sUpdated or sync_update.mUpdated:
+                insort(static_updates, sync_update)
+                if sync_update.mUpdated and sync_update.sUpdated:
+                    insort(master_updates, sync_update)
+                    insort(slave_updates, sync_update)
+                if sync_update.mUpdated and not sync_update.sUpdated:
+                    insort(master_updates, sync_update)
+                if sync_update.sUpdated and not sync_update.mUpdated:
+                    insort(slave_updates, sync_update)
 
         print debugUtils.hashify("COMPLETED MERGE")
-        print timediff()
+        print timediff(settings)
 
-        # todo: process duplicates here
+        # TODO: process duplicates here
 
     #########################################
     # Write Report
     #########################################
 
     print debugUtils.hashify("Write Report")
-    print timediff()
+    print timediff(settings)
 
-    with io.open(repPath, 'w+', encoding='utf8') as resFile:
+    with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
 
-        repdFile = None
+        repd_file = None
         if args.process_duplicates:
-            repdFile = io.open(repdPath, 'w+', encoding='utf8')
+            repd_file = io.open(repd_path, 'w+', encoding='utf8')
 
         css = ""
         reporter = HtmlReporter(css=css)
@@ -802,272 +875,247 @@ def main():
                 'Edited Address',
                 'Edited Alt Address',
             ]).items()))
-        # csv_colnames = colData.getColNames(OrderedDict(basic_cols.items() + [
-        #     ('address_reason', {}),
-        #     ('name_reason', {}),
-        #     ('Edited Name', {}),
-        #     ('Edited Address', {}),
-        #     ('Edited Alt Address', {}),
-        # ]))
-        # print repr(basic_colnames)
-        # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
-        # print repr(unicode_colnames)
-        # WPCsvWriter = DictWriter(WPresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
-        # WPCsvWriter.writeheader()
-        # ACTCsvWriter = DictWriter(ACTresCsvFile, fieldnames = unicode_colnames, extrasaction = 'ignore' )
-        # ACTCsvWriter.writeheader()
 
-        sanitizingGroup = HtmlReporter.Group('sanitizing', 'Sanitizing Results')
+        sanitizing_group = HtmlReporter.Group('sanitizing',
+                                              'Sanitizing Results')
 
-        # s_bad_addresses_usrlist = UsrObjList(saParser.badAddress.values())
-
-        # for user in saParser.badAddress.values():
-        #     # user['address_reason'] = ''.join([address.reason for address in addresses])
-        #     s_bad_addresses_usrlist.append(user)
-
-        if saParser.badAddress:
-            sanitizingGroup.addSection(
+        if sa_parser.badAddress:
+            sanitizing_group.addSection(
                 HtmlReporter.Section(
                     's_bad_addresses_list',
-                    title = 'Bad %s Address List' % SLAVE_NAME.title(),
-                    description = '%s records that have badly formatted addresses' % SLAVE_NAME,
-                    data = UsrObjList(saParser.badAddress.values()).tabulate(
-                        cols = address_cols,
-                        tablefmt='html',
-                    ),
-                    length = len(saParser.badAddress)
-                )
-            )
+                    title='Bad %s Address List' % settings.slave_name.title(),
+                    description='%s records that have badly formatted addresses'
+                    % settings.slave_name,
+                    data=UsrObjList(sa_parser.badAddress.values()).tabulate(
+                        cols=address_cols,
+                        tablefmt='html', ),
+                    length=len(sa_parser.badAddress)))
 
-        # for row in saParser.badAddress.values():
-        #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
-
-        if saParser.badName:
-            sanitizingGroup.addSection(
+        if sa_parser.badName:
+            sanitizing_group.addSection(
                 HtmlReporter.Section(
                     's_bad_names_list',
-                    title = 'Bad %s Names List' % SLAVE_NAME.title(),
-                    description = '%s records that have badly formatted names' % SLAVE_NAME,
-                    data = UsrObjList(saParser.badName.values()).tabulate(
-                        cols = name_cols,
-                        tablefmt='html',
-                    ),
-                    length = len(saParser.badName)
-                )
-            )
-        if saParser.badName or saParser.badAddress:
-            UsrObjList(saParser.badName.values() + maParser.badAddress.values()).exportItems(WPresCsvPath, csv_colnames)
+                    title='Bad %s Names List' % settings.slave_name.title(),
+                    description='%s records that have badly formatted names' %
+                    settings.slave_name,
+                    data=UsrObjList(sa_parser.badName.values()).tabulate(
+                        cols=name_cols,
+                        tablefmt='html', ),
+                    length=len(sa_parser.badName)))
+        if sa_parser.badName or sa_parser.badAddress:
+            UsrObjList(sa_parser.badName.values() + ma_parser.badAddress.
+                       values()).exportItems(w_pres_csv_path, csv_colnames)
 
-        # for row in saParser.badName.values():
-        #     WPCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
-
-        if maParser.badAddress:
-            sanitizingGroup.addSection(
+        if ma_parser.badAddress:
+            sanitizing_group.addSection(
                 HtmlReporter.Section(
                     'm_bad_addresses_list',
-                    title = 'Bad %s Address List' % MASTER_NAME.title(),
-                    description = '%s records that have badly formatted addresses' % MASTER_NAME,
-                    data = UsrObjList(maParser.badAddress.values()).tabulate(
-                        cols = address_cols,
-                        tablefmt='html',
-                    ),
-                    length = len(maParser.badAddress)
-                )
-            )
+                    title='Bad %s Address List' % settings.master_name.title(),
+                    description='%s records that have badly formatted addresses'
+                    % settings.master_name,
+                    data=UsrObjList(ma_parser.badAddress.values()).tabulate(
+                        cols=address_cols,
+                        tablefmt='html', ),
+                    length=len(ma_parser.badAddress)))
 
-        # for row in maParser.badAddress.values():
-        #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
-
-        if maParser.badName:
-            sanitizingGroup.addSection(
+        if ma_parser.badName:
+            sanitizing_group.addSection(
                 HtmlReporter.Section(
                     'm_bad_names_list',
-                    title = 'Bad %s Names List' % MASTER_NAME.title(),
-                    description = '%s records that have badly formatted names' % MASTER_NAME,
-                    data = UsrObjList(maParser.badName.values()).tabulate(
-                        cols = name_cols,
-                        tablefmt='html',
-                    ),
-                    length = len(maParser.badName)
-                )
-            )
+                    title='Bad %s Names List' % settings.master_name.title(),
+                    description='%s records that have badly formatted names' %
+                    settings.master_name,
+                    data=UsrObjList(ma_parser.badName.values()).tabulate(
+                        cols=name_cols,
+                        tablefmt='html', ),
+                    length=len(ma_parser.badName)))
 
-        # for row in maParser.badName.values():
-        #     ACTCsvWriter.writerow(OrderedDict(map(SanitationUtils.coerceUnicode, (key, value))  for key, value in row.items()))
-        if maParser.badName or maParser.badAddress:
-            UsrObjList(maParser.badName.values() + maParser.badAddress.values())\
-                .exportItems(masterResCsvPath, csv_colnames)
+        if ma_parser.badName or ma_parser.badAddress:
+            UsrObjList(ma_parser.badName.values() + ma_parser.badAddress.values())\
+                .exportItems(master_res_csv_path, csv_colnames)
 
-        reporter.addGroup(sanitizingGroup)
+        reporter.addGroup(sanitizing_group)
 
-        if args.do_sync and (mDeltaUpdates + sDeltaUpdates):
+        if args.do_sync and (m_delta_updates + s_delta_updates):
 
-            deltaGroup = HtmlReporter.Group('deltas', 'Field Changes')
+            delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
-            mDeltaList = UsrObjList(filter(None,
-                                [update.newMObject for update in mDeltaUpdates]))
+            m_delta_list = UsrObjList(
+                filter(None, [update.newMObject
+                              for update in m_delta_updates]))
 
-            sDeltaList = UsrObjList(filter(None,
-                                [update.newSObject for update in sDeltaUpdates]))
+            s_delta_list = UsrObjList(
+                filter(None, [update.newSObject
+                              for update in s_delta_updates]))
 
-            deltaCols = ColData_User.getDeltaCols()
+            delta_cols = ColData_User.getDeltaCols()
 
-            allDeltaCols = OrderedDict(
-                ColData_User.getBasicCols().items() +
-                ColData_User.nameCols(deltaCols.keys()+deltaCols.values()).items()
-            )
+            all_delta_cols = OrderedDict(
+                ColData_User.getBasicCols().items() + ColData_User.nameCols(
+                    delta_cols.keys() + delta_cols.values()).items())
 
-            if mDeltaList:
-                deltaGroup.addSection(
+            if m_delta_list:
+                delta_group.addSection(
                     HtmlReporter.Section(
                         'm_deltas',
-                        title = '%s Changes List' % MASTER_NAME.title(),
-                        description = '%s records that have changed important fields' % MASTER_NAME,
-                        data = mDeltaList.tabulate(
-                            cols=allDeltaCols,
-                            tablefmt='html'),
-                        length = len(mDeltaList)
-                    )
-                )
+                        title='%s Changes List' % settings.master_name.title(),
+                        description='%s records that have changed important fields'
+                        % settings.master_name,
+                        data=m_delta_list.tabulate(
+                            cols=all_delta_cols, tablefmt='html'),
+                        length=len(m_delta_list)))
 
-            if sDeltaList:
-                deltaGroup.addSection(
+            if s_delta_list:
+                delta_group.addSection(
                     HtmlReporter.Section(
                         's_deltas',
-                        title = '%s Changes List' % SLAVE_NAME.title(),
-                        description = '%s records that have changed important fields' % SLAVE_NAME,
-                        data = sDeltaList.tabulate(
-                            cols=allDeltaCols,
-                            tablefmt='html'),
-                        length = len(sDeltaList)
-                    )
-                )
+                        title='%s Changes List' % settings.slave_name.title(),
+                        description='%s records that have changed important fields'
+                        % settings.slave_name,
+                        data=s_delta_list.tabulate(
+                            cols=all_delta_cols, tablefmt='html'),
+                        length=len(s_delta_list)))
 
-            reporter.addGroup(deltaGroup)
-            if mDeltaList:
-                mDeltaList.exportItems(masterDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
-            if sDeltaList:
-                sDeltaList.exportItems(slaveDeltaCsvPath, ColData_User.getColNames(allDeltaCols))
-
+            reporter.addGroup(delta_group)
+            if m_delta_list:
+                m_delta_list.exportItems(
+                    master_delta_csv_path,
+                    ColData_User.getColNames(all_delta_cols))
+            if s_delta_list:
+                s_delta_list.exportItems(
+                    slave_delta_csv_path,
+                    ColData_User.getColNames(all_delta_cols))
 
         report_matching = args.do_sync
         if report_matching:
 
-            matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
-            matchingGroup.addSection(
+            matching_group = HtmlReporter.Group('matching', 'Matching Results')
+            matching_group.addSection(
                 HtmlReporter.Section(
                     'perfect_matches',
                     **{
-                        'title': 'Perfect Matches',
-                        'description': "%s records match well with %s" % (SLAVE_NAME, MASTER_NAME),
-                        'data': globalMatches.tabulate(tablefmt="html"),
-                        'length': len(globalMatches)
-                    }
-                )
-            )
+                        'title':
+                        'Perfect Matches',
+                        'description':
+                        "%s records match well with %s" % (
+                            settings.slave_name, settings.master_name),
+                        'data':
+                        global_matches.tabulate(tablefmt="html"),
+                        'length':
+                        len(global_matches)
+                    }))
 
-            matchListInstructions = {
-                'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
-                # 'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
-                'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
-                # 'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+            match_list_instructions = {
+                'cardMatcher.masterlessMatches':
+                '%s records do not have a corresponding CARD ID in %s (deleted?)'
+                % (settings.slave_name, settings.master_name),
+                'usernameMatcher.slavelessMatches':
+                '%s records have no USERNAMEs in %s' %
+                (settings.master_name, settings.slave_name),
             }
 
-            for matchlistType, matchList in anomalousMatchLists.items():
-                if not matchList:
+            for matchlist_type, match_list in anomalous_match_lists.items():
+                if not match_list:
                     continue
-                description = matchListInstructions.get(matchlistType, matchlistType)
-                if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
-                    data = matchList.merge().tabulate(tablefmt="html")
+                description = match_list_instructions.get(matchlist_type,
+                                                          matchlist_type)
+                if ('masterless' in matchlist_type or
+                        'slaveless' in matchlist_type):
+                    data = match_list.merge().tabulate(tablefmt="html")
                 else:
-                    data = matchList.tabulate(tablefmt="html")
-                matchingGroup.addSection(
+                    data = match_list.tabulate(tablefmt="html")
+                matching_group.addSection(
                     HtmlReporter.Section(
-                        matchlistType,
+                        matchlist_type,
                         **{
-                            # 'title': matchlistType.title(),
+                            # 'title': matchlist_type.title(),
                             'description': description,
                             'data': data,
-                            'length': len(matchList)
-                        }
-                    )
-                )
+                            'length': len(match_list)
+                        }))
 
             # print debugUtils.hashify("anomalous ParseLists: ")
 
-            parseListInstructions = {
-                "saParser.noemails" : "%s records have invalid emails" % SLAVE_NAME,
-                "maParser.noemails" : "%s records have invalid emails" % MASTER_NAME,
-                "maParser.nocards"  : "%s records have no cards" % MASTER_NAME,
-                "saParser.nousernames": "%s records have no username" % SLAVE_NAME
+            parse_list_instructions = {
+                "saParser.noemails":
+                "%s records have invalid emails" % settings.slave_name,
+                "maParser.noemails":
+                "%s records have invalid emails" % settings.master_name,
+                "maParser.nocards":
+                "%s records have no cards" % settings.master_name,
+                "saParser.nousernames":
+                "%s records have no username" % settings.slave_name
             }
 
-            for parselistType, parseList in anomalousParselists.items():
-                description = parseListInstructions.get(parselistType, parselistType)
-                usrList  = UsrObjList()
-                for obj in parseList.values():
-                    usrList.append(obj)
+            for parselist_type, parse_list in anomalous_parselists.items():
+                description = parse_list_instructions.get(parselist_type,
+                                                          parselist_type)
+                usr_list = UsrObjList()
+                for obj in parse_list.values():
+                    usr_list.append(obj)
 
-                data = usrList.tabulate(tablefmt="html")
+                data = usr_list.tabulate(tablefmt="html")
 
-                matchingGroup.addSection(
+                matching_group.addSection(
                     HtmlReporter.Section(
-                        parselistType,
+                        parselist_type,
                         **{
-                            # 'title': matchlistType.title(),
+                            # 'title': matchlist_type.title(),
                             'description': description,
                             'data': data,
-                            'length': len(parseList)
-                        }
-                    )
-                )
+                            'length': len(parse_list)
+                        }))
 
-            reporter.addGroup(matchingGroup)
+            reporter.addGroup(matching_group)
 
         report_sync = args.do_sync
         if report_sync:
-            syncingGroup = HtmlReporter.Group('sync', 'Syncing Results')
+            syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
-                    (MASTER_NAME + "_updates"),
-                    description = MASTER_NAME + " items will be updated",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in masterUpdates ]),
-                    length = len(masterUpdates)
-                )
-            )
+                    (settings.master_name + "_updates"),
+                    description=settings.master_name +
+                    " items will be updated",
+                    data='<hr>'.join([
+                        update.tabulate(tablefmt="html")
+                        for update in master_updates
+                    ]),
+                    length=len(master_updates)))
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
-                    (SLAVE_NAME + "_updates"),
-                    description = SLAVE_NAME + " items will be updated",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in slaveUpdates ]),
-                    length = len(slaveUpdates)
-                )
-            )
+                    (settings.slave_name + "_updates"),
+                    description=settings.slave_name + " items will be updated",
+                    data='<hr>'.join([
+                        update.tabulate(tablefmt="html")
+                        for update in slave_updates
+                    ]),
+                    length=len(slave_updates)))
 
-            syncingGroup.addSection(
+            syncing_group.addSection(
                 HtmlReporter.Section(
                     "problematic_updates",
-                    description = "items can't be merged because they are too dissimilar",
-                    data = '<hr>'.join([update.tabulate(tablefmt="html") for update in problematicUpdates ]),
-                    length = len(problematicUpdates)
-                )
-            )
+                    description="items can't be merged because they are too dissimilar",
+                    data='<hr>'.join([
+                        update.tabulate(tablefmt="html")
+                        for update in problematic_updates
+                    ]),
+                    length=len(problematic_updates)))
 
-            reporter.addGroup(syncingGroup)
+            reporter.addGroup(syncing_group)
 
         report_duplicates = args.process_duplicates
         if report_duplicates:
 
-            dupCss = """
+            dup_css = """
 .highlight_old {color: red !important; }
 .highlight_old {color: orange;}
 .highlight_master {background: lightblue !important;}
 .highlight_slave {background: lightpink !important;}
             """
-            dupReporter = HtmlReporter(css=dupCss)
-            duplicateGroup = HtmlReporter.Group('dup', 'Duplicate Results')
+            dup_reporter = HtmlReporter(css=dup_css)
+            duplicate_group = HtmlReporter.Group('dup', 'Duplicate Results')
 
             basic_cols = ColData_User.getBasicCols()
             dup_cols = OrderedDict(basic_cols.items() + [
@@ -1078,300 +1126,384 @@ def main():
             # What we're doing here is analysing the duplicates we've seen so far, and
             # creating a list of all the potential objects to delete and WHY they should be deleted.
 
-            def fn_obj_source_is(source):
-                def obj_source_is(objectData):
-                    objSource = objectData.get('source')
-                    if objSource and source == objSource:
+            def fn_obj_source_is(target_source):
+                """
+                returns a function that checks if the source of the object is equal
+                to the given target source
+                """
+
+                def obj_source_is(object_data):
+                    """
+                    checks if the source of the object is equal to the given
+                    target source
+                    """
+
+                    obj_source = object_data.get('source')
+                    if obj_source and target_source == obj_source:
                         return True
+
                 return obj_source_is
 
             def fn_user_older_than_wp(wp_time):
-                """ returns a function that checks if the user is older than a date given in wp_time format """
+                """
+                return a function that checks if the user is older than a date given
+                in wp_time format
+                """
                 wp_time_obj = TimeUtils.wpStrpMktime(wp_time)
                 assert wp_time_obj, "should be valid time struct: %s" % wp_time
-                def user_older_than(userData):
-                    if fn_obj_source_is(MASTER_NAME)(userData):
-                        assert hasattr(userData, 'act_last_transaction'), \
+
+                def user_older_than(user_data):
+                    """
+                    determine if user is older than the time time specified in
+                    fn_user_older_than_wp
+                    """
+                    if fn_obj_source_is(settings.master_name)(user_data):
+                        assert hasattr(user_data, 'act_last_transaction'), \
                             "%s user should have act_last_transaction attr: %s, %s, source: %s" % (\
-                                MASTER_NAME,
-                                type(userData),
-                                SanitationUtils.coerceAscii(userData),
-                                userData.get('source')
-                            )
-                        user_time_obj = userData.act_last_transaction
+                                settings.master_name,
+                                type(user_data),
+                                SanitationUtils.coerceAscii(user_data),
+                                user_data.get('source'))
+                        user_time_obj = user_data.act_last_transaction
                     else:
-                        user_time_obj = userData.last_modtime
+                        user_time_obj = user_data.last_modtime
                     return user_time_obj < wp_time_obj
+
                 return user_older_than
 
             duplicates = Duplicates()
 
-            for duplicateType, duplicateMatchlist in duplicateMatchlists.items():
-                print "checking duplicates of type %s" % duplicateType
-                print "len(duplicateMatchlist) %s" % len(duplicateMatchlist)
-                for match in duplicateMatchlist:
+            for duplicate_type, duplicate_matchlist in duplicate_matchlists.items(
+            ):
+                print "checking duplicates of type %s" % duplicate_type
+                print "len(duplicate_matchlist) %s" % len(duplicate_matchlist)
+                for match in duplicate_matchlist:
                     if match.mLen <= 1:
                         continue
                         # only care about master duplicates at the moment
-                    duplicateObjects = list(match.mObjects)
-                    duplicates.add_conflictors(duplicateObjects, duplicateType)
+                    duplicate_objects = list(match.mObjects)
+                    duplicates.add_conflictors(duplicate_objects,
+                                               duplicate_type)
 
             address_duplicates = {}
-            for address, objects in maParser.addresses.items():
+            for address, objects in ma_parser.addresses.items():
                 # print "analysing address %s " % address
-                # for objectData in objects:
-                    # print " -> associated object: %s" % objectData
+                # for object_data in objects:
+                # print " -> associated object: %s" % object_data
                 if len(objects) > 1:
                     # if there are more than one objects associated with an address, add to the duplicate addresses report
                     address_duplicates[address] = objects
-                    duplicates.add_conflictors(objects, "address", weighting=0.1)
+                    duplicates.add_conflictors(
+                        objects, "address", weighting=0.1)
 
-            for objectData in maParser.objects.values():
-                if fn_user_older_than_wp(OLD_THRESHOLD)(objectData):
-                    details = TimeUtils.wpTimeToString(objectData.act_last_transaction)
-                    duplicates.add_conflictor(objectData, "last_transaction_old", 0.5, details)
-                elif fn_user_older_than_wp(OLDISH_THRESHOLD)(objectData):
-                    details = TimeUtils.wpTimeToString(objectData.act_last_transaction)
-                    duplicates.add_conflictor(objectData, "last_transaction_oldish", 0.2, details)
+            for object_data in ma_parser.objects.values():
+                if fn_user_older_than_wp(old_threshold)(object_data):
+                    details = TimeUtils.wpTimeToString(
+                        object_data.act_last_transaction)
+                    duplicates.add_conflictor(
+                        object_data, "last_transaction_old", 0.5, details)
+                elif fn_user_older_than_wp(oldish_threshold)(object_data):
+                    details = TimeUtils.wpTimeToString(
+                        object_data.act_last_transaction)
+                    duplicates.add_conflictor(
+                        object_data, "last_transaction_oldish", 0.2, details)
 
             highlight_rules_master_slave = [
-                ('highlight_master', fn_obj_source_is(MASTER_NAME)),
-                ('highlight_slave', fn_obj_source_is(SLAVE_NAME))
+                ('highlight_master', fn_obj_source_is(settings.master_name)),
+                ('highlight_slave', fn_obj_source_is(settings.slave_name))
             ]
 
             highlight_rules_old = [
-                ('highlight_oldish', fn_user_older_than_wp(OLDISH_THRESHOLD)),
-                ('highlight_old', fn_user_older_than_wp(OLD_THRESHOLD))
+                ('highlight_oldish', fn_user_older_than_wp(oldish_threshold)),
+                ('highlight_old', fn_user_older_than_wp(old_threshold))
             ]
 
             highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
 
-
             # if Registrar.DEBUG_DUPLICATES:
-                # print duplicates.tabulate({}, tablefmt='plain')
+            # print duplicates.tabulate({}, tablefmt='plain')
             if duplicates:
-                duplicateGroup.addSection(
-                    HtmlReporter.Section(
-                        'all duplicates',
-                        **{
-                            'title': 'All Duplicates',
-                            'description': "%s records are involved in duplicates" % (MASTER_NAME),
-                            'data': duplicates.tabulate(dup_cols, tablefmt='html', highlight_rules=highlight_rules_all),
-                            'length': len(duplicates)
-                        }
-                    )
-                )
+                duplicate_group.addSection(
+                    HtmlReporter.Section('all duplicates', **{
+                        'title':
+                        'All Duplicates',
+                        'description':
+                        "%s records are involved in duplicates" %
+                        settings.master_name,
+                        'data':
+                        duplicates.tabulate(
+                            dup_cols,
+                            tablefmt='html',
+                            highlight_rules=highlight_rules_all),
+                        'length':
+                        len(duplicates)
+                    }))
 
-            emailConflictData = emailConflictMatches.tabulate(
+            email_conflict_data = email_conflict_matches.tabulate(
                 cols=dup_cols,
                 tablefmt="html",
-                highlight_rules=highlight_rules_all
-            )
-            duplicateGroup.addSection(
+                highlight_rules=highlight_rules_all)
+            duplicate_group.addSection(
                 HtmlReporter.Section(
                     "email conflicts",
                     **{
-                        # 'title': matchlistType.title(),
+                        # 'title': matchlist_type.title(),
                         'description': "email conflicts",
-                        'data': emailConflictData,
-                        'length': len(emailConflictMatches)
-                    }
-                )
-            )
+                        'data': email_conflict_data,
+                        'length': len(email_conflict_matches)
+                    }))
 
-            emailDuplicateData = emailMatcher.duplicateMatches.tabulate(
-                tablefmt="html",
-                highlight_rules=highlight_rules_all
-            )
-            if emailMatcher.duplicateMatches:
-                duplicateGroup.addSection(
-                    HtmlReporter.Section(
-                        'email_duplicates',
-                        **{
-                            'title': 'Email Duplicates',
-                            'description': "%s records match with multiple records in %s on email" % (SLAVE_NAME, MASTER_NAME),
-                            'data': emailDuplicateData,
-                            'length': len(emailMatcher.duplicateMatches)
-                        }
-                    )
-                )
+            email_duplicate_data = email_matcher.duplicateMatches.tabulate(
+                tablefmt="html", highlight_rules=highlight_rules_all)
+            if email_matcher.duplicateMatches:
+                duplicate_group.addSection(
+                    HtmlReporter.Section('email_duplicates', **{
+                        'title':
+                        'Email Duplicates',
+                        'description':
+                        "%s records match with multiple records in %s on email"
+                        % (settings.slave_name, settings.master_name),
+                        'data':
+                        email_duplicate_data,
+                        'length':
+                        len(email_matcher.duplicateMatches)
+                    }))
 
-            matchListInstructions = {
-                # 'cardMatcher.masterlessMatches': '%s records do not have a corresponding CARD ID in %s (deleted?)' % (SLAVE_NAME, MASTER_NAME),
-                'cardMatcher.duplicateMatches': '%s records have multiple CARD IDs in %s' % (SLAVE_NAME, MASTER_NAME),
-                # 'usernameMatcher.slavelessMatches': '%s records have no USERNAMEs in %s' % (MASTER_NAME, SLAVE_NAME),
-                'usernameMatcher.duplicateMatches': '%s records have multiple USERNAMEs in %s' % (SLAVE_NAME, MASTER_NAME)
+            match_list_instructions = {
+                'cardMatcher.duplicateMatches':
+                '%s records have multiple CARD IDs in %s' %
+                (settings.slave_name, settings.master_name),
+                'usernameMatcher.duplicateMatches':
+                '%s records have multiple USERNAMEs in %s' %
+                (settings.slave_name, settings.master_name)
             }
 
-            for matchlistType, matchList in anomalousMatchLists.items():
-                if not matchList:
+            for matchlist_type, match_list in anomalous_match_lists.items():
+                if not match_list:
                     continue
-                description = matchListInstructions.get(matchlistType, matchlistType)
-                if( 'masterless' in matchlistType or 'slaveless' in matchlistType):
-                    data = matchList.merge().tabulate(tablefmt="html")
+                description = match_list_instructions.get(matchlist_type,
+                                                          matchlist_type)
+                if ('masterless' in matchlist_type or
+                        'slaveless' in matchlist_type):
+                    data = match_list.merge().tabulate(tablefmt="html")
                 else:
-                    data = matchList.tabulate(tablefmt="html", highlight_rules=highlight_rules_all)
-                matchingGroup.addSection(
+                    data = match_list.tabulate(
+                        tablefmt="html", highlight_rules=highlight_rules_all)
+                matching_group.addSection(
                     HtmlReporter.Section(
-                        matchlistType,
+                        matchlist_type,
                         **{
-                            # 'title': matchlistType.title(),
+                            # 'title': matchlist_type.title(),
                             'description': description,
                             'data': data,
-                            'length': len(matchList)
-                        }
-                    )
-                )
+                            'length': len(match_list)
+                        }))
 
             if address_duplicates:
 
                 print "there are address duplicates"
-                duplicateGroup.addSection(
+                duplicate_group.addSection(
                     HtmlReporter.Section(
                         'address_duplicates',
-                        title='Duplicate %s Addresses' % MASTER_NAME.title(),
-                        description='%s addresses that appear in multiple records' % MASTER_NAME,
+                        title='Duplicate %s Addresses' %
+                        settings.master_name.title(),
+                        description='%s addresses that appear in multiple records'
+                        % settings.master_name,
                         data="<br/>".join([
-                            "<h4>%s</h4><p>%s</p>" % (
-                                address,
-                                UsrObjList(objects).tabulate(
+                            "<h4>%s</h4><p>%s</p>" % (address, UsrObjList(
+                                objects).tabulate(
                                     cols=dup_cols,
                                     tablefmt='html',
-                                    highlight_rules=highlight_rules_old
-                                )
-                            ) for address, objects in address_duplicates.items()
+                                    highlight_rules=highlight_rules_old))
+                            for address, objects in address_duplicates.items()
                         ]),
-                        length=len(address_duplicates)
-                    )
-                )
-            dupReporter.addGroup(duplicateGroup)
-            repdFile.write(dupReporter.getDocumentUnicode() )
+                        length=len(address_duplicates)))
+            dup_reporter.addGroup(duplicate_group)
+            repd_file.write(dup_reporter.getDocumentUnicode())
 
-        resFile.write( reporter.getDocumentUnicode() )
+        res_file.write(reporter.getDocumentUnicode())
 
     #########################################
     # Update databases
     #########################################
 
-    allUpdates = staticUpdates
+    all_updates = static_updates
     if args.do_problematic:
-        allUpdates += problematicUpdates
+        all_updates += problematic_updates
 
-    print debugUtils.hashify("Update databases (%d)" % len(allUpdates))
-    print timediff()
+    print debugUtils.hashify("Update databases (%d)" % len(all_updates))
+    print timediff(settings)
 
-    masterFailures = []
-    slaveFailures = []
+    master_failures = []
+    slave_failures = []
 
-    if allUpdates:
-        Registrar.registerProgress("UPDATING %d RECORDS" % len(allUpdates))
+    if all_updates:
+        Registrar.registerProgress("UPDATING %d RECORDS" % len(all_updates))
 
         if args.ask_before_update:
             try:
-                input("Please read reports and press Enter to continue or ctrl-c to stop...")
+                input(
+                    "Please read reports and press Enter to continue or ctrl-c to stop..."
+                )
             except SyntaxError:
                 pass
 
         if Registrar.DEBUG_PROGRESS:
-            updateProgressCounter = ProgressCounter(len(allUpdates))
+            update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-            UsrSyncClient_SSH_ACT(actConnectParams, actDbParams, fsParams) as masterClient, \
-            UsrSyncClient_WP(wpApiParams) as slaveClient:
-            # UsrSyncClient_JSON(jsonConnectParams) as slaveClient:
+            UsrSyncClient_SSH_ACT(act_connect_params, act_db_params, fs_params) as master_client, \
+            UsrSyncClient_WP(wp_api_params) as slave_client:
+            # UsrSyncClient_JSON(jsonConnectParams) as slave_client:
 
-            for count, update in enumerate(allUpdates):
+            for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
-                    updateProgressCounter.maybePrintUpdate(count)
+                    update_progress_counter.maybePrintUpdate(count)
                 # if update.WPID == '1':
                 #     print repr(update.WPID)
                 #     continue
-                if update_master and update.mUpdated :
+                if update_master and update.mUpdated:
                     try:
-                        update.updateMaster(masterClient)
-                    except Exception, e:
-                        masterFailures.append({
-                            'update':update,
-                            'master':SanitationUtils.coerceUnicode(update.newMObject),
-                            'slave':SanitationUtils.coerceUnicode(update.newSObject),
-                            'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                            'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                            'exception':repr(e)
+                        update.updateMaster(master_client)
+                    except Exception, exc:
+                        master_failures.append({
+                            'update':
+                            update,
+                            'master':
+                            SanitationUtils.coerceUnicode(update.newMObject),
+                            'slave':
+                            SanitationUtils.coerceUnicode(update.newSObject),
+                            'mchanges':
+                            SanitationUtils.coerceUnicode(
+                                update.getMasterUpdates()),
+                            'schanges':
+                            SanitationUtils.coerceUnicode(
+                                update.getSlaveUpdates()),
+                            'exception':
+                            repr(exc)
                         })
-                        Registrar.registerError("ERROR UPDATING MASTER (%s): %s\n%s" % (
-                            update.MasterID,
-                            repr(e),
-                            traceback.format_exc()
-                        ) )
+                        Registrar.registerError(
+                            "ERROR UPDATING MASTER (%s): %s\n%s" %
+                            (update.MasterID, repr(exc),
+                             traceback.format_exc()))
 
                         # continue
-                if update_slave and update.sUpdated :
+                if update_slave and update.sUpdated:
                     try:
-                        update.updateSlave(slaveClient)
-                    except Exception, e:
-                        slaveFailures.append({
-                            'update':update,
-                            'master':SanitationUtils.coerceUnicode(update.newMObject),
-                            'slave':SanitationUtils.coerceUnicode(update.newSObject),
-                            'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                            'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                            'exception':repr(e)
+                        update.updateSlave(slave_client)
+                    except Exception, exc:
+                        slave_failures.append({
+                            'update':
+                            update,
+                            'master':
+                            SanitationUtils.coerceUnicode(update.newMObject),
+                            'slave':
+                            SanitationUtils.coerceUnicode(update.newSObject),
+                            'mchanges':
+                            SanitationUtils.coerceUnicode(
+                                update.getMasterUpdates()),
+                            'schanges':
+                            SanitationUtils.coerceUnicode(
+                                update.getSlaveUpdates()),
+                            'exception':
+                            repr(exc)
                         })
-                        Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (
-                            update.SlaveID,
-                            repr(e),
-                            traceback.format_exc()
-                        ) )
+                        Registrar.registerError(
+                            "ERROR UPDATING SLAVE (%s): %s\n%s" %
+                            (update.SlaveID, repr(exc),
+                             traceback.format_exc()))
 
-    def outputFailures(failures, filePath):
-        with open(filePath, 'w+') as outFile:
+    def output_failures(failures, file_path):
+        """
+        outputs a list of lists of failures as a csv file to the path specified
+        """
+        with open(file_path, 'w+') as out_file:
             for failure in failures:
                 Registrar.registerError(failure)
             dictwriter = unicodecsv.DictWriter(
-                outFile,
-                fieldnames = ['update', 'master', 'slave', 'mchanges', 'schanges', 'exception'],
-                extrasaction = 'ignore',
-            )
+                out_file,
+                fieldnames=[
+                    'update', 'master', 'slave', 'mchanges', 'schanges',
+                    'exception'
+                ],
+                extrasaction='ignore', )
             dictwriter.writerows(failures)
-            print "WROTE FILE: ", filePath
+            print "WROTE FILE: ", file_path
 
-    outputFailures(masterFailures, mFailPath)
-    outputFailures(slaveFailures, sFailPath)
+    output_failures(master_failures, settings.m_fail_path)
+    output_failures(slave_failures, settings.s_fail_path)
 
     # Registrar.registerError('testing errors')
 
-if __name__ == '__main__':
+
+def catch_main():
+    """
+    Run the main function within a try statement and attempt to analyse failure
+    """
+
+    settings = argparse.Namespace()
+
+    settings.in_folder = "../input/"
+    settings.out_folder = "../output/"
+    settings.log_folder = "../logs/"
+    settings.src_folder = MODULE_LOCATION
+    settings.pkl_folder = "pickles/"
+
+    os.chdir(MODULE_PATH)
+
+    settings.import_name = TimeUtils.getMsTimeStamp()
+    settings.start_time = time.time()
+
+    settings.test_mode = True
+    settings.rep_path = ''
+    settings.yaml_path = os.path.join("merger_config.yaml")
+    settings.m_fail_path = os.path.join(settings.out_folder, "act_fails.csv")
+    settings.s_fail_path = os.path.join(settings.out_folder, "wp_fails.csv")
+    settings.log_path = os.path.join(settings.log_folder,
+                                     "log_%s.txt" % settings.import_name)
+    settings.zip_path = os.path.join(settings.log_folder,
+                                     "zip_%s.zip" % settings.import_name)
+    settings.user_file = False
+    settings.card_file = False
+    settings.email_file = False
+    settings.since_m = False
+    settings.since_s = False
+
     try:
-        main()
+        main(settings)
     except SystemExit:
         exit()
     except:
         Registrar.registerError(traceback.format_exc())
 
-    with io.open(logPath, 'w+', encoding='utf8') as logFile:
+    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.getMessageItems(1).items():
             print source
-            logFile.writelines([SanitationUtils.coerceUnicode(source)])
-            logFile.writelines(
-                [SanitationUtils.coerceUnicode(message) for message in messages]
-            )
+            log_file.writelines([SanitationUtils.coerceUnicode(source)])
+            log_file.writelines([
+                SanitationUtils.coerceUnicode(message) for message in messages
+            ])
             for message in messages:
-                pprint( message, indent=4, width=80, depth=2)
-
-
+                pprint(message, indent=4, width=80, depth=2)
 
     #########################################
     # email reports
     #########################################
 
-    files_to_zip = [mFailPath, sFailPath, repPath]
+    files_to_zip = [
+        settings.m_fail_path, settings.s_fail_path, settings.rep_path
+    ]
 
-    with zipfile.ZipFile(zipPath, 'w') as zipFile:
+    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)
-                zipFile.write(file_to_zip)
-            except Exception as e:
-                if(e):
+                zip_file.write(file_to_zip)
+            except Exception as exc:
+                if exc:
                     pass
-        Registrar.registerMessage('wrote file %s' % zipPath)
+        Registrar.registerMessage('wrote file %s' % settings.zip_path)
+
+
+if __name__ == '__main__':
+    catch_main()
