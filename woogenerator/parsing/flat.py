@@ -17,9 +17,9 @@ class CSVParse_Flat(CSVParse_Base):
 
 class ImportSpecial(ImportFlat):
 
-    ID = descriptorUtils.safeKeyProperty('ID')
-    start_time = descriptorUtils.safeKeyProperty('start_time')
-    end_time = descriptorUtils.safeKeyProperty('end_time')
+    ID = descriptorUtils.safe_key_property('ID')
+    start_time = descriptorUtils.safe_key_property('start_time')
+    end_time = descriptorUtils.safe_key_property('end_time')
 
     # @property
     # def start_time_iso(self): return TimeUtils.isoTimeToString(self.start_time)
@@ -29,7 +29,7 @@ class ImportSpecial(ImportFlat):
 
     def __init__(self, data, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.register_message(' ')
         for key in ["FROM", "TO"]:
             if key not in data:
                 raise UserWarning(
@@ -49,7 +49,7 @@ class ImportSpecial(ImportFlat):
 
     def get_index(self):
         exc = DeprecationWarning("use .index instead of .get_index()")
-        self.registerError(exc)
+        self.register_error(exc)
         return self.index
 
 
@@ -59,7 +59,7 @@ class CSVParse_Special(CSVParse_Flat):
 
     def __init__(self, cols=None, defaults=None):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.register_message(' ')
         if cols is None:
             cols = []
         if defaults is None:
@@ -80,17 +80,17 @@ class CSVParse_Special(CSVParse_Flat):
         cols = listUtils.combine_lists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
-        self.objectIndexer = self.getObjectID
+        self.objectIndexer = self.get_object_id
 
     @classmethod
-    def getObjectID(self, object_data):
+    def get_object_id(self, object_data):
         return object_data.ID
 
 
 class ImportSqlProduct(ImportFlat):
-    ID = descriptorUtils.safeKeyProperty('ID')
-    codesum = descriptorUtils.safeKeyProperty('codesum')
-    itemsum = descriptorUtils.safeKeyProperty('itemsum')
+    ID = descriptorUtils.safe_key_property('ID')
+    codesum = descriptorUtils.safe_key_property('codesum')
+    itemsum = descriptorUtils.safe_key_property('itemsum')
 
     @property
     def index(self):

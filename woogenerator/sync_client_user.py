@@ -59,42 +59,42 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
                 SanitationUtils.coerce_unicode(error)
             )
 
-    def putFile(self, local_path, remote_path):
+    def put_file(self, local_path, remote_path):
         self.assert_connect()
 
         # remote_dir, remoteFileName = os.path.split(remote_path)
         remote_dir = os.path.split(remote_path)[0]
 
         exception = Exception()
-        sftpClient = self.service.open_sftp()
+        sftp_client = self.service.open_sftp()
         if remote_dir:
             try:
-                sftpClient.stat(remote_dir)
+                sftp_client.stat(remote_dir)
             except:
-                sftpClient.mkdir(remote_dir)
-        sftpClient.put(local_path, remote_path)
-        fstat = sftpClient.stat(remote_path)
-        sftpClient.close()
+                sftp_client.mkdir(remote_dir)
+        sftp_client.put(local_path, remote_path)
+        fstat = sftp_client.stat(remote_path)
+        sftp_client.close()
 
         if not fstat:
             exception = UserWarning("could not stat remote file")
             raise exception
 
         # try:
-        #     sftpClient = self.service.open_sftp()
+        #     sftp_client = self.service.open_sftp()
         #     if remote_dir:
         #         try:
-        #             sftpClient.stat(remote_dir)
+        #             sftp_client.stat(remote_dir)
         #         except:
-        #             sftpClient.mkdir(remote_dir)
-        #     sftpClient.put(local_path, remote_path)
-        #     fstat = sftpClient.stat(remote_path)
+        #             sftp_client.mkdir(remote_dir)
+        #     sftp_client.put(local_path, remote_path)
+        #     fstat = sftp_client.stat(remote_path)
         #     if not fstat:
         #         exception = UserWarning("could not stat remote file")
         # except Exception, exc:
         #     exception = exc
         # finally:
-        #     sftpClient.close()
+        #     sftp_client.close()
         # if not isinstance(exception, Exception):
         #     raise exception
 
@@ -108,32 +108,32 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             [assertion, "stat returned possible errors", str(possible_errors)])
 
     @classmethod
-    def printFileProgress(self, completed, total):
+    def print_file_progress(self, completed, total):
         if not hasattr(self, 'progress_counter'):
             self.progress_counter = ProgressCounter(total)
-        self.progress_counter.maybePrintUpdate(completed)
+        self.progress_counter.maybe_print_update(completed)
 
     def get_delete_file(self, remote_path, local_path):
         self.assert_remote_file_exists(remote_path)
 
-        sftpClient = self.service.open_sftp()
-        sftpClient.get(remote_path, local_path, self.printFileProgress)
-        sftpClient.remove(remote_path)
-        sftpClient.close()
+        sftp_client = self.service.open_sftp()
+        sftp_client.get(remote_path, local_path, self.print_file_progress)
+        sftp_client.remove(remote_path)
+        sftp_client.close()
 
         # exception = None
         # try:
-        #     sftpClient = self.service.open_sftp()
-        #     sftpClient.get(remote_path, local_path, self.printFileProgress)
-        #     sftpClient.remove(remote_path)
+        #     sftp_client = self.service.open_sftp()
+        #     sftp_client.get(remote_path, local_path, self.print_file_progress)
+        #     sftp_client.remove(remote_path)
         # except Exception, exc:
         #     exception = exc
         # finally:
-        #     sftpClient.close()
+        #     sftp_client.close()
         # if exception:
         #     raise exception
 
-    def removeRemoteFile(self, remote_path):
+    def remove_remote_file(self, remote_path):
         self.assert_remote_file_exists(remote_path)
         self.service.exec_command('rm "%s"' % remote_path)
 
@@ -174,7 +174,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             dictwriter.writeheader()
             dictwriter.writerow(updates)
 
-        self.putFile(local_path, remote_path)
+        self.put_file(local_path, remote_path)
 
         tokens = [
             'cd ' + remote_export_folder + ';',
@@ -199,7 +199,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         self.exec_silent_command_assert(command)
 
         try:
-            self.removeRemoteFile(imported_file)
+            self.remove_remote_file(imported_file)
         except:
             raise Exception("import didn't produce a .imported file")
 
@@ -432,7 +432,7 @@ ON {um_on_clause}
         )
 
         if Registrar.DEBUG_CLIENT:
-            Registrar.registerMessage(sql_select_user_modtime)
+            Registrar.register_message(sql_select_user_modtime)
 
         cursor.execute(sql_select_user_modtime)
 

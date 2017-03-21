@@ -30,7 +30,7 @@ fields = {
     'user_login': "admin"
 }
 fields_json = SanitationUtils.encode_json(fields)
-SanitationUtils.safePrint(repr(fields_json))
+SanitationUtils.safe_print(repr(fields_json))
 # fields_json_base64 = SanitationUtils.encode_base64( fields_json )
 fields_json_base64 = "eyJidXNpbmVzc190eXBlIjogIk90aGVyIiwgInByZWZfdGVsIjogIkZhbHNlIiwgImFjdF9yb2xlIjogIlJOIiwgInByZWZfbW9iIjogIkZhbHNlIiwgImhvd19oZWFyX2Fib3V0IjogIkV2ZW50IiwgInVzZXJfZW1haWwiOiAiZW1tYS1hbGxlbjk0QGhvdG1haWwuY29tIn0="
 # print fields_json_base64

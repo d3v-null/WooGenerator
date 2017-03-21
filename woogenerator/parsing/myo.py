@@ -20,7 +20,7 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
     def __init__(self, cols={}, defaults={}, schema='MY', import_name="",
                  taxo_subs={}, item_subs={}, taxoDepth=3, itemDepth=2, meta_width=2):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
+            self.register_message(' ')
         extra_cols = ['WNRC', 'RNRC', 'HTML Description']
 
         extra_defaults = OrderedDict([
@@ -236,17 +236,17 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
         super(CSVParse_MYO, self).__init__(cols, defaults, schema,
                                            taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
         if self.DEBUG_MYO:
-            self.registerMessage("csvparse initialized with cols: %s" %
-                                 SanitationUtils.coerce_unicode(extra_cols))
+            self.register_message("csvparse initialized with cols: %s" %
+                                  SanitationUtils.coerce_unicode(extra_cols))
 
-    # def joinDescs(self, descs, fullnames):
+    # def join_descs(self, descs, fullnames):
     # return self.change_fullname(self.joinItems(fullnames[self.taxoDepth:]))
 
     # def processItemtype(self, itemData):
     #     if itemData['itemtype'] == 'Y':
     #         itemData['item_name'] = itemData['itemsum'][:32]
     #         # itemData['description'] = itemData['descsum'][:]
-    #         self.registerProduct(itemData)
+    #         self.register_product(itemData)
 
 
 class MYOProdList(ShopProdList):
@@ -269,7 +269,7 @@ class MYOProdList(ShopProdList):
 #         defaults = col_data.get_defaults(),
 #     )
 #     productParser.analyse_file(genPath)
-#     products = productParser.getProducts().values()
+#     products = productParser.get_products().values()
 #
 #     print "products:"
 #     prodList = MYOProdList(products)

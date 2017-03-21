@@ -64,7 +64,7 @@ class TestCSVParseWoo(TestCase):
         # category.get('taxosum', ''))
 
         # print "Products:"
-        # for product in WooParser.getProducts():
+        # for product in WooParser.get_products():
         # print "%15s | %s" % (product.get('codesum', ''),
         # product.get('itemsum', '')), product.get('dprplist')
 

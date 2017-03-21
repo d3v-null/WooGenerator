@@ -107,7 +107,7 @@ class SyncClientAbstract(Registrar):
         if hasattr(self.service_builder, '__name__'):
             service_name = getattr(self.service_builder, '__name__')
         if self.DEBUG_API:
-            self.registerMessage(
+            self.register_message(
                 "building service (%s) with positional: %s and keyword: %s" %
                 (str(service_name), str(positional_args),
                  str(self.connect_params)))
@@ -209,7 +209,7 @@ class SyncClientGDrive(SyncClientAbstract):
                 self.gdrive_params['scopes'])
             flow.user_agent = self.gdrive_params['app_name']
             credentials = tools.run(flow, store)  # pylint: disable=E1101
-            self.registerMessage('Storing credentials to ' + credential_path)
+            self.register_message('Storing credentials to ' + credential_path)
         return credentials
 
     def download_file_content_csv(self, gid=None):
@@ -229,11 +229,11 @@ class SyncClientGDrive(SyncClientAbstract):
         if download_url:
             resp, content = self.service._http.request(download_url)
             if resp.status == 200:
-                self.registerMessage('Status: %s' % resp)
+                self.register_message('Status: %s' % resp)
                 if content:
                     return SanitationUtils.coerce_unicode(content)
             else:
-                self.registerError('An error occurred: %s' % resp)
+                self.register_error('An error occurred: %s' % resp)
 
     def get_gm_modtime(self, gid=None):
         """ Get modtime of a drive file (individual gid not supported yet) """
@@ -251,7 +251,7 @@ class SyncClientGDrive(SyncClientAbstract):
                     message += " with gid %s" % gid
                 if out_path:
                     message += " to: %s" % out_path
-                Registrar.registerMessage(message)
+                Registrar.register_message(message)
 
             content = self.download_file_content_csv(gid)
             if not content:
@@ -330,7 +330,7 @@ class SyncClientRest(SyncClientAbstract):
             """
             headers = response.headers
             if Registrar.DEBUG_API:
-                Registrar.registerMessage("headers: %s" % str(headers))
+                Registrar.register_message("headers: %s" % str(headers))
 
             if self.service.namespace == 'wp-json':
                 total_pages_key = 'X-WP-TotalPages'
@@ -361,7 +361,7 @@ class SyncClientRest(SyncClientAbstract):
                         prev_endpoint, 'page', self.next_page)
 
                     # if Registrar.DEBUG_API:
-                    #     Registrar.registerMessage('next_endpoint: %s' % str(self.next_endpoint))
+                    #     Registrar.register_message('next_endpoint: %s' % str(self.next_endpoint))
 
             if self.next_page:
                 self.offset = (self.limit * self.next_page) + 1
@@ -372,11 +372,11 @@ class SyncClientRest(SyncClientAbstract):
         def next(self):
             """ Used by Iterable to get next item in the API """
             if Registrar.DEBUG_API:
-                Registrar.registerMessage('start')
+                Registrar.register_message('start')
 
             if self.next_endpoint is None:
                 if Registrar.DEBUG_API:
-                    Registrar.registerMessage(
+                    Registrar.register_message(
                         'stopping due to no next endpoint')
                 raise StopIteration()
 
@@ -389,8 +389,8 @@ class SyncClientRest(SyncClientAbstract):
                 if self.limit > 1:
                     new_limit = 1
                     if Registrar.DEBUG_API:
-                        Registrar.registerMessage('reducing limit in %s' %
-                                                  self.next_endpoint)
+                        Registrar.register_message('reducing limit in %s' %
+                                                   self.next_endpoint)
 
                     self.next_endpoint = UrlUtils.set_query_singular(
                         self.next_endpoint, 'filter[limit]', new_limit)
@@ -415,8 +415,8 @@ class SyncClientRest(SyncClientAbstract):
                     #     urlencode(endpoint_queries)
                     # )
                     if Registrar.DEBUG_API:
-                        Registrar.registerMessage('new endpoint %s' %
-                                                  self.next_endpoint)
+                        Registrar.register_message('new endpoint %s' %
+                                                   self.next_endpoint)
 
                     self.prev_response = self.service.get(self.next_endpoint)
 
@@ -433,10 +433,10 @@ class SyncClientRest(SyncClientAbstract):
                 exc = ConnectionError(
                     'api call to %s failed: %s' %
                     (self.next_endpoint, self.prev_response.text))
-                Registrar.registerError(exc)
+                Registrar.register_error(exc)
 
             # if Registrar.DEBUG_API:
-            #     Registrar.registerMessage('first api response: %s' % str(prev_response_json))
+            #     Registrar.register_message('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
                 raise ConnectionError('first api call returned errors: %s' %
                                       (prev_response_json['errors']))
@@ -532,10 +532,10 @@ class SyncClientRest(SyncClientAbstract):
                 if limit is not None:
                     total_items = min(limit, total_items)
                 progress_counter = ProgressCounter(total_items)
-            progress_counter.maybePrintUpdate(result_count)
+            progress_counter.maybe_print_update(result_count)
 
             # if Registrar.DEBUG_API:
-            #     Registrar.registerMessage('processing page: %s' % str(page))
+            #     Registrar.register_message('processing page: %s' % str(page))
             page_items = []
             if self.page_nesting and self.endpoint_plural in page:
                 page_items = page.get(self.endpoint_plural)
@@ -548,7 +548,7 @@ class SyncClientRest(SyncClientAbstract):
                 result_count += 1
                 if limit and result_count > limit:
                     if Registrar.DEBUG_API:
-                        Registrar.registerMessage('reached limit, exiting')
+                        Registrar.register_message('reached limit, exiting')
                     return
 
     def upload_changes(self, pkey, data=None):
@@ -556,7 +556,7 @@ class SyncClientRest(SyncClientAbstract):
             pkey = int(pkey)
         except ValueError:
             exc = UserWarning("Can't convert pkey %s to int" % pkey)
-            Registrar.registerError(exc)
+            Registrar.register_error(exc)
             raise exc
         super(SyncClientRest, self).upload_changes(pkey)
         endpoint_parsed = urlparse(self.endpoint_plural)
@@ -568,8 +568,8 @@ class SyncClientRest(SyncClientAbstract):
         if re.match('wc/v[2-9]', self.service.version):
             data = {self.endpoint_singular: data}
         if Registrar.DEBUG_API:
-            Registrar.registerMessage("updating %s: %s" %
-                                      (service_endpoint, data))
+            Registrar.register_message("updating %s: %s" %
+                                       (service_endpoint, data))
         response = self.service.put(service_endpoint, data)
         assert response.status_code not in [400, 401], "API ERROR"
         try:
@@ -615,8 +615,8 @@ class SyncClientRest(SyncClientAbstract):
         if self.service.version is not 'wc/v1':
             data = {endpoint_singular: data}
         if Registrar.DEBUG_API:
-            Registrar.registerMessage("creating %s: %s" %
-                                      (service_endpoint, data))
+            Registrar.register_message("creating %s: %s" %
+                                       (service_endpoint, data))
         response = self.service.post(service_endpoint, data)
         assert response.status_code not in [400, 401], "API ERROR"
         assert response.json(), "json should exist"

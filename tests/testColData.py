@@ -156,7 +156,7 @@ class testColDataUser(TestCase):
         print "test_getWPAPICols", api_cols.keys()
 
     def test_getWPAPIVariableCols(self):
-        api_cols = ColData_Woo.getWPAPIVariableCols()
+        api_cols = ColData_Woo.get_wpapi_variable_cols()
         print "test_getWPAPIVariableCols", api_cols.keys()
 
 if __name__ == '__main__':

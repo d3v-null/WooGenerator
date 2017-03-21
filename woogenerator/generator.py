@@ -413,7 +413,8 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
             'g_drive_params', 'wc_api_params', 'api_product_parser_args',
             'product_parser_args'
     ]:
-        Registrar.registerMessage("%s: %s" % (thing, getattr(settings, thing)))
+        Registrar.register_message("%s: %s" %
+                                   (thing, getattr(settings, thing)))
 
     if settings.schema in settings.myo_schemas:
         col_data_class = ColData_MYO
@@ -445,8 +446,8 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
 
     if settings.download_master:
         if Registrar.DEBUG_GDRIVE:
-            Registrar.registerMessage("GDrive params: %s" %
-                                      settings.g_drive_params)
+            Registrar.register_message("GDrive params: %s" %
+                                       settings.g_drive_params)
         client_class = SyncClientGDrive
         client_args = [settings.g_drive_params]
     else:
@@ -456,24 +457,24 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
     with client_class(*client_args) as client:
         if settings.schema in settings.woo_schemas:
             if settings.do_dyns:
-                Registrar.registerMessage("analysing dprc rules")
+                Registrar.register_message("analysing dprc rules")
                 client.analyse_remote(
                     parsers.dyn, settings.dprc_path, gid=settings.dprc_gid)
                 settings.product_parser_args['dprc_rules'] = parsers.dyn.taxos
 
-                Registrar.registerMessage("analysing dprp rules")
+                Registrar.register_message("analysing dprp rules")
                 parsers.dyn.clear_transients()
                 client.analyse_remote(
                     parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
                 settings.product_parser_args['dprpRules'] = parsers.dyn.taxos
 
             if settings.do_specials:
-                Registrar.registerMessage("analysing specials")
+                Registrar.register_message("analysing specials")
                 client.analyse_remote(
                     parsers.special, settings.spec_path, gid=settings.spec_gid)
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("all specials: %s" %
-                                              parsers.special.tabulate())
+                    Registrar.register_message("all specials: %s" %
+                                               parsers.special.tabulate())
                 settings.product_parser_args[
                     'specialRules'] = parsers.special.rules
 
@@ -483,8 +484,8 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                     specials_mode=settings.specials_mode,
                     current_special=settings.current_special)
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.registerMessage("current_special_groups: %s" %
-                                              current_special_groups)
+                    Registrar.register_message("current_special_groups: %s" %
+                                               current_special_groups)
 
                 # print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
                 # print "Registrar.DEBUG_SPECIAL: %s" %
@@ -501,7 +502,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
 
         parsers.product = product_parser_class(**settings.product_parser_args)
 
-        Registrar.registerProgress("analysing product data")
+        Registrar.register_progress("analysing product data")
 
         client.analyse_remote(
             parsers.product,
@@ -518,15 +519,15 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
     """
     # TODO: fix too-many-statements,too-many-branches,too-many-statements
 
-    Registrar.registerProgress("processing images")
+    Registrar.register_progress("processing images")
 
     if Registrar.DEBUG_IMG:
-        Registrar.registerMessage("Looking in folders: %s" %
-                                  settings.img_raw_folders)
+        Registrar.register_message("Looking in folders: %s" %
+                                   settings.img_raw_folders)
 
     def invalid_image(img_name, error):
         """ Register error globally and attribute to image """
-        Registrar.registerError(error, img_name)
+        Registrar.register_error(error, img_name)
         parsers.product.images[img_name].invalidate(error)
 
     ls_raw = {}
@@ -560,7 +561,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
     ls_cmp = os.listdir(settings.img_dst)
     for fname in ls_cmp:
         if fname not in parsers.product.images.keys():
-            Registrar.registerWarning("DELETING FROM REFLATTENED", fname)
+            Registrar.register_warning("DELETING FROM REFLATTENED", fname)
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))
 
@@ -570,13 +571,13 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
             # we only care about product images atm
         if Registrar.DEBUG_IMG:
             if data.categories:
-                Registrar.registerMessage(
+                Registrar.register_message(
                     "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum)
                                                 for taxo in data.categories]),
                     img)
 
             if data.products:
-                Registrar.registerMessage("Associated Products: " + str([
+                Registrar.register_message("Associated Products: " + str([
                     (item.rowcount, item.codesum) for item in data.products
                 ]), img)
 
@@ -600,8 +601,8 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
             continue
 
         if Registrar.DEBUG_IMG:
-            Registrar.registerMessage("title: %s | description: %s" %
-                                      (title, description), img)
+            Registrar.register_message("title: %s | description: %s" %
+                                       (title, description), img)
 
         # ------
         # REMETA
@@ -641,12 +642,12 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
                 # print "image mod (src, dst): ", img_src_mod, imgdstmod
                 if img_dst_mod > img_src_mod:
                     if Registrar.DEBUG_IMG:
-                        Registrar.registerMessage(
+                        Registrar.register_message(
                             img, "DESTINATION FILE NEWER: %s" % img_dst_path)
                     continue
 
             if Registrar.DEBUG_IMG:
-                Registrar.registerMessage("resizing: %s" % img)
+                Registrar.register_message("resizing: %s" % img)
 
             shutil.copy(img_raw_path, img_dst_path)
 
@@ -682,13 +683,13 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
     """ Export key information from the parsers to spreadsheets """
     # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
-    Registrar.registerProgress("Exporting info to spreadsheets")
+    Registrar.register_progress("Exporting info to spreadsheets")
 
     if settings.schema in settings.myo_schemas:
         product_cols = ColData_MYO.get_product_cols()
         product_list = MYOProdList(parsers.product.products.values())
         product_list.export_items(settings.myo_path,
-                                 ColDataBase.get_col_names(product_cols))
+                                  ColDataBase.get_col_names(product_cols))
     elif settings.schema in settings.woo_schemas:
         product_cols = ColData_Woo.get_product_cols()
 
@@ -723,7 +724,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
             category_list = WooCatList(parsers.product.categories.values())
             category_list.export_items(settings.cat_path,
-                                      ColDataBase.get_col_names(category_cols))
+                                       ColDataBase.get_col_names(category_cols))
 
         # specials
         if settings.do_specials:
@@ -740,7 +741,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                         fla_name + "-" + current_special + fla_ext)
                     special_product_list = WooProdList(special_products)
                     special_product_list.export_items(fls_path,
-                                                     product_colnames)
+                                                      product_colnames)
                 special_variations = parsers.product.onspecial_variations.values(
                 )
                 if special_variations:
@@ -751,7 +752,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
                     sp_variation_list = WooVarList(special_variations)
                     sp_variation_list.export_items(flvs_path,
-                                                  variation_col_names)
+                                                   variation_col_names)
 
         updated_products = parsers.product.updated_products.values()
         if updated_products:
@@ -770,7 +771,8 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                                      flv_name + "-Updated" + flv_ext)
 
             updated_variations_list = WooVarList(updated_variations)
-            updated_variations_list.export_items(flvu_path, variation_col_names)
+            updated_variations_list.export_items(
+                flvu_path, variation_col_names)
 
 
 def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -854,7 +856,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             Registrar.DEBUG_ERROR = True
         if args.verbosity > 1:
             Registrar.DEBUG_MESSAGE = True
-            Registrar.registerMessage("raw args: %s" % pformat(vars(args)))
+            Registrar.register_message("raw args: %s" % pformat(vars(args)))
         if args.quiet:
             Registrar.DEBUG_PROGRESS = False
             Registrar.DEBUG_ERROR = False
@@ -886,7 +888,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
         if settings.auto_create_new:
             exc = UserWarning("auto-create not fully implemented yet")
-            Registrar.registerWarning(exc)
+            Registrar.register_warning(exc)
         if args.auto_delete_old:
             raise UserWarning("auto-delete not implemented yet")
 
@@ -1097,7 +1099,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if settings.do_categories:
                 client.analyse_remote_categories(api_product_parser)
 
-            Registrar.registerProgress("analysing WC API data")
+            Registrar.register_progress("analysing WC API data")
 
             client.analyse_remote(
                 api_product_parser, limit=settings.download_limit)
@@ -1110,7 +1112,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Attempt Matching
     #########################################
 
-    Registrar.registerProgress("Attempting matching")
+    Registrar.register_progress("Attempting matching")
 
     s_delta_updates = []
     # mDeltaUpdates = []
@@ -1151,7 +1153,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         # TODO: fix too-many-nested-blocks
         if settings.do_categories:
             if Registrar.DEBUG_CATS:
-                Registrar.registerMessage(
+                Registrar.register_message(
                     "matching %d master categories with %d slave categories" %
                     (len(parsers.product.categories),
                      len(api_product_parser.categories)))
@@ -1163,7 +1165,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             if Registrar.DEBUG_CATS:
                 if category_matcher.pure_matches:
-                    Registrar.registerMessage("All Category matches:\n%s" % (
+                    Registrar.register_message("All Category matches:\n%s" % (
                         '\n'.join(map(str, category_matcher.matches))))
 
             valid_category_matches = []
@@ -1184,7 +1186,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     exc = UserWarning(
                         "categories couldn't be synchronized because of ambiguous names:\n%s"
                         % '\n'.join(map(str, invalid_category_matches)))
-                    Registrar.registerError(exc)
+                    Registrar.register_error(exc)
                     raise exc
 
             if category_matcher.slaveless_matches and category_matcher.masterless_matches:
@@ -1193,7 +1195,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     %
                     ('\n'.join(map(str, category_matcher.slaveless_matches)),
                      '\n'.join(map(str, category_matcher.masterless_matches))))
-                Registrar.registerError(exc)
+                Registrar.register_error(exc)
                 # raise exc
 
             global_category_matches.add_matches(category_matcher.pure_matches)
@@ -1229,7 +1231,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             for update in master_category_updates:
                 if Registrar.DEBUG_UPDATE:
-                    Registrar.registerMessage(
+                    Registrar.register_message(
                         "performing update < %5s | %5s > = \n%100s, %100s " %
                         (update.master_id, update.slave_id,
                          str(update.old_m_object), str(update.old_s_object)))
@@ -1237,7 +1239,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     exc = UserWarning(
                         "couldn't fine pkey %s in parsers.product.categories" %
                         update.master_id)
-                    Registrar.registerError(exc)
+                    Registrar.register_error(exc)
                     continue
                 for col, warnings in update.sync_warnings.items():
                     if not col == 'ID':
@@ -1252,8 +1254,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             col] = new_val
 
             if Registrar.DEBUG_CATS:
-                Registrar.registerMessage("NEW CATEGORIES: %d" %
-                                          (len(slaveless_category_matches)))
+                Registrar.register_message("NEW CATEGORIES: %d" %
+                                           (len(slaveless_category_matches)))
 
             if settings.auto_create_new:
                 # create categories that do not yet exist on slave
@@ -1263,13 +1265,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                 with CatSyncClient_WC(settings.wc_api_params) as client:
                     if Registrar.DEBUG_CATS:
-                        Registrar.registerMessage("created cat client")
+                        Registrar.register_message("created cat client")
                     new_categories = [
                         match.m_object for match in slaveless_category_matches
                     ]
                     if Registrar.DEBUG_CATS:
-                        Registrar.registerMessage("new categories %s" %
-                                                  new_categories)
+                        Registrar.register_message("new categories %s" %
+                                                   new_categories)
 
                     while new_categories:
                         category = new_categories.pop(0)
@@ -1279,7 +1281,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 new_categories.append(category)
                                 continue
 
-                        m_api_data = category.toApiData(ColData_Woo, 'wp-api')
+                        m_api_data = category.to_api_data(
+                            ColData_Woo, 'wp-api')
                         for key in ['id', 'slug', 'sku']:
                             if key in m_api_data:
                                 del m_api_data[key]
@@ -1293,7 +1296,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             response_api_data = response.json()
                             response_api_data = response_api_data.get(
                                 'product_category', response_api_data)
-                            api_product_parser.processApiCategory(
+                            api_product_parser.process_api_category(
                                 response_api_data)
                             api_cat_translation = OrderedDict()
                             for key, data in ColData_Woo.get_wpapi_category_cols(
@@ -1304,10 +1307,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                     wp_api_key = key
                                 api_cat_translation[wp_api_key] = key
                             # print "TRANSLATION: ", api_cat_translation
-                            category_parser_data = api_product_parser.translateKeys(
+                            category_parser_data = api_product_parser.translate_keys(
                                 response_api_data, api_cat_translation)
                             if Registrar.DEBUG_CATS:
-                                Registrar.registerMessage(
+                                Registrar.register_message(
                                     "category being updated with parser data: %s"
                                     % category_parser_data)
                             category.update(category_parser_data)
@@ -1317,9 +1320,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 for slaveless_category_match in slaveless_category_matches:
                     exc = UserWarning("category needs to be created: %s" %
                                       slaveless_category_match.m_objects[0])
-                    Registrar.registerWarning(exc)
+                    Registrar.register_warning(exc)
 
-        # print parsers.product.toStrTree()
+        # print parsers.product.to_str_tree()
         if Registrar.DEBUG_CATS:
             print "product parser"
             for key, category in parsers.product.categories.items():
@@ -1331,7 +1334,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 api_product_parser.categories)
             print "there are %s children of API root" % len(
                 api_product_parser.rootData.children)
-            print api_product_parser.toStrTree()
+            print api_product_parser.to_str_tree()
             for key, category in api_product_parser.categories.items():
                 print "%5s | %50s" % (key, category.title[:50])
 
@@ -1348,7 +1351,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
         sync_cols = ColData_Woo.get_wpapi_cols()
         if Registrar.DEBUG_UPDATE:
-            Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
+            Registrar.register_message("sync_cols: %s" % repr(sync_cols))
 
         for col in settings.exclude_cols:
             if col in sync_cols:
@@ -1358,13 +1361,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             exc = UserWarning(
                 "products couldn't be synchronized because of ambiguous SKUs:%s"
                 % '\n'.join(map(str, product_matcher.duplicate_matches)))
-            Registrar.registerError(exc)
+            Registrar.register_error(exc)
             raise exc
 
         for _, prod_match in enumerate(product_matcher.pure_matches):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-                Registrar.registerMessage("processing prod_match: %s" %
-                                          prod_match.tabulate())
+                Registrar.register_message("processing prod_match: %s" %
+                                           prod_match.tabulate())
             m_object = prod_match.m_object
             s_object = prod_match.s_object
 
@@ -1407,7 +1410,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 ])
 
                 if Registrar.DEBUG_CATS:
-                    Registrar.registerMessage(
+                    Registrar.register_message(
                         "comparing categories of %s:\n%s\n%s\n%s\n%s" %
                         (m_object.codesum, str(m_object.categories.values()),
                          str(s_object.categories.values()),
@@ -1430,7 +1433,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     # slave_categories =  [category.wooCatName for category \
                     # in change_match_list.merge().s_objects]
 
-                    sync_update.loserUpdate(**update_params)
+                    sync_update.loser_update(**update_params)
                     # sync_update.new_m_object['catlist'] = master_categories
                     # sync_update.new_s_object['catlist'] = master_categories
 
@@ -1444,10 +1447,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             repr(slave_categories)
                         )
                     update_params['reason'] = 'identical'
-                    sync_update.tieUpdate(**update_params)
+                    sync_update.tie_update(**update_params)
 
                 if Registrar.DEBUG_CATS:
-                    Registrar.registerMessage(
+                    Registrar.register_message(
                         "category matches for update:\n%s" % (
                             category_matcher.__repr__()))
 
@@ -1468,8 +1471,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 continue
 
             if Registrar.DEBUG_UPDATE:
-                Registrar.registerMessage("sync updates:\n%s" %
-                                          sync_update.tabulate())
+                Registrar.register_message("sync updates:\n%s" %
+                                           sync_update.tabulate())
 
             if sync_update.s_updated and sync_update.s_deltas:
                 insort(s_delta_updates, sync_update)
@@ -1488,8 +1491,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                                 parsers.product.variations)
 
             if Registrar.DEBUG_VARS:
-                Registrar.registerMessage("variation matcher:\n%s" %
-                                          variation_matcher.__repr__())
+                Registrar.register_message("variation matcher:\n%s" %
+                                           variation_matcher.__repr__())
 
             global_variation_matches.add_matches(
                 variation_matcher.pure_matches)
@@ -1498,16 +1501,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             slaveless_variation_matches.add_matches(
                 variation_matcher.slaveless_matches)
 
-            var_sync_cols = ColData_Woo.getWPAPIVariableCols()
+            var_sync_cols = ColData_Woo.get_wpapi_variable_cols()
             if Registrar.DEBUG_UPDATE:
-                Registrar.registerMessage("var_sync_cols: %s" %
-                                          repr(var_sync_cols))
+                Registrar.register_message("var_sync_cols: %s" %
+                                           repr(var_sync_cols))
 
             if variation_matcher.duplicate_matches:
                 exc = UserWarning(
                     "variations couldn't be synchronized because of ambiguous SKUs:%s"
                     % '\n'.join(map(str, variation_matcher.duplicate_matches)))
-                Registrar.registerError(exc)
+                Registrar.register_error(exc)
                 raise exc
 
             for var_match_count, var_match in enumerate(
@@ -1526,7 +1529,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     continue
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var update %d:\n%s" % (
+                    Registrar.register_message("var update %d:\n%s" % (
                         var_match_count, sync_update.tabulate()))
 
                 if not sync_update.important_static:
@@ -1546,7 +1549,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 # sync_update.update(var_sync_cols)
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var create %d:\n%s" % (
+                    Registrar.register_message("var create %d:\n%s" % (
                         var_match_count, m_object.identifier))
 
                 # TODO: figure out which attribute terms to add
@@ -1561,7 +1564,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 # sync_update.update(var_sync_cols)
 
                 if Registrar.DEBUG_VARS:
-                    Registrar.registerMessage("var delete: %d:\n%s" % (
+                    Registrar.register_message("var delete: %d:\n%s" % (
                         var_match_count, s_object.identifier))
 
                 # TODO: figure out which attribute terms to delete
@@ -1572,7 +1575,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 m_object = new_prod_match.m_object
                 print "will create product %d: %s" % (new_prod_count,
                                                       m_object.identifier)
-                api_data = m_object.toApiData(ColData_Woo, 'wp-api')
+                api_data = m_object.to_api_data(ColData_Woo, 'wp-api')
                 for key in ['id', 'slug']:
                     if key in api_data:
                         del api_data[key]
@@ -1582,14 +1585,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     check_warnings()
 
     # except Exception, exc:
-    #     Registrar.registerError(repr(exc))
+    #     Registrar.register_error(repr(exc))
     #     settings.report_and_quit = True
 
     #########################################
     # Write Report
     #########################################
 
-    Registrar.registerProgress("Write Report")
+    Registrar.register_progress("Write Report")
 
     with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
@@ -1809,7 +1812,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    (SanitationUtils.makeSafeClass(settings.slave_name) +
+                    (SanitationUtils.make_safe_class(settings.slave_name) +
                      "_product_updates"),
                     description=settings.slave_name + " items will be updated",
                     data='<hr>'.join([
@@ -1836,7 +1839,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                 syncing_group.add_section(
                     HtmlReporter.Section(
-                        (SanitationUtils.makeSafeClass(settings.slave_name) +
+                        (SanitationUtils.make_safe_class(settings.slave_name) +
                          "_variation_updates"),
                         description=settings.slave_name +
                         " items will be updated",
@@ -1958,7 +1961,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             #
             #     )
             # )
-            Registrar.registerMessage('nothing to report')
+            Registrar.register_message('nothing to report')
             reporter.add_group(empty_group)
 
         res_file.write(reporter.get_document_unicode())
@@ -1986,8 +1989,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     slave_failures = []
     if all_product_updates:
-        Registrar.registerProgress("UPDATING %d RECORDS" %
-                                   len(all_product_updates))
+        Registrar.register_progress("UPDATING %d RECORDS" %
+                                    len(all_product_updates))
 
         if settings.ask_before_update:
             input(
@@ -2000,23 +2003,23 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         with ProdSyncClient_WC(settings.wc_api_params) as slave_client:
             for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
-                    update_progress_counter.maybePrintUpdate(count)
+                    update_progress_counter.maybe_print_update(count)
 
                 if settings.update_slave and update.s_updated:
                     # print "attempting update to %s " % str(update)
 
                     try:
-                        update.updateSlave(slave_client)
+                        update.update_slave(slave_client)
                     except Exception as exc:
                         # slave_failures.append({
                         #     'update':update,
                         #     'master':SanitationUtils.coerce_unicode(update.new_m_object),
                         #     'slave':SanitationUtils.coerce_unicode(update.new_s_object),
-                        #     'mchanges':SanitationUtils.coerce_unicode(update.getMasterUpdates()),
-                        #     'schanges':SanitationUtils.coerce_unicode(update.getSlaveUpdates()),
+                        #     'mchanges':SanitationUtils.coerce_unicode(update.get_master_updates()),
+                        #     'schanges':SanitationUtils.coerce_unicode(update.get_slave_updates()),
                         #     'exception':repr(exc)
                         # })
-                        SanitationUtils.safePrint(
+                        SanitationUtils.safe_print(
                             "ERROR UPDATING SLAVE (%s): %s" %
                             (update.slave_id, repr(exc)))
                         slave_failures.append(update)
@@ -2027,7 +2030,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 # Display reports
                 #########################################
 
-    Registrar.registerProgress("Displaying reports")
+    Registrar.register_progress("Displaying reports")
 
     shutil.copyfile(settings.rep_path, settings.rep_web_path)
     if settings.show_report:
@@ -2075,20 +2078,20 @@ def catch_main():  # pylint: disable=too-many-statements,too-many-branches
         exit()
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
         status = 69  # service unavailable
-        Registrar.registerError(traceback.format_exc())
+        Registrar.register_error(traceback.format_exc())
     except IOError:
         status = 74
         print "cwd: %s" % os.getcwd()
-        Registrar.registerError(traceback.format_exc())
+        Registrar.register_error(traceback.format_exc())
     except UserWarning:
         status = 65
-        Registrar.registerError(traceback.format_exc())
+        Registrar.register_error(traceback.format_exc())
     except:
         status = 1
-        Registrar.registerError(traceback.format_exc())
+        Registrar.register_error(traceback.format_exc())
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
-        for source, messages in Registrar.getMessageItems(1).items():
+        for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
             log_file.writelines([
@@ -2112,7 +2115,7 @@ def catch_main():  # pylint: disable=too-many-statements,too-many-branches
                 zip_file.write(file_to_zip)
             except:
                 pass
-        Registrar.registerMessage('wrote file %s' % settings.zip_path)
+        Registrar.register_message('wrote file %s' % settings.zip_path)
 
     # print "\nexiting with status %s \n" % status
     sys.exit(status)

@@ -116,7 +116,7 @@ class Match(object):
         objects in the match
         """
         if self.m_len or self.s_len:
-            # Registrar.registerMessage("getting GCS of %s" % (self.m_objects + self.s_objects))
+            # Registrar.register_message("getting GCS of %s" % (self.m_objects + self.s_objects))
             return InheritenceUtils.gcs(*(self.m_objects + self.s_objects))
         else:
             return None
@@ -308,11 +308,11 @@ class MatchList(list):
         """
         Adds a match to the list
         """
-        # Registrar.registerMessage("adding match: %s" % str(match))
+        # Registrar.register_message("adding match: %s" % str(match))
         match_s_indices = []
         match_m_indices = []
         for s_object in match.s_objects:
-            # Registrar.registerMessage('indexing slave %s with %s : %s' \
+            # Registrar.register_message('indexing slave %s with %s : %s' \
             #                         % (s_object, repr(self._index_fn), s_index))
             s_index = self._index_fn(s_object)
             assert \
@@ -331,7 +331,7 @@ class MatchList(list):
                 ), "all s_indices should be equal: %s" % match_s_indices
             self.s_indices.append(match_s_indices[0])
         for m_object in match.m_objects:
-            # Registrar.registerMessage('indexing master %s with %s : %s' \
+            # Registrar.register_message('indexing master %s with %s : %s' \
             # % (s_object, repr(self._index_fn), s_index))
             m_index = self._index_fn(m_object)
             assert \
@@ -563,7 +563,7 @@ class AbstractMatcher(Registrar):
         # except Exception as exc:
         # finally:
         # pass
-        # self.registerWarning( "could not add match to %s matches %s" % (
+        # self.register_warning( "could not add match to %s matches %s" % (
         #     match_type,
         #     SanitationUtils.coerce_unicode(repr(exc))
         # ))
@@ -574,7 +574,7 @@ class AbstractMatcher(Registrar):
         # finally:
 
     # pass
-    # self.registerWarning( "could not add match to matches %s" % (
+    # self.register_warning( "could not add match to matches %s" % (
     #     SanitationUtils.coerce_unicode(repr(exc))
     # ))
 

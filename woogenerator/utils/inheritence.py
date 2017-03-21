@@ -17,7 +17,7 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
                     additions = []
                     for _class in class_sets[i]:
                         additions.extend(_class.__bases__)
-                    # Registrar.registerMessage("additions: %s" % additions)
+                    # Registrar.register_message("additions: %s" % additions)
                     if additions:
                         class_sets[i].update(set(additions))
                 if set_lengths == [len(class_set) for class_set in class_sets]:
@@ -36,7 +36,7 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
         else:
             return None
         # except AssertionError, exc:
-        #     Registrar.registerError(exc)
+        #     Registrar.register_error(exc)
         #     raise exc
         #     return None
 

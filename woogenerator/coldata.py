@@ -24,15 +24,15 @@ class ColDataBase(object):
     @classmethod
     def get_defaults(cls):
         defaults = {}
-        # Registrar.registerMessage('called with class: '+ unicode(cls) + ', data=' + unicode(cls.data))
+        # Registrar.register_message('called with class: '+ unicode(cls) + ', data=' + unicode(cls.data))
         for col, data in cls.data.items():
-            # Registrar.registerMessage('col is %s' % col)
+            # Registrar.register_message('col is %s' % col)
             if 'default' in data:
-                # Registrar.registerMessage('has default')
+                # Registrar.register_message('has default')
                 defaults[col] = data.get('default')
             else:
                 pass
-                # Registrar.registerMessage('does not have default')
+                # Registrar.register_message('does not have default')
         return defaults
 
     @classmethod
@@ -80,7 +80,7 @@ class ColDataBase(object):
         return cls.get_export_cols(api)
 
     @classmethod
-    def getWPAPIVariableCols(cls):
+    def get_wpapi_variable_cols(cls):
         cols = OrderedDict()
         for col, data in cls.get_wpapi_cols().items():
             if 'sync' in data:
@@ -102,7 +102,7 @@ class ColDataBase(object):
         return api_cols
 
     @classmethod
-    def getWPAPIMetaCols(cls, api='wp-api'):
+    def get_wpapi_meta_cols(cls, api='wp-api'):
         # export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
         for col, data in cls.data.items():

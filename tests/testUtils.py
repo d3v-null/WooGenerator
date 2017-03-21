@@ -13,23 +13,23 @@ class testProgressCounter(TestCase):
 
     @skip("takes too long")
     def test_carriageReturn(self):
-        self.progress_counter.maybePrintUpdate(1)
+        self.progress_counter.maybe_print_update(1)
         sleep(1)
-        self.progress_counter.maybePrintUpdate(2)
+        self.progress_counter.maybe_print_update(2)
         sleep(1)
-        self.progress_counter.maybePrintUpdate(3)
+        self.progress_counter.maybe_print_update(3)
         sleep(1)
         print "woo something else\n"
 
-        self.progress_counter.maybePrintUpdate(3)
+        self.progress_counter.maybe_print_update(3)
         sleep(1)
-        self.progress_counter.maybePrintUpdate(4)
+        self.progress_counter.maybe_print_update(4)
         sleep(1)
 
         print "woo, another thing"
 
         for i in range(90, 100):
-            self.progress_counter.maybePrintUpdate(i)
+            self.progress_counter.maybe_print_update(i)
             sleep(1)
 
         print "some stuff after"
@@ -37,7 +37,7 @@ class testProgressCounter(TestCase):
     def test_stripURLHost(self):
         test_url = 'http://localhost/woocommerce/wc-api/v3/products?oauth_consumer_key=ck_0297450a41484f27184d1a8a3275f9bab5b69143&oauth_timestamp=1473914520&oauth_nonce=c430d5c707d1c8c8ff446b380eddc3218a366d0a&oauth_signature_method=HMAC-SHA256&oauth_signature=dYXFhWavVbLHeqeDMbUhWxghrnBBwCwqFaS+wYAxcy8=&page=2'
         expected_result = '/woocommerce/wc-api/v3/products?oauth_consumer_key=ck_0297450a41484f27184d1a8a3275f9bab5b69143&oauth_timestamp=1473914520&oauth_nonce=c430d5c707d1c8c8ff446b380eddc3218a366d0a&oauth_signature_method=HMAC-SHA256&oauth_signature=dYXFhWavVbLHeqeDMbUhWxghrnBBwCwqFaS+wYAxcy8=&page=2'
-        self.assertEqual(SanitationUtils.stripURLHost(
+        self.assertEqual(SanitationUtils.strip_url_host(
             test_url), expected_result)
 
 

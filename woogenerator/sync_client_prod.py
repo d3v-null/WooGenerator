@@ -17,10 +17,10 @@ class ProdSyncClient_WC(SyncClientWC):
             if 'product_categories' in page:
                 for page_item in page.get('product_categories'):
                     categories.append(page_item)
-        parser.processApiCategories(categories)
+        parser.process_api_categories(categories)
         if self.DEBUG_API:
-            self.registerMessage("Analysed categories:")
-            self.registerMessage(parser.toStrTree())
+            self.register_message("Analysed categories:")
+            self.register_message(parser.to_str_tree())
 
     # def analyse_remote(self, parser, since=None, limit=None):
     # return super(ProdSyncClient_WC, self).analyse_remote(parser, since,
@@ -33,15 +33,15 @@ class ProdSyncClient_WC(SyncClientWC):
         if self.DEBUG_API:
             categories = updates.get('categories')
             if categories:
-                self.registerMessage(
+                self.register_message(
                     "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
             else:
-                self.registerMessage("NO CAT CHANGES IN %s" % str(updates))
+                self.register_message("NO CAT CHANGES IN %s" % str(updates))
             custom_meta = updates.get('custom_meta')
             if custom_meta:
-                self.registerMessage("CUSTOM META: %s" % str(custom_meta))
+                self.register_message("CUSTOM META: %s" % str(custom_meta))
             else:
-                self.registerMessage("NO CUSTOM META")
+                self.register_message("NO CUSTOM META")
 
         response = None
         if updates:
@@ -51,7 +51,7 @@ class ProdSyncClient_WC(SyncClientWC):
 
     # def setCategories(self, pkey, categories):
     #     """ Sets the item specified by pkey to be a member exclusively of the categories specified """
-    #     categories = map(SanitationUtils.similarComparison, categories)
+    #     categories = map(SanitationUtils.similar_comparison, categories)
     #     get_categories_response = self.service.get('products/%s?fields=categories' % pkey)
     #     current_categories = []
     #     if get_categories_response.status_code == 200:
@@ -62,7 +62,7 @@ class ProdSyncClient_WC(SyncClientWC):
     #         except JSONDecodeError:
     #             raise UserWarning("could not decode get_categories_response: %s" % get_categories_response.text)
     #     print "CURRENT CATEGORIES: %s" % unicode(current_categories)
-    #     current_categories = map(SanitationUtils.similarComparison, current_categories)
+    #     current_categories = map(SanitationUtils.similar_comparison, current_categories)
     #     new_categories = list(set(categories) - set(current_categories))
         # delete_categories = list(set(current_categories) - set(categories))
 

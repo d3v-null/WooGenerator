@@ -123,16 +123,16 @@ changeDataFmt = changeData[:1]
 
 for user_id, c_time, changed, data in sorted(changeData[1:]):
     if user_id == 1:
-        SanitationUtils.safePrint(changed)
+        SanitationUtils.safe_print(changed)
     changedMap = json2map(changed)
     if not isinstance(changedMap, dict):
         continue
     if user_id == 1:
         for value in changedMap.values():
             for val in value:
-                SanitationUtils.safePrint(val)
+                SanitationUtils.safe_print(val)
     dataMap = json2map(data)
-    diffMap = listUtils.keysNotIn(dataMap, changedMap.keys()) if isinstance(
+    diffMap = listUtils.keys_not_in(dataMap, changedMap.keys()) if isinstance(
         changedMap, dict) else dataMap
     changeDataFmt.append([
         user_id,

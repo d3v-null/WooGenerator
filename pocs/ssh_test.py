@@ -60,7 +60,7 @@ command = " ".join(filter(None, [
 
 ]))
 
-# SanitationUtils.safePrint(command)
+# SanitationUtils.safe_print(command)
 # exit()
 
 sshClient = paramiko.SSHClient()
@@ -71,18 +71,18 @@ try:
     possible_errors = stdout.readlines()
     assert not possible_errors, "command returned errors: " + possible_errors
     try:
-        sftpClient = sshClient.open_sftp()
-        sftpClient.chdir(remoteExportFolder)
-        fstat = sftpClient.stat(exportFilename)
+        sftp_client = sshClient.open_sftp()
+        sftp_client.chdir(remoteExportFolder)
+        fstat = sftp_client.stat(exportFilename)
         if fstat:
-            sftpClient.get(exportFilename, maPath)
+            sftp_client.get(exportFilename, maPath)
     except Exception as exc:
-        SanitationUtils.safePrint("ERROR IN SFTP: " + str(exc))
+        SanitationUtils.safe_print("ERROR IN SFTP: " + str(exc))
     finally:
-        sftpClient.close()
+        sftp_client.close()
 
 except Exception as exc:
-    SanitationUtils.safePrint("ERROR IN SSH: " + str(exc))
+    SanitationUtils.safe_print("ERROR IN SSH: " + str(exc))
 finally:
     sshClient.close()
 
@@ -95,18 +95,18 @@ maParser = CSVParse_User(
 maParser.analyse_file(maPath, maEncoding)
 
 
-def printBasicColumns(users):
+def print_basic_columns(users):
     # print len(users)
     usrList = UsrObjList()
     for user in users:
         usrList.append(user)
-        # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
+        # SanitationUtils.safe_print( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
 
     cols = col_data.get_basic_cols()
 
-    SanitationUtils.safePrint(usrList.tabulate(
+    SanitationUtils.safe_print(usrList.tabulate(
         cols,
         tablefmt='simple'
     ))
 
-printBasicColumns(list(chain(*maParser.emails.values()[:100])))
+print_basic_columns(list(chain(*maParser.emails.values()[:100])))

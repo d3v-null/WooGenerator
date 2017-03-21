@@ -12,7 +12,7 @@ from woogenerator.parsing.tree import CSVParse_Tree, ImportTreeItem, ImportTreeT
 
 class ImportDynObject(ImportTreeObject):
 
-    def isRuleLine(self): return False
+    def is_rule_line(self): return False
 
     def validate(self):
         for key, validation in self.validations:
@@ -25,12 +25,12 @@ class ImportDynObject(ImportTreeObject):
 class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
 
     validations = {
-        'Discount': ValidationUtils.isNotNone,
-        'Discount Type': ValidationUtils.isContainedIn(['PDSC'])
+        'Discount': ValidationUtils.is_not_none,
+        'Discount Type': ValidationUtils.is_contained_in(['PDSC'])
     }
 
-    discount = descriptorUtils.safeKeyProperty('Discount')
-    discount_type = descriptorUtils.safeKeyProperty('Discount Type')
+    discount = descriptorUtils.safe_key_property('Discount')
+    discount_type = descriptorUtils.safe_key_property('Discount Type')
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRuleLine, self).__init__(*args, **kwargs)
@@ -42,7 +42,7 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
             raise UserWarning(
                 "one of buy or receiver must be visible to ImportDynObject")
 
-    def isRuleLine(self): return True
+    def is_rule_line(self): return True
 
     @property
     def pricing_rule_disc_type(self):
@@ -62,22 +62,22 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
 class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     validations = {
-        'ID': ValidationUtils.isNotNone,
-        'Qty. Base': ValidationUtils.isContainedIn(['PROD', 'VAR', 'CAT']),
-        'Rule Mode': ValidationUtils.isContainedIn(['BULK', 'SPECIAL']),
-        'Roles': ValidationUtils.isNotNone
+        'ID': ValidationUtils.is_not_none,
+        'Qty. Base': ValidationUtils.is_contained_in(['PROD', 'VAR', 'CAT']),
+        'Rule Mode': ValidationUtils.is_contained_in(['BULK', 'SPECIAL']),
+        'Roles': ValidationUtils.is_not_none
     }
 
-    qty_base = descriptorUtils.safeKeyProperty('Qty. Base')
-    rule_mode = descriptorUtils.safeKeyProperty('Rule Mode')
-    roles = descriptorUtils.safeKeyProperty('Roles')
+    qty_base = descriptorUtils.safe_key_property('Qty. Base')
+    rule_mode = descriptorUtils.safe_key_property('Rule Mode')
+    roles = descriptorUtils.safe_key_property('Roles')
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         self.rule_lines = []
         assert self.ID
 
-    ID = descriptorUtils.safeKeyProperty('ID')
+    ID = descriptorUtils.safe_key_property('ID')
 
     @property
     def index(self): return self.ID
@@ -112,13 +112,13 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     # def registerRuleLine(self, lineData):
     #     # assert isinstance(lineData, ImportDynObject)
-    #     assert lineData.isRuleLine()
-    #     self.registerAnything(
+    #     assert lineData.is_rule_line()
+    #     self.register_anything(
     #         lineData,
-    #         self.getRuleLines()
+    #         self.get_rule_lines()
     #     )
 
-    def getRuleLines(self):
+    def get_rule_lines(self):
         # return self.rule_lines
         return self.getChildren()
 
@@ -147,10 +147,10 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 ['Qty. Base', 'Rule Mode', 'Roles']
             )
         )
-        if self.getRuleLines():
+        if self.get_rule_lines():
             rep += ' | '
             rep += ', '.join([line.get('Meaning', '')
-                              for line in self.getRuleLines()])
+                              for line in self.get_rule_lines()])
         rep += ' >'
         return rep
 
@@ -176,7 +176,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 1: empty_blockrule
             }
             rules = {}
-            for i, rule_line in enumerate(self.getRuleLines()):
+            for i, rule_line in enumerate(self.get_rule_lines()):
                 rule = copy(empty_rule)
                 rule['from'] = rule_line.pricing_rule_from
                 rule['to'] = rule_line.pricing_rule_to
@@ -189,7 +189,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 1: empty_rule
             }
             block_rules = {}
-            for i, block_rule_line in enumerate(self.getRuleLines()):
+            for i, block_rule_line in enumerate(self.get_rule_lines()):
                 block_rule = copy(empty_blockrule)
                 block_rule['from'] = block_rule_line.pricing_rule_from
                 block_rule['to'] = block_rule_line.pricing_rule_to
@@ -210,19 +210,19 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
         return PHPUtils.serialize(pricing_rule)
 
-    def toHTML(self):
+    def to_html(self):
         col_names = self.get_col_names()
 
         html = u'<table class="shop_table lasercommerce pricing_table table table-striped">'
         html += '<thead><tr>'
         for col, name in col_names.items():
-            col_class = SanitationUtils.sanitizeClass(col)
+            col_class = SanitationUtils.sanitize_class(col)
             html += '<th class=%s>' % col_class
             html += bleach.clean(name)
             html += '</th>'
         html += '</tr></thead>'
-        rule_lines = self.getRuleLines()
-        self.registerMessage("rule_lines: %s" % (rule_lines))
+        rule_lines = self.get_rule_lines()
+        self.register_message("rule_lines: %s" % (rule_lines))
         for rule_line_data in rule_lines:
             line_type = rule_line_data.get('Discount Type', '')
             html += '<tr>'
@@ -260,7 +260,7 @@ class CSVParse_Dyn(CSVParse_Tree):
         super(CSVParse_Dyn, self).__init__(cols, defaults,
                                            taxoDepth=1, itemDepth=1, meta_width=0)
 
-        self.taxoIndexer = self.getObjectIndex
+        self.taxoIndexer = self.get_object_index
 
     # def clear_transients(self):
     #     super(CSVParse_Dyn, self).clear_transients()
@@ -277,7 +277,7 @@ class CSVParse_Dyn(CSVParse_Tree):
     #     ruleData = self.getRuleData(parent_data)
     #     ruleData.addLineData(itemData)
 
-    # def registerRule(self, itemData):
+    # def register_rule(self, itemData):
     #     ruleData = self.getRuleData(itemData)
     #     ruleData.addRuleData(itemData)
     #     print "registering rule ", itemData
@@ -299,11 +299,11 @@ class CSVParse_Dyn(CSVParse_Tree):
 
     # def processTaxo(self, itemData):
     #     super(CSVParse_Dyn, self).processTaxo(itemData)
-    #     self.registerRule(itemData)
+    #     self.register_rule(itemData)
 
     # def analyseRow(self, row, itemData):
     #     itemData = super(CSVParse_Dyn, self).analyseRow(row, itemData)
-    #     if isRuleLine
+    #     if is_rule_line
 
 
 if __name__ == '__main__':
@@ -320,8 +320,8 @@ if __name__ == '__main__':
 
     with open(out_path, 'w+') as out_file:
         def write_section(title, description, data, length=0,
-                         html_class="results_section"):
-            section_id = SanitationUtils.makeSafeClass(title)
+                          html_class="results_section"):
+            section_id = SanitationUtils.make_safe_class(title)
             description = "%s %s" % (
                 str(length) if length else "No", description)
             out_file.write('<div class="%s">' % html_class)
@@ -351,7 +351,7 @@ if __name__ == '__main__':
         out_file.write('<div class="matching">')
         out_file.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
         for rule in dynParser.taxos.values():
-            rule['html'] = rule.toHTML()
+            rule['html'] = rule.to_html()
             rule['_pricing_rule'] = rule.to_pricing_rule()
 
         # print '\n'.join(map(str , dynParser.taxos.values()))
@@ -362,8 +362,8 @@ if __name__ == '__main__':
             "all products and their dynaimc pricing rules",
             re.sub("<table>", "<table class=\"table table-striped\">",
                    dynList.tabulate(cols=OrderedDict([
-                    ('html', {}),
-                    ('_pricing_rule', {}),
+                       ('html', {}),
+                       ('_pricing_rule', {}),
                    ]), tablefmt="html")
                    ),
             length=len(dynList.objects)

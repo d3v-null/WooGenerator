@@ -22,8 +22,8 @@ class HtmlReporter(object):
             self.length = length
             self.classname = classname
 
-        def toHtml(self):
-            section_id = SanitationUtils.makeSafeClass(self.classname)
+        def to_html(self):
+            section_id = SanitationUtils.make_safe_class(self.classname)
             out = '<div class="section">'
             out += '<a data-toggle="collapse" href="#{0}" aria-expanded="true" data-target="#{0}" aria-controls="{0}">'.format(
                 section_id)
@@ -56,11 +56,11 @@ class HtmlReporter(object):
         def add_section(self, section):
             self.sections[section.classname] = section
 
-        def toHtml(self):
+        def to_html(self):
             out = '<div class="group">'
             out += '<h1>' + self.title + '</h1>'
             for section in self.sections.values():
-                out += section.toHtml()
+                out += section.to_html()
             out += '</div>'
             out = SanitationUtils.coerce_unicode(out)
             return out
@@ -90,7 +90,7 @@ class HtmlReporter(object):
 
     def get_body(self):
         content = "<br/>".join(
-            group.toHtml() for group in self.groups.values()
+            group.to_html() for group in self.groups.values()
         )
         out = """
 <body>
@@ -125,9 +125,9 @@ def test_html_reporter():
             io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as ures_file:
         reporter = HtmlReporter()
 
-        matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
+        matching_group = HtmlReporter.Group('matching', 'Matching Results')
 
-        matchingGroup.add_section(
+        matching_group.add_section(
             HtmlReporter.Section(
                 'perfect_matches',
                 **{
@@ -139,9 +139,9 @@ def test_html_reporter():
             )
         )
 
-        reporter.add_group(matchingGroup)
+        reporter.add_group(matching_group)
 
         document = reporter.get_document()
-        # SanitationUtils.safePrint( document)
+        # SanitationUtils.safe_print( document)
         ures_file.write(SanitationUtils.coerce_unicode(document))
         res_file.write(SanitationUtils.coerce_ascii(document))

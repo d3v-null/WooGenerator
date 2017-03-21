@@ -219,9 +219,9 @@ class NameUtils:
                      r"(?P<note_delimeter>{noted}) (?P<names_after_note_delimeter>{names})?"
                  ]) +
                  r")").format(
-        note=SanitationUtils.wrapClearRegex(
+        note=SanitationUtils.wrap_clear_regex(
             SanitationUtils.compile_abbrv_regex(noteAbbreviations)),
-        noted=SanitationUtils.wrapClearRegex(
+        noted=SanitationUtils.wrap_clear_regex(
             SanitationUtils.compile_abbrv_regex(noteDelimeters)),
         names=lazyMultiNameRegex,
         name=singleNameRegex,
@@ -242,73 +242,73 @@ class NameUtils:
     )
 
     nameTokenRegex = r"(%s)" % "|".join([
-        SanitationUtils.wrapClearRegex(titleRegex),
-        SanitationUtils.wrapClearRegex(positionRegex),
-        SanitationUtils.wrapClearRegex(nameSuffixRegex),
-        SanitationUtils.wrapClearRegex(careOfRegex),
-        SanitationUtils.wrapClearRegex(organizationRegex),
-        SanitationUtils.wrapClearRegex(SanitationUtils.email_regex),
-        SanitationUtils.wrapClearRegex(noteRegex),
-        SanitationUtils.wrapClearRegex(familyNameRegex),
-        SanitationUtils.wrapClearRegex(singleNameRegex),
-        SanitationUtils.wrapClearRegex(ordinalNumberRegex),
+        SanitationUtils.wrap_clear_regex(titleRegex),
+        SanitationUtils.wrap_clear_regex(positionRegex),
+        SanitationUtils.wrap_clear_regex(nameSuffixRegex),
+        SanitationUtils.wrap_clear_regex(careOfRegex),
+        SanitationUtils.wrap_clear_regex(organizationRegex),
+        SanitationUtils.wrap_clear_regex(SanitationUtils.email_regex),
+        SanitationUtils.wrap_clear_regex(noteRegex),
+        SanitationUtils.wrap_clear_regex(familyNameRegex),
+        SanitationUtils.wrap_clear_regex(singleNameRegex),
+        SanitationUtils.wrap_clear_regex(ordinalNumberRegex),
         SanitationUtils.disallowedPunctuationRegex
     ])
 
     @staticmethod
-    def identifyTitle(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_title(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.titleAbbreviations, string)
 
     @staticmethod
-    def identifyNote(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_note(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.noteAbbreviations, string)
 
     @staticmethod
-    def identifyPosition(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_position(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.positionAbbreviations, string)
 
     @staticmethod
-    def identifyNameSuffix(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_name_suffix(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.nameSuffixAbbreviations, string)
 
     @staticmethod
-    def identifyCareOf(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_care_of(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.careOfAbbreviations, string)
 
     @staticmethod
-    def identifyOrganization(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_organization(string):
+        return SanitationUtils.identify_abbreviation(
             NameUtils.organizationTypeAbbreviations, string)
 
     @staticmethod
-    def sanitizeNameToken(string):
+    def sanitize_name_token(string):
         return SanitationUtils.normalize_val(string)
 
     @staticmethod
-    def getSingleName(token):
+    def get_single_name(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.singleNameRegex
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # name = " ".join(matchGrps)
-            name = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            # name = " ".join(match_grps)
+            name = match_grps[0]
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint("FOUND NAME " + repr(name))
+                SanitationUtils.safe_print("FOUND NAME " + repr(name))
             return name
 
     @staticmethod
-    def getSingleNames(token):
+    def get_single_names(token):
         matches = re.findall(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.singleNameRegex
             ),
             token
@@ -316,125 +316,125 @@ class NameUtils:
         names = [match[0] for match in filter(None, matches)]
         if names:
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint("FOUND NAMES " + repr(names))
+                SanitationUtils.safe_print("FOUND NAMES " + repr(names))
             return names
 
     @staticmethod
-    def getMultiName(token):
+    def get_multi_name(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.greedyMultiNameRegex
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # name = " ".join(matchGrps)
-            name = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            # name = " ".join(match_grps)
+            name = match_grps[0]
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint("FOUND NAME " + repr(name))
+                SanitationUtils.safe_print("FOUND NAME " + repr(name))
             return name
 
     @staticmethod
     def get_email(token):
-        # if Registrar.DEBUG_NAME: SanitationUtils.safePrint("checking email", token)
+        # if Registrar.DEBUG_NAME: SanitationUtils.safe_print("checking email", token)
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 "({})".format(SanitationUtils.email_regex)
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            # if Registrar.DEBUG_NAME: SanitationUtils.safePrint("email matches", repr(matchGrps))
-            # name = " ".join(matchGrps)
-            email = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            # if Registrar.DEBUG_NAME: SanitationUtils.safe_print("email matches", repr(match_grps))
+            # name = " ".join(match_grps)
+            email = match_grps[0]
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint("FOUND EMAIL " + repr(email))
+                SanitationUtils.safe_print("FOUND EMAIL " + repr(email))
             return email
 
     @staticmethod
-    def getTitle(token):
+    def get_title(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.titleRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('name_title'):
-            title = NameUtils.identifyTitle(match_dict['name_title'])
+            title = NameUtils.identify_title(match_dict['name_title'])
             if Registrar.DEBUG_NAME:
                 print "FOUND TITLE ", repr(title)
             return title
-        # matchGrps = match.groups() if match else None
-        # if(matchGrps):
-        #     # title = " ".join(matchGrps)
-        #     title = matchGrps[0]
+        # match_grps = match.groups() if match else None
+        # if(match_grps):
+        #     # title = " ".join(match_grps)
+        #     title = match_grps[0]
         #     if Registrar.DEBUG_NAME: print "FOUND TITLE ", repr(title)
         #     return title
 
     @staticmethod
-    def getPosition(token):
+    def get_position(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.positionRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('name_position'):
-            position = NameUtils.identifyPosition(match_dict['name_position'])
+            position = NameUtils.identify_position(match_dict['name_position'])
             if Registrar.DEBUG_NAME:
                 print "FOUND POSITION ", repr(position)
             return position
-        # matchGrps = match.groups() if match else None
-        # if(matchGrps):
-        #     # position = " ".join(matchGrps)
-        #     position = matchGrps[0]
+        # match_grps = match.groups() if match else None
+        # if(match_grps):
+        #     # position = " ".join(match_grps)
+        #     position = match_grps[0]
         #     if Registrar.DEBUG_NAME: print "FOUND POSITION ", repr(position)
         #     return position
 
     @staticmethod
-    def getOrdinal(token):
+    def get_ordinal(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.ordinalNumberRegex
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if matchGrps:
-            ordinal = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if match_grps:
+            ordinal = match_grps[0]
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint("FOUND ORDINAL", ordinal)
+                SanitationUtils.safe_print("FOUND ORDINAL", ordinal)
             return ordinal
 
     @staticmethod
-    def getNameSuffix(token):
+    def get_name_suffix(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.nameSuffixRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('name_suffix'):
-            suffix = NameUtils.identifyNameSuffix(match_dict['name_suffix'])
+            suffix = NameUtils.identify_name_suffix(match_dict['name_suffix'])
             if Registrar.DEBUG_NAME:
                 print "FOUND NAME SUFFIX ", repr(suffix)
             return suffix
-        # matchGrps = match.groups() if match else None
-        # if(matchGrps):
-        #     # position = " ".join(matchGrps)
-        #     suffix = matchGrps[0]
+        # match_grps = match.groups() if match else None
+        # if(match_grps):
+        #     # position = " ".join(match_grps)
+        #     suffix = match_grps[0]
         #     if Registrar.DEBUG_NAME: print "FOUND NAME SUFFIX ", repr(suffix)
         #     return suffix
 
     @staticmethod
-    def getNote(token):
+    def get_note(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.noteRegex
             ),
             token
@@ -448,13 +448,15 @@ class NameUtils:
             names_after_note = None
             if note_open_paren:
                 if match_dict.get('note_before'):
-                    note = NameUtils.identifyNote(match_dict.get('note_only'))
+                    note = NameUtils.identify_note(match_dict.get('note_only'))
                     names_after_note = match_dict.get('names_after_note')
                 elif match_dict.get('note_middle'):
                     names_before_note = match_dict.get(
                         'names_before_note_middle')
-                    note = NameUtils.identifyNote(match_dict.get('note_middle'))
-                    names_after_note = match_dict.get('names_after_note_middle')
+                    note = NameUtils.identify_note(
+                        match_dict.get('note_middle'))
+                    names_after_note = match_dict.get(
+                        'names_after_note_middle')
                 else:
                     names_before_note = match_dict.get('note_names_only')
                     note = None
@@ -464,7 +466,7 @@ class NameUtils:
                     names_before_note = " ".join(
                         filter(None, [name_before_note_paren, names_before_note]))
             elif match_dict.get('note_only'):
-                note = NameUtils.identifyNote(match_dict.get('note_only'))
+                note = NameUtils.identify_note(match_dict.get('note_only'))
             elif match_dict.get('note_delimeter'):
                 note = match_dict.get('note_delimeter')
                 names_after_note = match_dict.get('names_after_note_delimeter')
@@ -474,16 +476,16 @@ class NameUtils:
             if Registrar.DEBUG_NAME:
                 print "FOUND NOTE ", repr(note_tuple)
             return note_tuple
-        # matchGrps = match.groups() if match else None
-        # if(matchGrps):
-        #     # note = " ".join(matchGrps)
-        #     note = matchGrps[0]
+        # match_grps = match.groups() if match else None
+        # if(match_grps):
+        #     # note = " ".join(match_grps)
+        #     note = match_grps[0]
         #     return note
 
     @staticmethod
     def get_family_name(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.familyNameRegex
             ),
             token
@@ -498,44 +500,44 @@ class NameUtils:
             combined_family_name = " ".join(
                 filter(None, [family_name_prefix, family_name]))
             if Registrar.DEBUG_NAME:
-                SanitationUtils.safePrint(
+                SanitationUtils.safe_print(
                     "FOUND FAMILY NAME", combined_family_name)
             return combined_family_name
 
     @staticmethod
     def get_care_of(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.careOfRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('careof'):
-            careof = NameUtils.identifyCareOf(match_dict.get('careof'))
+            careof = NameUtils.identify_care_of(match_dict.get('careof'))
             names = match_dict.get('careof_names')
             careof_tuple = (careof, names)
             if Registrar.DEBUG_NAME:
                 print "FOUND CAREOF ", repr(careof_tuple)
             return careof_tuple
-        # matchGrps = match.groups() if match else None
-        # if(matchGrps):
-        #     # note = " ".join(matchGrps)
-        #     careof = matchGrps[0]
+        # match_grps = match.groups() if match else None
+        # if(match_grps):
+        #     # note = " ".join(match_grps)
+        #     careof = match_grps[0]
         #     if Registrar.DEBUG_NAME: print "FOUND CAREOF ", repr(careof)
         #     return careof
 
     @staticmethod
-    def getOrganization(token):
+    def get_organization(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 NameUtils.organizationRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and (match_dict.get('organization_name')
-                          and match_dict.get('organization_type')):
+                           and match_dict.get('organization_type')):
             organization_name = match_dict.get('organization_name')
             organization_type = match_dict.get('organization_type')
             organization = (organization_name, organization_type)
@@ -544,7 +546,7 @@ class NameUtils:
             return organization
 
     @staticmethod
-    def tokenizeName(string):
+    def tokenize_name(string):
         string = string.upper()
         matches = re.findall(
             NameUtils.nameTokenRegex,
@@ -552,7 +554,7 @@ class NameUtils:
         )
         # if Registrar.DEBUG_NAME: print repr(matches)
         return map(
-            lambda match: NameUtils.sanitizeNameToken(match[0]),
+            lambda match: NameUtils.sanitize_name_token(match[0]),
             matches
         )
 
@@ -560,7 +562,7 @@ class NameUtils:
 def test_name_utils():
     pass
     # print SanitationUtils.compile_abbrv_regex(NameUtils.noteAbbreviations)
-    # print NameUtils.tokenizeName('DERWENT (ACCT)')
+    # print NameUtils.tokenize_name('DERWENT (ACCT)')
     # print NameUtils.get_email('KYLIESWEET@GMAIL.COM')
 
     # assert r'\'' in SanitationUtils.allowedPunctuation
@@ -587,10 +589,10 @@ def test_name_utils():
     # )
     # if match: print [match_item for match_item in match.groups()]
 
-    # print "singlename", repr( NameUtils.getSingleName('O\'CALLAGHAN' ))
+    # print "singlename", repr( NameUtils.get_single_name('O\'CALLAGHAN' ))
     # def testNotes(line):
-    #     for token in NameUtils.tokenizeName(line):
-    #         print token, NameUtils.getNote(token)
+    #     for token in NameUtils.tokenize_name(line):
+    #         print token, NameUtils.get_note(token)
     #
     # testNotes("DE-RWENT- FINALIST")
     # testNotes("JAGGERS HAIR- DO NOT WANT TO BE CALLED!!!!")
@@ -1241,91 +1243,91 @@ class AddressUtils:
 
 # [^,\s\d/()-]+
     addressTokenRegex = r"(%s)" % "|".join([
-        SanitationUtils.wrapClearRegex(deliveryRegex),
-        SanitationUtils.wrapClearRegex(floorLevelRegex),
-        SanitationUtils.wrapClearRegex(subunitRegex),
-        SanitationUtils.wrapClearRegex(thoroughfareRegex),
-        SanitationUtils.wrapClearRegex(buildingRegex),
-        SanitationUtils.wrapClearRegex(weakThoroughfareRegex),
-        SanitationUtils.wrapClearRegex(weakSubunitRegex),
-        # SanitationUtils.wrapClearRegex( stateRegex),
-        SanitationUtils.wrapClearRegex(NameUtils.careOfRegex),
-        SanitationUtils.wrapClearRegex(NameUtils.organizationRegex),
-        SanitationUtils.wrapClearRegex(NameUtils.singleNameRegex),
-        SanitationUtils.wrapClearRegex(multiNumberAllRegex),
-        SanitationUtils.wrapClearRegex(slashAbbrvRegex),
+        SanitationUtils.wrap_clear_regex(deliveryRegex),
+        SanitationUtils.wrap_clear_regex(floorLevelRegex),
+        SanitationUtils.wrap_clear_regex(subunitRegex),
+        SanitationUtils.wrap_clear_regex(thoroughfareRegex),
+        SanitationUtils.wrap_clear_regex(buildingRegex),
+        SanitationUtils.wrap_clear_regex(weakThoroughfareRegex),
+        SanitationUtils.wrap_clear_regex(weakSubunitRegex),
+        # SanitationUtils.wrap_clear_regex( stateRegex),
+        SanitationUtils.wrap_clear_regex(NameUtils.careOfRegex),
+        SanitationUtils.wrap_clear_regex(NameUtils.organizationRegex),
+        SanitationUtils.wrap_clear_regex(NameUtils.singleNameRegex),
+        SanitationUtils.wrap_clear_regex(multiNumberAllRegex),
+        SanitationUtils.wrap_clear_regex(slashAbbrvRegex),
         SanitationUtils.disallowedPunctuationRegex,
 
     ])
 
     @staticmethod
-    def identifySubunit(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_subunit(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.subunitAbbreviations, string)
 
     @staticmethod
-    def identifyFloor(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_floor(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.floorAbbreviations, string)
 
     @staticmethod
-    def identifyThoroughfareType(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_thoroughfare_type(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.thoroughfareTypeAbbreviations, string)
 
     @staticmethod
-    def identifyThoroughfareSuffix(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_thoroughfare_suffix(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.thoroughfareSuffixAbbreviations, string)
 
     @staticmethod
-    def identifyState(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_state(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.stateAbbreviations, string)
 
     @staticmethod
-    def identifyBuildingType(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_building_type(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
-    def identifyBuildingTypes(string):
-        return SanitationUtils.identifyAbbreviations(
+    def identify_building_types(string):
+        return SanitationUtils.identify_abbreviations(
             AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
-    def identifyDeliveryType(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_delivery_type(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.deliveryTypeAbbreviations, string)
 
     @staticmethod
-    def identifyCountry(string):
-        return SanitationUtils.identifyAbbreviation(
+    def identify_country(string):
+        return SanitationUtils.identify_abbreviation(
             AddressUtils.countryAbbreviations, string)
 
     @staticmethod
     def get_floor(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.floorLevelRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if(match_dict):
-            floor_type = AddressUtils.identifyFloor(
+            floor_type = AddressUtils.identify_floor(
                 match_dict.get('floor_type'))
             floor_number = match_dict.get('floor_number')
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint(
+                SanitationUtils.safe_print(
                     "FOUND FLOOR", floor_type, floor_number)
             return floor_type, floor_number
         return None
 
     @staticmethod
-    def getSubunitType(token):
+    def get_subunit_type(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.subunitTypeTypeRegexNamed
             ),
             token
@@ -1338,62 +1340,62 @@ class AddressUtils:
             return subunit_type
 
     @staticmethod
-    def getSubunit(token):
+    def get_subunit(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.subunitRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if(match_dict and match_dict.get('subunit_type') and match_dict.get('subunit_number')):
-            subunit_type = AddressUtils.identifySubunit(
+            subunit_type = AddressUtils.identify_subunit(
                 match_dict.get('subunit_type'))
             subunit_number = match_dict.get('subunit_number')
             subunit = (subunit_type, subunit_number)
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND SUBUNIT", subunit)
+                SanitationUtils.safe_print("FOUND SUBUNIT", subunit)
             return subunit
         return None
 
     @staticmethod
-    def getWeakSubunit(token):
+    def get_weak_subunit(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.weakSubunitRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if(match_dict and match_dict.get('weak_subunit_type') and match_dict.get('weak_subunit_number')):
-            subunit_type = AddressUtils.identifySubunit(
+            subunit_type = AddressUtils.identify_subunit(
                 match_dict.get('weak_subunit_type'))
             subunit_number = match_dict.get('weak_subunit_number')
             subunit = (subunit_type, subunit_number)
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
+                SanitationUtils.safe_print("FOUND WEAK SUBUNIT", subunit)
             return subunit
         return None
 
     @staticmethod
-    def getThoroughfareType(token):
+    def get_thoroughfare_type(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.thoroughfareTypeRegexNamed
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('thoroughfare_type'):
-            thoroughfare_type = AddressUtils.identifyThoroughfareType(
+            thoroughfare_type = AddressUtils.identify_thoroughfare_type(
                 match_dict.get('thoroughfare_type')
             )
             return thoroughfare_type
 
     @staticmethod
-    def getThoroughfare(token):
+    def get_thoroughfare(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.thoroughfareRegex
             ),
             token
@@ -1401,15 +1403,15 @@ class AddressUtils:
         match_dict = match.groupdict() if match else None
         if(match_dict and match_dict.get('thoroughfare_name') and match_dict.get('thoroughfare_type')):
             thoroughfare_name = match_dict.get('thoroughfare_name')
-            thoroughfare_type = AddressUtils.identifyThoroughfareType(
+            thoroughfare_type = AddressUtils.identify_thoroughfare_type(
                 match_dict.get('thoroughfare_type')
             )
-            thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
+            thoroughfare_suffix = AddressUtils.identify_thoroughfare_suffix(
                 match_dict.get('thoroughfare_suffix')
             )
             thoroughfare_number = match_dict.get('thoroughfare_number')
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint(
+                SanitationUtils.safe_print(
                     "FOUND THOROUGHFARE",
                     thoroughfare_number,
                     thoroughfare_name,
@@ -1422,7 +1424,7 @@ class AddressUtils:
     @staticmethod
     def get_building(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.buildingRegex
             ),
             token
@@ -1431,11 +1433,11 @@ class AddressUtils:
         if(match_dict):
             # print match_dict
             building_name = match_dict.get('building_name')
-            building_type = ''.join(AddressUtils.identifyBuildingTypes(
+            building_type = ''.join(AddressUtils.identify_building_types(
                 match_dict.get('building_type')
             ))
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint(
+                SanitationUtils.safe_print(
                     "FOUND BUILDING",
                     building_name,
                     building_type
@@ -1443,9 +1445,9 @@ class AddressUtils:
             return building_name, building_type
 
     @staticmethod
-    def getWeakThoroughfare(token):
+    def get_weak_thoroughfare(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.weakThoroughfareRegex
             ),
             token
@@ -1455,10 +1457,10 @@ class AddressUtils:
             # print match_dict
             weak_thoroughfare_name = match_dict.get('weak_thoroughfare_name')
             weak_thoroughfare_type = match_dict.get('weak_thoroughfare_type')
-            # weak_thoroughfare_type = AddressUtils.identifyThoroughfareType(
+            # weak_thoroughfare_type = AddressUtils.identify_thoroughfare_type(
             #     match_dict.get('weak_thoroughfare_type')
             # )
-            weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
+            weak_thoroughfare_suffix = AddressUtils.identify_thoroughfare_suffix(
                 match_dict.get('weak_thoroughfare_suffix')
             )
 
@@ -1471,9 +1473,9 @@ class AddressUtils:
             return weak_thoroughfare_name, weak_thoroughfare_type, weak_thoroughfare_suffix
 
     @staticmethod
-    def getState(token):
+    def get_state(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.stateRegex
             ),
             token
@@ -1482,55 +1484,56 @@ class AddressUtils:
         if(match_dict and match_dict.get('state_name')):
             state_name = match_dict.get('state_name')
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND STATE ", state_name)
+                SanitationUtils.safe_print("FOUND STATE ", state_name)
             return state_name
 
     @staticmethod
     def get_delivery(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.deliveryRegex
             ),
             token
         )
         match_dict = match.groupdict() if match else None
         if(match_dict):
-            delivery_type = AddressUtils.identifyDeliveryType(
+            delivery_type = AddressUtils.identify_delivery_type(
                 match_dict.get('delivery_type'))
             delivery_number = match_dict.get('delivery_number')
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint(
+                SanitationUtils.safe_print(
                     "FOUND DELIVERY ", delivery_type, delivery_number)
             return delivery_type, delivery_number
 
     @staticmethod
-    def getNumber(token):
+    def get_number(token):
         match = re.match(
-            SanitationUtils.wrapClearRegex(
+            SanitationUtils.wrap_clear_regex(
                 AddressUtils.multiNumberAllRegex
             ),
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            number = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            number = match_grps[0]
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND NUMBER ", repr(number))
-            number = SanitationUtils.stripAllWhitespace(number)
+                SanitationUtils.safe_print("FOUND NUMBER ", repr(number))
+            number = SanitationUtils.strip_all_whitespace(number)
             return number
 
     @staticmethod
-    def getSingleNumber(token):
+    def get_single_number(token):
         match = re.match(
             "(" + AddressUtils.numberRegex + ")",
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            number = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            number = match_grps[0]
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND SINGLE NUMBER ", repr(number))
-            number = SanitationUtils.stripAllWhitespace(number)
+                SanitationUtils.safe_print(
+                    "FOUND SINGLE NUMBER ", repr(number))
+            number = SanitationUtils.strip_all_whitespace(number)
             return number
 
     @staticmethod
@@ -1539,38 +1542,39 @@ class AddressUtils:
             "(" + AddressUtils.numberRegex + ")",
             token
         )
-        matchGrps = match.groups() if match else None
-        if(matchGrps):
-            number = matchGrps[0]
+        match_grps = match.groups() if match else None
+        if(match_grps):
+            number = match_grps[0]
             if Registrar.DEBUG_ADDRESS:
-                SanitationUtils.safePrint("FOUND SINGLE NUMBER ", repr(number))
-            number = SanitationUtils.stripAllWhitespace(number)
+                SanitationUtils.safe_print(
+                    "FOUND SINGLE NUMBER ", repr(number))
+            number = SanitationUtils.strip_all_whitespace(number)
             return number
 
     @staticmethod
-    def sanitizeState(string):
+    def sanitize_state(string):
         return SanitationUtils.compose(
-            SanitationUtils.stripLeadingWhitespace,
-            SanitationUtils.stripTailingWhitespace,
-            SanitationUtils.stripExtraWhitespace,
-            SanitationUtils.stripPunctuation,
-            SanitationUtils.toUpper
+            SanitationUtils.strip_leading_whitespace,
+            SanitationUtils.strip_tailing_whitespace,
+            SanitationUtils.strip_extra_whitespace,
+            SanitationUtils.strip_punctuation,
+            SanitationUtils.to_upper
         )(string)
 
     @staticmethod
-    def sanitizeAddressToken(string):
-        string = SanitationUtils.stripExtraWhitespace(string)
+    def sanitize_address_token(string):
+        string = SanitationUtils.strip_extra_whitespace(string)
         string = re.sub(AddressUtils.numberAlphaRegex +
                         SanitationUtils.clearStartRegex, r'\1\2', string)
         string = re.sub(AddressUtils.numberRangeRegex, r'\1-\2', string)
         if Registrar.DEBUG_UTILS:
-            SanitationUtils.safePrint("sanitizeAddressToken", string)
+            SanitationUtils.safe_print("sanitize_address_token", string)
         return string
 
     @staticmethod
-    def tokenizeAddress(string):
+    def tokenize_address(string):
         # if Registrar.DEBUG_ADDRESS:
-        #     SanitationUtils.safePrint("in tokenizeAddress")
+        #     SanitationUtils.safe_print("in tokenize_address")
         matches = re.findall(
             AddressUtils.addressTokenRegex,
             string.upper()
@@ -1579,14 +1583,14 @@ class AddressUtils:
         #     for match in matches:
         #         print repr(match)
         return map(
-            lambda match: AddressUtils.sanitizeAddressToken(match[0]),
+            lambda match: AddressUtils.sanitize_address_token(match[0]),
             matches
         )
 
     @staticmethod
     def address_remove_end_word(string, word):
-        string_layout = AddressUtils.tokenizeAddress(string)
-        word_layout = AddressUtils.tokenizeAddress(word)
+        string_layout = AddressUtils.tokenize_address(string)
+        word_layout = AddressUtils.tokenize_address(word)
         if not(word_layout and string_layout):
             return string
         for i, word in enumerate(reversed(word_layout)):
@@ -1621,10 +1625,10 @@ class AddressUtils:
 #     # print "stateRegex", AddressUtils.stateRegex
 #     # print "delimeterRegex", AddressUtils.delimeterRegex
 #
-#     # print AddressUtils.getSubunit("SHOP 4 A")
+#     # print AddressUtils.get_subunit("SHOP 4 A")
 #     # print AddressUtils.get_floor("LEVEL 8")
-#     print AddressUtils.tokenizeAddress("BROADWAY FAIR SHOPPING CTR")
+#     print AddressUtils.tokenize_address("BROADWAY FAIR SHOPPING CTR")
 #     print AddressUtils.get_building("BROADWAY FAIR SHOPPING CTR")
 #     print AddressUtils.get_building("BROADWAY FAIR SHOPPING")
-#     print NameUtils.getMultiName("BROADWAY")
+#     print NameUtils.get_multi_name("BROADWAY")
 #

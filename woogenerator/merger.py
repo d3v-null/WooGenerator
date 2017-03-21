@@ -1,36 +1,35 @@
 # pylint: disable=too-many-lines
-"""
-Module for updating woocommerce and ACT databases from ACT import file.
-"""
+""" Module for updating woocommerce and ACT databases from ACT import file. """
 # TODO: Fix too-many-lines
 
-from pprint import pprint
-from collections import OrderedDict
+import argparse
+import io
 import os
-import traceback
-from bisect import insort
 import re
 import time
+import traceback
 import zipfile
-import io
+from bisect import insort
+from collections import OrderedDict
+from pprint import pprint
 
-import yaml
 import unicodecsv
-import argparse
+import yaml
+from __init__ import MODULE_LOCATION, MODULE_PATH
 from sshtunnel import check_address
-
-from __init__ import MODULE_PATH, MODULE_LOCATION
-from woogenerator.utils import SanitationUtils, TimeUtils, HtmlReporter
-from woogenerator.utils import Registrar, debugUtils, ProgressCounter
-from woogenerator.matching import Match, MatchList, ConflictingMatchList
-from woogenerator.matching import UsernameMatcher, CardMatcher, NocardEmailMatcher, EmailMatcher
-from woogenerator.parsing.user import CSVParse_User, UsrObjList
 from woogenerator.coldata import ColData_User
-from woogenerator.sync_client_user import UsrSyncClient_SSH_ACT, UsrSyncClient_SQL_WP
-from woogenerator.sync_client_user import UsrSyncClient_WP
-from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
+from woogenerator.matching import (CardMatcher, ConflictingMatchList,
+                                   EmailMatcher, Match, MatchList,
+                                   NocardEmailMatcher, UsernameMatcher)
+from woogenerator.parsing.user import CSVParse_User, UsrObjList
+from woogenerator.sync_client_user import (UsrSyncClient_SQL_WP,
+                                           UsrSyncClient_SSH_ACT,
+                                           UsrSyncClient_WP)
+from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
+                                SanitationUtils, TimeUtils, debugUtils)
 
 
 def timediff(settings):
@@ -519,7 +518,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             for line in filter_file_obj
                         ]
                 except IOError as exc:
-                    SanitationUtils.safePrint(
+                    SanitationUtils.safe_print(
                         "could not open %s file [%s] from %s" % (
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
@@ -557,8 +556,8 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             try:
                 check_address(getattr(settings, host))
             except AttributeError:
-                Registrar.registerError("host not specified in settings: %s" %
-                                        host)
+                Registrar.register_error("host not specified in settings: %s" %
+                                         host)
             except Exception as exc:
                 raise UserWarning("Host must be valid: %s [%s = %s]" % (
                     str(exc), host, repr(getattr(settings, host))))
@@ -586,14 +585,14 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             client.analyse_remote(
                 sa_parser, limit=settings.limit, filterItems=filter_items)
 
-            sa_parser.getObjList().export_items(
+            sa_parser.get_obj_list().export_items(
                 os.path.join(settings.in_folder, s_x_filename),
                 ColData_User.get_wp_import_col_names())
 
     else:
         sa_parser.analyse_file(sa_path, sa_encoding)
 
-    # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+    # CSVParse_User.print_basic_columns( list(chain( *saParser.emails.values() )) )
 
     #########################################
     # Generate and Analyse ACT CSV files using shell
@@ -623,7 +622,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         ma_parser.analyse_file(
             ma_path, dialect_suggestion='act_out', encoding=ma_encoding)
 
-    # CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
+    # CSVParse_User.print_basic_columns(  saParser.roles['WP'] )
     #
     # exit()
     # quit()
@@ -769,9 +768,9 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
         for count, match in enumerate(global_matches):
             if Registrar.DEBUG_PROGRESS:
-                sync_progress_counter.maybePrintUpdate(count)
+                sync_progress_counter.maybe_print_update(count)
                 # print "examining globalMatch %d" % count
-                # # print SanitationUtils.safePrint( match.tabulate(tablefmt = 'simple'))
+                # # print SanitationUtils.safe_print( match.tabulate(tablefmt = 'simple'))
                 # print repr(match)
 
             m_object = match.m_objects[0]
@@ -782,7 +781,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
             # if(Registrar.DEBUG_MESSAGE):
             #     print "examining SyncUpdate"
-            #     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
+            #     SanitationUtils.safe_print( syncUpdate.tabulate(tablefmt = 'simple'))
 
             if sync_update.m_updated and sync_update.m_deltas:
                 insort(m_delta_updates, sync_update)
@@ -794,19 +793,19 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                 continue
 
             if sync_update.s_updated:
-                sync_slave_updates = sync_update.getSlaveUpdates()
+                sync_slave_updates = sync_update.get_slave_updates()
                 if 'E-mail' in sync_slave_updates:
                     new_email = sync_slave_updates['E-mail']
                     if new_email in sa_parser.emails:
                         m_objects = [m_object]
                         s_objects = [s_object] + sa_parser.emails[new_email]
-                        SanitationUtils.safePrint("duplicate emails",
-                                                  m_objects, s_objects)
+                        SanitationUtils.safe_print("duplicate emails",
+                                                   m_objects, s_objects)
                         try:
                             email_conflict_matches.add_match(
                                 Match(m_objects, s_objects))
                         except Exception as exc:
-                            SanitationUtils.safePrint(
+                            SanitationUtils.safe_print(
                                 ("something happened adding an email "
                                  "conflict, new_email: %s ; exception: %s") %
                                 (new_email, exc))
@@ -1342,7 +1341,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     slave_failures = []
 
     if all_updates:
-        Registrar.registerProgress("UPDATING %d RECORDS" % len(all_updates))
+        Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
         if args.ask_before_update:
             try:
@@ -1362,31 +1361,33 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
-                    update_progress_counter.maybePrintUpdate(count)
+                    update_progress_counter.maybe_print_update(count)
                 # if update.wpid == '1':
                 #     print repr(update.wpid)
                 #     continue
                 if update_master and update.m_updated:
                     try:
-                        update.updateMaster(master_client)
+                        update.update_master(master_client)
                     except Exception as exc:
                         master_failures.append({
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerce_unicode(update.new_m_object),
+                            SanitationUtils.coerce_unicode(
+                                update.new_m_object),
                             'slave':
-                            SanitationUtils.coerce_unicode(update.new_s_object),
+                            SanitationUtils.coerce_unicode(
+                                update.new_s_object),
                             'mchanges':
                             SanitationUtils.coerce_unicode(
-                                update.getMasterUpdates()),
+                                update.get_master_updates()),
                             'schanges':
                             SanitationUtils.coerce_unicode(
-                                update.getSlaveUpdates()),
+                                update.get_slave_updates()),
                             'exception':
                             repr(exc)
                         })
-                        Registrar.registerError(
+                        Registrar.register_error(
                             "ERROR UPDATING MASTER (%s): %s\n%s" %
                             (update.master_id, repr(exc),
                              traceback.format_exc()))
@@ -1394,36 +1395,38 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                         # continue
                 if update_slave and update.s_updated:
                     try:
-                        update.updateSlave(slave_client)
+                        update.update_slave(slave_client)
                     except Exception as exc:
                         slave_failures.append({
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerce_unicode(update.new_m_object),
+                            SanitationUtils.coerce_unicode(
+                                update.new_m_object),
                             'slave':
-                            SanitationUtils.coerce_unicode(update.new_s_object),
+                            SanitationUtils.coerce_unicode(
+                                update.new_s_object),
                             'mchanges':
                             SanitationUtils.coerce_unicode(
-                                update.getMasterUpdates()),
+                                update.get_master_updates()),
                             'schanges':
                             SanitationUtils.coerce_unicode(
-                                update.getSlaveUpdates()),
+                                update.get_slave_updates()),
                             'exception':
                             repr(exc)
                         })
-                        Registrar.registerError(
+                        Registrar.register_error(
                             "ERROR UPDATING SLAVE (%s): %s\n%s" %
                             (update.slave_id, repr(exc),
                              traceback.format_exc()))
 
     def output_failures(failures, file_path):
         """
-        outputs a list of lists of failures as a csv file to the path specified
+        Output a list of lists of failures as a csv file to the path specified.
         """
         with open(file_path, 'w+') as out_file:
             for failure in failures:
-                Registrar.registerError(failure)
+                Registrar.register_error(failure)
             dictwriter = unicodecsv.DictWriter(
                 out_file,
                 fieldnames=[
@@ -1437,7 +1440,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     output_failures(master_failures, settings.m_fail_path)
     output_failures(slave_failures, settings.s_fail_path)
 
-    # Registrar.registerError('testing errors')
+    # Registrar.register_error('testing errors')
 
 
 def catch_main():
@@ -1478,10 +1481,10 @@ def catch_main():
     except SystemExit:
         exit()
     except:
-        Registrar.registerError(traceback.format_exc())
+        Registrar.register_error(traceback.format_exc())
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
-        for source, messages in Registrar.getMessageItems(1).items():
+        for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
             log_file.writelines([
@@ -1506,7 +1509,7 @@ def catch_main():
             except Exception as exc:
                 if exc:
                     pass
-        Registrar.registerMessage('wrote file %s' % settings.zip_path)
+        Registrar.register_message('wrote file %s' % settings.zip_path)
 
 
 if __name__ == '__main__':

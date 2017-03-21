@@ -179,7 +179,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         ) as sqlClient:
             sqlClient.analyse_remote(saParser, since='2016-01-01 00:00:00')
 
-        # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
+        # CSVParse_User.print_basic_columns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
 
     @skip

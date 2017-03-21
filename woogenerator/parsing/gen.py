@@ -41,9 +41,9 @@ class ImportGenMixin(object):
     codesumKey = 'codesum'
     descsumKey = 'descsum'
     namesumKey = 'itemsum'
-    namesum = descriptorUtils.safeKeyProperty(namesumKey)
-    codesum = descriptorUtils.safeKeyProperty(codesumKey)
-    descsum = descriptorUtils.safeKeyProperty(descsumKey)
+    namesum = descriptorUtils.safe_key_property(namesumKey)
+    codesum = descriptorUtils.safe_key_property(codesumKey)
+    descsum = descriptorUtils.safe_key_property(descsumKey)
 
     verifyMetaKeys = [
         namesumKey,
@@ -53,7 +53,7 @@ class ImportGenMixin(object):
 
     # def __init__(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
-    #         self.registerMessage(' ')
+    #         self.register_message(' ')
     #     super(ImportGenMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -86,9 +86,9 @@ class ImportGenFlat(ImportFlat, ImportGenMixin):
     "Base class for flat generator classes"
     # def __init__(self, *args, **kwargs):
     #     if self.DEBUG_MRO:
-    #         self.registerMessage(' ')
+    #         self.register_message(' ')
     #     super(ImportGenFlat, self).__init__(*args, **kwargs)
-    # self.verifyMeta()
+    # self.verify_meta()
 
 
 class ImportGenObject(ImportTreeObject, ImportGenMixin):
@@ -102,11 +102,11 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 
     verifyMetaKeys = ImportTreeObject.verifyMetaKeys + ImportGenMixin.verifyMetaKeys
 
-    code = descriptorUtils.safeKeyProperty(codeKey)
-    name = descriptorUtils.safeKeyProperty(nameKey)
-    fullname = descriptorUtils.safeKeyProperty(fullnameKey)
-    description = descriptorUtils.safeKeyProperty(descriptionKey)
-    fullnamesum = descriptorUtils.safeKeyProperty(fullnamesumKey)
+    code = descriptorUtils.safe_key_property(codeKey)
+    name = descriptorUtils.safe_key_property(nameKey)
+    fullname = descriptorUtils.safe_key_property(fullnameKey)
+    description = descriptorUtils.safe_key_property(descriptionKey)
+    fullnamesum = descriptorUtils.safe_key_property(fullnamesumKey)
 
     name_delimeter = ' '
 
@@ -114,7 +114,7 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage('ImportGenObject')
+            self.register_message('ImportGenObject')
         self.subs = kwargs.pop('subs', {})
         self.regex = kwargs.pop('regex', {})
         super(ImportGenObject, self).__init__(*args, **kwargs)
@@ -150,16 +150,16 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     def name_ancestors(self):
         return self.ancestors
 
-    def getNameAncestors(self):
+    def get_name_ancestors(self):
         raise DeprecationWarning(
-            "use .name_ancestors instead of .getNameAncestors()")
+            "use .name_ancestors instead of .get_name_ancestors()")
         return self.name_ancestors
         # return self.getAncestors()
 
     def get_code_delimeter(self, other):
         return ''
 
-    def joinCodes(self, ancestors):
+    def join_codes(self, ancestors):
         code_ancestors = [
             ancestor for ancestor in ancestors + [self] if ancestor.code]
         if not code_ancestors:
@@ -172,11 +172,11 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
             prev = this
         return codesum
 
-    def joinDescs(self, ancestors):
+    def join_descs(self, ancestors):
         if self.DEBUG_GEN:
-            self.registerMessage(
+            self.register_message(
                 u"given description: {}".format(self.description))
-            self.registerMessage(u"self: {}".format(self.items()))
+            self.register_message(u"self: {}".format(self.items()))
         if self.description:
             return self.description
         fullnames = [self.fullname]
@@ -196,19 +196,19 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     # def name_delimeter(self):
     #     return ' '
 
-    def getNameDelimeter(self):
+    def get_name_delimeter(self):
         raise DeprecationWarning(
-            "use .name_delimeter instead of .getNameDelimeter()")
+            "use .name_delimeter instead of .get_name_delimeter()")
         return ' '
 
-    def joinNames(self, ancestors):
+    def join_names(self, ancestors):
         ancestors_self = ancestors + [self]
         names = listUtils.filter_unique_true(
             map(lambda x: x.name, ancestors_self))
         name_delimeter = self.name_delimeter
         return name_delimeter.join(names)
 
-    def joinFullnames(self, ancestors):
+    def join_fullnames(self, ancestors):
         ancestors_self = ancestors + [self]
         names = listUtils.filter_unique_true(
             map(lambda x: x.fullname, ancestors_self))
@@ -218,55 +218,55 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     def change_name(self, name):
         return SanitationUtils.shorten(self.regex, self.subs, name)
 
-    def processMeta(self):
+    def process_meta(self):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        # super(ImportGenObject, self).processMeta()
+            self.register_message(' ')
+        # super(ImportGenObject, self).process_meta()
         meta = self.meta
 
         try:
             self.fullname = meta[0]
         except IndexError:
             self.fullname = ""
-        # self.registerMessage("fullname: {}".format(self.fullname ) )
+        # self.register_message("fullname: {}".format(self.fullname ) )
 
         try:
             self.code = meta[1]
         except IndexError:
             self.code = ""
-        # self.registerMessage("code: {}".format(self.code ) )
+        # self.register_message("code: {}".format(self.code ) )
 
         ancestors = self.ancestors
         if self.DEBUG_GEN:
-            self.registerMessage('ancestors:')
+            self.register_message('ancestors:')
             for ancestor in ancestors:
-                self.registerMessage(u"-> {}".format(ancestor))
+                self.register_message(u"-> {}".format(ancestor))
 
-        codesum = self.joinCodes(ancestors)
+        codesum = self.join_codes(ancestors)
         if self.DEBUG_GEN:
-            self.registerMessage(u"codesum: {}".format(codesum))
+            self.register_message(u"codesum: {}".format(codesum))
         self.codesum = codesum
 
-        descsum = self.joinDescs(ancestors)
+        descsum = self.join_descs(ancestors)
         if self.DEBUG_GEN:
-            self.registerMessage(u"descsum: {}".format(descsum))
+            self.register_message(u"descsum: {}".format(descsum))
         self.descsum = descsum
 
         name = self.change_name(self.fullname)
         if self.DEBUG_GEN:
-            self.registerMessage(u"name: {}".format(name))
+            self.register_message(u"name: {}".format(name))
         self.name = name
 
         name_ancestors = self.name_ancestors
 
-        namesum = self.joinNames(name_ancestors)
+        namesum = self.join_names(name_ancestors)
         if self.DEBUG_GEN:
-            self.registerMessage(u"namesum: {}".format(namesum))
+            self.register_message(u"namesum: {}".format(namesum))
         self.namesum = namesum
 
-        fullnamesum = self.joinFullnames(name_ancestors)
+        fullnamesum = self.join_fullnames(name_ancestors)
         if self.DEBUG_GEN:
-            self.registerMessage(u"fullnamesum: {}".format(fullnamesum))
+            self.register_message(u"fullnamesum: {}".format(fullnamesum))
         self.fullnamesum = fullnamesum
 
 
@@ -277,10 +277,10 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
     def name_ancestors(self):
         return self.itemAncestors
 
-    def getNameAncestors(self):
+    def get_name_ancestors(self):
         exc = DeprecationWarning(
-            "use .name_ancestors instead of .getNameAncestors()")
-        self.registerError(exc)
+            "use .name_ancestors instead of .get_name_ancestors()")
+        self.register_error(exc)
         return self.name_ancestors
         # return self.getItemAncestors()
 
@@ -295,14 +295,14 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
 class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
 
     namesumKey = 'taxosum'
-    namesum = descriptorUtils.safeKeyProperty(namesumKey)
+    namesum = descriptorUtils.safe_key_property(namesumKey)
 
     name_delimeter = ' > '
 
-    def getNameDelimeter(self):
+    def get_name_delimeter(self):
         exc = DeprecationWarning(
-            "use .name_delimeter instead of .getNameDelimeter()")
-        self.registerError(exc)
+            "use .name_delimeter instead of .get_name_delimeter()")
+        self.register_error(exc)
         return ' > '
 
 
@@ -322,7 +322,7 @@ class CSVParse_Gen_Mixin(object):
         return object_data.codesum
 
     @classmethod
-    def getNameSum(cls, object_data):
+    def get_name_sum(cls, object_data):
         assert issubclass(type(object_data), ImportGenMixin)
         return object_data.namesum
 
@@ -331,18 +331,18 @@ class CSVParse_Gen_Mixin(object):
         assert issubclass(type(object_data), ImportGenObject)
         return object_data.fullnamesum
 
-    def sanitizeCell(self, cell):
-        return SanitationUtils.sanitizeCell(cell)
+    def sanitize_cell(self, cell):
+        return SanitationUtils.sanitize_cell(cell)
 
-    def getParserData(self, **kwargs):
+    def get_parser_data(self, **kwargs):
         if Registrar.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.register_message(' ')
         defaults = {
             self.objectContainer.namesumKey: '',
             self.objectContainer.codesumKey: '',
             self.objectContainer.descsumKey: ''
         }
-        # super_data = super(CSVParse_Gen_Mixin, self).getParserData(**kwargs)
+        # super_data = super(CSVParse_Gen_Mixin, self).get_parser_data(**kwargs)
         # super_data = {}
         # defaults.update(super_data)
         return defaults
@@ -352,11 +352,11 @@ class CSVParse_Gen_Mixin(object):
 class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin):
     """ Parser for tree-based generator structure """
 
-    sanitizeCell = CSVParse_Gen_Mixin.sanitizeCell
+    sanitize_cell = CSVParse_Gen_Mixin.sanitize_cell
 
     def __init__(self, cols, defaults, schema, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage('CSVParse_Gen_Tree')
+            self.register_message('CSVParse_Gen_Tree')
         taxo_subs = kwargs.pop('taxo_subs', {})
         item_subs = kwargs.pop('item_subs', {})
         extra_defaults = OrderedDict([
@@ -394,54 +394,56 @@ class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin):
         assert meta_width >= 2, "meta_width must be greater than 2 for a GEN subclass"
 
         self.schema = schema
-        self.taxo_subs = listUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
-        self.item_subs = listUtils.combine_ordered_dicts(item_subs, extra_item_subs)
+        self.taxo_subs = listUtils.combine_ordered_dicts(
+            taxo_subs, extra_taxo_subs)
+        self.item_subs = listUtils.combine_ordered_dicts(
+            item_subs, extra_item_subs)
         self.taxoRegex = SanitationUtils.compile_regex(self.taxo_subs)
         self.itemRegex = SanitationUtils.compile_regex(self.item_subs)
 
         if self.DEBUG_GEN:
-            self.registerMessage("taxoDepth: {}".format(
+            self.register_message("taxoDepth: {}".format(
                 self.taxoDepth), 'CSVParse_Gen_Tree.__init__')
-            self.registerMessage("itemDepth: {}".format(
+            self.register_message("itemDepth: {}".format(
                 self.itemDepth), 'CSVParse_Gen_Tree.__init__')
-            self.registerMessage("maxDepth: {}".format(
+            self.register_message("maxDepth: {}".format(
                 self.maxDepth), 'CSVParse_Gen_Tree.__init__')
-            self.registerMessage("meta_width: {}".format(
+            self.register_message("meta_width: {}".format(
                 self.meta_width), 'CSVParse_Gen_Tree.__init__')
-            self.registerMessage("schema: {}".format(
+            self.register_message("schema: {}".format(
                 self.schema), 'CSVParse_Gen_Tree.__init__')
 
-    def getNewObjContainer(self, all_data, **kwargs):
+    def get_new_obj_container(self, all_data, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        container = super(CSVParse_Gen_Tree, self).getNewObjContainer(
+            self.register_message(' ')
+        container = super(CSVParse_Gen_Tree, self).get_new_obj_container(
             all_data, **kwargs)
         if issubclass(container, ImportTreeItem):
             if self.DEBUG_GEN:
-                self.registerMessage("super resulted in item container")
+                self.register_message("super resulted in item container")
             itemtype = all_data.get(self.schema, '')
             if self.DEBUG_GEN:
-                self.registerMessage("itemtype: {}".format(itemtype))
+                self.register_message("itemtype: {}".format(itemtype))
             if itemtype in self.containers.keys():
                 container = self.containers[itemtype]
         else:
             if self.DEBUG_GEN:
-                self.registerMessage("super resulted in non-item container")
+                self.register_message("super resulted in non-item container")
         return container
 
-    def getParserData(self, **kwargs):
-        super_data = CSVParse_Gen_Mixin.getParserData(self, **kwargs)
-        super_data.update(CSVParse_Tree.getParserData(self, **kwargs))
+    def get_parser_data(self, **kwargs):
+        super_data = CSVParse_Gen_Mixin.get_parser_data(self, **kwargs)
+        super_data.update(CSVParse_Tree.get_parser_data(self, **kwargs))
         return super_data
 
     # def clear_transients(self):
     #     super(CSVParse_Gen_Tree, self).clear_transients()
         # CSVParse_Shop.clear_transients(self)
 
-    # def registerItem(self, itemData):
-    #     super(CSVParse_Gen_Tree, self).registerItem(itemData)
+    # def register_item(self, itemData):
+    #     super(CSVParse_Gen_Tree, self).register_item(itemData)
     #     if itemData.isProduct:
-    #         self.registerProduct(itemData)
+    #         self.register_product(itemData)
 
     def change_item(self, item):
         return SanitationUtils.shorten(self.itemRegex, self.item_subs, item)
@@ -451,10 +453,10 @@ class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin):
         return SanitationUtils.shorten(
             SanitationUtils.compile_regex(subs), subs, item)
 
-    def getKwargs(self, all_data, container, **kwargs):
+    def get_kwargs(self, all_data, container, **kwargs):
         if self.DEBUG_MRO:
-            self.registerMessage(' ')
-        kwargs = super(CSVParse_Gen_Tree, self).getKwargs(
+            self.register_message(' ')
+        kwargs = super(CSVParse_Gen_Tree, self).get_kwargs(
             all_data, container, **kwargs)
         assert issubclass(container, ImportGenObject)
         if issubclass(container, self.taxoContainer):
@@ -471,5 +473,5 @@ class CSVParse_Gen_Tree(CSVParse_Tree, CSVParse_Gen_Mixin):
             assert kwargs[key] is not None
         return kwargs
 
-    # def newObject(self, rowcount, row, **kwargs):
-    # return super(CSVParse_Gen_Tree, self).newObject(rowcount, row, **kwargs)
+    # def new_object(self, rowcount, row, **kwargs):
+    # return super(CSVParse_Gen_Tree, self).new_object(rowcount, row, **kwargs)

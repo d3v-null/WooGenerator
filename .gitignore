@@ -123,3 +123,7 @@ woogenerator.pylint
 bad_variable_names.txt
 
 bad_variable_names.txt
+
+bad_imports.txt
+
+bad_variable_names.txt

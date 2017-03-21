@@ -47,10 +47,10 @@ class ImportSpecialObject(ImportTreeObject, ImportSpecialMixin):
 class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     container = SpecialGruopList
 
-    ID = descriptorUtils.safeKeyProperty(ImportSpecialMixin.groupIDKey)
-    start_time = descriptorUtils.safeKeyProperty(
+    ID = descriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
+    start_time = descriptorUtils.safe_key_property(
         ImportSpecialMixin.startTimeKey)
-    end_time = descriptorUtils.safeKeyProperty(ImportSpecialMixin.endTimeKey)
+    end_time = descriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
     verifyMetaKeys = [
         ImportSpecialMixin.startTimeKey,
         ImportSpecialMixin.endTimeKey,
@@ -89,7 +89,8 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
 
 
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
-    ruleCode = descriptorUtils.safeKeyProperty(ImportSpecialMixin.ruleCodeKey)
+    ruleCode = descriptorUtils.safe_key_property(
+        ImportSpecialMixin.ruleCodeKey)
     verifyMetaKeys = [
         ImportSpecialMixin.ruleCodeKey
     ]
@@ -126,7 +127,7 @@ class CSVParse_Special(CSVParse_Tree):
 
     def __init__(self, cols=None, defaults=None):
         if self.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.register_message(' ')
         if cols is None:
             cols = []
         if defaults is None:
@@ -156,23 +157,23 @@ class CSVParse_Special(CSVParse_Tree):
             itemDepth=1,
             meta_width=1
         )
-        self.objectIndexer = self.getObjectID
-        self.registerItem = self.registerRule
-        self.registerTaxo = self.registerRuleGroup
+        self.objectIndexer = self.get_object_id
+        self.register_item = self.register_rule
+        self.register_taxo = self.register_rule_group
 
     def clear_transients(self):
         if self.DEBUG_MRO:
-            Registrar.registerMessage(' ')
+            Registrar.register_message(' ')
         super(CSVParse_Special, self).clear_transients()
         self.ruleGroups = OrderedDict()
         self.rules = OrderedDict()
 
-    def registerRuleGroup(self, groupData):
+    def register_rule_group(self, groupData):
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage(
+            Registrar.register_message(
                 "registering rule group: %s", groupData.identifier)
         assert groupData.isTaxo
-        self.registerAnything(
+        self.register_anything(
             groupData,
             self.ruleGroups,
             indexer=self.objectIndexer,
@@ -181,12 +182,12 @@ class CSVParse_Special(CSVParse_Tree):
             registerName='rule groups'
         )
 
-    def registerRule(self, ruleData):
+    def register_rule(self, ruleData):
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage(
+            Registrar.register_message(
                 "registering rule: %s", ruleData.identifier)
         assert ruleData.isItem
-        self.registerAnything(
+        self.register_anything(
             ruleData,
             self.rules,
             indexer=self.objectIndexer,
@@ -203,7 +204,7 @@ class CSVParse_Special(CSVParse_Tree):
             # TODO: may have to sort this
             response = all_future[0]
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage("returning %s" % (response))
+            Registrar.register_message("returning %s" % (response))
         return response
 
     def all_future(self):
@@ -247,7 +248,7 @@ class CSVParse_Special(CSVParse_Tree):
             "2016-08-12", TimeUtils.dateFormat))
         # modes: ['override', 'auto_next', 'all_future']
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage("starting")
+            Registrar.register_message("starting")
         response = []
         if specials_mode == 'override':
             if current_special and current_special in self.ruleGroups.keys():
@@ -261,16 +262,16 @@ class CSVParse_Special(CSVParse_Tree):
             if all_future:
                 response = all_future
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage(
+            Registrar.register_message(
                 "returning %s <- %s, %s" % (response, specials_mode, current_special))
         return response
 
     @classmethod
-    def getObjectID(cls, object_data):
+    def get_object_id(cls, object_data):
         return object_data.ID
 
-    def sanitizeCell(self, cell):
-        return SanitationUtils.sanitizeSpecialCell(cell)
+    def sanitize_cell(self, cell):
+        return SanitationUtils.sanitize_special_cell(cell)
 
     def tabulate(self, tablefmt=None):
         if not tablefmt:

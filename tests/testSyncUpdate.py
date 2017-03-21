@@ -363,7 +363,7 @@ class testSyncUpdate_Usr(TestCase):
         print "slave old:  ", syncUpdate.old_s_object['Name'], '|', syncUpdate.old_s_object['Contact']
         print "slave new:  ", syncUpdate.new_s_object['Name'], '|', syncUpdate.new_s_object['Contact']
         print syncUpdate.tabulate(tablefmt='simple')
-        print syncUpdate.getMasterUpdates()
+        print syncUpdate.get_master_updates()
 
     def test_similarURL(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)

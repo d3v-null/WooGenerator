@@ -23,8 +23,8 @@ class test_sanitation_utils(TestCase):
     def test_similarURL(self):
         url1 = 'http://www.technotan.com.au'
         url2 = 'www.technotan.com.au'
-        self.assertEqual(SanitationUtils.similarURLComparison(url1), url2)
-        self.assertEqual(SanitationUtils.similarURLComparison(url2), url2)
+        self.assertEqual(SanitationUtils.similar_url_comparison(url1), url2)
+        self.assertEqual(SanitationUtils.similar_url_comparison(url2), url2)
 
     def test_findallEmails(self):
         email1 = "derwentx@gmail.com archive"
@@ -49,18 +49,18 @@ class test_sanitation_utils(TestCase):
 
     def test_sanitizeCell(self):
         url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
-        self.assertItemsEqual(url, SanitationUtils.sanitizeCell(url))
+        self.assertItemsEqual(url, SanitationUtils.sanitize_cell(url))
 
     def test_similarComparison(self):
         url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
-        self.assertItemsEqual(url, SanitationUtils.similarComparison(url))
+        self.assertItemsEqual(url, SanitationUtils.similar_comparison(url))
 
     def test_similarMarkupComparison(self):
         markup1 = 'Complete A Frame Assembly  (No Insert) - A-Frame Sign Parts - A-Frame Signs - Generic Signage'
         markup2 = '<p>Complete A Frame Assembly (No Insert) - A-Frame Sign Parts - A-Frame Signs - Generic Signage</p>\n'
         self.assertEqual(
-            SanitationUtils.similarMarkupComparison(markup1),
-            SanitationUtils.similarMarkupComparison(markup2)
+            SanitationUtils.similar_markup_comparison(markup1),
+            SanitationUtils.similar_markup_comparison(markup2)
         )
 
 if __name__ == '__main__':

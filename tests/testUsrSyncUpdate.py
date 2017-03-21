@@ -138,7 +138,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
             for count, update in enumerate(updates):
                 try:
-                    response = update.updateSlave(slaveClient)
+                    response = update.update_slave(slaveClient)
                     print "response (code) is %s" % response
                     assert response, "response should exist because update should not be empty. update: %s" % update.tabulate(
                         tablefmt="html")
@@ -151,11 +151,11 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                         'update': update,
                         'master': SanitationUtils.coerce_unicode(update.new_m_object),
                         'slave': SanitationUtils.coerce_unicode(update.new_s_object),
-                        'mchanges': SanitationUtils.coerce_unicode(update.getMasterUpdates()),
-                        'schanges': SanitationUtils.coerce_unicode(update.getSlaveUpdates()),
+                        'mchanges': SanitationUtils.coerce_unicode(update.get_master_updates()),
+                        'schanges': SanitationUtils.coerce_unicode(update.get_slave_updates()),
                         'exception': repr(exc)
                     })
-                    Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (
+                    Registrar.register_error("ERROR UPDATING SLAVE (%s): %s\n%s" % (
                         update.slave_id,
                         repr(exc),
                         traceback.format_exc()
