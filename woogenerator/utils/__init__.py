@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils module used by woogenerator """
+"""utils module used by woogenerator."""
 
 import sys
 import os

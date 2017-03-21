@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" helper classes for parsing files and data """
+"""helper classes for parsing files and data."""
 
 import sys
 import os
