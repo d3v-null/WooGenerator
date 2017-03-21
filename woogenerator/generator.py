@@ -30,7 +30,7 @@ from __init__ import MODULE_PATH, MODULE_LOCATION
 from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter
 from woogenerator.utils import HtmlReporter, Registrar
 from woogenerator.metagator import MetaGator
-from woogenerator.coldata import ColData_Woo, ColData_MYO, ColData_Base
+from woogenerator.coldata import ColData_Woo, ColData_MYO, ColDataBase
 from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
 from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from woogenerator.matching import MatchList
@@ -420,12 +420,12 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
     elif settings.schema in settings.woo_schemas:
         col_data_class = ColData_Woo
     else:
-        col_data_class = ColData_Base
+        col_data_class = ColDataBase
     settings.product_parser_args.update(**{
         'cols':
-        col_data_class.getImportCols(),
+        col_data_class.get_import_cols(),
         'defaults':
-        col_data_class.getDefaults(),
+        col_data_class.get_defaults(),
     })
     if settings.schema in settings.myo_schemas:
         product_parser_class = CSVParse_MYO
@@ -459,7 +459,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                 Registrar.registerMessage("analysing dprc rules")
                 client.analyse_remote(
                     parsers.dyn, settings.dprc_path, gid=settings.dprc_gid)
-                settings.product_parser_args['dprcRules'] = parsers.dyn.taxos
+                settings.product_parser_args['dprc_rules'] = parsers.dyn.taxos
 
                 Registrar.registerMessage("analysing dprp rules")
                 parsers.dyn.clearTransients()
@@ -495,7 +495,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
 
                     if current_special_groups:
                         settings.product_parser_args[
-                            'currentSpecialGroups'] = current_special_groups
+                            'current_special_groups'] = current_special_groups
                         settings.product_parser_args[
                             'add_special_categories'] = settings.add_special_categories
 
@@ -610,7 +610,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
         try:
             if settings.do_remeta_images:
                 metagator = MetaGator(img_raw_path)
-        except Exception, exc:
+        except Exception as exc:
             invalid_image(img, "error creating metagator: " + str(exc))
             continue
 
@@ -685,20 +685,20 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
     Registrar.registerProgress("Exporting info to spreadsheets")
 
     if settings.schema in settings.myo_schemas:
-        product_cols = ColData_MYO.getProductCols()
+        product_cols = ColData_MYO.get_product_cols()
         product_list = MYOProdList(parsers.product.products.values())
         product_list.exportItems(settings.myo_path,
-                                 ColData_Base.getColNames(product_cols))
+                                 ColDataBase.get_col_names(product_cols))
     elif settings.schema in settings.woo_schemas:
-        product_cols = ColData_Woo.getProductCols()
+        product_cols = ColData_Woo.get_product_cols()
 
         for col in settings.exclude_cols:
             if col in product_cols:
                 del product_cols[col]
 
-        attribute_cols = ColData_Woo.getAttributeCols(
+        attribute_cols = ColData_Woo.get_attribute_cols(
             parsers.product.attributes, parsers.product.vattributes)
-        product_colnames = ColData_Base.getColNames(
+        product_colnames = ColDataBase.get_col_names(
             listUtils.combineOrderedDicts(product_cols, attribute_cols))
 
         product_list = WooProdList(parsers.product.products.values())
@@ -706,11 +706,11 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
         # variations
 
-        variation_cols = ColData_Woo.getVariationCols()
+        variation_cols = ColData_Woo.get_variation_cols()
 
-        attribute_meta_cols = ColData_Woo.getAttributeMetaCols(
+        attribute_meta_cols = ColData_Woo.get_attribute_meta_cols(
             parsers.product.vattributes)
-        variation_col_names = ColData_Base.getColNames(
+        variation_col_names = ColDataBase.get_col_names(
             listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
 
         if parsers.product.variations:
@@ -719,18 +719,18 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
         if parsers.product.categories:
             # categories
-            category_cols = ColData_Woo.getCategoryCols()
+            category_cols = ColData_Woo.get_category_cols()
 
             category_list = WooCatList(parsers.product.categories.values())
             category_list.exportItems(settings.cat_path,
-                                      ColData_Base.getColNames(category_cols))
+                                      ColDataBase.get_col_names(category_cols))
 
         # specials
         if settings.do_specials:
             # current_special = settings.current_special
             current_special = None
-            if parsers.product.currentSpecialGroups:
-                current_special = parsers.product.currentSpecialGroups[0].ID
+            if parsers.product.current_special_groups:
+                current_special = parsers.product.current_special_groups[0].ID
             if current_special:
                 special_products = parsers.product.onspecial_products.values()
                 if special_products:
@@ -790,10 +790,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         config = yaml.load(stream)
 
         # overrides
-        if 'inFolder' in config.keys():
-            settings.in_folder = config['inFolder']
-        if 'outFolder' in config.keys():
-            settings.out_folder = config['outFolder']
+        if 'in_folder' in config.keys():
+            settings.in_folder = config['in_folder']
+        if 'out_folder' in config.keys():
+            settings.out_folder = config['out_folder']
         if 'logFolder' in config.keys():
             settings.log_folder = config['logFolder']
 
@@ -1044,15 +1044,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     }
 
     settings.api_product_parser_args = {
-        'importName': settings.import_name,
+        'import_name': settings.import_name,
         'itemDepth': settings.item_depth,
         'taxoDepth': settings.taxo_depth,
-        'cols': ColData_Woo.getImportCols(),
-        'defaults': ColData_Woo.getDefaults(),
+        'cols': ColData_Woo.get_import_cols(),
+        'defaults': ColData_Woo.get_defaults(),
     }
 
     settings.product_parser_args = {
-        'importName': settings.import_name,
+        'import_name': settings.import_name,
         'itemDepth': settings.item_depth,
         'taxoDepth': settings.taxo_depth,
     }
@@ -1062,7 +1062,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.checkEqual([category.namesum for category in category_list]):
+        if listUtils.checkEqual(
+                [category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
             category_name[:50], len(category_list), str(category_list))
@@ -1201,7 +1202,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             slaveless_category_matches.add_matches(
                 category_matcher.slaveless_matches)
 
-            sync_cols = ColData_Woo.getWPAPICategoryCols()
+            sync_cols = ColData_Woo.get_wpapi_category_cols()
 
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
@@ -1274,7 +1275,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         category = new_categories.pop(0)
                         if category.parent:
                             parent = category.parent
-                            if not parent.isRoot and not parent.WPID and parent in new_categories:
+                            if not parent.isRoot and not parent.wpid and parent in new_categories:
                                 new_categories.append(category)
                                 continue
 
@@ -1295,7 +1296,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             api_product_parser.processApiCategory(
                                 response_api_data)
                             api_cat_translation = OrderedDict()
-                            for key, data in ColData_Woo.getWPAPICategoryCols(
+                            for key, data in ColData_Woo.get_wpapi_category_cols(
                             ).items():
                                 try:
                                     wp_api_key = data['wp-api']['key']
@@ -1323,7 +1324,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             print "product parser"
             for key, category in parsers.product.categories.items():
                 print "%5s | %50s | %s" % (key, category.title[:50],
-                                           category.WPID)
+                                           category.wpid)
         if Registrar.DEBUG_CATS:
             print "api product parser info"
             print "there are %s slave categories registered" % len(
@@ -1345,7 +1346,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         slaveless_product_matches.add_matches(
             product_matcher.slaveless_matches)
 
-        sync_cols = ColData_Woo.getWPAPICols()
+        sync_cols = ColData_Woo.get_wpapi_cols()
         if Registrar.DEBUG_UPDATE:
             Registrar.registerMessage("sync_cols: %s" % repr(sync_cols))
 
@@ -1395,14 +1396,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     category_matcher.slaveless_matches)
 
                 master_categories = set([
-                    master_category.WPID
+                    master_category.wpid
                     for master_category in m_object.categories.values()
-                    if master_category.WPID
+                    if master_category.wpid
                 ])
                 slave_categories = set([
-                    slave_category.WPID
+                    slave_category.wpid
                     for slave_category in s_object.categories.values()
-                    if slave_category.WPID
+                    if slave_category.wpid
                 ])
 
                 if Registrar.DEBUG_CATS:
@@ -1593,9 +1594,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
-        # basic_cols = ColData_Woo.getBasicCols()
-        # csv_colnames = ColData_Woo.getColNames(
-        #     OrderedDict(basic_cols.items() + ColData_Woo.nameCols([
+        # basic_cols = ColData_Woo.get_basic_cols()
+        # csv_colnames = ColData_Woo.get_col_names(
+        #     OrderedDict(basic_cols.items() + ColData_Woo.name_cols([
         #         # 'address_reason',
         #         # 'name_reason',
         #         # 'Edited Name',
@@ -1619,10 +1620,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 ]
             )
 
-            delta_cols = ColData_Woo.getDeltaCols()
+            delta_cols = ColData_Woo.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColData_Woo.getBasicCols().items() + ColData_Woo.nameCols(
+                ColData_Woo.get_basic_cols().items() + ColData_Woo.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if s_delta_list:
@@ -1641,7 +1642,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if s_delta_list:
                 s_delta_list.exportItems(
                     settings.slave_delta_csv_path,
-                    ColData_Woo.getColNames(all_delta_cols))
+                    ColData_Woo.get_col_names(all_delta_cols))
 
         #
         report_matching = settings.do_sync
@@ -2006,7 +2007,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                     try:
                         update.updateSlave(slave_client)
-                    except Exception, exc:
+                    except Exception as exc:
                         # slave_failures.append({
                         #     'update':update,
                         #     'master':SanitationUtils.coerceUnicode(update.new_m_object),

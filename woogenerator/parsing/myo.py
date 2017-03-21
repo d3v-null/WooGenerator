@@ -17,8 +17,8 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
             'Y': self.productContainer
         }
 
-    def __init__(self, cols={}, defaults={}, schema='MY', importName="",
-                 taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
+    def __init__(self, cols={}, defaults={}, schema='MY', import_name="",
+                 taxo_subs={}, item_subs={}, taxoDepth=3, itemDepth=2, meta_width=2):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         extra_cols = ['WNRC', 'RNRC', 'HTML Description']
@@ -32,11 +32,11 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
             ('Inactive Item', 'N'),
         ])
 
-        extra_taxoSubs = OrderedDict([
+        extra_taxo_subs = OrderedDict([
             ('', ''),
         ])
 
-        extra_itemSubs = OrderedDict([
+        extra_item_subs = OrderedDict([
             ('Body Butter with Shimmer', 'Body Butter w/ Shimmer'),
             ('Tan Saver Body Wash', 'Body Wash'),
             ('Full Body Moisturizer', 'Moisturizer'),
@@ -224,17 +224,17 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 
         ])
 
-        if not importName:
-            importName = time.strftime("%Y-%m-%d %H:%M:%S")
+        if not import_name:
+            import_name = time.strftime("%Y-%m-%d %H:%M:%S")
         cols = listUtils.combineLists(cols, extra_cols)
         defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
-        taxoSubs = listUtils.combineOrderedDicts(taxoSubs, extra_taxoSubs)
-        itemSubs = listUtils.combineOrderedDicts(itemSubs, extra_itemSubs)
+        taxo_subs = listUtils.combineOrderedDicts(taxo_subs, extra_taxo_subs)
+        item_subs = listUtils.combineOrderedDicts(item_subs, extra_item_subs)
         if not schema:
             schema = "MY"
 
         super(CSVParse_MYO, self).__init__(cols, defaults, schema,
-                                           taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
+                                           taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
         if self.DEBUG_MYO:
             self.registerMessage("csvparse initialized with cols: %s" %
                                  SanitationUtils.coerceUnicode(extra_cols))
@@ -251,22 +251,22 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 
 class MYOProdList(ShopProdList):
 
-    def getReportCols(self):
-        return ColData_MYO.getProductCols()
+    def get_report_cols(self):
+        return ColData_MYO.get_product_cols()
 
 
 # if __name__ == '__main__':
 #     print "Testing MYO script..."
-#     inFolder = "../input/"
+#     in_folder = "../input/"
 #     os.chdir('source')
 #
-#     genPath = os.path.join(inFolder, 'generator.csv')
+#     genPath = os.path.join(in_folder, 'generator.csv')
 #
 #
-#     colData = ColData_MYO()
+#     col_data = ColData_MYO()
 #     productParser = CSVParse_MYO(
-#         cols = colData.getImportCols(),
-#         defaults = colData.getDefaults(),
+#         cols = col_data.get_import_cols(),
+#         defaults = col_data.get_defaults(),
 #     )
 #     productParser.analyseFile(genPath)
 #     products = productParser.getProducts().values()

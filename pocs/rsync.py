@@ -51,7 +51,8 @@ class Cookie:
 
 def visit(cookie, dirname, names):
     """Copy files names from sink_root + (dirname - sink_root) to target_root + (dirname - sink_root)"""
-    if os.path.split(cookie.sink_root)[1]:  # Should be tested with (C:\Cvs -> C:\)! (C:\Archives\MyDatas\UltraEdit -> C:\Archives\MyDatas) (Cvs -> "")! (Archives\MyDatas\UltraEdit -> Archives\MyDatas) (\Cvs -> \)! (\Archives\MyDatas\UltraEdit -> Archives\MyDatas)
+    if os.path.split(cookie.sink_root)[
+            1]:  # Should be tested with (C:\Cvs -> C:\)! (C:\Archives\MyDatas\UltraEdit -> C:\Archives\MyDatas) (Cvs -> "")! (Archives\MyDatas\UltraEdit -> Archives\MyDatas) (\Cvs -> \)! (\Archives\MyDatas\UltraEdit -> Archives\MyDatas)
         dirname = dirname[len(cookie.sink_root) + 1:]
     else:
         dirname = dirname[len(cookie.sink_root):]
@@ -176,7 +177,9 @@ def shouldUpdate(cookie, sink, target):
         sink_sz = sink_st.st_size
         sink_mt = sink_st.st_mtime
     except:
-        logError("Fail to retrieve information about sink %s (skip update)" % sink)
+        logError(
+            "Fail to retrieve information about sink %s (skip update)" %
+            sink)
         return 0
 
     try:
@@ -373,7 +376,7 @@ def convertPatterns(path, sign):
     """Read the files for pattern and return a vector of filters"""
     filters = []
     f = open(path, "r")
-    while 1:
+    while True:
         pattern = f.readline()
         if not pattern:
             break
@@ -484,7 +487,7 @@ def main(args):
     target_root = args[1]
     try:  # In order to allow compatibility below 2.3.
         pass
-        if os.path.__dict__.has_key("supports_unicode_filenames") and os.path.supports_unicode_filenames:
+        if "supports_unicode_filenames" in os.path.__dict__ and os.path.supports_unicode_filenames:
             target_root = unicode(target_root, sys.getfilesystemencoding())
     finally:
         cookie.target_root = target_root
@@ -496,7 +499,7 @@ def main(args):
     sink_families = {}
     for sink in sinks:
         try:  # In order to allow compatibility below 2.3.
-            if os.path.__dict__.has_key("supports_unicode_filenames") and os.path.supports_unicode_filenames:
+            if "supports_unicode_filenames" in os.path.__dict__ and os.path.supports_unicode_filenames:
                 sink = unicode(sink, sys.getfilesystemencoding())
         except:
             pass
@@ -509,7 +512,7 @@ def main(args):
                 break
             sink_root, sink_name = os.path.split(sink_root)
         sink_root = sink_drive + sink_root
-        if not sink_families.has_key(sink_root):
+        if sink_root not in sink_families:
             sink_families[sink_root] = []
         sink_families[sink_root] = sink_families[sink_root] + [sink_name]
 

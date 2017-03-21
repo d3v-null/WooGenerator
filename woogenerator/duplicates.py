@@ -1,4 +1,4 @@
-""" Stores all information about how a record is duplicated and stores references to the objects 
+""" Stores all information about how a record is duplicated and stores references to the objects
 with which it conflicts """
 
 from collections import OrderedDict
@@ -6,30 +6,30 @@ from utils import SanitationUtils
 from tabulate import tabulate
 
 
-def object_glb_index_fn(objectData):
-    assert hasattr(objectData, 'index'), \
-        "objectData should have index attr, type: %s " % type(objectData)
-    return SanitationUtils.coerceUnicode(objectData.index)
+def object_glb_index_fn(object_data):
+    assert hasattr(object_data, 'index'), \
+        "object_data should have index attr, type: %s " % type(object_data)
+    return SanitationUtils.coerceUnicode(object_data.index)
 
 
-def object_m_index_fn(objectData):
-    assert hasattr(objectData, 'MYOBID'), \
-        "objectData should have MYOBID attr, type: %s " % type(objectData)
-    return SanitationUtils.coerceUnicode(objectData.MYOBID)
+def object_m_index_fn(object_data):
+    assert hasattr(object_data, 'MYOBID'), \
+        "object_data should have MYOBID attr, type: %s " % type(object_data)
+    return SanitationUtils.coerceUnicode(object_data.MYOBID)
 
 
-def object_s_index_fn(objectData):
-    assert hasattr(objectData, 'username'), \
-        "objectData should have username attr, type: %s " % type(objectData)
-    return SanitationUtils.coerceUnicode(objectData.username)
+def object_s_index_fn(object_data):
+    assert hasattr(object_data, 'username'), \
+        "object_data should have username attr, type: %s " % type(object_data)
+    return SanitationUtils.coerceUnicode(object_data.username)
 
 
 class DuplicateObject(object):
     """stores all the data about a given objects conflicts with other objects"""
 
-    def __init__(self, objectData):
+    def __init__(self, object_data):
         super(DuplicateObject, self).__init__()
-        self.objectData = objectData
+        self.object_data = object_data
         self.reasons = OrderedDict()
 
     def __cmp__(self, other):
@@ -37,11 +37,11 @@ class DuplicateObject(object):
 
     @property
     def m_index(self):
-        return object_m_index_fn(self.objectData)
+        return object_m_index_fn(self.object_data)
 
     @property
     def s_index(self):
-        return object_s_index_fn(self.objectData)
+        return object_s_index_fn(self.object_data)
 
     @property
     def reason_count(self):
@@ -92,8 +92,8 @@ class DuplicateObject(object):
                 reason_info['details']
             ])
 
-        objContainer = self.objectData.containerize()
-        out += objContainer.tabulate(cols, tablefmt, highlight_rules)
+        obj_container = self.object_data.containerize()
+        out += obj_container.tabulate(cols, tablefmt, highlight_rules)
 
         out += tabulate(reason_table, tablefmt=tablefmt,
                         headers=["Reason", "Weighting", "Details"])
@@ -111,21 +111,21 @@ class Duplicates(OrderedDict):
         assert isinstance(
             conflictors, list), "conflictors should be in a list, instead %s " % type(conflictors)
         assert isinstance(reason, str), "reason should be a string"
-        for duplicateObject in conflictors:
+        for duplicate_object in conflictors:
             # conflictors other than self
-            coConflictors = set(conflictors) - set(duplicateObject)
-            duplicateDetails = ", ".join([
-                SanitationUtils.coerceAscii(object_glb_index_fn(objectData))
-                for objectData in coConflictors
+            co_conflictors = set(conflictors) - set(duplicate_object)
+            duplicate_details = ", ".join([
+                SanitationUtils.coerceAscii(object_glb_index_fn(object_data))
+                for object_data in co_conflictors
             ])
-            self.add_conflictor(duplicateObject, reason,
-                                details=duplicateDetails, weighting=weighting)
+            self.add_conflictor(duplicate_object, reason,
+                                details=duplicate_details, weighting=weighting)
 
     def add_conflictor(self, conflictor, reason, weighting=1, details=None):
-        duplicateIndex = object_glb_index_fn(conflictor)
-        if duplicateIndex not in self:
-            self[duplicateIndex] = DuplicateObject(conflictor)
-        self[duplicateIndex].add_reason(reason, weighting, details)
+        duplicate_index = object_glb_index_fn(conflictor)
+        if duplicate_index not in self:
+            self[duplicate_index] = DuplicateObject(conflictor)
+        self[duplicate_index].add_reason(reason, weighting, details)
 
     def tabulate(self, cols, tablefmt=None, highlight_rules=None):
         if not tablefmt:

@@ -12,14 +12,14 @@ from context import tests_datadir
 class TestCSVParseWoo(TestCase):
 
     def setUp(self):
-        importName = TimeUtils.get_ms_timestamp()
+        import_name = TimeUtils.get_ms_timestamp()
 
         self.genPath = os.path.join(tests_datadir, "generator_sample.csv")
 
         self.productParserArgs = {
-            'importName': importName,
-            'cols': ColData_Woo.getImportCols(),
-            'defaults': ColData_Woo.getDefaults(),
+            'import_name': import_name,
+            'cols': ColData_Woo.get_import_cols(),
+            'defaults': ColData_Woo.get_defaults(),
         }
 
         for var in ['self.productParserArgs']:

@@ -66,8 +66,8 @@ class ImportTreeObject(ImportObject):
         if not self.isRoot:
             parent.registerChild(self)
 
-        self.childRegister = OrderedDict()
-        self.childIndexer = Registrar.getObjectRowcount
+        self.child_register = OrderedDict()
+        self.child_indexer = Registrar.getObjectRowcount
 
         self.verifyMeta()
 
@@ -112,8 +112,8 @@ class ImportTreeObject(ImportObject):
         #                                             )
         self.registerAnything(
             childData,
-            self.childRegister,
-            indexer=self.childIndexer,
+            self.child_register,
+            indexer=self.child_indexer,
             singular=True,
             # resolver = self.passiveResolver,
             registerName='parent'
@@ -121,7 +121,7 @@ class ImportTreeObject(ImportObject):
 
     @property
     def children(self):
-        return self.childRegister.values()
+        return self.child_register.values()
     #
 
     @property
@@ -134,13 +134,13 @@ class ImportTreeObject(ImportObject):
 
     #
     # @classmethod
-    # def fromImportObject(cls, objectData, depth, meta, parent):
+    # def fromImportObject(cls, object_data, depth, meta, parent):
     #     exc = DeprecationWarning()
     #     self.registerError(exc)
-        # assert isinstance(objectData, ImportObject)
-        # row = objectData.row
-        # rowcount = objectData.rowcount
-        # return cls(objectData, rowcount, row, depth, meta, parent)
+        # assert isinstance(object_data, ImportObject)
+        # row = object_data.row
+        # rowcount = object_data.rowcount
+        # return cls(object_data, rowcount, row, depth, meta, parent)
     #
     # @property
     # def isItem(self): return self.isItem
@@ -196,14 +196,14 @@ class ImportTreeObject(ImportObject):
         self._depth = depth
 
     @property
-    def identifierDelimeter(self):
-        # delim = super(ImportTreeObject, self).identifierDelimeter
+    def identifier_delimeter(self):
+        # delim = super(ImportTreeObject, self).identifier_delimeter
         return "=" * self.depth
 
     # def getIdentifierDelimeter(self):
-    #     exc = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     exc = DeprecationWarning("Use .identifier_delimeter instead of .getIdentifierDelimeter()")
     #     self.registerError(exc)
-    #     return self.identifierDelimeter
+    #     return self.identifier_delimeter
 
     # def getParent(self):
     #     exc = DeprecationWarning("Use .parent instead of .getParent()")
@@ -242,10 +242,10 @@ class ImportTreeObject(ImportObject):
         return [ancestor.get(key) for ancestor in [self] + self.ancestors]
 
     def getFirstFilteredAncestorSelfKey(self, key):
-        ancestorValues = self.getAncestorSelfKey(key)
-        filteredAncestorValues = [value for value in ancestorValues if value]
-        if filteredAncestorValues[0]:
-            return filteredAncestorValues[0]
+        ancestor_values = self.getAncestorSelfKey(key)
+        filtered_ancestor_values = [value for value in ancestor_values if value]
+        if filtered_ancestor_values[0]:
+            return filtered_ancestor_values[0]
     #
     # def getChildren(self):
     #     exc = DeprecationWarning("use .children instead of .getChildren()")
@@ -284,7 +284,7 @@ class ImportTreeRoot(ImportTreeObject):
         return "root"
 
     @property
-    def WPID(self):
+    def wpid(self):
         return "-1"
 
 
@@ -292,13 +292,13 @@ class ImportTreeItem(ImportTreeObject):
     isItem = True
 
     @property
-    def identifierDelimeter(self):
-        return super(ImportTreeItem, self).identifierDelimeter + '>'
+    def identifier_delimeter(self):
+        return super(ImportTreeItem, self).identifier_delimeter + '>'
 
     # def getIdentifierDelimeter(self):
-    #     exc = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     exc = DeprecationWarning("use .identifier_delimeter instead of .getIdentifierDelimeter()")
     #     self.registerError(exc)
-    #     return self.identifierDelimeter
+    #     return self.identifier_delimeter
         # return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
 
     @property
@@ -317,14 +317,14 @@ class ImportTreeTaxo(ImportTreeObject):
     isTaxo = True
 
     @property
-    def identifierDelimeter(self):
-        return super(ImportTreeTaxo, self).identifierDelimeter + '#'
+    def identifier_delimeter(self):
+        return super(ImportTreeTaxo, self).identifier_delimeter + '#'
 
     def getIdentifierDelimeter(self):
         exc = DeprecationWarning(
-            "use .identifierDelimeter instead of .getIdentifierDelimeter()")
+            "use .identifier_delimeter instead of .getIdentifierDelimeter()")
         self.registerError(exc)
-        return self.identifierDelimeter
+        return self.identifier_delimeter
         # return super(ImportTreeTaxo, self).getIdentifierDelimeter() + '#'
 
 
@@ -378,11 +378,11 @@ class ImportStack(list):
 
     def display(self):
         out = "\n"
-        for objectData in self:
+        for object_data in self:
             try:
-                out += objectData.identifier + "\n"
+                out += object_data.identifier + "\n"
             except:
-                out += repr(objectData) + "\n"
+                out += repr(object_data) + "\n"
         return out
 
     def copy(self):
@@ -401,13 +401,14 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     itemContainer = ImportTreeItem
     taxoContainer = ImportTreeTaxo
 
-    def __init__(self, cols, defaults, taxoDepth, itemDepth, metaWidth, **kwargs):
+    def __init__(self, cols, defaults, taxoDepth,
+                 itemDepth, meta_width, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('CSVParse_Tree')
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         # self.maxDepth  = taxoDepth + itemDepth
-        self.metaWidth = metaWidth
+        self.meta_width = meta_width
         self.itemIndexer = self.getObjectRowcount
         self.taxoIndexer = self.getObjectRowcount
         super(CSVParse_Tree, self).__init__(cols, defaults, **kwargs)
@@ -417,7 +418,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         #     print "-> taxoDepth: ", self.taxoDepth
         #     print "-> itemDepth: ", self.itemDepth
         #     print "-> maxDepth: ", self.maxDepth
-        #     print "-> metaWidth: ", self.metaWidth
+        #     print "-> meta_width: ", self.meta_width
 
     @property
     def maxDepth(self):
@@ -456,44 +457,44 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
             registerName='taxos',
         )
 
-    def registerObject(self, objectData):
-        assert isinstance(objectData, ImportTreeObject)
-        super(CSVParse_Tree, self).registerObject(objectData)
+    def registerObject(self, object_data):
+        assert isinstance(object_data, ImportTreeObject)
+        super(CSVParse_Tree, self).registerObject(object_data)
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        if objectData.isItem:
-            self.registerItem(objectData)
-        if objectData.isTaxo:
-            self.registerTaxo(objectData)
+        if object_data.isItem:
+            self.registerItem(object_data)
+        if object_data.isTaxo:
+            self.registerTaxo(object_data)
 
-    # def registerObject(self, objectData):
-    #     CSVParse_Base.registerObject(self, objectData)
-    #     CSVParse_Tree_Mixin.registerObject(self, objectData)
+    # def registerObject(self, object_data):
+    #     CSVParse_Base.registerObject(self, object_data)
+    #     CSVParse_Tree_Mixin.registerObject(self, object_data)
 
         # self.registerMessage("ceated root: %s" % str(self.rootData))
 
-    def assignParent(self, parentData=None, itemData=None):
+    def assignParent(self, parent_data=None, itemData=None):
         assert isinstance(itemData, ImportTreeObject)
-        if not parentData:
-            parentData = self.rootData
-        assert isinstance(parentData, ImportTreeObject)
-        parentData.registerChild(itemData)
-        itemData.registerParent(parentData)
+        if not parent_data:
+            parent_data = self.rootData
+        assert isinstance(parent_data, ImportTreeObject)
+        parent_data.registerChild(itemData)
+        itemData.registerParent(parent_data)
 
     def depth(self, row):
-        sanitizedRow = [self.sanitizeCell(cell) for cell in row]
-        for i, sanitizedCell in enumerate(sanitizedRow):
-            if sanitizedCell:
+        sanitized_row = [self.sanitizeCell(cell) for cell in row]
+        for i, sanitized_cell in enumerate(sanitized_row):
+            if sanitized_cell:
                 return i
             if i >= self.maxDepth:
                 break
         return -1
 
     def extractMeta(self, row, thisDepth):
-        # return [row[thisDepth+i*self.maxDepth]for i in range(self.metaWidth)]
-        meta = [''] * self.metaWidth
+        # return [row[thisDepth+i*self.maxDepth]for i in range(self.meta_width)]
+        meta = [''] * self.meta_width
         if row:
-            for i in range(self.metaWidth):
+            for i in range(self.meta_width):
                 try:
                     meta[i] = row[thisDepth + i * self.maxDepth]
                 except IndexError as exc:
@@ -507,9 +508,9 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     def isItemDepth(self, depth):
         return depth >= self.taxoDepth and depth < self.maxDepth
 
-    def getNewObjContainer(self, allData, **kwargs):
+    def getNewObjContainer(self, all_data, **kwargs):
         container = super(CSVParse_Tree, self).getNewObjContainer(
-            allData, **kwargs)
+            all_data, **kwargs)
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         depth = kwargs['depth']
@@ -523,9 +524,9 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
             container = self.itemContainer
         return container
 
-    def getKwargs(self, allData, container, **kwargs):
+    def getKwargs(self, all_data, container, **kwargs):
         kwargs = super(CSVParse_Tree, self).getKwargs(
-            allData, container, **kwargs)
+            all_data, container, **kwargs)
         assert issubclass(container, ImportTreeObject)
 
         # sanity check kwargs has been called with correct arguments
@@ -630,32 +631,33 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         assert len(
             self.stack) == thisDepth, "stack should have been properly refreshed"
 
-    def refreshStackFromObject(self, objectData):
-        assert isinstance(objectData, ImportTreeObject)
-        return self.refreshStack(objectData.rowcount, objectData.row, objectData.depth)
+    def refreshStackFromObject(self, object_data):
+        assert isinstance(object_data, ImportTreeObject)
+        return self.refreshStack(
+            object_data.rowcount, object_data.row, object_data.depth)
 
-    def processObject(self, objectData):
+    def processObject(self, object_data):
         assert isinstance(self.stack, ImportStack)
         oldstack = self.stack[:]
         assert isinstance(
             oldstack, ImportStack), 'stack should be ImportStack not %s' % oldstack.__class__.__name__
-        self.refreshStackFromObject(objectData)
+        self.refreshStackFromObject(object_data)
         assert isinstance(
             self.stack, ImportStack), 'stack should be ImportStack not %s' % self.stack.__class__.__name__
         assert oldstack == self.stack, 'self.stack (%s) is inconsistent with %s' % (
             oldstack.display(), self.stack.display())
-        self.stack.append(objectData)
-        super(CSVParse_Tree, self).processObject(objectData)
+        self.stack.append(object_data)
+        super(CSVParse_Tree, self).processObject(object_data)
 
     def verifyItem(self, itemData):
         index = self.itemIndexer(itemData)
-        itemID = id(itemData)
-        lookupData = self.items[index]
-        lookupID = id(lookupData)
-        assert itemID == lookupID, "item has deviated from its place in items"
+        item_id = id(itemData)
+        lookup_data = self.items[index]
+        lookup_id = id(lookup_data)
+        assert item_id == lookup_id, "item has deviated from its place in items"
 
-    # def analyseFile(self, fileName):
-    #     super(CSVParse_Tree, self).analyseFile(fileName)
+    # def analyseFile(self, file_name):
+    #     super(CSVParse_Tree, self).analyseFile(file_name)
 
     def findTaxo(self, taxoData):
         response = None

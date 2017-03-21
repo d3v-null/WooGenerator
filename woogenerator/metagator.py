@@ -129,7 +129,8 @@ class MetaGator(Registrar):
                         for key, value in newmeta.items()])
         changed = []
         for key in ['title', 'description']:
-            if SanitationUtils.similarComparison(oldmeta[key]) != SanitationUtils.similarComparison(newmeta[key]):
+            if SanitationUtils.similarComparison(
+                    oldmeta[key]) != SanitationUtils.similarComparison(newmeta[key]):
                 changed += [key]
                 if self.DEBUG_IMG:
                     self.registerMessage(

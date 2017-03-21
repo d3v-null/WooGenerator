@@ -72,8 +72,8 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
     def testUploadSlaveChanges(self):
 
         maParser = CSVParse_User(
-            cols=ColData_User.getACTImportCols(),
-            defaults=ColData_User.getDefaults()
+            cols=ColData_User.get_act_import_cols(),
+            defaults=ColData_User.get_defaults()
         )
 
         master_bus_type = "Salon"
@@ -92,8 +92,8 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         print "MASTER RECORDS: \n", maParser.tabulate()
 
         saParser = CSVParse_User_Api(
-            cols=ColData_User.getWPImportCols(),
-            defaults=ColData_User.getDefaults()
+            cols=ColData_User.get_wp_import_cols(),
+            defaults=ColData_User.get_defaults()
         )
 
         with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
@@ -112,7 +112,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
 
-        syncCols = ColData_User.getSyncCols()
+        syncCols = ColData_User.get_sync_cols()
 
         for count, match in enumerate(globalMatches):
             m_object = match.m_objects[0]
@@ -146,7 +146,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                         print "response text: %s" % response.text
                         response_json = response.json()
 
-                except Exception, exc:
+                except Exception as exc:
                     slaveFailures.append({
                         'update': update,
                         'master': SanitationUtils.coerceUnicode(update.new_m_object),

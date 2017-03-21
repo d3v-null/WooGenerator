@@ -10,10 +10,10 @@ class ProdSyncClient_WC(SyncClientWC):
     #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
 
     def analyseRemoteCategories(self, parser):
-        taxoApiIterator = self.ApiIterator(
+        taxo_api_iterator = self.ApiIterator(
             self.service, '/products/categories')
         categories = []
-        for page in taxoApiIterator:
+        for page in taxo_api_iterator:
             if 'product_categories' in page:
                 for page_item in page.get('product_categories'):
                     categories.append(page_item)
@@ -28,7 +28,7 @@ class ProdSyncClient_WC(SyncClientWC):
 
     def upload_changes(self, pkey, updates=None):
         # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_API:
             categories = updates.get('categories')

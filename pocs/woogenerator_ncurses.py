@@ -95,7 +95,7 @@ def main(stdscr):
         "How about really really really really really really really really really really long lines?\n",
         Box(2, 2, 2, 2)
     )
-    while 1:
+    while True:
         stdscr.refresh()
 
 

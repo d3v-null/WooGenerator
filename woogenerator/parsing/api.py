@@ -28,7 +28,7 @@ class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
-        self.categoryIndexer = CSVParse_Woo_Mixin.getTitle
+        self.category_indexer = CSVParse_Woo_Mixin.getTitle
 
     @property
     def index(self):
@@ -73,7 +73,8 @@ class ImportApiProductSimple(ImportApiProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
 
 
-class ImportApiProductVariable(ImportApiProduct, ImportShopProductVariableMixin):
+class ImportApiProductVariable(
+        ImportApiProduct, ImportShopProductVariableMixin):
     isVariable = ImportShopProductVariableMixin.isVariable
     product_type = ImportShopProductVariableMixin.product_type
 
@@ -84,7 +85,8 @@ class ImportApiProductVariable(ImportApiProduct, ImportShopProductVariableMixin)
         ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
 
 
-class ImportApiProductVariation(ImportApiProduct, ImportShopProductVariationMixin):
+class ImportApiProductVariation(
+        ImportApiProduct, ImportShopProductVariationMixin):
     isVariation = ImportShopProductVariationMixin.isVariation
     product_type = ImportShopProductVariationMixin.product_type
 
@@ -121,17 +123,18 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
 # CSVParse_Woo_Mixin):
 
 
-class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
+class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
+                       CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     objectContainer = ImportApiObject
     productContainer = ImportApiProduct
     simpleContainer = ImportApiProductSimple
     variableContainer = ImportApiProductVariable
     variationContainer = ImportApiProductVariation
     categoryContainer = ImportApiCategory
-    # categoryIndexer = CSVParse_Gen_Mixin.getNameSum
-    # categoryIndexer = CSVParse_Woo_Mixin.getTitle
-    # categoryIndexer = CSVParse_Woo_Mixin.getWPID
-    categoryIndexer = CSVParse_Base.getObjectRowcount
+    # category_indexer = CSVParse_Gen_Mixin.getNameSum
+    # category_indexer = CSVParse_Woo_Mixin.getTitle
+    # category_indexer = CSVParse_Woo_Mixin.getWPID
+    category_indexer = CSVParse_Base.getObjectRowcount
     productIndexer = CSVParse_Shop_Mixin.productIndexer
     variationIndexer = CSVParse_Woo_Mixin.getTitle
 
@@ -139,7 +142,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         if self.DEBUG_MRO:
             self.registerMessage('CSVParse_Woo_Api')
         super(CSVParse_Woo_Api, self).__init__(*args, **kwargs)
-        # self.categoryIndexer = CSVParse_Gen_Mixin.getNameSum
+        # self.category_indexer = CSVParse_Gen_Mixin.getNameSum
         # if hasattr(CSVParse_Woo_Mixin, '__init__'):
         #     CSVParse_Gen_Mixin.__init__(self, *args, **kwargs)
 
@@ -156,52 +159,52 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         # super(CSVParse_Woo_Api, self).clearTransients()
         # CSVParse_Shop_Mixin.clearTransients(self)
 
-    def registerObject(self, objectData):
-        # CSVParse_Gen_Tree.registerObject(self, objectData)
-        CSVParse_Base.registerObject(self, objectData)
-        # CSVParse_Tree_Mixin.registerObject(self, objectData)
-        CSVParse_Shop_Mixin.registerObject(self, objectData)
-        # CSVParse_Woo_Mixin.registerObject(self, objectData)
+    def registerObject(self, object_data):
+        # CSVParse_Gen_Tree.registerObject(self, object_data)
+        CSVParse_Base.registerObject(self, object_data)
+        # CSVParse_Tree_Mixin.registerObject(self, object_data)
+        CSVParse_Shop_Mixin.registerObject(self, object_data)
+        # CSVParse_Woo_Mixin.registerObject(self, object_data)
 
-    # def processObject(self, objectData):
-        # super(CSVParse_Woo_Api, self).processObject(objectData)
+    # def processObject(self, object_data):
+        # super(CSVParse_Woo_Api, self).processObject(object_data)
         # todo: this
 
-    # def registerObject(self, objectData):
+    # def registerObject(self, object_data):
     #     if self.DEBUG_MRO:
     #         self.registerMessage(' ')
     #     if self.DEBUG_API:
-    #         self.registerMessage("registering objectData: %s" % str(objectData))
-    #     super(CSVParse_Woo_Api, self).registerObject(objectData)
+    #         self.registerMessage("registering object_data: %s" % str(object_data))
+    #     super(CSVParse_Woo_Api, self).registerObject(object_data)
 
     @classmethod
     def getApiDimensionData(cls, dimensions):
-        newData = OrderedDict()
+        new_data = OrderedDict()
         for dimension_key in ['length', 'width', 'height']:
             if dimension_key in dimensions:
-                newData[dimension_key] = dimensions[dimension_key]
-                # objectData[dimension_key] = dimensions[dimension_key]
-        return newData
+                new_data[dimension_key] = dimensions[dimension_key]
+                # object_data[dimension_key] = dimensions[dimension_key]
+        return new_data
 
     @classmethod
     def getApiStockStatusData(cls, in_stock):
-        newData = OrderedDict()
+        new_data = OrderedDict()
         if in_stock:
             stock_status = 'in_stock'
         else:
             stock_status = 'outofstock'
-        newData['stock_status'] = stock_status
-        return newData
+        new_data['stock_status'] = stock_status
+        return new_data
 
-    def processApiCategory(self, categoryApiData, objectData=None):
+    def processApiCategory(self, categoryApiData, object_data=None):
         """
-        Create category if not exist or find if exist, then assign objectData to category
+        Create category if not exist or find if exist, then assign object_data to category
         Has to emulate CSVParse_Base.newObject()
         """
         if self.DEBUG_API:
             category_title = categoryApiData.get('title', '')
-            if objectData:
-                identifier = objectData.identifier
+            if object_data:
+                identifier = object_data.identifier
                 self.registerMessage(
                     "%s member of category %s"
                     % (identifier, category_title)
@@ -216,33 +219,33 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             self.registerMessage("ANALYSE CATEGORY: %s" %
                                  repr(categoryApiData))
         core_translation = OrderedDict()
-        for col, col_data in ColData_Woo.getWPAPICoreCols().items():
+        for col, col_data in ColData_Woo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
                 wp_api_key = col
             core_translation[wp_api_key] = col
-        categorySearchData = {}
-        categorySearchData.update(
+        category_search_data = {}
+        category_search_data.update(
             **self.translateKeys(categoryApiData, core_translation))
-        categorySearchData = dict([(key, SanitationUtils.html_unescape_recursive(value))
-                                   for key, value in categorySearchData.items()])
+        category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
+                                   for key, value in category_search_data.items()])
 
         # if 'id' in categoryApiData:
-        #     categorySearchData[self.categoryContainer.wpidKey] = categoryApiData['id']
+        #     category_search_data[self.categoryContainer.wpidKey] = categoryApiData['id']
         # if 'name' in categoryApiData:
-        #     categorySearchData[self.categoryContainer.titleKey] = categoryApiData['name']
-        #     categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['name']
+        #     category_search_data[self.categoryContainer.titleKey] = categoryApiData['name']
+        #     category_search_data[self.categoryContainer.namesumKey] = categoryApiData['name']
         # elif 'title' in categoryApiData:
-        #     categorySearchData[self.categoryContainer.titleKey] = categoryApiData['title']
-        #     categorySearchData[self.categoryContainer.namesumKey] = categoryApiData['title']
+        #     category_search_data[self.categoryContainer.titleKey] = categoryApiData['title']
+        #     category_search_data[self.categoryContainer.namesumKey] = categoryApiData['title']
         # if 'slug' in categoryApiData:
-        #     categorySearchData[self.categoryContainer.slugKey] = categoryApiData['slug']
+        #     category_search_data[self.categoryContainer.slugKey] = categoryApiData['slug']
         if self.DEBUG_API:
             self.registerMessage("SEARCHING FOR CATEGORY: %s" %
-                                 repr(categorySearchData))
-        catData = self.findCategory(categorySearchData)
-        if not catData:
+                                 repr(category_search_data))
+        cat_data = self.findCategory(category_search_data)
+        if not cat_data:
             if self.DEBUG_API:
                 self.registerMessage("CATEGORY NOT FOUND")
 
@@ -253,54 +256,54 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 categoryApiData['slug'] = ''
 
             kwargs = OrderedDict()
-            kwargs['apiData'] = categoryApiData
+            kwargs['api_data'] = categoryApiData
 
-            # defaultData = OrderedDict(self.defaults.items())
+            # default_data = OrderedDict(self.defaults.items())
             #
-            # parserData = self.getParserData(**kwargs)
+            # parser_data = self.getParserData(**kwargs)
             #
-            # allData = listUtils.combineOrderedDicts(defaultData, parserData)
+            # all_data = listUtils.combineOrderedDicts(default_data, parser_data)
             #
-            # container = self.getNewObjContainer(allData, **kwargs)
+            # container = self.getNewObjContainer(all_data, **kwargs)
             #
-            # catData = container(allData, **kwargs)
+            # cat_data = container(all_data, **kwargs)
 
             # kwargs = OrderedDict(self.defaults.items())
-            # kwargs.update(categorySearchData)
+            # kwargs.update(category_search_data)
             # catRowcount = getattr(self, 'rowcount')
             # if 'id' in categoryApiData:
             #     catRowcount = categoryApiData['id']
-            parentCategoryData = None
+            parent_category_data = None
             if 'parent' in categoryApiData:
-                parentCategorySearchData = {}
-                parentCategorySearchData[
+                parent_category_search_data = {}
+                parent_category_search_data[
                     self.categoryContainer.wpidKey] = categoryApiData['parent']
-                parentCategoryData = self.findCategory(
-                    parentCategorySearchData)
-            if parentCategoryData:
-                kwargs['parent'] = parentCategoryData
+                parent_category_data = self.findCategory(
+                    parent_category_search_data)
+            if parent_category_data:
+                kwargs['parent'] = parent_category_data
             else:
                 kwargs['parent'] = self.rootData
 
-            catData = self.newObject(rowcount=self.rowcount, **kwargs)
+            cat_data = self.newObject(rowcount=self.rowcount, **kwargs)
 
             if self.DEBUG_API:
-                self.registerMessage("CONSTRUCTED: %s" % catData.identifier)
-            self.processObject(catData)
+                self.registerMessage("CONSTRUCTED: %s" % cat_data.identifier)
+            self.processObject(cat_data)
             if self.DEBUG_API:
-                self.registerMessage("PROCESSED: %s" % catData.identifier)
-            self.registerCategory(catData)
+                self.registerMessage("PROCESSED: %s" % cat_data.identifier)
+            self.registerCategory(cat_data)
             if self.DEBUG_API:
-                self.registerMessage("REGISTERED: %s" % catData.identifier)
+                self.registerMessage("REGISTERED: %s" % cat_data.identifier)
 
         else:
             if self.DEBUG_API:
-                self.registerMessage("FOUND CATEGORY: %s" % repr(catData))
+                self.registerMessage("FOUND CATEGORY: %s" % repr(cat_data))
 
-        self.joinCategory(catData, objectData)
+        self.joinCategory(cat_data, object_data)
         # if self.DEBUG_API:
-        #     index = self.categoryIndexer(catData)
-        #     self.registerMessage(repr(self.categoryIndexer))
+        #     index = self.category_indexer(cat_data)
+        #     self.registerMessage(repr(self.category_indexer))
         #     self.registerMessage("REGISTERING CATEGORY WITH INDEX %s" % repr(index))
 
         self.rowcount += 1
@@ -327,12 +330,12 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 #         categories.append(category)
             self.processApiCategory(category)
 
-    def processApiAttributes(self, objectData, attributes, var=False):
+    def processApiAttributes(self, object_data, attributes, var=False):
         varstr = 'var ' if var else ''
         for attribute in attributes:
             if self.DEBUG_API:
                 self.registerMessage("%s has %sattribute %s" % (
-                    objectData.identifier, varstr, attribute))
+                    object_data.identifier, varstr, attribute))
             if 'name' in attribute:
                 attr = attribute.get('name')
             elif 'slug' in attribute:
@@ -349,208 +352,208 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
             if vals:
                 for val in vals:
-                    self.registerAttribute(objectData, attr, val, var)
+                    self.registerAttribute(object_data, attr, val, var)
 
     @classmethod
     def getParserData(cls, **kwargs):
         """
-        Gets data ready for the parser, in this case from apiData
+        Gets data ready for the parser, in this case from api_data
         """
-        parserData = OrderedDict()
-        apiData = kwargs.get('apiData', {})
-        # print "apiData before: %s" % str(apiData)
-        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))
-                        for key, value in apiData.items()])
-        # print "apiData after:  %s" % str(apiData)
-        parserData = OrderedDict()
+        parser_data = OrderedDict()
+        api_data = kwargs.get('api_data', {})
+        # print "api_data before: %s" % str(api_data)
+        api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
+                        for key, value in api_data.items()])
+        # print "api_data after:  %s" % str(api_data)
+        parser_data = OrderedDict()
         core_translation = OrderedDict()
-        for col, col_data in ColData_Woo.getWPAPICoreCols().items():
+        for col, col_data in ColData_Woo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
                 wp_api_key = col
             core_translation[wp_api_key] = col
         # if Registrar.DEBUG_API: Registrar.registerMessage("core_translation: %s" % pformat(core_translation))
-        parserData.update(**cls.translateKeys(apiData, core_translation))
+        parser_data.update(**cls.translateKeys(api_data, core_translation))
 
         meta_translation = OrderedDict()
-        if 'meta' in apiData:
-            metaData = apiData['meta']
+        if 'meta' in api_data:
+            meta_data = api_data['meta']
             for col, col_data in ColData_Woo.getWPAPIMetaCols().items():
                 try:
                     wp_api_key = col_data['wp-api']['key']
                 except:
                     wp_api_key = col
                 meta_translation[wp_api_key] = col
-            parserData.update(**cls.translateKeys(metaData, meta_translation))
-        if 'dimensions' in apiData:
-            parserData.update(**cls.getApiDimensionData(apiData['dimensions']))
-        if 'in_stock' in apiData:
-            parserData.update(**cls.getApiStockStatusData(apiData['in_stock']))
-        # if 'description' in apiData:
-        #     parserData[cls.objectContainer.descriptionKey] = apiData['description']
+            parser_data.update(**cls.translateKeys(meta_data, meta_translation))
+        if 'dimensions' in api_data:
+            parser_data.update(**cls.getApiDimensionData(api_data['dimensions']))
+        if 'in_stock' in api_data:
+            parser_data.update(**cls.getApiStockStatusData(api_data['in_stock']))
+        # if 'description' in api_data:
+        #     parser_data[cls.objectContainer.descriptionKey] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
         # categories
-        if 'title' in apiData:
-            parserData[cls.objectContainer.titleKey] = apiData['title']
+        if 'title' in api_data:
+            parser_data[cls.objectContainer.titleKey] = api_data['title']
 
         assert \
-            cls.objectContainer.descriptionKey in parserData, \
-            "parserData should have description: %s\n original: %s\ntranslations: %s, %s" \
-            % (parserData, apiData, core_translation, meta_translation)
-        parserData[cls.objectContainer.descsumKey] = parserData[
+            cls.objectContainer.descriptionKey in parser_data, \
+            "parser_data should have description: %s\n original: %s\ntranslations: %s, %s" \
+            % (parser_data, api_data, core_translation, meta_translation)
+        parser_data[cls.objectContainer.descsumKey] = parser_data[
             cls.objectContainer.descriptionKey]
         assert \
-            cls.objectContainer.titleKey in parserData, \
-            "parserData should have title: %s\n original: %s\ntranslations: %s, %s" \
-            % (parserData, apiData, core_translation, meta_translation)
-        if apiData['type'] == 'category':
-            parserData[cls.categoryContainer.namesumKey] = parserData[
+            cls.objectContainer.titleKey in parser_data, \
+            "parser_data should have title: %s\n original: %s\ntranslations: %s, %s" \
+            % (parser_data, api_data, core_translation, meta_translation)
+        if api_data['type'] == 'category':
+            parser_data[cls.categoryContainer.namesumKey] = parser_data[
                 cls.objectContainer.titleKey]
             assert \
-                cls.objectContainer.slugKey in parserData, \
-                "parserData should have slug: %s\n original: %s\ntranslations: %s, %s" \
-                % (parserData, apiData, core_translation, meta_translation)
-            parserData[cls.objectContainer.codesumKey] = parserData[
+                cls.objectContainer.slugKey in parser_data, \
+                "parser_data should have slug: %s\n original: %s\ntranslations: %s, %s" \
+                % (parser_data, api_data, core_translation, meta_translation)
+            parser_data[cls.objectContainer.codesumKey] = parser_data[
                 cls.objectContainer.slugKey]
         else:
-            parserData[cls.objectContainer.namesumKey] = parserData[
+            parser_data[cls.objectContainer.namesumKey] = parser_data[
                 cls.objectContainer.titleKey]
         assert \
-            cls.objectContainer.codesumKey in parserData, \
-            "parserData should have codesum: %s\n original: %s\ntranslations: %s, %s" \
-            % (parserData, apiData, core_translation, meta_translation)
+            cls.objectContainer.codesumKey in parser_data, \
+            "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
+            % (parser_data, api_data, core_translation, meta_translation)
         assert \
-            cls.objectContainer.namesumKey in parserData, \
-            "parserData should have namesum: %s\n original: %s\ntranslations: %s, %s" \
-            % (parserData, apiData, core_translation, meta_translation)
+            cls.objectContainer.namesumKey in parser_data, \
+            "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
+            % (parser_data, api_data, core_translation, meta_translation)
 
-        # title = parserData.get(cls.objectContainer.titleKey, '')
-        # if not title and 'title' in apiData:
-        #     title = apiData['title']
-        # if not title and 'name' in apiData:
-        #     title = apiData['name']
-        # parserData[cls.objectContainer.titleKey] = title
-        # parserData[cls.objectContainer.namesumKey] = title
+        # title = parser_data.get(cls.objectContainer.titleKey, '')
+        # if not title and 'title' in api_data:
+        #     title = api_data['title']
+        # if not title and 'name' in api_data:
+        #     title = api_data['name']
+        # parser_data[cls.objectContainer.titleKey] = title
+        # parser_data[cls.objectContainer.namesumKey] = title
         #
-        # slug = parserData.get(cls.objectContainer.slugKey,'')
-        # if not slug and 'slug' in apiData:
-        #     slug = apiData['slug']
-        # parserData[cls.objectContainer.slugKey] = slug
+        # slug = parser_data.get(cls.objectContainer.slugKey,'')
+        # if not slug and 'slug' in api_data:
+        #     slug = api_data['slug']
+        # parser_data[cls.objectContainer.slugKey] = slug
         #
-        description = parserData.get(cls.objectContainer.descriptionKey, '')
-        if not description and 'description' in apiData:
-            description = apiData['description']
-        parserData[cls.objectContainer.descriptionKey] = description
-        parserData[cls.objectContainer.descsumKey] = description
+        description = parser_data.get(cls.objectContainer.descriptionKey, '')
+        if not description and 'description' in api_data:
+            description = api_data['description']
+        parser_data[cls.objectContainer.descriptionKey] = description
+        parser_data[cls.objectContainer.descsumKey] = description
 
         if Registrar.DEBUG_API:
             Registrar.registerMessage(
-                "parserData: {}".format(pformat(parserData)))
-        return parserData
+                "parser_data: {}".format(pformat(parser_data)))
+        return parser_data
 
-    def getKwargs(self, allData, container, **kwargs):
+    def getKwargs(self, all_data, container, **kwargs):
         if not 'parent' in kwargs:
             kwargs['parent'] = self.rootData
         return kwargs
 
-    def getNewObjContainer(self, allData, **kwargs):
+    def getNewObjContainer(self, all_data, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         container = super(CSVParse_Woo_Api, self).getNewObjContainer(
-            allData, **kwargs)
-        apiData = kwargs.get('apiData', {})
+            all_data, **kwargs)
+        api_data = kwargs.get('api_data', {})
         if self.DEBUG_API:
-            self.registerMessage('apiData: %s' % str(apiData))
-            self.registerMessage('apiData[type]: %s' %
-                                 repr(apiData.get('type')))
-        if 'type' in apiData:
-            api_type = apiData['type']
+            self.registerMessage('api_data: %s' % str(api_data))
+            self.registerMessage('api_data[type]: %s' %
+                                 repr(api_data.get('type')))
+        if 'type' in api_data:
+            api_type = api_data['type']
             if self.DEBUG_API:
                 self.registerMessage('api type: %s' % str(api_type))
             try:
                 container = self.containers[api_type]
             except IndexError:
                 exc = UserWarning("Unknown API product type: %s" % api_type)
-                source = apiData.get('SKU')
+                source = api_data.get('SKU')
                 self.registerError(exc, source)
         if self.DEBUG_API:
             self.registerMessage("container: {}".format(container.__name__))
         return container
 
-    def analyseWpApiObj(self, apiData):
+    def analyseWpApiObj(self, api_data):
         if self.DEBUG_API:
             self.registerMessage("API DATA CATEGORIES: %s" %
-                                 repr(apiData.get('categories')))
-        if not apiData.get('categories'):
+                                 repr(api_data.get('categories')))
+        if not api_data.get('categories'):
             if self.DEBUG_API:
                 self.registerMessage(
-                    "NO CATEGORIES FOUND IN API DATA: %s" % repr(apiData))
+                    "NO CATEGORIES FOUND IN API DATA: %s" % repr(api_data))
         kwargs = {
-            'apiData': apiData
+            'api_data': api_data
         }
-        objectData = self.newObject(rowcount=self.rowcount, **kwargs)
+        object_data = self.newObject(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
-            self.registerMessage("CONSTRUCTED: %s" % objectData.identifier)
-        self.processObject(objectData)
+            self.registerMessage("CONSTRUCTED: %s" % object_data.identifier)
+        self.processObject(object_data)
         if self.DEBUG_API:
-            self.registerMessage("PROCESSED: %s" % objectData.identifier)
-        self.registerObject(objectData)
+            self.registerMessage("PROCESSED: %s" % object_data.identifier)
+        self.registerObject(object_data)
         if self.DEBUG_API:
-            self.registerMessage("REGISTERED: %s" % objectData.identifier)
+            self.registerMessage("REGISTERED: %s" % object_data.identifier)
         # self.registerMessage("mro: {}".format(container.mro()))
         self.rowcount += 1
 
-        if 'categories' in apiData:
-            for category in apiData['categories']:
-                self.processApiCategory({'title': category}, objectData)
+        if 'categories' in api_data:
+            for category in api_data['categories']:
+                self.processApiCategory({'title': category}, object_data)
                 # self.rowcount += 1
 
-        if 'variations' in apiData:
-            for variation in apiData['variations']:
-                self.analyseWpApiVariation(objectData, variation)
+        if 'variations' in api_data:
+            for variation in api_data['variations']:
+                self.analyseWpApiVariation(object_data, variation)
                 # self.rowcount += 1
 
-        if 'attributes' in apiData:
-            self.processApiAttributes(objectData, apiData['attributes'], False)
+        if 'attributes' in api_data:
+            self.processApiAttributes(object_data, api_data['attributes'], False)
 
-    def analyseWpApiVariation(self, objectData, variationApiData):
+    def analyseWpApiVariation(self, object_data, variationApiData):
         if self.DEBUG_API:
-            self.registerMessage("parentData: %s" %
-                                 pformat(objectData.items()))
+            self.registerMessage("parent_data: %s" %
+                                 pformat(object_data.items()))
             self.registerMessage("variationApiData: %s" %
                                  pformat(variationApiData))
-        defaultVarData = dict(
+        default_var_data = dict(
             type='variation',
             title='Variation #%s of %s' % (
-                variationApiData.get('id'), objectData.title),
-            description=objectData.get('descsum'),
-            parent_id=objectData.get('ID')
+                variationApiData.get('id'), object_data.title),
+            description=object_data.get('descsum'),
+            parent_id=object_data.get('ID')
         )
-        defaultVarData.update(**variationApiData)
+        default_var_data.update(**variationApiData)
         if self.DEBUG_API:
-            self.registerMessage("defaultVarData: %s" %
-                                 pformat(defaultVarData))
+            self.registerMessage("default_var_data: %s" %
+                                 pformat(default_var_data))
 
         kwargs = {
-            'apiData': defaultVarData,
-            'parent': objectData
+            'api_data': default_var_data,
+            'parent': object_data
         }
 
-        variationData = self.newObject(rowcount=self.rowcount, **kwargs)
+        variation_data = self.newObject(rowcount=self.rowcount, **kwargs)
 
         if self.DEBUG_API:
-            self.registerMessage("CONSTRUCTED: %s" % variationData.identifier)
-        self.processObject(variationData)
+            self.registerMessage("CONSTRUCTED: %s" % variation_data.identifier)
+        self.processObject(variation_data)
         if self.DEBUG_API:
-            self.registerMessage("PROCESSED: %s" % variationData.identifier)
-        self.registerObject(variationData)
-        # self.registerVariation(objectData, variationData)
+            self.registerMessage("PROCESSED: %s" % variation_data.identifier)
+        self.registerObject(variation_data)
+        # self.registerVariation(object_data, variation_data)
         if self.DEBUG_API:
-            self.registerMessage("REGISTERED: %s" % variationData.identifier)
+            self.registerMessage("REGISTERED: %s" % variation_data.identifier)
 
         self.rowcount += 1
 
         if 'attributes' in variationApiData:
             self.processApiAttributes(
-                objectData, variationApiData['attributes'], True)
+                object_data, variationApiData['attributes'], True)

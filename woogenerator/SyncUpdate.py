@@ -11,18 +11,19 @@ from tabulate import tabulate
 # , UnicodeCsvDialectUtils
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.contact_objects import ContactAddress
-from woogenerator.coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
+from woogenerator.coldata import ColDataBase, ColData_User, ColData_Prod, ColData_Woo
 from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
 
 
-class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+class SyncUpdate(
+        Registrar):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """
     Stores information about and performs operations on a pending update
     """
     # TODO: fix too-many-instance-attributes,too-many-public-methods
 
-    colData = ColData_Base
+    col_data = ColDataBase
     master_name = None
     slave_name = None
     merge_mode = None
@@ -30,7 +31,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
     m_meta_target = 'act'
 
     @classmethod
-    def set_globals(cls, master_name, slave_name, merge_mode, default_last_sync):
+    def set_globals(cls, master_name, slave_name,
+                    merge_mode, default_last_sync):
         """
         sets the class attributes to those specified in the user config
         """
@@ -141,13 +143,15 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
         """
         Parse a raw act-like time string
         """
-        return TimeUtils.act_server_to_local_time(TimeUtils.act_strp_mktime(rawMTime))
+        return TimeUtils.act_server_to_local_time(
+            TimeUtils.act_strp_mktime(rawMTime))
 
     def parse_s_time(self, rawSTime):
         """
         Parse a raw wp-like time string
         """
-        return TimeUtils.wp_server_to_local_time(TimeUtils.wp_strp_mktime(rawSTime))
+        return TimeUtils.wp_server_to_local_time(
+            TimeUtils.wp_strp_mktime(rawSTime))
 
     def sanitize_value(self, col, value):
         """
@@ -177,74 +181,75 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
         else:
             return self.get_s_value(col)
 
-    def valuesSimilar(self, col, mValue, sValue):
+    def valuesSimilar(self, col, m_value, s_value):
         response = False
-        if not (mValue or sValue):
+        if not (m_value or s_value):
             response = True
-        elif not (mValue and sValue):
+        elif not (m_value and s_value):
             response = False
         # check if they are similar
-        if SanitationUtils.similarComparison(mValue) == SanitationUtils.similarComparison(sValue):
+        if SanitationUtils.similarComparison(
+                m_value) == SanitationUtils.similarComparison(s_value):
             response = True
 
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, mValue, sValue, response))
+            self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
     def colIdentical(self, col):
-        mValue = self.get_m_value(col)
-        sValue = self.get_s_value(col)
-        response = mValue == sValue
+        m_value = self.get_m_value(col)
+        s_value = self.get_s_value(col)
+        response = m_value == s_value
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, mValue, sValue, response))
+            self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
     def colSimilar(self, col):
-        mValue = self.get_m_value(col)
-        sValue = self.get_s_value(col)
-        response = self.valuesSimilar(col, mValue, sValue)
+        m_value = self.get_m_value(col)
+        s_value = self.get_s_value(col)
+        response = self.valuesSimilar(col, m_value, s_value)
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, mValue, sValue, response))
+            self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
     def newColIdentical(self, col):
-        mValue = self.get_new_m_value(col)
-        sValue = self.get_new_s_value(col)
-        response = mValue == sValue
+        m_value = self.get_new_m_value(col)
+        s_value = self.get_new_s_value(col)
+        response = m_value == s_value
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, mValue, sValue, response))
+            self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
     def mColStatic(self, col):
-        oValue = self.get_m_value(col)
-        nValue = self.get_new_m_value(col)
-        response = oValue == nValue
+        o_value = self.get_m_value(col)
+        n_value = self.get_new_m_value(col)
+        response = o_value == n_value
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, oValue, nValue, response))
+            self.registerMessage(self.testToStr(col, o_value, n_value, response))
         return response
 
     def sColStatic(self, col):
-        oValue = self.get_s_value(col)
-        nValue = self.get_new_s_value(col)
-        response = oValue == nValue
+        o_value = self.get_s_value(col)
+        n_value = self.get_new_s_value(col)
+        response = o_value == n_value
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, oValue, nValue, response))
+            self.registerMessage(self.testToStr(col, o_value, n_value, response))
         return response
 
     def mColSemiStatic(self, col):
-        oValue = self.get_m_value(col)
-        nValue = self.get_new_m_value(col)
-        response = self.valuesSimilar(col, oValue, nValue)
+        o_value = self.get_m_value(col)
+        n_value = self.get_new_m_value(col)
+        response = self.valuesSimilar(col, o_value, n_value)
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, oValue, nValue, response))
+            self.registerMessage(self.testToStr(col, o_value, n_value, response))
         return response
 
     def sColSemiStatic(self, col):
-        oValue = self.get_s_value(col)
-        nValue = self.get_new_s_value(col)
-        response = self.valuesSimilar(col, oValue, nValue)
+        o_value = self.get_s_value(col)
+        n_value = self.get_new_s_value(col)
+        response = self.valuesSimilar(col, o_value, n_value)
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, oValue, nValue, response))
+            self.registerMessage(self.testToStr(col, o_value, n_value, response))
         return response
 
     def testToStr(self, col, val1, val2, res):
@@ -334,21 +339,21 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                     ])
                     for key in ['mColTime', 'sColTime']:
                         try:
-                            rawTime = int(warning[key])
-                            if rawTime:
+                            raw_time = int(warning[key])
+                            if raw_time:
                                 warning_fmtd[
-                                    key] = TimeUtils.wp_time_to_string(rawTime)
-                        except Exception, exc:
+                                    key] = TimeUtils.wp_time_to_string(raw_time)
+                        except Exception as exc:
                             if(exc):
                                 pass
                     subjects[subject].append(warning_fmtd)
             tables = []
             for subject, warnings in subjects.items():
-                antiSubject_fmtd = subject_fmt % self.opposite_src(subject)
+                anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
                 table = [header] + warnings
                 table_fmtd = tabulate(table, headers='firstrow',
                                       tablefmt=tablefmt)
-                tables.append(delimeter.join([antiSubject_fmtd, table_fmtd]))
+                tables.append(delimeter.join([anti_subject_fmtd, table_fmtd]))
             return delimeter.join(tables)
         else:
             return ""
@@ -390,7 +395,7 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             updateParams['oldWinnerValue'] = self.get_m_value(col)
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
-            newLoserObject = self.new_s_object
+            new_loser_object = self.new_s_object
             if data.get('delta') and reason in ['updating', 'deleting']:
                 # print "setting s_deltas"
                 self.s_deltas = True
@@ -401,7 +406,7 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             updateParams['oldWinnerValue'] = self.get_s_value(col)
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
-            newLoserObject = self.new_m_object
+            new_loser_object = self.new_m_object
             if data.get('delta') and reason in ['updating', 'deleting']:
                 # print "setting m_deltas"
                 self.m_deltas = True
@@ -409,18 +414,18 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
 
         self.addSyncWarning(**updateParams)
         # self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data, s_time, m_time)
-        # SanitationUtils.safePrint("loser %s was %s" % (col, repr(newLoserObject[col])))
+        # SanitationUtils.safePrint("loser %s was %s" % (col, repr(new_loser_object[col])))
         # SanitationUtils.safePrint("updating to ", oldWinnerValue)
         if data.get('delta'):
             # print "delta true for ", col, \
             # "loser", updateParams['oldLoserValue'], \
             # "winner", updateParams['oldWinnerValue']
-            newLoserObject[self.colData.deltaCol(col)] = updateParams[
+            new_loser_object[self.col_data.delta_col(col)] = updateParams[
                 'oldLoserValue']
 
-        newLoserObject[col] = updateParams['oldWinnerValue']
-        # SanitationUtils.safePrint( "loser %s is now %s" % (col, repr(newLoserObject[col])))
-        # SanitationUtils.safePrint( "loser Name is now ", newLoserObject['Name'])
+        new_loser_object[col] = updateParams['oldWinnerValue']
+        # SanitationUtils.safePrint( "loser %s is now %s" % (col, repr(new_loser_object[col])))
+        # SanitationUtils.safePrint( "loser Name is now ", new_loser_object['Name'])
         self.updates += 1
         if data.get('static'):
             self.static = False
@@ -470,8 +475,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
         else:
             pass
 
-        mValue = self.get_m_value(col)
-        sValue = self.get_s_value(col)
+        m_value = self.get_m_value(col)
+        s_value = self.get_s_value(col)
 
         updateParams['mColTime'] = self.getMColModTime(col)
         updateParams['sColTime'] = self.getSColModTime(col)
@@ -480,13 +485,13 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                                       updateParams['sColTime'])
 
         # if data.get('tracked'):
-        #     mTimeRaw =  self.old_m_object.get(ColData_User.modTimeCol(col))
+        #     mTimeRaw =  self.old_m_object.get(ColData_User.mod_time_col(col))
         #     print "mTimeRaw:",mTimeRaw
         #     m_time = self.parse_m_time(mTimeRaw)
         #     print "mTimeRaw:",m_time
         #     if not m_time: m_time = self.m_time
         #
-        #     sTimeRaw = self.old_s_object.get(ColData_User.modTimeCol(col))
+        #     sTimeRaw = self.old_s_object.get(ColData_User.mod_time_col(col))
         #     print "sTimeRaw:",sTimeRaw
         #     m_time = self.parse_s_time(sTimeRaw)
         #     print "s_time:",s_time
@@ -508,23 +513,23 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                 self.tieUpdate(**updateParams)
                 return
 
-            if self.merge_mode == 'merge' and not (mValue and sValue):
-                if winner == self.slave_name and not sValue:
+            if self.merge_mode == 'merge' and not (m_value and s_value):
+                if winner == self.slave_name and not s_value:
                     winner = self.master_name
                     updateParams['reason'] = 'merging'
-                elif winner == self.master_name and not mValue:
+                elif winner == self.master_name and not m_value:
                     winner = self.slave_name
                     updateParams['reason'] = 'merging'
 
         if 'reason' not in updateParams:
             if winner == self.slave_name:
-                wValue, lValue = sValue, mValue
+                w_value, l_value = s_value, m_value
             else:
-                wValue, lValue = mValue, sValue
+                w_value, l_value = m_value, s_value
 
-            if not wValue:
+            if not w_value:
                 updateParams['reason'] = 'deleting'
-            elif not lValue:
+            elif not l_value:
                 updateParams['reason'] = 'inserting'
             else:
                 updateParams['reason'] = 'updating'
@@ -555,14 +560,14 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             subtitle_fmt = "<h3>%s</h3>"
             info_delimeter = "<br/>"
             info_fmt = "<strong>%s:</strong> %s"
-        oldMatch = Match([self.old_m_object], [self.old_s_object])
+        old_match = Match([self.old_m_object], [self.old_s_object])
         # if self.DEBUG_UPDATE:
-        #     self.registerMessage(oldMatch.__str__())
+        #     self.registerMessage(old_match.__str__())
         out_str = ""
         out_str += heading_fmt % self.__str__()
         out_str += info_delimeter.join([
             subtitle_fmt % "OLD",
-            oldMatch.tabulate(cols=None, tablefmt=tablefmt)
+            old_match.tabulate(cols=None, tablefmt=tablefmt)
         ])
         out_str += info_delimeter
 
@@ -595,11 +600,11 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                 self.displaySlaveChanges(tablefmt),
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
-        newMatch = Match([self.new_m_object], [self.new_s_object])
+        new_match = Match([self.new_m_object], [self.new_s_object])
         out_str += info_delimeter
         out_str += info_delimeter.join([
             subtitle_fmt % 'NEW',
-            newMatch.tabulate(cols=None, tablefmt=tablefmt)
+            new_match.tabulate(cols=None, tablefmt=tablefmt)
         ])
 
         return out_str
@@ -773,7 +778,7 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
 
 
 class SyncUpdate_Usr(SyncUpdate):
-    colData = ColData_User
+    col_data = ColData_User
     s_meta_target = 'wp'
 
     def __init__(self, *args, **kwargs):
@@ -786,14 +791,14 @@ class SyncUpdate_Usr(SyncUpdate):
 
         # extra heuristics for merge mode:
         if self.merge_mode == 'merge' and not self.s_mod:
-            might_be_sEdited = False
+            might_be_s_edited = False
             if not self.old_s_object.addressesActLike():
-                might_be_sEdited = True
+                might_be_s_edited = True
             elif self.old_s_object.get('Home Country') == 'AU':
-                might_be_sEdited = True
+                might_be_s_edited = True
             elif self.old_s_object.usernameActLike():
-                might_be_sEdited = True
-            if might_be_sEdited:
+                might_be_s_edited = True
+            if might_be_s_edited:
                 # print repr(self.old_s_object), "might be edited"
                 self.s_time = self.t_time
                 if self.m_mod:
@@ -808,85 +813,88 @@ class SyncUpdate_Usr(SyncUpdate):
     def slave_id(self):
         return self.get_s_value("Wordpress ID")
 
-    def valuesSimilar(self, col, mValue, sValue):
+    def valuesSimilar(self, col, m_value, s_value):
         response = super(SyncUpdate_Usr, self).valuesSimilar(
-            col, mValue, sValue)
+            col, m_value, s_value)
         if not response:
             if "phone" in col.lower():
                 if "preferred" in col.lower():
-                    mPreferred = SanitationUtils.similarTruStrComparison(
-                        mValue)
-                    sPreferred = SanitationUtils.similarTruStrComparison(
-                        sValue)
-                    # print repr(mValue), " -> ", mPreferred
-                    # print repr(sValue), " -> ", sPreferred
-                    if mPreferred == sPreferred:
+                    m_preferred = SanitationUtils.similarTruStrComparison(
+                        m_value)
+                    s_preferred = SanitationUtils.similarTruStrComparison(
+                        s_value)
+                    # print repr(m_value), " -> ", m_preferred
+                    # print repr(s_value), " -> ", s_preferred
+                    if m_preferred == s_preferred:
                         response = True
                 else:
-                    mPhone = SanitationUtils.similarPhoneComparison(mValue)
-                    sPhone = SanitationUtils.similarPhoneComparison(sValue)
-                    plen = min(len(mPhone), len(sPhone))
-                    if plen > 7 and mPhone[-plen] == sPhone[-plen]:
+                    m_phone = SanitationUtils.similarPhoneComparison(m_value)
+                    s_phone = SanitationUtils.similarPhoneComparison(s_value)
+                    plen = min(len(m_phone), len(s_phone))
+                    if plen > 7 and m_phone[-plen] == s_phone[-plen]:
                         response = True
             elif "role" in col.lower():
-                mRole = SanitationUtils.similarComparison(mValue)
-                sRole = SanitationUtils.similarComparison(sValue)
-                if mRole == 'rn':
-                    mRole = ''
-                if sRole == 'rn':
-                    sRole = ''
-                if mRole == sRole:
+                m_role = SanitationUtils.similarComparison(m_value)
+                s_role = SanitationUtils.similarComparison(s_value)
+                if m_role == 'rn':
+                    m_role = ''
+                if s_role == 'rn':
+                    s_role = ''
+                if m_role == s_role:
                     response = True
-            elif "address" in col.lower() and isinstance(mValue, ContactAddress):
-                if(mValue != sValue):
+            elif "address" in col.lower() and isinstance(m_value, ContactAddress):
+                if(m_value != s_value):
                     pass
-                    # print "M: ", mValue.__str__(out_schema="flat"), "S: ",
-                    # sValue.__str__(out_schema="flat")
-                response = mValue.similar(sValue)
+                    # print "M: ", m_value.__str__(out_schema="flat"), "S: ",
+                    # s_value.__str__(out_schema="flat")
+                response = m_value.similar(s_value)
             elif "web site" in col.lower():
-                if SanitationUtils.similarURLComparison(mValue) == SanitationUtils.similarURLComparison(sValue):
+                if SanitationUtils.similarURLComparison(
+                        m_value) == SanitationUtils.similarURLComparison(s_value):
                     response = True
 
         if self.DEBUG_UPDATE:
             self.registerMessage(self.testToStr(
-                col, mValue.__str__(), sValue.__str__(), response))
+                col, m_value.__str__(), s_value.__str__(), response))
         return response
 
     #
     def getMColModTime(self, col):
-        if self.colData.data.get(col, {}).get('tracked'):
-            col_tracking_name = self.colData.modTimeCol(col)
+        if self.col_data.data.get(col, {}).get('tracked'):
+            col_tracking_name = self.col_data.mod_time_col(col)
         else:
             col_tracking_name = None
-            for tracking_name, tracked_cols in self.colData.getACTTrackedCols().items():
+            for tracking_name, tracked_cols in self.col_data.get_act_tracked_cols().items():
                 if col in tracked_cols:
                     col_tracking_name = tracking_name
 
         if col_tracking_name:
-            # print 'sColModTime tracking_name', col_tracking_name
+            # print 's_col_mod_time tracking_name', col_tracking_name
             if self.old_m_object.get(col_tracking_name):
-                # print 'sColModTime tracking_name exists', \
+                # print 's_col_mod_time tracking_name exists', \
                 #         self.old_m_object.get(col_tracking_name), \
                 #         ' -> ',\
                 #         self.parse_m_time(self.old_m_object.get(col_tracking_name))
-                return self.parse_m_time(self.old_m_object.get(col_tracking_name))
-            elif col_tracking_name not in self.colData.getACTFutureTrackedCols().items():
+                return self.parse_m_time(
+                    self.old_m_object.get(col_tracking_name))
+            elif col_tracking_name not in self.col_data.get_act_future_tracked_cols().items():
                 return None
         return self.m_time
 
     def getSColModTime(self, col):
-        if self.colData.data.get(col, {}).get('tracked'):
-            col_tracking_name = self.colData.modTimeCol(col)
+        if self.col_data.data.get(col, {}).get('tracked'):
+            col_tracking_name = self.col_data.mod_time_col(col)
         else:
             col_tracking_name = None
-            for tracking_name, tracked_cols in self.colData.getWPTrackedCols().items():
+            for tracking_name, tracked_cols in self.col_data.get_wp_tracked_cols().items():
                 if col in tracked_cols:
                     col_tracking_name = tracking_name
 
         if col_tracking_name:
-            # print 'mColModTime tracking_name', col_tracking_name
+            # print 'm_col_mod_time tracking_name', col_tracking_name
             if self.old_s_object.get(col_tracking_name):
-                return self.parse_s_time(self.old_s_object.get(col_tracking_name))
+                return self.parse_s_time(
+                    self.old_s_object.get(col_tracking_name))
             else:
                 return None
 
@@ -903,27 +911,27 @@ class SyncUpdate_Usr(SyncUpdate):
             (info_fmt % ("%s Mod Time" % self.slave_name, TimeUtils.wp_time_to_string(
                 self.s_time))) if self.s_mod else "%s Not Modded" % self.slave_name
         ]
-        for tracking_name, cols in self.colData.getACTTrackedCols().items():
+        for tracking_name, cols in self.col_data.get_act_tracked_cols().items():
             col = cols[0]
-            mColModTime = self.getMColModTime(col)
-            sColModTime = self.getSColModTime(col)
-            if mColModTime or sColModTime:
+            m_col_mod_time = self.getMColModTime(col)
+            s_col_mod_time = self.getSColModTime(col)
+            if m_col_mod_time or s_col_mod_time:
                 info_components.append(info_fmt % (tracking_name, '%s: %s; %s: %s' % (
                     self.master_name,
-                    TimeUtils.wp_time_to_string(mColModTime),
+                    TimeUtils.wp_time_to_string(m_col_mod_time),
                     self.slave_name,
-                    TimeUtils.wp_time_to_string(sColModTime),
+                    TimeUtils.wp_time_to_string(s_col_mod_time),
                 )))
         return info_components
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             SanitationUtils.safePrint(
                 "getting updates for col %s, updates: %s" % (col, str(updates)))
-        if col in self.colData.data.keys():
-            data = self.colData.data[col]
+        if col in self.col_data.data.keys():
+            data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
@@ -938,23 +946,23 @@ class SyncUpdate_Usr(SyncUpdate):
         return updates
 
     def getSlaveUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
-                    newVal = self.new_s_object.get(col)
-                    updates[col] = newVal
+                    new_val = self.new_s_object.get(col)
+                    updates[col] = new_val
                     if self.DEBUG_UPDATE:
-                        self.registerMessage(u"newval: %s" % repr(newVal))
+                        self.registerMessage(u"newval: %s" % repr(new_val))
             if data.get('aliases'):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"has aliases")
@@ -973,21 +981,21 @@ class SyncUpdate_Usr(SyncUpdate):
         return updates
 
     def getMasterUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.m_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
-                newVal = self.new_m_object.get(col)
-                updates[col] = newVal
+                new_val = self.new_m_object.get(col)
+                updates[col] = new_val
                 if self.DEBUG_UPDATE:
-                    self.registerMessage(u"newval: %s" % repr(newVal))
+                    self.registerMessage(u"newval: %s" % repr(new_val))
             if data.get('aliases'):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"has aliases")
@@ -1011,34 +1019,34 @@ class SyncUpdate_Usr_Api(SyncUpdate_Usr):
     s_meta_target = 'wp-api'
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s : %s" %
-                                 (unicode(col), self.colData.data.get(col)))
-        if col in self.colData.data:
+                                 (unicode(col), self.col_data.data.get(col)))
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp-api exists")
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
-                    newVal = self.new_s_object.get(col)
-                    newKey = col
+                    new_val = self.new_s_object.get(col)
+                    new_key = col
                     if 'key' in data_s:
-                        newKey = data_s.get('key')
+                        new_key = data_s.get('key')
                     if data_s.get('meta'):
                         if not 'meta' in updates:
                             updates['meta'] = OrderedDict()
-                        updates['meta'][newKey] = newVal
+                        updates['meta'][new_key] = new_val
                     else:
-                        updates[newKey] = newVal
+                        updates[new_key] = new_val
                     if self.DEBUG_UPDATE:
-                        self.registerMessage(u"newval: %s" % repr(newVal))
+                        self.registerMessage(u"newval: %s" % repr(new_val))
                     if self.DEBUG_UPDATE:
-                        self.registerMessage(u"newkey: %s" % repr(newKey))
+                        self.registerMessage(u"newkey: %s" % repr(new_key))
             if data.get('aliases'):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"has aliases")
@@ -1058,7 +1066,7 @@ class SyncUpdate_Usr_Api(SyncUpdate_Usr):
 
 
 class SyncUpdate_Prod(SyncUpdate):
-    colData = ColData_Prod
+    col_data = ColData_Prod
     s_meta_target = 'wp-api'
 
     def __init__(self, *args, **kwargs):
@@ -1072,40 +1080,40 @@ class SyncUpdate_Prod(SyncUpdate):
     def slave_id(self):
         return self.get_s_value('ID')
 
-    def valuesSimilar(self, col, mValue, sValue):
+    def valuesSimilar(self, col, m_value, s_value):
         response = super(SyncUpdate_Prod, self).valuesSimilar(
-            col, mValue, sValue)
-        if col in self.colData.data:
-            colData = self.colData.data[col]
-            if colData.get('type'):
-                if colData.get('type') == 'currency':
-                    mPrice = SanitationUtils.similarCurrencyComparison(mValue)
-                    sPrice = SanitationUtils.similarCurrencyComparison(sValue)
-                    if mPrice == sPrice:
+            col, m_value, s_value)
+        if col in self.col_data.data:
+            col_data = self.col_data.data[col]
+            if col_data.get('type'):
+                if col_data.get('type') == 'currency':
+                    m_price = SanitationUtils.similarCurrencyComparison(m_value)
+                    s_price = SanitationUtils.similarCurrencyComparison(s_value)
+                    if m_price == s_price:
                         response = True
         elif not response:
             if col is 'descsum':
-                mDesc = SanitationUtils.similarMarkupComparison(mValue)
-                sDesc = SanitationUtils.similarMarkupComparison(sValue)
-                if mDesc == sDesc:
+                m_desc = SanitationUtils.similarMarkupComparison(m_value)
+                s_desc = SanitationUtils.similarMarkupComparison(s_value)
+                if m_desc == s_desc:
                     response = True
             elif col is 'CVC':
-                mCom = SanitationUtils.similarComparison(mValue) or '0'
-                sCom = SanitationUtils.similarComparison(sValue) or '0'
-                if mCom == sCom:
+                m_com = SanitationUtils.similarComparison(m_value) or '0'
+                s_com = SanitationUtils.similarComparison(s_value) or '0'
+                if m_com == s_com:
                     response = True
 
         if self.DEBUG_UPDATE:
             self.registerMessage(self.testToStr(
-                col, mValue.__repr__(), sValue.__repr__(), response))
+                col, m_value.__repr__(), s_value.__repr__(), response))
         return response
 
 
 class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
-    colData = ColData_Woo
+    col_data = ColData_Woo
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
         # if col == 'catlist':
@@ -1124,8 +1132,8 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
         #         # print update_catlist
         #         # print actual_catlist
 
-        if col in self.colData.data:
-            data = self.colData.data[col]
+        if col in self.col_data.data:
+            data = self.col_data.data[col]
             if self.s_meta_target in data:
                 data_s = data[self.s_meta_target]
                 if 'key' in data_s:
@@ -1156,23 +1164,23 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
         return updates
 
     def getSlaveUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
-                    newVal = self.new_s_object.get(col)
-                    updates[col] = newVal
+                    new_val = self.new_s_object.get(col)
+                    updates[col] = new_val
                     if self.DEBUG_UPDATE:
-                        self.registerMessage(u"newval: %s" % repr(newVal))
+                        self.registerMessage(u"newval: %s" % repr(new_val))
             # if data.get('aliases'):
             #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
             #     data_aliases = data['aliases']
@@ -1189,27 +1197,28 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
         return updates
 
     def getMasterUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
 
         if col == 'catlist':
-            if hasattr(self.old_s_object, 'isVariation') and self.old_s_object.isVariation:
+            if hasattr(self.old_s_object,
+                       'isVariation') and self.old_s_object.isVariation:
                 # print "excluded item because isVariation"
                 return updates
 
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.m_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
-                newVal = self.new_m_object.get(col)
-                updates[col] = newVal
+                new_val = self.new_m_object.get(col)
+                updates[col] = new_val
                 if self.DEBUG_UPDATE:
-                    self.registerMessage(u"newval: %s" % repr(newVal))
+                    self.registerMessage(u"newval: %s" % repr(new_val))
             # if data.get('aliases'):
             #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
             #     data_aliases = data['aliases']
@@ -1231,7 +1240,7 @@ class SyncUpdate_Var_Woo(SyncUpdate_Prod_Woo):
 
 
 class SyncUpdate_Cat_Woo(SyncUpdate):
-    colData = ColData_Woo
+    col_data = ColData_Woo
     s_meta_target = 'wp-api'
 
     @property
@@ -1242,28 +1251,28 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
     def slave_id(self):
         return self.get_s_value('ID')
 
-    def valuesSimilar(self, col, mValue, sValue):
+    def valuesSimilar(self, col, m_value, s_value):
         response = super(SyncUpdate_Cat_Woo, self).valuesSimilar(
-            col, mValue, sValue)
+            col, m_value, s_value)
         if not response:
             if col is 'descsum':
-                mDesc = SanitationUtils.similarMarkupComparison(mValue)
-                sDesc = SanitationUtils.similarMarkupComparison(sValue)
-                if mDesc == sDesc:
+                m_desc = SanitationUtils.similarMarkupComparison(m_value)
+                s_desc = SanitationUtils.similarMarkupComparison(s_value)
+                if m_desc == s_desc:
                     response = True
 
         if self.DEBUG_UPDATE:
             self.registerMessage(self.testToStr(
-                col, mValue.__repr__(), sValue.__repr__(), response))
+                col, m_value.__repr__(), s_value.__repr__(), response))
         return response
 
     def getSlaveUpdatesNativeRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         # SanitationUtils.safePrint("getting updates for col %s, updates: %s" % (col, str(updates)))
 
-        if col in self.colData.data:
-            data = self.colData.data[col]
+        if col in self.col_data.data:
+            data = self.col_data.data[col]
             if self.s_meta_target in data:
                 data_s = data[self.s_meta_target]
                 if 'key' in data_s:
@@ -1294,23 +1303,23 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
         return updates
 
     def getSlaveUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
-                    newVal = self.new_s_object.get(col)
-                    updates[col] = newVal
+                    new_val = self.new_s_object.get(col)
+                    updates[col] = new_val
                     if self.DEBUG_UPDATE:
-                        self.registerMessage(u"newval: %s" % repr(newVal))
+                        self.registerMessage(u"newval: %s" % repr(new_val))
             # if data.get('aliases'):
             #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
             #     data_aliases = data['aliases']
@@ -1327,27 +1336,28 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
         return updates
 
     def getMasterUpdatesRecursive(self, col, updates=None):
-        if updates == None:
+        if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
             self.registerMessage(u"checking %s" % unicode(col))
 
         if col == 'catlist':
-            if hasattr(self.old_s_object, 'isVariation') and self.old_s_object.isVariation:
+            if hasattr(self.old_s_object,
+                       'isVariation') and self.old_s_object.isVariation:
                 # print "excluded item because isVariation"
                 return updates
 
-        if col in self.colData.data:
+        if col in self.col_data.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
-            data = self.colData.data[col]
+            data = self.col_data.data[col]
             if data.get(self.m_meta_target):
                 if self.DEBUG_UPDATE:
                     self.registerMessage(u"wp exists")
-                newVal = self.new_m_object.get(col)
-                updates[col] = newVal
+                new_val = self.new_m_object.get(col)
+                updates[col] = new_val
                 if self.DEBUG_UPDATE:
-                    self.registerMessage(u"newval: %s" % repr(newVal))
+                    self.registerMessage(u"newval: %s" % repr(new_val))
             # if data.get('aliases'):
             #     if self.DEBUG_UPDATE: self.registerMessage( u"has aliases" )
             #     data_aliases = data['aliases']

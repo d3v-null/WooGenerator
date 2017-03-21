@@ -30,8 +30,8 @@ class UsrSyncClient_WP(SyncClientWP):
 
 class UsrSyncClient_SSH_ACT(SyncClientAbstract):
 
-    def __init__(self, connect_params, dbParams, fsParams):
-        self.dbParams = dbParams
+    def __init__(self, connect_params, db_params, fsParams):
+        self.db_params = db_params
         self.fsParams = fsParams
         super(UsrSyncClient_SSH_ACT, self).__init__(connect_params)
 
@@ -59,21 +59,21 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
                 SanitationUtils.coerceUnicode(error)
             )
 
-    def putFile(self, localPath, remotePath):
+    def putFile(self, local_path, remote_path):
         self.assert_connect()
 
-        # remoteDir, remoteFileName = os.path.split(remotePath)
-        remoteDir = os.path.split(remotePath)[0]
+        # remote_dir, remoteFileName = os.path.split(remote_path)
+        remote_dir = os.path.split(remote_path)[0]
 
         exception = Exception()
         sftpClient = self.service.open_sftp()
-        if remoteDir:
+        if remote_dir:
             try:
-                sftpClient.stat(remoteDir)
+                sftpClient.stat(remote_dir)
             except:
-                sftpClient.mkdir(remoteDir)
-        sftpClient.put(localPath, remotePath)
-        fstat = sftpClient.stat(remotePath)
+                sftpClient.mkdir(remote_dir)
+        sftpClient.put(local_path, remote_path)
+        fstat = sftpClient.stat(remote_path)
         sftpClient.close()
 
         if not fstat:
@@ -82,13 +82,13 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
 
         # try:
         #     sftpClient = self.service.open_sftp()
-        #     if remoteDir:
+        #     if remote_dir:
         #         try:
-        #             sftpClient.stat(remoteDir)
+        #             sftpClient.stat(remote_dir)
         #         except:
-        #             sftpClient.mkdir(remoteDir)
-        #     sftpClient.put(localPath, remotePath)
-        #     fstat = sftpClient.stat(remotePath)
+        #             sftpClient.mkdir(remote_dir)
+        #     sftpClient.put(local_path, remote_path)
+        #     fstat = sftpClient.stat(remote_path)
         #     if not fstat:
         #         exception = UserWarning("could not stat remote file")
         # except Exception, exc:
@@ -98,11 +98,11 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # if not isinstance(exception, Exception):
         #     raise exception
 
-    def assertRemoteFileExists(self, remotePath, assertion=""):
+    def assertRemoteFileExists(self, remote_path, assertion=""):
         self.assert_connect()
 
-        # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remotePath)
-        stderr = self.service.exec_command('stat "%s"' % remotePath)[2]
+        # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remote_path)
+        stderr = self.service.exec_command('stat "%s"' % remote_path)[2]
         possible_errors = stderr.readlines()
         assert not possible_errors, " ".join(
             [assertion, "stat returned possible errors", str(possible_errors)])
@@ -113,19 +113,19 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             self.progress_counter = ProgressCounter(total)
         self.progress_counter.maybePrintUpdate(completed)
 
-    def getDeleteFile(self, remotePath, localPath):
-        self.assertRemoteFileExists(remotePath)
+    def getDeleteFile(self, remote_path, local_path):
+        self.assertRemoteFileExists(remote_path)
 
         sftpClient = self.service.open_sftp()
-        sftpClient.get(remotePath, localPath, self.printFileProgress)
-        sftpClient.remove(remotePath)
+        sftpClient.get(remote_path, local_path, self.printFileProgress)
+        sftpClient.remove(remote_path)
         sftpClient.close()
 
         # exception = None
         # try:
         #     sftpClient = self.service.open_sftp()
-        #     sftpClient.get(remotePath, localPath, self.printFileProgress)
-        #     sftpClient.remove(remotePath)
+        #     sftpClient.get(remote_path, local_path, self.printFileProgress)
+        #     sftpClient.remove(remote_path)
         # except Exception, exc:
         #     exception = exc
         # finally:
@@ -133,9 +133,9 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # if exception:
         #     raise exception
 
-    def removeRemoteFile(self, remotePath):
-        self.assertRemoteFileExists(remotePath)
-        self.service.exec_command('rm "%s"' % remotePath)
+    def removeRemoteFile(self, remote_path):
+        self.assertRemoteFileExists(remote_path)
+        self.service.exec_command('rm "%s"' % remote_path)
 
     def upload_changes(self, user_pkey, updates=None):
         if not updates:
@@ -152,17 +152,17 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             + updates.items()
         )
 
-        importName = self.fsParams['importName']
-        outFolder = self.fsParams['outFolder']
+        import_name = self.fsParams['import_name']
+        out_folder = self.fsParams['out_folder']
         remote_export_folder = self.fsParams['remote_export_folder']
-        fileRoot = 'act_i_' + importName + '_' + user_pkey
-        fileName = fileRoot + '.csv'
-        localPath = os.path.join(outFolder, fileName)
-        remotePath = os.path.join(remote_export_folder, fileName)
-        importedFile = os.path.join(
-            remote_export_folder, fileRoot + '.imported')
+        file_root = 'act_i_' + import_name + '_' + user_pkey
+        file_name = file_root + '.csv'
+        local_path = os.path.join(out_folder, file_name)
+        remote_path = os.path.join(remote_export_folder, file_name)
+        imported_file = os.path.join(
+            remote_export_folder, file_root + '.imported')
 
-        with open(localPath, 'w+') as out_file:
+        with open(local_path, 'w+') as out_file:
             csvdialect = UnicodeCsvDialectUtils.act_out
             dictwriter = unicodecsv.DictWriter(
                 out_file,
@@ -174,14 +174,14 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             dictwriter.writeheader()
             dictwriter.writerow(updates)
 
-        self.putFile(localPath, remotePath)
+        self.putFile(local_path, remote_path)
 
         tokens = [
             'cd ' + remote_export_folder + ';',
             '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-                **self.dbParams
+                **self.db_params
             ),
-            ('"%s"' % fileName) if fileName else None
+            ('"%s"' % file_name) if file_name else None
         ]
 
         command = " ".join(token for token in tokens if token)
@@ -191,15 +191,15 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # command = " ".join(filter(None,[
         #     'cd ' + remote_export_folder + ';',
         #     '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-        #         **self.dbParams
+        #         **self.db_params
         #     ),
-        #     ('"%s"' % fileName) if fileName else None
+        #     ('"%s"' % file_name) if file_name else None
         # ]))
 
         self.execSilentCommandAssert(command)
 
         try:
-            self.removeRemoteFile(importedFile)
+            self.removeRemoteFile(imported_file)
         except:
             raise Exception("import didn't produce a .imported file")
 
@@ -211,21 +211,21 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             # this gets rid of unused argument warnings
             pass
 
-        importName = self.fsParams['importName']
+        import_name = self.fsParams['import_name']
         remote_export_folder = self.fsParams['remote_export_folder']
-        fileRoot = 'act_x_' + importName
-        fileName = fileRoot + '.csv'
-        inFolder = self.fsParams['inFolder']
-        localPath = os.path.join(inFolder, fileName)
-        remotePath = os.path.join(remote_export_folder, fileName)
+        file_root = 'act_x_' + import_name
+        file_name = file_root + '.csv'
+        in_folder = self.fsParams['in_folder']
+        local_path = os.path.join(in_folder, file_name)
+        remote_path = os.path.join(remote_export_folder, file_name)
 
         tokens = [
             'cd ' + remote_export_folder + ';',
             '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
-                **self.dbParams
+                **self.db_params
             ),
             '-s"%s"' % since,
-            '"%s"' % fileName
+            '"%s"' % file_name
         ]
 
         command = " ".join([token for token in tokens if token])
@@ -233,18 +233,18 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # command = " ".join(filter(None,[
         #     'cd ' + remote_export_folder + ';',
         #     '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
-        #         **self.dbParams
+        #         **self.db_params
         #     ),
         #     '-s"%s"' % since,
-        #     '"%s"' % fileName
+        #     '"%s"' % file_name
         # ]))
 
         print "executing export command..."
         self.execSilentCommandAssert(command)
         print "donloading file..."
-        self.getDeleteFile(remotePath, localPath)
+        self.getDeleteFile(remote_path, local_path)
         print "analysing file..."
-        parser.analyseFile(localPath, dialect_suggestion='act_out')
+        parser.analyseFile(local_path, dialect_suggestion='act_out')
 
 
 class UsrSyncClient_SQL_WP(SyncClientAbstract):
@@ -252,9 +252,9 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
 
     """docstring for UsrSyncClient_SQL_WP"""
 
-    def __init__(self, connect_params, dbParams):
-        self.dbParams = dbParams
-        self.tbl_prefix = self.dbParams.pop('tbl_prefix', '')
+    def __init__(self, connect_params, db_params):
+        self.db_params = db_params
+        self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
         super(UsrSyncClient_SQL_WP, self).__init__(connect_params)
         # self.fsParams = fsParams
 
@@ -272,9 +272,9 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
 
         self.assert_connect()
 
-        # srv_offset = self.dbParams.pop('srv_offset','')
-        self.dbParams['port'] = self.service.local_bind_address[-1]
-        cursor = pymysql.connect(**self.dbParams).cursor()
+        # srv_offset = self.db_params.pop('srv_offset','')
+        self.db_params['port'] = self.service.local_bind_address[-1]
+        cursor = pymysql.connect(**self.db_params).cursor()
 
         sm_where_clauses = []
 
@@ -291,7 +291,7 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
             "MAX(tu.`time`) as `Edited in Wordpress`"
         ]
 
-        for tracking_name, aliases in ColData_User.getWPTrackedCols().items():
+        for tracking_name, aliases in ColData_User.get_wp_tracked_cols().items():
             case_clauses = []
             for alias in aliases:
                 case_clauses.append(
@@ -337,21 +337,21 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
             #     # n rows to analyse
             #     print "THERE ARE %d ITEMS" % len(results)
 
-        wpDbMetaCols = ColData_User.getWPDBCols(meta=True)
-        wpDbCoreCols = ColData_User.getWPDBCols(meta=False)
+        wp_db_meta_cols = ColData_User.get_wpdb_cols(meta=True)
+        wp_db_core_cols = ColData_User.get_wpdb_cols(meta=False)
 
         userdata_cols = ",\n\t\t".join(filter(None,
                                               [
                                                   "u.%s as `%s`" % (key, name)
-                                                  for key, name in wpDbCoreCols.items()
+                                                  for key, name in wp_db_core_cols.items()
                                               ] + [
                                                   "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (
                                                       key, name)
-                                                  for key, name in wpDbMetaCols.items()
+                                                  for key, name in wp_db_meta_cols.items()
                                               ]
                                               ))
 
-        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
+        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.get_wp_cols().items()))
 
         # assert all([
         #     'Wordpress ID' in wpCols.keys(),

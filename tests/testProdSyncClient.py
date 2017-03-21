@@ -26,10 +26,10 @@ class testProdSyncClient(abstractSyncClientTestCase):
         self.productParserArgs = {}
 
     def processConfig(self, config):
-        # if 'inFolder' in config.keys():
-        #     inFolder = config['inFolder']
-        # if 'outFolder' in config.keys():
-        #     outFolder = config['outFolder']
+        # if 'in_folder' in config.keys():
+        #     in_folder = config['in_folder']
+        # if 'out_folder' in config.keys():
+        #     out_folder = config['out_folder']
         # if 'logFolder' in config.keys():
         #     logFolder = config['logFolder']
 
@@ -52,11 +52,11 @@ class testProdSyncClient(abstractSyncClientTestCase):
         }
 
         self.productParserArgs = {
-            'importName': self.importName,
+            'import_name': self.import_name,
             # 'itemDepth': itemDepth,
             # 'taxoDepth': taxoDepth,
-            'cols': ColData_Woo.getImportCols(),
-            'defaults': ColData_Woo.getDefaults(),
+            'cols': ColData_Woo.get_import_cols(),
+            'defaults': ColData_Woo.get_defaults(),
         }
 
     def setUp(self):

@@ -56,10 +56,10 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     with open(settings.yaml_path) as stream:
         config = yaml.load(stream)
 
-        if 'inFolder' in config.keys():
-            settings.in_folder = config['inFolder']
-        if 'outFolder' in config.keys():
-            settings.out_folder = config['outFolder']
+        if 'in_folder' in config.keys():
+            settings.in_folder = config['in_folder']
+        if 'out_folder' in config.keys():
+            settings.out_folder = config['out_folder']
         if 'logFolder' in config.keys():
             settings.log_folder = config['logFolder']
 
@@ -398,7 +398,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     file_suffix = "_test" if settings.test_mode else ""
     file_suffix += "_filter" if do_filter else ""
     m_x_filename = "act_x" + file_suffix + "_" + settings.import_name + ".csv"
-    # m_i_filename = "act_i"+file_suffix+"_"+importName+".csv"
+    # m_i_filename = "act_i"+file_suffix+"_"+import_name+".csv"
     s_x_filename = "wp_x" + file_suffix + "_" + settings.import_name + ".csv"
     # remoteExportPath = os.path.join(settings.remote_export_folder, m_x_filename)
 
@@ -406,20 +406,20 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         ma_path = os.path.join(settings.in_folder, m_x_filename)
         ma_encoding = "utf-8"
     else:
-        # ma_path = os.path.join(inFolder, "act_x_test_2016-05-03_23-01-48.csv")
+        # ma_path = os.path.join(in_folder, "act_x_test_2016-05-03_23-01-48.csv")
         ma_path = os.path.join(settings.in_folder, settings.master_file)
-        # ma_path = os.path.join(inFolder, "500-act-records-edited.csv")
-        # ma_path = os.path.join(inFolder, "500-act-records.csv")
+        # ma_path = os.path.join(in_folder, "500-act-records-edited.csv")
+        # ma_path = os.path.join(in_folder, "500-act-records.csv")
         ma_encoding = "utf8"
     if download_slave:
         sa_path = os.path.join(settings.in_folder, s_x_filename)
         sa_encoding = "utf8"
     else:
         sa_path = os.path.join(settings.in_folder, settings.slave_file)
-        # sa_path = os.path.join(inFolder, "500-wp-records-edited.csv")
+        # sa_path = os.path.join(in_folder, "500-wp-records-edited.csv")
         sa_encoding = "utf8"
 
-    # moPath = os.path.join(outFolder, m_i_filename)
+    # moPath = os.path.join(out_folder, m_i_filename)
     settings.rep_path = os.path.join(settings.out_folder,
                                      "usr_sync_report%s.html" % file_suffix)
     repd_path = os.path.join(settings.out_folder,
@@ -447,7 +447,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     # xmlrpc_uri = store_url + 'xmlrpc.php'
     # json_uri = store_url + 'wp-json/wp/v2'
 
-    settings.act_fields = ";".join(ColData_User.getACTImportCols())
+    settings.act_fields = ";".join(ColData_User.get_act_import_cols())
 
     # jsonconnect_params = {
     #     'json_uri': json_uri,
@@ -490,10 +490,10 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         act_db_params['since'] = settings.since_m
 
     fs_params = {
-        'importName': settings.import_name,
+        'import_name': settings.import_name,
         'remote_export_folder': settings.remote_export_folder,
-        'inFolder': settings.in_folder,
-        'outFolder': settings.out_folder
+        'in_folder': settings.in_folder,
+        'out_folder': settings.out_folder
     }
 
     #########################################
@@ -518,7 +518,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
                             for line in filter_file_obj
                         ]
-                except IOError, exc:
+                except IOError as exc:
                     SanitationUtils.safePrint(
                         "could not open %s file [%s] from %s" % (
                             key, filter_file, unicode(os.getcwd())))
@@ -540,8 +540,8 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         "Download / Generate Slave Parser Object"), timediff(settings)
 
     sa_parser = CSVParse_User(
-        cols=ColData_User.getWPImportCols(),
-        defaults=ColData_User.getDefaults(),
+        cols=ColData_User.get_wp_import_cols(),
+        defaults=ColData_User.get_defaults(),
         filterItems=filter_items,
         limit=settings.limit,
         source=settings.slave_name)
@@ -588,7 +588,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
             sa_parser.getObjList().exportItems(
                 os.path.join(settings.in_folder, s_x_filename),
-                ColData_User.getWPImportColNames())
+                ColData_User.get_wp_import_col_names())
 
     else:
         sa_parser.analyseFile(sa_path, sa_encoding)
@@ -600,8 +600,8 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     #########################################
 
     ma_parser = CSVParse_User(
-        cols=ColData_User.getACTImportCols(),
-        defaults=ColData_User.getDefaults(),
+        cols=ColData_User.get_act_import_cols(),
+        defaults=ColData_User.get_defaults(),
         contact_schema='act',
         filterItems=filter_items,
         limit=settings.limit,
@@ -762,7 +762,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         print debugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
         print timediff(settings)
 
-        sync_cols = ColData_User.getSyncCols()
+        sync_cols = ColData_User.get_sync_cols()
 
         if Registrar.DEBUG_PROGRESS:
             sync_progress_counter = ProgressCounter(len(global_matches))
@@ -805,7 +805,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                         try:
                             email_conflict_matches.add_match(
                                 Match(m_objects, s_objects))
-                        except Exception, exc:
+                        except Exception as exc:
                             SanitationUtils.safePrint(
                                 ("something happened adding an email "
                                  "conflict, new_email: %s ; exception: %s") %
@@ -859,7 +859,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         css = ""
         reporter = HtmlReporter(css=css)
 
-        basic_cols = ColData_User.getBasicCols()
+        basic_cols = ColData_User.get_basic_cols()
         address_cols = OrderedDict(basic_cols.items() + [
             ('address_reason', {}),
             ('Edited Address', {}),
@@ -869,8 +869,8 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             ('name_reason', {}),
             ('Edited Name', {}),
         ])
-        csv_colnames = ColData_User.getColNames(
-            OrderedDict(basic_cols.items() + ColData_User.nameCols([
+        csv_colnames = ColData_User.get_col_names(
+            OrderedDict(basic_cols.items() + ColData_User.name_cols([
                 'address_reason',
                 'name_reason',
                 'Edited Name',
@@ -881,59 +881,59 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         sanitizing_group = HtmlReporter.Group('sanitizing',
                                               'Sanitizing Results')
 
-        if sa_parser.badAddress:
+        if sa_parser.bad_address:
             sanitizing_group.addSection(
                 HtmlReporter.Section(
                     's_bad_addresses_list',
                     title='Bad %s Address List' % settings.slave_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.slave_name,
-                    data=UsrObjList(sa_parser.badAddress.values()).tabulate(
+                    data=UsrObjList(sa_parser.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(sa_parser.badAddress)))
+                    length=len(sa_parser.bad_address)))
 
-        if sa_parser.badName:
+        if sa_parser.bad_name:
             sanitizing_group.addSection(
                 HtmlReporter.Section(
                     's_bad_names_list',
                     title='Bad %s Names List' % settings.slave_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.slave_name,
-                    data=UsrObjList(sa_parser.badName.values()).tabulate(
+                    data=UsrObjList(sa_parser.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(sa_parser.badName)))
-        if sa_parser.badName or sa_parser.badAddress:
-            UsrObjList(sa_parser.badName.values() + ma_parser.badAddress.
+                    length=len(sa_parser.bad_name)))
+        if sa_parser.bad_name or sa_parser.bad_address:
+            UsrObjList(sa_parser.bad_name.values() + ma_parser.bad_address.
                        values()).exportItems(w_pres_csv_path, csv_colnames)
 
-        if ma_parser.badAddress:
+        if ma_parser.bad_address:
             sanitizing_group.addSection(
                 HtmlReporter.Section(
                     'm_bad_addresses_list',
                     title='Bad %s Address List' % settings.master_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.master_name,
-                    data=UsrObjList(ma_parser.badAddress.values()).tabulate(
+                    data=UsrObjList(ma_parser.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(ma_parser.badAddress)))
+                    length=len(ma_parser.bad_address)))
 
-        if ma_parser.badName:
+        if ma_parser.bad_name:
             sanitizing_group.addSection(
                 HtmlReporter.Section(
                     'm_bad_names_list',
                     title='Bad %s Names List' % settings.master_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.master_name,
-                    data=UsrObjList(ma_parser.badName.values()).tabulate(
+                    data=UsrObjList(ma_parser.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(ma_parser.badName)))
+                    length=len(ma_parser.bad_name)))
 
-        if ma_parser.badName or ma_parser.badAddress:
-            UsrObjList(ma_parser.badName.values() + ma_parser.badAddress.values())\
+        if ma_parser.bad_name or ma_parser.bad_address:
+            UsrObjList(ma_parser.bad_name.values() + ma_parser.bad_address.values())\
                 .exportItems(master_res_csv_path, csv_colnames)
 
         reporter.addGroup(sanitizing_group)
@@ -950,10 +950,10 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                 filter(None, [update.new_s_object
                               for update in s_delta_updates]))
 
-            delta_cols = ColData_User.getDeltaCols()
+            delta_cols = ColData_User.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColData_User.getBasicCols().items() + ColData_User.nameCols(
+                ColData_User.get_basic_cols().items() + ColData_User.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if m_delta_list:
@@ -982,11 +982,11 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             if m_delta_list:
                 m_delta_list.exportItems(
                     master_delta_csv_path,
-                    ColData_User.getColNames(all_delta_cols))
+                    ColData_User.get_col_names(all_delta_cols))
             if s_delta_list:
                 s_delta_list.exportItems(
                     slave_delta_csv_path,
-                    ColData_User.getColNames(all_delta_cols))
+                    ColData_User.get_col_names(all_delta_cols))
 
         report_matching = args.do_sync
         if report_matching:
@@ -1119,7 +1119,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             dup_reporter = HtmlReporter(css=dup_css)
             duplicate_group = HtmlReporter.Group('dup', 'Duplicate Results')
 
-            basic_cols = ColData_User.getBasicCols()
+            basic_cols = ColData_User.get_basic_cols()
             dup_cols = OrderedDict(basic_cols.items() + [
                 # ('Create Date', {}),
                 # ('Last Sale', {})
@@ -1363,13 +1363,13 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybePrintUpdate(count)
-                # if update.WPID == '1':
-                #     print repr(update.WPID)
+                # if update.wpid == '1':
+                #     print repr(update.wpid)
                 #     continue
                 if update_master and update.m_updated:
                     try:
                         update.updateMaster(master_client)
-                    except Exception, exc:
+                    except Exception as exc:
                         master_failures.append({
                             'update':
                             update,
@@ -1395,7 +1395,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                 if update_slave and update.s_updated:
                     try:
                         update.updateSlave(slave_client)
-                    except Exception, exc:
+                    except Exception as exc:
                         slave_failures.append({
                             'update':
                             update,

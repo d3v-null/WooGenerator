@@ -103,7 +103,7 @@ def download_media_csv(service, fildId, local_fd):
     while True:
         try:
             download_progress, done = media_request.next_chunk()
-        except errors.HttpError, error:
+        except errors.HttpError as error:
             print 'An error occurred: %s' % error
             return
         if download_progress:

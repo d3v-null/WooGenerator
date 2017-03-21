@@ -16,27 +16,27 @@ from woogenerator.parsing.gen import ImportGenMixin, ImportGenObject
 class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
-    reportCols = ColData_Prod.getReportCols()
+    reportCols = ColData_Prod.get_report_cols()
 
-    def append(self, objectData):
-        assert issubclass(objectData.__class__, ImportShopMixin), \
+    def append(self, object_data):
+        assert issubclass(object_data.__class__, ImportShopMixin), \
             "object must be subclass of ImportShopMixin not %s : %s" % (
-                SanitationUtils.coerceUnicode(objectData.__class__),
-                SanitationUtils.coerceUnicode(objectData)
+                SanitationUtils.coerceUnicode(object_data.__class__),
+                SanitationUtils.coerceUnicode(object_data)
         )
-        return super(ShopProdList, self).append(objectData)
+        return super(ShopProdList, self).append(object_data)
 
 
 class ShopCatList(ItemList):
-    reportCols = ColData_Prod.getReportCols()
+    reportCols = ColData_Prod.get_report_cols()
 
 
 class ShopObjList(ObjList):
 
-    def __init__(self, fileName=None, objects=None, indexer=None):
-        self.fileName = fileName
+    def __init__(self, file_name=None, objects=None, indexer=None):
+        self.file_name = file_name
         self.isValid = True
-        if not self.fileName:
+        if not self.file_name:
             self.isValid = False
         self.products = ShopProdList()
         self.categories = ShopCatList()
@@ -71,26 +71,26 @@ class ShopObjList(ObjList):
     #     return self._isValid
     #
     # @property
-    # def fileName(self):
+    # def file_name(self):
     #     return self._fileName
 
-    def append(self, objectData):
-        assert isinstance(objectData, ImportShopMixin)
-        if objectData.isCategory:
+    def append(self, object_data):
+        assert isinstance(object_data, ImportShopMixin)
+        if object_data.isCategory:
             container = self.categories
-        elif objectData.isProduct:
+        elif object_data.isProduct:
             container = self.products
         else:
             container = self._objects
 
-        if objectData not in container:
-            bisect.insort(container, objectData)
+        if object_data not in container:
+            bisect.insort(container, object_data)
 
     def invalidate(self, reason=""):
         if self.DEBUG_IMG:
             if not reason:
                 reason = "IMG INVALID"
-            self.registerError(reason, self.fileName)
+            self.registerError(reason, self.file_name)
         self.isValid = False
 
 
@@ -155,9 +155,9 @@ class ImportShopMixin(object):
 
     def registerImage(self, image):
         assert isinstance(image, (str, unicode))
-        thisImages = self.images
-        if image not in thisImages:
-            thisImages.append(image)
+        this_images = self.images
+        if image not in this_images:
+            this_images.append(image)
             # parent = self.getParent()
             # parentImages = parent.getImages()
             # if not parentImages:
@@ -168,51 +168,51 @@ class ImportShopMixin(object):
         self.registerError(exc)
         return self.images
 
-    def toApiData(self, colData, api):
-        apiData = OrderedDict()
+    def toApiData(self, col_data, api):
+        api_data = OrderedDict()
         if self.isCategory:
-            for col, col_data in colData.getWPAPICategoryCols(api).items():
+            for col, col_data in col_data.get_wpapi_category_cols(api).items():
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
                     except:
                         wp_api_key = col
-                    apiData[wp_api_key] = self[col]
-            if self.parent and self.parent.WPID:
-                apiData['parent'] = self.parent.WPID
+                    api_data[wp_api_key] = self[col]
+            if self.parent and self.parent.wpid:
+                api_data['parent'] = self.parent.wpid
         else:
             assert self.isProduct
-            for col, col_data in colData.getWPAPICoreCols(api).items():
+            for col, col_data in col_data.get_wpapi_core_cols(api).items():
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
                     except:
                         wp_api_key = col
-                    apiData[wp_api_key] = self[col]
-            for col, col_data in colData.getWPAPIMetaCols(api).items():
+                    api_data[wp_api_key] = self[col]
+            for col, col_data in col_data.getWPAPIMetaCols(api).items():
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
                     except:
                         wp_api_key = col
-                    if not 'meta' in apiData:
-                        apiData['meta'] = {}
-                    apiData['meta'][wp_api_key] = self[col]
+                    if not 'meta' in api_data:
+                        api_data['meta'] = {}
+                    api_data['meta'][wp_api_key] = self[col]
             if self.isVariable:
                 variations = []
                 for variation in self.variations.values():
-                    variationData = variation.toApiData(colData, api)
-                    variations.append(variationData)
-                apiData['variations'] = variations
-        return apiData
+                    variation_data = variation.toApiData(col_data, api)
+                    variations.append(variation_data)
+                api_data['variations'] = variations
+        return api_data
 
 
 class ImportShopProductMixin(object):
     container = ShopProdList
-    # categoryIndexer = Registrar.getObjectIndex
-    categoryIndexer = Registrar.getObjectRowcount
-    # categoryIndexer = CSVParse_Gen_Mixin.getFullNameSum
-    # categoryIndexer = CSVParse_Gen_Mixin.getNameSum
+    # category_indexer = Registrar.getObjectIndex
+    category_indexer = Registrar.getObjectRowcount
+    # category_indexer = CSVParse_Gen_Mixin.getFullNameSum
+    # category_indexer = CSVParse_Gen_Mixin.getNameSum
     product_type = None
     isProduct = True
 
@@ -222,20 +222,20 @@ class ImportShopProductMixin(object):
         # super(ImportShopProductMixin, self).__init__(*args, **kwargs)
         self.categories = OrderedDict()
 
-    def registerCategory(self, catData):
+    def registerCategory(self, cat_data):
         self.registerAnything(
-            catData,
+            cat_data,
             self.categories,
             # indexer = self.getSum,
-            indexer=self.categoryIndexer,
+            indexer=self.category_indexer,
             singular=True,
             resolver=self.duplicateObjectExceptionResolver,
             registerName='product categories'
         )
 
-    def joinCategory(self, catData):
-        self.registerCategory(catData)
-        catData.registerMember(self)
+    def joinCategory(self, cat_data):
+        self.registerCategory(cat_data)
+        cat_data.registerMember(self)
 
     def getCategories(self):
         exc = DeprecationWarning("use .categories instead of .getCategories()")
@@ -243,14 +243,14 @@ class ImportShopProductMixin(object):
         return self.categories
 
     @property
-    def typeName(self):
+    def type_name(self):
         return self.product_type
 
     def getTypeName(self):
         exc = DeprecationWarning(
             "use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
         self.registerError(exc)
-        return self.typeName
+        return self.type_name
         # return self.product_type
 
 
@@ -291,15 +291,15 @@ class ImportShopProductVariationMixin(object):
     isVariation = True
     container = ImportShopProductMixin.container
 
-    def registerParentProduct(self, parentData):
-        assert issubclass(type(parentData), ImportShopProductVariableMixin)
-        self.parentProduct = parentData
-        self['parent_SKU'] = parentData.codesum
+    def registerParentProduct(self, parent_data):
+        assert issubclass(type(parent_data), ImportShopProductVariableMixin)
+        self.parentProduct = parent_data
+        self['parent_SKU'] = parent_data.codesum
 
-    def joinVariable(self, parentData):
-        assert issubclass(type(parentData), ImportShopProductVariableMixin)
-        self.registerParentProduct(parentData)
-        parentData.registerVariation(self)
+    def joinVariable(self, parent_data):
+        assert issubclass(type(parent_data), ImportShopProductVariableMixin)
+        self.registerParentProduct(parent_data)
+        parent_data.registerVariation(self)
 
     def getParentProduct(self):
         return self.parentProduct
@@ -333,8 +333,8 @@ class ImportShopCategoryMixin(object):
         return self.members
 
     # @property
-    # def identifierDelimeter(self):
-    #     delim = super(ImportShopCategoryMixin, self).identifierDelimeter
+    # def identifier_delimeter(self):
+    #     delim = super(ImportShopCategoryMixin, self).identifier_delimeter
     #     return '|'.join([d for d in [delim, self.namesum] ])
 
 
@@ -349,7 +349,7 @@ class CSVParse_Shop_Mixin(object):
     variationContainer = ImportShopProductVariationMixin
     categoryContainer = ImportShopCategoryMixin
     productIndexer = CSVParse_Gen_Mixin.getCodeSum
-    categoryIndexer = CSVParse_Gen_Mixin.getCodeSum
+    category_indexer = CSVParse_Gen_Mixin.getCodeSum
     variationIndexer = CSVParse_Gen_Mixin.getCodeSum
     do_images = True
 
@@ -365,7 +365,7 @@ class CSVParse_Shop_Mixin(object):
     #     if kwargs:
     #         pass # gets rid of unused kwargs warnings
     #     self.productIndexer = self.getCodeSum
-    #     self.categoryIndexer = self.getCodeSum
+    #     self.category_indexer = self.getCodeSum
 
     @property
     def containers(self):
@@ -402,13 +402,13 @@ class CSVParse_Shop_Mixin(object):
             registerName='products'
         )
 
-    def registerImage(self, image, objectData):
+    def registerImage(self, image, object_data):
         assert isinstance(image, (str, unicode))
         assert image is not ""
         if image not in self.images.keys():
             self.images[image] = ShopObjList(image)
-        self.images[image].append(objectData)
-        objectData.registerImage(image)
+        self.images[image].append(object_data)
+        object_data.registerImage(image)
 
     def getProducts(self):
         exc = DeprecationWarning("Use .products instead of .getProducts()")
@@ -418,66 +418,66 @@ class CSVParse_Shop_Mixin(object):
                 "returning products: {}".format(self.products.keys()))
         return self.products
 
-    def registerObject(self, objectData):
+    def registerObject(self, object_data):
         if Registrar.DEBUG_MRO:
             Registrar.registerMessage(' ')
-        # super(CSVParse_Shop_Mixin, self).registerObject(objectData)
-        if issubclass(type(objectData), ImportShopProductMixin):
-            if issubclass(type(objectData), ImportShopProductVariationMixin):
+        # super(CSVParse_Shop_Mixin, self).registerObject(object_data)
+        if issubclass(type(object_data), ImportShopProductMixin):
+            if issubclass(type(object_data), ImportShopProductVariationMixin):
                 assert \
-                    objectData.isVariation, \
-                    "objectData not variation %s, obj isVariation: %s, cls isVariation; %s" \
-                    % (type(objectData), repr(objectData.isVariation), repr(type(objectData).isVariation))
-                parentData = objectData.parent
-                assert parentData and parentData.isVariable
-                self.registerVariation(parentData, objectData)
+                    object_data.isVariation, \
+                    "object_data not variation %s, obj isVariation: %s, cls isVariation; %s" \
+                    % (type(object_data), repr(object_data.isVariation), repr(type(object_data).isVariation))
+                parent_data = object_data.parent
+                assert parent_data and parent_data.isVariable
+                self.registerVariation(parent_data, object_data)
             else:
-                self.registerProduct(objectData)
+                self.registerProduct(object_data)
             # if Registrar.DEBUG_SHOP:
                 # Registrar.registerMessage("Object is product")
         # else:
             # if Registrar.DEBUG_SHOP:
             #     Registrar.registerMessage("Object is not product")
 
-    def registerCategory(self, catData):
+    def registerCategory(self, cat_data):
         assert\
-            issubclass(type(catData), ImportShopCategoryMixin), \
-            "catData should be ImportShopCategoryMixin not %s" % str(
-                type(catData))
+            issubclass(type(cat_data), ImportShopCategoryMixin), \
+            "cat_data should be ImportShopCategoryMixin not %s" % str(
+                type(cat_data))
         self.registerAnything(
-            catData,
+            cat_data,
             self.categories,
-            indexer=self.categoryIndexer,
+            indexer=self.category_indexer,
             resolver=self.passiveResolver,
             singular=True,
             registerName='categories'
         )
         self.registerAnything(
-            catData,
+            cat_data,
             self.categories_name,
-            indexer=catData.wooCatName,
+            indexer=cat_data.wooCatName,
             singular=False
         )
 
-    def joinCategory(self, catData, itemData=None):
+    def joinCategory(self, cat_data, itemData=None):
         if itemData:
             assert\
                 issubclass(type(itemData), ImportShopProductMixin), \
                 "itemData should be ImportShopProductMixin not %s" % str(
                     type(itemData))
             # for product_cat in itemData.categories:
-            #     assert self.categoryIndexer(product_cat) != self.categoryIndexer(catData)
-            itemData.joinCategory(catData)
+            #     assert self.category_indexer(product_cat) != self.category_indexer(cat_data)
+            itemData.joinCategory(cat_data)
 
-    def registerJoinCategory(self, catData, itemData=None):
-        self.registerCategory(catData)
-        self.joinCategory(catData, itemData)
+    def registerJoinCategory(self, cat_data, itemData=None):
+        self.registerCategory(cat_data)
+        self.joinCategory(cat_data, itemData)
 
-    def registerVariation(self, parentData, varData):
-        assert issubclass(type(parentData), ImportShopProductVariableMixin)
+    def registerVariation(self, parent_data, varData):
+        assert issubclass(type(parent_data), ImportShopProductVariableMixin)
         assert issubclass(type(
             varData), ImportShopProductVariationMixin), "varData should subclass ImportShopProductVariationMixin instead %s" % type(varData)
-        assert parentData.isVariable
+        assert parent_data.isVariable
         assert varData.isVariation, "varData should be a variation, is %s instead. type: %s" \
                                     % (repr(varData.isVariable), repr(type(varData)))
         # if self.DEBUG_API:
@@ -492,9 +492,9 @@ class CSVParse_Shop_Mixin(object):
             registerName='variations'
         )
 
-        varData.joinVariable(parentData)
+        varData.joinVariable(parent_data)
 
-    def registerAttribute(self, objectData, attr, val, var=False):
+    def registerAttribute(self, object_data, attr, val, var=False):
         try:
             attr = str(attr)
             assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(
@@ -506,7 +506,7 @@ class CSVParse_Shop_Mixin(object):
             self.registerError("could not register attribute: {}".format(exc))
             # raise exc
         else:
-            objectData.registerAttribute(attr, val, var)
+            object_data.registerAttribute(attr, val, var)
             self.registerAnything(
                 val,
                 self.attributes,
@@ -523,13 +523,13 @@ class CSVParse_Shop_Mixin(object):
                     registerName='Variable Attributes'
                 )
 
-    def toStrTreeRecursive(self, catData):
+    def toStrTreeRecursive(self, cat_data):
         response = ''
-        # print "stringing cat %s" % repr(catData)
-        for child in catData.children:
+        # print "stringing cat %s" % repr(cat_data)
+        for child in cat_data.children:
             if child.isRoot or not child.isCategory:
                 continue
-            registered = self.categoryIndexer(child) in self.categories.keys()
+            registered = self.category_indexer(child) in self.categories.keys()
             response += " | ".join([
                 "%-5s" % ((child.depth) * ' ' + '*'),
                 "%-16s" % str(child.get(self.objectContainer.codesumKey))[:16],
@@ -537,7 +537,7 @@ class CSVParse_Shop_Mixin(object):
                 "r:%5s" % str(child.rowcount)[:10],
                 "w:%5s" % str(child.get(self.objectContainer.wpidKey))[:10],
                 "%1s" % "R" if registered else " "
-                # "%5s" % child.WPID
+                # "%5s" % child.wpid
             ])
             response += '\n'
             response += self.toStrTreeRecursive(child)

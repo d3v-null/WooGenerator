@@ -12,12 +12,12 @@ from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
 class TestCSVParseSpecialV2(TestCase):
 
     def setUp(self):
-        # importName = TimeUtils.get_ms_timestamp()
+        # import_name = TimeUtils.get_ms_timestamp()
 
         self.specPath = os.path.join(tests_datadir, "specials_v2.csv")
 
         self.specialParserArgs = {
-            # 'importName':importName
+            # 'import_name':import_name
         }
 
         # Registrar.DEBUG_MESSAGE = True

@@ -66,7 +66,7 @@ def send_zipped_file(zipped_file, recipients, sender, connect_params):
     server.quit()
 
 srcFolder = "../source/"
-inFolder = "../input/"
+in_folder = "../input/"
 yamlPath = os.path.join(srcFolder, "merger_config.yaml")
 try:
     os.stat('source')

@@ -12,7 +12,8 @@ class HtmlReporter(object):
         data_heading_fmt = "<h3>%s</h3>"
         data_separater = "<hr>"
 
-        def __init__(self, classname, title=None, description="", data="", length=None):
+        def __init__(self, classname, title=None,
+                     description="", data="", length=None):
             if title is None:
                 title = classname.title()
             self.title = title
@@ -22,14 +23,14 @@ class HtmlReporter(object):
             self.classname = classname
 
         def toHtml(self):
-            sectionID = SanitationUtils.makeSafeClass(self.classname)
+            section_id = SanitationUtils.makeSafeClass(self.classname)
             out = '<div class="section">'
             out += '<a data-toggle="collapse" href="#{0}" aria-expanded="true" data-target="#{0}" aria-controls="{0}">'.format(
-                sectionID)
+                section_id)
             out += '<h2>' + self.title + \
                 (' ({})'.format(self.length) if self.length else '') + '</h2>'
             out += '</a>'
-            out += '<div class="collapse" id="' + sectionID + '">'
+            out += '<div class="collapse" id="' + section_id + '">'
             out += '<p class="description">' + \
                 (str(self.length) if self.length else "No") + \
                 ' ' + self.description + '</p>'
@@ -120,8 +121,8 @@ class HtmlReporter(object):
 
 def testHTMLReporter():
     with\
-            open('../output/htmlReporterTest.html', 'w+') as resFile,\
-            io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as uresFile:
+            open('../output/htmlReporterTest.html', 'w+') as res_file,\
+            io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as ures_file:
         reporter = HtmlReporter()
 
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
@@ -142,5 +143,5 @@ def testHTMLReporter():
 
         document = reporter.getDocument()
         # SanitationUtils.safePrint( document)
-        uresFile.write(SanitationUtils.coerceUnicode(document))
-        resFile.write(SanitationUtils.coerceAscii(document))
+        ures_file.write(SanitationUtils.coerceUnicode(document))
+        res_file.write(SanitationUtils.coerceAscii(document))

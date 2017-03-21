@@ -743,7 +743,7 @@ class EmailMatcher(FilteringMatcher):
         assert \
             hasattr(user_object, 'email'), \
             "must be able to get email, instead type is %s" % type(user_object)
-        return SanitationUtils.normalizeVal(user_object.email)
+        return SanitationUtils.normalize_val(user_object.email)
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
         if not s_match_indices:

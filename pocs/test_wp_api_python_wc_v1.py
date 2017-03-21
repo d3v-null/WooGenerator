@@ -18,7 +18,7 @@ def print_response(response):
         print "response headers: %s" % str(response.headers)
         print "request url: %s" % repr(response.request.url)
         print "request body: %s" % repr(response.request.body)
-    except Exception, exc:
+    except Exception as exc:
         print "failed: %s" % repr(exc)
         print "response: %s" % repr(response)
 

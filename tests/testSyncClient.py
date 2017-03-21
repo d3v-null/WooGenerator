@@ -23,7 +23,7 @@ class abstractSyncClientTestCase(TestCase):
     def processConfig(self, config): raise NotImplementedError()
 
     def setUp(self):
-        self.importName = TimeUtils.get_ms_timestamp()
+        self.import_name = TimeUtils.get_ms_timestamp()
 
         with open(self.yamlPath) as stream:
             config = yaml.load(stream)
@@ -116,11 +116,11 @@ class testSyncClient(abstractSyncClientTestCase):
         print "wpApiParams", self.wpApiParams
 
         self.productParserArgs = {
-            'self.importName': self.importName,
+            'self.import_name': self.import_name,
             # 'itemDepth': itemDepth,
             # 'taxoDepth': taxoDepth,
-            'cols': ColData_Woo.getImportCols(),
-            'defaults': ColData_Woo.getDefaults(),
+            'cols': ColData_Woo.get_import_cols(),
+            'defaults': ColData_Woo.get_defaults(),
         }
 
         print "productParserArgs", self.productParserArgs

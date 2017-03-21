@@ -29,7 +29,8 @@ get_nonce = lambda: '27718007815082439851427366369'
 # get_nonce = lambda: str(str(random.getrandbits(64)) + str(get_timestamp()))
 
 
-def get_sign(params, url, http_method, consumer_secret='', oauth_token_secret=""):
+def get_sign(params, url, http_method, consumer_secret='',
+             oauth_token_secret=""):
     """returns HMAC-SHA1 sign"""
     params.sort()
     normalized_params = urlencode(params)

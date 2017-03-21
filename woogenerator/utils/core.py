@@ -103,9 +103,9 @@ class SanitationUtils:
 
     @classmethod
     def identifyAbbreviation(cls, abbrvDict, string):
-        for abbrvKey, abbrvs in abbrvDict.items():
-            if(string in [abbrvKey] + abbrvs):
-                return abbrvKey
+        for abbrv_key, abbrvs in abbrvDict.items():
+            if(string in [abbrv_key] + abbrvs):
+                return abbrv_key
         return string
 
     @classmethod
@@ -121,17 +121,17 @@ class SanitationUtils:
                 yield identified
 
     @classmethod
-    def compilePartialAbbrvRegex(cls,  abbrvKey, abbrvs):
+    def compilePartialAbbrvRegex(cls, abbrv_key, abbrvs):
         return "|".join(filter(None, [
             "|".join(filter(None, abbrvs)),
-            abbrvKey
+            abbrv_key
         ]))
 
     @classmethod
-    def compileAbbrvRegex(cls,  abbrv):
+    def compileAbbrvRegex(cls, abbrv):
         return "|".join(filter(None,
                                [cls.compilePartialAbbrvRegex(
-                                   abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
+                                   abbrv_key, abbrvValue) for abbrv_key, abbrvValue in abbrv.items()]
                                ))
 
     @classmethod
@@ -293,7 +293,7 @@ class SanitationUtils:
         print " ".join([cls.coerceBytes(arg) for arg in args])
 
     @classmethod
-    def normalizeVal(cls, thing):
+    def normalize_val(cls, thing):
         unicode_return = cls.compose(
             cls.coerceUnicode,
             cls.toUpper,
@@ -480,7 +480,8 @@ class SanitationUtils:
     @classmethod
     def compileRegex(cls, subs):
         if subs:
-            return re.compile("(%s)" % '|'.join(filter(None, map(re.escape, subs))))
+            return re.compile("(%s)" % '|'.join(
+                filter(None, map(re.escape, subs))))
         else:
             return None
 
@@ -541,7 +542,7 @@ class SanitationUtils:
     @classmethod
     def similarNoPunctuationComparison(cls, string):
         return cls.compose(
-            cls.normalizeVal,
+            cls.normalize_val,
             cls.stripPunctuation,
         )(string)
 
@@ -757,7 +758,8 @@ class SanitationUtils:
 
     @classmethod
     def stringContainsDisallowedPunctuation(cls, string):
-        return True if(re.search(cls.disallowedPunctuationRegex, string)) else False
+        return True if(
+            re.search(cls.disallowedPunctuationRegex, string)) else False
 
     @classmethod
     def stringContainsPunctuation(cls, string):
@@ -910,7 +912,7 @@ class descriptorUtils:
         def getter(self):
             assert key in self.keys(), "{} must be set before get in {}".format(
                 key, repr(type(self)))
-            return SanitationUtils.normalizeVal(self[key])
+            return SanitationUtils.normalize_val(self[key])
 
         def setter(self, value):
             assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(
@@ -1083,13 +1085,13 @@ class Registrar(object):
             "Object [index: %s] already exists in register %s" % (index, registerName))
 
     @classmethod
-    def getObjectRowcount(cls, objectData):
-        return objectData.rowcount
+    def getObjectRowcount(cls, object_data):
+        return object_data.rowcount
 
     @classmethod
-    def getObjectIndex(cls, objectData):
-        if hasattr(objectData, 'index'):
-            return objectData.index
+    def getObjectIndex(cls, object_data):
+        if hasattr(object_data, 'index'):
+            return object_data.index
         else:
             raise UserWarning('object is not indexable')
 
@@ -1103,7 +1105,8 @@ class Registrar(object):
             str(new), registerName, index))
 
     @classmethod
-    def duplicateObjectExceptionResolver(cls, new, old, index, registerName=''):
+    def duplicateObjectExceptionResolver(
+            cls, new, old, index, registerName=''):
         assert hasattr(
             new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
         assert hasattr(
@@ -1119,7 +1122,8 @@ class Registrar(object):
 
     @classmethod
     def stringAnything(self, index, thing, delimeter='|'):
-        return SanitationUtils.coerceBytes(u"%50s %s %s" % (index, delimeter, thing))
+        return SanitationUtils.coerceBytes(
+            u"%50s %s %s" % (index, delimeter, thing))
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
@@ -1401,8 +1405,8 @@ class FileUtils(object):
 
     @classmethod
     def getFileName(cls, path):
-        fileName, ext = os.path.splitext(os.path.basename(path))
-        return fileName
+        file_name, ext = os.path.splitext(os.path.basename(path))
+        return file_name
 
 
 if __name__ == '__main__':

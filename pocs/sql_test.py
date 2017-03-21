@@ -8,9 +8,9 @@ from parsing.flat import CSVParse_User
 from collections import OrderedDict
 
 srcFolder = "../source/"
-inFolder = "../input/"
+in_folder = "../input/"
 yamlPath = "merger_config.yaml"
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
+import_name = time.strftime("%Y-%m-%d %H:%M:%S")
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)
@@ -29,7 +29,7 @@ with open(yamlPath) as stream:
 
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 
-colData = ColData_User()
+col_data = ColData_User()
 
 saRows = []
 
@@ -51,8 +51,8 @@ with \
         passwd=db_pass,
         db=db_name)
 
-    wpCols = OrderedDict(filter(lambda (k, v): not v.get(
-        'wp', {}).get('generated'), ColData_User.getWPCols().items()))
+    wpCols = OrderedDict(filter(lambda k_v: not k_v[1].get(
+        'wp', {}).get('generated'), ColData_User.get_wp_cols().items()))
 
     assert all([
         'Wordpress ID' in wpCols.keys(),
@@ -79,8 +79,8 @@ with \
 # print saRows
 
 saParser = CSVParse_User(
-    cols=colData.getImportCols(),
-    defaults=colData.getDefaults()
+    cols=col_data.get_import_cols(),
+    defaults=col_data.get_defaults()
 )
 if saRows:
     saParser.analyseRows(saRows)

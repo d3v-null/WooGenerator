@@ -3,8 +3,8 @@ import os
 import re
 import csv
 
-inFolder = "../input/"
-testPath = os.path.join(inFolder, "insane.csv")
+in_folder = "../input/"
+testPath = os.path.join(in_folder, "insane.csv")
 
 sub_params = None
 sub_params = {

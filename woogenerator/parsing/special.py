@@ -154,7 +154,7 @@ class CSVParse_Special(CSVParse_Tree):
             defaults,
             taxoDepth=1,
             itemDepth=1,
-            metaWidth=1
+            meta_width=1
         )
         self.objectIndexer = self.getObjectID
         self.registerItem = self.registerRule
@@ -211,14 +211,14 @@ class CSVParse_Special(CSVParse_Tree):
         # if True or Registrar.DEBUG_SPECIAL:
         # print("entering all_future")
         all_future = []
-        for specialIndex, specialGroup in self.ruleGroups.items():
-            if specialGroup.hasFinished:
+        for special_index, special_group in self.ruleGroups.items():
+            if special_group.hasFinished:
                 continue
                 # if True or Registrar.DEBUG_SPECIAL:
-                #     print("specialGroup has finished: %s ended: %s, currently %s" % \
+                #     print("special_group has finished: %s ended: %s, currently %s" % \
                 #           (
-                #               specialIndex,
-                #               TimeUtils.wp_time_to_string(specialGroup.end_time),
+                #               special_index,
+                #               TimeUtils.wp_time_to_string(special_group.end_time),
                 #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
                 #           )
                 #     )
@@ -226,14 +226,14 @@ class CSVParse_Special(CSVParse_Tree):
             else:
                 pass
                 # if True or Registrar.DEBUG_SPECIAL:
-                #     print("specialGroup has not finished: %s ends %s, currently %s" % \
+                #     print("special_group has not finished: %s ends %s, currently %s" % \
                 #           (
-                #               specialIndex,
-                #               TimeUtils.wp_time_to_string(specialGroup.end_time),
+                #               special_index,
+                #               TimeUtils.wp_time_to_string(special_group.end_time),
                 #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
                 #           )
                 #     )
-            all_future.append(specialGroup)
+            all_future.append(special_group)
         # if True or Registrar.DEBUG_SPECIAL:
         #     print("returning %s" % (all_future))
         all_future = sorted(all_future, cmp=(
@@ -241,7 +241,8 @@ class CSVParse_Special(CSVParse_Tree):
         return all_future
 
     #
-    def determine_current_special_groups(self, specials_mode, current_special=None):
+    def determine_current_special_groups(
+            self, specials_mode, current_special=None):
         TimeUtils.set_override_time(time.strptime(
             "2016-08-12", TimeUtils.dateFormat))
         # modes: ['override', 'auto_next', 'all_future']
@@ -265,8 +266,8 @@ class CSVParse_Special(CSVParse_Tree):
         return response
 
     @classmethod
-    def getObjectID(cls, objectData):
-        return objectData.ID
+    def getObjectID(cls, object_data):
+        return object_data.ID
 
     def sanitizeCell(self, cell):
         return SanitationUtils.sanitizeSpecialCell(cell)
@@ -277,11 +278,11 @@ class CSVParse_Special(CSVParse_Tree):
         #
 
         out = "\n"
-        for index, ruleGroup in self.ruleGroups.items():
+        for index, rule_group in self.ruleGroups.items():
             out += "-> %s\n" % index
-            ruleList = SpecialRuleList(ruleGroup.children)
+            rule_list = SpecialRuleList(rule_group.children)
             out += SanitationUtils.coerceBytes(
-                ruleList.tabulate(tablefmt='simple'))
+                rule_list.tabulate(tablefmt='simple'))
             out += '\n'
 
         return out

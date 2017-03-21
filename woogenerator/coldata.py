@@ -4,17 +4,17 @@ from utils import listUtils  # , Registrar #, debugUtils
 # import json
 
 
-class ColData_Base(object):
+class ColDataBase(object):
     data = OrderedDict()
 
     def __init__(self, data):
-        super(ColData_Base, self).__init__()
+        super(ColDataBase, self).__init__()
         assert issubclass(
             type(data), dict), "Data should be a dictionary subclass"
         self.data = data
 
     @classmethod
-    def getImportCols(cls):
+    def get_import_cols(cls):
         imports = []
         for col, data in cls.data.items():
             if data.get('import', False):
@@ -22,7 +22,7 @@ class ColData_Base(object):
         return imports
 
     @classmethod
-    def getDefaults(cls):
+    def get_defaults(cls):
         defaults = {}
         # Registrar.registerMessage('called with class: '+ unicode(cls) + ', data=' + unicode(cls.data))
         for col, data in cls.data.items():
@@ -36,53 +36,53 @@ class ColData_Base(object):
         return defaults
 
     @classmethod
-    def getExportCols(cls, schema=None):
+    def get_export_cols(cls, schema=None):
         if not schema:
             return None
-        exportCols = OrderedDict()
+        export_cols = OrderedDict()
         for col, data in cls.data.items():
             if data.get(schema, ''):
-                exportCols[col] = data
-        return exportCols
+                export_cols[col] = data
+        return export_cols
 
     @classmethod
-    def getBasicCols(self):
-        return self.getExportCols('basic')
+    def get_basic_cols(self):
+        return self.get_export_cols('basic')
 
     @classmethod
-    def getDeltaCols(self):
+    def get_delta_cols(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('delta'):
-                cols[col] = self.deltaCol(col)
+                cols[col] = self.delta_col(col)
         return cols
 
     @classmethod
-    def getColNames(cls, cols):
-        colNames = OrderedDict()
+    def get_col_names(cls, cols):
+        col_names = OrderedDict()
         for col, data in cols.items():
             label = data.get('label', '')
-            colNames[col] = label if label else col
-        return colNames
+            col_names[col] = label if label else col
+        return col_names
 
     @classmethod
-    def nameCols(cls, cols):
+    def name_cols(cls, cols):
         return OrderedDict(
             [(col, {}) for col in cols]
         )
 
     @classmethod
-    def getReportCols(cls):
-        return cls.getExportCols('report')
+    def get_report_cols(cls):
+        return cls.get_export_cols('report')
 
     @classmethod
-    def getWPAPICols(cls, api='wp-api'):
-        return cls.getExportCols(api)
+    def get_wpapi_cols(cls, api='wp-api'):
+        return cls.get_export_cols(api)
 
     @classmethod
     def getWPAPIVariableCols(cls):
         cols = OrderedDict()
-        for col, data in cls.getWPAPICols().items():
+        for col, data in cls.get_wpapi_cols().items():
             if 'sync' in data:
                 if data.get('sync') == 'not_variable':
                     continue
@@ -90,65 +90,65 @@ class ColData_Base(object):
         return cols
 
     @classmethod
-    def getWPAPICoreCols(cls, api='wp-api'):
-        exportCols = cls.getExportCols(api)
-        apiCols = OrderedDict()
-        for col, data in exportCols.items():
-            apiData = data.get(api, {})
-            if hasattr(apiData, '__getitem__') \
-                    and not apiData.get('meta'):
-                apiCols[col] = data
+    def get_wpapi_core_cols(cls, api='wp-api'):
+        export_cols = cls.get_export_cols(api)
+        api_cols = OrderedDict()
+        for col, data in export_cols.items():
+            api_data = data.get(api, {})
+            if hasattr(api_data, '__getitem__') \
+                    and not api_data.get('meta'):
+                api_cols[col] = data
 
-        return apiCols
+        return api_cols
 
     @classmethod
     def getWPAPIMetaCols(cls, api='wp-api'):
-        # exportCols = cls.getExportCols(api)
-        apiCols = OrderedDict()
+        # export_cols = cls.get_export_cols(api)
+        api_cols = OrderedDict()
         for col, data in cls.data.items():
-            apiData = data.get(api, {})
-            if hasattr(apiData, '__getitem__') \
-                    and apiData.get('meta') is not None:
-                if apiData.get('meta'):
-                    apiCols[col] = data
+            api_data = data.get(api, {})
+            if hasattr(api_data, '__getitem__') \
+                    and api_data.get('meta') is not None:
+                if api_data.get('meta'):
+                    api_cols[col] = data
             else:
-                backupApiData = data.get('wp', {})
-                if hasattr(backupApiData, '__getitem__') \
-                        and backupApiData.get('meta') is not None:
-                    if backupApiData.get('meta'):
-                        apiCols[col] = data
-        return apiCols
+                backup_api_data = data.get('wp', {})
+                if hasattr(backup_api_data, '__getitem__') \
+                        and backup_api_data.get('meta') is not None:
+                    if backup_api_data.get('meta'):
+                        api_cols[col] = data
+        return api_cols
 
     @classmethod
-    def getWPAPICategoryCols(cls, api='wp-api'):
-        exportCols = cls.getExportCols(api)
-        apiCategoryCols = OrderedDict()
-        for col, data in exportCols.items():
+    def get_wpapi_category_cols(cls, api='wp-api'):
+        export_cols = cls.get_export_cols(api)
+        api_category_cols = OrderedDict()
+        for col, data in export_cols.items():
             if data.get('category', ''):
-                apiCategoryCols[col] = data
-        return apiCategoryCols
+                api_category_cols[col] = data
+        return api_category_cols
 
     @classmethod
-    def getWPAPIImportCols(cls, api='wp-api'):
-        exportCols = cls.getExportCols('import')
-        apiImportCols = OrderedDict()
-        for col, data in exportCols.items():
+    def get_wpapi_import_cols(cls, api='wp-api'):
+        export_cols = cls.get_export_cols('import')
+        api_import_cols = OrderedDict()
+        for col, data in export_cols.items():
             key = col
             if api in data and 'key' in data[api]:
                 key = data[api]['key']
-            apiImportCols[key] = data
-        return apiImportCols
+            api_import_cols[key] = data
+        return api_import_cols
 
     @classmethod
-    def getSyncCols(self):
-        return self.getExportCols('sync')
+    def get_sync_cols(self):
+        return self.get_export_cols('sync')
 
     @classmethod
-    def deltaCol(self, col):
+    def delta_col(self, col):
         return 'Delta ' + col
 
 
-class ColData_Prod(ColData_Base):
+class ColData_Prod(ColDataBase):
     data = OrderedDict([
         ('codesum', {
             'label': 'SKU',
@@ -309,8 +309,8 @@ class ColData_MYO(ColData_Prod):
         super(ColData_MYO, self).__init__(data)
 
     @classmethod
-    def getProductCols(self):
-        return self.getExportCols('product')
+    def get_product_cols(self):
+        return self.get_export_cols('product')
 
 
 class ColData_Woo(ColData_Prod):
@@ -1133,63 +1133,63 @@ class ColData_Woo(ColData_Prod):
         super(ColData_Woo, self).__init__(data)
 
     @classmethod
-    def getProductCols(cls):
-        return cls.getExportCols('product')
+    def get_product_cols(cls):
+        return cls.get_export_cols('product')
 
     @classmethod
-    def getVariationCols(cls):
-        return cls.getExportCols('variation')
+    def get_variation_cols(cls):
+        return cls.get_export_cols('variation')
 
     @classmethod
-    def getCategoryCols(cls):
-        return cls.getExportCols('category')
+    def get_category_cols(cls):
+        return cls.get_export_cols('category')
 
     @classmethod
-    def getPricingCols(cls):
-        return cls.getExportCols('pricing')
+    def get_pricing_cols(cls):
+        return cls.get_export_cols('pricing')
 
     @classmethod
-    def getShippingCols(cls):
-        return cls.getExportCols('shipping')
+    def get_shipping_cols(cls):
+        return cls.get_export_cols('shipping')
 
     @classmethod
-    def getInventoryCols(cls):
-        return cls.getExportCols('inventory')
+    def get_inventory_cols(cls):
+        return cls.get_export_cols('inventory')
 
     @classmethod
-    def getWPCols(cls):
-        return cls.getExportCols('wp')
+    def get_wp_cols(cls):
+        return cls.get_export_cols('wp')
 
     @classmethod
-    def getAttributeCols(cls, attributes, vattributes):
-        attributeCols = OrderedDict()
+    def get_attribute_cols(cls, attributes, vattributes):
+        attribute_cols = OrderedDict()
         all_attrs = listUtils.combineLists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
-            attributeCols['attribute:' + attr] = {
+            attribute_cols['attribute:' + attr] = {
                 'product': True,
             }
             if attr in vattributes.keys():
-                attributeCols['attribute_default:' + attr] = {
+                attribute_cols['attribute_default:' + attr] = {
                     'product': True,
                 }
-                attributeCols['attribute_data:' + attr] = {
+                attribute_cols['attribute_data:' + attr] = {
                     'product': True,
                 }
-        return attributeCols
+        return attribute_cols
 
     @classmethod
-    def getAttributeMetaCols(cls, vattributes):
-        atttributeMetaCols = OrderedDict()
+    def get_attribute_meta_cols(cls, vattributes):
+        atttribute_meta_cols = OrderedDict()
         for attr in vattributes.keys():
-            atttributeMetaCols['meta:attribute_' + attr] = {
+            atttribute_meta_cols['meta:attribute_' + attr] = {
                 'variable': True,
                 'tag': attr
             }
-        return atttributeMetaCols
+        return atttribute_meta_cols
 
 
-class ColData_User(ColData_Base):
+class ColData_User(ColDataBase):
     # modTimeSuffix = ' Modified'
 
     modMapping = {
@@ -1197,7 +1197,7 @@ class ColData_User(ColData_Base):
     }
 
     @classmethod
-    def modTimeCol(cls, col):
+    def mod_time_col(cls, col):
         if col in cls.modMapping:
             col = cls.modMapping[col]
         return 'Edited ' + col
@@ -1319,11 +1319,11 @@ class ColData_User(ColData_Base):
                 'HO Contact',
                 'Contact'
             ],
-            'sync':True,
-            'static':True,
-            'basic':True,
-            'report':True,
-            'tracked':True,
+            'sync': True,
+            'static': True,
+            'basic': True,
+            'report': True,
+            'tracked': True,
         }),
         ('Contact', {
             'import': True,
@@ -1496,8 +1496,8 @@ class ColData_User(ColData_Base):
             'tracked': 'future',
             'aliases': ['Mobile Phone', 'Phone', 'Fax'],
             # 'Mobile Phone Preferred', 'Phone Preferred', ]
-            'basic':True,
-            'report':True,
+            'basic': True,
+            'report': True,
         }),
 
         ('Mobile Phone', {
@@ -1600,8 +1600,8 @@ class ColData_User(ColData_Base):
             'static': True,
             'sync': True,
             'aliases': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country', 'Shire'],
-            'basic':True,
-            'tracked':True,
+            'basic': True,
+            'tracked': True,
         }),
         ('Home Address', {
             'act': False,
@@ -1612,7 +1612,7 @@ class ColData_User(ColData_Base):
             'sync': True,
             'basic': True,
             'aliases': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
-            'tracked':'future',
+            'tracked': 'future',
         }),
         ('Address 1', {
             'wp': {
@@ -2085,7 +2085,7 @@ class ColData_User(ColData_Base):
                         'GooglePlus Username', 'Instagram Username',
                         ],
             #    'Web Site'],
-            'tracked':True,
+            'tracked': True,
         }),
 
         ("Facebook Username", {
@@ -2192,52 +2192,52 @@ class ColData_User(ColData_Base):
         super(ColData_User, self).__init__(data)
 
     @classmethod
-    def getUserCols(self):
-        return self.getExportCols('user')
+    def get_user_cols(self):
+        return self.get_export_cols('user')
 
     @classmethod
-    def getSyncCols(self):
-        return self.getExportCols('sync')
+    def get_sync_cols(self):
+        return self.get_export_cols('sync')
 
     @classmethod
-    def getCapitalCols(self):
-        return self.getExportCols('capitalized')
+    def get_capital_cols(self):
+        return self.get_export_cols('capitalized')
 
     @classmethod
-    def getWPCols(self):
-        return self.getExportCols('wp')
+    def get_wp_cols(self):
+        return self.get_export_cols('wp')
 
     @classmethod
-    def getACTCols(self):
-        return self.getExportCols('act')
+    def get_act_cols(self):
+        return self.get_export_cols('act')
 
     @classmethod
-    def getAliasCols(self):
-        return self.getExportCols('aliases')
+    def get_alias_cols(self):
+        return self.get_export_cols('aliases')
 
     @classmethod
-    def getWPImportCols(self):
+    def get_wp_import_cols(self):
         cols = []
         for col, data in self.data.items():
             if data.get('wp') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(self.modTimeCol(col))
+                cols.append(self.mod_time_col(col))
         return cols
 
     @classmethod
-    def getWPImportColNames(self):
+    def get_wp_import_col_names(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('wp') and data.get('import'):
                 cols[col] = col
             if data.get('tracked'):
-                modCol = self.modTimeCol(col)
-                cols[modCol] = modCol
+                mod_col = self.mod_time_col(col)
+                cols[mod_col] = mod_col
         return cols
 
     @classmethod
-    def getWPDBCols(self, meta=None):
+    def get_wpdb_cols(self, meta=None):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('wp'):
@@ -2256,10 +2256,10 @@ class ColData_User(ColData_Base):
         return cols
 
     @classmethod
-    def getAllWPDBCols(self):
+    def get_all_wpdb_cols(self):
         return listUtils.combineOrderedDicts(
-            self.getWPDBCols(True),
-            self.getWPDBCols(False)
+            self.get_wpdb_cols(True),
+            self.get_wpdb_cols(False)
         )
 
     # @classmethod
@@ -2281,17 +2281,17 @@ class ColData_User(ColData_Base):
     #     return cols
 
     @classmethod
-    def getWPTrackedCols(self):
+    def get_wp_tracked_cols(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('tracked'):
-                tracking_name = self.modTimeCol(col)
+                tracking_name = self.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
                     alias_data = self.data.get(alias, {})
                     if alias_data.get('wp'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.modTimeCol(alias)
+                            this_tracking_name = self.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
                         # wp_data = alias_data.get('wp')
@@ -2303,64 +2303,64 @@ class ColData_User(ColData_Base):
         return cols
 
     @classmethod
-    def getACTTrackedCols(self):
+    def get_act_tracked_cols(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('tracked'):
-                tracking_name = self.modTimeCol(col)
+                tracking_name = self.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
                     alias_data = self.data.get(alias, {})
                     if alias_data.get('act'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.modTimeCol(alias)
+                            this_tracking_name = self.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
-    def getACTFutureTrackedCols(self):
+    def get_act_future_tracked_cols(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('tracked') and data.get('tracked') == 'future':
-                tracking_name = self.modTimeCol(col)
+                tracking_name = self.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
                     alias_data = self.data.get(alias, {})
                     if alias_data.get('act'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.modTimeCol(alias)
+                            this_tracking_name = self.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
-    def getACTImportCols(self):
+    def get_act_import_cols(self):
         cols = []
         for col, data in self.data.items():
             if data.get('act') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(self.modTimeCol(col))
+                cols.append(self.mod_time_col(col))
         return cols
 
     @classmethod
-    def getACTImportColNames(self):
+    def get_act_import_col_names(self):
         cols = OrderedDict()
         for col, data in self.data.items():
             if data.get('act') and data.get('import'):
                 cols[col] = col
             if data.get('tracked'):
-                modCol = self.modTimeCol(col)
-                cols[modCol] = modCol
+                mod_col = self.mod_time_col(col)
+                cols[mod_col] = mod_col
         return cols
 
     @classmethod
-    def getTansyncDefaultsRecursive(self, col, exportCols=None, data=None):
+    def get_tansync_defaults_recursive(self, col, export_cols=None, data=None):
         if data is None:
             data = {}
-        if exportCols is None:
-            exportCols = OrderedDict()
+        if export_cols is None:
+            export_cols = OrderedDict()
 
         # print "getting sync data: ", col, data
 
@@ -2392,59 +2392,59 @@ class ColData_User(ColData_Base):
             if not wp_data.get('generated'):
                 assert wp_data.get('key'), "column %s must have key" % col
                 key = wp_data['key']
-                exportCols[key] = new_data
+                export_cols[key] = new_data
 
         if data.get('aliases'):
             for alias in data['aliases']:
                 alias_data = self.data.get(alias, {})
                 alias_data['sync'] = data.get('sync')
-                exportCols = self.getTansyncDefaultsRecursive(
-                    alias, exportCols, alias_data)
+                export_cols = self.get_tansync_defaults_recursive(
+                    alias, export_cols, alias_data)
 
-        return exportCols
+        return export_cols
 
     @classmethod
-    def getTansyncDefaults(self):
-        exportCols = OrderedDict()
+    def get_tansync_defaults(self):
+        export_cols = OrderedDict()
         for col, data in self.data.items():
-            exportCols = self.getTansyncDefaultsRecursive(
-                col, exportCols, data)
-        return exportCols
+            export_cols = self.get_tansync_defaults_recursive(
+                col, export_cols, data)
+        return export_cols
 
 #
 #
 # def testColDataMyo():
 #     print "Testing ColData_MYO Class:"
-#     colData = ColData_MYO()
-#     print colData.getImportCols()
-#     print colData.getDefaults()
-#     print colData.getProductCols()
+#     col_data = ColData_MYO()
+#     print col_data.get_import_cols()
+#     print col_data.get_defaults()
+#     print col_data.get_product_cols()
 #
 # def testColDataWoo():
 #     print "Testing ColData_Woo class:"
-#     colData = ColData_Woo()
-#     print colData.getImportCols()
-#     print colData.getDefaults()
-#     print colData.getProductCols()
+#     col_data = ColData_Woo()
+#     print col_data.get_import_cols()
+#     print col_data.get_defaults()
+#     print col_data.get_product_cols()
 #
 # def testColDataUser():
 #     print "Testing ColData_User class:"
-#     colData = ColData_User()
-#     # print "importCols", colData.getImportCols()
-#     # print "userCols", colData.getUserCols().keys()
-#     # print "reportCols", colData.getReportCols().keys()
-#     # print "capitalCols", colData.getCapitalCols().keys()
-#     # print "syncCols", colData.getSyncCols().keys()
-#     print "actCols", colData.getACTCols().keys()
-#     # print "wpcols", colData.getWPCols().keys()
-#     print "getWPTrackedCols", colData.getWPTrackedCols()
-#     print "getACTTrackedCols", colData.getACTTrackedCols()
-#     print "getACTFutureTrackedCols", colData.getACTFutureTrackedCols()
+#     col_data = ColData_User()
+#     # print "importCols", col_data.get_import_cols()
+#     # print "userCols", col_data.get_user_cols().keys()
+#     # print "reportCols", col_data.get_report_cols().keys()
+#     # print "capitalCols", col_data.get_capital_cols().keys()
+#     # print "syncCols", col_data.get_sync_cols().keys()
+#     print "actCols", col_data.get_act_cols().keys()
+#     # print "wpcols", col_data.get_wp_cols().keys()
+#     print "get_wp_tracked_cols", col_data.get_wp_tracked_cols()
+#     print "get_act_tracked_cols", col_data.get_act_tracked_cols()
+#     print "get_act_future_tracked_cols", col_data.get_act_future_tracked_cols()
 #
 # def testTansyncDefaults():
-#     colData = ColData_User()
+#     col_data = ColData_User()
 #     print '{'
-#     for col, data in colData.getTansyncDefaults().items():
+#     for col, data in col_data.get_tansync_defaults().items():
 #         print '"%s": %s,' % (col, json.dumps(data))
 #     print '}'
 #

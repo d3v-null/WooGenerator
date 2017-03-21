@@ -74,7 +74,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
-        self.ruleLines = []
+        self.rule_lines = []
         assert self.ID
 
     ID = descriptorUtils.safeKeyProperty('ID')
@@ -106,9 +106,9 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
 
-    # def addLineData(self, ruleLineData):
-    #     if ruleLineData:
-    #         self['children'].append(ruleLineData)
+    # def addLineData(self, rule_line_data):
+    #     if rule_line_data:
+    #         self['children'].append(rule_line_data)
 
     # def registerRuleLine(self, lineData):
     #     # assert isinstance(lineData, ImportDynObject)
@@ -119,12 +119,12 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     #     )
 
     def getRuleLines(self):
-        # return self.ruleLines
+        # return self.rule_lines
         return self.getChildren()
 
-    def getColNames(self):
-        ruleMode = self.get('Rule Mode', 'BULK')
-        if ruleMode == 'BULK' or not ruleMode:
+    def get_col_names(self):
+        rule_mode = self.get('Rule Mode', 'BULK')
+        if rule_mode == 'BULK' or not rule_mode:
             return OrderedDict([
                 ('Min ( Buy )', 'From'),
                 ('Max ( Receive )', 'To'),
@@ -172,30 +172,30 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
         if(self.rule_mode == 'BULK'):
             mode = 'continuous'
-            blockRules = {
+            block_rules = {
                 1: empty_blockrule
             }
             rules = {}
-            for i, ruleLine in enumerate(self.getRuleLines()):
+            for i, rule_line in enumerate(self.getRuleLines()):
                 rule = copy(empty_rule)
-                rule['from'] = ruleLine.pricing_rule_from
-                rule['to'] = ruleLine.pricing_rule_to
-                rule['amount'] = ruleLine.discount
-                rule['type'] = ruleLine.pricing_rule_disc_type
+                rule['from'] = rule_line.pricing_rule_from
+                rule['to'] = rule_line.pricing_rule_to
+                rule['amount'] = rule_line.discount
+                rule['type'] = rule_line.pricing_rule_disc_type
                 rules[i + 1] = rule
         else:
             mode = 'block'
             rules = {
                 1: empty_rule
             }
-            blockRules = {}
-            for i, blockRuleLine in enumerate(self.getRuleLines()):
-                blockRule = copy(empty_blockrule)
-                blockRule['from'] = blockRuleLine.pricing_rule_from
-                blockRule['to'] = blockRuleLine.pricing_rule_to
-                blockRule['amount'] = blockRuleLine.discount
-                blockRule['type'] = blockRuleLine.pricing_rule_disc_type
-                blockRules[i + 1] = blockRule
+            block_rules = {}
+            for i, block_rule_line in enumerate(self.getRuleLines()):
+                block_rule = copy(empty_blockrule)
+                block_rule['from'] = block_rule_line.pricing_rule_from
+                block_rule['to'] = block_rule_line.pricing_rule_to
+                block_rule['amount'] = block_rule_line.discount
+                block_rule['type'] = block_rule_line.pricing_rule_disc_type
+                block_rules[i + 1] = block_rule
 
         pricing_rule = OrderedDict([
             ('conditions_type', 'all'),
@@ -205,30 +205,30 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
             ('date_from', ''),
             ('date_to', ''),
             ('rules', rules),
-            ('blockrules', blockRules),
+            ('blockrules', block_rules),
         ])
 
         return PHPUtils.serialize(pricing_rule)
 
     def toHTML(self):
-        colNames = self.getColNames()
+        col_names = self.get_col_names()
 
         html = u'<table class="shop_table lasercommerce pricing_table table table-striped">'
         html += '<thead><tr>'
-        for col, name in colNames.items():
-            colClass = SanitationUtils.sanitizeClass(col)
-            html += '<th class=%s>' % colClass
+        for col, name in col_names.items():
+            col_class = SanitationUtils.sanitizeClass(col)
+            html += '<th class=%s>' % col_class
             html += bleach.clean(name)
             html += '</th>'
         html += '</tr></thead>'
-        ruleLines = self.getRuleLines()
-        self.registerMessage("ruleLines: %s" % (ruleLines))
-        for ruleLineData in ruleLines:
-            lineType = ruleLineData.get('Discount Type', '')
+        rule_lines = self.getRuleLines()
+        self.registerMessage("rule_lines: %s" % (rule_lines))
+        for rule_line_data in rule_lines:
+            line_type = rule_line_data.get('Discount Type', '')
             html += '<tr>'
-            for col in colNames.keys():
-                value = ruleLineData.get(col, '')
-                if col == 'Discount' and lineType in ['PDSC']:
+            for col in col_names.keys():
+                value = rule_line_data.get(col, '')
+                if col == 'Discount' and line_type in ['PDSC']:
                     value += '%'
                 html += '<td>'
                 html += value  # bleach.clean(value)
@@ -258,7 +258,7 @@ class CSVParse_Dyn(CSVParse_Tree):
         cols = listUtils.combineLists(cols, extra_cols)
         defaults = listUtils.combineOrderedDicts(extra_defaults, defaults)
         super(CSVParse_Dyn, self).__init__(cols, defaults,
-                                           taxoDepth=1, itemDepth=1, metaWidth=0)
+                                           taxoDepth=1, itemDepth=1, meta_width=0)
 
         self.taxoIndexer = self.getObjectIndex
 
@@ -267,14 +267,14 @@ class CSVParse_Dyn(CSVParse_Tree):
     #     self.rules = {}
 
     # def getRuleData(self, itemData):
-    #     ruleID = itemData['ID']
-    #     assert ruleID, 'ruleID must exist to register rule'
-    #     if not ruleID in self.rules.keys():
-    #         self.rules[ruleID] = ImportDynRule(itemData)
-    #     return self.rules[ruleID]
+    #     rule_id = itemData['ID']
+    #     assert rule_id, 'rule_id must exist to register rule'
+    #     if not rule_id in self.rules.keys():
+    #         self.rules[rule_id] = ImportDynRule(itemData)
+    #     return self.rules[rule_id]
 
-    # def registerRuleLine(self, parentData, itemData):
-    #     ruleData = self.getRuleData(parentData)
+    # def registerRuleLine(self, parent_data, itemData):
+    #     ruleData = self.getRuleData(parent_data)
     #     ruleData.addLineData(itemData)
 
     # def registerRule(self, itemData):
@@ -294,8 +294,8 @@ class CSVParse_Dyn(CSVParse_Tree):
     # def processItem(self, itemData):
     #     super(CSVParse_Dyn, self).processItem(itemData)
         # assert len(self.stack) > 1, "Item must have a parent since taxoDepth = 1"
-        # parentData = self.stack[-2]
-        # self.registerRuleLine(parentData, itemData)
+        # parent_data = self.stack[-2]
+        # self.registerRuleLine(parent_data, itemData)
 
     # def processTaxo(self, itemData):
     #     super(CSVParse_Dyn, self).processTaxo(itemData)
@@ -307,11 +307,11 @@ class CSVParse_Dyn(CSVParse_Tree):
 
 
 if __name__ == '__main__':
-    inFolder = "../input/"
-    dprcPath = os.path.join(inFolder, 'DPRC.csv')
-    dprpPath = os.path.join(inFolder, 'DPRP.csv')
-    outFolder = "../output/"
-    out_path = os.path.join(outFolder, 'dynRules.html')
+    in_folder = "../input/"
+    dprcPath = os.path.join(in_folder, 'DPRC.csv')
+    dprpPath = os.path.join(in_folder, 'DPRP.csv')
+    out_folder = "../output/"
+    out_path = os.path.join(out_folder, 'dynRules.html')
 
     dynParser = CSVParse_Dyn()
     dynParser.analyseFile(dprpPath)
@@ -319,16 +319,17 @@ if __name__ == '__main__':
     # todo: rewrite in htmlReporter
 
     with open(out_path, 'w+') as out_file:
-        def writeSection(title, description, data, length=0, html_class="results_section"):
-            sectionID = SanitationUtils.makeSafeClass(title)
+        def writeSection(title, description, data, length=0,
+                         html_class="results_section"):
+            section_id = SanitationUtils.makeSafeClass(title)
             description = "%s %s" % (
                 str(length) if length else "No", description)
             out_file.write('<div class="%s">' % html_class)
             out_file.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' %
-                           (sectionID, sectionID, sectionID))
+                           (section_id, section_id, section_id))
             out_file.write('<h2>%s (%d)</h2>' % (title, length))
             out_file.write('</a>')
-            out_file.write('<div class="collapse" id="%s">' % sectionID)
+            out_file.write('<div class="collapse" id="%s">' % section_id)
             out_file.write('<p class="description">%s</p>' % description)
             out_file.write('<p class="data">')
             out_file.write(

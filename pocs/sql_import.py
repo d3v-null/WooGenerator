@@ -17,8 +17,8 @@ from sshtunnel import SSHTunnelForwarder
 
 ### DEFAULT CONFIG ###
 
-inFolder = "../input/"
-outFolder = "../output/"
+in_folder = "../input/"
+out_folder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source"
 
@@ -26,17 +26,17 @@ yamlPath = "generator_config.yaml"
 
 thumbsize = 1920, 1200
 
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
+import_name = time.strftime("%Y-%m-%d %H:%M:%S")
 
 ### Process YAML file ###
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)
     # overrides
-    if 'inFolder' in config.keys():
-        inFolder = config['inFolder']
-    if 'outFolder' in config.keys():
-        outFolder = config['outFolder']
+    if 'in_folder' in config.keys():
+        in_folder = config['in_folder']
+    if 'out_folder' in config.keys():
+        out_folder = config['out_folder']
     if 'logFolder' in config.keys():
         logFolder = config['logFolder']
 
@@ -65,20 +65,20 @@ with open(yamlPath) as stream:
     tbl_prefix = config.get('tbl_prefix', '')
 
 # mandatory params
-assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb,
+assert all([in_folder, out_folder, logFolder, webFolder, imgFolder_glb,
             woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
-genPath = os.path.join(inFolder, 'generator.csv')
-dprcPath = os.path.join(inFolder, 'DPRC.csv')
-dprpPath = os.path.join(inFolder, 'DPRP.csv')
-specPath = os.path.join(inFolder, 'specials.csv')
-usPath = os.path.join(inFolder, 'US.csv')
-xsPath = os.path.join(inFolder, 'XS.csv')
+genPath = os.path.join(in_folder, 'generator.csv')
+dprcPath = os.path.join(in_folder, 'DPRC.csv')
+dprpPath = os.path.join(in_folder, 'DPRP.csv')
+specPath = os.path.join(in_folder, 'specials.csv')
+usPath = os.path.join(in_folder, 'US.csv')
+xsPath = os.path.join(in_folder, 'XS.csv')
 imgFolder = [imgFolder_glb]
 
 sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
-colData = ColData_Woo()
+col_data = ColData_Woo()
 
 sql_run = True
 
@@ -100,7 +100,7 @@ if sql_run:
             passwd=db_pass,
             db=db_name)
 
-        wpCols = colData.getWPCols()
+        wpCols = col_data.get_wp_cols()
 
         assert all([
             'ID' in wpCols.keys(),
@@ -122,7 +122,7 @@ if sql_run:
         cursor.execute(
             sql
         )
-        # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
+        # headers = col_data.get_wp_cols().keys() + ['ID', 'user_id', 'updated']
         headers = [i[0] for i in cursor.description]
         # print headers
         sqlRows = [headers] + list(cursor.fetchall())
@@ -132,8 +132,8 @@ print sqlRows
 sqlParser = CSVParse_TT
 
 sqlParser = CSVParse_TT(
-    cols=colData.getImportCols(),
-    defaults=colData.getDefaults()
+    cols=col_data.get_import_cols(),
+    defaults=col_data.get_defaults()
 )
 if sqlRows:
     sqlParser.analyseRows(sqlRows)

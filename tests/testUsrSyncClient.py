@@ -29,13 +29,13 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         self.fsParams = {}
 
     def processConfig(self, config):
-        inFolder = "../input/"
-        outFolder = "../output/"
+        in_folder = "../input/"
+        out_folder = "../output/"
 
-        if 'inFolder' in config.keys():
-            inFolder = config['inFolder']
-        if 'outFolder' in config.keys():
-            outFolder = config['outFolder']
+        if 'in_folder' in config.keys():
+            in_folder = config['in_folder']
+        if 'out_folder' in config.keys():
+            out_folder = config['out_folder']
         # if 'logFolder' in config.keys():
         #     logFolder = config['logFolder']
 
@@ -79,7 +79,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
-        actFields = ";".join(ColData_User.getACTImportCols())
+        actFields = ";".join(ColData_User.get_act_import_cols())
 
         SSHTunnelForwarderAddress = (ssh_host, ssh_port)
         SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
@@ -126,10 +126,10 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         # }
 
         self.actconnect_params = {
-            'hostname':    m_ssh_host,
-            'port':        m_ssh_port,
-            'username':    m_ssh_user,
-            'password':    m_ssh_pass,
+            'hostname': m_ssh_host,
+            'port': m_ssh_port,
+            'username': m_ssh_user,
+            'password': m_ssh_pass,
         }
 
         self.actDbParams = {
@@ -143,10 +143,10 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         }
 
         self.fsParams = {
-            'importName': self.importName,
+            'import_name': self.import_name,
             'remote_export_folder': remote_export_folder,
-            'inFolder': inFolder,
-            'outFolder': outFolder
+            'in_folder': in_folder,
+            'out_folder': out_folder
         }
 
     def setUp(self):
@@ -169,8 +169,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
     def test_SQLWP_Analyse(self):
         saParser = CSVParse_User(
-            cols=ColData_User.getImportCols(),
-            defaults=ColData_User.getDefaults()
+            cols=ColData_User.get_import_cols(),
+            defaults=ColData_User.get_defaults()
         )
 
         with UsrSyncClient_SQL_WP(
@@ -237,8 +237,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
     #         sqlClient.assert_connect()
-    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
-    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #         sqlClient.db_params['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.db_params ).cursor()
     #
     #         sql = """
     #         SELECT user_url
@@ -271,8 +271,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
     #         sqlClient.assert_connect()
-    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
-    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #         sqlClient.db_params['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.db_params ).cursor()
     #
     #         sql = """
     #         SELECT user_url
@@ -330,8 +330,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
     #         sqlClient.assert_connect()
-    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
-    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #         sqlClient.db_params['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.db_params ).cursor()
     #
     #         sql = """
     #         SELECT user_url
@@ -363,8 +363,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
     #         sqlClient.assert_connect()
-    #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
-    #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
+    #         sqlClient.db_params['port'] = sqlClient.service.local_bind_address[-1]
+    #         cursor = pymysql.connect( **sqlClient.db_params ).cursor()
     #
     #         sql = """
     #         SELECT user_url
@@ -397,11 +397,11 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
     def test_WP_analyse(self):
         print "API Import cols: "
-        pprint(ColData_User.getWPAPIImportCols())
+        pprint(ColData_User.get_wpapi_import_cols())
 
         saParser = CSVParse_User_Api(
-            cols=ColData_User.getWPImportCols(),
-            defaults=ColData_User.getDefaults()
+            cols=ColData_User.get_wp_import_cols(),
+            defaults=ColData_User.get_defaults()
         )
 
         with UsrSyncClient_WP(self.wpApiParams) as slaveClient:

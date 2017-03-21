@@ -113,7 +113,7 @@ class NameUtils:
         ('DIRECTOR', []),
         ('HAIRDRESSER', []),
         ('STYLIST', []),
-        ('CEO',     []),
+        ('CEO', []),
         ('FINANCE DEPT', ['FINANCE DEPARTMENT']),
         ('RECEPTION', ['RECEPTION']),
     ])
@@ -145,23 +145,23 @@ class NameUtils:
     noteDelimeters = OrderedDict([
         ("-", []),
         (r"&", []),
-        (r"\?",   []),
-        (r"@",     []),
+        (r"\?", []),
+        (r"@", []),
         ('AND', ['&AMP']),
         ('OR', []),
     ])
 
     careOfAbbreviations = OrderedDict([
-        ('C/O',     ['C/-', 'CARE OF']),
-        ('ATTN',   ['ATTENTION'])
+        ('C/O', ['C/-', 'CARE OF']),
+        ('ATTN', ['ATTENTION'])
     ])
 
     organizationTypeAbbreviations = OrderedDict([
-        ('CO',      ['COMPANY']),
-        ('INC',     ['INCORPORATED']),
-        ('LTD',     ['LIMITED']),
-        ('NL',      ['NO LIABILITY']),
-        ('PTY',     ['PROPRIETARY']),
+        ('CO', ['COMPANY']),
+        ('INC', ['INCORPORATED']),
+        ('LTD', ['LIMITED']),
+        ('NL', ['NO LIABILITY']),
+        ('PTY', ['PROPRIETARY']),
         ('PTY LTD', ['PROPRIETARY LIMITED'])
     ])
 
@@ -171,16 +171,16 @@ class NameUtils:
     ])
 
     familyNamePrefixAbbreviations = OrderedDict([
-        ('MC',      []),
-        ('MAC',     []),
+        ('MC', []),
+        ('MAC', []),
         ('VAN DE', []),
         ('VAN DER', []),
         ('VAN DEN', []),
-        ('VAN',     []),
-        ('DER',     []),
-        ('DI',      []),
-        ('O',       []),
-        ('O',       []),
+        ('VAN', []),
+        ('DER', []),
+        ('DI', []),
+        ('O', []),
+        ('O', []),
     ])
 
     titleRegex = r"(?P<name_title>%s)\.?" % (
@@ -257,31 +257,37 @@ class NameUtils:
 
     @staticmethod
     def identifyTitle(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.titleAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.titleAbbreviations, string)
 
     @staticmethod
     def identifyNote(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.noteAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.noteAbbreviations, string)
 
     @staticmethod
     def identifyPosition(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.positionAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.positionAbbreviations, string)
 
     @staticmethod
     def identifyNameSuffix(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.nameSuffixAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.nameSuffixAbbreviations, string)
 
     @staticmethod
     def identifyCareOf(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.careOfAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.careOfAbbreviations, string)
 
     @staticmethod
     def identifyOrganization(string):
-        return SanitationUtils.identifyAbbreviation(NameUtils.organizationTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            NameUtils.organizationTypeAbbreviations, string)
 
     @staticmethod
     def sanitizeNameToken(string):
-        return SanitationUtils.normalizeVal(string)
+        return SanitationUtils.normalize_val(string)
 
     @staticmethod
     def getSingleName(token):
@@ -355,9 +361,9 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('name_title'):
-            title = NameUtils.identifyTitle(matchDict['name_title'])
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('name_title'):
+            title = NameUtils.identifyTitle(match_dict['name_title'])
             if Registrar.DEBUG_NAME:
                 print "FOUND TITLE ", repr(title)
             return title
@@ -376,9 +382,9 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('name_position'):
-            position = NameUtils.identifyPosition(matchDict['name_position'])
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('name_position'):
+            position = NameUtils.identifyPosition(match_dict['name_position'])
             if Registrar.DEBUG_NAME:
                 print "FOUND POSITION ", repr(position)
             return position
@@ -412,9 +418,9 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('name_suffix'):
-            suffix = NameUtils.identifyNameSuffix(matchDict['name_suffix'])
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('name_suffix'):
+            suffix = NameUtils.identifyNameSuffix(match_dict['name_suffix'])
             if Registrar.DEBUG_NAME:
                 print "FOUND NAME SUFFIX ", repr(suffix)
             return suffix
@@ -433,34 +439,35 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and (matchDict.get('note_open_paren') or matchDict.get('note_only') or matchDict.get('note_delimeter')):
-            note_open_paren = matchDict.get('note_open_paren')
-            note_close_paren = matchDict.get('note_close_paren')
+        match_dict = match.groupdict() if match else None
+        if match_dict and (match_dict.get('note_open_paren') or match_dict.get(
+                'note_only') or match_dict.get('note_delimeter')):
+            note_open_paren = match_dict.get('note_open_paren')
+            note_close_paren = match_dict.get('note_close_paren')
             names_before_note = None
             names_after_note = None
             if note_open_paren:
-                if matchDict.get('note_before'):
-                    note = NameUtils.identifyNote(matchDict.get('note_only'))
-                    names_after_note = matchDict.get('names_after_note')
-                elif matchDict.get('note_middle'):
-                    names_before_note = matchDict.get(
+                if match_dict.get('note_before'):
+                    note = NameUtils.identifyNote(match_dict.get('note_only'))
+                    names_after_note = match_dict.get('names_after_note')
+                elif match_dict.get('note_middle'):
+                    names_before_note = match_dict.get(
                         'names_before_note_middle')
-                    note = NameUtils.identifyNote(matchDict.get('note_middle'))
-                    names_after_note = matchDict.get('names_after_note_middle')
+                    note = NameUtils.identifyNote(match_dict.get('note_middle'))
+                    names_after_note = match_dict.get('names_after_note_middle')
                 else:
-                    names_before_note = matchDict.get('note_names_only')
+                    names_before_note = match_dict.get('note_names_only')
                     note = None
-                name_before_note_paren = matchDict.get(
+                name_before_note_paren = match_dict.get(
                     'name_before_note_paren')
                 if name_before_note_paren:
                     names_before_note = " ".join(
                         filter(None, [name_before_note_paren, names_before_note]))
-            elif matchDict.get('note_only'):
-                note = NameUtils.identifyNote(matchDict.get('note_only'))
-            elif matchDict.get('note_delimeter'):
-                note = matchDict.get('note_delimeter')
-                names_after_note = matchDict.get('names_after_note_delimeter')
+            elif match_dict.get('note_only'):
+                note = NameUtils.identifyNote(match_dict.get('note_only'))
+            elif match_dict.get('note_delimeter'):
+                note = match_dict.get('note_delimeter')
+                names_after_note = match_dict.get('names_after_note_delimeter')
 
             note_tuple = (note_open_paren, names_before_note,
                           note, names_after_note, note_close_paren)
@@ -481,10 +488,10 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('family_name'):
-            family_name = matchDict['family_name']
-            family_name_prefix = matchDict.get('family_name_prefix')
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('family_name'):
+            family_name = match_dict['family_name']
+            family_name_prefix = match_dict.get('family_name_prefix')
             for component in [family_name_prefix, family_name]:
                 if Registrar.DEBUG_NAME:
                     print "name component", repr(component)
@@ -503,10 +510,10 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('careof'):
-            careof = NameUtils.identifyCareOf(matchDict.get('careof'))
-            names = matchDict.get('careof_names')
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('careof'):
+            careof = NameUtils.identifyCareOf(match_dict.get('careof'))
+            names = match_dict.get('careof_names')
             careof_tuple = (careof, names)
             if Registrar.DEBUG_NAME:
                 print "FOUND CAREOF ", repr(careof_tuple)
@@ -526,10 +533,11 @@ class NameUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and (matchDict.get('organization_name') and matchDict.get('organization_type')):
-            organization_name = matchDict.get('organization_name')
-            organization_type = matchDict.get('organization_type')
+        match_dict = match.groupdict() if match else None
+        if match_dict and (match_dict.get('organization_name')
+                          and match_dict.get('organization_type')):
+            organization_name = match_dict.get('organization_name')
+            organization_type = match_dict.get('organization_type')
             organization = (organization_name, organization_type)
             if Registrar.DEBUG_NAME:
                 print "FOUND ORGANIZATION ", repr(organization)
@@ -591,9 +599,9 @@ def testNameUtils():
 class AddressUtils:
     subunitAbbreviations = OrderedDict([
         # ('ANT',     ['ANTENNA']),
-        ('APARTMENT',     ['APT', 'A']),
+        ('APARTMENT', ['APT', 'A']),
         # ('ATM',     ['AUTOMATED TELLER MACHINE']),
-        ('BBQ',     ['BARBECUE']),
+        ('BBQ', ['BARBECUE']),
         # ('BTSD',    ['BOATSHED']),
         ('BUILDING', ['BLDG']),
         # ('BNGW',    ['BUNGALOW']),
@@ -602,251 +610,251 @@ class AddressUtils:
         # ('CARS',    ['CARSPACE']),
         # ('CLUB',    []),
         # ('COOL',    ['COOLROOM']),
-        ('COTTAGE',    ['CTGE']),
-        ('DUPLEX',     ['DUP', 'DUPL']),
+        ('COTTAGE', ['CTGE']),
+        ('DUPLEX', ['DUP', 'DUPL']),
         ('FACTORY', ['FCTY', 'FY']),
-        ('FLAT',    ['FLT', 'FL', 'F']),
-        ('GARAGE',    ['GRGE']),
-        ('HALL',    []),
-        ('HOUSE',     ['HSE']),
-        ('KIOSK',     ['KSK']),
-        ('LEASE',     ['LSE']),
-        ('LOBBY',    ['LBBY']),
-        ('LOFT',    []),
-        ('LOT',     []),
-        ('MAISONETTE',    ['MSNT']),
-        ('MBTH',    ['MARINE BERTH', 'MB']),
-        ('OFFICE',    ['OFFC', 'OFF']),
-        ('PENTHOUSE',  ['PTHS']),
-        ('REAR',       ['R']),
+        ('FLAT', ['FLT', 'FL', 'F']),
+        ('GARAGE', ['GRGE']),
+        ('HALL', []),
+        ('HOUSE', ['HSE']),
+        ('KIOSK', ['KSK']),
+        ('LEASE', ['LSE']),
+        ('LOBBY', ['LBBY']),
+        ('LOFT', []),
+        ('LOT', []),
+        ('MAISONETTE', ['MSNT']),
+        ('MBTH', ['MARINE BERTH', 'MB']),
+        ('OFFICE', ['OFFC', 'OFF']),
+        ('PENTHOUSE', ['PTHS']),
+        ('REAR', ['R']),
         # ('RESV',    ['RESERVE']),
-        ('ROOM',    ['RM']),
-        ('SHED',    []),
-        ('SHOP',    ['SH', 'SP', 'SHP']),
-        ('SHRM',    ['SHOWROOM']),
+        ('ROOM', ['RM']),
+        ('SHED', []),
+        ('SHOP', ['SH', 'SP', 'SHP']),
+        ('SHRM', ['SHOWROOM']),
         # ('SIGN',    []),
-        ('SITE',    []),
-        ('STALL',    ['STLL', 'SL']),
-        ('STORE',    ['STOR']),
-        ('STR',     ['STRATA UNIT']),
-        ('STUDIO',     ['STU', 'STUDIO APARTMENT']),
-        ('SUBS',    ['SUBSTATION']),
-        ('SUITE',      ['SE']),
-        ('TNCY',    ['TENANCY']),
-        ('TWR',     ['TOWER']),
-        ('TOWNHOUSE',    ['TNHS']),
-        ('UNIT',    ['U']),
-        ('VLT',     ['VAULT']),
-        ('VILLA',    ['VLLA']),
-        ('WARD',    []),
-        ('WAREHOUSE',    ['WHSE', 'WE']),
-        ('WKSH',    ['WORKSHOP'])
+        ('SITE', []),
+        ('STALL', ['STLL', 'SL']),
+        ('STORE', ['STOR']),
+        ('STR', ['STRATA UNIT']),
+        ('STUDIO', ['STU', 'STUDIO APARTMENT']),
+        ('SUBS', ['SUBSTATION']),
+        ('SUITE', ['SE']),
+        ('TNCY', ['TENANCY']),
+        ('TWR', ['TOWER']),
+        ('TOWNHOUSE', ['TNHS']),
+        ('UNIT', ['U']),
+        ('VLT', ['VAULT']),
+        ('VILLA', ['VLLA']),
+        ('WARD', []),
+        ('WAREHOUSE', ['WHSE', 'WE']),
+        ('WKSH', ['WORKSHOP'])
     ])
 
     stateAbbreviations = OrderedDict([
-        ('AAT',     ['AUSTRALIAN ANTARCTIC TERRITORY']),
-        ('ACT',     ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
-        ('NSW',     ['NEW SOUTH WALES']),
-        ('NT',      ['NORTHERN TERRITORY']),
-        ('QLD',     ['QUEENSLAND']),
-        ('SA',      ['SOUTH AUSTRALIA']),
-        ('TAS',     ['TASMAIA']),
-        ('VIC',     ['VICTORIA']),
-        ('WA',      ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
+        ('AAT', ['AUSTRALIAN ANTARCTIC TERRITORY']),
+        ('ACT', ['AUSTRALIAN CAPITAL TERRITORY', 'AUS CAPITAL TERRITORY']),
+        ('NSW', ['NEW SOUTH WALES']),
+        ('NT', ['NORTHERN TERRITORY']),
+        ('QLD', ['QUEENSLAND']),
+        ('SA', ['SOUTH AUSTRALIA']),
+        ('TAS', ['TASMAIA']),
+        ('VIC', ['VICTORIA']),
+        ('WA', ['WESTERN AUSTRALIA', 'WEST AUSTRALIA', 'WEST AUS']),
     ])
 
     floorAbbreviations = OrderedDict([
-        ('B',       ['BASEMENT']),
-        ('G',       ['GROUND FLOOR', 'GROUND']),
-        ('LG',      ['LOWER GROUND FLOOR', 'LOWER GROUND']),
-        ('UG',      ['UPPER GROUND FLOOR', 'UPPER GROUND', 'UPPER LEVEL']),
-        ('FL',      ['FLOOR', 'FLR']),
-        ('LEVEL',   ['LVL', 'L']),
-        ('M',       ['MEZZANINE', 'MEZ'])
+        ('B', ['BASEMENT']),
+        ('G', ['GROUND FLOOR', 'GROUND']),
+        ('LG', ['LOWER GROUND FLOOR', 'LOWER GROUND']),
+        ('UG', ['UPPER GROUND FLOOR', 'UPPER GROUND', 'UPPER LEVEL']),
+        ('FL', ['FLOOR', 'FLR']),
+        ('LEVEL', ['LVL', 'L']),
+        ('M', ['MEZZANINE', 'MEZ'])
     ])
 
     thoroughfareTypeAbbreviations = OrderedDict([
-        ('ACCS',     ['ACCESS']),
-        ('ALLY',     ['ALLEY']),
-        ('ALWY',     ['ALLEYWAY']),
-        ('AMBL',     ['AMBLE']),
-        ('ANCG',     ['ANCHORAGE']),
-        ('APP',      ['APPROACH']),
-        ('ARC',      ['ARCADE']),
-        ('ARTL',     ['ARTERIAL']),
-        ('ARTY',     ['ARTERY', 'ART']),
-        ('AVE',      ['AVENUE', 'AV']),
-        ('BASN',     ['BASIN']),
-        ('BA',       ['BANAN']),
-        ('BCH',      ['BEACH']),
-        ('BEND',     []),
-        ('BWLK',     ['BOARDWALK']),
-        ('BLVD',      ['BOULEVARD', 'BLVD']),
-        ('BR',       ['BRACE']),
-        ('BRAE',     []),
-        ('BRK',      ['BREAK']),
-        ('BROW',     []),
-        ('BYPA',     ['BYPASS']),
-        ('BYWY',     ['BYWAY']),
-        ('CSWY',     ['CAUSEWAY']),
-        ('CTR',      ['CENTRE']),
-        ('CH',       ['CHASE']),
-        ('CIR',      ['CIRCLE', 'CCLE']),
-        ('CCT',      ['CIRCUIT']),
-        ('CRCS',     ['CIRCUS']),
-        ('CL',       ['CLOSE']),
-        ('CON',      ['CONCOURSE']),
-        ('CPS',      ['COPSE']),
-        ('CNR',      ['CORNER']),
-        ('CT',       ['COURT', 'CRT']),
-        ('CTYD',     ['COURTYARD']),
-        ('COVE',     []),
-        ('CRES',     ['CRESCENT', 'CR', 'CRESENT', 'CRS']),
-        ('CRST',     ['CREST']),
-        ('CRSS',     ['CROSS']),
-        ('CSAC',     ['CUL-DE-SAC']),
-        ('CUTT',     ['CUTTING']),
-        ('DALE',     []),
-        ('DIP',      []),
-        ('DR',       ['DRIVE']),
-        ('DVWY',     ['DRIVEWAY']),
-        ('EDGE',     []),
-        ('ELB',      ['ELBOW']),
-        ('END',      []),
-        ('ENT',      ['ENTRANCE']),
-        ('ESP',      ['ESPLANADE']),
-        ('EXP',      ['EXPRESSWAY']),
-        ('FAWY',     ['FAIRWAY']),
-        ('FOLW',     ['FOLLOW']),
-        ('FTWY',     ['FOOTWAY']),
-        ('FORM',     ['FORMATION']),
-        ('FWY',      ['FREEWAY']),
-        ('FRTG',     ['FRONTAGE']),
-        ('GAP',      []),
-        ('GDNS',     ['GARDENS', 'GARDEN']),
-        ('GTE',      ['GATE']),
-        ('GLDE',     ['GLADE']),
-        ('GLEN',     []),
-        ('GRA',      ['GRANGE']),
-        ('GRN',      ['GREEN']),
-        ('GR',       ['GROVE']),
-        ('HTS',      ['HEIGHTS']),
-        ('HIRD',     ['HIGHROAD']),
-        ('HWY',      ['HIGHWAY', 'HGWY', 'HWAY', 'H\'WAY']),
-        ('HILL',     []),
-        ('INTG',     ['INTERCHANGE']),
-        ('JNC',      ['JUNCTION']),
-        ('KEY',      []),
-        ('LANE',     []),
-        ('LNWY',     ['LANEWAY']),
-        ('LINE',     []),
-        ('LINK',     []),
-        ('LKT',      ['LOOKOUT', 'LOOK OUT']),
-        ('LOOP',     []),
-        ('MALL',     []),
-        ('MNDR',     ['MEANDER']),
-        ('MEWS',     []),
-        ('MTWY',     ['MOTORWAY']),
-        ('NOOK',     []),
-        ('OTLK',     ['OUTLOOK']),
-        ('PDE',      ['PARADE']),
-        ('PARK',     []),
-        ('PWY',      ['PARKWAY']),
-        ('PASS',     []),
-        ('PSGE',     ['PASSAGE']),
-        ('PATH',     []),
-        ('PWAY',     ['PATHWAY']),
-        ('PIAZ',     ['PIAZZA']),
-        ('PL',       ['PLACE', 'PLCE']),
-        ('PLZA',     ['PLAZA']),
-        ('PKT',      ['POCKET']),
-        ('PNT',      ['POINT']),
-        ('PORT',     []),
-        ('PROM',     ['PROMENADE']),
-        ('QDRT',     ['QUADRANT']),
-        ('QYS',      ['QUAYS']),
-        ('RMBL',     ['RAMBLE']),
-        ('REST',     []),
-        ('RTT',      ['RETREAT']),
-        ('RDGE',     ['RIDGE']),
-        ('RISE',     []),
-        ('RD',       ['ROAD']),
-        ('RTY',      ['ROTARY']),
-        ('RTE',      ['ROUTE']),
-        ('ROW',      []),
-        ('RUE',      []),
-        ('SVWY',     ['SERVICEWAY']),
-        ('SHUN',     ['SHUNT']),
-        ('SPUR',     []),
-        ('SQ',       ['SQUARE']),
-        ('ST',       ['STREET']),
+        ('ACCS', ['ACCESS']),
+        ('ALLY', ['ALLEY']),
+        ('ALWY', ['ALLEYWAY']),
+        ('AMBL', ['AMBLE']),
+        ('ANCG', ['ANCHORAGE']),
+        ('APP', ['APPROACH']),
+        ('ARC', ['ARCADE']),
+        ('ARTL', ['ARTERIAL']),
+        ('ARTY', ['ARTERY', 'ART']),
+        ('AVE', ['AVENUE', 'AV']),
+        ('BASN', ['BASIN']),
+        ('BA', ['BANAN']),
+        ('BCH', ['BEACH']),
+        ('BEND', []),
+        ('BWLK', ['BOARDWALK']),
+        ('BLVD', ['BOULEVARD', 'BLVD']),
+        ('BR', ['BRACE']),
+        ('BRAE', []),
+        ('BRK', ['BREAK']),
+        ('BROW', []),
+        ('BYPA', ['BYPASS']),
+        ('BYWY', ['BYWAY']),
+        ('CSWY', ['CAUSEWAY']),
+        ('CTR', ['CENTRE']),
+        ('CH', ['CHASE']),
+        ('CIR', ['CIRCLE', 'CCLE']),
+        ('CCT', ['CIRCUIT']),
+        ('CRCS', ['CIRCUS']),
+        ('CL', ['CLOSE']),
+        ('CON', ['CONCOURSE']),
+        ('CPS', ['COPSE']),
+        ('CNR', ['CORNER']),
+        ('CT', ['COURT', 'CRT']),
+        ('CTYD', ['COURTYARD']),
+        ('COVE', []),
+        ('CRES', ['CRESCENT', 'CR', 'CRESENT', 'CRS']),
+        ('CRST', ['CREST']),
+        ('CRSS', ['CROSS']),
+        ('CSAC', ['CUL-DE-SAC']),
+        ('CUTT', ['CUTTING']),
+        ('DALE', []),
+        ('DIP', []),
+        ('DR', ['DRIVE']),
+        ('DVWY', ['DRIVEWAY']),
+        ('EDGE', []),
+        ('ELB', ['ELBOW']),
+        ('END', []),
+        ('ENT', ['ENTRANCE']),
+        ('ESP', ['ESPLANADE']),
+        ('EXP', ['EXPRESSWAY']),
+        ('FAWY', ['FAIRWAY']),
+        ('FOLW', ['FOLLOW']),
+        ('FTWY', ['FOOTWAY']),
+        ('FORM', ['FORMATION']),
+        ('FWY', ['FREEWAY']),
+        ('FRTG', ['FRONTAGE']),
+        ('GAP', []),
+        ('GDNS', ['GARDENS', 'GARDEN']),
+        ('GTE', ['GATE']),
+        ('GLDE', ['GLADE']),
+        ('GLEN', []),
+        ('GRA', ['GRANGE']),
+        ('GRN', ['GREEN']),
+        ('GR', ['GROVE']),
+        ('HTS', ['HEIGHTS']),
+        ('HIRD', ['HIGHROAD']),
+        ('HWY', ['HIGHWAY', 'HGWY', 'HWAY', 'H\'WAY']),
+        ('HILL', []),
+        ('INTG', ['INTERCHANGE']),
+        ('JNC', ['JUNCTION']),
+        ('KEY', []),
+        ('LANE', []),
+        ('LNWY', ['LANEWAY']),
+        ('LINE', []),
+        ('LINK', []),
+        ('LKT', ['LOOKOUT', 'LOOK OUT']),
+        ('LOOP', []),
+        ('MALL', []),
+        ('MNDR', ['MEANDER']),
+        ('MEWS', []),
+        ('MTWY', ['MOTORWAY']),
+        ('NOOK', []),
+        ('OTLK', ['OUTLOOK']),
+        ('PDE', ['PARADE']),
+        ('PARK', []),
+        ('PWY', ['PARKWAY']),
+        ('PASS', []),
+        ('PSGE', ['PASSAGE']),
+        ('PATH', []),
+        ('PWAY', ['PATHWAY']),
+        ('PIAZ', ['PIAZZA']),
+        ('PL', ['PLACE', 'PLCE']),
+        ('PLZA', ['PLAZA']),
+        ('PKT', ['POCKET']),
+        ('PNT', ['POINT']),
+        ('PORT', []),
+        ('PROM', ['PROMENADE']),
+        ('QDRT', ['QUADRANT']),
+        ('QYS', ['QUAYS']),
+        ('RMBL', ['RAMBLE']),
+        ('REST', []),
+        ('RTT', ['RETREAT']),
+        ('RDGE', ['RIDGE']),
+        ('RISE', []),
+        ('RD', ['ROAD']),
+        ('RTY', ['ROTARY']),
+        ('RTE', ['ROUTE']),
+        ('ROW', []),
+        ('RUE', []),
+        ('SVWY', ['SERVICEWAY']),
+        ('SHUN', ['SHUNT']),
+        ('SPUR', []),
+        ('SQ', ['SQUARE']),
+        ('ST', ['STREET']),
         ('STRAIGHT', []),
-        ('SBWY',     ['SUBWAY']),
-        ('TARN',     []),
-        ('TCE',      ['TERRACE']),
-        ('THFR',     ['THOROUGHFARE']),
-        ('TLWY',     ['TOLLWAY']),
-        ('TOP',      []),
-        ('TOR',      []),
-        ('TRK',      ['TRACK']),
-        ('TRL',      ['TRAIL']),
-        ('TURN',     []),
-        ('UPAS',     ['UNDERPASS']),
-        ('VALE',     []),
-        ('VIAD',     ['VIADUCT']),
-        ('VIEW',     []),
-        ('VSTA',     ['VISTA']),
-        ('WALK',     []),
-        ('WAY',      ['WY']),
-        ('WKWY',     ['WALKWAY']),
-        ('WHRF',     ['WHARF']),
-        ('WYND',     [])
+        ('SBWY', ['SUBWAY']),
+        ('TARN', []),
+        ('TCE', ['TERRACE']),
+        ('THFR', ['THOROUGHFARE']),
+        ('TLWY', ['TOLLWAY']),
+        ('TOP', []),
+        ('TOR', []),
+        ('TRK', ['TRACK']),
+        ('TRL', ['TRAIL']),
+        ('TURN', []),
+        ('UPAS', ['UNDERPASS']),
+        ('VALE', []),
+        ('VIAD', ['VIADUCT']),
+        ('VIEW', []),
+        ('VSTA', ['VISTA']),
+        ('WALK', []),
+        ('WAY', ['WY']),
+        ('WKWY', ['WALKWAY']),
+        ('WHRF', ['WHARF']),
+        ('WYND', [])
     ])
 
     thoroughfareSuffixAbbreviations = OrderedDict([
-        ('CN',  ['CENTRAL']),
-        ('E',   ['EAST']),
-        ('EX',  ['EXTENSION']),
-        ('LR',  ['LOWER']),
-        ('N',   ['NORTH']),
-        ('NE',  ['NORTH EAST']),
-        ('NW',  ['NORTH WEST']),
-        ('S',   ['SOUTH']),
-        ('SE',  ['SOUTH EAST']),
-        ('SW',  ['SOUTH WEST']),
-        ('UP',  ['UPPER']),
-        ('W',   ['WEST'])
+        ('CN', ['CENTRAL']),
+        ('E', ['EAST']),
+        ('EX', ['EXTENSION']),
+        ('LR', ['LOWER']),
+        ('N', ['NORTH']),
+        ('NE', ['NORTH EAST']),
+        ('NW', ['NORTH WEST']),
+        ('S', ['SOUTH']),
+        ('SE', ['SOUTH EAST']),
+        ('SW', ['SOUTH WEST']),
+        ('UP', ['UPPER']),
+        ('W', ['WEST'])
     ])
 
     buildingTypeAbbreviations = OrderedDict([
         ('SHOPPING CENTRE', ["S/C", r"SHOP.? CENTRE", "SHOPNG CENTRE"]),
         ('SHOPPING CENTER', [r"SHOP.? CENTER", "SHOPNG CENTER"]),
-        ('SHOPPING CTR',    [r"SHOP.? CTR", "SHOPNG CTR"]),
-        ("SHOPPING CTNR",   [r"SHOP.? CTR", "SHOPNG CTNR"]),
-        ('PLAZA',           ['PLZA']),
-        ('ARCADE',          ["ARC"]),
-        ('MALL',            []),
-        ('BUILDING',        ['BLDG']),
-        ('FORUM',           []),
-        ('HOUSE',           []),
-        ('CENTER',          []),
-        ('CENTRE',          []),
-        ('FORUM',           []),
-        ('CTR',             ["CNTR"]),
+        ('SHOPPING CTR', [r"SHOP.? CTR", "SHOPNG CTR"]),
+        ("SHOPPING CTNR", [r"SHOP.? CTR", "SHOPNG CTNR"]),
+        ('PLAZA', ['PLZA']),
+        ('ARCADE', ["ARC"]),
+        ('MALL', []),
+        ('BUILDING', ['BLDG']),
+        ('FORUM', []),
+        ('HOUSE', []),
+        ('CENTER', []),
+        ('CENTRE', []),
+        ('FORUM', []),
+        ('CTR', ["CNTR"]),
     ])
 
     deliveryTypeAbbreviations = OrderedDict([
-        ('CARE PO',     []),
-        ('CMA',         []),
-        ('CMB',         []),
-        ('CPA',         []),
-        ('GPO BOX',     [r"G\.?P\.?O(\.| )BOX", "GENERAL POST OFFICE BOX"]),
-        ('LOCKED BAG',  []),
-        ('PO BOX',      [r"P\.?O\.? ?BOX"]),
-        ('PO',          []),
-        ('RMB',         []),
-        ('RMS',         []),
-        ('MS',          []),
+        ('CARE PO', []),
+        ('CMA', []),
+        ('CMB', []),
+        ('CPA', []),
+        ('GPO BOX', [r"G\.?P\.?O(\.| )BOX", "GENERAL POST OFFICE BOX"]),
+        ('LOCKED BAG', []),
+        ('PO BOX', [r"P\.?O\.? ?BOX"]),
+        ('PO', []),
+        ('RMB', []),
+        ('RMS', []),
+        ('MS', []),
         ('PRIVATE BAG', []),
         ('PARCEL LOCKER', []),
     ])
@@ -1252,39 +1260,48 @@ class AddressUtils:
 
     @staticmethod
     def identifySubunit(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.subunitAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.subunitAbbreviations, string)
 
     @staticmethod
     def identifyFloor(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.floorAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.floorAbbreviations, string)
 
     @staticmethod
     def identifyThoroughfareType(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.thoroughfareTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.thoroughfareTypeAbbreviations, string)
 
     @staticmethod
     def identifyThoroughfareSuffix(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.thoroughfareSuffixAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.thoroughfareSuffixAbbreviations, string)
 
     @staticmethod
     def identifyState(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.stateAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.stateAbbreviations, string)
 
     @staticmethod
     def identifyBuildingType(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.buildingTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
     def identifyBuildingTypes(string):
-        return SanitationUtils.identifyAbbreviations(AddressUtils.buildingTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviations(
+            AddressUtils.buildingTypeAbbreviations, string)
 
     @staticmethod
     def identifyDeliveryType(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.deliveryTypeAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.deliveryTypeAbbreviations, string)
 
     @staticmethod
     def identifyCountry(string):
-        return SanitationUtils.identifyAbbreviation(AddressUtils.countryAbbreviations, string)
+        return SanitationUtils.identifyAbbreviation(
+            AddressUtils.countryAbbreviations, string)
 
     @staticmethod
     def getFloor(token):
@@ -1294,11 +1311,11 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict):
+        match_dict = match.groupdict() if match else None
+        if(match_dict):
             floor_type = AddressUtils.identifyFloor(
-                matchDict.get('floor_type'))
-            floor_number = matchDict.get('floor_number')
+                match_dict.get('floor_type'))
+            floor_number = match_dict.get('floor_number')
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint(
                     "FOUND FLOOR", floor_type, floor_number)
@@ -1313,10 +1330,10 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('subunit_type'):
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('subunit_type'):
             subunit_type = AddressUtils.identifySubunitType(
-                matchDict.get('subunit_type')
+                match_dict.get('subunit_type')
             )
             return subunit_type
 
@@ -1328,11 +1345,11 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('subunit_type') and matchDict.get('subunit_number')):
+        match_dict = match.groupdict() if match else None
+        if(match_dict and match_dict.get('subunit_type') and match_dict.get('subunit_number')):
             subunit_type = AddressUtils.identifySubunit(
-                matchDict.get('subunit_type'))
-            subunit_number = matchDict.get('subunit_number')
+                match_dict.get('subunit_type'))
+            subunit_number = match_dict.get('subunit_number')
             subunit = (subunit_type, subunit_number)
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint("FOUND SUBUNIT", subunit)
@@ -1347,11 +1364,11 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('weak_subunit_type') and matchDict.get('weak_subunit_number')):
+        match_dict = match.groupdict() if match else None
+        if(match_dict and match_dict.get('weak_subunit_type') and match_dict.get('weak_subunit_number')):
             subunit_type = AddressUtils.identifySubunit(
-                matchDict.get('weak_subunit_type'))
-            subunit_number = matchDict.get('weak_subunit_number')
+                match_dict.get('weak_subunit_type'))
+            subunit_number = match_dict.get('weak_subunit_number')
             subunit = (subunit_type, subunit_number)
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint("FOUND WEAK SUBUNIT", subunit)
@@ -1366,10 +1383,10 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if matchDict and matchDict.get('thoroughfare_type'):
+        match_dict = match.groupdict() if match else None
+        if match_dict and match_dict.get('thoroughfare_type'):
             thoroughfare_type = AddressUtils.identifyThoroughfareType(
-                matchDict.get('thoroughfare_type')
+                match_dict.get('thoroughfare_type')
             )
             return thoroughfare_type
 
@@ -1381,16 +1398,16 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('thoroughfare_name') and matchDict.get('thoroughfare_type')):
-            thoroughfare_name = matchDict.get('thoroughfare_name')
+        match_dict = match.groupdict() if match else None
+        if(match_dict and match_dict.get('thoroughfare_name') and match_dict.get('thoroughfare_type')):
+            thoroughfare_name = match_dict.get('thoroughfare_name')
             thoroughfare_type = AddressUtils.identifyThoroughfareType(
-                matchDict.get('thoroughfare_type')
+                match_dict.get('thoroughfare_type')
             )
             thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
-                matchDict.get('thoroughfare_suffix')
+                match_dict.get('thoroughfare_suffix')
             )
-            thoroughfare_number = matchDict.get('thoroughfare_number')
+            thoroughfare_number = match_dict.get('thoroughfare_number')
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint(
                     "FOUND THOROUGHFARE",
@@ -1410,12 +1427,12 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict):
-            # print matchDict
-            building_name = matchDict.get('building_name')
+        match_dict = match.groupdict() if match else None
+        if(match_dict):
+            # print match_dict
+            building_name = match_dict.get('building_name')
             building_type = ''.join(AddressUtils.identifyBuildingTypes(
-                matchDict.get('building_type')
+                match_dict.get('building_type')
             ))
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint(
@@ -1433,16 +1450,16 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('weak_thoroughfare_name') and matchDict.get('weak_thoroughfare_type')):
-            # print matchDict
-            weak_thoroughfare_name = matchDict.get('weak_thoroughfare_name')
-            weak_thoroughfare_type = matchDict.get('weak_thoroughfare_type')
+        match_dict = match.groupdict() if match else None
+        if(match_dict and match_dict.get('weak_thoroughfare_name') and match_dict.get('weak_thoroughfare_type')):
+            # print match_dict
+            weak_thoroughfare_name = match_dict.get('weak_thoroughfare_name')
+            weak_thoroughfare_type = match_dict.get('weak_thoroughfare_type')
             # weak_thoroughfare_type = AddressUtils.identifyThoroughfareType(
-            #     matchDict.get('weak_thoroughfare_type')
+            #     match_dict.get('weak_thoroughfare_type')
             # )
             weak_thoroughfare_suffix = AddressUtils.identifyThoroughfareSuffix(
-                matchDict.get('weak_thoroughfare_suffix')
+                match_dict.get('weak_thoroughfare_suffix')
             )
 
             if Registrar.DEBUG_ADDRESS:
@@ -1461,9 +1478,9 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict and matchDict.get('state_name')):
-            state_name = matchDict.get('state_name')
+        match_dict = match.groupdict() if match else None
+        if(match_dict and match_dict.get('state_name')):
+            state_name = match_dict.get('state_name')
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint("FOUND STATE ", state_name)
             return state_name
@@ -1476,11 +1493,11 @@ class AddressUtils:
             ),
             token
         )
-        matchDict = match.groupdict() if match else None
-        if(matchDict):
+        match_dict = match.groupdict() if match else None
+        if(match_dict):
             delivery_type = AddressUtils.identifyDeliveryType(
-                matchDict.get('delivery_type'))
-            delivery_number = matchDict.get('delivery_number')
+                match_dict.get('delivery_type'))
+            delivery_number = match_dict.get('delivery_number')
             if Registrar.DEBUG_ADDRESS:
                 SanitationUtils.safePrint(
                     "FOUND DELIVERY ", delivery_type, delivery_number)
@@ -1580,10 +1597,10 @@ class AddressUtils:
     @staticmethod
     def extractShop(address):
         match = re.match(AddressUtils.shopRegex, address)
-        matchDict = match.groupdict()
-        if(matchDict):
-            number = matchDict.get('number', None)
-            rest = matchDict.get('rest', None)
+        match_dict = match.groupdict()
+        if(match_dict):
+            number = match_dict.get('number', None)
+            rest = match_dict.get('rest', None)
             if(number):
                 return number, rest
         return None, address

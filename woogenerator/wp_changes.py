@@ -17,7 +17,7 @@ from sshtunnel import SSHTunnelForwarder
 import json
 import io
 
-importName = time.strftime("%Y-%m-%d %H:%M:%S")
+import_name = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
 
 
@@ -25,15 +25,15 @@ def timediff():
     return time.time() - start_time
 
 ### DEFAULT CONFIG ###
-outFolder = "../output/"
+out_folder = "../output/"
 yamlPath = "merger_config.yaml"
 testMode = False
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)
 
-    if 'outFolder' in config.keys():
-        outFolder = config['outFolder']
+    if 'out_folder' in config.keys():
+        out_folder = config['out_folder']
 
     # mandatory
     merge_mode = config.get('merge_mode', 'sync')
@@ -56,13 +56,13 @@ with open(yamlPath) as stream:
 #########################################
 
 fileSuffix = "_test" if testMode else ""
-repPath = os.path.join(outFolder, "changes_report%s.html" % fileSuffix)
+repPath = os.path.join(out_folder, "changes_report%s.html" % fileSuffix)
 
 #########################################
 # Download / Generate Slave Parser Object
 #########################################
 
-colData = ColData_User()
+col_data = ColData_User()
 
 saRows = []
 
@@ -89,7 +89,7 @@ with \
 
     cursor = conn.cursor()
     cursor.execute(sql)
-    # headers = colData.getWPCols().keys() + ['ID', 'user_id', 'updated']
+    # headers = col_data.get_wp_cols().keys() + ['ID', 'user_id', 'updated']
     headers = [i[0] for i in cursor.description]
 
     # print headers
@@ -142,7 +142,7 @@ for user_id, c_time, changed, data in sorted(changeData[1:]):
 
 print "creating report..."
 
-with io.open(repPath, 'w+', encoding='utf-8') as resFile:
+with io.open(repPath, 'w+', encoding='utf-8') as res_file:
     reporter = HtmlReporter()
 
     group = HtmlReporter.Group('changes', 'Changes')
@@ -160,4 +160,4 @@ with io.open(repPath, 'w+', encoding='utf-8') as resFile:
         )
     )
 
-    resFile.write(SanitationUtils.coerceUnicode(reporter.getDocument()))
+    res_file.write(SanitationUtils.coerceUnicode(reporter.getDocument()))

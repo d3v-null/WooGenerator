@@ -12,7 +12,7 @@ class testColDataUser(TestCase):
         self.maxDiff = None
 
     def test_getImportCols(self):
-        importCols = ColData_User.getImportCols()
+        importCols = ColData_User.get_import_cols()
         self.assertItemsEqual(
             importCols,
             [
@@ -67,7 +67,7 @@ class testColDataUser(TestCase):
             ])
 
     def test_getActTrackedCols(self):
-        actTrackedCols = ColData_User.getACTTrackedCols()
+        actTrackedCols = ColData_User.get_act_tracked_cols()
         self.assertItemsEqual(
             actTrackedCols,
             OrderedDict(
@@ -89,12 +89,12 @@ class testColDataUser(TestCase):
                  ]))
 
     def test_getDeltaCols(self):
-        DeltaCols = ColData_User.getDeltaCols()
+        DeltaCols = ColData_User.get_delta_cols()
         self.assertItemsEqual(DeltaCols, OrderedDict(
             [('E-mail', 'Delta E-mail'), ('Role', 'Delta Role')]))
 
     def test_getAllWpDbCols(self):
-        dbCols = ColData_User.getAllWPDBCols()
+        dbCols = ColData_User.get_all_wpdb_cols()
         # print "dbCols %s" % pformat(dbCols.items())
         self.assertItemsEqual(dbCols, OrderedDict([
             ('myob_card_id', 'MYOB Card ID'),
@@ -152,7 +152,7 @@ class testColDataUser(TestCase):
         ]))
 
     def test_getWPAPICols(self):
-        api_cols = ColData_Woo.getWPAPICols()
+        api_cols = ColData_Woo.get_wpapi_cols()
         print "test_getWPAPICols", api_cols.keys()
 
     def test_getWPAPIVariableCols(self):

@@ -7,11 +7,11 @@ from utils import TimeUtils, SanitationUtils
 from itertools import chain
 
 srcFolder = "../source/"
-inFolder = "../input/"
+in_folder = "../input/"
 remoteExportFolder = "act_usr_exp/"
 yamlPath = "merger_config.yaml"
 
-importName = TimeUtils.get_ms_timestamp()
+import_name = TimeUtils.get_ms_timestamp()
 dateStamp = TimeUtils.get_datestamp()
 
 with open(yamlPath) as stream:
@@ -27,20 +27,20 @@ with open(yamlPath) as stream:
     m_db_name = config.get('test_m_db_name')
     m_command = config.get('test_m_command')
 
-exportFilename = "act_x_test_" + importName + ".csv"
+exportFilename = "act_x_test_" + import_name + ".csv"
 remoteExportPath = os.path.join(remoteExportFolder, exportFilename)
-maPath = os.path.join(inFolder, exportFilename)
+maPath = os.path.join(in_folder, exportFilename)
 maEncoding = "utf-8"
 
 paramikoSSHParams = {
-    'hostname':    m_ssh_host,
-    'port':        m_ssh_port,
-    'username':    m_ssh_user,
-    'password':    m_ssh_pass,
+    'hostname': m_ssh_host,
+    'port': m_ssh_port,
+    'username': m_ssh_user,
+    'password': m_ssh_pass,
 }
 
-colData = ColData_User()
-actCols = colData.getACTCols()
+col_data = ColData_User()
+actCols = col_data.get_act_cols()
 fields = ";".join(actCols.keys())
 
 command = " ".join(filter(None, [
@@ -76,19 +76,19 @@ try:
         fstat = sftpClient.stat(exportFilename)
         if fstat:
             sftpClient.get(exportFilename, maPath)
-    except Exception, exc:
+    except Exception as exc:
         SanitationUtils.safePrint("ERROR IN SFTP: " + str(exc))
     finally:
         sftpClient.close()
 
-except Exception, exc:
+except Exception as exc:
     SanitationUtils.safePrint("ERROR IN SSH: " + str(exc))
 finally:
     sshClient.close()
 
 maParser = CSVParse_User(
-    cols=colData.getImportCols(),
-    defaults=colData.getDefaults(),
+    cols=col_data.get_import_cols(),
+    defaults=col_data.get_defaults(),
     contact_schema='act',
 )
 
@@ -102,7 +102,7 @@ def printBasicColumns(users):
         usrList.append(user)
         # SanitationUtils.safePrint( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
 
-    cols = colData.getBasicCols()
+    cols = col_data.get_basic_cols()
 
     SanitationUtils.safePrint(usrList.tabulate(
         cols,

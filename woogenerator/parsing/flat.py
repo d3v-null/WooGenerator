@@ -83,8 +83,8 @@ class CSVParse_Special(CSVParse_Flat):
         self.objectIndexer = self.getObjectID
 
     @classmethod
-    def getObjectID(self, objectData):
-        return objectData.ID
+    def getObjectID(self, object_data):
+        return object_data.ID
 
 
 class ImportSqlProduct(ImportFlat):
