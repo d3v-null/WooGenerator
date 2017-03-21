@@ -31,7 +31,7 @@ class MetaGator(Registrar):
 
     def write_meta(self, title, description):
         title, description = map(
-            SanitationUtils.coerceAscii, (title, description))
+            SanitationUtils.coerce_ascii, (title, description))
         # print "title, description: ", title, ', ', description
         if self.isPNG:
             # print "image is PNG"
@@ -120,12 +120,12 @@ class MetaGator(Registrar):
             raise Exception("not an image file: ", self.ext)
 
         title, description = tuple(
-            map(SanitationUtils.asciiToUnicode, [title, description]))
+            map(SanitationUtils.ascii_to_unicode, [title, description]))
         return {'title': title, 'description': description}
 
     def update_meta(self, newmeta):
         oldmeta = self.read_meta()
-        newmeta = dict([(key, SanitationUtils.coerceAscii(value))
+        newmeta = dict([(key, SanitationUtils.coerce_ascii(value))
                         for key, value in newmeta.items()])
         changed = []
         for key in ['title', 'description']:

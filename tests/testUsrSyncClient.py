@@ -411,7 +411,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
     # def test_SSH_download(self):
     #     with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
-    #         response = client.getDeleteFile('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
+    #         response = client.get_delete_file('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
 
     # def test_SSH_Upload(self):
     #     fields = {

@@ -226,10 +226,10 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 
         if not import_name:
             import_name = time.strftime("%Y-%m-%d %H:%M:%S")
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
-        taxo_subs = listUtils.combineOrderedDicts(taxo_subs, extra_taxo_subs)
-        item_subs = listUtils.combineOrderedDicts(item_subs, extra_item_subs)
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
+        taxo_subs = listUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
+        item_subs = listUtils.combine_ordered_dicts(item_subs, extra_item_subs)
         if not schema:
             schema = "MY"
 
@@ -237,10 +237,10 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
                                            taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
         if self.DEBUG_MYO:
             self.registerMessage("csvparse initialized with cols: %s" %
-                                 SanitationUtils.coerceUnicode(extra_cols))
+                                 SanitationUtils.coerce_unicode(extra_cols))
 
     # def joinDescs(self, descs, fullnames):
-    # return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
+    # return self.change_fullname(self.joinItems(fullnames[self.taxoDepth:]))
 
     # def processItemtype(self, itemData):
     #     if itemData['itemtype'] == 'Y':
@@ -268,7 +268,7 @@ class MYOProdList(ShopProdList):
 #         cols = col_data.get_import_cols(),
 #         defaults = col_data.get_defaults(),
 #     )
-#     productParser.analyseFile(genPath)
+#     productParser.analyse_file(genPath)
 #     products = productParser.getProducts().values()
 #
 #     print "products:"

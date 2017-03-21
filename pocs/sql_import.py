@@ -136,6 +136,6 @@ sqlParser = CSVParse_TT(
     defaults=col_data.get_defaults()
 )
 if sqlRows:
-    sqlParser.analyseRows(sqlRows)
+    sqlParser.analyse_rows(sqlRows)
 
 print sqlParser.products

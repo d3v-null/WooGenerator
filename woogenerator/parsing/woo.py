@@ -57,7 +57,7 @@ class ImportWooMixin(object):
     def splist(self):
         schedule = self.get('SCHEDULE')
         if schedule:
-            return filter(None, SanitationUtils.findAllTokens(schedule))
+            return filter(None, SanitationUtils.find_all_tokens(schedule))
         else:
             return []
 
@@ -149,7 +149,7 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         if not line2:
             name_ancestors = self.name_ancestors
             ancestors_self = name_ancestors + [self]
-            names = listUtils.filterUniqueTrue(
+            names = listUtils.filter_unique_true(
                 map(lambda x: x.name, ancestors_self))
             if names and len(names) < 2:
                 line1 = names[0]
@@ -170,7 +170,7 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
 
     @property
     def inheritenceAncestors(self):
-        return listUtils.filterUniqueTrue(
+        return listUtils.filter_unique_true(
             self.categories.values() + super(ImportWooProduct, self).inheritenceAncestors
         )
 
@@ -179,25 +179,25 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             "use .inheritenceAncestors insetad of .getInheritanceAncestors()")
         self.registerError(exc)
         return self.inheritenceAncestors
-        # return listUtils.filterUniqueTrue(
-        #     self.getCategories().values() + \
+        # return listUtils.filter_unique_true(
+        #     self.get_categories().values() + \
         #         super(ImportWooProduct, self).getInheritanceAncestors()
         # )
 
     @property
     def extraSpecialCategory(self):
         ancestors_self = self.taxoAncestors + [self]
-        names = listUtils.filterUniqueTrue(
+        names = listUtils.filter_unique_true(
             map(lambda x: x.fullname, ancestors_self))
         return "Specials > " + names[0] + " Specials"
 
-    def getExtraSpecialCategory(self):
+    def get_extra_special_category(self):
         exc = DeprecationWarning(
-            "use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
+            "use .extraSpecialCategory insetad of .get_extra_special_category()")
         self.registerError(exc)
         return self.extraSpecialCategory
         # ancestors_self = self.getTaxoAncestors() + [self]
-        # names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestors_self))
+        # names = listUtils.filter_unique_true(map(lambda x: x.fullname, ancestors_self))
         # return "Specials > " + names[0] + " Specials"
 
 
@@ -269,13 +269,13 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     # def identifier_delimeter(self):
     #     return ImportWooObject.identifier_delimeter(self)
 
-    def findChildCategory(self, index):
+    def find_child_category(self, index):
         for child in self.children:
             if child.isCategory:
                 if child.index == index:
                     return child
                 else:
-                    result = child.findChildCategory(index)
+                    result = child.find_child_category(index)
                     if result:
                         return result
         return None
@@ -314,7 +314,7 @@ class CSVParse_Woo_Mixin(object):
     """ All the stuff that's common to Woo Parser classes """
     objectContainer = ImportWooObject
 
-    def findCategory(self, search_data):
+    def find_category(self, search_data):
         response = None
         matching_category_sets = []
         for search_key in [
@@ -366,7 +366,7 @@ class CSVParse_Woo_Mixin(object):
     def getWPID(self, object_data):
         return object_data.wpid
 
-    def clearTransients(self):
+    def clear_transients(self):
         pass
 
 
@@ -438,16 +438,16 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
         extra_cat_maps = OrderedDict()
 
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = listUtils.combineOrderedDicts(
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = listUtils.combineOrderedDicts(
+        kwargs['item_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
         if not kwargs.get('schema'):
             kwargs['schema'] = "TT"
-        self.cat_mapping = listUtils.combineOrderedDicts(
+        self.cat_mapping = listUtils.combine_ordered_dicts(
             kwargs.pop('cat_mapping', {}), extra_cat_maps)
         self.dprc_rules = kwargs.pop('dprc_rules', {})
         self.dprpRules = kwargs.pop('dprpRules', {})
@@ -475,12 +475,12 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         #     print "-> maxDepth: ", self.maxDepth
         #     print "-> meta_width: ", self.meta_width
 
-    def clearTransients(self):
+    def clear_transients(self):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        CSVParse_Gen_Tree.clearTransients(self)
-        CSVParse_Shop_Mixin.clearTransients(self)
-        CSVParse_Woo_Mixin.clearTransients(self)
+        CSVParse_Gen_Tree.clear_transients(self)
+        CSVParse_Shop_Mixin.clear_transients(self)
+        CSVParse_Woo_Mixin.clear_transients(self)
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
@@ -607,7 +607,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         )
 
     def processImages(self, object_data):
-        imglist = filter(None, SanitationUtils.findAllImages(
+        imglist = filter(None, SanitationUtils.find_all_images(
             object_data.get('Images', '')))
         for image in imglist:
             self.registerImage(image, object_data)
@@ -635,12 +635,12 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             if self.DEBUG_WOO:
                 self.registerMessage("HAS EXTRA LAYERS")
             if object_data.isProduct:
-                # self.registerMessage("ANCESTOR NAMESUM: %s" % str(object_data.getAncestorKey('namesum')))
-                # self.registerMessage("ANCESTOR DESCSUM: %s" % str(object_data.getAncestorKey('descsum')))
-                # self.registerMessage("ANCESTOR CATSUM: %s" % str(object_data.getAncestorKey('catsum')))
-                # self.registerMessage("ANCESTOR ITEMSUM: %s" % str(object_data.getAncestorKey('itemsum')))
-                # self.registerMessage("ANCESTOR TAXOSUM: %s" % str(object_data.getAncestorKey('taxosum')))
-                # self.registerMessage("ANCESTOR NAME: %s" % str(object_data.getAncestorKey('name')))
+                # self.registerMessage("ANCESTOR NAMESUM: %s" % str(object_data.get_ancestor_key('namesum')))
+                # self.registerMessage("ANCESTOR DESCSUM: %s" % str(object_data.get_ancestor_key('descsum')))
+                # self.registerMessage("ANCESTOR CATSUM: %s" % str(object_data.get_ancestor_key('catsum')))
+                # self.registerMessage("ANCESTOR ITEMSUM: %s" % str(object_data.get_ancestor_key('itemsum')))
+                # self.registerMessage("ANCESTOR TAXOSUM: %s" % str(object_data.get_ancestor_key('taxosum')))
+                # self.registerMessage("ANCESTOR NAME: %s" % str(object_data.get_ancestor_key('name')))
                 taxo_ancestor_names = [ancestorData.get(
                     'name') for ancestorData in object_data.taxoAncestors]
                 # self.registerMessage("TAXO ANCESTOR NAMES: %s" % str(taxo_ancestor_names))
@@ -788,7 +788,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             object_data.inheritenceAncestors + \
             [object_data]
 
-        palist = listUtils.filterUniqueTrue(map(
+        palist = listUtils.filter_unique_true(map(
             lambda ancestor: ancestor.get('PA'),
             ancestors
         ))
@@ -798,7 +798,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
         for attrs in palist:
             try:
-                decoded = SanitationUtils.decodeJSON(attrs)
+                decoded = SanitationUtils.decode_json(attrs)
                 for attr, val in decoded.items():
                     self.registerAttribute(object_data, attr, val)
             except Exception as exc:
@@ -808,7 +808,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         if object_data.isVariation:
             parent_data = object_data.parent
             assert parent_data and parent_data.isVariable
-            vattrs = SanitationUtils.decodeJSON(object_data.get('VA'))
+            vattrs = SanitationUtils.decode_json(object_data.get('VA'))
             assert vattrs
             for attr, val in vattrs.items():
                 self.registerAttribute(parent_data, attr, val, True)
@@ -850,7 +850,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 self.registerMessage(
                     "specials: {}".format(object_data.specials))
 
-    def addDynRules(self, itemData, dynType, ruleIDs):
+    def add_dyn_rules(self, itemData, dynType, ruleIDs):
         rules = {
             'dprc': self.dprc_rules,
             'dprp': self.dprpRules
@@ -885,14 +885,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                     dprclist = dprc_string.split('|')
                     if self.DEBUG_WOO:
                         self.registerMessage("found dprclist %s" % (dprclist))
-                    self.addDynRules(object_data, 'dprc', dprclist)
+                    self.add_dyn_rules(object_data, 'dprc', dprclist)
                 dprp_string = ancestor.get('DYNPROD')
                 if dprp_string:
                     # print " -> DPRP", dprp_string
                     dprplist = dprp_string.split('|')
                     if self.DEBUG_WOO:
                         self.registerMessage("found dprplist %s" % (dprplist))
-                    self.addDynRules(object_data, 'dprp', dprplist)
+                    self.add_dyn_rules(object_data, 'dprp', dprplist)
 
             if(object_data.get('dprclist', '')):
                 object_data['dprcsum'] = '<br/>'.join(
@@ -938,14 +938,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 if object_index in self.cat_mapping.keys():
                     index = self.cat_mapping[object_index]
                     for ancestor in object_data.ancestors:
-                        result = ancestor.findChildCategory(index)
+                        result = ancestor.find_child_category(index)
                         if result:
                             for member in object_data.members.values():
                                 self.registerJoinCategory(result, member)
 
         if object_data.isProduct:
             categories = object_data.categories.values()
-            object_data['catsum'] = '|'.join(listUtils.filterUniqueTrue(
+            object_data['catsum'] = '|'.join(listUtils.filter_unique_true(
                 map(
                     lambda x: x.namesum,
                     categories
@@ -1062,7 +1062,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                                 # print "discount is ", discount
                                 special_price = None
 
-                                percentages = SanitationUtils.findallPercent(
+                                percentages = SanitationUtils.find_all_percent(
                                     discount)
                                 # print "percentages are", percentages
                                 if percentages:
@@ -1076,7 +1076,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                                             regular_price_string)
                                         special_price = regular_price * coefficient
                                 else:
-                                    dollars = SanitationUtils.findallDollars(
+                                    dollars = SanitationUtils.find_all_dollars(
                                         discount)
                                     if dollars:
                                         dollar = float(
@@ -1170,7 +1170,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             search_data = {
                 self.objectContainer.titleKey: category_name
             }
-            result = self.findCategory(search_data)
+            result = self.find_category(search_data)
             if not result:
                 result = self.categoryContainer(
                     {
@@ -1192,7 +1192,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             search_data = {
                 self.objectContainer.titleKey: category_name
             }
-            result = self.findCategory(search_data)
+            result = self.find_category(search_data)
             if not result:
                 result = self.categoryContainer(
                     {
@@ -1268,15 +1268,15 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                     self.registerWarning(exc, object_data)
                     break
 
-    def analyseFile(self, file_name, encoding=None, limit=None):
-        objects = super(CSVParse_Woo, self).analyseFile(
+    def analyse_file(self, file_name, encoding=None, limit=None):
+        objects = super(CSVParse_Woo, self).analyse_file(
             file_name, encoding=encoding, limit=limit)
         # post processing
         # for itemData in self.taxos.values() + self.items.values():
         # print 'POST analysing product', itemData.codesum, itemData.namesum
 
         for index, object_data in self.objects.items():
-            # print '%s POST' % object_data.getIdentifier()
+            # print '%s POST' % object_data.get_identifier()
             if self.do_dyns:
                 self.postProcessDyns(object_data)
             self.postProcessCategories(object_data)
@@ -1294,14 +1294,14 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
         return objects
 
-    def getCategories(self):
-        exc = DeprecationWarning("use .categories instead of .getCategories()")
+    def get_categories(self):
+        exc = DeprecationWarning("use .categories instead of .get_categories()")
         self.registerError(exc)
         return self.categories
         # return self.flatten(self.categories.values())
 
-    def getAttributes(self):
-        exc = DeprecationWarning("use .attributes instead of .getAttributes()")
+    def get_attributes(self):
+        exc = DeprecationWarning("use .attributes instead of .get_attributes()")
         self.registerError(exc)
         return self.attributes
         # return self.flatten(self.attributes.values())
@@ -1351,11 +1351,11 @@ class CSVParse_TT(CSVParse_Woo):
             ('CTPP', 'CTKPP')
         ])
 
-        # cols = listUtils.combineLists( cols, extra_cols )
-        # defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        # taxo_subs = listUtils.combineOrderedDicts( taxo_subs, extra_taxo_subs )
-        # item_subs = listUtils.combineOrderedDicts( item_subs, extra_item_subs )
-        # cat_mapping = listUtils.combineOrderedDicts( cat_mapping, extra_cat_maps )
+        # cols = listUtils.combine_lists( cols, extra_cols )
+        # defaults = listUtils.combine_ordered_dicts( defaults, extra_defaults )
+        # taxo_subs = listUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
+        # item_subs = listUtils.combine_ordered_dicts( item_subs, extra_item_subs )
+        # cat_mapping = listUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
         #
         #
         # super(CSVParse_TT, self).__init__( cols, defaults, schema, import_name,\
@@ -1363,13 +1363,13 @@ class CSVParse_TT(CSVParse_Woo):
         #         dprc_rules, dprpRules, specials, cat_mapping)
 
         #
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = listUtils.combineOrderedDicts(
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = listUtils.combineOrderedDicts(
+        kwargs['item_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
-        kwargs['cat_mapping'] = listUtils.combineOrderedDicts(
+        kwargs['cat_mapping'] = listUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "TT"
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
@@ -1423,11 +1423,11 @@ class CSVParse_VT(CSVParse_Woo):
 
         extra_cat_maps = OrderedDict()
 
-        # cols = listUtils.combineLists( cols, extra_cols )
-        # defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        # taxo_subs = listUtils.combineOrderedDicts( taxo_subs, extra_taxo_subs )
-        # item_subs = listUtils.combineOrderedDicts( item_subs, extra_item_subs )
-        # cat_mapping = listUtils.combineOrderedDicts( cat_mapping, extra_cat_maps )
+        # cols = listUtils.combine_lists( cols, extra_cols )
+        # defaults = listUtils.combine_ordered_dicts( defaults, extra_defaults )
+        # taxo_subs = listUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
+        # item_subs = listUtils.combine_ordered_dicts( item_subs, extra_item_subs )
+        # cat_mapping = listUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
         #
         # self.registerMessage("cat_mapping: %s" % str(cat_mapping))
         #
@@ -1437,13 +1437,13 @@ class CSVParse_VT(CSVParse_Woo):
         #
 
         #
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = listUtils.combineOrderedDicts(
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = listUtils.combineOrderedDicts(
+        kwargs['item_subs'] = listUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
-        kwargs['cat_mapping'] = listUtils.combineOrderedDicts(
+        kwargs['cat_mapping'] = listUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "VT"
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )

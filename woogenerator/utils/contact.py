@@ -184,15 +184,15 @@ class NameUtils:
     ])
 
     titleRegex = r"(?P<name_title>%s)\.?" % (
-        SanitationUtils.compileAbbrvRegex(titleAbbreviations)
+        SanitationUtils.compile_abbrv_regex(titleAbbreviations)
     )
 
     positionRegex = r"(?P<name_position>%s)\.?" % (
-        SanitationUtils.compileAbbrvRegex(positionAbbreviations)
+        SanitationUtils.compile_abbrv_regex(positionAbbreviations)
     )
 
     familyNamePrefixRegex = r"%s" % (
-        SanitationUtils.compileAbbrvRegex(familyNamePrefixAbbreviations)
+        SanitationUtils.compile_abbrv_regex(familyNamePrefixAbbreviations)
     )
 
     familyNameRegex = r"(?:(?P<family_name_prefix>%s) )?(?P<family_name>%s)" % (
@@ -220,25 +220,25 @@ class NameUtils:
                  ]) +
                  r")").format(
         note=SanitationUtils.wrapClearRegex(
-            SanitationUtils.compileAbbrvRegex(noteAbbreviations)),
+            SanitationUtils.compile_abbrv_regex(noteAbbreviations)),
         noted=SanitationUtils.wrapClearRegex(
-            SanitationUtils.compileAbbrvRegex(noteDelimeters)),
+            SanitationUtils.compile_abbrv_regex(noteDelimeters)),
         names=lazyMultiNameRegex,
         name=singleNameRegex,
     )
 
     careOfRegex = r"(?P<careof>%s)[\.:]? ?(?P<careof_names>%s)" % (
-        SanitationUtils.compileAbbrvRegex(careOfAbbreviations),
+        SanitationUtils.compile_abbrv_regex(careOfAbbreviations),
         greedyMultiNameRegex,
     )
 
     nameSuffixRegex = r"\(?(?P<name_suffix>%s)\.?\)?" % (
-        SanitationUtils.compileAbbrvRegex(nameSuffixAbbreviations)
+        SanitationUtils.compile_abbrv_regex(nameSuffixAbbreviations)
     )
 
     organizationRegex = r"(?P<organization_name>%s) (?P<organization_type>%s)\.?" % (
         greedyMultiNameRegex,
-        SanitationUtils.compileAbbrvRegex(organizationTypeAbbreviations)
+        SanitationUtils.compile_abbrv_regex(organizationTypeAbbreviations)
     )
 
     nameTokenRegex = r"(%s)" % "|".join([
@@ -336,7 +336,7 @@ class NameUtils:
             return name
 
     @staticmethod
-    def getEmail(token):
+    def get_email(token):
         # if Registrar.DEBUG_NAME: SanitationUtils.safePrint("checking email", token)
         match = re.match(
             SanitationUtils.wrapClearRegex(
@@ -481,7 +481,7 @@ class NameUtils:
         #     return note
 
     @staticmethod
-    def getFamilyName(token):
+    def get_family_name(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 NameUtils.familyNameRegex
@@ -503,7 +503,7 @@ class NameUtils:
             return combined_family_name
 
     @staticmethod
-    def getCareOf(token):
+    def get_care_of(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 NameUtils.careOfRegex
@@ -557,11 +557,11 @@ class NameUtils:
         )
 
 
-def testNameUtils():
+def test_name_utils():
     pass
-    # print SanitationUtils.compileAbbrvRegex(NameUtils.noteAbbreviations)
+    # print SanitationUtils.compile_abbrv_regex(NameUtils.noteAbbreviations)
     # print NameUtils.tokenizeName('DERWENT (ACCT)')
-    # print NameUtils.getEmail('KYLIESWEET@GMAIL.COM')
+    # print NameUtils.get_email('KYLIESWEET@GMAIL.COM')
 
     # assert r'\'' in SanitationUtils.allowedPunctuation
     # assert r'\'' not in SanitationUtils.disallowedPunctuation
@@ -1180,21 +1180,21 @@ class AddressUtils:
     ])
 
     floorLevelRegex = r"(?:(?P<floor_prefix>FLOOR|LEVEL|LVL)\.? )?(?P<floor_type>%s)\.? ?(?P<floor_number>%s)" % (
-        SanitationUtils.compileAbbrvRegex(floorAbbreviations),
+        SanitationUtils.compile_abbrv_regex(floorAbbreviations),
         singleAlphaNumberRegex,
     )
     subunitTypeRegexNamed = "(?P<subunit_type>%s)" % (
-        SanitationUtils.compileAbbrvRegex(subunitAbbreviations)
+        SanitationUtils.compile_abbrv_regex(subunitAbbreviations)
     )
     subunitRegex = r"(?P<subunit_type>%s) ?(?P<subunit_number>(?:%s)/?)" % (
-        SanitationUtils.compileAbbrvRegex(subunitAbbreviations),
+        SanitationUtils.compile_abbrv_regex(subunitAbbreviations),
         multiAlphaNumberAlphaRegex,
     )
     weakSubunitRegex = r"(?P<weak_subunit_type>%s) ?(?P<weak_subunit_number>(?:%s)/?)" % (
         NameUtils.singleNameRegex,
         multiAlphaNumberAlphaRegex,
     )
-    stateRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(
+    stateRegex = r"(%s)" % SanitationUtils.compile_abbrv_regex(
         stateAbbreviations)
     thoroughfareNameRegex = r"%s" % (
         "|".join([
@@ -1203,13 +1203,13 @@ class AddressUtils:
         ])
     )
     thoroughfareTypeRegex = r"%s" % (
-        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
+        SanitationUtils.compile_abbrv_regex(thoroughfareTypeAbbreviations)
     )
     thoroughfareTypeRegexNamed = r"(?P<thoroughfare_type>%s)" % (
-        SanitationUtils.compileAbbrvRegex(thoroughfareTypeAbbreviations)
+        SanitationUtils.compile_abbrv_regex(thoroughfareTypeAbbreviations)
     )
     thoroughfareSuffixRegex = r"%s" % (
-        SanitationUtils.compileAbbrvRegex(thoroughfareSuffixAbbreviations)
+        SanitationUtils.compile_abbrv_regex(thoroughfareSuffixAbbreviations)
     )
     thoroughfareRegex = r"(?P<thoroughfare_number>{0})\s+(?P<thoroughfare_name>{1})\s+(?P<thoroughfare_type>{2})\.?(?:\s+(?P<thoroughfare_suffix>{3}))?".format(
         multiNumberSlashRegex,
@@ -1223,20 +1223,20 @@ class AddressUtils:
         thoroughfareSuffixRegex
     )
     buildingTypeRegex = r"(?P<building_type>{0}(\s{0})*)".format(
-        SanitationUtils.compileAbbrvRegex(buildingTypeAbbreviations)
+        SanitationUtils.compile_abbrv_regex(buildingTypeAbbreviations)
     )
     buildingRegex = r"(?P<building_name>{0})\s+{1}".format(
         NameUtils.lazyMultiNameRegex,
         buildingTypeRegex
     )
     deliveryTypeRegex = r"(?P<delivery_type>%s)" % (
-        SanitationUtils.compileAbbrvRegex(deliveryTypeAbbreviations),
+        SanitationUtils.compile_abbrv_regex(deliveryTypeAbbreviations),
     )
     deliveryRegex = r"%s(?:\s*(?P<delivery_number>%s))?" % (
         deliveryTypeRegex,
         singleNumberRegex
     )
-    countryRegex = r"(%s)" % SanitationUtils.compileAbbrvRegex(
+    countryRegex = r"(%s)" % SanitationUtils.compile_abbrv_regex(
         countryAbbreviations)
 
 # [^,\s\d/()-]+
@@ -1304,7 +1304,7 @@ class AddressUtils:
             AddressUtils.countryAbbreviations, string)
 
     @staticmethod
-    def getFloor(token):
+    def get_floor(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 AddressUtils.floorLevelRegex
@@ -1420,7 +1420,7 @@ class AddressUtils:
         return None
 
     @staticmethod
-    def getBuilding(token):
+    def get_building(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 AddressUtils.buildingRegex
@@ -1486,7 +1486,7 @@ class AddressUtils:
             return state_name
 
     @staticmethod
-    def getDelivery(token):
+    def get_delivery(token):
         match = re.match(
             SanitationUtils.wrapClearRegex(
                 AddressUtils.deliveryRegex
@@ -1534,7 +1534,7 @@ class AddressUtils:
             return number
 
     @staticmethod
-    def findSingleNumber(token):
+    def find_single_number(token):
         match = re.search(
             "(" + AddressUtils.numberRegex + ")",
             token
@@ -1584,7 +1584,7 @@ class AddressUtils:
         )
 
     @staticmethod
-    def addressRemoveEndWord(string, word):
+    def address_remove_end_word(string, word):
         string_layout = AddressUtils.tokenizeAddress(string)
         word_layout = AddressUtils.tokenizeAddress(word)
         if not(word_layout and string_layout):
@@ -1595,7 +1595,7 @@ class AddressUtils:
         return " ".join(string_layout[:-len(word_layout)])
 
     @staticmethod
-    def extractShop(address):
+    def extract_shop(address):
         match = re.match(AddressUtils.shopRegex, address)
         match_dict = match.groupdict()
         if(match_dict):
@@ -1610,9 +1610,9 @@ class AddressUtils:
 #     # SanitationUtils.clearFinishRegex = "<FINISH>"
 #     # print repr(AddressUtils.addressTokenRegex)
 #
-#     # print AddressUtils.addressRemoveEndWord("WEST AUSTRALIA", "WEST AUSTRALIA")
+#     # print AddressUtils.address_remove_end_word("WEST AUSTRALIA", "WEST AUSTRALIA")
 #
-#     # print AddressUtils.addressRemoveEndWord("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
+#     # print AddressUtils.address_remove_end_word("SHOP 7 KENWICK SHOPNG CNTR BELMONT RD, KENWICK WA (", "KENWICK WA")
 #     # print SanitationUtils.unicodeToByte(u"\u00FC ASD")
 #     # print "addressTokenRegex", AddressUtils.addressTokenRegex
 #     # print "thoroughfareRegex", AddressUtils.thoroughfareRegex
@@ -1622,9 +1622,9 @@ class AddressUtils:
 #     # print "delimeterRegex", AddressUtils.delimeterRegex
 #
 #     # print AddressUtils.getSubunit("SHOP 4 A")
-#     # print AddressUtils.getFloor("LEVEL 8")
+#     # print AddressUtils.get_floor("LEVEL 8")
 #     print AddressUtils.tokenizeAddress("BROADWAY FAIR SHOPPING CTR")
-#     print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING CTR")
-#     print AddressUtils.getBuilding("BROADWAY FAIR SHOPPING")
+#     print AddressUtils.get_building("BROADWAY FAIR SHOPPING CTR")
+#     print AddressUtils.get_building("BROADWAY FAIR SHOPPING")
 #     print NameUtils.getMultiName("BROADWAY")
 #

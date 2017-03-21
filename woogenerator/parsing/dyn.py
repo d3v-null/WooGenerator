@@ -255,15 +255,15 @@ class CSVParse_Dyn(CSVParse_Tree):
             'Rule Mode': 'BULK'
         }
 
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(extra_defaults, defaults)
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(extra_defaults, defaults)
         super(CSVParse_Dyn, self).__init__(cols, defaults,
                                            taxoDepth=1, itemDepth=1, meta_width=0)
 
         self.taxoIndexer = self.getObjectIndex
 
-    # def clearTransients(self):
-    #     super(CSVParse_Dyn, self).clearTransients()
+    # def clear_transients(self):
+    #     super(CSVParse_Dyn, self).clear_transients()
     #     self.rules = {}
 
     # def getRuleData(self, itemData):
@@ -314,12 +314,12 @@ if __name__ == '__main__':
     out_path = os.path.join(out_folder, 'dynRules.html')
 
     dynParser = CSVParse_Dyn()
-    dynParser.analyseFile(dprpPath)
+    dynParser.analyse_file(dprpPath)
 
     # todo: rewrite in htmlReporter
 
     with open(out_path, 'w+') as out_file:
-        def writeSection(title, description, data, length=0,
+        def write_section(title, description, data, length=0,
                          html_class="results_section"):
             section_id = SanitationUtils.makeSafeClass(title)
             description = "%s %s" % (
@@ -357,7 +357,7 @@ if __name__ == '__main__':
         # print '\n'.join(map(str , dynParser.taxos.values()))
         dynList = ObjList(dynParser.taxos.values())
 
-        writeSection(
+        write_section(
             "Dynamic Pricing Rules",
             "all products and their dynaimc pricing rules",
             re.sub("<table>", "<table class=\"table table-striped\">",

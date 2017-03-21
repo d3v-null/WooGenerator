@@ -81,7 +81,7 @@ class ObjList(list, Registrar):
             self.append(obj)
 
     def getKey(self, key):
-        values = listUtils.filterUniqueTrue([
+        values = listUtils.filter_unique_true([
             obj.get(key) for obj in self.objects
         ])
 
@@ -125,16 +125,16 @@ class ObjList(list, Registrar):
                     # repr(sanitizer(obj.get(col)))
                     row += [sanitizer(obj.get(col))or ""]
                     try:
-                        SanitationUtils.coerceUnicode(row[-1])
+                        SanitationUtils.coerce_unicode(row[-1])
                     except:
                         Registrar.registerWarning("can't turn row into unicode: %s" %
-                                                  SanitationUtils.coerceUnicode(row))
+                                                  SanitationUtils.coerce_unicode(row))
 
                 table += [row]
                 # table += [[obj.index] + [ sanitizer(obj.get(col) )or "" for col in cols.keys()]]
             # print "table", table
             # SanitationUtils.safePrint(table)
-            # return SanitationUtils.coerceUnicode(tabulate(table, headers=header,
+            # return SanitationUtils.coerce_unicode(tabulate(table, headers=header,
             # tablefmt=tablefmt))
             table_str = (tabulate(table, headers=header, tablefmt=tablefmt))
             if highlight_rules and tablefmt == 'html':
@@ -152,7 +152,7 @@ class ObjList(list, Registrar):
                 "cannot tabulate Objlist: there are no objects")
             return ""
 
-    def exportItems(self, filePath, col_names, dialect=None, encoding="utf8"):
+    def export_items(self, filePath, col_names, dialect=None, encoding="utf8"):
         assert filePath, "needs a filepath"
         assert col_names, "needs col_names"
         assert self.objects, "meeds items"
@@ -252,9 +252,9 @@ class ImportObject(OrderedDict, Registrar):
         self.registerError(exc)
         return self.type_name
 
-    def getIdentifierDelimeter(self):
+    def get_identifier_delimeter(self):
         exc = DeprecationWarning(
-            "use .identifier_delimeter instead of .getIdentifierDelimeter()")
+            "use .identifier_delimeter instead of .get_identifier_delimeter()")
         self.registerError(exc)
         return self.identifier_delimeter
 
@@ -273,14 +273,14 @@ class ImportObject(OrderedDict, Registrar):
         return self.stringAnything(index, "<%s>" %
                                    type_name, identifier_delimeter)
 
-    def getIdentifier(self):
-        exc = DeprecationWarning("use .identifier instead of .getIdentifier()")
+    def get_identifier(self):
+        exc = DeprecationWarning("use .identifier instead of .get_identifier()")
         self.registerError(exc)
         return self.identifier
         # return Registrar.stringAnything( self.index, "<%s>" %
-        # self.getTypeName(), self.getIdentifierDelimeter() )
+        # self.getTypeName(), self.get_identifier_delimeter() )
 
-    def getCopyArgs(self):
+    def get_copy_args(self):
         return {
             'rowcount': self.rowcount,
             'row': self.row[:]
@@ -299,11 +299,11 @@ class ImportObject(OrderedDict, Registrar):
         print "doing a copy on %s \nwith items %s \nand copyargs %s" % (
             repr(self.__class__),
             pformat(items),
-            self.getCopyArgs(),
+            self.get_copy_args(),
         )
         return self.__class__(
             copy(OrderedDict(self.items())),
-            **self.getCopyArgs()
+            **self.get_copy_args()
         )
 
     def __deepcopy__(self, memodict=None):
@@ -314,13 +314,13 @@ class ImportObject(OrderedDict, Registrar):
         # print Registrar.deepcopyprefix, "doing a deepcopy on %s \nwith items %s \nand copyargs %s, \nmemodict: %s" % (
         #     repr(self.__class__),
         #     pformat(items),
-        #     self.getCopyArgs(),
+        #     self.get_copy_args(),
         #     pformat(memodict)
         # )
         Registrar.deepcopyprefix = Registrar.deepcopyprefix[1:]
         return self.__class__(
             deepcopy(OrderedDict(items)),
-            **self.getCopyArgs()
+            **self.get_copy_args()
         )
 
     def __str__(self):
@@ -350,17 +350,17 @@ class CSVParse_Base(Registrar):
         extra_defaults = OrderedDict()
 
         self.limit = kwargs.pop('limit', None)
-        self.cols = listUtils.combineLists(cols, extra_cols)
-        self.defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
+        self.cols = listUtils.combine_lists(cols, extra_cols)
+        self.defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
         self.objectIndexer = self.getObjectRowcount
-        self.clearTransients()
+        self.clear_transients()
         self.source = kwargs.get('source')
 
     def __getstate__(self): return self.__dict__
 
     def __setstate__(self, d): self.__dict__.update(d)
 
-    def clearTransients(self):
+    def clear_transients(self):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
         self.indices = OrderedDict()
@@ -378,7 +378,7 @@ class CSVParse_Base(Registrar):
             registerName='objects'
         )
 
-    def analyseHeader(self, row):
+    def analyse_header(self, row):
         # if self.DEBUG_PARSER: self.registerMessage( 'row: %s' % unicode(row) )
         sanitized_row = [self.sanitizeCell(cell) for cell in row]
         for col in self.cols:
@@ -470,10 +470,10 @@ class CSVParse_Base(Registrar):
         parser_data = self.getParserData(**kwargs)
         if self.DEBUG_PARSER:
             self.registerMessage("parser_data: {}".format(parser_data))
-        # all_data = listUtils.combineOrderedDicts(parser_data, default_data)
-        all_data = listUtils.combineOrderedDicts(default_data, parser_data)
+        # all_data = listUtils.combine_ordered_dicts(parser_data, default_data)
+        all_data = listUtils.combine_ordered_dicts(default_data, parser_data)
         mandatory_data = self.getMandatoryData(**kwargs)
-        all_data = listUtils.combineOrderedDicts(all_data, mandatory_data)
+        all_data = listUtils.combine_ordered_dicts(all_data, mandatory_data)
         if self.DEBUG_PARSER:
             self.registerMessage("all_data: {}".format(all_data))
         container = self.getNewObjContainer(all_data, **kwargs)
@@ -497,7 +497,7 @@ class CSVParse_Base(Registrar):
         # self.processObject(object_data)
         # self.registerObject(object_data)
 
-    def analyseRows(self, unicode_rows, file_name="rows", limit=None):
+    def analyse_rows(self, unicode_rows, file_name="rows", limit=None):
         if limit and isinstance(limit, int):
             unicode_rows = list(unicode_rows)[:limit]
         if self.DEBUG_PROGRESS:
@@ -539,7 +539,7 @@ class CSVParse_Base(Registrar):
                 continue
 
             if not self.indices:
-                self.analyseHeader(unicode_row)
+                self.analyse_header(unicode_row)
                 continue
             try:
                 object_data = self.newObject(self.rowcount, row=unicode_row)
@@ -573,14 +573,14 @@ class CSVParse_Base(Registrar):
         if self.DEBUG_PARSER:
             self.registerMessage("Completed analysis")
 
-    def analyseStream(self, byte_file_obj, streamName=None,
+    def analyse_stream(self, byte_file_obj, streamName=None,
                       encoding=None, dialect_suggestion=None, limit=None):
         """ may want to revert back to this commit if things break:
         https://github.com/derwentx/WooGenerator/commit/c4fabf83d5b4d1e0a4d3ff755cd8eadf1433d253 """
 
         if hasattr(self, 'rowcount') and self.rowcount > 1:
             raise UserWarning(
-                'rowcount should be 0. Make sure clearTransients is being called on ancestors')
+                'rowcount should be 0. Make sure clear_transients is being called on ancestors')
         if encoding is None:
             encoding = "utf8"
 
@@ -595,7 +595,7 @@ class CSVParse_Base(Registrar):
                 "Analysing stream: {0}, encoding: {1}".format(streamName, encoding))
 
         # I can't imagine this having any problems
-        byte_sample = SanitationUtils.coerceBytes(byte_file_obj.read(1000))
+        byte_sample = SanitationUtils.coerce_bytes(byte_file_obj.read(1000))
         byte_file_obj.seek(0)
 
         if dialect_suggestion:
@@ -623,13 +623,13 @@ class CSVParse_Base(Registrar):
             encoding=encoding,
             strict=True
         )
-        return self.analyseRows(
+        return self.analyse_rows(
             unicodecsvreader, file_name=streamName, limit=limit)
 
-    def analyseFile(self, file_name, encoding=None,
+    def analyse_file(self, file_name, encoding=None,
                     dialect_suggestion=None, limit=None):
         with open(file_name, 'rbU') as byte_file_obj:
-            return self.analyseStream(
+            return self.analyse_stream(
                 byte_file_obj,
                 streamName=file_name,
                 encoding=encoding,
@@ -646,7 +646,7 @@ class CSVParse_Base(Registrar):
                 translated[translation] = object_data[col]
         return translated
 
-    def analyseWpApiObj(self, api_data):
+    def analyse_wp_api_obj(self, api_data):
         raise NotImplementedError()
 
     def getObjects(self):
@@ -662,7 +662,7 @@ class CSVParse_Base(Registrar):
 
     def tabulate(self, cols=None, tablefmt=None):
         objlist = self.getObjList()
-        return SanitationUtils.coerceBytes(objlist.tabulate(cols, tablefmt))
+        return SanitationUtils.coerce_bytes(objlist.tabulate(cols, tablefmt))
 
     @classmethod
     def printBasicColumns(cls, objects):
@@ -694,7 +694,7 @@ class CSVParse_Base(Registrar):
 #         defaults = usrData.get_defaults()
 #     )
 #
-#     usrParser.analyseFile(actPath)
+#     usrParser.analyse_file(actPath)
 #
 #     SanitationUtils.safePrint( usrParser.tabulate(cols = usrData.get_report_cols()))
 #     print ( usrParser.tabulate(cols = usrData.get_report_cols()))

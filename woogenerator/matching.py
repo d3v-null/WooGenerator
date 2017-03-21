@@ -253,7 +253,7 @@ class Match(object):
                 raise exc
         else:
             out += 'EMPTY'
-        # return SanitationUtils.coerceUnicode(out)
+        # return SanitationUtils.coerce_unicode(out)
         return out
 
 
@@ -326,7 +326,7 @@ class MatchList(list):
             match_s_indices.append(s_index)
         if match_s_indices:
             if self.check_indices:
-                assert listUtils.checkEqual(
+                assert listUtils.check_equal(
                     match_s_indices
                 ), "all s_indices should be equal: %s" % match_s_indices
             self.s_indices.append(match_s_indices[0])
@@ -345,7 +345,7 @@ class MatchList(list):
             match_m_indices.append(m_index)
         if match_m_indices:
             if self.check_indices:
-                assert listUtils.checkEqual(
+                assert listUtils.check_equal(
                     match_m_indices
                 ), "all m_indices should be equal: %s" % match_m_indices
             self.m_indices.append(match_m_indices[0])
@@ -385,7 +385,7 @@ class MatchList(list):
                 prefix = '<div class="matchList">'
                 suffix = '</div>'
             return prefix + delimeter.join([
-                SanitationUtils.coerceBytes(
+                SanitationUtils.coerce_bytes(
                     match.tabulate(
                         cols=cols,
                         tablefmt=tablefmt,
@@ -565,7 +565,7 @@ class AbstractMatcher(Registrar):
         # pass
         # self.registerWarning( "could not add match to %s matches %s" % (
         #     match_type,
-        #     SanitationUtils.coerceUnicode(repr(exc))
+        #     SanitationUtils.coerce_unicode(repr(exc))
         # ))
         # raise exc
         self._matches['all'].add_match(match)
@@ -575,7 +575,7 @@ class AbstractMatcher(Registrar):
 
     # pass
     # self.registerWarning( "could not add match to matches %s" % (
-    #     SanitationUtils.coerceUnicode(repr(exc))
+    #     SanitationUtils.coerce_unicode(repr(exc))
     # ))
 
     def m_filter(self, objects):

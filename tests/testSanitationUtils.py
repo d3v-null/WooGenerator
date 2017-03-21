@@ -13,7 +13,7 @@ from woogenerator.parsing.user import ImportUser, CSVParse_User
 from woogenerator.contact_objects import FieldGroup
 
 
-class testSanitationUtils(TestCase):
+class test_sanitation_utils(TestCase):
     # def setUp(self):
     #     yamlPath = "source/merger_config.yaml"
     #
@@ -28,22 +28,22 @@ class testSanitationUtils(TestCase):
 
     def test_findallEmails(self):
         email1 = "derwentx@gmail.com archive"
-        self.assertItemsEqual(SanitationUtils.findallEmails(email1),
+        self.assertItemsEqual(SanitationUtils.find_all_emails(email1),
                               [u'derwentx@gmail.com'])
         email2 = "derwentx@gmail.com derwent@laserphile.com"
-        self.assertItemsEqual(SanitationUtils.findallEmails(email2),
+        self.assertItemsEqual(SanitationUtils.find_all_emails(email2),
                               [u'derwentx@gmail.com', 'derwent@laserphile.com'])
 
     def test_findUrl(self):
         url1 = "http://www.laserphile.com/ lol"
         self.assertItemsEqual(
-            SanitationUtils.findallURLs(url1),
+            SanitationUtils.find_all_urls(url1),
             ['http://www.laserphile.com/'])
 
     def test_findUrlHard(self):
         url = 'http://www.facebook.com/search/?flt=1&amp;q=amber+melrose&amp;o=2048&amp;s=0#'
         self.assertItemsEqual(
-            SanitationUtils.findallURLs(url),
+            SanitationUtils.find_all_urls(url),
             ['http://www.facebook.com/search/?flt=1&q=amber+melrose&o=2048&s=0#']
         )
 
@@ -67,5 +67,5 @@ if __name__ == '__main__':
     # main()
     doubleNameTestSuite = unittest.TestSuite()
     doubleNameTestSuite.addTest(
-        testSanitationUtils('test_similarMarkupComparison'))
+        test_sanitation_utils('test_similarMarkupComparison'))
     unittest.TextTestRunner().run(doubleNameTestSuite)

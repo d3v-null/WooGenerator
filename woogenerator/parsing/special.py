@@ -100,11 +100,11 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
 
     @property
     def start_time(self):
-        return self.getFirstFilteredAncestorSelfKey(self.startTimeKey)
+        return self.get_first_filtered_ancestor_self_key(self.startTimeKey)
 
     @property
     def end_time(self):
-        return self.getFirstFilteredAncestorSelfKey(self.endTimeKey)
+        return self.get_first_filtered_ancestor_self_key(self.endTimeKey)
 
     @property
     def ID(self):
@@ -147,7 +147,7 @@ class CSVParse_Special(CSVParse_Tree):
             "XWNS",
             "XWPS"
         ]
-        cols = listUtils.combineLists(cols, extra_cols)
+        cols = listUtils.combine_lists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(
             cols,
@@ -160,10 +160,10 @@ class CSVParse_Special(CSVParse_Tree):
         self.registerItem = self.registerRule
         self.registerTaxo = self.registerRuleGroup
 
-    def clearTransients(self):
+    def clear_transients(self):
         if self.DEBUG_MRO:
             Registrar.registerMessage(' ')
-        super(CSVParse_Special, self).clearTransients()
+        super(CSVParse_Special, self).clear_transients()
         self.ruleGroups = OrderedDict()
         self.rules = OrderedDict()
 
@@ -177,7 +177,7 @@ class CSVParse_Special(CSVParse_Tree):
             self.ruleGroups,
             indexer=self.objectIndexer,
             singular=True,
-            resolver=self.duplicateObjectExceptionResolver,
+            resolver=self.duplicate_object_exception_resolver,
             registerName='rule groups'
         )
 
@@ -191,7 +191,7 @@ class CSVParse_Special(CSVParse_Tree):
             self.rules,
             indexer=self.objectIndexer,
             singular=True,
-            resolver=self.duplicateObjectExceptionResolver,
+            resolver=self.duplicate_object_exception_resolver,
             registerName='rules'
         )
 
@@ -281,7 +281,7 @@ class CSVParse_Special(CSVParse_Tree):
         for index, rule_group in self.ruleGroups.items():
             out += "-> %s\n" % index
             rule_list = SpecialRuleList(rule_group.children)
-            out += SanitationUtils.coerceBytes(
+            out += SanitationUtils.coerce_bytes(
                 rule_list.tabulate(tablefmt='simple'))
             out += '\n'
 

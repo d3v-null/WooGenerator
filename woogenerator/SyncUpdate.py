@@ -196,7 +196,7 @@ class SyncUpdate(
             self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
-    def colIdentical(self, col):
+    def col_identical(self, col):
         m_value = self.get_m_value(col)
         s_value = self.get_s_value(col)
         response = m_value == s_value
@@ -204,7 +204,7 @@ class SyncUpdate(
             self.registerMessage(self.testToStr(col, m_value, s_value, response))
         return response
 
-    def colSimilar(self, col):
+    def col_similar(self, col):
         m_value = self.get_m_value(col)
         s_value = self.get_s_value(col)
         response = self.valuesSimilar(col, m_value, s_value)
@@ -257,7 +257,7 @@ class SyncUpdate(
             unicode(col),
             repr(val1),
             repr(val2),
-            SanitationUtils.boolToTruishString(res)
+            SanitationUtils.bool_to_truish_string(res)
         )
 
     def updateToStr(self, updateType, updateParams):
@@ -265,7 +265,7 @@ class SyncUpdate(
         assert 'col' in updateParams
         out = u""
         out += "SYNC %s:" % updateType
-        out += " | %s " % SanitationUtils.coerceAscii(self)
+        out += " | %s " % SanitationUtils.coerce_ascii(self)
         out += " | col:  %s" % updateParams['col']
         if 'subject' in updateParams:
             out += " | subj: %s " % updateParams['subject']
@@ -273,14 +273,14 @@ class SyncUpdate(
             out += " | reas: %s " % updateParams['reason']
         if updateType in ['WARN', 'PROB']:
             if 'oldWinnerValue' in updateParams:
-                out += " | OLD: %s " % SanitationUtils.coerceAscii(
+                out += " | OLD: %s " % SanitationUtils.coerce_ascii(
                     updateParams['oldWinnerValue'])
             if 'oldLoserValue' in updateParams:
-                out += " | NEW: %s " % SanitationUtils.coerceAscii(
+                out += " | NEW: %s " % SanitationUtils.coerce_ascii(
                     updateParams['oldLoserValue'])
         return out
 
-    def addProblematicUpdate(self, **updateParams):
+    def add_problematic_update(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
             assert updateParams[key], 'missing mandatory prob param %s' % key
         col = updateParams['col']
@@ -288,9 +288,9 @@ class SyncUpdate(
             self.sync_problematics[col] = []
         self.sync_problematics[col].append(updateParams)
         self.registerWarning(self.updateToStr('PROB', updateParams))
-        # self.registerWarning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
+        # self.registerWarning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
 
-    def addSyncWarning(self, **updateParams):
+    def add_sync_warning(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
             assert updateParams[
                 key], 'missing mandatory warning param %s' % key
@@ -300,9 +300,9 @@ class SyncUpdate(
         self.sync_warnings[col].append(updateParams)
         if self.DEBUG_UPDATE:
             self.registerWarning(self.updateToStr('WARN', updateParams))
-        # self.registerWarning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
+        # self.registerWarning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
 
-    def addSyncPass(self, **updateParams):
+    def add_sync_pass(self, **updateParams):
         for key in ['col']:
             assert updateParams[key], 'missing mandatory pass param %s' % key
         col = updateParams['col']
@@ -311,9 +311,9 @@ class SyncUpdate(
         self.sync_passes[col].append(updateParams)
         if self.DEBUG_UPDATE:
             self.registerWarning(self.updateToStr('PASS', updateParams))
-        # if self.DEBUG_UPDATE: self.registerMessage("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerceUnicode(updateParams)))
+        # if self.DEBUG_UPDATE: self.registerMessage("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
 
-    def displayUpdateList(self, updateList, tablefmt=None):
+    def display_update_list(self, updateList, tablefmt=None):
         if updateList:
             delimeter = "<br/>" if tablefmt == "html" else "\n"
             subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
@@ -358,11 +358,11 @@ class SyncUpdate(
         else:
             return ""
 
-    def displaySyncWarnings(self, tablefmt=None):
-        return self.displayUpdateList(self.sync_warnings, tablefmt)
+    def display_sync_warnings(self, tablefmt=None):
+        return self.display_update_list(self.sync_warnings, tablefmt)
 
-    def displayProblematicUpdates(self, tablefmt=None):
-        return self.displayUpdateList(self.sync_problematics, tablefmt)
+    def display_problematic_updates(self, tablefmt=None):
+        return self.display_update_list(self.sync_problematics, tablefmt)
 
     # def getOldLoserObject(self, winner=None):
     #     if not winner: winner = self.winner
@@ -387,7 +387,7 @@ class SyncUpdate(
         reason = updateParams.get('reason', '')
         data = updateParams.get('data', {})
 
-        # self.registerMessage("loserUpdate " + SanitationUtils.coerceUnicode([winner, col, reason]))
+        # self.registerMessage("loserUpdate " + SanitationUtils.coerce_unicode([winner, col, reason]))
         if(winner == self.master_name):
             # oldLoserObject = self.old_s_object
             updateParams['oldLoserValue'] = self.get_s_value(col)
@@ -412,8 +412,8 @@ class SyncUpdate(
                 self.m_deltas = True
         # if data.get('warn'):
 
-        self.addSyncWarning(**updateParams)
-        # self.addSyncWarning(col, winner, reason, oldLoserValue, oldWinnerValue, data, s_time, m_time)
+        self.add_sync_warning(**updateParams)
+        # self.add_sync_warning(col, winner, reason, oldLoserValue, oldWinnerValue, data, s_time, m_time)
         # SanitationUtils.safePrint("loser %s was %s" % (col, repr(new_loser_object[col])))
         # SanitationUtils.safePrint("updating to ", oldWinnerValue)
         if data.get('delta'):
@@ -433,7 +433,7 @@ class SyncUpdate(
             self.important_updates += 1
             self.important_cols.append(col)
             if data.get('static'):
-                self.addProblematicUpdate(**updateParams)
+                self.add_problematic_update(**updateParams)
                 self.important_static = False
 
     def tieUpdate(self, **updateParams):
@@ -446,7 +446,7 @@ class SyncUpdate(
             updateParams['value'] = self.old_s_object.get(col)
         elif self.old_m_object:
             updateParams['value'] = self.old_s_object.get(col)
-        self.addSyncPass(**updateParams)
+        self.add_sync_pass(**updateParams)
 
     def getMColModTime(self, col):
         return None
@@ -468,7 +468,7 @@ class SyncUpdate(
         # sync_warn = data.get('warn')
         # syncstatic = data.get('static')
 
-        if(self.colIdentical(col)):
+        if(self.col_identical(col)):
             updateParams['reason'] = 'identical'
             self.tieUpdate(**updateParams)
             return
@@ -508,7 +508,7 @@ class SyncUpdate(
             elif('slave' in str(sync_mode).lower()):
                 winner = self.slave_name
         else:
-            if(self.colSimilar(col)):
+            if(self.col_similar(col)):
                 updateParams['reason'] = 'similar'
                 self.tieUpdate(**updateParams)
                 return
@@ -545,7 +545,7 @@ class SyncUpdate(
         # if self.s_updated:
         #     self.new_s_object.refreshContactObjects()
 
-    def getInfoComponents(self, info_fmt="%s"):
+    def get_info_components(self, info_fmt="%s"):
         return [
             (info_fmt % ("static", "yes" if self.static else "no")),
             (info_fmt % ("important_static", "yes" if self.important_static else "no"))
@@ -571,7 +571,7 @@ class SyncUpdate(
         ])
         out_str += info_delimeter
 
-        info_components = self.getInfoComponents(info_fmt)
+        info_components = self.get_info_components(info_fmt)
         if info_components:
             info_components = [subtitle_fmt % "INFO"] + info_components
             out_str += info_delimeter.join(filter(None, info_components))
@@ -582,22 +582,22 @@ class SyncUpdate(
             changes_components += [
                 subtitle_fmt % 'PROBLEMATIC CHANGES (%d)' % len(
                     self.sync_problematics),
-                self.displayProblematicUpdates(tablefmt),
+                self.display_problematic_updates(tablefmt),
             ]
         changes_components += [
             subtitle_fmt % 'CHANGES (%d!%d)' % (
                 self.updates, self.important_updates),
-            self.displaySyncWarnings(tablefmt),
+            self.display_sync_warnings(tablefmt),
         ]
         if self.new_m_object:
             changes_components += [
                 subtitle_fmt % '%s CHANGES' % self.master_name,
-                self.displayMasterChanges(tablefmt),
+                self.display_master_changes(tablefmt),
             ]
         if self.new_s_object:
             changes_components += [
                 subtitle_fmt % '%s CHANGES' % self.slave_name,
-                self.displaySlaveChanges(tablefmt),
+                self.display_slave_changes(tablefmt),
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
         new_match = Match([self.new_m_object], [self.new_s_object])
@@ -657,7 +657,7 @@ class SyncUpdate(
             self.registerMessage(u"returned %s" % unicode(updates))
         return updates
 
-    def displaySlaveChanges(self, tablefmt=None):
+    def display_slave_changes(self, tablefmt=None):
         if self.sync_warnings:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
@@ -691,7 +691,7 @@ class SyncUpdate(
                                  tablefmt=tablefmt)
                     ])
                 )
-                # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+                # updates_json_base64 = SanitationUtils.encode_base64(SanitationUtils.encode_json(updates))
                 # print_elements.append(updates_json_base64)
                 # return (pkey, all_updates_json_base64)
             else:
@@ -701,7 +701,7 @@ class SyncUpdate(
             return info_delimeter.join(print_elements)
         return ""
 
-    def displayMasterChanges(self, tablefmt=None):
+    def display_master_changes(self, tablefmt=None):
         if self.sync_warnings:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
@@ -735,7 +735,7 @@ class SyncUpdate(
                                  tablefmt=tablefmt)
                     ])
                 )
-                # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
+                # updates_json_base64 = SanitationUtils.encode_base64(SanitationUtils.encode_json(updates))
                 # print_elements.append(updates_json_base64)
                 # return (pkey, all_updates_json_base64)
             else:
@@ -756,7 +756,7 @@ class SyncUpdate(
         # todo: Determine if file imported correctly and delete file
 
     def updateSlave(self, client):
-        # SanitationUtils.safePrint(  self.displaySlaveChanges() )
+        # SanitationUtils.safePrint(  self.display_slave_changes() )
         updates = self.getSlaveUpdatesNative()
         if not updates:
             return
@@ -792,7 +792,7 @@ class SyncUpdate_Usr(SyncUpdate):
         # extra heuristics for merge mode:
         if self.merge_mode == 'merge' and not self.s_mod:
             might_be_s_edited = False
-            if not self.old_s_object.addressesActLike():
+            if not self.old_s_object.addresses_act_like():
                 might_be_s_edited = True
             elif self.old_s_object.get('Home Country') == 'AU':
                 might_be_s_edited = True
@@ -900,9 +900,9 @@ class SyncUpdate_Usr(SyncUpdate):
 
         return self.s_time
 
-    def getInfoComponents(self, info_fmt="%s"):
+    def get_info_components(self, info_fmt="%s"):
         info_components = super(
-            SyncUpdate_Usr, self).getInfoComponents(info_fmt)
+            SyncUpdate_Usr, self).get_info_components(info_fmt)
         info_components += [
             (info_fmt % ("Last Sale", TimeUtils.wp_time_to_string(
                 self.b_time))) if self.b_time else "No Last Sale",

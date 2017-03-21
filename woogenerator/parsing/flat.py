@@ -47,8 +47,8 @@ class ImportSpecial(ImportFlat):
     def index(self):
         return self.ID
 
-    def getIndex(self):
-        exc = DeprecationWarning("use .index instead of .getIndex()")
+    def get_index(self):
+        exc = DeprecationWarning("use .index instead of .get_index()")
         self.registerError(exc)
         return self.index
 
@@ -77,7 +77,7 @@ class CSVParse_Special(CSVParse_Flat):
             "XWNS",
             "XWPS"
         ]
-        cols = listUtils.combineLists(cols, extra_cols)
+        cols = listUtils.combine_lists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
         self.objectIndexer = self.getObjectID

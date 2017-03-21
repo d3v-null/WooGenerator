@@ -21,8 +21,8 @@ class ShopProdList(ItemList):
     def append(self, object_data):
         assert issubclass(object_data.__class__, ImportShopMixin), \
             "object must be subclass of ImportShopMixin not %s : %s" % (
-                SanitationUtils.coerceUnicode(object_data.__class__),
-                SanitationUtils.coerceUnicode(object_data)
+                SanitationUtils.coerce_unicode(object_data.__class__),
+                SanitationUtils.coerce_unicode(object_data)
         )
         return super(ShopProdList, self).append(object_data)
 
@@ -148,8 +148,8 @@ class ImportShopMixin(object):
 
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
-    def getAttributes(self):
-        exc = DeprecationWarning("use .attributes instead of .getAttributes()")
+    def get_attributes(self):
+        exc = DeprecationWarning("use .attributes instead of .get_attributes()")
         self.registerError(exc)
         return self.attributes
 
@@ -159,12 +159,12 @@ class ImportShopMixin(object):
         if image not in this_images:
             this_images.append(image)
             # parent = self.getParent()
-            # parentImages = parent.getImages()
+            # parentImages = parent.get_images()
             # if not parentImages:
             #     parent.registerImage(image)
 
-    def getImages(self):
-        exc = DeprecationWarning("use .images instead of .getImages()")
+    def get_images(self):
+        exc = DeprecationWarning("use .images instead of .get_images()")
         self.registerError(exc)
         return self.images
 
@@ -211,7 +211,7 @@ class ImportShopProductMixin(object):
     container = ShopProdList
     # category_indexer = Registrar.getObjectIndex
     category_indexer = Registrar.getObjectRowcount
-    # category_indexer = CSVParse_Gen_Mixin.getFullNameSum
+    # category_indexer = CSVParse_Gen_Mixin.get_full_name_sum
     # category_indexer = CSVParse_Gen_Mixin.getNameSum
     product_type = None
     isProduct = True
@@ -229,7 +229,7 @@ class ImportShopProductMixin(object):
             # indexer = self.getSum,
             indexer=self.category_indexer,
             singular=True,
-            resolver=self.duplicateObjectExceptionResolver,
+            resolver=self.duplicate_object_exception_resolver,
             registerName='product categories'
         )
 
@@ -237,8 +237,8 @@ class ImportShopProductMixin(object):
         self.registerCategory(cat_data)
         cat_data.registerMember(self)
 
-    def getCategories(self):
-        exc = DeprecationWarning("use .categories instead of .getCategories()")
+    def get_categories(self):
+        exc = DeprecationWarning("use .categories instead of .get_categories()")
         self.registerError(exc)
         return self.categories
 
@@ -248,7 +248,7 @@ class ImportShopProductMixin(object):
 
     def getTypeName(self):
         exc = DeprecationWarning(
-            "use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
+            "use .extraSpecialCategory insetad of .get_extra_special_category()")
         self.registerError(exc)
         return self.type_name
         # return self.product_type
@@ -348,9 +348,9 @@ class CSVParse_Shop_Mixin(object):
     variableContainer = ImportShopProductVariableMixin
     variationContainer = ImportShopProductVariationMixin
     categoryContainer = ImportShopCategoryMixin
-    productIndexer = CSVParse_Gen_Mixin.getCodeSum
-    category_indexer = CSVParse_Gen_Mixin.getCodeSum
-    variationIndexer = CSVParse_Gen_Mixin.getCodeSum
+    productIndexer = CSVParse_Gen_Mixin.get_code_sum
+    category_indexer = CSVParse_Gen_Mixin.get_code_sum
+    variationIndexer = CSVParse_Gen_Mixin.get_code_sum
     do_images = True
 
     # products = None
@@ -364,8 +364,8 @@ class CSVParse_Shop_Mixin(object):
     #         pass # gets rid of unused args warnings
     #     if kwargs:
     #         pass # gets rid of unused kwargs warnings
-    #     self.productIndexer = self.getCodeSum
-    #     self.category_indexer = self.getCodeSum
+    #     self.productIndexer = self.get_code_sum
+    #     self.category_indexer = self.get_code_sum
 
     @property
     def containers(self):
@@ -376,10 +376,10 @@ class CSVParse_Shop_Mixin(object):
             'category': self.categoryContainer
         }
 
-    def clearTransients(self):
+    def clear_transients(self):
         if Registrar.DEBUG_MRO:
             Registrar.registerMessage(' ')
-        # super(CSVParse_Shop_Mixin,self).clearTransients()
+        # super(CSVParse_Shop_Mixin,self).clear_transients()
         self.products = OrderedDict()
         self.categories = OrderedDict()
         self.attributes = OrderedDict()
@@ -488,7 +488,7 @@ class CSVParse_Shop_Mixin(object):
             self.variations,
             indexer=self.variationIndexer,
             singular=True,
-            resolver=self.duplicateObjectExceptionResolver,
+            resolver=self.duplicate_object_exception_resolver,
             registerName='variations'
         )
 

@@ -106,14 +106,14 @@ class FieldGroup(Registrar):
         if not self.reason:
             self.reason = reason
         self.registerError("INVALID: %s" %
-                           SanitationUtils.coerceUnicode(reason))
+                           SanitationUtils.coerce_unicode(reason))
 
     def enforce_strict(self, reason=None):
         self.problematic = True
         if self.strict:
             self.invalidate(reason)
             self.registerMessage("PROBLEMATIC: %s" %
-                                 SanitationUtils.coerceUnicode(reason))
+                                 SanitationUtils.coerce_unicode(reason))
 
     def tabulate(self, tablefmt=None):
         if not tablefmt:
@@ -218,13 +218,13 @@ class ContactObject(FieldGroup):
 
     def add_careof(self, careof):
         self.registerMessage("FOUND CAREOF %s" %
-                             SanitationUtils.coerceUnicode(careof))
+                             SanitationUtils.coerce_unicode(careof))
         if careof not in self.properties['careof_names']:
             self.properties['careof_names'] += [careof]
 
     def add_organization(self, organization):
         self.registerMessage("FOUND ORGANIZATION: %s" %
-                             SanitationUtils.coerceUnicode(organization))
+                             SanitationUtils.coerce_unicode(organization))
         if organization not in self.properties['organization_names']:
             self.properties['organization_names'] += [organization]
 
@@ -334,9 +334,9 @@ class ContactAddress(ContactObject):
 
     def processKwargs(self):
         if not self.empty:
-            # if not schema: self.schema = self.__class__.determineSchema(**self.kwargs)
+            # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
 
-            lines = listUtils.filterUniqueTrue(map(lambda key: SanitationUtils.normalize_val(
+            lines = listUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
                 self.kwargs.get(key, '')), ['line1', 'line2']))
 
             if self.kwargs.get('country', ''):
@@ -412,9 +412,9 @@ class ContactAddress(ContactObject):
                 self.numberCombo.reset()
                 for j, token in enumerate(tokens):
                     if self.numberCombo.broken(j):
-                        self.addNumber(self.numberCombo.flattened)
+                        self.add_number(self.numberCombo.flattened)
                     if self.name_combo.broken(j):
-                        self.addName(self.name_combo.flattened)
+                        self.add_name(self.name_combo.flattened)
                     self.registerMessage(u"-> token[%d]: %s" % (j, token))
                     if len(token) == 1 and SanitationUtils.stringContainsDisallowedPunctuation(
                             token):
@@ -424,12 +424,12 @@ class ContactAddress(ContactObject):
                     # break
                 if self.numberCombo:
                     self.registerMessage("CONGRUENT NUMBERS AT END OF CYCLE: %s" %
-                                         SanitationUtils.coerceUnicode(self.numberCombo))
-                    self.addNumber(self.numberCombo.flattened)
+                                         SanitationUtils.coerce_unicode(self.numberCombo))
+                    self.add_number(self.numberCombo.flattened)
                 if self.name_combo:
                     self.registerMessage("CONGRUENT NAMES AT END OF CYCLE:  %s" %
-                                         SanitationUtils.coerceUnicode(self.name_combo))
-                    self.addName(self.name_combo.flattened)
+                                         SanitationUtils.coerce_unicode(self.name_combo))
+                    self.add_name(self.name_combo.flattened)
                 # self.registerMessage( "FINISHED CYCLE, NAMES: ", self.properties['names'])
                 continue
 
@@ -439,7 +439,7 @@ class ContactAddress(ContactObject):
                         'thoroughfares']:
                     weak_thoroughfare = self.properties[
                         'weak_thoroughfares'].pop()
-                    self.coerceThoroughfare(number, weak_thoroughfare)
+                    self.coerce_thoroughfare(number, weak_thoroughfare)
                 else:
                     self.properties['unknowns'] += [number]
                     self.invalidate(
@@ -449,17 +449,17 @@ class ContactAddress(ContactObject):
             while self.properties['incomplete_subunits']:
                 incomplete_subunit = self.properties[
                     'incomplete_subunits'].pop()
-                self.completeSubunit(incomplete_subunit)
+                self.complete_subunit(incomplete_subunit)
 
             while self.properties['ambiguous_tokens']:
                 if not self.properties['thoroughfares'] \
                         and not self.properties['weak_thoroughfares']:
                     ambiguous_token = self.properties['ambiguous_tokens'].pop()
-                    self.addWeakThoroughfare((ambiguous_token, None, None))
+                    self.add_weak_thoroughfare((ambiguous_token, None, None))
                 else:
                     ambiguous_token = self.properties['ambiguous_tokens']
                     self.enforce_strict('There are some ambiguous tokens: %s' %
-                                       SanitationUtils.coerceUnicode(self.properties['ambiguous_tokens']))
+                                       SanitationUtils.coerce_unicode(self.properties['ambiguous_tokens']))
                     break
 
             # if self.properties['thoroughfares'] and self.properties['weak_thoroughfares'] and not self.properties['buildings']
@@ -468,7 +468,7 @@ class ContactAddress(ContactObject):
                 'thoroughfares'] + self.properties['weak_thoroughfares']
             if len(all_thoroughfares) > 1:
                 self.enforce_strict('multiple thoroughfares: %s' %
-                                   SanitationUtils.coerceUnicode(
+                                   SanitationUtils.coerce_unicode(
                                        all_thoroughfares)
                                    )
 
@@ -480,13 +480,13 @@ class ContactAddress(ContactObject):
 
     def parseToken(self, tokenIndex, token):
         for getter, adder in [
-            (AddressUtils.getDelivery, self.addDelivery),
-            (AddressUtils.getSubunit, self.addSubunit),
-            (AddressUtils.getFloor, self.addFloor),
-            (AddressUtils.getThoroughfare, self.addThoroughfare),
-            (NameUtils.getCareOf, self.add_careof),
+            (AddressUtils.get_delivery, self.add_delivery),
+            (AddressUtils.getSubunit, self.add_subunit),
+            (AddressUtils.get_floor, self.add_floor),
+            (AddressUtils.getThoroughfare, self.add_thoroughfare),
+            (NameUtils.get_care_of, self.add_careof),
             (NameUtils.getOrganization, self.add_organization),
-            (AddressUtils.getWeakSubunit, self.addWeakSubunit)
+            (AddressUtils.getWeakSubunit, self.add_weak_subunit)
         ]:
             result = getter(token)
             if result:
@@ -496,25 +496,25 @@ class ContactAddress(ContactObject):
         name = NameUtils.getMultiName(token)
         number = AddressUtils.getNumber(token)
         weak_thoroughfare = AddressUtils.getWeakThoroughfare(token)
-        building = AddressUtils.getBuilding(token)
+        building = AddressUtils.get_building(token)
 
         if (not name) or weak_thoroughfare or building:
             if self.name_combo:
-                self.addName(self.name_combo.flattened)
+                self.add_name(self.name_combo.flattened)
         if not number:
             if self.numberCombo:
-                self.addNumber(self.numberCombo.flattened)
+                self.add_number(self.numberCombo.flattened)
 
         if building and weak_thoroughfare:
             self.registerMessage("BUILDING AND WEAK THOROUGHFARE")
-            self.addName(token)
+            self.add_name(token)
             return
             # self.invalidate("Ambiguous thoroughfare or building (multiple buildings detected): %s" % repr(token))
         if weak_thoroughfare:
-            self.addWeakThoroughfare(weak_thoroughfare)
+            self.add_weak_thoroughfare(weak_thoroughfare)
             return
         if building and not self.properties['buildings']:
-            self.addBuilding(building)
+            self.add_building(building)
             return
         # ignore if unknown is city or state
         # if token in self.words_to_remove:
@@ -533,26 +533,26 @@ class ContactAddress(ContactObject):
 
         if name:
             self.registerMessage("FOUND NAME: %s" %
-                                 SanitationUtils.coerceUnicode(name))
+                                 SanitationUtils.coerce_unicode(name))
             self.name_combo.add(tokenIndex, name)
             return
 
         if number:
             self.registerMessage("FOUND NUMBER: %s" %
-                                 SanitationUtils.coerceUnicode(number))
+                                 SanitationUtils.coerce_unicode(number))
             self.numberCombo.add(tokenIndex, number)
             return
 
         self.registerMessage("UNKNOWN TOKEN %s" %
-                             SanitationUtils.coerceUnicode(token))
+                             SanitationUtils.coerce_unicode(token))
         self.properties['unknowns'] += [token]
         self.invalidate("There are some unknown tokens: %s" %
                         repr(self.properties['unknowns']))
 
     # NO SUBUNUTS -> SUBUNIT W/ NO UNIT TYPE
 
-    def addNumber(self, number):
-        # if self.name_combo: self.addName(self.name_combo.flattened)
+    def add_number(self, number):
+        # if self.name_combo: self.add_name(self.name_combo.flattened)
         number = AddressUtils.getNumber(number)
         if not number:
             return
@@ -569,47 +569,47 @@ class ContactAddress(ContactObject):
                 assert int(number_find) > int(
                     subunit_find), "Number must be greater than subunit number"
                 subunit_number += number
-                self.addSubunit((subunit_type, subunit_number))
+                self.add_subunit((subunit_type, subunit_number))
             except Exception as exc:
-                self.registerMessage(SanitationUtils.coerceUnicode(exc))
-                self.completeSubunit((subunit_type, subunit_number))
-                self.addNumber(number)
+                self.registerMessage(SanitationUtils.coerce_unicode(exc))
+                self.complete_subunit((subunit_type, subunit_number))
+                self.add_number(number)
         elif not self.properties['subunits']:
-            self.coerceSubunit(number)
+            self.coerce_subunit(number)
         else:
             self.properties['numbers'] += [number]
 
     # NUMBERS and NO THOROUGHFARES -> WEAK THOROUGHFARE
     # SUBUNIT or FLOORS or DELIVERIES -> BUILDING
 
-    def addName(self, name):
-        # if self.numberCombo: self.addNumber(self.numberCombo.flattened)
+    def add_name(self, name):
+        # if self.numberCombo: self.add_number(self.numberCombo.flattened)
         # name = NameUtils.getMultiName(name)
         if not name:
             return
         # if we haven't flushed numberCombo, do it now
         self.registerMessage("PROCESSING NAME %s" %
-                             SanitationUtils.coerceUnicode(name))
+                             SanitationUtils.coerce_unicode(name))
         names = filter(None, NameUtils.getSingleNames(name))
         self.registerMessage("SINGLE NAMES %s" %
-                             SanitationUtils.coerceUnicode(names))
+                             SanitationUtils.coerce_unicode(names))
         weak_thoroughfare = AddressUtils.getWeakThoroughfare(name)
-        building = AddressUtils.getBuilding(name)
+        building = AddressUtils.get_building(name)
         if building and weak_thoroughfare:
             self.registerMessage("BUILDING %s" %
-                                 SanitationUtils.coerceUnicode(building))
+                                 SanitationUtils.coerce_unicode(building))
             self.registerMessage("WEAK THOROUGHFARE:  %s" %
-                                 SanitationUtils.coerceUnicode(weak_thoroughfare))
+                                 SanitationUtils.coerce_unicode(weak_thoroughfare))
             if building[1] and weak_thoroughfare[1]:
                 thoroughfare_type_len, building_type_len = map(
                     lambda x: len(x[1]),
                     [weak_thoroughfare, building]
                 )
                 if thoroughfare_type_len > building_type_len:
-                    self.addWeakThoroughfare(weak_thoroughfare)
+                    self.add_weak_thoroughfare(weak_thoroughfare)
                     return
                 elif building_type_len > thoroughfare_type_len:
-                    self.addBuilding(building)
+                    self.add_building(building)
                     return
                 else:
                     self.registerWarning(
@@ -626,19 +626,19 @@ class ContactAddress(ContactObject):
                     thoroughfare_type = None
                 weak_thoroughfare = (
                     thoroughfare_name, thoroughfare_type, None)
-            self.addWeakThoroughfare(weak_thoroughfare)
+            self.add_weak_thoroughfare(weak_thoroughfare)
         elif not (self.properties['buildings']) and \
                 (self.properties['subunits'] or self.properties['floors'] or self.properties['deliveries']):
             if building:
-                self.addBuilding(building)
+                self.add_building(building)
             else:
-                self.coerceBuilding(name)
+                self.coerce_building(name)
         elif weak_thoroughfare and not (self.properties['thoroughfares'] + self.properties['weak_thoroughfares']):
-            self.addWeakThoroughfare(weak_thoroughfare)
+            self.add_weak_thoroughfare(weak_thoroughfare)
         elif building and not self.properties['buildings']:
-            self.addBuilding(building)
+            self.add_building(building)
         # elif weak_thoroughfare and not building:
-        #     self.addWeakThoroughfare(weak_thoroughfare)
+        #     self.add_weak_thoroughfare(weak_thoroughfare)
         elif name in self.words_to_remove:
             self.properties['ignores'] += [name]
         elif not (self.properties['thoroughfares'] + self.properties['weak_thoroughfares']):
@@ -646,87 +646,87 @@ class ContactAddress(ContactObject):
         else:
             self.properties['ambiguous_tokens'] += [name]
 
-    def addSubunit(self, subunit):
+    def add_subunit(self, subunit):
         subunit_type, subunit_number = subunit
         if subunit_type in ['SHOP', 'SUITE', 'KIOSK', 'SHRM', 'STORE']:
             self.properties['isShop'] = True
         if subunit_number[-1] == '/':
             while self.properties['incomplete_subunits']:
-                self.completeSubunit(
+                self.complete_subunit(
                     self.properties['incomplete_subunits'].pop())
             self.registerMessage("ADDING INCOMPLETE SUBUNIT:  %s" %
-                                 SanitationUtils.coerceUnicode(subunit))
+                                 SanitationUtils.coerce_unicode(subunit))
             self.properties['incomplete_subunits'] += [subunit]
         else:
             self.registerMessage("ADDING SUBUNIT:  %s" %
-                                 SanitationUtils.coerceUnicode(subunit))
+                                 SanitationUtils.coerce_unicode(subunit))
             self.properties['subunits'] += [subunit]
 
-    def addWeakSubunit(self, weak_subunit):
+    def add_weak_subunit(self, weak_subunit):
         subunit_type, subunit_number = weak_subunit
         self.enforce_strict("Unknown subunit type: %s" % subunit_type)
-        self.addSubunit(weak_subunit)
+        self.add_subunit(weak_subunit)
 
-    def coerceSubunit(self, number):
+    def coerce_subunit(self, number):
         subunit = (None, number)
         self.registerMessage("COERCED SUBUNIT: %s" %
-                             SanitationUtils.coerceUnicode(subunit))
+                             SanitationUtils.coerce_unicode(subunit))
         self.properties['coerced_subunits'] += [subunit]
 
-    def completeSubunit(self, incomplete_subunit):
+    def complete_subunit(self, incomplete_subunit):
         subunit_type, subunit_number = incomplete_subunit
         if subunit_number[-1] == '/':
             subunit_number = subunit_number[:-1]
         complete_subunit = subunit_type, subunit_number
-        self.addSubunit(complete_subunit)
+        self.add_subunit(complete_subunit)
 
-    def addBuilding(self, building):
+    def add_building(self, building):
         all_thoroughfares = self.properties[
             'thoroughfares'] + self.properties['weak_thoroughfares']
         if all_thoroughfares:
             self.enforce_strict("Building (%s) should not come after thoroughfare (%s)" % (
-                SanitationUtils.coerceUnicode(building),
-                SanitationUtils.coerceUnicode(all_thoroughfares[0])
+                SanitationUtils.coerce_unicode(building),
+                SanitationUtils.coerce_unicode(all_thoroughfares[0])
             ))
         self.registerMessage("ADDING BUILDING:  %s" %
-                             SanitationUtils.coerceUnicode(building))
+                             SanitationUtils.coerce_unicode(building))
         self.properties['buildings'] += [building]
 
-    def coerceBuilding(self, token):
-        building = AddressUtils.getBuilding(token)
+    def coerce_building(self, token):
+        building = AddressUtils.get_building(token)
         if not building:
             building = (token, None)
         self.registerMessage("COERCED BUILDING %s" %
-                             SanitationUtils.coerceUnicode(building))
-        self.addBuilding(building)
+                             SanitationUtils.coerce_unicode(building))
+        self.add_building(building)
 
-    def addThoroughfare(self, thoroughfare):
+    def add_thoroughfare(self, thoroughfare):
         self.registerMessage("ADDING THOROUGHFARE %s" %
-                             SanitationUtils.coerceUnicode(thoroughfare))
+                             SanitationUtils.coerce_unicode(thoroughfare))
         thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix = thoroughfare
-        self.assertValidThoroughfareType(thoroughfare_name, thoroughfare_type)
+        self.assert_valid_thoroughfare_type(thoroughfare_name, thoroughfare_type)
         # if legit thoroughfare is being added, remove weaklings before adding
         while self.properties['weak_thoroughfares']:
             weak_thoroughfare = self.properties['weak_thoroughfares'].pop()
             token = " ".join(filter(None, weak_thoroughfare))
-            self.coerceBuilding(token)
+            self.coerce_building(token)
         self.properties['thoroughfares'] += [thoroughfare]
 
-    def coerceThoroughfare(self, number, weak_thoroughfare):
+    def coerce_thoroughfare(self, number, weak_thoroughfare):
         self.registerMessage("COERCING THOROUGHFARE %s %s" % (
-            SanitationUtils.coerceUnicode(number),
-            SanitationUtils.coerceUnicode(weak_thoroughfare),
+            SanitationUtils.coerce_unicode(number),
+            SanitationUtils.coerce_unicode(weak_thoroughfare),
         ))
         thoroughfare_name, thoroughfare_type, thoroughfare_suffix = weak_thoroughfare
         thoroughfare = (number, thoroughfare_name,
                         thoroughfare_type, thoroughfare_suffix)
         self.registerMessage("COERCED THOROUGHFARE: %s" %
-                             SanitationUtils.coerceUnicode(thoroughfare))
-        self.addThoroughfare(thoroughfare)
+                             SanitationUtils.coerce_unicode(thoroughfare))
+        self.add_thoroughfare(thoroughfare)
 
-    def addWeakThoroughfare(self, weak_thoroughfare):
+    def add_weak_thoroughfare(self, weak_thoroughfare):
         self.registerMessage("ADDING WEAK THOROUGHFARE %s" %
-                             SanitationUtils.coerceUnicode(weak_thoroughfare))
+                             SanitationUtils.coerce_unicode(weak_thoroughfare))
         if \
                 True or\
                 not (self.properties['thoroughfares'] or self.properties['weak_thoroughfares']):
@@ -741,36 +741,36 @@ class ContactAddress(ContactObject):
                         'coerced_subunits'].pop()
 
                 # token = " ".join(names)
-                self.coerceThoroughfare(number, weak_thoroughfare)
+                self.coerce_thoroughfare(number, weak_thoroughfare)
                 return
             self.registerMessage("ADDING WEAK THOROUGHFARE:  %s" %
-                                 SanitationUtils.coerceUnicode(weak_thoroughfare))
+                                 SanitationUtils.coerce_unicode(weak_thoroughfare))
             thoroughfare_name, thoroughfare_type, thoroughfare_suffix = weak_thoroughfare
-            self.assertValidThoroughfareType(
+            self.assert_valid_thoroughfare_type(
                 thoroughfare_name, thoroughfare_type)
             self.properties['weak_thoroughfares'] += [weak_thoroughfare]
         else:
             token = " ".join(filter(None, weak_thoroughfare))
-            self.coerceBuilding(token)
+            self.coerce_building(token)
 
-    def addFloor(self, floor):
+    def add_floor(self, floor):
         self.registerMessage("ADDING FLOOR:  %s" %
-                             SanitationUtils.coerceUnicode(floor))
+                             SanitationUtils.coerce_unicode(floor))
         self.properties['floors'] += [floor]
 
-    def addDelivery(self, delivery):
+    def add_delivery(self, delivery):
         self.registerMessage("ADDING DELIVERY:  %s" %
-                             SanitationUtils.coerceUnicode(delivery))
+                             SanitationUtils.coerce_unicode(delivery))
         self.properties['deliveries'] += [delivery]
 
-    def assertValidThoroughfareType(
+    def assert_valid_thoroughfare_type(
             self, thoroughfare_name, thoroughfare_type):
         if thoroughfare_type:
             try:
                 assert AddressUtils.getThoroughfareType(
                     thoroughfare_type), "Unknown thoroughfares type: %s" % thoroughfare_type
             except Exception as exc:
-                self.enforce_strict(SanitationUtils.coerceUnicode(exc))
+                self.enforce_strict(SanitationUtils.coerce_unicode(exc))
         else:
             self.enforce_strict("No thoroughfare type: " + thoroughfare_name)
 
@@ -875,7 +875,7 @@ class ContactAddress(ContactObject):
             filter(None, [self.city, self.state, self.postcode, self.country]))
 
     @staticmethod
-    def determineSchema(**kwargs):
+    def determine_schema(**kwargs):
         fields = filter(None, map(lambda key: kwargs.get(
             key, ''), ['line1', 'line2', 'city']))
         if(fields):
@@ -894,7 +894,7 @@ class ContactAddress(ContactObject):
         delimeter = "; "
         if tablefmt == "html":
             delimeter = "<br/>"
-        return SanitationUtils.coerceUnicode(prefix + delimeter.join(filter(None, [
+        return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
             self.line1,
             self.line2,
             self.line3,
@@ -903,7 +903,7 @@ class ContactAddress(ContactObject):
         ])))
 
     def __str__(self, tablefmt=None):
-        return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
+        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
 
 
 class ContactName(ContactObject):
@@ -1007,16 +1007,16 @@ class ContactName(ContactObject):
                     # print reverse_name_components, no_punctuation_contact
                     if reverse_name_components == no_punctuation_contact:
                         self.registerMessage(
-                            "DETECTED REVERSE NAME:  %s" % SanitationUtils.coerceUnicode(full_name_contact))
+                            "DETECTED REVERSE NAME:  %s" % SanitationUtils.coerce_unicode(full_name_contact))
                         # self.enforce_strict("Ambiguous if format is family_name, first_name middle_name or just stray comma")
                         full_name_contact = None
 
-            full_names = listUtils.filterUniqueTrue(
+            full_names = listUtils.filter_unique_true(
                 map(SanitationUtils.normalize_val, [full_name_contact, full_name_components]))
 
             if len(full_names) > 1:
                 self.invalidate("Unable to determine which name is correct: %s" %
-                                SanitationUtils.coerceUnicode(full_names))
+                                SanitationUtils.coerce_unicode(full_names))
 
             for i, full_name in enumerate(full_names):
                 self.registerMessage(
@@ -1031,7 +1031,7 @@ class ContactName(ContactObject):
                 if self.name_combo:
                     self.registerMessage(
                         "CONGRUENT NAMES AT END OF CYCLE: %s" % self.name_combo)
-                    self.addName(self.name_combo.flattened)
+                    self.add_name(self.name_combo.flattened)
 
             while self.properties['names']:
                 name = self.properties['names'].pop(0)
@@ -1058,13 +1058,13 @@ class ContactName(ContactObject):
 
             if len(self.properties['family_names']) > 1:
                 self.enforce_strict("THERE ARE MULTIPLE FAMILY NAMES: %s" %
-                                   SanitationUtils.coerceBytes(' / '.join(self.properties['family_names'])))
+                                   SanitationUtils.coerce_bytes(' / '.join(self.properties['family_names'])))
             if len(self.properties['middle_names']) > 1:
                 self.enforce_strict("THERE ARE MULTIPLE MIDDLE NAMES: %s" %
-                                   SanitationUtils.coerceBytes(' / '.join(self.properties['middle_names'])))
+                                   SanitationUtils.coerce_bytes(' / '.join(self.properties['middle_names'])))
             if len(self.properties['first_names']) > 2:
                 self.enforce_strict("THERE ARE MULTIPLE FIRST NAMES: %s" %
-                                   SanitationUtils.coerceBytes(' / '.join(self.properties['first_names'])))
+                                   SanitationUtils.coerce_bytes(' / '.join(self.properties['first_names'])))
 
             if len(self.properties['family_names'] + self.properties[
                    'middle_names'] + self.properties['first_names']) == 0:
@@ -1072,28 +1072,28 @@ class ContactName(ContactObject):
 
             if len(self.properties['titles']) > 1:
                 self.enforce_strict("THERE ARE MULTIPLE TITLES: " +
-                                   SanitationUtils.coerceBytes(' / '.join(self.properties['titles'])))
+                                   SanitationUtils.coerce_bytes(' / '.join(self.properties['titles'])))
 
             if len(self.properties['notes']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE NOTES: " + SanitationUtils.coerceBytes(
+                self.enforce_strict("THERE ARE MULTIPLE NOTES: " + SanitationUtils.coerce_bytes(
                     " / ".join(map(self.getNoteNoParanthesis, self.properties.get('notes', [])))))
 
             if len(self.properties['positions']) > 1:
                 self.enforce_strict("THERE ARE MULTIPLE POSITIONS: " +
-                                   SanitationUtils.coerceBytes(' / '.join(self.properties['positions'])))
+                                   SanitationUtils.coerce_bytes(' / '.join(self.properties['positions'])))
 
             if self.properties['unknowns']:
-                self.invalidate("There are some unknown tokens: %s" % SanitationUtils.coerceBytes(
+                self.invalidate("There are some unknown tokens: %s" % SanitationUtils.coerce_bytes(
                     ' / '.join(self.properties['unknowns'])))
 
     def parseToken(self, tokenIndex, token):
         if self.name_combo.broken(tokenIndex):
-            self.addName(self.name_combo.flattened)
+            self.add_name(self.name_combo.flattened)
 
         title = NameUtils.getTitle(token)
         if title:
             self.registerMessage("FOUND TITLE: %s" %
-                                 SanitationUtils.coerceUnicode(title))
+                                 SanitationUtils.coerce_unicode(title))
             if title not in self.properties['titles']:
                 self.properties['titles'] += [title]
             return
@@ -1101,7 +1101,7 @@ class ContactName(ContactObject):
         position = NameUtils.getPosition(token)
         if position:
             self.registerMessage("FOUND POSITION: %s" %
-                                 SanitationUtils.coerceUnicode(position))
+                                 SanitationUtils.coerce_unicode(position))
             if position not in self.properties['positions']:
                 self.properties['positions'] += [position]
             return
@@ -1109,15 +1109,15 @@ class ContactName(ContactObject):
         suffix = NameUtils.getNameSuffix(token)
         if suffix:
             self.registerMessage("FOUND NAME SUFFIX: %s" %
-                                 SanitationUtils.coerceUnicode(suffix))
+                                 SanitationUtils.coerce_unicode(suffix))
             if suffix not in self.properties['suffixes']:
                 self.properties['suffixes'] += [suffix]
             return
 
-        email = NameUtils.getEmail(token)
+        email = NameUtils.get_email(token)
         if email:
             self.registerMessage("FOUND EMAIL: %s" %
-                                 SanitationUtils.coerceUnicode(email))
+                                 SanitationUtils.coerce_unicode(email))
             if email not in self.properties['emails']:
                 self.properties['emails'] += [email]
             return
@@ -1130,10 +1130,10 @@ class ContactName(ContactObject):
                 self.properties['notes'] += [note]
             return
 
-        careof = NameUtils.getCareOf(token)
+        careof = NameUtils.get_care_of(token)
         if careof:
             self.registerMessage("FOUND CAREOF: %s" %
-                                 SanitationUtils.coerceUnicode(careof))
+                                 SanitationUtils.coerce_unicode(careof))
             if careof not in self.properties['careof_names']:
                 self.properties['careof_names'] += [careof]
             return
@@ -1141,21 +1141,21 @@ class ContactName(ContactObject):
         organization = NameUtils.getOrganization(token)
         if organization:
             self.registerMessage("FOUND ORGANIZATION: %s" %
-                                 SanitationUtils.coerceUnicode(organization))
+                                 SanitationUtils.coerce_unicode(organization))
             if organization not in self.properties['organization_names']:
                 self.properties['organization_names'] += [organization]
             return
 
-        family_name = NameUtils.getFamilyName(token)
+        family_name = NameUtils.get_family_name(token)
         single_name = NameUtils.getSingleName(token)
         if family_name and single_name:
             self.registerMessage("FOUND FAMILY AND NAME: '%s' | '%s'" % (
-                SanitationUtils.coerceUnicode(family_name),
-                SanitationUtils.coerceUnicode(single_name)))
+                SanitationUtils.coerce_unicode(family_name),
+                SanitationUtils.coerce_unicode(single_name)))
         if family_name:
             if not single_name or (len(family_name) > len(single_name)):
                 self.registerMessage("FOUND FAMILY NAME: %s" %
-                                     SanitationUtils.coerceUnicode(family_name))
+                                     SanitationUtils.coerce_unicode(family_name))
                 self.properties['family_names'] += [family_name]
                 return
 
@@ -1163,7 +1163,7 @@ class ContactName(ContactObject):
 
         if multi_name:
             self.registerMessage("FOUND NAME: %s" %
-                                 SanitationUtils.coerceUnicode(multi_name))
+                                 SanitationUtils.coerce_unicode(multi_name))
             self.name_combo.add(tokenIndex, multi_name)
             return
 
@@ -1174,15 +1174,15 @@ class ContactName(ContactObject):
         self.properties['unknowns'] += [token]
         self.invalidate("UNKNOWN TOKEN: " + repr(token))
 
-    def addName(self, name):
+    def add_name(self, name):
         if name in self.words_to_remove:
             self.properties['ignores'] += [name]
             self.registerMessage("IGNORING WORD: %s" %
-                                 SanitationUtils.coerceUnicode(name))
+                                 SanitationUtils.coerce_unicode(name))
             return
         if name and name not in self.properties['names']:
             self.registerMessage("ADDING NAME: %s" %
-                                 SanitationUtils.coerceUnicode(name))
+                                 SanitationUtils.coerce_unicode(name))
             self.properties['names'] += [name]
 
     def getNoteNoParanthesis(self, note_tuple):
@@ -1309,7 +1309,7 @@ class ContactName(ContactObject):
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = " "
-        return SanitationUtils.coerceUnicode(prefix + delimeter.join(filter(None, [
+        return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
             (("PREF: " + self.name_prefix)
              if self.debug and self.name_prefix else self.name_prefix),
             (("FIRST: " + self.first_name)
@@ -1327,7 +1327,7 @@ class ContactName(ContactObject):
         ])))
 
     def __str__(self, tablefmt=None):
-        return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
+        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
 
 #
 # def testcontactNameEquality():
@@ -1506,14 +1506,14 @@ class ContactPhones(FieldGroup):
             mob_line += ' PREF'
         fax_line = (("FAX: " + self.fax_number)
                     if self.debug and self.fax_number else self.fax_number)
-        return SanitationUtils.coerceUnicode(prefix + delimeter.join(filter(None, [
+        return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
             tel_line,
             mob_line,
             fax_line,
         ])))
 
     def __str__(self, tablefmt=None):
-        return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
+        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
 #
 # def testContactNumber():
 #     numbers = ContactPhones(
@@ -1579,7 +1579,7 @@ class SocialMediaFields(FieldGroup):
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = "; "
-        return SanitationUtils.coerceUnicode(prefix + delimeter.join(filter(None, [
+        return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
             self.facebook,
             self.twitter,
             self.gplus,
@@ -1588,7 +1588,7 @@ class SocialMediaFields(FieldGroup):
         ])))
 
     def __str__(self, tablefmt=None):
-        return SanitationUtils.coerceBytes(self.__unicode__(tablefmt))
+        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
 
 
 #

@@ -462,7 +462,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                 settings.product_parser_args['dprc_rules'] = parsers.dyn.taxos
 
                 Registrar.registerMessage("analysing dprp rules")
-                parsers.dyn.clearTransients()
+                parsers.dyn.clear_transients()
                 client.analyse_remote(
                     parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
                 settings.product_parser_args['dprpRules'] = parsers.dyn.taxos
@@ -687,7 +687,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
     if settings.schema in settings.myo_schemas:
         product_cols = ColData_MYO.get_product_cols()
         product_list = MYOProdList(parsers.product.products.values())
-        product_list.exportItems(settings.myo_path,
+        product_list.export_items(settings.myo_path,
                                  ColDataBase.get_col_names(product_cols))
     elif settings.schema in settings.woo_schemas:
         product_cols = ColData_Woo.get_product_cols()
@@ -699,10 +699,10 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         attribute_cols = ColData_Woo.get_attribute_cols(
             parsers.product.attributes, parsers.product.vattributes)
         product_colnames = ColDataBase.get_col_names(
-            listUtils.combineOrderedDicts(product_cols, attribute_cols))
+            listUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
         product_list = WooProdList(parsers.product.products.values())
-        product_list.exportItems(settings.fla_path, product_colnames)
+        product_list.export_items(settings.fla_path, product_colnames)
 
         # variations
 
@@ -711,18 +711,18 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         attribute_meta_cols = ColData_Woo.get_attribute_meta_cols(
             parsers.product.vattributes)
         variation_col_names = ColDataBase.get_col_names(
-            listUtils.combineOrderedDicts(variation_cols, attribute_meta_cols))
+            listUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
 
         if parsers.product.variations:
             variation_list = WooVarList(parsers.product.variations.values())
-            variation_list.exportItems(settings.flv_path, variation_col_names)
+            variation_list.export_items(settings.flv_path, variation_col_names)
 
         if parsers.product.categories:
             # categories
             category_cols = ColData_Woo.get_category_cols()
 
             category_list = WooCatList(parsers.product.categories.values())
-            category_list.exportItems(settings.cat_path,
+            category_list.export_items(settings.cat_path,
                                       ColDataBase.get_col_names(category_cols))
 
         # specials
@@ -739,7 +739,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                         settings.out_folder,
                         fla_name + "-" + current_special + fla_ext)
                     special_product_list = WooProdList(special_products)
-                    special_product_list.exportItems(fls_path,
+                    special_product_list.export_items(fls_path,
                                                      product_colnames)
                 special_variations = parsers.product.onspecial_variations.values(
                 )
@@ -750,7 +750,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                         flv_name + "-" + current_special + flv_ext)
 
                     sp_variation_list = WooVarList(special_variations)
-                    sp_variation_list.exportItems(flvs_path,
+                    sp_variation_list.export_items(flvs_path,
                                                   variation_col_names)
 
         updated_products = parsers.product.updated_products.values()
@@ -760,7 +760,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                                     fla_name + "-Updated" + fla_ext)
 
             updated_product_list = WooProdList(updated_products)
-            updated_product_list.exportItems(flu_path, product_colnames)
+            updated_product_list.export_items(flu_path, product_colnames)
 
         updated_variations = parsers.product.updated_variations.values()
 
@@ -770,7 +770,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                                      flv_name + "-Updated" + flv_ext)
 
             updated_variations_list = WooVarList(updated_variations)
-            updated_variations_list.exportItems(flvu_path, variation_col_names)
+            updated_variations_list.export_items(flvu_path, variation_col_names)
 
 
 def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -1062,7 +1062,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.checkEqual(
+        if listUtils.check_equal(
                 [category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
@@ -1095,7 +1095,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         with ProdSyncClient_WC(settings.wc_api_params) as client:
             # try:
             if settings.do_categories:
-                client.analyseRemoteCategories(api_product_parser)
+                client.analyse_remote_categories(api_product_parser)
 
             Registrar.registerProgress("analysing WC API data")
 
@@ -1175,7 +1175,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 for match in category_matcher.duplicate_matches:
                     master_taxo_sums = [cat.namesum for cat in match.m_objects]
                     if all(master_taxo_sums) \
-                            and listUtils.checkEqual(master_taxo_sums) \
+                            and listUtils.check_equal(master_taxo_sums) \
                             and not len(match.s_objects) > 1:
                         valid_category_matches.append(match)
                     else:
@@ -1605,7 +1605,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         #     ]).items()))
 
         # print repr(basic_colnames)
-        # unicode_colnames = map(SanitationUtils.coerceUnicode, csv_colnames.values())
+        # unicode_colnames = map(SanitationUtils.coerce_unicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
         if settings.do_sync and (s_delta_updates):
@@ -1627,7 +1627,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     delta_cols.keys() + delta_cols.values()).items())
 
             if s_delta_list:
-                delta_group.addSection(
+                delta_group.add_section(
                     HtmlReporter.Section(
                         's_deltas',
                         title='%s Changes List' % settings.slave_name.title(),
@@ -1637,10 +1637,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             cols=all_delta_cols, tablefmt='html'),
                         length=len(s_delta_list)))
 
-            reporter.addGroup(delta_group)
+            reporter.add_group(delta_group)
 
             if s_delta_list:
-                s_delta_list.exportItems(
+                s_delta_list.export_items(
                     settings.slave_delta_csv_path,
                     ColData_Woo.get_col_names(all_delta_cols))
 
@@ -1651,7 +1651,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             matching_group = HtmlReporter.Group('product_matching',
                                                 'Product Matching Results')
             if global_product_matches:
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         'perfect_product_matches',
                         **{
@@ -1666,7 +1666,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             len(global_product_matches)
                         }))
             if masterless_product_matches:
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         'masterless_product_matches',
                         **{
@@ -1681,7 +1681,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             len(masterless_product_matches)
                         }))
             if slaveless_product_matches:
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         'slaveless_product_matches',
                         **{
@@ -1696,13 +1696,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             len(slaveless_product_matches)
                         }))
             if matching_group.sections:
-                reporter.addGroup(matching_group)
+                reporter.add_group(matching_group)
 
             if settings.do_categories:
                 matching_group = HtmlReporter.Group(
                     'category_matching', 'Category Matching Results')
                 if global_category_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_category_matches',
                             **{
@@ -1718,7 +1718,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(global_category_matches)
                             }))
                 if masterless_category_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'masterless_category_matches',
                             **{
@@ -1733,7 +1733,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(masterless_category_matches)
                             }))
                 if slaveless_category_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'slaveless_category_matches',
                             **{
@@ -1748,13 +1748,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(slaveless_category_matches)
                             }))
                 if matching_group.sections:
-                    reporter.addGroup(matching_group)
+                    reporter.add_group(matching_group)
 
             if settings.do_variations:
                 matching_group = HtmlReporter.Group(
                     'variation_matching', 'Variation Matching Results')
                 if global_variation_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_variation_matches',
                             **{
@@ -1770,7 +1770,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(global_variation_matches)
                             }))
                 if masterless_variation_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'masterless_variation_matches',
                             **{
@@ -1785,7 +1785,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(masterless_variation_matches)
                             }))
                 if slaveless_variation_matches:
-                    matching_group.addSection(
+                    matching_group.add_section(
                         HtmlReporter.Section(
                             'slaveless_variation_matches',
                             **{
@@ -1800,14 +1800,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 len(slaveless_variation_matches)
                             }))
                 if matching_group.sections:
-                    reporter.addGroup(matching_group)
+                    reporter.add_group(matching_group)
 
         report_sync = settings.do_sync
         if report_sync:
             syncing_group = HtmlReporter.Group('prod_sync',
                                                'Product Syncing Results')
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     (SanitationUtils.makeSafeClass(settings.slave_name) +
                      "_product_updates"),
@@ -1818,7 +1818,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     ]),
                     length=len(slave_product_updates)))
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     "problematic_product_updates",
                     description="items can't be merged because they are too dissimilar",
@@ -1828,13 +1828,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     ]),
                     length=len(problematic_product_updates)))
 
-            reporter.addGroup(syncing_group)
+            reporter.add_group(syncing_group)
 
             if settings.do_variations:
                 syncing_group = HtmlReporter.Group('variation_sync',
                                                    'Variation Syncing Results')
 
-                syncing_group.addSection(
+                syncing_group.add_section(
                     HtmlReporter.Section(
                         (SanitationUtils.makeSafeClass(settings.slave_name) +
                          "_variation_updates"),
@@ -1846,7 +1846,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         ]),
                         length=len(slave_variation_updates)))
 
-                syncing_group.addSection(
+                syncing_group.add_section(
                     HtmlReporter.Section(
                         "problematic_variation_updates",
                         description="items can't be merged because they are too dissimilar",
@@ -1856,7 +1856,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         ]),
                         length=len(problematic_variation_updates)))
 
-                reporter.addGroup(syncing_group)
+                reporter.add_group(syncing_group)
 
         report_cats = settings.do_sync and settings.do_categories
         if report_cats:
@@ -1865,7 +1865,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             syncing_group = HtmlReporter.Group('cats',
                                                'Category Syncing Results')
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     ('delete_categories'),
                     description="%s items will leave categories" %
@@ -1906,7 +1906,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 tablefmt="html"
             )
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     ('delete_categories_not_specials'),
                     description="%s items will leave categories" %
@@ -1920,7 +1920,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     # )
                 ))
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     ('join_categories'),
                     description="%s items will join categories" %
@@ -1947,11 +1947,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     # )
                 ))
 
-            reporter.addGroup(syncing_group)
+            reporter.add_group(syncing_group)
 
         if not reporter.groups:
             empty_group = HtmlReporter.Group('empty', 'Nothing to report')
-            # empty_group.addSection(
+            # empty_group.add_section(
             #     HtmlReporter.Section(
             #         ('empty'),
             #         data = ''
@@ -1959,9 +1959,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             #     )
             # )
             Registrar.registerMessage('nothing to report')
-            reporter.addGroup(empty_group)
+            reporter.add_group(empty_group)
 
-        res_file.write(reporter.getDocumentUnicode())
+        res_file.write(reporter.get_document_unicode())
 
     if settings.report_and_quit:
         sys.exit(ExitStatus.success)
@@ -2010,10 +2010,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     except Exception as exc:
                         # slave_failures.append({
                         #     'update':update,
-                        #     'master':SanitationUtils.coerceUnicode(update.new_m_object),
-                        #     'slave':SanitationUtils.coerceUnicode(update.new_s_object),
-                        #     'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                        #     'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                        #     'master':SanitationUtils.coerce_unicode(update.new_m_object),
+                        #     'slave':SanitationUtils.coerce_unicode(update.new_s_object),
+                        #     'mchanges':SanitationUtils.coerce_unicode(update.getMasterUpdates()),
+                        #     'schanges':SanitationUtils.coerce_unicode(update.getSlaveUpdates()),
                         #     'exception':repr(exc)
                         # })
                         SanitationUtils.safePrint(
@@ -2090,9 +2090,9 @@ def catch_main():  # pylint: disable=too-many-statements,too-many-branches
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.getMessageItems(1).items():
             print source
-            log_file.writelines([SanitationUtils.coerceUnicode(source)])
+            log_file.writelines([SanitationUtils.coerce_unicode(source)])
             log_file.writelines([
-                SanitationUtils.coerceUnicode(message) for message in messages
+                SanitationUtils.coerce_unicode(message) for message in messages
             ])
             for message in messages:
                 pprint(message, indent=4, width=80, depth=2)

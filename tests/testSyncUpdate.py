@@ -343,7 +343,7 @@ class testSyncUpdate_Usr(TestCase):
             defaults=ColData_User.get_defaults(),
         )
 
-        saParser.analyseFile(saPath)
+        saParser.analyse_file(saPath)
 
         sUsr = saParser.emails['neil@technotan.com.au'][0]
 
@@ -352,7 +352,7 @@ class testSyncUpdate_Usr(TestCase):
             defaults=ColData_User.get_defaults(),
         )
 
-        maParser.analyseFile(maPath)
+        maParser.analyse_file(maPath)
 
         mUsr = maParser.emails['neil@technotan.com.au'][0]
 

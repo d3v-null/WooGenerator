@@ -36,10 +36,10 @@ class HtmlReporter(object):
                 ' ' + self.description + '</p>'
             out += '<p class="data">'
             out += re.sub("<table>", "<table class=\"table table-striped\">",
-                          SanitationUtils.coerceUnicode(self.data))
+                          SanitationUtils.coerce_unicode(self.data))
             out += '</p>'
             out += '</div>'
-            out = SanitationUtils.coerceUnicode(out)
+            out = SanitationUtils.coerce_unicode(out)
             return out
 
     class Group:
@@ -53,7 +53,7 @@ class HtmlReporter(object):
             self.sections = sections
             self.classname = classname
 
-        def addSection(self, section):
+        def add_section(self, section):
             self.sections[section.classname] = section
 
         def toHtml(self):
@@ -62,17 +62,17 @@ class HtmlReporter(object):
             for section in self.sections.values():
                 out += section.toHtml()
             out += '</div>'
-            out = SanitationUtils.coerceUnicode(out)
+            out = SanitationUtils.coerce_unicode(out)
             return out
 
     def __init__(self, css=None):
         self.groups = OrderedDict()
         self.css = css
 
-    def addGroup(self, group):
+    def add_group(self, group):
         self.groups[group.classname] = group
 
-    def getHead(self):
+    def get_head(self):
         css = ''
         if self.css:
             css = "<style>" + self.css + "</style>"
@@ -88,7 +88,7 @@ class HtmlReporter(object):
 </head>
 """
 
-    def getBody(self):
+    def get_body(self):
         content = "<br/>".join(
             group.toHtml() for group in self.groups.values()
         )
@@ -99,12 +99,12 @@ class HtmlReporter(object):
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </body>
 """
-        out = SanitationUtils.coerceUnicode(out)
+        out = SanitationUtils.coerce_unicode(out)
         return out
 
-    def getDocument(self):
-        head = self.getHead()
-        body = self.getBody()
+    def get_document(self):
+        head = self.get_head()
+        body = self.get_body()
         out = """\
 <!DOCTYPE html>
 <html lang="en">
@@ -112,14 +112,14 @@ class HtmlReporter(object):
 """ + body + """
 </html>
 """
-        out = SanitationUtils.coerceUnicode(out)
+        out = SanitationUtils.coerce_unicode(out)
         return out
 
-    def getDocumentUnicode(self):
-        return SanitationUtils.coerceUnicode(self.getDocument())
+    def get_document_unicode(self):
+        return SanitationUtils.coerce_unicode(self.get_document())
 
 
-def testHTMLReporter():
+def test_html_reporter():
     with\
             open('../output/htmlReporterTest.html', 'w+') as res_file,\
             io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as ures_file:
@@ -127,7 +127,7 @@ def testHTMLReporter():
 
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
 
-        matchingGroup.addSection(
+        matchingGroup.add_section(
             HtmlReporter.Section(
                 'perfect_matches',
                 **{
@@ -139,9 +139,9 @@ def testHTMLReporter():
             )
         )
 
-        reporter.addGroup(matchingGroup)
+        reporter.add_group(matchingGroup)
 
-        document = reporter.getDocument()
+        document = reporter.get_document()
         # SanitationUtils.safePrint( document)
-        ures_file.write(SanitationUtils.coerceUnicode(document))
-        res_file.write(SanitationUtils.coerceAscii(document))
+        ures_file.write(SanitationUtils.coerce_unicode(document))
+        res_file.write(SanitationUtils.coerce_ascii(document))

@@ -146,18 +146,18 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         # if hasattr(CSVParse_Woo_Mixin, '__init__'):
         #     CSVParse_Gen_Mixin.__init__(self, *args, **kwargs)
 
-    def clearTransients(self):
+    def clear_transients(self):
         # for base_class in CSVParse_Woo_Api.__bases__:
-        #     if hasattr(base_class, 'clearTransients'):
-        #         base_class.clearTransients(self)
-        # CSVParse_Flat.clearTransients(self)
-        CSVParse_Base.clearTransients(self)
-        CSVParse_Tree_Mixin.clearTransients(self)
-        CSVParse_Shop_Mixin.clearTransients(self)
-        CSVParse_Woo_Mixin.clearTransients(self)
+        #     if hasattr(base_class, 'clear_transients'):
+        #         base_class.clear_transients(self)
+        # CSVParse_Flat.clear_transients(self)
+        CSVParse_Base.clear_transients(self)
+        CSVParse_Tree_Mixin.clear_transients(self)
+        CSVParse_Shop_Mixin.clear_transients(self)
+        CSVParse_Woo_Mixin.clear_transients(self)
 
-        # super(CSVParse_Woo_Api, self).clearTransients()
-        # CSVParse_Shop_Mixin.clearTransients(self)
+        # super(CSVParse_Woo_Api, self).clear_transients()
+        # CSVParse_Shop_Mixin.clear_transients(self)
 
     def registerObject(self, object_data):
         # CSVParse_Gen_Tree.registerObject(self, object_data)
@@ -178,7 +178,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
     #     super(CSVParse_Woo_Api, self).registerObject(object_data)
 
     @classmethod
-    def getApiDimensionData(cls, dimensions):
+    def get_api_dimension_data(cls, dimensions):
         new_data = OrderedDict()
         for dimension_key in ['length', 'width', 'height']:
             if dimension_key in dimensions:
@@ -187,7 +187,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         return new_data
 
     @classmethod
-    def getApiStockStatusData(cls, in_stock):
+    def get_api_stock_status_data(cls, in_stock):
         new_data = OrderedDict()
         if in_stock:
             stock_status = 'in_stock'
@@ -244,7 +244,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         if self.DEBUG_API:
             self.registerMessage("SEARCHING FOR CATEGORY: %s" %
                                  repr(category_search_data))
-        cat_data = self.findCategory(category_search_data)
+        cat_data = self.find_category(category_search_data)
         if not cat_data:
             if self.DEBUG_API:
                 self.registerMessage("CATEGORY NOT FOUND")
@@ -262,7 +262,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
             #
             # parser_data = self.getParserData(**kwargs)
             #
-            # all_data = listUtils.combineOrderedDicts(default_data, parser_data)
+            # all_data = listUtils.combine_ordered_dicts(default_data, parser_data)
             #
             # container = self.getNewObjContainer(all_data, **kwargs)
             #
@@ -278,7 +278,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
                 parent_category_search_data = {}
                 parent_category_search_data[
                     self.categoryContainer.wpidKey] = categoryApiData['parent']
-                parent_category_data = self.findCategory(
+                parent_category_data = self.find_category(
                     parent_category_search_data)
             if parent_category_data:
                 kwargs['parent'] = parent_category_data
@@ -387,9 +387,9 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
                 meta_translation[wp_api_key] = col
             parser_data.update(**cls.translateKeys(meta_data, meta_translation))
         if 'dimensions' in api_data:
-            parser_data.update(**cls.getApiDimensionData(api_data['dimensions']))
+            parser_data.update(**cls.get_api_dimension_data(api_data['dimensions']))
         if 'in_stock' in api_data:
-            parser_data.update(**cls.getApiStockStatusData(api_data['in_stock']))
+            parser_data.update(**cls.get_api_stock_status_data(api_data['in_stock']))
         # if 'description' in api_data:
         #     parser_data[cls.objectContainer.descriptionKey] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
@@ -481,7 +481,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
             self.registerMessage("container: {}".format(container.__name__))
         return container
 
-    def analyseWpApiObj(self, api_data):
+    def analyse_wp_api_obj(self, api_data):
         if self.DEBUG_API:
             self.registerMessage("API DATA CATEGORIES: %s" %
                                  repr(api_data.get('categories')))
@@ -511,13 +511,13 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
 
         if 'variations' in api_data:
             for variation in api_data['variations']:
-                self.analyseWpApiVariation(object_data, variation)
+                self.analyse_wp_api_variation(object_data, variation)
                 # self.rowcount += 1
 
         if 'attributes' in api_data:
             self.processApiAttributes(object_data, api_data['attributes'], False)
 
-    def analyseWpApiVariation(self, object_data, variationApiData):
+    def analyse_wp_api_variation(self, object_data, variationApiData):
         if self.DEBUG_API:
             self.registerMessage("parent_data: %s" %
                                  pformat(object_data.items()))

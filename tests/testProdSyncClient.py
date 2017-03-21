@@ -97,15 +97,15 @@ class testProdSyncClient(abstractSyncClientTestCase):
 
         prodList = ShopProdList(productParser.products.values())
         # print
-        # SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))
+        # SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
         varList = ShopProdList(productParser.variations.values())
         # print
-        # SanitationUtils.coerceBytes(varList.tabulate(tablefmt='simple'))
+        # SanitationUtils.coerce_bytes(varList.tabulate(tablefmt='simple'))
         catList = ShopCatList(productParser.categories.values())
         # print
-        # SanitationUtils.coerceBytes(catList.tabulate(tablefmt='simple'))
+        # SanitationUtils.coerce_bytes(catList.tabulate(tablefmt='simple'))
         attrList = productParser.attributes.items()
-        # print SanitationUtils.coerceBytes(tabulate(attrList, headers='keys',
+        # print SanitationUtils.coerce_bytes(tabulate(attrList, headers='keys',
         # tablefmt="simple"))
 
     def testUploadChanges(self):

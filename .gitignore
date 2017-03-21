@@ -119,3 +119,7 @@ logs archive*.zip
 bad_names.txt
 
 woogenerator.pylint
+
+bad_variable_names.txt
+
+bad_variable_names.txt

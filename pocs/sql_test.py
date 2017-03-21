@@ -83,6 +83,6 @@ saParser = CSVParse_User(
     defaults=col_data.get_defaults()
 )
 if saRows:
-    saParser.analyseRows(saRows)
+    saParser.analyse_rows(saRows)
 
 print saParser.tabulate()

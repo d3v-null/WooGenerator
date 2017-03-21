@@ -146,10 +146,10 @@ class SyncClientLocal(SyncClientAbstract):
         pass
 
     def analyse_remote(self, parser, out_path=None, limit=None, **kwargs):
-        return parser.analyseFile(out_path, limit=limit)
+        return parser.analyse_file(out_path, limit=limit)
         # out_encoding='utf8'
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
-        # return parser.analyseStream(out_file, limit=limit,
+        # return parser.analyse_stream(out_file, limit=limit,
         # encoding=out_encoding)
 
 
@@ -231,7 +231,7 @@ class SyncClientGDrive(SyncClientAbstract):
             if resp.status == 200:
                 self.registerMessage('Status: %s' % resp)
                 if content:
-                    return SanitationUtils.coerceUnicode(content)
+                    return SanitationUtils.coerce_unicode(content)
             else:
                 self.registerError('An error occurred: %s' % resp)
 
@@ -264,11 +264,11 @@ class SyncClientGDrive(SyncClientAbstract):
                     mode='w'
                 ) as out_file:
                     out_file.write(content)
-                parser.analyseFile(
+                parser.analyse_file(
                     out_path, limit=limit, encoding=out_encoding)
             else:
                 with closing(StringIO(content)) as content_stream:
-                    parser.analyseStream(content_stream, limit=limit)
+                    parser.analyse_stream(content_stream, limit=limit)
 
             if Registrar.DEBUG_GDRIVE:
                 message = "downloaded contents of spreadsheet"
@@ -544,7 +544,7 @@ class SyncClientRest(SyncClientAbstract):
 
             for page_item in page_items:
 
-                parser.analyseWpApiObj(page_item)
+                parser.analyse_wp_api_obj(page_item)
                 result_count += 1
                 if limit and result_count > limit:
                     if Registrar.DEBUG_API:

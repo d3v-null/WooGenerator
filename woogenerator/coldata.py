@@ -1163,7 +1163,7 @@ class ColData_Woo(ColData_Prod):
     @classmethod
     def get_attribute_cols(cls, attributes, vattributes):
         attribute_cols = OrderedDict()
-        all_attrs = listUtils.combineLists(
+        all_attrs = listUtils.combine_lists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
             attribute_cols['attribute:' + attr] = {
@@ -2257,7 +2257,7 @@ class ColData_User(ColDataBase):
 
     @classmethod
     def get_all_wpdb_cols(self):
-        return listUtils.combineOrderedDicts(
+        return listUtils.combine_ordered_dicts(
             self.get_wpdb_cols(True),
             self.get_wpdb_cols(False)
         )

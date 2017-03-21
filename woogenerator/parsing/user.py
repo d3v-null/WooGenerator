@@ -243,19 +243,19 @@ class ImportUser(ImportFlat):
 
         emails = []
         if data.get('E-mail'):
-            emails = listUtils.combineLists(
-                emails, SanitationUtils.findallEmails(data['E-mail']))
+            emails = listUtils.combine_lists(
+                emails, SanitationUtils.find_all_emails(data['E-mail']))
         if data.get('Personal E-mail'):
-            emails = listUtils.combineLists(
+            emails = listUtils.combine_lists(
                 emails,
-                SanitationUtils.findallEmails(data.get('Personal E-mail')))
+                SanitationUtils.find_all_emails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
         self['Personal E-mail'] = ', '.join(emails)
 
         urls = []
         if data.get('Web Site'):
-            urls = listUtils.combineLists(
-                urls, SanitationUtils.findallURLs(data['Web Site']))
+            urls = listUtils.combine_lists(
+                urls, SanitationUtils.find_all_urls(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
@@ -324,7 +324,7 @@ class ImportUser(ImportFlat):
     def getNewObjContainer():
         return UsrObjList
 
-    def addressesActLike(self):
+    def addresses_act_like(self):
         act_like = True
         for address in filter(None,
                               map(lambda key: self.get(key),
@@ -364,8 +364,8 @@ class CSVParse_User(CSVParse_Flat):
             # ('post_status', 'publish'),
             # ('last_import', import_name),
         ])
-        cols = listUtils.combineLists(cols, extra_cols)
-        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
+        cols = listUtils.combine_lists(cols, extra_cols)
+        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
         super(CSVParse_User, self).__init__(
             cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
@@ -385,10 +385,10 @@ class CSVParse_User(CSVParse_Flat):
     #         except:
     #             kwargs[key] = self.retrieveColFromRow
 
-    def clearTransients(self):
+    def clear_transients(self):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        super(CSVParse_User, self).clearTransients()
+        super(CSVParse_User, self).clear_transients()
         self.roles = OrderedDict()
         self.noroles = OrderedDict()
         self.emails = OrderedDict()
@@ -608,7 +608,7 @@ class CSVParse_User(CSVParse_Flat):
         if not name.valid:
             reason = name.reason
             assert reason, "there must be a reason that this name is invalid: " + name
-            # print "registering bad name: ", SanitationUtils.coerceBytes(name)
+            # print "registering bad name: ", SanitationUtils.coerce_bytes(name)
             self.registerBadName(object_data, name)
 
         # emails = object_data.emails
@@ -699,7 +699,7 @@ class CSVParse_User_Api(CSVParse_User):
                 "parser_data: {}".format(pformat(parser_data)))
         return parser_data
 
-    def analyseWpApiObj(self, api_data):
+    def analyse_wp_api_obj(self, api_data):
         kwargs = {'api_data': api_data}
         object_data = self.newObject(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:

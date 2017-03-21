@@ -111,7 +111,7 @@ class SanitationUtils:
     @classmethod
     def identifyAbbreviations(cls, abbrvDict, string):
         matches = re.findall(
-            '(' + cls.compileAbbrvRegex(abbrvDict) + ')',
+            '(' + cls.compile_abbrv_regex(abbrvDict) + ')',
             string
         )
 
@@ -121,16 +121,16 @@ class SanitationUtils:
                 yield identified
 
     @classmethod
-    def compilePartialAbbrvRegex(cls, abbrv_key, abbrvs):
+    def compile_partial_abbrv_regex(cls, abbrv_key, abbrvs):
         return "|".join(filter(None, [
             "|".join(filter(None, abbrvs)),
             abbrv_key
         ]))
 
     @classmethod
-    def compileAbbrvRegex(cls, abbrv):
+    def compile_abbrv_regex(cls, abbrv):
         return "|".join(filter(None,
-                               [cls.compilePartialAbbrvRegex(
+                               [cls.compile_partial_abbrv_regex(
                                    abbrv_key, abbrvValue) for abbrv_key, abbrvValue in abbrv.items()]
                                ))
 
@@ -141,7 +141,7 @@ class SanitationUtils:
     # Functions for dealing with string encodings
 
     @classmethod
-    def assertAscii(cls, string):
+    def assert_ascii(cls, string):
         for index, char in enumerate(string):
             assert ord(char) < 128, "char %s of string %s ... is not ascii" % (
                 index, (string[:index - 1]))
@@ -195,7 +195,7 @@ class SanitationUtils:
         return byte_return
 
     @classmethod
-    def asciiToUnicode(cls, ascii_str):
+    def ascii_to_unicode(cls, ascii_str):
         assert isinstance(
             ascii_str, str), "parameter should be str not %s" % type(ascii_str)
         unicode_return = converters.to_unicode(ascii_str, "ascii")
@@ -204,7 +204,7 @@ class SanitationUtils:
         return unicode_return
 
     @classmethod
-    def coerceUnicode(cls, thing):
+    def coerce_unicode(cls, thing):
         if thing is None:
             unicode_return = u""
         else:
@@ -214,39 +214,39 @@ class SanitationUtils:
         return unicode_return
 
     @classmethod
-    def coerceBytes(cls, thing):
+    def coerce_bytes(cls, thing):
         byte_return = cls.compose(
             cls.unicodeToUTF8,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
-    def coerceAscii(cls, thing):
+    def coerce_ascii(cls, thing):
         byte_return = cls.compose(
             cls.unicodeToAscii,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
-    def coerceXML(cls, thing):
+    def coerce_xml(cls, thing):
         byte_return = cls.compose(
             cls.unicodeToXml,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
-    def coerceFloat(cls, thing):
+    def coerce_float(cls, thing):
         unicode_thing = cls.compose(
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         try:
             float_return = float(unicode_thing)
@@ -267,10 +267,10 @@ class SanitationUtils:
         if isinstance(thing, (str, unicode)) and tablefmt == 'simple':
             thing = thing[:64] + '...'
         unicode_return = cls.compose(
-            cls.coerceUnicode,
+            cls.coerce_unicode,
             cls.limitString(50),
-            cls.escapeNewlines,
-            cls.coerceUnicode
+            cls.escape_newlines,
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
@@ -279,10 +279,10 @@ class SanitationUtils:
     @classmethod
     def sanitizeForXml(cls, thing):
         unicode_return = cls.compose(
-            cls.coerceUnicode,
+            cls.coerce_unicode,
             cls.sanitizeNewlines,
             cls.unicodeToXml,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
@@ -290,17 +290,17 @@ class SanitationUtils:
 
     @classmethod
     def safePrint(cls, *args):
-        print " ".join([cls.coerceBytes(arg) for arg in args])
+        print " ".join([cls.coerce_bytes(arg) for arg in args])
 
     @classmethod
     def normalize_val(cls, thing):
         unicode_return = cls.compose(
-            cls.coerceUnicode,
+            cls.coerce_unicode,
             cls.toUpper,
             cls.stripLeadingWhitespace,
             cls.stripTailingWhitespace,
             cls.stripExtraWhitespace,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(thing)
         assert isinstance(
             unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
@@ -474,11 +474,11 @@ class SanitationUtils:
         return re.sub('\n', '</br>', string)
 
     @classmethod
-    def escapeNewlines(cls, string):
+    def escape_newlines(cls, string):
         return re.sub('\n', r'\\n', string)
 
     @classmethod
-    def compileRegex(cls, subs):
+    def compile_regex(cls, subs):
         if subs:
             return re.compile("(%s)" % '|'.join(
                 filter(None, map(re.escape, subs))))
@@ -500,7 +500,7 @@ class SanitationUtils:
             cls.stripTailingNewline,
             cls.stripLeadingNewline,
             cls.removeNULL,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(cell)
 
     @classmethod
@@ -518,7 +518,7 @@ class SanitationUtils:
             cls.stripTailingNewline,
             cls.stripLeadingNewline,
             cls.removeNULL,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(cell)
 
     @classmethod
@@ -536,7 +536,7 @@ class SanitationUtils:
             cls.toLower,
             cls.stripLeadingWhitespace,
             cls.stripTailingWhitespace,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(string)
 
     @classmethod
@@ -554,7 +554,7 @@ class SanitationUtils:
             cls.stripAreaCode,
             cls.stripExtraWhitespace,
             cls.stripNonPhoneCharacters,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(string)
 
     @classmethod
@@ -568,7 +568,7 @@ class SanitationUtils:
     def similarURLComparison(cls, string):
         return cls.compose(
             cls.stripURLProtocol,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(string)
 
     @classmethod
@@ -580,15 +580,15 @@ class SanitationUtils:
             cls.stripExtraWhitespace,
             cls.stripPTags,
             cls.stripBrTags,
-            cls.coerceUnicode
+            cls.coerce_unicode
         )(string)
 
     @classmethod
     def similarCurrencyComparison(cls, string):
         return cls.compose(
-            cls.coerceFloat,
+            cls.coerce_float,
             cls.removeLeadingDollarWhiteSpace,
-            cls.coerceUnicode,
+            cls.coerce_unicode,
         )(string)
 
     @classmethod
@@ -629,53 +629,53 @@ class SanitationUtils:
         if isinstance(things, list):
             return [cls.html_unescape_recursive(thing) for thing in things]
         elif isinstance(things, (str, unicode)):
-            return cls.html_unescape(cls.coerceUnicode(things))
+            return cls.html_unescape(cls.coerce_unicode(things))
         else:
             return things
 
     @classmethod
-    def findAllImages(cls, instring):
+    def find_all_images(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = cls.coerceUnicode(instring)
+        instring = cls.coerce_unicode(instring)
         return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)', instring)
 
     @classmethod
-    def findAllTokens(cls, instring, delim="|"):
+    def find_all_tokens(cls, instring, delim="|"):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = cls.coerceUnicode(instring)
+        instring = cls.coerce_unicode(instring)
         return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring)
 
     @classmethod
-    def findallDollars(cls, instring):
+    def find_all_dollars(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = cls.coerceUnicode(instring)
+        instring = cls.coerce_unicode(instring)
         return re.findall(r"\s*\$([\d,]+\.?\d*)", instring)
 
     @classmethod
-    def findallPercent(cls, instring):
+    def find_all_percent(cls, instring):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
-        instring = cls.coerceUnicode(instring)
+        instring = cls.coerce_unicode(instring)
         return re.findall(r"\s*(\d+\.?\d*)%", instring)
 
     @classmethod
-    def findallEmails(cls, instring):
-        instring = cls.coerceUnicode(instring)
+    def find_all_emails(cls, instring):
+        instring = cls.coerce_unicode(instring)
         return re.findall(
             cls.wrapClearRegex(cls.email_regex),
             instring
         )
 
     @classmethod
-    def findallURLs(cls, instring):
-        instring = cls.coerceUnicode(instring)
+    def find_all_urls(cls, instring):
+        instring = cls.coerce_unicode(instring)
         instring = cls.html_unescape(instring)
         return re.findall(
             '(' + cls.regex_url_simple + ')',
@@ -777,7 +777,7 @@ class SanitationUtils:
             return "TRUE"
 
     @classmethod
-    def boolToTruishString(cls, boolVal):
+    def bool_to_truish_string(cls, boolVal):
         if boolVal:
             return "TRUE"
         else:
@@ -791,58 +791,58 @@ class SanitationUtils:
         # "%d/%m/%Y").timetuple()))
 
     @classmethod
-    def decodeJSON(cls, json_str):
+    def decode_json(cls, json_str):
         assert isinstance(json_str, (str, unicode))
         attrs = json.loads(json_str)
         return attrs
 
     @classmethod
-    def encodeJSON(cls, obj):
+    def encode_json(cls, obj):
         assert isinstance(obj, (dict, list))
         json_str = json.dumps(obj, encoding="utf8", ensure_ascii=False)
         return json_str
 
     @classmethod
-    def encodeBase64(cls, str):
-        utf8_str = cls.coerceBytes(str)
+    def encode_base64(cls, str):
+        utf8_str = cls.coerce_bytes(str)
         return base64.standard_b64encode(utf8_str)
 
     @classmethod
-    def decodeBase64(cls, b64_str):
+    def decode_base64(cls, b64_str):
         return base64.standard_b64decode(b64_str)
 
 
-def testSanitationUtils():
+def test_sanitation_utils():
     pass
 
     # obj = {
-    #     'key': SanitationUtils.coerceBytes(" 👌 ashdfk"),
+    #     'key': SanitationUtils.coerce_bytes(" 👌 ashdfk"),
     #     'list': [
     #         "🐸",
     #         u"\u2014"
     #     ]
     # }
     # print obj, repr(obj)
-    # obj_json = SanitationUtils.encodeJSON(obj)
+    # obj_json = SanitationUtils.encode_json(obj)
     # SanitationUtils.safePrint(obj_json, repr(obj_json) )
-    # obj_json_base64 = SanitationUtils.encodeBase64(obj_json)
+    # obj_json_base64 = SanitationUtils.encode_base64(obj_json)
     # print obj_json_base64
-    # obj_json_decoded = SanitationUtils.decodeBase64(obj_json_base64)
+    # obj_json_decoded = SanitationUtils.decode_base64(obj_json_base64)
     # print obj_json_decoded
-    # obj_decoded = SanitationUtils.decodeJSON(obj_json_decoded)
+    # obj_decoded = SanitationUtils.decode_json(obj_json_decoded)
     # print obj_decoded
 
     # fields = {
-    #     u'first_name':  SanitationUtils.coerceBytes(u'no👌od👌le'),
+    #     u'first_name':  SanitationUtils.coerce_bytes(u'no👌od👌le'),
     #     'user_url': "http://www.laserphile.com/asd",
     #     'first_name': 'noo-dle',
     #     'user_login': "admin"
     # }
     #
     # SanitationUtils.safePrint( fields, repr(fields) )
-    # fields_json = SanitationUtils.encodeJSON(fields)
+    # fields_json = SanitationUtils.encode_json(fields)
     # SanitationUtils.safePrint( fields_json, repr(fields_json) )
-    # fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
+    # fields_json_base64 = SanitationUtils.encode_base64( fields_json )
     # SanitationUtils.safePrint( fields_json_base64, repr(fields_json_base64) )
 
     # should be   eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm/wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
@@ -888,7 +888,7 @@ def testSanitationUtils():
     # c = SanitationUtils.decodeSafeOutput(b)
     # print 'c', repr(c)
     # a = u'TechnoTan Roll Up Banner Insert \u2014 Non per\nsonalised - Style D'
-    # SanitationUtils.safePrint( SanitationUtils.escapeNewlines(a))
+    # SanitationUtils.safePrint( SanitationUtils.escape_newlines(a))
 
 
 class descriptorUtils:
@@ -942,7 +942,7 @@ class descriptorUtils:
 class listUtils:
 
     @staticmethod
-    def combineLists(a, b):
+    def combine_lists(a, b):
         """
             Combines lists a and b uniquely, attempting to preserve order
         """
@@ -957,7 +957,7 @@ class listUtils:
         return c
 
     @staticmethod
-    def combineOrderedDicts(a, b):
+    def combine_ordered_dicts(a, b):
         """
             Combines OrderedDict a with b by starting with A and overwriting with items from b.
             Attempts to preserve order
@@ -972,7 +972,7 @@ class listUtils:
         return c
 
     @staticmethod
-    def filterUniqueTrue(a):
+    def filter_unique_true(a):
         b = []
         for i in a:
             if i and i not in b:
@@ -980,8 +980,8 @@ class listUtils:
         return b
 
     @staticmethod
-    def getAllkeys(*args):
-        return listUtils.filterUniqueTrue(itertools.chain(*(
+    def get_all_keys(*args):
+        return listUtils.filter_unique_true(itertools.chain(*(
             arg.keys() for arg in args if isinstance(arg, dict)
         )))
 
@@ -994,7 +994,7 @@ class listUtils:
         ])
 
     @staticmethod
-    def checkEqual(iterator):
+    def check_equal(iterator):
         """Taken from SO answer http://stackoverflow.com/questions/3844801/check-if-all-elements-in-a-list-are-identical """
         iterator = iter(iterator)
         try:
@@ -1020,12 +1020,12 @@ class debugUtils:
             return None
 
     @classmethod
-    def getCallerProcedure(cls, level=0):
+    def get_caller_procedure(cls, level=0):
         return cls.getProcedure(3 + level)
 
     @classmethod
-    def getCallerProcedures(cls, levels=2):
-        procedures = map(cls.getCallerProcedure, range(1, levels + 1))
+    def get_caller_procedures(cls, levels=2):
+        procedures = map(cls.get_caller_procedure, range(1, levels + 1))
         return ">".join(reversed(filter(None, procedures)))
 
     @staticmethod
@@ -1071,13 +1071,13 @@ class Registrar(object):
 
     # def __init__(self):
     # self.objectIndexer = id
-    # self.conflictResolver = self.passiveResolver
+    # self.conflict_resolver = self.passiveResolver
     # self.Registrar.DEBUG_ERROR = True
     # self.Registrar.DEBUG_WARN = False
     # self.Registrar.DEBUG_MESSAGE = False
 
     @classmethod
-    def conflictResolver(self, *args):
+    def conflict_resolver(self, *args):
         pass
 
     def resolveConflict(self, new, old, index, registerName=''):
@@ -1100,12 +1100,12 @@ class Registrar(object):
         pass
 
     @classmethod
-    def exceptionResolver(cls, new, old, index, registerName=''):
+    def exception_resolver(cls, new, old, index, registerName=''):
         raise Exception("could not register %s in %s. \nDuplicate index: %s" % (
             str(new), registerName, index))
 
     @classmethod
-    def duplicateObjectExceptionResolver(
+    def duplicate_object_exception_resolver(
             cls, new, old, index, registerName=''):
         assert hasattr(
             new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
@@ -1116,13 +1116,13 @@ class Registrar(object):
 
     def warningResolver(self, new, old, index, registerName=''):
         try:
-            self.exceptionResolver(new, old, index, registerName)
+            self.exception_resolver(new, old, index, registerName)
         except Exception as exc:
             self.registerError(exc, new)
 
     @classmethod
     def stringAnything(self, index, thing, delimeter='|'):
-        return SanitationUtils.coerceBytes(
+        return SanitationUtils.coerce_bytes(
             u"%50s %s %s" % (index, delimeter, thing))
 
     @classmethod
@@ -1133,7 +1133,7 @@ class Registrar(object):
     def registerAnything(self, thing, register, indexer=None, resolver=None,
                          singular=True, unique=True, registerName=''):
         if resolver is None:
-            resolver = self.conflictResolver
+            resolver = self.conflict_resolver
         if indexer is None:
             indexer = self.objectIndexer
         index = None
@@ -1177,8 +1177,8 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.getCallerProcedures()
-        error_string = SanitationUtils.coerceUnicode(error)
+            index = debugUtils.get_caller_procedures()
+        error_string = SanitationUtils.coerce_unicode(error)
         if self.DEBUG_ERROR:
             Registrar.printAnything(index, error_string, '!')
         self.registerAnything(
@@ -1198,8 +1198,8 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.getCallerProcedures()
-        error_string = SanitationUtils.coerceUnicode(message)
+            index = debugUtils.get_caller_procedures()
+        error_string = SanitationUtils.coerce_unicode(message)
         if self.DEBUG_WARN:
             Registrar.printAnything(index, error_string, '|')
         self.registerAnything(
@@ -1213,7 +1213,7 @@ class Registrar(object):
     @classmethod
     def registerMessage(self, message, source=None):
         if source is None:
-            source = debugUtils.getCallerProcedures()
+            source = debugUtils.get_caller_procedures()
         if self.DEBUG_MESSAGE:
             Registrar.printAnything(source, message, '~')
         self.registerAnything(
@@ -1233,9 +1233,9 @@ class Registrar(object):
     def getMessageItems(self, verbosity=0):
         items = self.errors
         if verbosity > 0:
-            items = listUtils.combineOrderedDicts(items, self.warnings)
+            items = listUtils.combine_ordered_dicts(items, self.warnings)
         if verbosity > 1:
-            items = listUtils.combineOrderedDicts(items, self.messages)
+            items = listUtils.combine_ordered_dicts(items, self.messages)
         return items
 
     @classmethod
@@ -1388,13 +1388,13 @@ class UnicodeCsvDialectUtils(object):
                 setattr(
                     dialect,
                     attr,
-                    SanitationUtils.coerceBytes(getattr(dialect, attr))
+                    SanitationUtils.coerce_bytes(getattr(dialect, attr))
                 )
         return dialect
 
     @classmethod
     def get_dialect_from_sample(cls, sample, suggestion):
-        byte_sample = SanitationUtils.coerceBytes(sample)
+        byte_sample = SanitationUtils.coerce_bytes(sample)
         csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
         if not csvdialect:
             return cls.get_dialect_from_suggestion(suggestion)
@@ -1404,16 +1404,16 @@ class UnicodeCsvDialectUtils(object):
 class FileUtils(object):
 
     @classmethod
-    def getFileName(cls, path):
+    def get_file_name(cls, path):
         file_name, ext = os.path.splitext(os.path.basename(path))
         return file_name
 
 
 if __name__ == '__main__':
     pass
-    # testHTMLReporter()
+    # test_html_reporter()
     # testTimeUtils()
-    # testSanitationUtils()
+    # test_sanitation_utils()
     # testUnicodeWriter()
     # testAddressUtils()
-    # testNameUtils()
+    # test_name_utils()

@@ -92,7 +92,7 @@ maParser = CSVParse_User(
     contact_schema='act',
 )
 
-maParser.analyseFile(maPath, maEncoding)
+maParser.analyse_file(maPath, maEncoding)
 
 
 def printBasicColumns(users):

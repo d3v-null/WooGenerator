@@ -9,19 +9,19 @@ from tabulate import tabulate
 def object_glb_index_fn(object_data):
     assert hasattr(object_data, 'index'), \
         "object_data should have index attr, type: %s " % type(object_data)
-    return SanitationUtils.coerceUnicode(object_data.index)
+    return SanitationUtils.coerce_unicode(object_data.index)
 
 
 def object_m_index_fn(object_data):
     assert hasattr(object_data, 'MYOBID'), \
         "object_data should have MYOBID attr, type: %s " % type(object_data)
-    return SanitationUtils.coerceUnicode(object_data.MYOBID)
+    return SanitationUtils.coerce_unicode(object_data.MYOBID)
 
 
 def object_s_index_fn(object_data):
     assert hasattr(object_data, 'username'), \
         "object_data should have username attr, type: %s " % type(object_data)
-    return SanitationUtils.coerceUnicode(object_data.username)
+    return SanitationUtils.coerce_unicode(object_data.username)
 
 
 class DuplicateObject(object):
@@ -115,7 +115,7 @@ class Duplicates(OrderedDict):
             # conflictors other than self
             co_conflictors = set(conflictors) - set(duplicate_object)
             duplicate_details = ", ".join([
-                SanitationUtils.coerceAscii(object_glb_index_fn(object_data))
+                SanitationUtils.coerce_ascii(object_glb_index_fn(object_data))
                 for object_data in co_conflictors
             ])
             self.add_conflictor(duplicate_object, reason,

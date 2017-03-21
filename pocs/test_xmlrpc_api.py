@@ -29,9 +29,9 @@ fields = {
     'user_url': "http://www.laserphile.com/",
     'user_login': "admin"
 }
-fields_json = SanitationUtils.encodeJSON(fields)
+fields_json = SanitationUtils.encode_json(fields)
 SanitationUtils.safePrint(repr(fields_json))
-# fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
+# fields_json_base64 = SanitationUtils.encode_base64( fields_json )
 fields_json_base64 = "eyJidXNpbmVzc190eXBlIjogIk90aGVyIiwgInByZWZfdGVsIjogIkZhbHNlIiwgImFjdF9yb2xlIjogIlJOIiwgInByZWZfbW9iIjogIkZhbHNlIiwgImhvd19oZWFyX2Fib3V0IjogIkV2ZW50IiwgInVzZXJfZW1haWwiOiAiZW1tYS1hbGxlbjk0QGhvdG1haWwuY29tIn0="
 # print fields_json_base64
 # eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS8ifQ==

@@ -44,7 +44,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
     def connection_ready(self):
         return self.service and self.service._transport and self.service._transport.active
 
-    def execSilentCommandAssert(self, command):
+    def exec_silent_command_assert(self, command):
         self.assert_connect()
         stdin, stdout, stderr = self.service.exec_command(command)
         if stdin:
@@ -55,8 +55,8 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
                 print error
                 continue
             assert not error, "command <%s> returned errors: %s" % (
-                SanitationUtils.coerceUnicode(command),
-                SanitationUtils.coerceUnicode(error)
+                SanitationUtils.coerce_unicode(command),
+                SanitationUtils.coerce_unicode(error)
             )
 
     def putFile(self, local_path, remote_path):
@@ -98,7 +98,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # if not isinstance(exception, Exception):
         #     raise exception
 
-    def assertRemoteFileExists(self, remote_path, assertion=""):
+    def assert_remote_file_exists(self, remote_path, assertion=""):
         self.assert_connect()
 
         # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remote_path)
@@ -113,8 +113,8 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             self.progress_counter = ProgressCounter(total)
         self.progress_counter.maybePrintUpdate(completed)
 
-    def getDeleteFile(self, remote_path, local_path):
-        self.assertRemoteFileExists(remote_path)
+    def get_delete_file(self, remote_path, local_path):
+        self.assert_remote_file_exists(remote_path)
 
         sftpClient = self.service.open_sftp()
         sftpClient.get(remote_path, local_path, self.printFileProgress)
@@ -134,7 +134,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         #     raise exception
 
     def removeRemoteFile(self, remote_path):
-        self.assertRemoteFileExists(remote_path)
+        self.assert_remote_file_exists(remote_path)
         self.service.exec_command('rm "%s"' % remote_path)
 
     def upload_changes(self, user_pkey, updates=None):
@@ -196,7 +196,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         #     ('"%s"' % file_name) if file_name else None
         # ]))
 
-        self.execSilentCommandAssert(command)
+        self.exec_silent_command_assert(command)
 
         try:
             self.removeRemoteFile(imported_file)
@@ -240,11 +240,11 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # ]))
 
         print "executing export command..."
-        self.execSilentCommandAssert(command)
+        self.exec_silent_command_assert(command)
         print "donloading file..."
-        self.getDeleteFile(remote_path, local_path)
+        self.get_delete_file(remote_path, local_path)
         print "analysing file..."
-        parser.analyseFile(local_path, dialect_suggestion='act_out')
+        parser.analyse_file(local_path, dialect_suggestion='act_out')
 
 
 class UsrSyncClient_SQL_WP(SyncClientAbstract):
@@ -323,9 +323,9 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
 
         if since:
             cursor.execute(sql_select_modtime)
-            headers = [SanitationUtils.coerceUnicode(
+            headers = [SanitationUtils.coerce_unicode(
                 i[0]) for i in cursor.description]
-            results = [[SanitationUtils.coerceUnicode(
+            results = [[SanitationUtils.coerce_unicode(
                 cell) for cell in row] for row in cursor]
             # table = [headers] + results
             # print tabulate(table, headers='firstrow')
@@ -436,10 +436,10 @@ ON {um_on_clause}
 
         cursor.execute(sql_select_user_modtime)
 
-        headers = [SanitationUtils.coerceUnicode(
+        headers = [SanitationUtils.coerce_unicode(
             i[0]) for i in cursor.description]
 
-        results = [[SanitationUtils.coerceUnicode(
+        results = [[SanitationUtils.coerce_unicode(
             cell) for cell in row] for row in cursor]
 
         rows = [headers] + results
@@ -448,4 +448,4 @@ ON {um_on_clause}
 
         if results:
             print "there are %d results" % len(results)
-            parser.analyseRows(rows)
+            parser.analyse_rows(rows)

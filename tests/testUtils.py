@@ -49,7 +49,7 @@ class testUnicodeCsvDialectUtils(TestCase):
         print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
 
 
-class testSanitationUtils(TestCase):
+class test_sanitation_utils(TestCase):
 
     def test_slugify(self):
         result = SanitationUtils.slugify("Tanbience Specials")
@@ -59,6 +59,6 @@ if __name__ == '__main__':
     main()
 
     # testSuite = TestSuite()
-    # testSuite.addTest(testSanitationUtils('test_slugify'))
+    # testSuite.addTest(test_sanitation_utils('test_slugify'))
     # testSuite.addTest(testProgressCounter('test_stripURLHost'))
     # TextTestRunner().run(testSuite)

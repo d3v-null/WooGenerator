@@ -157,8 +157,8 @@ class ImportTreeObject(ImportObject):
     # @property
     # def parent(self): return self._parent
 
-    def getCopyArgs(self):
-        args = super(ImportTreeObject, self).getCopyArgs()
+    def get_copy_args(self):
+        args = super(ImportTreeObject, self).get_copy_args()
         args.update(
             depth=self.depth,
             parent=self.parent,
@@ -200,8 +200,8 @@ class ImportTreeObject(ImportObject):
         # delim = super(ImportTreeObject, self).identifier_delimeter
         return "=" * self.depth
 
-    # def getIdentifierDelimeter(self):
-    #     exc = DeprecationWarning("Use .identifier_delimeter instead of .getIdentifierDelimeter()")
+    # def get_identifier_delimeter(self):
+    #     exc = DeprecationWarning("Use .identifier_delimeter instead of .get_identifier_delimeter()")
     #     self.registerError(exc)
     #     return self.identifier_delimeter
 
@@ -233,16 +233,16 @@ class ImportTreeObject(ImportObject):
     #     # ancestors = self.getAncestors()
     #     # return filter( lambda x: x.isTaxo, ancestors)
 
-    def getAncestorKey(self, key):
+    def get_ancestor_key(self, key):
         # ancestors = self.getAncestors()
         return [ancestor.get(key) for ancestor in self.ancestors]
 
-    def getAncestorSelfKey(self, key):
+    def get_ancestor_self_key(self, key):
         # ancestors = self.getAncestors()
         return [ancestor.get(key) for ancestor in [self] + self.ancestors]
 
-    def getFirstFilteredAncestorSelfKey(self, key):
-        ancestor_values = self.getAncestorSelfKey(key)
+    def get_first_filtered_ancestor_self_key(self, key):
+        ancestor_values = self.get_ancestor_self_key(key)
         filtered_ancestor_values = [value for value in ancestor_values if value]
         if filtered_ancestor_values[0]:
             return filtered_ancestor_values[0]
@@ -295,11 +295,11 @@ class ImportTreeItem(ImportTreeObject):
     def identifier_delimeter(self):
         return super(ImportTreeItem, self).identifier_delimeter + '>'
 
-    # def getIdentifierDelimeter(self):
-    #     exc = DeprecationWarning("use .identifier_delimeter instead of .getIdentifierDelimeter()")
+    # def get_identifier_delimeter(self):
+    #     exc = DeprecationWarning("use .identifier_delimeter instead of .get_identifier_delimeter()")
     #     self.registerError(exc)
     #     return self.identifier_delimeter
-        # return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
+        # return super(ImportTreeItem, self).get_identifier_delimeter() + '>'
 
     @property
     def itemAncestors(self):
@@ -320,12 +320,12 @@ class ImportTreeTaxo(ImportTreeObject):
     def identifier_delimeter(self):
         return super(ImportTreeTaxo, self).identifier_delimeter + '#'
 
-    def getIdentifierDelimeter(self):
+    def get_identifier_delimeter(self):
         exc = DeprecationWarning(
-            "use .identifier_delimeter instead of .getIdentifierDelimeter()")
+            "use .identifier_delimeter instead of .get_identifier_delimeter()")
         self.registerError(exc)
         return self.identifier_delimeter
-        # return super(ImportTreeTaxo, self).getIdentifierDelimeter() + '#'
+        # return super(ImportTreeTaxo, self).get_identifier_delimeter() + '#'
 
 
 class ItemList(ObjList):
@@ -392,7 +392,7 @@ class ImportStack(list):
 class CSVParse_Tree_Mixin(object):
     rootContainer = ImportTreeRoot
 
-    def clearTransients(self):
+    def clear_transients(self):
         self.rootData = self.rootContainer()
 
 
@@ -424,11 +424,11 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     def maxDepth(self):
         return self.taxoDepth + self.itemDepth
 
-    def clearTransients(self):
+    def clear_transients(self):
         if self.DEBUG_MRO:
             self.registerMessage('CSVParse_Tree')
-        CSVParse_Base.clearTransients(self)
-        CSVParse_Tree_Mixin.clearTransients(self)
+        CSVParse_Base.clear_transients(self)
+        CSVParse_Tree_Mixin.clear_transients(self)
         self.items = OrderedDict()
         self.taxos = OrderedDict()
         self.stack = ImportStack()
@@ -473,7 +473,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
         # self.registerMessage("ceated root: %s" % str(self.rootData))
 
-    def assignParent(self, parent_data=None, itemData=None):
+    def assign_parent(self, parent_data=None, itemData=None):
         assert isinstance(itemData, ImportTreeObject)
         if not parent_data:
             parent_data = self.rootData
@@ -490,7 +490,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
                 break
         return -1
 
-    def extractMeta(self, row, thisDepth):
+    def extract_meta(self, row, thisDepth):
         # return [row[thisDepth+i*self.maxDepth]for i in range(self.meta_width)]
         meta = [''] * self.meta_width
         if row:
@@ -544,7 +544,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
             meta = kwargs['meta']
             assert meta is not None
         except (AssertionError, KeyError):
-            kwargs['meta'] = self.extractMeta(kwargs['row'], kwargs['depth'])
+            kwargs['meta'] = self.extract_meta(kwargs['row'], kwargs['depth'])
         if self.DEBUG_TREE:
             self.registerMessage("meta: {}".format(kwargs['meta']))
 
@@ -592,7 +592,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     #     #     meta = kwargs['meta']
     #     #     assert meta is not None
     #     # except:
-    #     #     meta = self.extractMeta(kwargs['row'], depth)
+    #     #     meta = self.extract_meta(kwargs['row'], depth)
     #     # finally:
     #     #     kwargs['meta'] = meta
     #     # if self.DEBUG_TREE:
@@ -656,10 +656,10 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         lookup_id = id(lookup_data)
         assert item_id == lookup_id, "item has deviated from its place in items"
 
-    # def analyseFile(self, file_name):
-    #     super(CSVParse_Tree, self).analyseFile(file_name)
+    # def analyse_file(self, file_name):
+    #     super(CSVParse_Tree, self).analyse_file(file_name)
 
-    def findTaxo(self, taxoData):
+    def find_taxo(self, taxoData):
         response = None
         for key in [self.taxoContainer.rowcountKey]:
             value = taxoData.get(key)

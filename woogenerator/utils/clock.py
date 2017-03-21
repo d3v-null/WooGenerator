@@ -56,7 +56,7 @@ class TimeUtils(object):
                 # sometimes yaml does strings as datetime.datetime
                 string.microsecond = 0
                 string = str(string)
-            string = SanitationUtils.coerceUnicode(string)
+            string = SanitationUtils.coerce_unicode(string)
             tstruct = time.strptime(string, fmt)
             if tstruct:
                 return time.mktime(tstruct)

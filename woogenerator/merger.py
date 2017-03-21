@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines
 """
-Module for updating woocommerce and ACT databases from ACT import file
+Module for updating woocommerce and ACT databases from ACT import file.
 """
 # TODO: Fix too-many-lines
 
@@ -586,12 +586,12 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             client.analyse_remote(
                 sa_parser, limit=settings.limit, filterItems=filter_items)
 
-            sa_parser.getObjList().exportItems(
+            sa_parser.getObjList().export_items(
                 os.path.join(settings.in_folder, s_x_filename),
                 ColData_User.get_wp_import_col_names())
 
     else:
-        sa_parser.analyseFile(sa_path, sa_encoding)
+        sa_parser.analyse_file(sa_path, sa_encoding)
 
     # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
 
@@ -620,7 +620,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                                    fs_params) as master_client:
             master_client.analyse_remote(ma_parser, limit=settings.limit)
     else:
-        ma_parser.analyseFile(
+        ma_parser.analyse_file(
             ma_path, dialect_suggestion='act_out', encoding=ma_encoding)
 
     # CSVParse_User.printBasicColumns(  saParser.roles['WP'] )
@@ -882,7 +882,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                                               'Sanitizing Results')
 
         if sa_parser.bad_address:
-            sanitizing_group.addSection(
+            sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_addresses_list',
                     title='Bad %s Address List' % settings.slave_name.title(),
@@ -894,7 +894,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     length=len(sa_parser.bad_address)))
 
         if sa_parser.bad_name:
-            sanitizing_group.addSection(
+            sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_names_list',
                     title='Bad %s Names List' % settings.slave_name.title(),
@@ -906,10 +906,10 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     length=len(sa_parser.bad_name)))
         if sa_parser.bad_name or sa_parser.bad_address:
             UsrObjList(sa_parser.bad_name.values() + ma_parser.bad_address.
-                       values()).exportItems(w_pres_csv_path, csv_colnames)
+                       values()).export_items(w_pres_csv_path, csv_colnames)
 
         if ma_parser.bad_address:
-            sanitizing_group.addSection(
+            sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_addresses_list',
                     title='Bad %s Address List' % settings.master_name.title(),
@@ -921,7 +921,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     length=len(ma_parser.bad_address)))
 
         if ma_parser.bad_name:
-            sanitizing_group.addSection(
+            sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_names_list',
                     title='Bad %s Names List' % settings.master_name.title(),
@@ -934,9 +934,9 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
         if ma_parser.bad_name or ma_parser.bad_address:
             UsrObjList(ma_parser.bad_name.values() + ma_parser.bad_address.values())\
-                .exportItems(master_res_csv_path, csv_colnames)
+                .export_items(master_res_csv_path, csv_colnames)
 
-        reporter.addGroup(sanitizing_group)
+        reporter.add_group(sanitizing_group)
 
         if args.do_sync and (m_delta_updates + s_delta_updates):
 
@@ -957,7 +957,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     delta_cols.keys() + delta_cols.values()).items())
 
             if m_delta_list:
-                delta_group.addSection(
+                delta_group.add_section(
                     HtmlReporter.Section(
                         'm_deltas',
                         title='%s Changes List' % settings.master_name.title(),
@@ -968,7 +968,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                         length=len(m_delta_list)))
 
             if s_delta_list:
-                delta_group.addSection(
+                delta_group.add_section(
                     HtmlReporter.Section(
                         's_deltas',
                         title='%s Changes List' % settings.slave_name.title(),
@@ -978,13 +978,13 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             cols=all_delta_cols, tablefmt='html'),
                         length=len(s_delta_list)))
 
-            reporter.addGroup(delta_group)
+            reporter.add_group(delta_group)
             if m_delta_list:
-                m_delta_list.exportItems(
+                m_delta_list.export_items(
                     master_delta_csv_path,
                     ColData_User.get_col_names(all_delta_cols))
             if s_delta_list:
-                s_delta_list.exportItems(
+                s_delta_list.export_items(
                     slave_delta_csv_path,
                     ColData_User.get_col_names(all_delta_cols))
 
@@ -992,7 +992,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
         if report_matching:
 
             matching_group = HtmlReporter.Group('matching', 'Matching Results')
-            matching_group.addSection(
+            matching_group.add_section(
                 HtmlReporter.Section(
                     'perfect_matches',
                     **{
@@ -1026,7 +1026,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     data = match_list.merge().tabulate(tablefmt="html")
                 else:
                     data = match_list.tabulate(tablefmt="html")
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         matchlist_type,
                         **{
@@ -1058,7 +1058,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
                 data = usr_list.tabulate(tablefmt="html")
 
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         parselist_type,
                         **{
@@ -1068,13 +1068,13 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             'length': len(parse_list)
                         }))
 
-            reporter.addGroup(matching_group)
+            reporter.add_group(matching_group)
 
         report_sync = args.do_sync
         if report_sync:
             syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     (settings.master_name + "_updates"),
                     description=settings.master_name +
@@ -1085,7 +1085,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     ]),
                     length=len(master_updates)))
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     (settings.slave_name + "_updates"),
                     description=settings.slave_name + " items will be updated",
@@ -1095,7 +1095,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     ]),
                     length=len(slave_updates)))
 
-            syncing_group.addSection(
+            syncing_group.add_section(
                 HtmlReporter.Section(
                     "problematic_updates",
                     description="items can't be merged because they are too dissimilar",
@@ -1105,7 +1105,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                     ]),
                     length=len(problematic_updates)))
 
-            reporter.addGroup(syncing_group)
+            reporter.add_group(syncing_group)
 
         report_duplicates = args.process_duplicates
         if report_duplicates:
@@ -1165,7 +1165,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             "%s user should have act_last_transaction attr: %s, %s, source: %s" % (
                                 settings.master_name,
                                 type(user_data),
-                                SanitationUtils.coerceAscii(user_data),
+                                SanitationUtils.coerce_ascii(user_data),
                                 user_data.get('source'))
                         user_time_obj = user_data.act_last_transaction
                     else:
@@ -1227,7 +1227,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             # if Registrar.DEBUG_DUPLICATES:
             # print duplicates.tabulate({}, tablefmt='plain')
             if duplicates:
-                duplicate_group.addSection(
+                duplicate_group.add_section(
                     HtmlReporter.Section('all duplicates', **{
                         'title':
                         'All Duplicates',
@@ -1247,7 +1247,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                 cols=dup_cols,
                 tablefmt="html",
                 highlight_rules=highlight_rules_all)
-            duplicate_group.addSection(
+            duplicate_group.add_section(
                 HtmlReporter.Section(
                     "email conflicts",
                     **{
@@ -1260,7 +1260,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             email_duplicate_data = email_matcher.duplicate_matches.tabulate(
                 tablefmt="html", highlight_rules=highlight_rules_all)
             if email_matcher.duplicate_matches:
-                duplicate_group.addSection(
+                duplicate_group.add_section(
                     HtmlReporter.Section('email_duplicates', **{
                         'title':
                         'Email Duplicates',
@@ -1293,7 +1293,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                 else:
                     data = match_list.tabulate(
                         tablefmt="html", highlight_rules=highlight_rules_all)
-                matching_group.addSection(
+                matching_group.add_section(
                     HtmlReporter.Section(
                         matchlist_type,
                         **{
@@ -1306,7 +1306,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
             if address_duplicates:
 
                 print "there are address duplicates"
-                duplicate_group.addSection(
+                duplicate_group.add_section(
                     HtmlReporter.Section(
                         'address_duplicates',
                         title='Duplicate %s Addresses' %
@@ -1322,10 +1322,10 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             for address, objects in address_duplicates.items()
                         ]),
                         length=len(address_duplicates)))
-            dup_reporter.addGroup(duplicate_group)
-            repd_file.write(dup_reporter.getDocumentUnicode())
+            dup_reporter.add_group(duplicate_group)
+            repd_file.write(dup_reporter.get_document_unicode())
 
-        res_file.write(reporter.getDocumentUnicode())
+        res_file.write(reporter.get_document_unicode())
 
     #########################################
     # Update databases
@@ -1374,14 +1374,14 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerceUnicode(update.new_m_object),
+                            SanitationUtils.coerce_unicode(update.new_m_object),
                             'slave':
-                            SanitationUtils.coerceUnicode(update.new_s_object),
+                            SanitationUtils.coerce_unicode(update.new_s_object),
                             'mchanges':
-                            SanitationUtils.coerceUnicode(
+                            SanitationUtils.coerce_unicode(
                                 update.getMasterUpdates()),
                             'schanges':
-                            SanitationUtils.coerceUnicode(
+                            SanitationUtils.coerce_unicode(
                                 update.getSlaveUpdates()),
                             'exception':
                             repr(exc)
@@ -1400,14 +1400,14 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerceUnicode(update.new_m_object),
+                            SanitationUtils.coerce_unicode(update.new_m_object),
                             'slave':
-                            SanitationUtils.coerceUnicode(update.new_s_object),
+                            SanitationUtils.coerce_unicode(update.new_s_object),
                             'mchanges':
-                            SanitationUtils.coerceUnicode(
+                            SanitationUtils.coerce_unicode(
                                 update.getMasterUpdates()),
                             'schanges':
-                            SanitationUtils.coerceUnicode(
+                            SanitationUtils.coerce_unicode(
                                 update.getSlaveUpdates()),
                             'exception':
                             repr(exc)
@@ -1483,9 +1483,9 @@ def catch_main():
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.getMessageItems(1).items():
             print source
-            log_file.writelines([SanitationUtils.coerceUnicode(source)])
+            log_file.writelines([SanitationUtils.coerce_unicode(source)])
             log_file.writelines([
-                SanitationUtils.coerceUnicode(message) for message in messages
+                SanitationUtils.coerce_unicode(message) for message in messages
             ])
             for message in messages:
                 pprint(message, indent=4, width=80, depth=2)

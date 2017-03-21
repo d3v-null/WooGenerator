@@ -46,7 +46,7 @@ class TestCSVParseWoo(TestCase):
             **self.productParserArgs
         )
 
-        productParser.analyseFile(self.genPath)
+        productParser.analyse_file(self.genPath)
 
         Registrar.DEBUG_MRO = True
 
@@ -54,7 +54,7 @@ class TestCSVParseWoo(TestCase):
         print "number of items: %s" % len(productParser.items.values())
         print "number of products: %s" % len(productParser.products.values())
         prodList = WooProdList(productParser.products.values())
-        print SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))
+        print SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
 
         # sort_keys = lambda (ka, va), (kb, vb): cmp(ka, kb)
 

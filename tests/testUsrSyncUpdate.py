@@ -87,7 +87,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                 "AU", "0416160912", "7 Grosvenor Road", "", "Bayswater", 6053, "AU", "WA", "", "", "http://technotan.com.au", 32, master_bus_type, "", "", "", "", "", "", master_uname, "Neil", 1, "2015-07-13 22:33:05"]
         ]]
 
-        maParser.analyseRows(master_data)
+        maParser.analyse_rows(master_data)
 
         print "MASTER RECORDS: \n", maParser.tabulate()
 
@@ -149,10 +149,10 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                 except Exception as exc:
                     slaveFailures.append({
                         'update': update,
-                        'master': SanitationUtils.coerceUnicode(update.new_m_object),
-                        'slave': SanitationUtils.coerceUnicode(update.new_s_object),
-                        'mchanges': SanitationUtils.coerceUnicode(update.getMasterUpdates()),
-                        'schanges': SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
+                        'master': SanitationUtils.coerce_unicode(update.new_m_object),
+                        'slave': SanitationUtils.coerce_unicode(update.new_s_object),
+                        'mchanges': SanitationUtils.coerce_unicode(update.getMasterUpdates()),
+                        'schanges': SanitationUtils.coerce_unicode(update.getSlaveUpdates()),
                         'exception': repr(exc)
                     })
                     Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (

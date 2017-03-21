@@ -100,7 +100,7 @@ print "formatting data..."
 
 def json2map(map_json):
     try:
-        sanitizer = SanitationUtils.coerceUnicode
+        sanitizer = SanitationUtils.coerce_unicode
         map_obj = json.loads(map_json)
         map_obj = OrderedDict([
             ((map_key, [sanitizer(map_value)])
@@ -146,7 +146,7 @@ with io.open(repPath, 'w+', encoding='utf-8') as res_file:
     reporter = HtmlReporter()
 
     group = HtmlReporter.Group('changes', 'Changes')
-    group.addSection(
+    group.add_section(
         HtmlReporter.Section(
             'wp_changes',
             'Wordpress Changes',
@@ -160,4 +160,4 @@ with io.open(repPath, 'w+', encoding='utf-8') as res_file:
         )
     )
 
-    res_file.write(SanitationUtils.coerceUnicode(reporter.getDocument()))
+    res_file.write(SanitationUtils.coerce_unicode(reporter.get_document()))

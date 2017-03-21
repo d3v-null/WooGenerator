@@ -30,7 +30,7 @@ class TestCSVParseSpecialV2(TestCase):
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_SPECIAL = True
 
-        specialParser.analyseFile(self.specPath)
+        specialParser.analyse_file(self.specPath)
 
         print "number of special groups: %s" % len(specialParser.ruleGroups)
         print "number of special rules: %s" % len(specialParser.rules)
@@ -50,7 +50,7 @@ class TestCSVParseSpecialV2(TestCase):
             **self.specialParserArgs
         )
 
-        specialParser.analyseFile(self.specPath)
+        specialParser.analyse_file(self.specPath)
 
         Registrar.DEBUG_SPECIAL = True
         Registrar.DEBUG_MESSAGE = True
@@ -71,7 +71,7 @@ class TestCSVParseSpecialV2(TestCase):
             **self.specialParserArgs
         )
 
-        specialParser.analyseFile(self.specPath)
+        specialParser.analyse_file(self.specPath)
 
         # Registrar.DEBUG_SPECIAL = True
         # Registrar.DEBUG_MESSAGE = True
