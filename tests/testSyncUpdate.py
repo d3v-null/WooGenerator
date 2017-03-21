@@ -245,75 +245,75 @@ class testSyncUpdate_Usr(TestCase):
     def test_mNameColUpdate(self):
         syncUpdate = SyncUpdate_Usr(self.usrMN1, self.usrSN1)
         syncUpdate.update(ColData_User.getSyncCols())
-        self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Name')[0].get('subject'), syncUpdate.master_name)
+        self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Name')[0].get('subject'), syncUpdate.master_name)
 
     def test_sNameColUpdate(self):
         syncUpdate = SyncUpdate_Usr(self.usrMN2, self.usrSN2)
         syncUpdate.update(ColData_User.getSyncCols())
-        self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Name')[0].get('subject'), syncUpdate.slave_name)
+        self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Name')[0].get('subject'), syncUpdate.slave_name)
 
     def test_mDeltas(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD1)
         syncUpdate.update(ColData_User.getSyncCols())
-        # syncUpdate.mDeltas(ColData_User.getDeltaCols())
-        self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
-        self.assertFalse(syncUpdate.sDeltas)
-        self.assertTrue(syncUpdate.mDeltas)
-        self.assertEqual(syncUpdate.syncWarnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
-        self.assertEqual(syncUpdate.newMObject.get(ColData_User.deltaCol('Role')), 'WN')
+        # syncUpdate.m_deltas(ColData_User.getDeltaCols())
+        self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
+        self.assertFalse(syncUpdate.s_deltas)
+        self.assertTrue(syncUpdate.m_deltas)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
+        self.assertEqual(syncUpdate.new_m_object.get(ColData_User.deltaCol('Role')), 'WN')
 
     def test_sDeltas(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD2, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
-        # syncUpdate.sDeltas(ColData_User.getDeltaCols())
-        self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Role')[0].get('subject'), syncUpdate.master_name)
-        self.assertFalse(syncUpdate.mDeltas)
-        self.assertTrue(syncUpdate.sDeltas)
-        self.assertEqual(syncUpdate.newSObject.get('Role'), 'RN')
-        self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), 'WN')
+        # syncUpdate.s_deltas(ColData_User.getDeltaCols())
+        self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertFalse(syncUpdate.m_deltas)
+        self.assertTrue(syncUpdate.s_deltas)
+        self.assertEqual(syncUpdate.new_s_object.get('Role'), 'RN')
+        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), 'WN')
 
         syncUpdate = SyncUpdate_Usr(self.usrMD2a, self.usrSD2a)
         syncUpdate.update(ColData_User.getSyncCols())
-        # syncUpdate.sDeltas(ColData_User.getDeltaCols())
-        self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Role')[0].get('subject'), syncUpdate.master_name)
-        self.assertFalse(syncUpdate.mDeltas)
-        self.assertTrue(syncUpdate.sDeltas)
-        self.assertEqual(syncUpdate.newSObject.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), 'RN')
+        # syncUpdate.s_deltas(ColData_User.getDeltaCols())
+        self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertFalse(syncUpdate.m_deltas)
+        self.assertTrue(syncUpdate.s_deltas)
+        self.assertEqual(syncUpdate.new_s_object.get('Role'), 'WN')
+        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), 'RN')
 
     def test_mDeltasB(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD3, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
-        # syncUpdate.sDeltas(ColData_User.getDeltaCols())
-        self.assertGreater(syncUpdate.mTime, syncUpdate.sTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
-        self.assertFalse(syncUpdate.sDeltas)
-        self.assertFalse(syncUpdate.mDeltas)
-        self.assertEqual(syncUpdate.newMObject.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.newMObject.get(ColData_User.deltaCol('Role')), '')
+        # syncUpdate.s_deltas(ColData_User.getDeltaCols())
+        self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
+        self.assertFalse(syncUpdate.s_deltas)
+        self.assertFalse(syncUpdate.m_deltas)
+        self.assertEqual(syncUpdate.new_m_object.get('Role'), 'WN')
+        self.assertEqual(syncUpdate.new_m_object.get(ColData_User.deltaCol('Role')), '')
 
     def test_sDeltasB(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD3)
         syncUpdate.update(ColData_User.getSyncCols())
-        # syncUpdate.sDeltas(ColData_User.getDeltaCols())
-        self.assertGreater(syncUpdate.sTime, syncUpdate.mTime)
-        self.assertEqual(syncUpdate.syncWarnings.get('Role')[0].get('subject'), syncUpdate.master_name)
-        self.assertFalse(syncUpdate.mDeltas)
-        self.assertFalse(syncUpdate.sDeltas)
-        self.assertEqual(syncUpdate.newSObject.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.newSObject.get(ColData_User.deltaCol('Role')), '')
+        # syncUpdate.s_deltas(ColData_User.getDeltaCols())
+        self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertFalse(syncUpdate.m_deltas)
+        self.assertFalse(syncUpdate.s_deltas)
+        self.assertEqual(syncUpdate.new_s_object.get('Role'), 'WN')
+        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), '')
 
     def test_doubleNames(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
         print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Contact']
-        print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
-        print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
-        print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
+        print "master new: ", syncUpdate.new_m_object['Name'], '|', syncUpdate.new_m_object['Contact']
+        print "slave old:  ", syncUpdate.old_s_object['Name'], '|', syncUpdate.old_s_object['Contact']
+        print "slave new:  ", syncUpdate.new_s_object['Name'], '|', syncUpdate.new_s_object['Contact']
         print syncUpdate.tabulate(tablefmt='simple')
 
     def test_doubleNames2(self):
@@ -346,9 +346,9 @@ class testSyncUpdate_Usr(TestCase):
         syncUpdate = SyncUpdate_Usr(mUsr, sUsr)
         syncUpdate.update(ColData_User.getSyncCols())
         print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Contact']
-        print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Contact']
-        print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Contact']
-        print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Contact']
+        print "master new: ", syncUpdate.new_m_object['Name'], '|', syncUpdate.new_m_object['Contact']
+        print "slave old:  ", syncUpdate.old_s_object['Name'], '|', syncUpdate.old_s_object['Contact']
+        print "slave new:  ", syncUpdate.new_s_object['Name'], '|', syncUpdate.new_s_object['Contact']
         print syncUpdate.tabulate(tablefmt='simple')
         print syncUpdate.getMasterUpdates()
 
@@ -356,11 +356,11 @@ class testSyncUpdate_Usr(TestCase):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
         syncUpdate.update(ColData_User.getSyncCols())
         # print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Web Site']
-        # print "master new: ", syncUpdate.newMObject['Name'], '|', syncUpdate.newMObject['Web Site']
-        # print "slave old:  ", syncUpdate.oldSObject['Name'], '|', syncUpdate.oldSObject['Web Site']
-        # print "slave new:  ", syncUpdate.newSObject['Name'], '|', syncUpdate.newSObject['Web Site']
+        # print "master new: ", syncUpdate.new_m_object['Name'], '|', syncUpdate.new_m_object['Web Site']
+        # print "slave old:  ", syncUpdate.old_s_object['Name'], '|', syncUpdate.old_s_object['Web Site']
+        # print "slave new:  ", syncUpdate.new_s_object['Name'], '|', syncUpdate.new_s_object['Web Site']
 
-        self.assertIn('Web Site', syncUpdate.syncPasses)
+        self.assertIn('Web Site', syncUpdate.sync_passes)
         # print syncUpdate.tabulate(tablefmt='simple')
 
 

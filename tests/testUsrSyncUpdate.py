@@ -25,9 +25,9 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
     def __init__(self, *args, **kwargs):
         super(testUsrSyncUpdate, self).__init__(*args, **kwargs)
         self.SSHTunnelForwarderParams = {}
-        self.PyMySqlConnectParams = {}
-        self.jsonConnectParams = {}
-        self.actConnectParams = {}
+        self.PyMySqlconnect_params = {}
+        self.jsonconnect_params = {}
+        self.actconnect_params = {}
         self.actDbParams = {}
         self.fsParams = {}
 
@@ -93,7 +93,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         )
 
         with UsrSyncClient_WP(self.wpApiParams ) as slaveClient:
-            slaveClient.analyseRemote(saParser, search=master_uname)
+            slaveClient.analyse_remote(saParser, search=master_uname)
 
         print "SLAVE RECORDS: \n", saParser.tabulate()
 
@@ -121,7 +121,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             if not syncUpdate:
                 continue
 
-            if syncUpdate.sUpdated:
+            if syncUpdate.s_updated:
                 insort(updates, syncUpdate)
 
         slaveFailures = []
@@ -140,18 +140,18 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
                         print "response text: %s" % response.text
                         response_json = response.json()
 
-                except Exception, e:
+                except Exception, exc:
                     slaveFailures.append({
                         'update':update,
-                        'master':SanitationUtils.coerceUnicode(update.newMObject),
-                        'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                        'master':SanitationUtils.coerceUnicode(update.new_m_object),
+                        'slave':SanitationUtils.coerceUnicode(update.new_s_object),
                         'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
                         'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
-                        'exception':repr(e)
+                        'exception':repr(exc)
                     })
                     Registrar.registerError("ERROR UPDATING SLAVE (%s): %s\n%s" % (
-                        update.SlaveID,
-                        repr(e),
+                        update.slave_id,
+                        repr(exc),
                         traceback.format_exc()
                     ) )
 

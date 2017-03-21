@@ -76,13 +76,13 @@ try:
         fstat = sftpClient.stat(exportFilename)
         if fstat:
             sftpClient.get(exportFilename, maPath)
-    except Exception, e:
-        SanitationUtils.safePrint("ERROR IN SFTP: " + str(e))
+    except Exception, exc:
+        SanitationUtils.safePrint("ERROR IN SFTP: " + str(exc))
     finally:
         sftpClient.close()
 
-except Exception, e:
-    SanitationUtils.safePrint("ERROR IN SSH: " + str(e))
+except Exception, exc:
+    SanitationUtils.safePrint("ERROR IN SSH: " + str(exc))
 finally:
     sshClient.close()
 

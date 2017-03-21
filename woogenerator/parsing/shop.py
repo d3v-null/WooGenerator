@@ -45,9 +45,9 @@ class ShopObjList(ObjList):
 
     @property
     def name(self):
-        e = DeprecationWarning(".name deprecated")
-        self.registerError(e)
-        raise e
+        exc = DeprecationWarning(".name deprecated")
+        self.registerError(exc)
+        raise exc
 
     @property
     def title(self):
@@ -114,8 +114,8 @@ class ImportShopMixin(object):
 
     # @classmethod
     # def getNewObjContainer(cls):
-    #     e = DeprecationWarning("use .container instead of .getNewObjContainer()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .container instead of .getNewObjContainer()")
+    #     self.registerError(exc)
     #     return cls.container
     #     # return ObjList
 
@@ -144,8 +144,8 @@ class ImportShopMixin(object):
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
     def getAttributes(self):
-        e = DeprecationWarning("use .attributes instead of .getAttributes()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .attributes instead of .getAttributes()")
+        self.registerError(exc)
         return self.attributes
 
 
@@ -160,8 +160,8 @@ class ImportShopMixin(object):
             #     parent.registerImage(image)
 
     def getImages(self):
-        e = DeprecationWarning("use .images instead of .getImages()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .images instead of .getImages()")
+        self.registerError(exc)
         return self.images
 
     def toApiData(self, colData, api):
@@ -233,8 +233,8 @@ class ImportShopProductMixin(object):
         catData.registerMember(self)
 
     def getCategories(self):
-        e = DeprecationWarning("use .categories instead of .getCategories()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .categories instead of .getCategories()")
+        self.registerError(exc)
         return self.categories
 
     @property
@@ -242,8 +242,8 @@ class ImportShopProductMixin(object):
         return self.product_type
 
     def getTypeName(self):
-        e = DeprecationWarning("use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
+        self.registerError(exc)
         return self.typeName
         # return self.product_type
 
@@ -273,8 +273,8 @@ class ImportShopProductVariableMixin(object):
         )
 
     def getVariations(self):
-        e = DeprecationWarning("use .variations instead of .getVariations()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .variations instead of .getVariations()")
+        self.registerError(exc)
         return self.variations
 
 class ImportShopProductVariationMixin(object):
@@ -318,8 +318,8 @@ class ImportShopCategoryMixin(object):
         )
 
     def getMembers(self, itemData):
-        e = DeprecationWarning("use .members instead of .getMembers()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .members instead of .getMembers()")
+        self.registerError(exc)
         return self.members
 
     # @property
@@ -401,8 +401,8 @@ class CSVParse_Shop_Mixin(object):
         objectData.registerImage(image)
 
     def getProducts(self):
-        e = DeprecationWarning("Use .products instead of .getProducts()")
-        self.registerError(e)
+        exc = DeprecationWarning("Use .products instead of .getProducts()")
+        self.registerError(exc)
         if Registrar.DEBUG_SHOP:
             Registrar.registerMessage("returning products: {}".format(self.products.keys()))
         return self.products
@@ -486,9 +486,9 @@ class CSVParse_Shop_Mixin(object):
             assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(type(attr).__name__)
             assert attr is not '', 'Attribute must not be empty'
             assert attr[0] is not ' ', 'Attribute must not start with whitespace or '
-        except AssertionError as e:
-            self.registerError("could not register attribute: {}".format(e))
-            # raise e
+        except AssertionError as exc:
+            self.registerError("could not register attribute: {}".format(exc))
+            # raise exc
         else:
             objectData.registerAttribute(attr, val, var)
             self.registerAnything(

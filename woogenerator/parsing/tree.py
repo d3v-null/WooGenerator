@@ -130,8 +130,8 @@ class ImportTreeObject(ImportObject):
     #
     # @classmethod
     # def fromImportObject(cls, objectData, depth, meta, parent):
-    #     e = DeprecationWarning()
-    #     self.registerError(e)
+    #     exc = DeprecationWarning()
+    #     self.registerError(exc)
         # assert isinstance(objectData, ImportObject)
         # row = objectData.row
         # rowcount = objectData.rowcount
@@ -168,8 +168,8 @@ class ImportTreeObject(ImportObject):
         return self.ancestors
 
     # def getInheritanceAncestors(self):
-    #     e = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
+    #     self.registerError(exc)
     #     return self.inheritenceAncestors
 
     def inheritKey(self, key):
@@ -196,18 +196,18 @@ class ImportTreeObject(ImportObject):
         return "=" * self.depth
 
     # def getIdentifierDelimeter(self):
-    #     e = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("Use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     self.registerError(exc)
     #     return self.identifierDelimeter
 
     # def getParent(self):
-    #     e = DeprecationWarning("Use .parent instead of .getParent()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("Use .parent instead of .getParent()")
+    #     self.registerError(exc)
     #     return self.parent
     #
     # def getAncestors(self):
-    #     e = DeprecationWarning("use .ancestors instead of .getAncestors()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .ancestors instead of .getAncestors()")
+    #     self.registerError(exc)
     #     return self.ancestors
     #     # "gets all ancestors not including self or root"
     #     # this = self.getParent()
@@ -222,8 +222,8 @@ class ImportTreeObject(ImportObject):
         return filter( lambda x: x.isTaxo, self.ancestors)
 
     # def getTaxoAncestors(self):
-    #     e = DeprecationWarning("use .taxoAncestors instead of .getTaxoAncestors()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .taxoAncestors instead of .getTaxoAncestors()")
+    #     self.registerError(exc)
     #     return self.taxoAncestors
     #     # ancestors = self.getAncestors()
     #     # return filter( lambda x: x.isTaxo, ancestors)
@@ -243,25 +243,25 @@ class ImportTreeObject(ImportObject):
             return filteredAncestorValues[0]
     #
     # def getChildren(self):
-    #     e = DeprecationWarning("use .children instead of .getChildren()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .children instead of .getChildren()")
+    #     self.registerError(exc)
     #     return self.children
     #
     # def getSiblings(self):
-    #     e = DeprecationWarning("use .siblings instead of .getSiblings()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .siblings instead of .getSiblings()")
+    #     self.registerError(exc)
     #     return self.siblings
 
 #do we need these?
     #
     # def getDepth(self):
-    #     e = DeprecationWarning("use .depth instead of .getDepth()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .depth instead of .getDepth()")
+    #     self.registerError(exc)
     #     return self.depth
     #
     # def getMeta(self):
-    #     e = DeprecationWarning("use .meta instead of .getMeta()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .meta instead of .getMeta()")
+    #     self.registerError(exc)
     #     return self.meta
 
 class ImportTreeRoot(ImportTreeObject):
@@ -289,8 +289,8 @@ class ImportTreeItem(ImportTreeObject):
         return super(ImportTreeItem, self).identifierDelimeter + '>'
 
     # def getIdentifierDelimeter(self):
-    #     e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+    #     self.registerError(exc)
     #     return self.identifierDelimeter
         # return super(ImportTreeItem, self).getIdentifierDelimeter() + '>'
 
@@ -299,8 +299,8 @@ class ImportTreeItem(ImportTreeObject):
         return filter( lambda x: x.isItem, self.ancestors)
 
     # def getItemAncestors(self):
-    #     e = DeprecationWarning("use .itemAncestors instead of .getItemAncestors()")
-    #     self.registerError(e)
+    #     exc = DeprecationWarning("use .itemAncestors instead of .getItemAncestors()")
+    #     self.registerError(exc)
     #     return self.itemAncestors
     #     # ancestors = self.getAncestors()
     #     # return filter( lambda x: x.isItem, ancestors)
@@ -313,8 +313,8 @@ class ImportTreeTaxo(ImportTreeObject):
         return super(ImportTreeTaxo, self).identifierDelimeter + '#'
 
     def getIdentifierDelimeter(self):
-        e = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        self.registerError(exc)
         return self.identifierDelimeter
         # return super(ImportTreeTaxo, self).getIdentifierDelimeter() + '#'
 
@@ -480,8 +480,8 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
             for i in range(self.metaWidth):
                 try:
                     meta[i] = row[thisDepth + i*self.maxDepth]
-                except IndexError as e:
-                    self.registerError("could not get meta[{}] | {}".format(i, e))
+                except IndexError as exc:
+                    self.registerError("could not get meta[{}] | {}".format(i, exc))
         return meta
 
     def isTaxoDepth(self, depth):
@@ -599,8 +599,8 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     def refreshStack(self, rowcount, row, thisDepth):
         try:
             assert thisDepth >= 0, "stack should not be broken"
-        except AssertionError as e:
-            raise UserWarning(str(e))
+        except AssertionError as exc:
+            raise UserWarning(str(exc))
         del self.stack[thisDepth:]
         for depth in range(len(self.stack), thisDepth):
             layer = self.newObject(rowcount, row=row, depth=depth)
@@ -645,11 +645,11 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
 
     def getItems(self):
-        e = DeprecationWarning("Use .items instead of .getItems()")
-        self.registerError(e)
+        exc = DeprecationWarning("Use .items instead of .getItems()")
+        self.registerError(exc)
         return self.items
 
     def getTaxos(self):
-        e = DeprecationWarning("use .taxos instead of .getTaxos()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .taxos instead of .getTaxos()")
+        self.registerError(exc)
         return self.taxos

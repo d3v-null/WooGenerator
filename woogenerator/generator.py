@@ -31,7 +31,7 @@ from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, ProgressCo
 from woogenerator.utils import HtmlReporter, Registrar
 from woogenerator.metagator import MetaGator
 from woogenerator.coldata import ColData_Woo, ColData_MYO, ColData_Base
-from woogenerator.sync_client import SyncClient_GDrive, SyncClient_Local
+from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
 from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
 from woogenerator.matching import MatchList
 from woogenerator.matching import ProductMatcher, CategoryMatcher, VariationMatcher
@@ -447,29 +447,29 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         if Registrar.DEBUG_GDRIVE:
             Registrar.registerMessage("GDrive params: %s" %
                                       settings.g_drive_params)
-        client_class = SyncClient_GDrive
+        client_class = SyncClientGDrive
         client_args = [settings.g_drive_params]
     else:
-        client_class = SyncClient_Local
+        client_class = SyncClientLocal
         client_args = []
     #
     with client_class(*client_args) as client:
         if settings.schema in settings.woo_schemas:
             if settings.do_dyns:
                 Registrar.registerMessage("analysing dprc rules")
-                client.analyseRemote(
+                client.analyse_remote(
                     parsers.dyn, settings.dprc_path, gid=settings.dprc_gid)
                 settings.product_parser_args['dprcRules'] = parsers.dyn.taxos
 
                 Registrar.registerMessage("analysing dprp rules")
                 parsers.dyn.clearTransients()
-                client.analyseRemote(
+                client.analyse_remote(
                     parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
                 settings.product_parser_args['dprpRules'] = parsers.dyn.taxos
 
             if settings.do_specials:
                 Registrar.registerMessage("analysing specials")
-                client.analyseRemote(
+                client.analyse_remote(
                     parsers.special, settings.spec_path, gid=settings.spec_gid)
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.registerMessage("all specials: %s" %
@@ -503,7 +503,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
 
         Registrar.registerProgress("analysing product data")
 
-        client.analyseRemote(
+        client.analyse_remote(
             parsers.product,
             settings.gen_path,
             gid=settings.gen_gid,
@@ -1098,7 +1098,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
             Registrar.registerProgress("analysing WC API data")
 
-            client.analyseRemote(
+            client.analyse_remote(
                 api_product_parser, limit=settings.download_limit)
 
         # print api_product_parser.categories
@@ -1216,29 +1216,29 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
                     # print sync_update.tabulate()
 
-                    if not sync_update.importantStatic:
+                    if not sync_update.important_static:
                         insort(problematic_category_updates, sync_update)
                         continue
 
-                    if sync_update.mUpdated:
+                    if sync_update.m_updated:
                         master_category_updates.append(sync_update)
 
-                    if sync_update.sUpdated:
+                    if sync_update.s_updated:
                         slave_category_updates.append(sync_update)
 
             for update in master_category_updates:
                 if Registrar.DEBUG_UPDATE:
                     Registrar.registerMessage(
                         "performing update < %5s | %5s > = \n%100s, %100s " %
-                        (update.MasterID, update.SlaveID,
-                         str(update.old_m_object), str(update.oldSObject)))
-                if not update.MasterID in parsers.product.categories:
+                        (update.master_id, update.slave_id,
+                         str(update.old_m_object), str(update.old_s_object)))
+                if not update.master_id in parsers.product.categories:
                     exc = UserWarning(
                         "couldn't fine pkey %s in parsers.product.categories" %
-                        update.MasterID)
+                        update.master_id)
                     Registrar.registerError(exc)
                     continue
-                for col, warnings in update.syncWarnings.items():
+                for col, warnings in update.sync_warnings.items():
                     if not col == 'ID':
                         continue
                     for warning in warnings:
@@ -1247,7 +1247,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                             continue
 
                         new_val = warning['oldWinnerValue']
-                        parsers.product.categories[update.MasterID][
+                        parsers.product.categories[update.master_id][
                             col] = new_val
 
             if Registrar.DEBUG_CATS:
@@ -1286,7 +1286,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                         # print "uploading category: %s" % m_api_data
                         # pprint(m_api_data)
                         if settings.update_slave:
-                            response = client.createItem(m_api_data)
+                            response = client.create_item(m_api_data)
                             # print response
                             # print response.json()
                             response_api_data = response.json()
@@ -1413,7 +1413,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                          str(master_categories), str(slave_categories), ))
 
                 sync_update.old_m_object['catlist'] = list(master_categories)
-                sync_update.oldSObject['catlist'] = list(slave_categories)
+                sync_update.old_s_object['catlist'] = list(slave_categories)
 
                 if change_match_list:
                     assert \
@@ -1430,8 +1430,8 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                     #                      in change_match_list.merge().s_objects]
 
                     sync_update.loserUpdate(**update_params)
-                    # sync_update.newMObject['catlist'] = master_categories
-                    # sync_update.newSObject['catlist'] = master_categories
+                    # sync_update.new_m_object['catlist'] = master_categories
+                    # sync_update.new_s_object['catlist'] = master_categories
 
                     # update_params['oldLoserValue'] = slave_categories
                     # update_params['oldWinnerValue'] = master_categories
@@ -1463,21 +1463,21 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
             # Assumes that GDrive is read only, doesn't care about master
             # updates
-            if not sync_update.sUpdated:
+            if not sync_update.s_updated:
                 continue
 
             if Registrar.DEBUG_UPDATE:
                 Registrar.registerMessage("sync updates:\n%s" %
                                           sync_update.tabulate())
 
-            if sync_update.sUpdated and sync_update.sDeltas:
+            if sync_update.s_updated and sync_update.s_deltas:
                 insort(s_delta_updates, sync_update)
 
-            if not sync_update.importantStatic:
+            if not sync_update.important_static:
                 insort(problematic_product_updates, sync_update)
                 continue
 
-            if sync_update.sUpdated:
+            if sync_update.s_updated:
                 insort(slave_product_updates, sync_update)
 
         if settings.do_variations:
@@ -1521,18 +1521,18 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
                 # Assumes that GDrive is read only, doesn't care about master
                 # updates
-                if not sync_update.sUpdated:
+                if not sync_update.s_updated:
                     continue
 
                 if Registrar.DEBUG_VARS:
                     Registrar.registerMessage("var update %d:\n%s" % (
                         var_match_count, sync_update.tabulate()))
 
-                if not sync_update.importantStatic:
+                if not sync_update.important_static:
                     insort(problematic_variation_updates, sync_update)
                     continue
 
-                if sync_update.sUpdated:
+                if sync_update.s_updated:
                     insort(slave_variation_updates, sync_update)
 
             for var_match_count, var_match in enumerate(
@@ -1613,9 +1613,9 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
             s_delta_list = ShopObjList(
                 [
-                    delta_sync_update.newSObject
+                    delta_sync_update.new_s_object
                     for delta_sync_update in s_delta_updates \
-                    if delta_sync_update.newSObject
+                    if delta_sync_update.new_s_object
                 ]
             )
 
@@ -2001,7 +2001,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybePrintUpdate(count)
 
-                if settings.update_slave and update.sUpdated:
+                if settings.update_slave and update.s_updated:
                     # print "attempting update to %s " % str(update)
 
                     try:
@@ -2009,15 +2009,15 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                     except Exception, exc:
                         # slave_failures.append({
                         #     'update':update,
-                        #     'master':SanitationUtils.coerceUnicode(update.newMObject),
-                        #     'slave':SanitationUtils.coerceUnicode(update.newSObject),
+                        #     'master':SanitationUtils.coerceUnicode(update.new_m_object),
+                        #     'slave':SanitationUtils.coerceUnicode(update.new_s_object),
                         #     'mchanges':SanitationUtils.coerceUnicode(update.getMasterUpdates()),
                         #     'schanges':SanitationUtils.coerceUnicode(update.getSlaveUpdates()),
                         #     'exception':repr(exc)
                         # })
                         SanitationUtils.safePrint(
                             "ERROR UPDATING SLAVE (%s): %s" %
-                            (update.SlaveID, repr(exc)))
+                            (update.slave_id, repr(exc)))
                         slave_failures.append(update)
                 # else:
                 #     print "no update made to %s " % str(update)

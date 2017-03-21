@@ -449,9 +449,9 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             try:
                 container = self.containers[api_type]
             except IndexError:
-                e = UserWarning("Unknown API product type: %s" % api_type)
+                exc = UserWarning("Unknown API product type: %s" % api_type)
                 source = apiData.get('SKU')
-                self.registerError(e, source)
+                self.registerError(exc, source)
         if self.DEBUG_API: self.registerMessage("container: {}".format(container.__name__))
         return container
 

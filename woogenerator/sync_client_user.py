@@ -1,143 +1,47 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 import os
-# import shutil
-from utils import SanitationUtils, TimeUtils, Registrar #, listUtils #, debugUtils
-from utils import ProgressCounter, UnicodeCsvDialectUtils
-# from parsing.flat import CSVParse_User #, UsrObjList #, ImportUser
-from coldata import ColData_User
-# from tabulate import tabulate
-# from itertools import chain
-# from pprint import pprint
-# import sys
-# from copy import deepcopy
-import unicodecsv
-# import pickle
-# import dill as pickle
-# import requests
-# from bisect import insort
 import re
-# import time
-# import yaml
-# import MySQLdb
+
+import unicodecsv
 import paramiko
-from sshtunnel import SSHTunnelForwarder #, check_address
-# import io
-# import wordpress_xmlrpc
-# from wordpress_json import WordpressJsonWrapper, WordpressError
+from sshtunnel import SSHTunnelForwarder
 import pymysql
-# from simplejson import JSONDecodeError
-from sync_client import SyncClient_Abstract #, AbstractServiceInterface
-from sync_client import SyncClient_WP
-from sync_client import SyncClient_WC
 
-# class TansyncWordpressJsonWrapper(WordpressJsonWrapper, AbstractServiceInterface):
-#     def _request(self, method_name, **kw):
-#         method, endpoint, params, data, headers = self._prepare_req(
-#             method_name, **kw
-#         )
-#
-#         http_response = requests.request(
-#             method,
-#             self.site + endpoint,
-#             auth=self.auth,
-#             params=params,
-#             json=data,
-#             headers=headers
-#         )
-#
-#         try:
-#             http_response_json = http_response.json()
-#         except JSONDecodeError:
-#             raise WordpressError(' '.join([
-#                 'could not decode JSON:',
-#                 str(http_response.text)
-#             ]))
-#
-#         if http_response.status_code not in [200, 201, 400]:
-#             try:
-#                 first_json_response = http_response_json[0]
-#             except KeyError:
-#                 raise WordpressError(' '.join([
-#                     "invalid JSON response from",
-#                     http_response.url,
-#                     ": ",
-#                     http_response.text
-#                 ]))
-#             raise WordpressError(" ".join([
-#                 str(http_response.status_code),
-#                 str(http_response.reason),
-#                 ": ",
-#                 '[%s] %s' % (first_json_response.get('code'),
-#                              first_json_response.get('message'))
-#             ]))
-#
-#         return http_response_json
-#
-# class SyncClient_Abstract(SyncClient_Abstract):
-#     pass
+from woogenerator.coldata import ColData_User
+from woogenerator.sync_client import SyncClientAbstract #, AbstractServiceInterface
+from woogenerator.sync_client import SyncClientWP
+from woogenerator.sync_client import SyncClientWC
+from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
+from woogenerator.utils import ProgressCounter, UnicodeCsvDialectUtils
 
-# class UsrSyncClient_JSON(SyncClient_Abstract):
-#     service_builder = TansyncWordpressJsonWrapper
-#
-#     def __exit__(self, exit_type, value, traceback):
-#         pass
-#
-#     def __init__(self, connectParams):
-#         mandatory_params = ['json_uri', 'wp_user', 'wp_pass']
-#         super_keys =       ['site',     'user',    'pwd']
-#         superConnectParams = {}
-#         for param, key in zip( mandatory_params, super_keys ):
-#             assert param in connectParams, "missing mandatory param: " + param
-#             superConnectParams[key] = connectParams[param]
-#         super(UsrSyncClient_JSON, self).__init__(superConnectParams)
-#
-#     def uploadChanges(self, user_pkey, updates=None):
-#         super(UsrSyncClient_JSON, self).uploadChanges(user_pkey)
-#         updates_json = SanitationUtils.encodeJSON(updates)
-#         # print "UPDATES:", updates
-#         updates_json_base64 = SanitationUtils.encodeBase64(updates_json)
-#         # print updates_json_base64
-#         json_out = self.service.update_user(user_id=user_pkey, data={'tansync_updated_fields': updates_json_base64})
-#
-#         # print json_out
-#         if json_out is None:
-#             json_out = self.service.get_user(user_id=user_pkey)
-#             if 'tansync_last_error' in json_out:
-#                 last_error = json_out['tansync_last_error']
-#                 raise Exception(
-#                     "No response from json api, last error: %s" % last_error
-#                 )
-#             raise Exception("No response from json api")
-#         return json_out
-
-class UsrSyncClient_WC(SyncClient_WC):
+class UsrSyncClient_WC(SyncClientWC):
     endpoint_singular = 'customer'
 
-class UsrSyncClient_WP(SyncClient_WP):
+class UsrSyncClient_WP(SyncClientWP):
     endpoint_singular = 'user'
 
     @property
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
 
-class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
-    def __init__(self, connectParams, dbParams, fsParams):
+class UsrSyncClient_SSH_ACT(SyncClientAbstract):
+    def __init__(self, connect_params, dbParams, fsParams):
         self.dbParams = dbParams
         self.fsParams = fsParams
-        super(UsrSyncClient_SSH_ACT, self).__init__(connectParams)
+        super(UsrSyncClient_SSH_ACT, self).__init__(connect_params)
 
-    def attemptConnect(self):
+    def attempt_connect(self):
         self.service = paramiko.SSHClient()
         self.service.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.service.connect(**self.connectParams)
+        self.service.connect(**self.connect_params)
 
     @property
-    def connectionReady(self):
+    def connection_ready(self):
         return self.service and self.service._transport and self.service._transport.active
 
     def execSilentCommandAssert(self, command):
-        self.assertConnect()
+        self.assert_connect()
         stdin, stdout, stderr = self.service.exec_command(command)
         if stdin: pass #gets rid of annoying warnings
         possible_errors = stdout.readlines() + stderr.readlines()
@@ -151,7 +55,7 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
             )
 
     def putFile(self, localPath, remotePath):
-        self.assertConnect()
+        self.assert_connect()
 
         # remoteDir, remoteFileName = os.path.split(remotePath)
         remoteDir = os.path.split(remotePath)[0]
@@ -182,8 +86,8 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         #     fstat = sftpClient.stat(remotePath)
         #     if not fstat:
         #         exception = UserWarning("could not stat remote file")
-        # except Exception, e:
-        #     exception = e
+        # except Exception, exc:
+        #     exception = exc
         # finally:
         #     sftpClient.close()
         # if not isinstance(exception, Exception):
@@ -191,7 +95,7 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
 
 
     def assertRemoteFileExists(self, remotePath, assertion = ""):
-        self.assertConnect()
+        self.assert_connect()
 
         # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remotePath)
         stderr = self.service.exec_command('stat "%s"' % remotePath)[2]
@@ -200,9 +104,9 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
 
     @classmethod
     def printFileProgress(self, completed, total):
-        if not hasattr(self, 'progressCounter'):
-            self.progressCounter = ProgressCounter(total)
-        self.progressCounter.maybePrintUpdate(completed)
+        if not hasattr(self, 'progress_counter'):
+            self.progress_counter = ProgressCounter(total)
+        self.progress_counter.maybePrintUpdate(completed)
 
     def getDeleteFile(self, remotePath, localPath):
         self.assertRemoteFileExists(remotePath)
@@ -217,8 +121,8 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         #     sftpClient = self.service.open_sftp()
         #     sftpClient.get(remotePath, localPath, self.printFileProgress)
         #     sftpClient.remove(remotePath)
-        # except Exception, e:
-        #     exception = e
+        # except Exception, exc:
+        #     exception = exc
         # finally:
         #     sftpClient.close()
         # if exception:
@@ -228,12 +132,12 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         self.assertRemoteFileExists(remotePath)
         self.service.exec_command('rm "%s"' % remotePath)
 
-    def uploadChanges(self, user_pkey, updates=None):
+    def upload_changes(self, user_pkey, updates=None):
         if not updates:
             return
         # print "UPDATES:", updates
 
-        self.assertConnect()
+        self.assert_connect()
 
         if 'MYOB Card ID' in updates:
             del updates['MYOB Card ID']
@@ -252,10 +156,10 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         remotePath = os.path.join(remote_export_folder, fileName)
         importedFile = os.path.join(remote_export_folder, fileRoot + '.imported')
 
-        with open(localPath, 'w+') as outFile:
+        with open(localPath, 'w+') as out_file:
             csvdialect = UnicodeCsvDialectUtils.act_out
             dictwriter = unicodecsv.DictWriter(
-                outFile,
+                out_file,
                 dialect=csvdialect,
                 fieldnames=updates.keys(),
                 encoding='utf8',
@@ -293,7 +197,7 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         except:
             raise Exception("import didn't produce a .imported file")
 
-    def analyseRemote(self, parser, since=None, limit=None):
+    def analyse_remote(self, parser, since=None, limit=None):
         if not since:
             since = '1970-01-01'
         if limit:
@@ -336,14 +240,14 @@ class UsrSyncClient_SSH_ACT(SyncClient_Abstract):
         print "analysing file..."
         parser.analyseFile(localPath, dialect_suggestion='act_out')
 
-class UsrSyncClient_SQL_WP(SyncClient_Abstract):
+class UsrSyncClient_SQL_WP(SyncClientAbstract):
     service_builder = SSHTunnelForwarder
 
     """docstring for UsrSyncClient_SQL_WP"""
-    def __init__(self, connectParams, dbParams):
+    def __init__(self, connect_params, dbParams):
         self.dbParams = dbParams
         self.tbl_prefix = self.dbParams.pop('tbl_prefix','')
-        super(UsrSyncClient_SQL_WP, self).__init__(connectParams)
+        super(UsrSyncClient_SQL_WP, self).__init__(connect_params)
         # self.fsParams = fsParams
 
     def __enter__(self):
@@ -353,12 +257,12 @@ class UsrSyncClient_SQL_WP(SyncClient_Abstract):
     def __exit__(self, exit_type, value, traceback):
         self.service.close()
 
-    def attemptConnect(self):
-        self.service = SSHTunnelForwarder( **self.connectParams )
+    def attempt_connect(self):
+        self.service = SSHTunnelForwarder( **self.connect_params )
 
-    def analyseRemote(self, parser, since=None, limit=None, filterItems=None):
+    def analyse_remote(self, parser, since=None, limit=None, filterItems=None):
 
-        self.assertConnect()
+        self.assert_connect()
 
         # srv_offset = self.dbParams.pop('srv_offset','')
         self.dbParams['port'] = self.service.local_bind_address[-1]

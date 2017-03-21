@@ -34,9 +34,9 @@ class InheritenceUtils(object): # pylint: disable=too-few-public-methods
             return type(instances[0])
         else:
             return None
-        # except AssertionError, e:
-        #     Registrar.registerError(e)
-        #     raise e
+        # except AssertionError, exc:
+        #     Registrar.registerError(exc)
+        #     raise exc
         #     return None
 
 def overrides(interface_class):

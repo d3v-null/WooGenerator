@@ -152,7 +152,7 @@ class ObjList(list, Registrar):
         assert filePath, "needs a filepath"
         assert colNames, "needs colNames"
         assert self.objects, "meeds items"
-        with open(filePath, 'w+') as outFile:
+        with open(filePath, 'w+') as out_file:
             if dialect is None:
                 csvdialect = UnicodeCsvDialectUtils.act_out
             else:
@@ -161,7 +161,7 @@ class ObjList(list, Registrar):
             if self.DEBUG_ABSTRACT:
                 self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
             dictwriter = unicodecsv.DictWriter(
-                outFile,
+                out_file,
                 dialect=csvdialect,
                 fieldnames=colNames.keys(),
                 encoding=encoding,
@@ -499,7 +499,7 @@ class CSVParse_Base(Registrar):
                 raise Exception("could not append row %d, %s: \n\t%s" %
                                 (len(rows), str(exc), repr(rows[-1:])))
             rowlen = len(rows)
-            self.progressCounter = ProgressCounter(rowlen)
+            self.progress_counter = ProgressCounter(rowlen)
             unicode_rows = rows
 
         for unicode_row in (unicode_rows):
@@ -508,7 +508,7 @@ class CSVParse_Base(Registrar):
             if limit and self.rowcount > limit:
                 break
             if self.DEBUG_PROGRESS:
-                self.progressCounter.maybePrintUpdate(self.rowcount)
+                self.progress_counter.maybePrintUpdate(self.rowcount)
                 # now = time()
                 # if now - last_print > 1:
                 #     last_print = now

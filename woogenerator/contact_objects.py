@@ -528,8 +528,8 @@ class ContactAddress(ContactObject):
                 assert int(number_find) > int(subunit_find), "Number must be greater than subunit number"
                 subunit_number += number
                 self.addSubunit( (subunit_type, subunit_number) )
-            except Exception, e:
-                self.registerMessage(SanitationUtils.coerceUnicode(e))
+            except Exception, exc:
+                self.registerMessage(SanitationUtils.coerceUnicode(exc))
                 self.completeSubunit( (subunit_type, subunit_number) )
                 self.addNumber( number )
         elif not self.properties['subunits']:
@@ -703,8 +703,8 @@ class ContactAddress(ContactObject):
         if thoroughfare_type:
             try:
                 assert AddressUtils.getThoroughfareType(thoroughfare_type), "Unknown thoroughfares type: %s" % thoroughfare_type
-            except Exception, e:
-                self.enforceStrict(SanitationUtils.coerceUnicode(e))
+            except Exception, exc:
+                self.enforceStrict(SanitationUtils.coerceUnicode(exc))
         else:
             self.enforceStrict("No thoroughfare type: " + thoroughfare_name)
 

@@ -7,27 +7,27 @@ from woogenerator.utils import ProgressCounter, SanitationUtils, UnicodeCsvDiale
 
 class testProgressCounter(TestCase):
     def setUp(self):
-        self.progressCounter = ProgressCounter(100, 1)
+        self.progress_counter = ProgressCounter(100, 1)
 
     @skip("takes too long")
     def test_carriageReturn(self):
-        self.progressCounter.maybePrintUpdate(1)
+        self.progress_counter.maybePrintUpdate(1)
         sleep(1)
-        self.progressCounter.maybePrintUpdate(2)
+        self.progress_counter.maybePrintUpdate(2)
         sleep(1)
-        self.progressCounter.maybePrintUpdate(3)
+        self.progress_counter.maybePrintUpdate(3)
         sleep(1)
         print "woo something else\n"
 
-        self.progressCounter.maybePrintUpdate(3)
+        self.progress_counter.maybePrintUpdate(3)
         sleep(1)
-        self.progressCounter.maybePrintUpdate(4)
+        self.progress_counter.maybePrintUpdate(4)
         sleep(1)
 
         print "woo, another thing"
 
         for i in range(90, 100):
-            self.progressCounter.maybePrintUpdate(i)
+            self.progress_counter.maybePrintUpdate(i)
             sleep(1)
 
         print "some stuff after"

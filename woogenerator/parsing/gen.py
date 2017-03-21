@@ -269,8 +269,8 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
         return self.itemAncestors
 
     def getNameAncestors(self):
-        e = DeprecationWarning("use .nameAncestors instead of .getNameAncestors()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .nameAncestors instead of .getNameAncestors()")
+        self.registerError(exc)
         return self.nameAncestors
         # return self.getItemAncestors()
 
@@ -289,8 +289,8 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
     nameDelimeter = ' > '
 
     def getNameDelimeter(self):
-        e = DeprecationWarning("use .nameDelimeter instead of .getNameDelimeter()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .nameDelimeter instead of .getNameDelimeter()")
+        self.registerError(exc)
         return ' > '
 
 class CSVParse_Gen_Mixin(object):

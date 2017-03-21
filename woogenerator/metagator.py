@@ -34,15 +34,15 @@ class MetaGator(Registrar):
             # print "image is PNG"
             try:
                 new = Image.open(os.path.join(self.dir, self.fname))
-            except Exception as e:
-                raise Exception('unable to open image: '+str(e))
+            except Exception as exc:
+                raise Exception('unable to open image: '+str(exc))
             meta = PngImagePlugin.PngInfo()
             meta.add_text("title", title)
             meta.add_text("description", description)
             try:
                 new.save(os.path.join(self.dir, self.fname), pnginfo=meta)
-            except Exception as e:
-                raise Exception('unable to write image: '+str(e))
+            except Exception as exc:
+                raise Exception('unable to write image: '+str(exc))
 
         elif self.isJPG:
             # print "image is JPG"

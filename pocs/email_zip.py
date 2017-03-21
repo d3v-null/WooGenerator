@@ -35,9 +35,9 @@ def send_file_zipped(the_file, recipients, sender='you@you.com'):
     smtp.sendmail(sender, recipients, themsg)
     smtp.close()
 
-def send_zipped_file(zipped_file, recipients, sender, connectParams):
+def send_zipped_file(zipped_file, recipients, sender, connect_params):
     for param in ['host', 'port', 'user', 'pass']:
-        assert param in connectParams, 'must specify mandatory parameter %s' % param
+        assert param in connect_params, 'must specify mandatory parameter %s' % param
 
     themsg = MIMEMultipart()
     themsg['Subject'] = 'TEST: File %s' % zipped_file
@@ -55,7 +55,7 @@ def send_zipped_file(zipped_file, recipients, sender, connectParams):
     themsg = themsg.as_string()
 
     # send the message
-    server = smtplib.SMTP(connectParams['host'], connectParams['port'])
+    server = smtplib.SMTP(connect_params['host'], connect_params['port'])
     server.ehlo()
     server.starttls()
     server.login('derwentx@gmail.com','Opensesami0114')
@@ -70,8 +70,8 @@ yamlPath = os.path.join(srcFolder, "merger_config.yaml")
 try:
     os.stat('source')
     os.chdir('source')
-except Exception as e:
-    if(e): pass
+except Exception as exc:
+    if(exc): pass
     os.chdir(srcFolder)
 print os.getcwd()
 
@@ -87,7 +87,7 @@ send_zipped_file(
     '/Users/Derwent/Desktop/test.zip',
     ['webmaster@technotan.com.au'],
     'webmaster@technotan.com.au',
-    connectParams={
+    connect_params={
         'host': smtp_host,
         'port': smtp_port,
         'user': smtp_user,

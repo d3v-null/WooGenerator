@@ -44,8 +44,8 @@ class ImportSpecial(ImportFlat):
         return self.ID
 
     def getIndex(self):
-        e = DeprecationWarning("use .index instead of .getIndex()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .index instead of .getIndex()")
+        self.registerError(exc)
         return self.index
 
 class CSVParse_Special(CSVParse_Flat):

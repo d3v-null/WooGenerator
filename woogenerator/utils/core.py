@@ -1038,8 +1038,8 @@ class Registrar(object):
     def warningResolver(self, new, old, index, registerName = ''):
         try:
             self.exceptionResolver(new, old, index, registerName)
-        except Exception as e:
-            self.registerError(e, new )
+        except Exception as exc:
+            self.registerError(exc, new )
 
     @classmethod
     def stringAnything(self, index, thing, delimeter='|'):
@@ -1066,9 +1066,9 @@ class Registrar(object):
                 index = indexer
             assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
-        except AssertionError as e:
+        except AssertionError as exc:
             name = thing.__name__ if hasattr(thing, '__name__') else repr(indexer)
-            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (name, repr(index), str(e)))
+            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (name, repr(index), str(exc)))
         else:
             # if not register:
             #     register = OrderedDict()

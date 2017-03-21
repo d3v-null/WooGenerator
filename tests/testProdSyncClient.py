@@ -80,7 +80,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
     def testRead(self):
         response = []
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.getIterator()
+            response = client.get_iterator()
         # print tabulate(list(response)[:10], headers='keys')
 
         self.assertTrue(response)
@@ -91,7 +91,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
         )
 
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            client.analyseRemote(productParser, limit=20)
+            client.analyse_remote(productParser, limit=20)
 
         prodList = ShopProdList(productParser.products.values())
         # print SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))
@@ -108,7 +108,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             'regular_price': u'37.00'
         }
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadChanges", response.json()
@@ -121,7 +121,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             ]))
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             wn_regular_price = response.json()['product']['meta']['lc_wn_regular_price']
             # print response
             # if hasattr(response, 'json'):
@@ -136,7 +136,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             ]))
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadDeleteMeta", response.json()
@@ -150,7 +150,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             ('weight', u'11.0')
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadChangesVariation", response.json()
@@ -166,7 +166,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             ]))
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadChangesVariationMeta", response.json()
@@ -183,7 +183,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
             ]))
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
-            response = client.uploadChanges(pkey, updates)
+            response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadDeleteVariationMeta", response.json()
@@ -199,7 +199,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
 
     def testCatSyncClient(self):
         with CatSyncClient_WC(self.wcApiParams) as client:
-            for page in client.getIterator():
+            for page in client.get_iterator():
                 print page
 
 if __name__ == '__main__':

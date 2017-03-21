@@ -316,7 +316,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         if args.debug_duplicates is not None:
             Registrar.DEBUG_DUPLICATES = args.debug_duplicates
 
-        global_limit = args.limit
+        settings.limit = args.limit
 
     # api config
 
@@ -449,7 +449,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
 
     settings.act_fields = ";".join(ColData_User.getACTImportCols())
 
-    # jsonConnectParams = {
+    # jsonconnect_params = {
     #     'json_uri': json_uri,
     #     'wp_user': wp_user,
     #     'wp_pass': wp_pass
@@ -543,7 +543,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         cols=ColData_User.getWPImportCols(),
         defaults=ColData_User.getDefaults(),
         filterItems=filter_items,
-        limit=global_limit,
+        limit=settings.limit,
         source=settings.slave_name)
     if download_slave:
         settings.ssh_tunnel_forwarder_address = (settings.ssh_host,
@@ -579,12 +579,12 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         }
 
         print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
-        print "PyMySqlConnectParams", py_my_sql_connect_params
+        print "PyMySqlconnect_params", py_my_sql_connect_params
 
         with UsrSyncClient_SQL_WP(ssh_tunnel_forwarder_params,
                                   py_my_sql_connect_params) as client:
-            client.analyseRemote(
-                sa_parser, limit=global_limit, filterItems=filter_items)
+            client.analyse_remote(
+                sa_parser, limit=settings.limit, filterItems=filter_items)
 
             sa_parser.getObjList().exportItems(
                 os.path.join(settings.in_folder, s_x_filename),
@@ -604,7 +604,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         defaults=ColData_User.getDefaults(),
         contact_schema='act',
         filterItems=filter_items,
-        limit=global_limit,
+        limit=settings.limit,
         source=settings.master_name)
 
     print debugUtils.hashify("Generate and Analyse ACT data"), timediff(
@@ -618,7 +618,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
 
         with UsrSyncClient_SSH_ACT(act_connect_params, act_db_params,
                                    fs_params) as master_client:
-            master_client.analyseRemote(ma_parser, limit=global_limit)
+            master_client.analyse_remote(ma_parser, limit=settings.limit)
     else:
         ma_parser.analyseFile(
             ma_path, dialect_suggestion='act_out', encoding=ma_encoding)
@@ -782,16 +782,16 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
             #     print "examining SyncUpdate"
             #     SanitationUtils.safePrint( syncUpdate.tabulate(tablefmt = 'simple'))
 
-            if sync_update.mUpdated and sync_update.mDeltas:
+            if sync_update.m_updated and sync_update.m_deltas:
                 insort(m_delta_updates, sync_update)
 
-            if sync_update.sUpdated and sync_update.sDeltas:
+            if sync_update.s_updated and sync_update.s_deltas:
                 insort(s_delta_updates, sync_update)
 
             if not sync_update:
                 continue
 
-            if sync_update.sUpdated:
+            if sync_update.s_updated:
                 sync_slave_updates = sync_update.getSlaveUpdates()
                 if 'E-mail' in sync_slave_updates:
                     new_email = sync_slave_updates['E-mail']
@@ -810,30 +810,30 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                                 (new_email, exc))
                         continue
 
-            if not sync_update.importantStatic:
-                if sync_update.mUpdated and sync_update.sUpdated:
-                    if sync_update.sMod:
+            if not sync_update.important_static:
+                if sync_update.m_updated and sync_update.s_updated:
+                    if sync_update.s_mod:
                         insort(problematic_updates, sync_update)
                         continue
-                elif sync_update.mUpdated and not sync_update.sUpdated:
+                elif sync_update.m_updated and not sync_update.s_updated:
                     insort(nonstatic_m_updates, sync_update)
-                    if sync_update.sMod:
+                    if sync_update.s_mod:
                         insort(problematic_updates, sync_update)
                         continue
-                elif sync_update.sUpdated and not sync_update.mUpdated:
+                elif sync_update.s_updated and not sync_update.m_updated:
                     insort(nonstatic_s_updates, sync_update)
-                    if sync_update.sMod:
+                    if sync_update.s_mod:
                         insort(problematic_updates, sync_update)
                         continue
 
-            if sync_update.sUpdated or sync_update.mUpdated:
+            if sync_update.s_updated or sync_update.m_updated:
                 insort(static_updates, sync_update)
-                if sync_update.mUpdated and sync_update.sUpdated:
+                if sync_update.m_updated and sync_update.s_updated:
                     insort(master_updates, sync_update)
                     insort(slave_updates, sync_update)
-                if sync_update.mUpdated and not sync_update.sUpdated:
+                if sync_update.m_updated and not sync_update.s_updated:
                     insort(master_updates, sync_update)
-                if sync_update.sUpdated and not sync_update.mUpdated:
+                if sync_update.s_updated and not sync_update.m_updated:
                     insort(slave_updates, sync_update)
 
         print debugUtils.hashify("COMPLETED MERGE")
@@ -941,11 +941,11 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
             m_delta_list = UsrObjList(
-                filter(None, [update.newMObject
+                filter(None, [update.new_m_object
                               for update in m_delta_updates]))
 
             s_delta_list = UsrObjList(
-                filter(None, [update.newSObject
+                filter(None, [update.new_s_object
                               for update in s_delta_updates]))
 
             delta_cols = ColData_User.getDeltaCols()
@@ -1355,7 +1355,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         with \
             UsrSyncClient_SSH_ACT(act_connect_params, act_db_params, fs_params) as master_client, \
             UsrSyncClient_WP(wp_api_params) as slave_client:
-            # UsrSyncClient_JSON(jsonConnectParams) as slave_client:
+            # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
@@ -1363,7 +1363,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                 # if update.WPID == '1':
                 #     print repr(update.WPID)
                 #     continue
-                if update_master and update.mUpdated:
+                if update_master and update.m_updated:
                     try:
                         update.updateMaster(master_client)
                     except Exception, exc:
@@ -1371,9 +1371,9 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerceUnicode(update.newMObject),
+                            SanitationUtils.coerceUnicode(update.new_m_object),
                             'slave':
-                            SanitationUtils.coerceUnicode(update.newSObject),
+                            SanitationUtils.coerceUnicode(update.new_s_object),
                             'mchanges':
                             SanitationUtils.coerceUnicode(
                                 update.getMasterUpdates()),
@@ -1385,11 +1385,11 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                         })
                         Registrar.registerError(
                             "ERROR UPDATING MASTER (%s): %s\n%s" %
-                            (update.MasterID, repr(exc),
+                            (update.master_id, repr(exc),
                              traceback.format_exc()))
 
                         # continue
-                if update_slave and update.sUpdated:
+                if update_slave and update.s_updated:
                     try:
                         update.updateSlave(slave_client)
                     except Exception, exc:
@@ -1397,9 +1397,9 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                             'update':
                             update,
                             'master':
-                            SanitationUtils.coerceUnicode(update.newMObject),
+                            SanitationUtils.coerceUnicode(update.new_m_object),
                             'slave':
-                            SanitationUtils.coerceUnicode(update.newSObject),
+                            SanitationUtils.coerceUnicode(update.new_s_object),
                             'mchanges':
                             SanitationUtils.coerceUnicode(
                                 update.getMasterUpdates()),
@@ -1411,7 +1411,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                         })
                         Registrar.registerError(
                             "ERROR UPDATING SLAVE (%s): %s\n%s" %
-                            (update.SlaveID, repr(exc),
+                            (update.slave_id, repr(exc),
                              traceback.format_exc()))
 
     def output_failures(failures, file_path):

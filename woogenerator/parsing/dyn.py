@@ -307,41 +307,41 @@ if __name__ == '__main__':
     dprcPath= os.path.join(inFolder, 'DPRC.csv')
     dprpPath= os.path.join(inFolder, 'DPRP.csv')
     outFolder = "../output/"
-    outPath = os.path.join(outFolder, 'dynRules.html')
+    out_path = os.path.join(outFolder, 'dynRules.html')
 
     dynParser = CSVParse_Dyn()
     dynParser.analyseFile(dprpPath)
 
     #todo: rewrite in htmlReporter
 
-    with open(outPath, 'w+') as outFile:
+    with open(out_path, 'w+') as out_file:
         def writeSection(title, description, data, length = 0, html_class="results_section"):
             sectionID = SanitationUtils.makeSafeClass(title)
             description = "%s %s" % (str(length) if length else "No", description)
-            outFile.write('<div class="%s">'% html_class )
-            outFile.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
-            outFile.write('<h2>%s (%d)</h2>' % (title, length))
-            outFile.write('</a>')
-            outFile.write('<div class="collapse" id="%s">' % sectionID)
-            outFile.write('<p class="description">%s</p>' % description)
-            outFile.write('<p class="data">' )
-            outFile.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
-            outFile.write('</p>')
-            outFile.write('</div>')
-            outFile.write('</div>')
-        outFile.write('<!DOCTYPE html>')
-        outFile.write('<html lang="en">')
-        outFile.write('<head>')
-        outFile.write("""
+            out_file.write('<div class="%s">'% html_class )
+            out_file.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
+            out_file.write('<h2>%s (%d)</h2>' % (title, length))
+            out_file.write('</a>')
+            out_file.write('<div class="collapse" id="%s">' % sectionID)
+            out_file.write('<p class="description">%s</p>' % description)
+            out_file.write('<p class="data">' )
+            out_file.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
+            out_file.write('</p>')
+            out_file.write('</div>')
+            out_file.write('</div>')
+        out_file.write('<!DOCTYPE html>')
+        out_file.write('<html lang="en">')
+        out_file.write('<head>')
+        out_file.write("""
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
     """)
-        outFile.write('<body>')
-        outFile.write('<div class="matching">')
-        outFile.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
+        out_file.write('<body>')
+        out_file.write('<div class="matching">')
+        out_file.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
         for rule in dynParser.taxos.values():
             rule['html'] = rule.toHTML()
             rule['_pricing_rule'] = rule.to_pricing_rule()
@@ -361,10 +361,10 @@ if __name__ == '__main__':
             length = len(dynList.objects)
         )
 
-        outFile.write('</div>')
-        outFile.write("""
+        out_file.write('</div>')
+        out_file.write("""
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     """)
-        outFile.write('</body>')
-        outFile.write('</html>')
+        out_file.write('</body>')
+        out_file.write('</html>')

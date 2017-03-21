@@ -6,7 +6,7 @@ from unittest import TestCase #, main, skip
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
-from woogenerator.sync_client import SyncClient_GDrive
+from woogenerator.sync_client import SyncClientGDrive
 from woogenerator.sync_client_prod import ProdSyncClient_WC
 from woogenerator.sync_client_user import UsrSyncClient_WP
 from woogenerator.coldata import ColData_User, ColData_Woo
@@ -125,7 +125,7 @@ class testSyncClient(abstractSyncClientTestCase):
         print "productParserArgs", self.productParserArgs
 
     def test_GDrive_Read(self):
-        with SyncClient_GDrive(self.gDriveParams) as client:
+        with SyncClientGDrive(self.gDriveParams) as client:
             print "drive file:", client.drive_file
             print "GID", client.get_gm_modtime(self.gDriveParams['genGID'])
 
@@ -134,7 +134,7 @@ class testSyncClient(abstractSyncClientTestCase):
         self.wcApiParams.update(timeout=1)
         with ProdSyncClient_WC(self.wcApiParams) as client:
             # print client.service.get('products').text
-            for pagecount, page in enumerate(client.getIterator('products')):
+            for pagecount, page in enumerate(client.get_iterator('products')):
                 print "PAGE %d: " % pagecount
                 if 'products' in page:
                     for page_product in page.get('products'):
@@ -148,7 +148,7 @@ class testSyncClient(abstractSyncClientTestCase):
     def test_UsrSyncClient_WP_Read(self):
         with UsrSyncClient_WP(self.wpApiParams) as client:
             print client.service.get('users').text
-            for pagecount, page in enumerate(client.getIterator('users')):
+            for pagecount, page in enumerate(client.get_iterator('users')):
                 print "PAGE %d: " % pagecount
                 if 'users' in page:
                     for page_user in page.get('users'):

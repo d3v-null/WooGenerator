@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     curses.wrapper(main)
     # try:
-    # except Exception as e:
-    #     raise e
+    # except Exception as exc:
+    #     raise exc
 
 

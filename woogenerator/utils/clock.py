@@ -98,10 +98,11 @@ class TimeUtils(object):
         converts to wp formatted local time string """
         if not fmt:
             fmt = cls.wpTimeFormat
-        assert isinstance(secs, (Number, basestring)), \
-            "param must be a number or string not %s" % type(secs)
-        secs = float(secs)
-        return time.strftime(fmt, time.localtime(secs))
+        if secs:
+            assert isinstance(secs, (Number, basestring)), \
+                "param must be a number or string not %s" % type(secs)
+            secs = float(secs)
+            return time.strftime(fmt, time.localtime(secs))
 
     @classmethod
     def has_happened_yet(cls, secs):

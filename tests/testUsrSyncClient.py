@@ -21,9 +21,9 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     def __init__(self, *args, **kwargs):
         super(testUsrSyncClient, self).__init__(*args, **kwargs)
         self.SSHTunnelForwarderParams = {}
-        self.PyMySqlConnectParams = {}
-        self.jsonConnectParams = {}
-        self.actConnectParams = {}
+        self.PyMySqlconnect_params = {}
+        self.jsonconnect_params = {}
+        self.actconnect_params = {}
         self.actDbParams = {}
         self.fsParams = {}
 
@@ -86,7 +86,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             'remote_bind_address': SSHTunnelForwarderBindAddress,
         }
 
-        self.PyMySqlConnectParams = {
+        self.PyMySqlconnect_params = {
             'host' : 'localhost',
             'user' : db_user,
             'password': db_pass,
@@ -114,13 +114,13 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         # json_uri = store_url + 'wp-json/wp/v2'
         #
-        # self.jsonConnectParams = {
+        # self.jsonconnect_params = {
         #     'json_uri': json_uri,
         #     'wp_user': wp_user,
         #     'wp_pass': wp_pass
         # }
 
-        self.actConnectParams = {
+        self.actconnect_params = {
             'hostname':    m_ssh_host,
             'port':        m_ssh_port,
             'username':    m_ssh_user,
@@ -147,8 +147,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     def setUp(self):
         super(testUsrSyncClient, self).setUp()
 
-        for var in ['SSHTunnelForwarderParams', 'PyMySqlConnectParams',
-                    'wcApiParams', 'actConnectParams', 'actDbParams']:
+        for var in ['SSHTunnelForwarderParams', 'PyMySqlconnect_params',
+                    'wcApiParams', 'actconnect_params', 'actDbParams']:
             print var, getattr(self, var)
 
         # Registrar.DEBUG_SHOP = True
@@ -171,9 +171,9 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         with UsrSyncClient_SQL_WP(
             self.SSHTunnelForwarderParams,
-            self.PyMySqlConnectParams
+            self.PyMySqlconnect_params
         ) as sqlClient:
-            sqlClient.analyseRemote(saParser, since='2016-01-01 00:00:00')
+            sqlClient.analyse_remote(saParser, since='2016-01-01 00:00:00')
 
         # CSVParse_User.printBasicColumns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
@@ -185,14 +185,14 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             "MYOB Card ID": "C000001",
         }
 
-        with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
-            response = client.uploadChanges('C000001', fields)
+        with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+            response = client.upload_changes('C000001', fields)
         print response
 
     # @skip
     # def test_JSON_read(self):
     #     response = ''
-    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
+    #     with UsrSyncClient_JSON(self.jsonconnect_params) as client:
     #         response = client.service.get_posts()
     #     print response
     #     self.assertTrue(response)
@@ -202,8 +202,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     fields = {"user_email": "neil@technotan.com.au"}
     #
     #     response = ''
-    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-    #         response = client.uploadChanges(2, fields)
+    #     with UsrSyncClient_JSON(self.jsonconnect_params) as client:
+    #         response = client.upload_changes(2, fields)
     #
     #     print response
     #
@@ -212,8 +212,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     fields = {"first_name": "neil"}
     #
     #     response = ''
-    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-    #         response = client.uploadChanges(1, fields)
+    #     with UsrSyncClient_JSON(self.jsonconnect_params) as client:
+    #         response = client.upload_changes(1, fields)
     #
     #     self.assertTrue(response)
     #
@@ -224,15 +224,15 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     user_id = 2508
     #
     #     response = None
-    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-    #         response = client.uploadChanges(user_id, fields)
+    #     with UsrSyncClient_JSON(self.jsonconnect_params) as client:
+    #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
     #     with UsrSyncClient_SQL_WP(
     #         self.SSHTunnelForwarderParams,
-    #         self.PyMySqlConnectParams
+    #         self.PyMySqlconnect_params
     #     ) as sqlClient:
-    #         sqlClient.assertConnect()
+    #         sqlClient.assert_connect()
     #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
     #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
     #
@@ -258,15 +258,15 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     user_id = 2508
     #
     #     response = None
-    #     with UsrSyncClient_JSON(self.jsonConnectParams) as client:
-    #         response = client.uploadChanges(user_id, fields)
+    #     with UsrSyncClient_JSON(self.jsonconnect_params) as client:
+    #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
     #     with UsrSyncClient_SQL_WP(
     #         self.SSHTunnelForwarderParams,
-    #         self.PyMySqlConnectParams
+    #         self.PyMySqlconnect_params
     #     ) as sqlClient:
-    #         sqlClient.assertConnect()
+    #         sqlClient.assert_connect()
     #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
     #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
     #
@@ -288,7 +288,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     def test_WC_read(self):
         response = []
         with UsrSyncClient_WC(self.wcApiParams) as client:
-            response = client.getIterator()
+            response = client.get_iterator()
         print tabulate(list(response)[:10], headers='keys')
         print list(response)
         self.assertTrue(response)
@@ -298,7 +298,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #
     #     response = ''
     #     with UsrSyncClient_WC(self.wcApiParams) as client:
-    #         response = client.uploadChanges(2, fields)
+    #         response = client.upload_changes(2, fields)
     #
     #     print response
     #
@@ -307,7 +307,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #
     #     response = ''
     #     with UsrSyncClient_WC(self.wcApiParams) as client:
-    #         response = client.uploadChanges(1, fields)
+    #         response = client.upload_changes(1, fields)
     #
     #     self.assertTrue(response)
     #
@@ -318,14 +318,14 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #
     #     response = None
     #     with UsrSyncClient_WC(self.wcApiParams) as client:
-    #         response = client.uploadChanges(user_id, fields)
+    #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
     #     with UsrSyncClient_SQL_WP(
     #         self.SSHTunnelForwarderParams,
-    #         self.PyMySqlConnectParams
+    #         self.PyMySqlconnect_params
     #     ) as sqlClient:
-    #         sqlClient.assertConnect()
+    #         sqlClient.assert_connect()
     #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
     #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
     #
@@ -351,14 +351,14 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #
     #     response = None
     #     with UsrSyncClient_WC(self.wcApiParams) as client:
-    #         response = client.uploadChanges(user_id, fields)
+    #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
     #     with UsrSyncClient_SQL_WP(
     #         self.SSHTunnelForwarderParams,
-    #         self.PyMySqlConnectParams
+    #         self.PyMySqlconnect_params
     #     ) as sqlClient:
-    #         sqlClient.assertConnect()
+    #         sqlClient.assert_connect()
     #         sqlClient.dbParams['port'] = sqlClient.service.local_bind_address[-1]
     #         cursor = pymysql.connect( **sqlClient.dbParams ).cursor()
     #
@@ -380,14 +380,14 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     def test_WP_read(self):
         response = []
         with UsrSyncClient_WP(self.wpApiParams) as client:
-            response = client.getIterator()
+            response = client.get_iterator()
         print tabulate(list(response)[:10], headers='keys')
         print list(response)
         self.assertTrue(response)
 
     def test_WP_iterator(self):
         with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
-            iterator = slaveClient.getIterator('users?context=edit')
+            iterator = slaveClient.get_iterator('users?context=edit')
             for page in iterator:
                 pprint(page)
 
@@ -401,12 +401,12 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         )
 
         with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
-            slaveClient.analyseRemote(saParser)
+            slaveClient.analyse_remote(saParser)
 
         print saParser.tabulate()
 
     # def test_SSH_download(self):
-    #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
+    #     with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
     #         response = client.getDeleteFile('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
 
     # def test_SSH_Upload(self):
@@ -416,8 +416,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     }
     #
     #     response = ''
-    #     with UsrSyncClient_SSH_ACT(self.actConnectParams, self.actDbParams, self.fsParams) as client:
-    #         response = client.uploadChanges('C004897', fields)
+    #     with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+    #         response = client.upload_changes('C004897', fields)
     #
     #     print response
 

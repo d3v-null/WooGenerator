@@ -75,8 +75,8 @@ class ImportWooMixin(object):
             self.specials.append(special)
 
     def getSpecials(self):
-        e = DeprecationWarning("use .specials instead of .getSpecials()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .specials instead of .getSpecials()")
+        self.registerError(exc)
         return self.specials
 
 class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
@@ -156,8 +156,8 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             self.title = self.namesum
 
     def getNameDelimeter(self):
-        e = DeprecationWarning("use .nameDelimeter insetad of .getNameDelimeter()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .nameDelimeter insetad of .getNameDelimeter()")
+        self.registerError(exc)
         return self.nameDelimeter
 
     @property
@@ -167,8 +167,8 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         )
 
     def getInheritanceAncestors(self):
-        e = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .inheritenceAncestors insetad of .getInheritanceAncestors()")
+        self.registerError(exc)
         return self.inheritenceAncestors
         # return listUtils.filterUniqueTrue(
         #     self.getCategories().values() + \
@@ -182,8 +182,8 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         return "Specials > " + names[0] + " Specials"
 
     def getExtraSpecialCategory(self):
-        e = DeprecationWarning("use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .extraSpecialCategory insetad of .getExtraSpecialCategory()")
+        self.registerError(exc)
         return self.extraSpecialCategory
         # ancestorsSelf = self.getTaxoAncestors() + [self]
         # names = listUtils.filterUniqueTrue(map(lambda x: x.fullname, ancestorsSelf))
@@ -481,9 +481,9 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         try:
             allData = args[0]
         except IndexError:
-            e = UserWarning("allData not specified")
-            self.registerError(e)
-            raise e
+            exc = UserWarning("allData not specified")
+            self.registerError(exc)
+            raise exc
 
         if issubclass(container, ImportTreeItem) \
         and self.schema in allData:
@@ -492,9 +492,9 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 try:
                     container = self.containers[woo_type]
                 except IndexError:
-                    e = UserWarning("Unknown API product type: %s" % woo_type)
+                    exc = UserWarning("Unknown API product type: %s" % woo_type)
                     source = kwargs.get('rowcount')
-                    self.registerError(e, source)
+                    self.registerError(exc, source)
         if self.DEBUG_SHOP:
             self.registerMessage("container: {}".format(container.__name__))
         return container
@@ -505,8 +505,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
             special = str(special)
             assert isinstance(special, (str, unicode)), 'Special must be a string not {}'.format(type(special).__name__)
             assert special is not '', 'Attribute must not be empty'
-        except AssertionError as e:
-            self.registerError("could not register special: {}".format(e))
+        except AssertionError as exc:
+            self.registerError("could not register special: {}".format(exc))
         self.registerAnything(
             objectData,
             self.special_items,
@@ -757,8 +757,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
                 decoded = SanitationUtils.decodeJSON(attrs)
                 for attr, val in decoded.items():
                     self.registerAttribute(objectData, attr, val)
-            except Exception as e:
-                self.registerError("could not decode attributes: %s | %s" % (attrs, e), objectData )
+            except Exception as exc:
+                self.registerError("could not decode attributes: %s | %s" % (attrs, exc), objectData )
 
         if objectData.isVariation:
             parentData = objectData.parent
@@ -914,8 +914,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         if self.do_images and objectData.isProduct and not objectData.isVariation:
             try:
                 assert objectData['imgsum'], "All Products should have images"
-            except AssertionError as e:
-                self.registerWarning(e, objectData)
+            except AssertionError as exc:
+                self.registerWarning(exc, objectData)
 
         if self.DEBUG_WOO:
             self.registerMessage("imgsum of %s is %s"%(objectData.index, objectData.get('imgsum')))
@@ -1178,16 +1178,16 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['weight', 'length', 'height', 'width']:
                 if not objectData.get(key):
-                    e = UserWarning("All products must have shipping: %s"%key)
-                    self.registerError(e, objectData)
+                    exc = UserWarning("All products must have shipping: %s"%key)
+                    self.registerError(exc, objectData)
                     break
 
     def postProcessPricing(self, objectData):
         if objectData.isProduct and not objectData.isVariable:
             for key in ['WNR']:
                 if not objectData.get(key):
-                    e = UserWarning("All products must have pricing: %s"%key)
-                    self.registerWarning(e, objectData)
+                    exc = UserWarning("All products must have pricing: %s"%key)
+                    self.registerWarning(exc, objectData)
                     break
 
 
@@ -1217,20 +1217,20 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         return objects
 
     def getCategories(self):
-        e = DeprecationWarning("use .categories instead of .getCategories()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .categories instead of .getCategories()")
+        self.registerError(exc)
         return self.categories
         # return self.flatten(self.categories.values())
 
     def getAttributes(self):
-        e = DeprecationWarning("use .attributes instead of .getAttributes()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .attributes instead of .getAttributes()")
+        self.registerError(exc)
         return self.attributes
         # return self.flatten(self.attributes.values())
 
     def getVariations(self):
-        e = DeprecationWarning("use .variations instead of .getVariations()")
-        self.registerError(e)
+        exc = DeprecationWarning("use .variations instead of .getVariations()")
+        self.registerError(exc)
         return self.variations
 
 
