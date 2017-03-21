@@ -149,7 +149,8 @@ class SyncClientLocal(SyncClientAbstract):
         return parser.analyseFile(out_path, limit=limit)
         # out_encoding='utf8'
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
-        #     return parser.analyseStream(out_file, limit=limit, encoding=out_encoding)
+        # return parser.analyseStream(out_file, limit=limit,
+        # encoding=out_encoding)
 
 
 class SyncClientGDrive(SyncClientAbstract):
@@ -295,6 +296,7 @@ class SyncClientRest(SyncClientAbstract):
         """
         An iterator for traversing items in the API
         """
+
         def __init__(self, service, endpoint):
             assert isinstance(service, WPAPIService)
             self.service = service
@@ -382,7 +384,8 @@ class SyncClientRest(SyncClientAbstract):
             try:
                 self.prev_response = self.service.get(self.next_endpoint)
             except ReadTimeout as exc:
-                # instead of processing this endoint, do the page product by product
+                # instead of processing this endoint, do the page product by
+                # product
                 if self.limit > 1:
                     new_limit = 1
                     if Registrar.DEBUG_API:

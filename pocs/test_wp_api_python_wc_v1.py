@@ -5,12 +5,13 @@ from wordpress import API
 # from woocommerce import API
 from pprint import pprint, pformat
 
+
 def print_response(response):
     """figures out the type of response and attempts to print it """
     try:
         if 'json' in response.headers.get('content-type'):
             print "response json:"
-            pprint( response.json())
+            pprint(response.json())
         else:
             print "response: %s" % BeautifulSoup(response.text, 'lxml').prettify().encode(errors='backslashreplace')
         print "response code: %d" % response.status_code
@@ -40,7 +41,8 @@ print "\n\n*******\n* GET *\n*******\n\n"
 # response = wcapi.get('products')
 # response = wcapi.get('products?page=2')
 # response = wcapi.put('products/99', {'product':{'title':'Woo Single #2a'}} )
-# response = wcapi.put('products/99?id=http%3A%2F%2Fprinter', {'product':{'title':'Woo Single #2a'}} )
+# response = wcapi.put('products/99?id=http%3A%2F%2Fprinter',
+# {'product':{'title':'Woo Single #2a'}} )
 
 response = wcapi.get('products/21391')
 print_response(response)
@@ -54,18 +56,20 @@ print "categories: %s" % pformat([(category['id'], category['name']) for categor
 # quit()
 
 response = wcapi.get('products/17834')
-product_categories = response.json().get('categories',[])
+product_categories = response.json().get('categories', [])
 print "categories: %s" % pformat(product_categories)
-# print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
+# print "categories: %s" % pformat([(category['id'], category['name']) for
+# category in categories])
 
 print "\n\n*******\n* PUT *\n*******\n\n"
 
 # data = {'categories':[{'id':898}]} # works
-data = {'categories':[{'slug':'specials-accessories-specials'}]} # doesn't work
+# doesn't work
+data = {'categories': [{'slug': 'specials-accessories-specials'}]}
 response = wcapi.put('products/17834', data)
 
 response = wcapi.get('products/17834?fields=categories')
-product_categories = response.json().get('categories',[])
+product_categories = response.json().get('categories', [])
 print "categories: %s" % pformat(product_categories)
 
 #
@@ -86,7 +90,8 @@ print "categories: %s" % pformat(product_categories)
 
 # request_token, request_token_secret = wpapi.oauth.get_request_token()
 
-# print "request_token: %s, request_token_secret: %s" % (request_token, request_token_secret)
+# print "request_token: %s, request_token_secret: %s" % (request_token,
+# request_token_secret)
 
 # response = wpapi.oauth.get_verifier()
 
@@ -96,7 +101,6 @@ print "categories: %s" % pformat(product_categories)
 # response = wpapi.get('/posts?page=1')
 
 # response = wpapi.post('/posts/1', data={'title':"Hello world!!"})
-
 
 
 # print wpapi.oauth.authentication

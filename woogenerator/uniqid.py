@@ -1,7 +1,10 @@
-import time, math, random
+import time
+import math
+import random
 
 # port of uniqmodule.c to pure python by Derwentx,
 # inspired by http://gurukhalsa.me/2011/uniqid-in-python/
+
 
 def uniqid(prefix='', more_entropy=False):
     """uniqid([prefix=''[, more_entropy=False]]) -> str

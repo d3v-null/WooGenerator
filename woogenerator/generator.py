@@ -512,7 +512,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         return parsers
 
 
-def process_images(settings, parsers):  #pylint: disable=too-many-statements,too-many-branches,too-many-locals
+def process_images(settings, parsers):  # pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """
     Process the images information in from the parsers
     """
@@ -678,7 +678,7 @@ def process_images(settings, parsers):  #pylint: disable=too-many-statements,too
     # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
 
-def export_parsers(settings, parsers):  #pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """ Export key information from the parsers to spreadsheets """
     # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
@@ -773,7 +773,7 @@ def export_parsers(settings, parsers):  #pylint: disable=too-many-branches,too-m
             updated_variations_list.exportItems(flvu_path, variation_col_names)
 
 
-def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """ The main function for generator """
     # TODO: too-many-locals,too-many-branches,too-many-statements
 
@@ -948,7 +948,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
 
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                          settings.merge_mode, settings.default_last_sync)
+                           settings.merge_mode, settings.default_last_sync)
 
     if args.variant == "ACC":
         settings.gen_path = os.path.join(settings.in_folder,
@@ -1146,7 +1146,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
-    if settings.do_sync:  #pylint: disable=too-many-nested-blocks
+    if settings.do_sync:  # pylint: disable=too-many-nested-blocks
         # TODO: fix too-many-nested-blocks
         if settings.do_categories:
             if Registrar.DEBUG_CATS:
@@ -1427,7 +1427,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                     # master_categories = [category.wooCatName for category \
                     #                      in change_match_list.merge().m_objects]
                     # slave_categories =  [category.wooCatName for category \
-                    #                      in change_match_list.merge().s_objects]
+                    # in change_match_list.merge().s_objects]
 
                     sync_update.loserUpdate(**update_params)
                     # sync_update.new_m_object['catlist'] = master_categories
@@ -1614,7 +1614,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
             s_delta_list = ShopObjList(
                 [
                     delta_sync_update.new_s_object
-                    for delta_sync_update in s_delta_updates \
+                    for delta_sync_update in s_delta_updates
                     if delta_sync_update.new_s_object
                 ]
             )
@@ -1876,7 +1876,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                                 # api_product_parser.products[index],
                                 # api_product_parser.products[index].categories,
                                 # ", ".join(category.wooCatName \
-                                #           for category in matches.merge().m_objects),
+                                # for category in matches.merge().m_objects),
                                 ", ".join(category.wooCatName
                                           for category in matches.merge()
                                           .s_objects)
@@ -1934,7 +1934,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
                                           for category in matches.merge()
                                           .m_objects),
                                 # ", ".join(category.wooCatName \
-                                #           for category in matches.merge().s_objects)
+                                # for category in matches.merge().s_objects)
                             ] for index, matches in join_categories.items()
                         ],
                         tablefmt="html"),
@@ -2040,7 +2040,7 @@ def main(override_args=None, settings=None):  #pylint: disable=too-many-locals,t
         print "open this link to view report %s" % settings.rep_web_link
 
 
-def catch_main():  #pylint: disable=too-many-statements,too-many-branches
+def catch_main():  # pylint: disable=too-many-statements,too-many-branches
     # TODO: fix too-many-statements,too-many-branches
     """
     Run the main function within a try statement and attempt to analyse failure

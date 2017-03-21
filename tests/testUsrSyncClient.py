@@ -12,6 +12,7 @@ from woogenerator.coldata import ColData_User
 from woogenerator.parsing.user import ImportUser, CSVParse_User, CSVParse_User_Api
 from woogenerator.utils import TimeUtils, Registrar
 
+
 @skip('no config file yet')
 class testUsrSyncClient(abstractSyncClientTestCase):
     # yamlPath = "merger_config.yaml"
@@ -38,39 +39,43 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         # if 'logFolder' in config.keys():
         #     logFolder = config['logFolder']
 
-        ssh_user = config.get(self.optionNamePrefix+'ssh_user')
-        ssh_pass = config.get(self.optionNamePrefix+'ssh_pass')
-        ssh_host = config.get(self.optionNamePrefix+'ssh_host')
-        ssh_port = config.get(self.optionNamePrefix+'ssh_port', 22)
-        m_ssh_user = config.get(self.optionNamePrefix+'m_ssh_user')
-        m_ssh_pass = config.get(self.optionNamePrefix+'m_ssh_pass')
-        m_ssh_host = config.get(self.optionNamePrefix+'m_ssh_host')
-        m_ssh_port = config.get(self.optionNamePrefix+'m_ssh_port', 22)
-        remote_bind_host = config.get(self.optionNamePrefix+'remote_bind_host', '127.0.0.1')
-        remote_bind_port = config.get(self.optionNamePrefix+'remote_bind_port', 3306)
-        db_user = config.get(self.optionNamePrefix+'db_user')
-        db_pass = config.get(self.optionNamePrefix+'db_pass')
-        db_name = config.get(self.optionNamePrefix+'db_name')
-        db_charset = config.get(self.optionNamePrefix+'db_charset', 'utf8mb4')
-        wp_srv_offset = config.get(self.optionNamePrefix+'wp_srv_offset', 0)
-        m_db_user = config.get(self.optionNamePrefix+'m_db_user')
-        m_db_pass = config.get(self.optionNamePrefix+'m_db_pass')
-        m_db_name = config.get(self.optionNamePrefix+'m_db_name')
-        m_db_host = config.get(self.optionNamePrefix+'m_db_host')
-        m_x_cmd = config.get(self.optionNamePrefix+'m_x_cmd')
-        m_i_cmd = config.get(self.optionNamePrefix+'m_i_cmd')
-        tbl_prefix = config.get(self.optionNamePrefix+'tbl_prefix', '')
+        ssh_user = config.get(self.optionNamePrefix + 'ssh_user')
+        ssh_pass = config.get(self.optionNamePrefix + 'ssh_pass')
+        ssh_host = config.get(self.optionNamePrefix + 'ssh_host')
+        ssh_port = config.get(self.optionNamePrefix + 'ssh_port', 22)
+        m_ssh_user = config.get(self.optionNamePrefix + 'm_ssh_user')
+        m_ssh_pass = config.get(self.optionNamePrefix + 'm_ssh_pass')
+        m_ssh_host = config.get(self.optionNamePrefix + 'm_ssh_host')
+        m_ssh_port = config.get(self.optionNamePrefix + 'm_ssh_port', 22)
+        remote_bind_host = config.get(
+            self.optionNamePrefix + 'remote_bind_host', '127.0.0.1')
+        remote_bind_port = config.get(
+            self.optionNamePrefix + 'remote_bind_port', 3306)
+        db_user = config.get(self.optionNamePrefix + 'db_user')
+        db_pass = config.get(self.optionNamePrefix + 'db_pass')
+        db_name = config.get(self.optionNamePrefix + 'db_name')
+        db_charset = config.get(
+            self.optionNamePrefix + 'db_charset', 'utf8mb4')
+        wp_srv_offset = config.get(self.optionNamePrefix + 'wp_srv_offset', 0)
+        m_db_user = config.get(self.optionNamePrefix + 'm_db_user')
+        m_db_pass = config.get(self.optionNamePrefix + 'm_db_pass')
+        m_db_name = config.get(self.optionNamePrefix + 'm_db_name')
+        m_db_host = config.get(self.optionNamePrefix + 'm_db_host')
+        m_x_cmd = config.get(self.optionNamePrefix + 'm_x_cmd')
+        m_i_cmd = config.get(self.optionNamePrefix + 'm_i_cmd')
+        tbl_prefix = config.get(self.optionNamePrefix + 'tbl_prefix', '')
         # wp_user = config.get(self.optionNamePrefix+'wp_user', '')
         # wp_pass = config.get(self.optionNamePrefix+'wp_pass', '')
-        wc_api_key = config.get(self.optionNamePrefix+'wc_api_key')
-        wc_api_secret = config.get(self.optionNamePrefix+'wc_api_secret')
-        wp_api_key = config.get(self.optionNamePrefix+'wp_api_key')
-        wp_api_secret = config.get(self.optionNamePrefix+'wp_api_secret')
-        store_url = config.get(self.optionNamePrefix+'store_url', '')
-        wp_user = config.get(self.optionNamePrefix+'wp_user')
-        wp_pass = config.get(self.optionNamePrefix+'wp_pass')
-        wp_callback = config.get(self.optionNamePrefix+'wp_callback')
-        remote_export_folder = config.get(self.optionNamePrefix+'remote_export_folder', '')
+        wc_api_key = config.get(self.optionNamePrefix + 'wc_api_key')
+        wc_api_secret = config.get(self.optionNamePrefix + 'wc_api_secret')
+        wp_api_key = config.get(self.optionNamePrefix + 'wp_api_key')
+        wp_api_secret = config.get(self.optionNamePrefix + 'wp_api_secret')
+        store_url = config.get(self.optionNamePrefix + 'store_url', '')
+        wp_user = config.get(self.optionNamePrefix + 'wp_user')
+        wp_pass = config.get(self.optionNamePrefix + 'wp_pass')
+        wp_callback = config.get(self.optionNamePrefix + 'wp_callback')
+        remote_export_folder = config.get(
+            self.optionNamePrefix + 'remote_export_folder', '')
 
         TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
@@ -80,17 +85,17 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
 
         self.SSHTunnelForwarderParams = {
-            'ssh_address_or_host':SSHTunnelForwarderAddress,
-            'ssh_password':ssh_pass,
-            'ssh_username':ssh_user,
+            'ssh_address_or_host': SSHTunnelForwarderAddress,
+            'ssh_password': ssh_pass,
+            'ssh_username': ssh_user,
             'remote_bind_address': SSHTunnelForwarderBindAddress,
         }
 
         self.PyMySqlconnect_params = {
-            'host' : 'localhost',
-            'user' : db_user,
+            'host': 'localhost',
+            'user': db_user,
             'password': db_pass,
-            'db'   : db_name,
+            'db': db_name,
             'charset': db_charset,
             'use_unicode': True,
             'tbl_prefix': tbl_prefix,
@@ -98,18 +103,18 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         }
 
         self.wcApiParams = {
-            'api_key':wc_api_key,
-            'api_secret':wc_api_secret,
-            'url':store_url
+            'api_key': wc_api_key,
+            'api_secret': wc_api_secret,
+            'url': store_url
         }
 
         self.wpApiParams = {
             'api_key': wp_api_key,
             'api_secret': wp_api_secret,
-            'url':store_url,
-            'wp_user':wp_user,
-            'wp_pass':wp_pass,
-            'callback':wp_callback
+            'url': store_url,
+            'wp_user': wp_user,
+            'wp_pass': wp_pass,
+            'callback': wp_callback
         }
 
         # json_uri = store_url + 'wp-json/wp/v2'
@@ -128,13 +133,13 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         }
 
         self.actDbParams = {
-            'db_x_exe':m_x_cmd,
-            'db_i_exe':m_i_cmd,
+            'db_x_exe': m_x_cmd,
+            'db_i_exe': m_i_cmd,
             'db_name': m_db_name,
             'db_host': m_db_host,
             'db_user': m_db_user,
             'db_pass': m_db_pass,
-            'fields' : actFields,
+            'fields': actFields,
         }
 
         self.fsParams = {
@@ -162,11 +167,10 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
 
-
     def test_SQLWP_Analyse(self):
         saParser = CSVParse_User(
-            cols = ColData_User.getImportCols(),
-            defaults = ColData_User.getDefaults()
+            cols=ColData_User.getImportCols(),
+            defaults=ColData_User.getDefaults()
         )
 
         with UsrSyncClient_SQL_WP(
@@ -420,7 +424,6 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         response = client.upload_changes('C004897', fields)
     #
     #     print response
-
 
 
 if __name__ == '__main__':

@@ -65,13 +65,15 @@ class TimeUtils(object):
     @classmethod
     def set_wp_srv_offset(cls, offset):
         """ changes the offset (secs) """
-        assert isinstance(offset, (int, float)), "param must be a number not %s" % type(offset)
+        assert isinstance(offset, (int, float)
+                          ), "param must be a number not %s" % type(offset)
         cls._wpSrvOffset = offset
 
     @classmethod
     def act_strp_mktime(cls, string):
         """ takes an act formatted time string, returns number of seconds since epoch """
-        assert isinstance(string, basestring), "param must be a string not %s" % type(string)
+        assert isinstance(
+            string, basestring), "param must be a string not %s" % type(string)
         return cls.star_strp_mktime(string, cls.actTimeFormat)
 
     @classmethod

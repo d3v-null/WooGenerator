@@ -1,7 +1,9 @@
 from sshtunnel import SSHTunnelForwarder
 
+
 class SSQLClient(object):
     """docstring for SSQLClient"""
+
     def __init__(self, ssh_conf, db_conf, remote_conf=None):
         super(SSQLClient, self).__init__()
 
@@ -9,7 +11,8 @@ class SSQLClient(object):
         assert ssh_conf['pass'], 'ssh pass must be specified'
         assert ssh_conf['host'], 'ssh host must be specified'
         assert ssh_conf['port'], 'ssh port must be specified'
-        if not remote_conf: remote_conf = ('127.0.0.1', 3306)
+        if not remote_conf:
+            remote_conf = ('127.0.0.1', 3306)
         assert len(remote_conf) == 2, 'Remote Config must be correctly specified'
         self._sshTunnelArgs = (
             (ssh_conf['host'], ssh_conf['port'])
@@ -41,7 +44,7 @@ class SSQLClient(object):
         ) as server:
             if(server):
                 pass
-        #todo this
+        # todo this
 
     def testDBConnet(self):
         with SSHTunnelForwarder(
@@ -50,8 +53,7 @@ class SSQLClient(object):
         ) as server:
             if(server):
                 pass
-        #todo this
-
+        # todo this
 
     def getSelectTuple(self, query):
         with SSHTunnelForwarder(
@@ -60,4 +62,4 @@ class SSQLClient(object):
         ) as server:
             if(server):
                 pass
-        #todo this
+        # todo this

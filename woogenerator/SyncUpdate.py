@@ -8,7 +8,8 @@ from collections import OrderedDict
 from copy import deepcopy
 from tabulate import tabulate
 
-from woogenerator.utils import SanitationUtils, TimeUtils, Registrar  # , UnicodeCsvDialectUtils
+# , UnicodeCsvDialectUtils
+from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.contact_objects import ContactAddress
 from woogenerator.coldata import ColData_Base, ColData_User, ColData_Prod, ColData_Woo
 from woogenerator.matching import Match
@@ -46,7 +47,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             assert isinstance(old_object, ImportObject)
         if not lastSync:
             lastSync = self.default_last_sync
-        # print "Creating SyncUpdate: ", old_m_object.__repr__(), old_s_object.__repr__()
+        # print "Creating SyncUpdate: ", old_m_object.__repr__(),
+        # old_s_object.__repr__()
         self.old_m_object = old_m_object
         self.old_s_object = old_s_object
         self.t_time = TimeUtils.wp_strp_mktime(lastSync)
@@ -266,9 +268,11 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             out += " | reas: %s " % updateParams['reason']
         if updateType in ['WARN', 'PROB']:
             if 'oldWinnerValue' in updateParams:
-                out += " | OLD: %s " % SanitationUtils.coerceAscii(updateParams['oldWinnerValue'])
+                out += " | OLD: %s " % SanitationUtils.coerceAscii(
+                    updateParams['oldWinnerValue'])
             if 'oldLoserValue' in updateParams:
-                out += " | NEW: %s " % SanitationUtils.coerceAscii(updateParams['oldLoserValue'])
+                out += " | NEW: %s " % SanitationUtils.coerceAscii(
+                    updateParams['oldLoserValue'])
         return out
 
     def addProblematicUpdate(self, **updateParams):
@@ -283,7 +287,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
 
     def addSyncWarning(self, **updateParams):
         for key in ['col', 'subject', 'reason']:
-            assert updateParams[key], 'missing mandatory warning param %s' % key
+            assert updateParams[
+                key], 'missing mandatory warning param %s' % key
         col = updateParams['col']
         if col not in self.sync_warnings.keys():
             self.sync_warnings[col] = []
@@ -331,7 +336,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                         try:
                             rawTime = int(warning[key])
                             if rawTime:
-                                warning_fmtd[key] = TimeUtils.wp_time_to_string(rawTime)
+                                warning_fmtd[
+                                    key] = TimeUtils.wp_time_to_string(rawTime)
                         except Exception, exc:
                             if(exc):
                                 pass
@@ -364,7 +370,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
         else:
             return self.master_name
 
-    # def loserUpdate(self, winner, col, reason = "", data={}, s_time=None, m_time=None):
+    # def loserUpdate(self, winner, col, reason = "", data={}, s_time=None,
+    # m_time=None):
     def loserUpdate(self, **updateParams):
         for key in ['col', 'subject']:
             assert updateParams[key], 'missing mandatory update param, %s from %s' % (
@@ -408,7 +415,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
             # print "delta true for ", col, \
             # "loser", updateParams['oldLoserValue'], \
             # "winner", updateParams['oldWinnerValue']
-            newLoserObject[self.colData.deltaCol(col)] = updateParams['oldLoserValue']
+            newLoserObject[self.colData.deltaCol(col)] = updateParams[
+                'oldLoserValue']
 
         newLoserObject[col] = updateParams['oldWinnerValue']
         # SanitationUtils.safePrint( "loser %s is now %s" % (col, repr(newLoserObject[col])))
@@ -426,7 +434,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
     def tieUpdate(self, **updateParams):
         # print "tieUpdate ", col, reason
         for key in ['col']:
-            assert updateParams[key], 'missing mandatory update param, %s' % key
+            assert updateParams[
+                key], 'missing mandatory update param, %s' % key
         col = updateParams['col']
         if self.old_s_object:
             updateParams['value'] = self.old_s_object.get(col)
@@ -566,11 +575,13 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
         changes_components = []
         if not self.important_static:
             changes_components += [
-                subtitle_fmt % 'PROBLEMATIC CHANGES (%d)' % len(self.sync_problematics),
+                subtitle_fmt % 'PROBLEMATIC CHANGES (%d)' % len(
+                    self.sync_problematics),
                 self.displayProblematicUpdates(tablefmt),
             ]
         changes_components += [
-            subtitle_fmt % 'CHANGES (%d!%d)' % (self.updates, self.important_updates),
+            subtitle_fmt % 'CHANGES (%d!%d)' % (
+                self.updates, self.important_updates),
             self.displaySyncWarnings(tablefmt),
         ]
         if self.new_m_object:
@@ -610,7 +621,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                 self.registerMessage(u"checking col %s" % unicode(col))
             for warning in warnings:
                 if self.DEBUG_UPDATE:
-                    self.registerMessage(u"-> checking warning %s" % unicode(warning))
+                    self.registerMessage(
+                        u"-> checking warning %s" % unicode(warning))
                 subject = warning['subject']
                 if subject == self.opposite_src(self.slave_name):
                     updates = self.getSlaveUpdatesNativeRecursive(col, updates)
@@ -670,7 +682,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                 print_elements.append(
                     info_delimeter.join([
                         # subtitle_fmt % "all updates" ,
-                        tabulate(updates_table, headers="keys", tablefmt=tablefmt)
+                        tabulate(updates_table, headers="keys",
+                                 tablefmt=tablefmt)
                     ])
                 )
                 # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
@@ -713,7 +726,8 @@ class SyncUpdate(Registrar):  # pylint: disable=too-many-instance-attributes,too
                 print_elements.append(
                     info_delimeter.join([
                         # subtitle_fmt % "changes" ,
-                        tabulate(updates_table, headers="keys", tablefmt=tablefmt)
+                        tabulate(updates_table, headers="keys",
+                                 tablefmt=tablefmt)
                     ])
                 )
                 # updates_json_base64 = SanitationUtils.encodeBase64(SanitationUtils.encodeJSON(updates))
@@ -795,12 +809,15 @@ class SyncUpdate_Usr(SyncUpdate):
         return self.get_s_value("Wordpress ID")
 
     def valuesSimilar(self, col, mValue, sValue):
-        response = super(SyncUpdate_Usr, self).valuesSimilar(col, mValue, sValue)
+        response = super(SyncUpdate_Usr, self).valuesSimilar(
+            col, mValue, sValue)
         if not response:
             if "phone" in col.lower():
                 if "preferred" in col.lower():
-                    mPreferred = SanitationUtils.similarTruStrComparison(mValue)
-                    sPreferred = SanitationUtils.similarTruStrComparison(sValue)
+                    mPreferred = SanitationUtils.similarTruStrComparison(
+                        mValue)
+                    sPreferred = SanitationUtils.similarTruStrComparison(
+                        sValue)
                     # print repr(mValue), " -> ", mPreferred
                     # print repr(sValue), " -> ", sPreferred
                     if mPreferred == sPreferred:
@@ -831,7 +848,8 @@ class SyncUpdate_Usr(SyncUpdate):
                     response = True
 
         if self.DEBUG_UPDATE:
-            self.registerMessage(self.testToStr(col, mValue.__str__(), sValue.__str__(), response))
+            self.registerMessage(self.testToStr(
+                col, mValue.__str__(), sValue.__str__(), response))
         return response
 
     #
@@ -875,7 +893,8 @@ class SyncUpdate_Usr(SyncUpdate):
         return self.s_time
 
     def getInfoComponents(self, info_fmt="%s"):
-        info_components = super(SyncUpdate_Usr, self).getInfoComponents(info_fmt)
+        info_components = super(
+            SyncUpdate_Usr, self).getInfoComponents(info_fmt)
         info_components += [
             (info_fmt % ("Last Sale", TimeUtils.wp_time_to_string(
                 self.b_time))) if self.b_time else "No Last Sale",
@@ -914,7 +933,8 @@ class SyncUpdate_Usr(SyncUpdate):
                 for alias in data_aliases:
                     if self.sColSemiStatic(alias):
                         continue
-                    updates = self.getSlaveUpdatesNativeRecursive(alias, updates)
+                    updates = self.getSlaveUpdatesNativeRecursive(
+                        alias, updates)
         return updates
 
     def getSlaveUpdatesRecursive(self, col, updates=None):
@@ -978,7 +998,8 @@ class SyncUpdate_Usr(SyncUpdate):
                             self.registerMessage(u"Alias semistatic")
                         continue
                     else:
-                        updates = self.getMasterUpdatesRecursive(alias, updates)
+                        updates = self.getMasterUpdatesRecursive(
+                            alias, updates)
         else:
             pass
             if self.DEBUG_UPDATE:
@@ -993,7 +1014,8 @@ class SyncUpdate_Usr_Api(SyncUpdate_Usr):
         if updates == None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
-            self.registerMessage(u"checking %s : %s" % (unicode(col), self.colData.data.get(col)))
+            self.registerMessage(u"checking %s : %s" %
+                                 (unicode(col), self.colData.data.get(col)))
         if col in self.colData.data:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col exists")
@@ -1027,7 +1049,8 @@ class SyncUpdate_Usr_Api(SyncUpdate_Usr):
                             self.registerMessage(u"Alias semistatic")
                         continue
                     else:
-                        updates = self.getSlaveUpdatesNativeRecursive(alias, updates)
+                        updates = self.getSlaveUpdatesNativeRecursive(
+                            alias, updates)
         else:
             if self.DEBUG_UPDATE:
                 self.registerMessage(u"col doesn't exist")
@@ -1050,7 +1073,8 @@ class SyncUpdate_Prod(SyncUpdate):
         return self.get_s_value('ID')
 
     def valuesSimilar(self, col, mValue, sValue):
-        response = super(SyncUpdate_Prod, self).valuesSimilar(col, mValue, sValue)
+        response = super(SyncUpdate_Prod, self).valuesSimilar(
+            col, mValue, sValue)
         if col in self.colData.data:
             colData = self.colData.data[col]
             if colData.get('type'):
@@ -1219,7 +1243,8 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
         return self.get_s_value('ID')
 
     def valuesSimilar(self, col, mValue, sValue):
-        response = super(SyncUpdate_Cat_Woo, self).valuesSimilar(col, mValue, sValue)
+        response = super(SyncUpdate_Cat_Woo, self).valuesSimilar(
+            col, mValue, sValue)
         if not response:
             if col is 'descsum':
                 mDesc = SanitationUtils.similarMarkupComparison(mValue)

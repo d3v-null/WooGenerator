@@ -27,7 +27,7 @@ with open(yamlPath) as stream:
     m_db_name = config.get('test_m_db_name')
     m_command = config.get('test_m_command')
 
-exportFilename = "act_x_test_"+importName+".csv"
+exportFilename = "act_x_test_" + importName + ".csv"
 remoteExportPath = os.path.join(remoteExportFolder, exportFilename)
 maPath = os.path.join(inFolder, exportFilename)
 maEncoding = "utf-8"
@@ -43,16 +43,16 @@ colData = ColData_User()
 actCols = colData.getACTCols()
 fields = ";".join(actCols.keys())
 
-command = " ".join(filter(None,[
+command = " ".join(filter(None, [
     'cd {wd};'.format(
-        wd      = remoteExportFolder,
+        wd=remoteExportFolder,
     ) if remoteExportFolder else None,
     '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
-        cmd     = m_command,
-        db_name = m_db_name,
-        db_host = m_db_host,
-        db_user = m_db_user,
-        db_pass = m_db_pass,
+        cmd=m_command,
+        db_name=m_db_name,
+        db_host=m_db_host,
+        db_user=m_db_user,
+        db_pass=m_db_pass,
     ),
     '-s"%s"' % "2016-03-01",
     '"-c%s"' % fields,
@@ -65,13 +65,13 @@ command = " ".join(filter(None,[
 
 sshClient = paramiko.SSHClient()
 sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-try: 
+try:
     sshClient.connect(**paramikoSSHParams)
     stdin, stdout, stderr = sshClient.exec_command(command)
     possible_errors = stdout.readlines()
     assert not possible_errors, "command returned errors: " + possible_errors
     try:
-        sftpClient = sshClient.open_sftp()    
+        sftpClient = sshClient.open_sftp()
         sftpClient.chdir(remoteExportFolder)
         fstat = sftpClient.stat(exportFilename)
         if fstat:
@@ -87,12 +87,13 @@ finally:
     sshClient.close()
 
 maParser = CSVParse_User(
-    cols = colData.getImportCols(),
-    defaults = colData.getDefaults(),
-    contact_schema = 'act',
+    cols=colData.getImportCols(),
+    defaults=colData.getDefaults(),
+    contact_schema='act',
 )
 
 maParser.analyseFile(maPath, maEncoding)
+
 
 def printBasicColumns(users):
     # print len(users)
@@ -103,11 +104,9 @@ def printBasicColumns(users):
 
     cols = colData.getBasicCols()
 
-    SanitationUtils.safePrint( usrList.tabulate(
+    SanitationUtils.safePrint(usrList.tabulate(
         cols,
-        tablefmt = 'simple'
+        tablefmt='simple'
     ))
 
-printBasicColumns( list(chain( *maParser.emails.values()[:100] )) )
-
-
+printBasicColumns(list(chain(*maParser.emails.values()[:100])))

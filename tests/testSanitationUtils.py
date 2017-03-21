@@ -28,10 +28,10 @@ class testSanitationUtils(TestCase):
 
     def test_findallEmails(self):
         email1 = "derwentx@gmail.com archive"
-        self.assertItemsEqual( SanitationUtils.findallEmails(email1),
+        self.assertItemsEqual(SanitationUtils.findallEmails(email1),
                               [u'derwentx@gmail.com'])
         email2 = "derwentx@gmail.com derwent@laserphile.com"
-        self.assertItemsEqual( SanitationUtils.findallEmails(email2),
+        self.assertItemsEqual(SanitationUtils.findallEmails(email2),
                               [u'derwentx@gmail.com', 'derwent@laserphile.com'])
 
     def test_findUrl(self):
@@ -66,5 +66,6 @@ class testSanitationUtils(TestCase):
 if __name__ == '__main__':
     # main()
     doubleNameTestSuite = unittest.TestSuite()
-    doubleNameTestSuite.addTest(testSanitationUtils('test_similarMarkupComparison'))
+    doubleNameTestSuite.addTest(
+        testSanitationUtils('test_similarMarkupComparison'))
     unittest.TextTestRunner().run(doubleNameTestSuite)

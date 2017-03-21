@@ -1,7 +1,7 @@
 from PIL import Image
 import piexif
 
-filename="/Users/Derwent/Desktop/test.jpg"
+filename = "/Users/Derwent/Desktop/test.jpg"
 im = Image.open(filename)
 print im.info
 print im.info["exif"]

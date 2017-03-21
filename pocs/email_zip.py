@@ -8,6 +8,7 @@ from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 
+
 def send_file_zipped(the_file, recipients, sender='you@you.com'):
     zf = tempfile.TemporaryFile(prefix='mail', suffix='.zip')
     zip = zipfile.ZipFile(zf, 'w')
@@ -35,6 +36,7 @@ def send_file_zipped(the_file, recipients, sender='you@you.com'):
     smtp.sendmail(sender, recipients, themsg)
     smtp.close()
 
+
 def send_zipped_file(zipped_file, recipients, sender, connect_params):
     for param in ['host', 'port', 'user', 'pass']:
         assert param in connect_params, 'must specify mandatory parameter %s' % param
@@ -58,8 +60,7 @@ def send_zipped_file(zipped_file, recipients, sender, connect_params):
     server = smtplib.SMTP(connect_params['host'], connect_params['port'])
     server.ehlo()
     server.starttls()
-    server.login('derwentx@gmail.com','Opensesami0114')
-
+    server.login('derwentx@gmail.com', 'Opensesami0114')
 
     server.sendmail(sender, recipients, themsg)
     server.quit()
@@ -71,7 +72,8 @@ try:
     os.stat('source')
     os.chdir('source')
 except Exception as exc:
-    if(exc): pass
+    if(exc):
+        pass
     os.chdir(srcFolder)
 print os.getcwd()
 

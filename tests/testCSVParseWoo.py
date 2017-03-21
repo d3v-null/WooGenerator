@@ -8,6 +8,7 @@ from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
 from context import tests_datadir
 
+
 class TestCSVParseWoo(TestCase):
 
     def setUp(self):
@@ -39,7 +40,6 @@ class TestCSVParseWoo(TestCase):
         CSVParse_TT.do_images = False
         CSVParse_TT.do_specials = False
         CSVParse_TT.do_dyns = False
-
 
     def testCSVParseTT(self):
         productParser = CSVParse_TT(

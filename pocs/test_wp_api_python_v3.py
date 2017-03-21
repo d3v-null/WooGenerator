@@ -5,7 +5,7 @@ from wordpress import API
 # from woocommerce import API
 from pprint import pprint, pformat
 
-### What this proof of concept is about
+# What this proof of concept is about
 #   Testing the features of v3 of the api
 #   things that work:
 #   - simple products
@@ -13,12 +13,13 @@ from pprint import pprint, pformat
 #   - variable instances
 #   - variable meta
 
+
 def print_response(response):
     """figures out the type of response and attempts to print it """
     try:
         if 'json' in response.headers.get('content-type'):
             print "response json:"
-            pprint( response.json())
+            pprint(response.json())
         else:
             print "response: %s" % BeautifulSoup(response.text, 'lxml').prettify().encode(errors='backslashreplace')
         print "response code: %d" % response.status_code
@@ -46,39 +47,42 @@ wcapi = API(
 
 print "\n\n*******\n* GET *\n*******\n\n"
 
-### tests for wordpress local test
+# tests for wordpress local test
 
 # response = wcapi.get('products')
 # response = wcapi.get('products/22') # id=22 is variable
-response = wcapi.get('products/23') # id=23 is variation of 22
+response = wcapi.get('products/23')  # id=23 is variation of 22
 
 # response = wcapi.get('products?page=2')
 # response = wcapi.put('products/99', {'product':{'title':'Woo Single #2a'}} )
-# response = wcapi.put('products/99?id=http%3A%2F%2Fprinter', {'product':{'title':'Woo Single #2a'}} )
+# response = wcapi.put('products/99?id=http%3A%2F%2Fprinter',
+# {'product':{'title':'Woo Single #2a'}} )
 
-### tests for technotea
+# tests for technotea
 
 # response = wcapi.get('products/21391?fields=meta')
 # response = wcapi.get('products/categories?filter[q]=solution')
 # categories = response.json().get('product_categories')
-# print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
+# print "categories: %s" % pformat([(category['id'], category['name']) for
+# category in categories])
 
 print_response(response)
 
 # response = wcapi.get('products/17834')
 # product_categories = response.json().get('product',{}).get('categories',[])
 # print "categories: %s" % pformat(product_categories)
-# print "categories: %s" % pformat([(category['id'], category['name']) for category in categories])
+# print "categories: %s" % pformat([(category['id'], category['name']) for
+# category in categories])
 
 print "\n\n*******\n* PUT *\n*******\n\n"
 
-### Tests for woocommerce local staging
+# Tests for woocommerce local staging
 
-data = {'product':{'custom_meta':{'attribute_pa_color':'grey'}}}
+data = {'product': {'custom_meta': {'attribute_pa_color': 'grey'}}}
 response = wcapi.put('products/23', data)
 print_response(response)
 
-### Tests for technotea
+# Tests for technotea
 
 # data = {'product':{'custom_meta':{'wootan_danger':'D'}}}
 # response = wcapi.put('products/21391', data)
@@ -86,12 +90,12 @@ print_response(response)
 
 print "\n\n*******\n* GET 2 *\n*******\n\n"
 
-### Tests for woocommerce local staging
+# Tests for woocommerce local staging
 
 response = wcapi.get('products/product/23')
 print_response(response)
 
-### Tests for technotea
+# Tests for technotea
 
 # response = wcapi.get('products/21391')
 # print_response(response)
@@ -121,7 +125,8 @@ print_response(response)
 
 # request_token, request_token_secret = wpapi.oauth.get_request_token()
 
-# print "request_token: %s, request_token_secret: %s" % (request_token, request_token_secret)
+# print "request_token: %s, request_token_secret: %s" % (request_token,
+# request_token_secret)
 
 # response = wpapi.oauth.get_verifier()
 
@@ -131,7 +136,6 @@ print_response(response)
 # response = wpapi.get('/posts?page=1')
 
 # response = wpapi.post('/posts/1', data={'title':"Hello world!!"})
-
 
 
 # print wpapi.oauth.authentication

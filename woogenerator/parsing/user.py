@@ -6,7 +6,7 @@ from collections import OrderedDict
 from pprint import pformat  # pprint
 # from copy import deepcopy
 
-from woogenerator.coldata import ColData_User  #, ColData_Woo
+from woogenerator.coldata import ColData_User  # , ColData_Woo
 from woogenerator.contact_objects import ContactAddress, ContactName
 from woogenerator.contact_objects import ContactPhones, SocialMediaFields
 from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
@@ -142,7 +142,8 @@ class ImportUser(ImportFlat):
             if (self.DEBUG_USR):
                 self.registerMessage(
                     "key: {key}, value: {val}".format(key=key, val=self[key]))
-        if (self.DEBUG_USR): self.registerMessage("data:" + repr(data))
+        if (self.DEBUG_USR):
+            self.registerMessage("data:" + repr(data))
         self.initContactObjects(data)
 
     def initContactObjects(self, data):
@@ -158,38 +159,38 @@ class ImportUser(ImportFlat):
         #     **emails_kwargs
         # )
 
-        name_kwargs = OrderedDict(filter(None, [\
-            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        name_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
-                'first_name'    : 'First Name',
-                'middle_name'   : 'Middle Name',
-                'family_name'   : 'Surname',
-                'name_prefix'   : 'Name Prefix',
-                'name_suffix'   : 'Name Suffix',
-                'contact'       : 'Contact',
-                'company'       : 'Company',
-                'city'          : 'City',
-                'country'       : 'Country',
-                'state'         : 'State',
+                'first_name': 'First Name',
+                'middle_name': 'Middle Name',
+                'family_name': 'Surname',
+                'name_prefix': 'Name Prefix',
+                'name_suffix': 'Name Suffix',
+                'contact': 'Contact',
+                'company': 'Company',
+                'city': 'City',
+                'country': 'Country',
+                'state': 'State',
             }.items()
         ]))
 
         self['Name'] = ContactName(**name_kwargs)
 
         assert self['Name'] is not None, \
-               'contact is missing mandatory fields: something went wrong'
+            'contact is missing mandatory fields: something went wrong'
 
-        address_kwargs = OrderedDict(filter(None, [\
-            ((key, data.get(value)) if data.get(value) else None) \
-            for key, value in\
+        address_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in
             {
-                'line1'     : 'Address 1',
-                'line2'     : 'Address 2',
-                'city'      : 'City',
-                'postcode'  : 'Postcode',
-                'state'     : 'State',
-                'country'   : 'Country',
-                'company'       : 'Company',
+                'line1': 'Address 1',
+                'line2': 'Address 2',
+                'city': 'City',
+                'postcode': 'Postcode',
+                'state': 'State',
+                'country': 'Country',
+                'company': 'Company',
             }.items()
         ]))
 
@@ -197,16 +198,16 @@ class ImportUser(ImportFlat):
 
         # print "ADDRESS: ", self['Address']
 
-        alt_address_kwargs = OrderedDict(filter(None, [\
-            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        alt_address_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
-                'line1'     : 'Home Address 1',
-                'line2'     : 'Home Address 2',
-                'city'      : 'Home City',
-                'postcode'  : 'Home Postcode',
-                'state'     : 'Home State',
-                'country'   : 'Home Country',
-                'company'   : 'Company',
+                'line1': 'Home Address 1',
+                'line2': 'Home Address 2',
+                'city': 'Home City',
+                'postcode': 'Home Postcode',
+                'state': 'Home State',
+                'country': 'Home Country',
+                'company': 'Company',
             }.items()
         ]))
 
@@ -214,21 +215,21 @@ class ImportUser(ImportFlat):
 
         # print "HOME ADDRESS: ", self['Home Address']
 
-        phone_kwargs = OrderedDict(filter(None, [\
-            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        phone_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
                 'mob_number': 'Mobile Phone',
                 'tel_number': 'Phone',
                 'fax_number': 'Fax',
-                'mob_pref'  : 'Mobile Phone Preferred',
-                'tel_pref'  : 'Phone Preferred',
+                'mob_pref': 'Mobile Phone Preferred',
+                'tel_pref': 'Phone Preferred',
             }.items()
         ]))
 
         self['Phone Numbers'] = ContactPhones(**phone_kwargs)
 
-        social_media_kwargs = OrderedDict(filter(None, [\
-            ((key, data.get(value)) if data.get(value) else None) for key, value in\
+        social_media_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
                 'facebook': 'Facebook Username',
                 'twitter': 'Twitter Username',
@@ -407,7 +408,7 @@ class CSVParse_User(CSVParse_Flat):
         return SanitationUtils.sanitizeCell(cell)
 
     def registerEmail(self, objectData, email):
-        #TODO: does this line break anything?
+        # TODO: does this line break anything?
         email = SanitationUtils.normalizeVal(email)
         self.registerAnything(
             objectData,
@@ -602,7 +603,8 @@ class CSVParse_User(CSVParse_Flat):
                 self.registerAddress(objectData, address)
 
         name = objectData.name
-        # print "NAME OF %s IS %s" % (repr(objectData), name.__str__(out_schema="flat"))
+        # print "NAME OF %s IS %s" % (repr(objectData),
+        # name.__str__(out_schema="flat"))
         if not name.valid:
             reason = name.reason
             assert reason, "there must be a reason that this name is invalid: " + name
@@ -645,6 +647,7 @@ class CSVParse_User(CSVParse_Flat):
 
 
 class CSVParse_User_Api(CSVParse_User):
+
     @classmethod
     def getParserData(cls, **kwargs):
         """
@@ -653,7 +656,7 @@ class CSVParse_User_Api(CSVParse_User):
         parserData = OrderedDict()
         apiData = kwargs.get('apiData', {})
         print "apiData before: %s" % str(apiData)
-        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
+        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))
                         for key, value in apiData.items()])
         print "apiData after:  %s" % str(apiData)
         parserData = OrderedDict()

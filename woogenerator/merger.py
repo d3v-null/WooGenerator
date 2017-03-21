@@ -1,4 +1,4 @@
-#pylint: disable=too-many-lines
+# pylint: disable=too-many-lines
 """
 Module for updating woocommerce and ACT databases from ACT import file
 """
@@ -40,7 +40,7 @@ def timediff(settings):
     return time.time() - settings.start_time
 
 
-def main(settings):  #pylint: disable=too-many-branches,too-many-locals
+def main(settings):  # pylint: disable=too-many-branches,too-many-locals
     """
     Using the settings object, attempt to perform the specified functions
     """
@@ -63,7 +63,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         if 'logFolder' in config.keys():
             settings.log_folder = config['logFolder']
 
-        #mandatory
+        # mandatory
         settings.merge_mode = config.get('merge_mode', 'sync')
         settings.master_name = config.get('master_name', 'MASTER')
         settings.slave_name = config.get('slave_name', 'SLAVE')
@@ -385,7 +385,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
 
     FieldGroup.do_post = args.do_post
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                          settings.merge_mode, settings.default_last_sync)
+                           settings.merge_mode, settings.default_last_sync)
     TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
     ### SET UP DIRECTORIES ###
@@ -514,9 +514,9 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                 try:
                     with open(os.path.join(settings.in_folder,
                                            filter_file)) as filter_file_obj:
-                        filter_items[key] = [\
-                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)\
-                            for line in filter_file_obj\
+                        filter_items[key] = [
+                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
+                            for line in filter_file_obj
                         ]
                 except IOError, exc:
                     SanitationUtils.safePrint(
@@ -662,7 +662,8 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         try:
             assert not anomalous_match_list
         except AssertionError:
-            # print "could not deny anomalous match list", match_list_type,  exc
+            # print "could not deny anomalous match list", match_list_type,
+            # exc
             anomalous_match_lists[match_list_type] = anomalous_match_list
 
     def deny_anomalous_parselist(parselist_type, anomalous_parselist):
@@ -707,7 +708,8 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
         print debugUtils.hashify("processing cards")
         print timediff(settings)
 
-        #for every card in slave not already matched, check that it exists in master
+        # for every card in slave not already matched, check that it exists in
+        # master
 
         deny_anomalous_parselist('maParser.nocards', ma_parser.nocards)
 
@@ -1124,7 +1126,8 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
             ])
 
             # What we're doing here is analysing the duplicates we've seen so far, and
-            # creating a list of all the potential objects to delete and WHY they should be deleted.
+            # creating a list of all the potential objects to delete and WHY
+            # they should be deleted.
 
             def fn_obj_source_is(target_source):
                 """
@@ -1159,7 +1162,7 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
                     """
                     if fn_obj_source_is(settings.master_name)(user_data):
                         assert hasattr(user_data, 'act_last_transaction'), \
-                            "%s user should have act_last_transaction attr: %s, %s, source: %s" % (\
+                            "%s user should have act_last_transaction attr: %s, %s, source: %s" % (
                                 settings.master_name,
                                 type(user_data),
                                 SanitationUtils.coerceAscii(user_data),
@@ -1353,8 +1356,8 @@ def main(settings):  #pylint: disable=too-many-branches,too-many-locals
             update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-            UsrSyncClient_SSH_ACT(act_connect_params, act_db_params, fs_params) as master_client, \
-            UsrSyncClient_WP(wp_api_params) as slave_client:
+                UsrSyncClient_SSH_ACT(act_connect_params, act_db_params, fs_params) as master_client, \
+                UsrSyncClient_WP(wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
             for count, update in enumerate(all_updates):

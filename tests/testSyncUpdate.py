@@ -15,6 +15,7 @@ from woogenerator.contact_objects import FieldGroup
 
 
 class testSyncUpdate_Usr(TestCase):
+
     def setUp(self):
         # yamlPath = "source/merger_config.yaml"
         yamlPath = os.path.join(tests_datadir, "generator_config_test.yaml")
@@ -26,7 +27,8 @@ class testSyncUpdate_Usr(TestCase):
             SLAVE_NAME = config.get('slave_name', 'SLAVE')
             DEFAULT_LAST_SYNC = config.get('default_last_sync')
 
-        SyncUpdate_Usr.set_globals( MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+        SyncUpdate_Usr.set_globals(
+            MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
 
         # FieldGroup.performPost = True
         # FieldGroup.DEBUG_WARN = True
@@ -35,7 +37,6 @@ class testSyncUpdate_Usr(TestCase):
         # SyncUpdate_Usr.DEBUG_WARN = True
         # SyncUpdate_Usr.DEBUG_MESSAGE = True
         # SyncUpdate_Usr.DEBUG_ERROR = True
-
 
         self.usrMN1 = ImportUser(
             {
@@ -60,7 +61,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Surname': 'Jackson',
                 'Edited Name': '2015-11-10 12:45:03',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -75,7 +76,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Surname': 'Smith',
                 'Edited Name': '10/11/2015 12:45:00 PM',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
-                '_row':[]
+                '_row': []
             },
             rowcount=1,
             row=[],
@@ -90,7 +91,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Surname': 'Jackson',
                 'Edited Name': '2015-11-10 12:55:03',
                 'Edited in Wordpress': '2015-11-11 6:45:00',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -104,7 +105,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:45:00 AM',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -118,7 +119,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -132,7 +133,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -146,7 +147,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:45:00',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -157,7 +158,7 @@ class testSyncUpdate_Usr(TestCase):
                 'MYOB Card ID': 'C000128',
                 'Role': 'WN',
                 'Edited in Act': '31/03/2016 12:41:43 PM',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -168,7 +169,7 @@ class testSyncUpdate_Usr(TestCase):
                 'MYOB Card ID': 'C000128',
                 'Role': 'RN',
                 'Wordpress ID': '3684',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -182,7 +183,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Act': '11/11/2015 6:55:00 AM',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -196,7 +197,7 @@ class testSyncUpdate_Usr(TestCase):
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
                 'Edited in Wordpress': '2015-11-11 6:55:00',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -215,7 +216,7 @@ class testSyncUpdate_Usr(TestCase):
                 'First Name': '',
                 'Surname': 'NEIL',
                 'Edited in Act': '16/05/2016 11:20:22 AM',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -234,7 +235,7 @@ class testSyncUpdate_Usr(TestCase):
                 'First Name': 'NEIL',
                 'Surname': 'CUNLIFFE-WILLIAMS',
                 'Edited in Wordpress': '2016-05-10 16:36:30',
-                '_row':[]
+                '_row': []
             },
             rowcount=2,
             row=[],
@@ -246,13 +247,15 @@ class testSyncUpdate_Usr(TestCase):
         syncUpdate = SyncUpdate_Usr(self.usrMN1, self.usrSN1)
         syncUpdate.update(ColData_User.getSyncCols())
         self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Name')[0].get('subject'), syncUpdate.master_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Name')[
+                         0].get('subject'), syncUpdate.master_name)
 
     def test_sNameColUpdate(self):
         syncUpdate = SyncUpdate_Usr(self.usrMN2, self.usrSN2)
         syncUpdate.update(ColData_User.getSyncCols())
         self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Name')[0].get('subject'), syncUpdate.slave_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Name')[
+                         0].get('subject'), syncUpdate.slave_name)
 
     def test_mDeltas(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD1)
@@ -261,51 +264,61 @@ class testSyncUpdate_Usr(TestCase):
         self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
         self.assertFalse(syncUpdate.s_deltas)
         self.assertTrue(syncUpdate.m_deltas)
-        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
-        self.assertEqual(syncUpdate.new_m_object.get(ColData_User.deltaCol('Role')), 'WN')
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[
+                         0].get('subject'), syncUpdate.slave_name)
+        self.assertEqual(syncUpdate.new_m_object.get(
+            ColData_User.deltaCol('Role')), 'WN')
 
     def test_sDeltas(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD2, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.s_deltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[
+                         0].get('subject'), syncUpdate.master_name)
         self.assertFalse(syncUpdate.m_deltas)
         self.assertTrue(syncUpdate.s_deltas)
         self.assertEqual(syncUpdate.new_s_object.get('Role'), 'RN')
-        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), 'WN')
+        self.assertEqual(syncUpdate.new_s_object.get(
+            ColData_User.deltaCol('Role')), 'WN')
 
         syncUpdate = SyncUpdate_Usr(self.usrMD2a, self.usrSD2a)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.s_deltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[
+                         0].get('subject'), syncUpdate.master_name)
         self.assertFalse(syncUpdate.m_deltas)
         self.assertTrue(syncUpdate.s_deltas)
         self.assertEqual(syncUpdate.new_s_object.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), 'RN')
+        self.assertEqual(syncUpdate.new_s_object.get(
+            ColData_User.deltaCol('Role')), 'RN')
 
     def test_mDeltasB(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD3, self.usrSD2)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.s_deltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.m_time, syncUpdate.s_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.slave_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[
+                         0].get('subject'), syncUpdate.slave_name)
         self.assertFalse(syncUpdate.s_deltas)
         self.assertFalse(syncUpdate.m_deltas)
         self.assertEqual(syncUpdate.new_m_object.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.new_m_object.get(ColData_User.deltaCol('Role')), '')
+        self.assertEqual(syncUpdate.new_m_object.get(
+            ColData_User.deltaCol('Role')), '')
 
     def test_sDeltasB(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD1, self.usrSD3)
         syncUpdate.update(ColData_User.getSyncCols())
         # syncUpdate.s_deltas(ColData_User.getDeltaCols())
         self.assertGreater(syncUpdate.s_time, syncUpdate.m_time)
-        self.assertEqual(syncUpdate.sync_warnings.get('Role')[0].get('subject'), syncUpdate.master_name)
+        self.assertEqual(syncUpdate.sync_warnings.get('Role')[
+                         0].get('subject'), syncUpdate.master_name)
         self.assertFalse(syncUpdate.m_deltas)
         self.assertFalse(syncUpdate.s_deltas)
         self.assertEqual(syncUpdate.new_s_object.get('Role'), 'WN')
-        self.assertEqual(syncUpdate.new_s_object.get(ColData_User.deltaCol('Role')), '')
+        self.assertEqual(syncUpdate.new_s_object.get(
+            ColData_User.deltaCol('Role')), '')
 
     def test_doubleNames(self):
         syncUpdate = SyncUpdate_Usr(self.usrMD4, self.usrSD4)
@@ -326,8 +339,8 @@ class testSyncUpdate_Usr(TestCase):
         saPath = os.path.join(inFolder, slave_file)
 
         saParser = CSVParse_User(
-            cols = ColData_User.getWPImportCols(),
-            defaults = ColData_User.getDefaults(),
+            cols=ColData_User.getWPImportCols(),
+            defaults=ColData_User.getDefaults(),
         )
 
         saParser.analyseFile(saPath)
@@ -335,8 +348,8 @@ class testSyncUpdate_Usr(TestCase):
         sUsr = saParser.emails['neil@technotan.com.au'][0]
 
         maParser = CSVParse_User(
-            cols = ColData_User.getACTImportCols(),
-            defaults = ColData_User.getDefaults(),
+            cols=ColData_User.getACTImportCols(),
+            defaults=ColData_User.getDefaults(),
         )
 
         maParser.analyseFile(maPath)
@@ -358,12 +371,11 @@ class testSyncUpdate_Usr(TestCase):
         # print "master old: ", syncUpdate.old_m_object['Name'], '|', syncUpdate.old_m_object['Web Site']
         # print "master new: ", syncUpdate.new_m_object['Name'], '|', syncUpdate.new_m_object['Web Site']
         # print "slave old:  ", syncUpdate.old_s_object['Name'], '|', syncUpdate.old_s_object['Web Site']
-        # print "slave new:  ", syncUpdate.new_s_object['Name'], '|', syncUpdate.new_s_object['Web Site']
+        # print "slave new:  ", syncUpdate.new_s_object['Name'], '|',
+        # syncUpdate.new_s_object['Web Site']
 
         self.assertIn('Web Site', syncUpdate.sync_passes)
         # print syncUpdate.tabulate(tablefmt='simple')
-
-
 
 
 if __name__ == '__main__':

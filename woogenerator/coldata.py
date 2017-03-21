@@ -1,14 +1,16 @@
 # from __future__ import absolute_import
 from collections import OrderedDict
-from utils import listUtils #, Registrar #, debugUtils
+from utils import listUtils  # , Registrar #, debugUtils
 # import json
+
 
 class ColData_Base(object):
     data = OrderedDict()
 
     def __init__(self, data):
         super(ColData_Base, self).__init__()
-        assert issubclass(type(data), dict), "Data should be a dictionary subclass"
+        assert issubclass(
+            type(data), dict), "Data should be a dictionary subclass"
         self.data = data
 
     @classmethod
@@ -35,7 +37,8 @@ class ColData_Base(object):
 
     @classmethod
     def getExportCols(cls, schema=None):
-        if not schema: return None
+        if not schema:
+            return None
         exportCols = OrderedDict()
         for col, data in cls.data.items():
             if data.get(schema, ''):
@@ -58,7 +61,7 @@ class ColData_Base(object):
     def getColNames(cls, cols):
         colNames = OrderedDict()
         for col, data in cols.items():
-            label = data.get('label','')
+            label = data.get('label', '')
             colNames[col] = label if label else col
         return colNames
 
@@ -67,7 +70,6 @@ class ColData_Base(object):
         return OrderedDict(
             [(col, {}) for col in cols]
         )
-
 
     @classmethod
     def getReportCols(cls):
@@ -87,7 +89,6 @@ class ColData_Base(object):
             cols[col] = data
         return cols
 
-
     @classmethod
     def getWPAPICoreCols(cls, api='wp-api'):
         exportCols = cls.getExportCols(api)
@@ -95,7 +96,7 @@ class ColData_Base(object):
         for col, data in exportCols.items():
             apiData = data.get(api, {})
             if hasattr(apiData, '__getitem__') \
-            and not apiData.get('meta'):
+                    and not apiData.get('meta'):
                 apiCols[col] = data
 
         return apiCols
@@ -107,17 +108,16 @@ class ColData_Base(object):
         for col, data in cls.data.items():
             apiData = data.get(api, {})
             if hasattr(apiData, '__getitem__') \
-            and apiData.get('meta') is not None:
+                    and apiData.get('meta') is not None:
                 if apiData.get('meta'):
                     apiCols[col] = data
             else:
                 backupApiData = data.get('wp', {})
                 if hasattr(backupApiData, '__getitem__') \
-                and backupApiData.get('meta') is not None:
+                        and backupApiData.get('meta') is not None:
                     if backupApiData.get('meta'):
                         apiCols[col] = data
         return apiCols
-
 
     @classmethod
     def getWPAPICategoryCols(cls, api='wp-api'):
@@ -147,100 +147,102 @@ class ColData_Base(object):
     def deltaCol(self, col):
         return 'Delta ' + col
 
+
 class ColData_Prod(ColData_Base):
     data = OrderedDict([
         ('codesum', {
             'label': 'SKU',
-            'product':True,
-            'report':True
+            'product': True,
+            'report': True
         }),
         ('itemsum', {
             'label': 'Name',
-            'product':True,
-            'report':True
+            'product': True,
+            'report': True
         }),
         ('descsum', {
             'label': 'Description',
             'product': True,
-            'report':True,
+            'report': True,
         }),
         ('WNR', {
-            'product':True,
-            'report':True,
-            'pricing':True,
+            'product': True,
+            'report': True,
+            'pricing': True,
         }),
         ('RNR', {
-            'product':True,
-            'report':True,
-            'pricing':True,
+            'product': True,
+            'report': True,
+            'pricing': True,
         }),
         ('DNR', {
-            'product':True,
-            'report':True,
-            'pricing':True,
+            'product': True,
+            'report': True,
+            'pricing': True,
         }),
         ('weight', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_weight',
-                'meta':True
+            'wp': {
+                'key': '_weight',
+                'meta': True
             },
-            'wp-api':True,
-            'sync':True,
-            'report':True
+            'wp-api': True,
+            'sync': True,
+            'report': True
         }),
         ('length', {
             'import': True,
             'product': True,
             'variation': True,
-            'shipping':True,
-            'wp':{
-                'key':'_length',
-                'meta':True
+            'shipping': True,
+            'wp': {
+                'key': '_length',
+                'meta': True
             },
-            'sync':True,
-            'report':True
+            'sync': True,
+            'report': True
         }),
         ('width', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_width',
-                'meta':True
+            'wp': {
+                'key': '_width',
+                'meta': True
             },
-            'sync':True,
-            'report':True
+            'sync': True,
+            'report': True
         }),
         ('height', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_height',
-                'meta':True
+            'wp': {
+                'key': '_height',
+                'meta': True
             },
-            'sync':True,
-            'report':True
+            'sync': True,
+            'report': True
         }),
     ])
+
 
 class ColData_MYO(ColData_Prod):
 
     data = OrderedDict(ColData_Prod.data.items() + [
         ('codesum', {
             'label': 'Item Number',
-            'product':True,
+            'product': True,
         }),
         ('itemsum', {
             'label': 'Item Name',
-            'product':True,
-            'report':True,
+            'product': True,
+            'report': True,
         }),
         ('WNR', {
             'label': 'Selling Price',
@@ -269,193 +271,195 @@ class ColData_MYO(ColData_Prod):
         ('descsum', {
             'label': 'Description',
             'product': True,
-            'report':True,
+            'report': True,
         }),
         ('HTML Description', {
             'import': True,
         }),
         ('Sell', {
-            'default':'S',
-            'product':True,
+            'default': 'S',
+            'product': True,
         }),
         ('Tax Code When Sold', {
-            'default':'GST',
+            'default': 'GST',
             'product': True,
         }),
         ('Sell Price Inclusive', {
-            'default':'X',
-            'product':True,
+            'default': 'X',
+            'product': True,
         }),
         ('Income Acct', {
-            'default':'41000',
-            'product':True,
+            'default': '41000',
+            'product': True,
         }),
         ('Inactive Item', {
-            'default':'N',
-            'product':True,
+            'default': 'N',
+            'product': True,
         }),
         ('use_desc', {
-            'label':'Use Desc. On Sale',
-            'default':'X',
-            'product':True
+            'label': 'Use Desc. On Sale',
+            'default': 'X',
+            'product': True
         })
     ])
 
     def __init__(self, data=None):
-        if not data: data = self.data
+        if not data:
+            data = self.data
         super(ColData_MYO, self).__init__(data)
 
     @classmethod
     def getProductCols(self):
         return self.getExportCols('product')
 
+
 class ColData_Woo(ColData_Prod):
 
     data = OrderedDict(ColData_Prod.data.items() + [
         ('ID', {
-            'category':True,
-            'product':True,
-            'wp':{
+            'category': True,
+            'product': True,
+            'wp': {
                 'key': 'ID',
                 'meta': False
             },
-            'wp-api':{
-                'key':'id'
+            'wp-api': {
+                'key': 'id'
             },
-            'report':True,
-            'sync':'slave_override',
+            'report': True,
+            'sync': 'slave_override',
         }),
         ('parent_SKU', {
-            'variation':True,
+            'variation': True,
         }),
         ('parent_id', {
-            'category':True,
-            'wp-api':{
-                'key':'parent'
+            'category': True,
+            'wp-api': {
+                'key': 'parent'
             }
         }),
         ('codesum', {
-            'label':'SKU',
-            'tag':'SKU',
+            'label': 'SKU',
+            'tag': 'SKU',
             'product': True,
             'variation': True,
             'category': True,
-            'wp':{
-                'key':'_sku',
-                'meta':True
+            'wp': {
+                'key': '_sku',
+                'meta': True
             },
-            'wp-api':{
-                'key':'sku'
+            'wp-api': {
+                'key': 'sku'
             },
-            'report':True,
-            'sync':True
+            'report': True,
+            'sync': True
         }),
-        ('slug',{
-            'category':True,
-            'wp-api':{
-                'key':'slug'
+        ('slug', {
+            'category': True,
+            'wp-api': {
+                'key': 'slug'
             },
-            'sync':'slave_override'
+            'sync': 'slave_override'
         }),
         ('display', {
-            'category':True,
-            'wp-api':True,
+            'category': True,
+            'wp-api': True,
         }),
         ('itemsum', {
-            'tag':'Title',
-            'label':'post_title',
-            'product':True,
+            'tag': 'Title',
+            'label': 'post_title',
+            'product': True,
             'variation': True,
-            'wp':{
-                'key':'post_title',
-                'meta':False
+            'wp': {
+                'key': 'post_title',
+                'meta': False
             },
-            'wp-api':{
-                'key':'title',
-                'meta':False
+            'wp-api': {
+                'key': 'title',
+                'meta': False
             },
-            'wp-api-wc-v1':{
-                'key':'title',
-                'meta':False
+            'wp-api-wc-v1': {
+                'key': 'title',
+                'meta': False
             },
-            'report':True,
-            'sync':'not_variable',
-            'static':True,
+            'report': True,
+            'sync': 'not_variable',
+            'static': True,
         }),
         ('title', {
-            'category':True,
-            'wp-api':{
-                'key':'name',
-                'meta':False
+            'category': True,
+            'wp-api': {
+                'key': 'name',
+                'meta': False
             },
             # 'sync':True
         }),
         ('title_1', {
             'label': 'meta:title_1',
-            'product':True,
-            'wp':{
-                'key':'title_1',
-                'meta':True
+            'product': True,
+            'wp': {
+                'key': 'title_1',
+                'meta': True
             }
         }),
         ('title_2', {
             'label': 'meta:title_2',
-            'product':True,
-            'wp':{
-                'key':'title_2',
-                'meta':True
+            'product': True,
+            'wp': {
+                'key': 'title_2',
+                'meta': True
             }
         }),
         ('taxosum', {
-            'label':'category_title',
-            'category':True,
+            'label': 'category_title',
+            'category': True,
         }),
         ('catlist', {
-            'product':True,
-            'wp-api':{
-                'key':'categories'
+            'product': True,
+            'wp-api': {
+                'key': 'categories'
             },
             # 'sync':'not_variable'
         }),
         # ('catids', {
         # }),
         ('prod_type', {
-            'label':'tax:product_type',
-            'product':True,
-            'wp-api':{
-                'key':'type'
+            'label': 'tax:product_type',
+            'product': True,
+            'wp-api': {
+                'key': 'type'
             }
         }),
         ('catsum', {
-            'label':'tax:product_cat',
-            'product':True,
+            'label': 'tax:product_cat',
+            'product': True,
         }),
         ('descsum', {
-            'label':'post_content',
-            'tag':'Description',
+            'label': 'post_content',
+            'tag': 'Description',
             'product': True,
-            'sync':'not_variable'
+            'sync': 'not_variable'
         }),
         ('HTML Description', {
             'import': True,
             'category': True,
-            'wp-api':{
-                'key':'description'
+            'wp-api': {
+                'key': 'description'
             },
         }),
         ('imgsum', {
-            'label':'Images',
+            'label': 'Images',
             'product': True,
             'variation': True,
             'category': True,
         }),
         ('rowcount', {
-            'label':'menu_order',
+            'label': 'menu_order',
             'product': True,
             'category': True,
             'variation': True,
-            'wp-api':{
-                'key':'menu_order'
+            'wp-api': {
+                'key': 'menu_order'
             },
             # 'sync':True
         }),
@@ -471,46 +475,46 @@ class ColData_Woo(ColData_Prod):
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp-api':{
-                'key':'wootan_danger',
-                'meta':True
+            'wp-api': {
+                'key': 'wootan_danger',
+                'meta': True
             },
-            'sync':True
+            'sync': True
         }),
         ('E', {
             'import': True,
         }),
         ('DYNCAT', {
-            'import':True,
+            'import': True,
             'category': True,
-            'product':True,
+            'product': True,
             'pricing': True,
         }),
         ('DYNPROD', {
-            'import':True,
+            'import': True,
             'category': True,
-            'product':True,
+            'product': True,
             'pricing': True,
         }),
         ('VISIBILITY', {
-            'import':True,
+            'import': True,
         }),
         ('catalog_visibility', {
-            'product':True,
-            'default':'visible'
+            'product': True,
+            'default': 'visible'
         }),
         ('SCHEDULE', {
-            'import':True,
-            'category':True,
-            'product':True,
+            'import': True,
+            'category': True,
+            'product': True,
             'pricing': True,
-            'default':''
+            'default': ''
         }),
         ('spsum', {
             'tag': 'active_specials',
-            'product':True,
-            'variation':True,
-            'pricing':True,
+            'product': True,
+            'variation': True,
+            'pricing': True,
         }),
         ('dprclist', {
             'label': 'meta:dynamic_category_rulesets',
@@ -548,466 +552,466 @@ class ColData_Woo(ColData_Prod):
         }),
         ('pricing_rules', {
             'label': 'meta:_pricing_rules',
-            'pricing':True,
-            'wp':{
-                'key':'pricing_rules',
-                'meta':False
+            'pricing': True,
+            'wp': {
+                'key': 'pricing_rules',
+                'meta': False
             },
-            'product':True,
+            'product': True,
         }),
         ('price', {
-            'label':'regular_price',
+            'label': 'regular_price',
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'_regular_price',
-                'meta':True
+            'wp': {
+                'key': '_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'regular_price'
+            'wp-api': {
+                'key': 'regular_price'
             },
-            'report':True,
-            'static':True,
-            'type':'currency',
+            'report': True,
+            'static': True,
+            'type': 'currency',
         }),
         ('sale_price', {
-            'label':'sale_price',
+            'label': 'sale_price',
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'_sale_price',
-                'meta':True
+            'wp': {
+                'key': '_sale_price',
+                'meta': True
             },
-            'wp-api':True,
-            'report':True,
-            'type':'currency',
+            'wp-api': True,
+            'report': True,
+            'type': 'currency',
         }),
         ('sale_price_dates_from', {
-            'label':'sale_price_dates_from',
-            'tag':'sale_from',
+            'label': 'sale_price_dates_from',
+            'tag': 'sale_from',
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': '_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'regular_price'
+            'wp-api': {
+                'key': 'regular_price'
             },
         }),
         ('sale_price_dates_to', {
-            'label':'sale_price_dates_to',
-            'tag':'sale_to',
+            'label': 'sale_price_dates_to',
+            'tag': 'sale_to',
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': '_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('RNR', {
             'label': 'meta:lc_rn_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rn_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_rn_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rn_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rn_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('RNS', {
             'label': 'meta:lc_rn_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rn_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_rn_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rn_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rn_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('RNF', {
             'label': 'meta:lc_rn_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rn_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_rn_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rn_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rn_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('RNT', {
             'label': 'meta:lc_rn_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rn_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_rn_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rn_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rn_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('RPR', {
             'label': 'meta:lc_rp_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rp_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_rp_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rp_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rp_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('RPS', {
             'label': 'meta:lc_rp_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rp_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_rp_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rp_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rp_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('RPF', {
             'label': 'meta:lc_rp_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rp_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_rp_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rp_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rp_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('RPT', {
             'label': 'meta:lc_rp_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_rp_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_rp_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_rp_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_rp_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('WNR', {
             'label': 'meta:lc_wn_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wn_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_wn_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wn_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wn_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('WNS', {
             'label': 'meta:lc_wn_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wn_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_wn_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wn_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wn_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('WNF', {
             'label': 'meta:lc_wn_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wn_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_wn_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wn_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wn_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('WNT', {
             'label': 'meta:lc_wn_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wn_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_wn_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wn_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wn_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('WPR', {
             'label': 'meta:lc_wp_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wp_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_wp_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wp_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wp_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('WPS', {
             'label': 'meta:lc_wp_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wp_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_wp_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wp_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wp_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('WPF', {
             'label': 'meta:lc_wp_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wp_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_wp_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wp_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wp_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('WPT', {
             'label': 'meta:lc_wp_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_wp_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_wp_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_wp_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_wp_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('DNR', {
             'label': 'meta:lc_dn_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dn_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_dn_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dn_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dn_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('DNS', {
             'label': 'meta:lc_dn_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dn_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_dn_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dn_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dn_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('DNF', {
             'label': 'meta:lc_dn_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dn_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_dn_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dn_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dn_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('DNT', {
             'label': 'meta:lc_dn_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dn_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_dn_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dn_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dn_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('DPR', {
             'label': 'meta:lc_dp_regular_price',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dp_regular_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_dp_regular_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dp_regular_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dp_regular_price',
+                'meta': True
             },
-            'static':True,
-            'type':'currency',
+            'static': True,
+            'type': 'currency',
         }),
         ('DPS', {
             'label': 'meta:lc_dp_sale_price',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dp_sale_price',
-                'meta':True
+            'wp': {
+                'key': 'lc_dp_sale_price',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dp_sale_price',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dp_sale_price',
+                'meta': True
             },
-            'type':'currency',
+            'type': 'currency',
         }),
         ('DPF', {
             'label': 'meta:lc_dp_sale_price_dates_from',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dp_sale_price_dates_from',
-                'meta':True
+            'wp': {
+                'key': 'lc_dp_sale_price_dates_from',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dp_sale_price_dates_from',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dp_sale_price_dates_from',
+                'meta': True
             },
         }),
         ('DPT', {
             'label': 'meta:lc_dp_sale_price_dates_to',
-            'sync':True,
+            'sync': True,
             'product': True,
             'variation': True,
             'pricing': True,
-            'wp':{
-                'key':'lc_dp_sale_price_dates_to',
-                'meta':True
+            'wp': {
+                'key': 'lc_dp_sale_price_dates_to',
+                'meta': True
             },
-            'wp-api':{
-                'key':'lc_dp_sale_price_dates_to',
-                'meta':True
+            'wp-api': {
+                'key': 'lc_dp_sale_price_dates_to',
+                'meta': True
             },
         }),
         ('CVC', {
             'label': 'meta:commissionable_value',
-            'sync':True,
+            'sync': True,
             'import': True,
             'product': True,
             'variation': True,
             'pricing': True,
             'default': 0,
-            'wp':{
-                'key':'commissionable_value',
-                'meta':True
+            'wp': {
+                'key': 'commissionable_value',
+                'meta': True
             },
-            'wp-api':{
-                'key':'commissionable_value',
-                'meta':True
+            'wp-api': {
+                'key': 'commissionable_value',
+                'meta': True
             },
         }),
         ('weight', {
@@ -1015,117 +1019,118 @@ class ColData_Woo(ColData_Prod):
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_weight',
-                'meta':True
+            'wp': {
+                'key': '_weight',
+                'meta': True
             },
-            'wp-api':{
-                'key':'weight'
+            'wp-api': {
+                'key': 'weight'
             },
-            'sync':True
+            'sync': True
         }),
         ('length', {
             'import': True,
             'product': True,
             'variation': True,
-            'shipping':True,
-            'wp':{
-                'key':'_length',
-                'meta':True
+            'shipping': True,
+            'wp': {
+                'key': '_length',
+                'meta': True
             },
-            'sync':True
+            'sync': True
         }),
         ('width', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_width',
-                'meta':True
+            'wp': {
+                'key': '_width',
+                'meta': True
             },
-            'sync':True
+            'sync': True
         }),
         ('height', {
             'import': True,
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp':{
-                'key':'_height',
-                'meta':True
+            'wp': {
+                'key': '_height',
+                'meta': True
             },
-            'sync':True
+            'sync': True
         }),
         ('stock', {
             'import': True,
             'product': True,
             'variation': True,
-            'inventory':True,
-            'wp':{
-                'key':'_stock',
-                'meta':True
+            'inventory': True,
+            'wp': {
+                'key': '_stock',
+                'meta': True
             },
-            'sync':True,
-            'wp-api':{
-                'key':'stock_quantity'
+            'sync': True,
+            'wp-api': {
+                'key': 'stock_quantity'
             }
         }),
         ('stock_status', {
             'import': True,
             'product': True,
             'variation': True,
-            'inventory':True,
-            'wp':{
-                'key':'_stock_status',
-                'meta':True
+            'inventory': True,
+            'wp': {
+                'key': '_stock_status',
+                'meta': True
             },
-            'sync':True
+            'sync': True
         }),
         ('manage_stock', {
             'product': True,
             'variation': True,
-            'inventory':True,
-            'wp':{
-                'key':'_manage_stock',
-                'meta':True
+            'inventory': True,
+            'wp': {
+                'key': '_manage_stock',
+                'meta': True
             },
-            'wp-api':{
+            'wp-api': {
                 'key': 'manage_stock'
             },
-            'sync':True,
-            'default':'no'
+            'sync': True,
+            'default': 'no'
         }),
         ('Images', {
             'import': True,
             'default': ''
         }),
         ('last_import', {
-            'label':'meta:last_import',
+            'label': 'meta:last_import',
             'product': True,
         }),
         ('Updated', {
             'import': True,
-            'product':True,
-            'wp-api':{
-                'key':'updated_at'
+            'product': True,
+            'wp-api': {
+                'key': 'updated_at'
             }
         }),
         ('post_status', {
-            'import':True,
-            'product':True,
-            'variation':True,
-            'wp-api':{
-                'key':'status'
+            'import': True,
+            'product': True,
+            'variation': True,
+            'wp-api': {
+                'key': 'status'
             },
-            'sync':True,
-            'default':'publish'
+            'sync': True,
+            'default': 'publish'
         }),
     ])
 
-    def __init__( self, data = None):
-        if not data: data = self.data
-        super(ColData_Woo, self).__init__( data )
+    def __init__(self, data=None):
+        if not data:
+            data = self.data
+        super(ColData_Woo, self).__init__(data)
 
     @classmethod
     def getProductCols(cls):
@@ -1158,17 +1163,18 @@ class ColData_Woo(ColData_Prod):
     @classmethod
     def getAttributeCols(cls, attributes, vattributes):
         attributeCols = OrderedDict()
-        all_attrs = listUtils.combineLists(attributes.keys(), vattributes.keys())
+        all_attrs = listUtils.combineLists(
+            attributes.keys(), vattributes.keys())
         for attr in all_attrs:
-            attributeCols['attribute:'+attr] = {
-                'product':True,
+            attributeCols['attribute:' + attr] = {
+                'product': True,
             }
             if attr in vattributes.keys():
-                attributeCols['attribute_default:'+attr] = {
-                    'product':True,
+                attributeCols['attribute_default:' + attr] = {
+                    'product': True,
                 }
-                attributeCols['attribute_data:'+attr] = {
-                    'product':True,
+                attributeCols['attribute_data:' + attr] = {
+                    'product': True,
                 }
         return attributeCols
 
@@ -1176,11 +1182,12 @@ class ColData_Woo(ColData_Prod):
     def getAttributeMetaCols(cls, vattributes):
         atttributeMetaCols = OrderedDict()
         for attr in vattributes.keys():
-            atttributeMetaCols['meta:attribute_'+attr] = {
+            atttributeMetaCols['meta:attribute_' + attr] = {
                 'variable': True,
                 'tag': attr
             }
         return atttributeMetaCols
+
 
 class ColData_User(ColData_Base):
     # modTimeSuffix = ' Modified'
@@ -1203,35 +1210,35 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'myob_card_id'
             },
-            'act':True,
+            'act': True,
             # 'label':'myob_card_id',
-            'import':True,
-            'user':True,
-            'report':True,
-            'sync':'master_override',
-            'warn':True,
-            'static':True,
-            'basic':True,
+            'import': True,
+            'user': True,
+            'report': True,
+            'sync': 'master_override',
+            'warn': True,
+            'static': True,
+            'basic': True,
         }),
         ('E-mail', {
             'wp': {
                 'meta': False,
                 'key': 'user_email'
             },
-            'wp-api':{
-                'meta':False,
-                'key':'email'
+            'wp-api': {
+                'meta': False,
+                'key': 'email'
             },
-            'act':True,
+            'act': True,
             'import': True,
-            'user':True,
+            'user': True,
             'report': True,
-            'sync':True,
-            'warn':True,
-            'static':True,
-            'basic':True,
-            'tracked':True,
-            'delta':True,
+            'sync': True,
+            'warn': True,
+            'static': True,
+            'basic': True,
+            'tracked': True,
+            'delta': True,
         }),
         ('Wordpress Username', {
             # 'label':'Username',
@@ -1240,17 +1247,17 @@ class ColData_User(ColData_Base):
                 'key': 'user_login',
                 'final': True
             },
-            'wp-api':{
-                'meta':False,
-                'key':'username'
+            'wp-api': {
+                'meta': False,
+                'key': 'username'
             },
-            'act':True,
-            'user':True,
+            'act': True,
+            'user': True,
             'report': True,
-            'import':True,
-            'sync':'slave_override',
-            'warn':True,
-            'static':True,
+            'import': True,
+            'sync': 'slave_override',
+            'warn': True,
+            'static': True,
             # 'tracked':True,
             # 'basic':True,
         }),
@@ -1261,19 +1268,19 @@ class ColData_User(ColData_Base):
                 'key': 'ID',
                 'final': True
             },
-            'wp-api':{
-                'key':'id',
-                'meta':False
+            'wp-api': {
+                'key': 'id',
+                'meta': False
             },
-            'act':False,
-            'user':True,
+            'act': False,
+            'user': True,
             'report': True,
-            'import':True,
+            'import': True,
             # 'sync':'slave_override',
-            'warn':True,
-            'static':True,
-            'basic':True,
-            'default':'',
+            'warn': True,
+            'static': True,
+            'basic': True,
+            'default': '',
             # 'tracked':True,
         }),
         ('Role', {
@@ -1286,19 +1293,19 @@ class ColData_User(ColData_Base):
                 'key': 'act_role'
             },
             # 'label': 'act_role',
-            'act':True,
-            'delta':True,
-            'import':True,
-            'user':True,
+            'act': True,
+            'delta': True,
+            'import': True,
+            'user': True,
             'report': True,
-            'sync':True,
+            'sync': True,
             'warn': True,
-            'static':True,
+            'static': True,
             # 'tracked':'future',
         }),
 
         ('Name', {
-            'user':True,
+            'user': True,
             'aliases': [
                 'Name Prefix',
                 'First Name',
@@ -1319,18 +1326,18 @@ class ColData_User(ColData_Base):
             'tracked':True,
         }),
         ('Contact', {
-            'import':True,
+            'import': True,
             'wp': {
                 'meta': False,
                 'key': 'display_name'
             },
-            'wp-api':{
-                'meta':False,
+            'wp-api': {
+                'meta': False,
                 'key': 'name'
             },
             'act': True,
-            'mutable':True,
-            'visible':True,
+            'mutable': True,
+            'visible': True,
             # 'label':'contact_name',
             # 'warn': True,
             # 'user':True,
@@ -1343,15 +1350,15 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'first_name'
             },
-            'wp-api':{
-                'meta':False,
-                'key':'first_name'
+            'wp-api': {
+                'meta': False,
+                'key': 'first_name'
             },
             'act': True,
-            'mutable':True,
-            'visible':True,
+            'mutable': True,
+            'visible': True,
             # 'label':'first_name',
-            'import':True,
+            'import': True,
             # 'user':True,
             # 'report': True,
             # 'sync':True,
@@ -1368,10 +1375,10 @@ class ColData_User(ColData_Base):
                 'key': 'last_name'
             },
             'act': True,
-            'mutable':True,
+            'mutable': True,
             # 'label':'last_name',
             'import': True,
-            'visible':True,
+            'visible': True,
             # 'user':True,
             # 'report': True,
             # 'sync':True,
@@ -1389,8 +1396,8 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
-            'mutable':True,
-            'visible':True,
+            'mutable': True,
+            'visible': True,
             # 'user': True,
         }),
         ('Name Suffix', {
@@ -1404,9 +1411,9 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
-            'visible':True,
+            'visible': True,
             # 'user': True,
-            'mutable':True,
+            'mutable': True,
         }),
         ('Name Prefix', {
             'wp': {
@@ -1419,9 +1426,9 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
-            'visible':True,
+            'visible': True,
             # 'user': True,
-            'mutable':True,
+            'mutable': True,
         }),
         ('Memo', {
             'wp': {
@@ -1434,7 +1441,7 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             'import': True,
-            'tracked':True,
+            'tracked': True,
         }),
         ('Spouse', {
             'wp': {
@@ -1473,22 +1480,22 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             # 'label':'billing_company',
-            'import':True,
-            'user':True,
-            'basic':True,
+            'import': True,
+            'user': True,
+            'basic': True,
             'report': True,
-            'sync':True,
+            'sync': True,
             'warn': True,
-            'static':True,
+            'static': True,
             # 'visible':True,
-            'tracked':True,
+            'tracked': True,
         }),
 
 
         ('Phone Numbers', {
-            'tracked':'future',
-            'aliases':[ 'Mobile Phone', 'Phone', 'Fax'],
-                        # 'Mobile Phone Preferred', 'Phone Preferred', ]
+            'tracked': 'future',
+            'aliases': ['Mobile Phone', 'Phone', 'Fax'],
+            # 'Mobile Phone Preferred', 'Phone Preferred', ]
             'basic':True,
             'report':True,
         }),
@@ -1504,13 +1511,13 @@ class ColData_User(ColData_Base):
             },
             'act': True,
             # 'label':'mobile_number',
-            'import':True,
-            'user':True,
-            'sync':True,
+            'import': True,
+            'user': True,
+            'sync': True,
             'warn': True,
-            'static':True,
+            'static': True,
             # 'visible':True,
-            'contact':True,
+            'contact': True,
         }),
         ('Phone', {
             'wp': {
@@ -1521,14 +1528,14 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_phone'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_phone',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'report': True,
-            'sync':True,
+            'sync': True,
             'warn': True,
-            'static':True,
+            'static': True,
             # 'visible':True,
         }),
         ('Fax', {
@@ -1540,14 +1547,14 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'fax_number'
             },
-            'act':True,
+            'act': True,
             # 'label':'fax_number',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'contact':True,
-            'visible':True,
-            'mutable':True,
+            'import': True,
+            'user': True,
+            'sync': True,
+            'contact': True,
+            'visible': True,
+            'mutable': True,
         }),
         ('Mobile Phone Preferred', {
             'wp': {
@@ -1558,13 +1565,13 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'pref_mob'
             },
-            'act':True,
+            'act': True,
             # 'label':'pref_mob',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'visible':True,
-            'mutable':True,
+            'import': True,
+            'user': True,
+            'sync': True,
+            'visible': True,
+            'mutable': True,
         }),
         ('Phone Preferred', {
             'wp': {
@@ -1575,36 +1582,36 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'pref_tel'
             },
-            'act':True,
+            'act': True,
             # 'label':'pref_tel',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'visible':True,
-            'mutable':True,
+            'import': True,
+            'user': True,
+            'sync': True,
+            'visible': True,
+            'mutable': True,
         }),
 
 
         ('Address', {
-            'act':False,
-            'wp':False,
-            'report':True,
-            'warn':True,
-            'static':True,
-            'sync':True,
-            'aliases':['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country', 'Shire'],
+            'act': False,
+            'wp': False,
+            'report': True,
+            'warn': True,
+            'static': True,
+            'sync': True,
+            'aliases': ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country', 'Shire'],
             'basic':True,
             'tracked':True,
         }),
         ('Home Address', {
-            'act':False,
-            'wp':False,
-            'report':True,
-            'warn':True,
-            'static':True,
-            'sync':True,
-            'basic':True,
-            'aliases':['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
+            'act': False,
+            'wp': False,
+            'report': True,
+            'warn': True,
+            'static': True,
+            'sync': True,
+            'basic': True,
+            'aliases': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
             'tracked':'future',
         }),
         ('Address 1', {
@@ -1616,10 +1623,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_address_1'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_address_1',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'warn': True,
             # 'static':True,
@@ -1635,10 +1642,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_address_2'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_address_2',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'warn': True,
             # 'static':True,
@@ -1654,10 +1661,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_city'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_city',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'warn': True,
             # 'static':True,
@@ -1674,10 +1681,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_postcode'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_postcode',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'warn': True,
             # 'static':True,
@@ -1693,10 +1700,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_state'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_state',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'warn': True,
             # 'static':True,
@@ -1713,10 +1720,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'billing_country'
             },
-            'act':True,
+            'act': True,
             # 'label':'billing_country',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'warn':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1726,8 +1733,8 @@ class ColData_User(ColData_Base):
             'wp': False,
             'act': True,
             # 'label':'billing_country',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'warn':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1742,10 +1749,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_address_1'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_address_1',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1760,10 +1767,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_address_2'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_address_2',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1778,10 +1785,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_city'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_city',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1796,10 +1803,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_postcode'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_postcode',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'visible':True,
@@ -1813,10 +1820,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_country'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_country',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1831,10 +1838,10 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'shipping_state'
             },
-            'act':True,
+            'act': True,
             # 'label':'shipping_state',
-            'import':True,
-            'user':True,
+            'import': True,
+            'user': True,
             # 'sync':True,
             # 'static':True,
             # 'capitalized':True,
@@ -1853,15 +1860,15 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'myob_customer_card_id'
             },
-            'act':True,
-            'import':True,
+            'act': True,
+            'import': True,
             # 'report':True,
-            'user':True,
-            'sync':'master_override',
-            'warn':True,
+            'user': True,
+            'sync': 'master_override',
+            'warn': True,
         }),
         ('Client Grade', {
-            'import':True,
+            'import': True,
             'wp': {
                 'meta': True,
                 'key': 'client_grade'
@@ -1870,16 +1877,16 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'client_grade'
             },
-            'act':True,
+            'act': True,
             # 'label':'client_grade',
-            'user':True,
+            'user': True,
             # 'report':True,
-            'sync':'master_override',
-            'warn':True,
-            'visible':True,
+            'sync': 'master_override',
+            'warn': True,
+            'visible': True,
         }),
         ('Direct Brand', {
-            'import':True,
+            'import': True,
             'wp': {
                 'meta': True,
                 'key': 'direct_brand'
@@ -1888,12 +1895,12 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'direct_brand'
             },
-            'act':True,
+            'act': True,
             # 'label':'direct_brand',
-            'user':True,
+            'user': True,
             # 'report': True,
-            'sync':'master_override',
-            'warn':True,
+            'sync': 'master_override',
+            'warn': True,
         }),
         ('Agent', {
             'wp': {
@@ -1904,13 +1911,13 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'agent'
             },
-            'act':True,
+            'act': True,
             # 'label':'agent',
-            'import':'true',
-            'user':True,
-            'sync':'master_override',
-            'warn':True,
-            'visible':True,
+            'import': 'true',
+            'user': True,
+            'sync': 'master_override',
+            'warn': True,
+            'visible': True,
         }),
 
         ('ABN', {
@@ -1922,14 +1929,14 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'abn'
             },
-            'act':True,
+            'act': True,
             # 'label':'abn',
-            'import':True,
-            'user':True,
-            'sync':True,
+            'import': True,
+            'user': True,
+            'sync': True,
             'warn': True,
-            'visible':True,
-            'mutable':True,
+            'visible': True,
+            'mutable': True,
         }),
         ('Business Type', {
             'wp': {
@@ -1940,12 +1947,12 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'business_type'
             },
-            'act':True,
+            'act': True,
             # 'label':'business_type',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'visible':True,
+            'import': True,
+            'user': True,
+            'sync': True,
+            'visible': True,
             # 'mutable':True
         }),
         ('Lead Source', {
@@ -1957,11 +1964,11 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'how_hear_about'
             },
-            'act':True,
+            'act': True,
             # 'label':'how_hear_about',
-            'import':True,
-            'user':True,
-            'sync':True,
+            'import': True,
+            'user': True,
+            'sync': True,
             # 'visible':True,
         }),
         ('Referred By', {
@@ -1973,25 +1980,25 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'referred_by'
             },
-            'act':True,
+            'act': True,
             # 'label':'referred_by',
-            'import':True,
-            'user':True,
-            'sync':True,
+            'import': True,
+            'user': True,
+            'sync': True,
         }),
         ('Tans Per Wk', {
-            'wp':{
-                'meta':True,
-                'key':'tans_per_wk'
+            'wp': {
+                'meta': True,
+                'key': 'tans_per_wk'
             },
-            'wp-api':{
-                'meta':True,
-                'key':'tans_per_wk'
+            'wp-api': {
+                'meta': True,
+                'key': 'tans_per_wk'
             },
-            'import':True,
-            'user':True,
-            'sync':True,
-            'default':''
+            'import': True,
+            'user': True,
+            'sync': True,
+            'default': ''
         }),
 
         # ('E-mails', {
@@ -2006,19 +2013,19 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'personal_email'
             },
-            'act':True,
+            'act': True,
             # 'label':'personal_email',
-            'import':True,
-            'user':True,
-            'tracked':'future',
-            'report':True,
+            'import': True,
+            'user': True,
+            'tracked': 'future',
+            'report': True,
         }),
         ('Create Date', {
             'import': True,
-            'act':True,
-            'wp':False,
+            'act': True,
+            'wp': False,
             'report': True,
-            'basic':True
+            'basic': True
         }),
         ('Wordpress Start Date', {
             'import': True,
@@ -2030,7 +2037,7 @@ class ColData_User(ColData_Base):
                 'meta': False,
                 'key': 'user_registered'
             },
-            'act':True,
+            'act': True,
             # 'report': True,
             # 'basic':True
         }),
@@ -2043,19 +2050,19 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'edited_in_act'
             },
-            'act':True,
+            'act': True,
             'import': True,
             'report': True,
-            'basic':True,
+            'basic': True,
         }),
         ('Edited in Wordpress', {
             'wp': {
-                'generated':True,
+                'generated': True,
             },
-            'act':True,
-            'import':True,
-            'report':True,
-            'basic':True
+            'act': True,
+            'import': True,
+            'report': True,
+            'basic': True
         }),
         ('Last Sale', {
             'wp': {
@@ -2066,18 +2073,18 @@ class ColData_User(ColData_Base):
                 'meta': True,
                 'key': 'act_last_sale'
             },
-            'act':True,
+            'act': True,
             'import': True,
-            'basic':True,
+            'basic': True,
             'report': True
         }),
 
         ('Social Media', {
-            'sync':True,
-            'aliases':['Facebook Username', 'Twitter Username',
-                       'GooglePlus Username', 'Instagram Username',
-                       ],
-                    #    'Web Site'],
+            'sync': True,
+            'aliases': ['Facebook Username', 'Twitter Username',
+                        'GooglePlus Username', 'Instagram Username',
+                        ],
+            #    'Web Site'],
             'tracked':True,
         }),
 
@@ -2090,11 +2097,11 @@ class ColData_User(ColData_Base):
                 'key': "facebook",
                 'meta': True
             },
-            'mutable':True,
-            'visible':True,
-            'contact':True,
-            'import':True,
-            'act':True,
+            'mutable': True,
+            'visible': True,
+            'contact': True,
+            'import': True,
+            'act': True,
         }),
         ("Twitter Username", {
             'wp': {
@@ -2105,11 +2112,11 @@ class ColData_User(ColData_Base):
                 'key': "twitter",
                 'meta': True
             },
-            'contact':True,
-            'mutable':True,
-            'visible':True,
-            'import':True,
-            'act':True,
+            'contact': True,
+            'mutable': True,
+            'visible': True,
+            'import': True,
+            'act': True,
         }),
         ("GooglePlus Username", {
             'wp': {
@@ -2120,11 +2127,11 @@ class ColData_User(ColData_Base):
                 'key': "gplus",
                 'meta': True
             },
-            'contact':True,
-            'mutable':True,
-            'visible':True,
-            'import':True,
-            'act':True,
+            'contact': True,
+            'mutable': True,
+            'visible': True,
+            'import': True,
+            'act': True,
         }),
         ("Instagram Username", {
             'wp': {
@@ -2135,42 +2142,42 @@ class ColData_User(ColData_Base):
                 'key': "instagram",
                 'meta': True
             },
-            'contact':True,
-            'mutable':True,
-            'visible':True,
-            'import':True,
-            'act':True,
+            'contact': True,
+            'mutable': True,
+            'visible': True,
+            'import': True,
+            'act': True,
         }),
         ('Web Site', {
             'wp': {
                 'meta': False,
                 'key': 'user_url'
             },
-            'wp-api':{
-                'meta':False,
-                'key':'url'
+            'wp-api': {
+                'meta': False,
+                'key': 'url'
             },
-            'act':True,
+            'act': True,
             'label': 'user_url',
-            'import':True,
-            'user':True,
-            'sync':True,
-            'tracked':True,
+            'import': True,
+            'user': True,
+            'sync': True,
+            'tracked': True,
         }),
 
         ("Added to mailing list", {
             'wp': {
                 'key': 'mailing_list',
-                'meta':True,
+                'meta': True,
             },
             'wp-api': {
                 'key': 'mailing_list',
-                'meta':True,
+                'meta': True,
             },
-            'sync':True,
-            'import':True,
-            'tracked':True,
-            'default':'',
+            'sync': True,
+            'import': True,
+            'tracked': True,
+            'default': '',
         })
         # ('rowcount', {
         #     # 'import':True,
@@ -2180,7 +2187,8 @@ class ColData_User(ColData_Base):
     ])
 
     def __init__(self, data=None):
-        if not data: data = self.data
+        if not data:
+            data = self.data
         super(ColData_User, self).__init__(data)
 
     @classmethod
@@ -2217,7 +2225,6 @@ class ColData_User(ColData_Base):
                 cols.append(self.modTimeCol(col))
         return cols
 
-
     @classmethod
     def getWPImportColNames(self):
         cols = OrderedDict()
@@ -2237,8 +2244,8 @@ class ColData_User(ColData_Base):
                 wp_data = data['wp']
                 if hasattr(wp_data, '__getitem__'):
                     if wp_data.get('generated')\
-                      or (meta and not wp_data.get('meta'))\
-                      or (not meta and wp_data.get('meta')):
+                            or (meta and not wp_data.get('meta'))\
+                            or (not meta and wp_data.get('meta')):
                         continue
                     if wp_data.get('key'):
                         key = wp_data['key']
@@ -2254,8 +2261,6 @@ class ColData_User(ColData_Base):
             self.getWPDBCols(True),
             self.getWPDBCols(False)
         )
-
-
 
     # @classmethod
     # def getWPTrackedColsRecursive(self, col, cols = None, data={}):
@@ -2275,7 +2280,6 @@ class ColData_User(ColData_Base):
 
     #     return cols
 
-
     @classmethod
     def getWPTrackedCols(self):
         cols = OrderedDict()
@@ -2288,7 +2292,8 @@ class ColData_User(ColData_Base):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
                             this_tracking_name = self.modTimeCol(alias)
-                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
+                        cols[this_tracking_name] = cols.get(
+                            this_tracking_name, []) + [alias]
                         # wp_data = alias_data.get('wp')
 
                         # if hasattr(wp_data, '__getitem__') and wp_data.get('key'):
@@ -2309,7 +2314,8 @@ class ColData_User(ColData_Base):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
                             this_tracking_name = self.modTimeCol(alias)
-                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
+                        cols[this_tracking_name] = cols.get(
+                            this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
@@ -2324,7 +2330,8 @@ class ColData_User(ColData_Base):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
                             this_tracking_name = self.modTimeCol(alias)
-                        cols[this_tracking_name] = cols.get(this_tracking_name, []) + [alias]
+                        cols[this_tracking_name] = cols.get(
+                            this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
@@ -2371,10 +2378,12 @@ class ColData_User(ColData_Base):
                 new_data['sync_ingress'] = 1
             new_data['sync_label'] = col
 
-        if data.get('visible'): new_data['profile_display'] = 1
-        if data.get('mutable'): new_data['profile_modify'] = 1
-        if data.get('contact'): new_data['contact_method'] = 1
-
+        if data.get('visible'):
+            new_data['profile_display'] = 1
+        if data.get('mutable'):
+            new_data['profile_modify'] = 1
+        if data.get('contact'):
+            new_data['contact_method'] = 1
 
         if new_data and data.get('wp'):
             wp_data = data['wp']
@@ -2389,7 +2398,8 @@ class ColData_User(ColData_Base):
             for alias in data['aliases']:
                 alias_data = self.data.get(alias, {})
                 alias_data['sync'] = data.get('sync')
-                exportCols = self.getTansyncDefaultsRecursive(alias, exportCols, alias_data)
+                exportCols = self.getTansyncDefaultsRecursive(
+                    alias, exportCols, alias_data)
 
         return exportCols
 
@@ -2397,7 +2407,8 @@ class ColData_User(ColData_Base):
     def getTansyncDefaults(self):
         exportCols = OrderedDict()
         for col, data in self.data.items():
-            exportCols = self.getTansyncDefaultsRecursive(col, exportCols, data)
+            exportCols = self.getTansyncDefaultsRecursive(
+                col, exportCols, data)
         return exportCols
 
 #

@@ -7,11 +7,14 @@ from woogenerator.parsing.tree import CSVParse_Tree
 from woogenerator.parsing.tree import TaxoList, ItemList
 from woogenerator.parsing.tree import ImportTreeItem, ImportTreeObject, ImportTreeTaxo
 
+
 class SpecialGruopList(TaxoList):
     pass
 
+
 class SpecialRuleList(ItemList):
     pass
+
 
 class ImportSpecialMixin(object):
     ruleCodeKey = 'Rule Code'
@@ -23,25 +26,30 @@ class ImportSpecialMixin(object):
 
     def init_from_to(self, data):
         if self.startTimeRawKey in data:
-            data[self.startTimeKey] = TimeUtils.g_drive_strp_mk_time(data[self.startTimeRawKey])
+            data[self.startTimeKey] = TimeUtils.g_drive_strp_mk_time(
+                data[self.startTimeRawKey])
         else:
             data[self.startTimeKey] = BLANK_CELL
 
         if self.endTimeRawKey in data:
-            data[self.endTimeKey] = TimeUtils.g_drive_strp_mk_time(data[self.endTimeRawKey])
+            data[self.endTimeKey] = TimeUtils.g_drive_strp_mk_time(
+                data[self.endTimeRawKey])
         else:
             data[self.endTimeKey] = BLANK_CELL
 
         return data
 
+
 class ImportSpecialObject(ImportTreeObject, ImportSpecialMixin):
     pass
+
 
 class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     container = SpecialGruopList
 
     ID = descriptorUtils.safeKeyProperty(ImportSpecialMixin.groupIDKey)
-    start_time = descriptorUtils.safeKeyProperty(ImportSpecialMixin.startTimeKey)
+    start_time = descriptorUtils.safeKeyProperty(
+        ImportSpecialMixin.startTimeKey)
     end_time = descriptorUtils.safeKeyProperty(ImportSpecialMixin.endTimeKey)
     verifyMetaKeys = [
         ImportSpecialMixin.startTimeKey,
@@ -52,7 +60,8 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     def __init__(self, data, **kwargs):
         for key in ["FROM", "TO"]:
             if key not in data:
-                raise UserWarning("Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
+                raise UserWarning(
+                    "Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
 
         data = self.init_from_to(data)
         super(ImportSpecialGroup, self).__init__(data, **kwargs)
@@ -77,6 +86,7 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     @property
     def isActive(self):
         return self.hasStarted and not self.hasFinished
+
 
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
     ruleCode = descriptorUtils.safeKeyProperty(ImportSpecialMixin.ruleCodeKey)
@@ -106,6 +116,7 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
     @property
     def index(self):
         return self.ID
+
 
 class CSVParse_Special(CSVParse_Tree):
 
@@ -139,12 +150,12 @@ class CSVParse_Special(CSVParse_Tree):
         cols = listUtils.combineLists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(
-                cols,
-                defaults,
-                taxoDepth=1,
-                itemDepth=1,
-                metaWidth=1
-            )
+            cols,
+            defaults,
+            taxoDepth=1,
+            itemDepth=1,
+            metaWidth=1
+        )
         self.objectIndexer = self.getObjectID
         self.registerItem = self.registerRule
         self.registerTaxo = self.registerRuleGroup
@@ -158,28 +169,30 @@ class CSVParse_Special(CSVParse_Tree):
 
     def registerRuleGroup(self, groupData):
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage("registering rule group: %s", groupData.identifier)
+            Registrar.registerMessage(
+                "registering rule group: %s", groupData.identifier)
         assert groupData.isTaxo
         self.registerAnything(
             groupData,
             self.ruleGroups,
-            indexer = self.objectIndexer,
-            singular = True,
-            resolver = self.duplicateObjectExceptionResolver,
-            registerName = 'rule groups'
+            indexer=self.objectIndexer,
+            singular=True,
+            resolver=self.duplicateObjectExceptionResolver,
+            registerName='rule groups'
         )
 
     def registerRule(self, ruleData):
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage("registering rule: %s", ruleData.identifier)
+            Registrar.registerMessage(
+                "registering rule: %s", ruleData.identifier)
         assert ruleData.isItem
         self.registerAnything(
             ruleData,
             self.rules,
-            indexer = self.objectIndexer,
-            singular = True,
-            resolver = self.duplicateObjectExceptionResolver,
-            registerName = 'rules'
+            indexer=self.objectIndexer,
+            singular=True,
+            resolver=self.duplicateObjectExceptionResolver,
+            registerName='rules'
         )
 
     def auto_next(self):
@@ -196,7 +209,7 @@ class CSVParse_Special(CSVParse_Tree):
     def all_future(self):
         """ return all future rules """
         # if True or Registrar.DEBUG_SPECIAL:
-            # print("entering all_future")
+        # print("entering all_future")
         all_future = []
         for specialIndex, specialGroup in self.ruleGroups.items():
             if specialGroup.hasFinished:
@@ -223,12 +236,14 @@ class CSVParse_Special(CSVParse_Tree):
             all_future.append(specialGroup)
         # if True or Registrar.DEBUG_SPECIAL:
         #     print("returning %s" % (all_future))
-        all_future = sorted(all_future, cmp=(lambda sa, sb: cmp(sa.start_time, sb.end_time)))
+        all_future = sorted(all_future, cmp=(
+            lambda sa, sb: cmp(sa.start_time, sb.end_time)))
         return all_future
 
     #
     def determine_current_special_groups(self, specials_mode, current_special=None):
-        TimeUtils.set_override_time(time.strptime("2016-08-12", TimeUtils.dateFormat))
+        TimeUtils.set_override_time(time.strptime(
+            "2016-08-12", TimeUtils.dateFormat))
         # modes: ['override', 'auto_next', 'all_future']
         if Registrar.DEBUG_SPECIAL:
             Registrar.registerMessage("starting")
@@ -238,13 +253,15 @@ class CSVParse_Special(CSVParse_Tree):
                 response = [self.ruleGroups[current_special]]
         elif specials_mode == 'auto_next':
             auto_next = self.auto_next()
-            if auto_next: response = [auto_next]
+            if auto_next:
+                response = [auto_next]
         elif specials_mode == 'all_future':
             all_future = self.all_future()
             if all_future:
                 response = all_future
         if Registrar.DEBUG_SPECIAL:
-            Registrar.registerMessage("returning %s <- %s, %s" % (response, specials_mode, current_special))
+            Registrar.registerMessage(
+                "returning %s <- %s, %s" % (response, specials_mode, current_special))
         return response
 
     @classmethod
@@ -256,14 +273,15 @@ class CSVParse_Special(CSVParse_Tree):
 
     def tabulate(self, tablefmt=None):
         if not tablefmt:
-            tablefmt="simple"
+            tablefmt = "simple"
         #
 
         out = "\n"
         for index, ruleGroup in self.ruleGroups.items():
             out += "-> %s\n" % index
             ruleList = SpecialRuleList(ruleGroup.children)
-            out += SanitationUtils.coerceBytes(ruleList.tabulate(tablefmt='simple'))
+            out += SanitationUtils.coerceBytes(
+                ruleList.tabulate(tablefmt='simple'))
             out += '\n'
 
         return out

@@ -5,6 +5,6 @@ if __name__ == '__main__' and __package__ is None:
 import re
 from source.utils import SanitationUtils
 
-#can negative lookahead work on a group?
+# can negative lookahead work on a group?
 
-print re.match( r"(?!.*a.*| .*)(\w+)", "bab")
+print re.match(r"(?!.*a.*| .*)(\w+)", "bab")

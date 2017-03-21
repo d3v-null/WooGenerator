@@ -4,10 +4,13 @@ import unittest
 from context import woogenerator
 from woogenerator.utils import TimeUtils
 
+
 class testUtilsTime(unittest.TestCase):
+
     def setUp(self):
         self.inTimeStr = "2016-05-06 16:07:00"
-        self.inTimeStruct = time.strptime(self.inTimeStr, TimeUtils.wpTimeFormat)
+        self.inTimeStruct = time.strptime(
+            self.inTimeStr, TimeUtils.wpTimeFormat)
         self.inTimeSecs = time.mktime(self.inTimeStruct)
         self.srvOffset = -7200
         self.inTimeStrOffset = "2016-05-06 14:07:00"
@@ -39,7 +42,8 @@ class testUtilsTime(unittest.TestCase):
 
     def test_srvOffset(self):
         self.assertEqual(
-            TimeUtils.wp_time_to_string(TimeUtils.wp_server_to_local_time(TimeUtils.wp_strp_mktime(self.inTimeStr))),
+            TimeUtils.wp_time_to_string(TimeUtils.wp_server_to_local_time(
+                TimeUtils.wp_strp_mktime(self.inTimeStr))),
             self.inTimeStrOffset
         )
 
@@ -56,7 +60,8 @@ class testUtilsTime(unittest.TestCase):
             )
 
         self.assertEqual(
-            TimeUtils.get_datestamp(time.localtime(TimeUtils.act_strp_mktime(self.actDateStr))),
+            TimeUtils.get_datestamp(time.localtime(
+                TimeUtils.act_strp_mktime(self.actDateStr))),
             self.wpDateStr
         )
 
@@ -65,8 +70,8 @@ class testUtilsTime(unittest.TestCase):
 
         self.assertEqual(TimeUtils.current_tsecs(), self.overrideTimeSecs)
 
-        self.assertFalse(TimeUtils.has_happened_yet(self.overrideTimeSecs-1))
-        self.assertTrue(TimeUtils.has_happened_yet(self.overrideTimeSecs+1))
+        self.assertFalse(TimeUtils.has_happened_yet(self.overrideTimeSecs - 1))
+        self.assertTrue(TimeUtils.has_happened_yet(self.overrideTimeSecs + 1))
 
 if __name__ == '__main__':
     unittest.main()

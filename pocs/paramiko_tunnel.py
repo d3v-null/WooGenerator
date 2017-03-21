@@ -49,14 +49,15 @@ g_verbose = True
 class ForwardServer (SocketServer.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
-    
+
 
 class Handler (SocketServer.BaseRequestHandler):
 
     def handle(self):
         try:
             chan = self.ssh_transport.open_channel('direct-tcpip',
-                                                   (self.chain_host, self.chain_port),
+                                                   (self.chain_host,
+                                                    self.chain_port),
                                                    self.request.getpeername())
         except Exception as exc:
             verbose('Incoming request to %s:%d failed: %s' % (self.chain_host,
@@ -82,7 +83,7 @@ class Handler (SocketServer.BaseRequestHandler):
                 if len(data) == 0:
                     break
                 self.request.send(data)
-                
+
         peername = self.request.getpeername()
         chan.close()
         self.request.close()
@@ -121,7 +122,7 @@ def get_host_port(spec, default_port):
 
 def parse_options():
     global g_verbose
-    
+
     parser = OptionParser(usage='usage: %prog [options] <ssh-server>[:<server-port>]',
                           version='%prog 1.0', description=HELP)
     parser.add_option('-q', '--quiet', action='store_false', dest='verbose', default=True,
@@ -147,7 +148,7 @@ def parse_options():
         parser.error('Incorrect number of arguments.')
     if options.remote is None:
         parser.error('Remote address required (-r).')
-    
+
     g_verbose = options.verbose
     server_host, server_port = get_host_port(args[0], SSH_PORT)
     remote_host, remote_port = get_host_port(options.remote, SSH_PORT)
@@ -156,11 +157,11 @@ def parse_options():
 
 def main():
     options, server, remote = parse_options()
-    
+
     password = None
     if options.readpass:
         password = getpass.getpass('Enter SSH password: ')
-    
+
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
@@ -170,13 +171,16 @@ def main():
         client.connect(server[0], server[1], username=options.user, key_filename=options.keyfile,
                        look_for_keys=options.look_for_keys, password=password)
     except Exception as exc:
-        print('*** Failed to connect to %s:%d: %r' % (server[0], server[1], exc))
+        print('*** Failed to connect to %s:%d: %r' %
+              (server[0], server[1], exc))
         sys.exit(1)
 
-    verbose('Now forwarding port %d to %s:%d ...' % (options.port, remote[0], remote[1]))
+    verbose('Now forwarding port %d to %s:%d ...' %
+            (options.port, remote[0], remote[1]))
 
     try:
-        forward_tunnel(options.port, remote[0], remote[1], client.get_transport())
+        forward_tunnel(options.port, remote[0], remote[
+                       1], client.get_transport())
     except KeyboardInterrupt:
         print('C-c: Port forwarding stopped.')
         sys.exit(0)

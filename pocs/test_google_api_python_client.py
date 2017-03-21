@@ -40,6 +40,7 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
+
 def download_file_gid_csv(service, drive_file, gid=None):
     """Download a file's content.
 
@@ -50,23 +51,24 @@ def download_file_gid_csv(service, drive_file, gid=None):
     Returns:
       File's content if successful, None otherwise.
     """
-    print( type(drive_file) )
-    print( drive_file)
+    print(type(drive_file))
+    print(drive_file)
     download_url = drive_file['exportLinks']['text/csv']
     if gid:
-        download_url += "&gid=" + gid 
+        download_url += "&gid=" + gid
     print download_url
     if download_url:
-      resp, content = service._http.request(download_url)
-      if resp.status == 200:
-        print ('Status: %s' % resp)
-        return content
-      else:
-        print ('An error occurred: %s' % resp)
-        return None
+        resp, content = service._http.request(download_url)
+        if resp.status == 200:
+            print ('Status: %s' % resp)
+            return content
+        else:
+            print ('An error occurred: %s' % resp)
+            return None
     else:
-      # The file doesn't have any content stored on Drive.
-      return None  
+        # The file doesn't have any content stored on Drive.
+        return None
+
 
 def main():
     credentials = get_credentials()
@@ -76,7 +78,7 @@ def main():
     print repr(service)
     drive_file = service.files().get(fileId=genFID).execute()
     # content = download_file_gid_csv(service, drive_file )
-    content = download_file_gid_csv(service, drive_file, "784188347" )
+    content = download_file_gid_csv(service, drive_file, "784188347")
     print content
 
 

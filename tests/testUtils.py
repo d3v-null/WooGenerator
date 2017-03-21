@@ -5,7 +5,9 @@ from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 from context import woogenerator
 from woogenerator.utils import ProgressCounter, SanitationUtils, UnicodeCsvDialectUtils
 
+
 class testProgressCounter(TestCase):
+
     def setUp(self):
         self.progress_counter = ProgressCounter(100, 1)
 
@@ -35,14 +37,20 @@ class testProgressCounter(TestCase):
     def test_stripURLHost(self):
         test_url = 'http://localhost/woocommerce/wc-api/v3/products?oauth_consumer_key=ck_0297450a41484f27184d1a8a3275f9bab5b69143&oauth_timestamp=1473914520&oauth_nonce=c430d5c707d1c8c8ff446b380eddc3218a366d0a&oauth_signature_method=HMAC-SHA256&oauth_signature=dYXFhWavVbLHeqeDMbUhWxghrnBBwCwqFaS+wYAxcy8=&page=2'
         expected_result = '/woocommerce/wc-api/v3/products?oauth_consumer_key=ck_0297450a41484f27184d1a8a3275f9bab5b69143&oauth_timestamp=1473914520&oauth_nonce=c430d5c707d1c8c8ff446b380eddc3218a366d0a&oauth_signature_method=HMAC-SHA256&oauth_signature=dYXFhWavVbLHeqeDMbUhWxghrnBBwCwqFaS+wYAxcy8=&page=2'
-        self.assertEqual(SanitationUtils.stripURLHost(test_url), expected_result)
+        self.assertEqual(SanitationUtils.stripURLHost(
+            test_url), expected_result)
+
 
 class testUnicodeCsvDialectUtils(TestCase):
+
     def test_get_act_dialect(self):
-        csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion('act_out')
+        csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
+            'act_out')
         print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
 
+
 class testSanitationUtils(TestCase):
+
     def test_slugify(self):
         result = SanitationUtils.slugify("Tanbience Specials")
         self.assertEqual(result, 'tanbience_specials')

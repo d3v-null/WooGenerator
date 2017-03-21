@@ -102,7 +102,8 @@ class ObjList(list, Registrar):
             if not cols:
                 cols = self.reportCols
             assert isinstance(cols, dict), \
-                "cols should be a dict, found %s instead: %s" % (type(cols), repr(cols))
+                "cols should be a dict, found %s instead: %s" % (
+                    type(cols), repr(cols))
             header = [self.objList_type]
             for col in cols.keys():
                 header += [col]
@@ -120,7 +121,8 @@ class ObjList(list, Registrar):
 
                 for col in cols.keys():
                     # if col == 'Address':
-                    #     print repr(str(obj.get(col))), repr(sanitizer(obj.get(col)))
+                    # print repr(str(obj.get(col))),
+                    # repr(sanitizer(obj.get(col)))
                     row += [sanitizer(obj.get(col))or ""]
                     try:
                         SanitationUtils.coerceUnicode(row[-1])
@@ -137,7 +139,8 @@ class ObjList(list, Registrar):
             table_str = (tabulate(table, headers=header, tablefmt=tablefmt))
             if highlight_rules and tablefmt == 'html':
                 # print "table pre:", (table_str.encode('utf8'))
-                table_str = re.sub(r'<tr><td>([^<]*)</td>', r'<tr class="\1">', table_str)
+                table_str = re.sub(
+                    r'<tr><td>([^<]*)</td>', r'<tr class="\1">', table_str)
                 # also delete first row
                 table_str = re.sub(r'<tr><th>\s*</th>', r'<tr>', table_str)
                 # print "table post:", (table_str.encode('utf8'))
@@ -145,7 +148,8 @@ class ObjList(list, Registrar):
             return table_str
             # return table.encode('utf8')
         else:
-            Registrar.registerWarning("cannot tabulate Objlist: there are no objects")
+            Registrar.registerWarning(
+                "cannot tabulate Objlist: there are no objects")
             return ""
 
     def exportItems(self, filePath, colNames, dialect=None, encoding="utf8"):
@@ -156,10 +160,12 @@ class ObjList(list, Registrar):
             if dialect is None:
                 csvdialect = UnicodeCsvDialectUtils.act_out
             else:
-                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
+                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
+                    dialect)
             # unicodecsv.register_dialect('act_out', delimiter=',', quoting=unicodecsv.QUOTE_ALL, doublequote=False, strict=True, quotechar="\"", escapechar="`")
             if self.DEBUG_ABSTRACT:
-                self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+                self.registerMessage(
+                    UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
             dictwriter = unicodecsv.DictWriter(
                 out_file,
                 dialect=csvdialect,
@@ -247,7 +253,8 @@ class ImportObject(OrderedDict, Registrar):
         return self.typeName
 
     def getIdentifierDelimeter(self):
-        exc = DeprecationWarning("use .identifierDelimeter instead of .getIdentifierDelimeter()")
+        exc = DeprecationWarning(
+            "use .identifierDelimeter instead of .getIdentifierDelimeter()")
         self.registerError(exc)
         return self.identifierDelimeter
 
@@ -261,7 +268,8 @@ class ImportObject(OrderedDict, Registrar):
             self.registerMessage("typeName %s" % repr(typeName))
         identifierDelimeter = self.identifierDelimeter
         if self.DEBUG_ABSTRACT:
-            self.registerMessage("identifierDelimeter %s" % repr(identifierDelimeter))
+            self.registerMessage("identifierDelimeter %s" %
+                                 repr(identifierDelimeter))
         return self.stringAnything(index, "<%s>" % typeName, identifierDelimeter)
 
     def getIdentifier(self):
@@ -379,7 +387,8 @@ class CSVParse_Base(Registrar):
                 continue
             if self.indices[col]:
                 if self.DEBUG_ABSTRACT:
-                    self.registerMessage("indices [%s] = %s" % (col, self.indices.get(col)))
+                    self.registerMessage("indices [%s] = %s" % (
+                        col, self.indices.get(col)))
             else:
                 self.registerError('Could not find index of %s -> %s in %s' %
                                    (repr(col), repr(sanitizedCol), repr(sanitizedRow)))
@@ -398,7 +407,8 @@ class CSVParse_Base(Registrar):
             return None
         try:
             if self.DEBUG_ABSTRACT:
-                self.registerMessage(u"row [%3d] = %s" % (index, repr(row[index])))
+                self.registerMessage(u"row [%3d] = %s" %
+                                     (index, repr(row[index])))
             # this may break shit
             return row[index]
         except Exception as exc:
@@ -449,7 +459,8 @@ class CSVParse_Base(Registrar):
         so that they can supply their own arguments to an object's initialization
         """
         if self.DEBUG_PARSER:
-            self.registerMessage('rowcount: {} | kwargs {}'.format(rowcount, kwargs))
+            self.registerMessage(
+                'rowcount: {} | kwargs {}'.format(rowcount, kwargs))
         kwargs['row'] = kwargs.get('row', [])
         kwargs['rowcount'] = rowcount
         defaultData = OrderedDict(self.defaults.items())
@@ -541,18 +552,22 @@ class CSVParse_Base(Registrar):
             try:
                 self.processObject(objectData)
                 if self.DEBUG_PARSER:
-                    self.registerMessage("%s PROCESSED" % objectData.identifier)
+                    self.registerMessage("%s PROCESSED" %
+                                         objectData.identifier)
             except UserWarning as exc:
-                self.registerError("could not process new object: {}".format(exc), objectData)
+                self.registerError(
+                    "could not process new object: {}".format(exc), objectData)
                 continue
             try:
                 self.registerObject(objectData)
                 if self.DEBUG_PARSER:
-                    self.registerMessage("%s REGISTERED" % objectData.identifier)
+                    self.registerMessage("%s REGISTERED" %
+                                         objectData.identifier)
                     self.registerMessage("%s" % objectData.__repr__())
 
             except UserWarning as exc:
-                self.registerWarning("could not register new object: {}".format(exc), objectData)
+                self.registerWarning(
+                    "could not register new object: {}".format(exc), objectData)
                 continue
         if self.DEBUG_PARSER:
             self.registerMessage("Completed analysis")
@@ -582,11 +597,13 @@ class CSVParse_Base(Registrar):
         byte_file_obj.seek(0)
 
         if dialect_suggestion:
-            csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect_suggestion)
+            csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
+                dialect_suggestion)
         else:
             csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
             assert \
-                csvdialect.delimiter == ',' and isinstance(csvdialect.delimiter, str)
+                csvdialect.delimiter == ',' and isinstance(
+                    csvdialect.delimiter, str)
             # try:
             #     csvdialect = unicodecsv.Sniffer().sniff(byte_sample)
             #     assert csvdialect.delimiter ==',', "sanity test"
@@ -595,7 +612,8 @@ class CSVParse_Base(Registrar):
             #     csvdialect = UnicodeCsvDialectUtils.default_dialect
 
         if self.DEBUG_PARSER:
-            self.registerMessage(UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+            self.registerMessage(
+                UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
 
         unicodecsvreader = unicodecsv.reader(
             byte_file_obj,

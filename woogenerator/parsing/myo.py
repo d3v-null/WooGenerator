@@ -7,22 +7,23 @@ from woogenerator.parsing.gen import CSVParse_Gen_Tree
 from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
 # from woogenerator.parsing.abstract import ObjList
 
+
 class CSVParse_MYO(CSVParse_Gen_Tree):
     productContainer = ImportShopProductMixin
 
     @property
     def containers(self):
-        return  {
+        return {
             'Y': self.productContainer
         }
 
-    def __init__(self, cols={}, defaults={}, schema='MY', importName="", \
-            taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
+    def __init__(self, cols={}, defaults={}, schema='MY', importName="",
+                 taxoSubs={}, itemSubs={}, taxoDepth=3, itemDepth=2, metaWidth=2):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        extra_cols = [ 'WNRC', 'RNRC', 'HTML Description' ]
+        extra_cols = ['WNRC', 'RNRC', 'HTML Description']
 
-        extra_defaults =  OrderedDict([
+        extra_defaults = OrderedDict([
             ('Sell', 'S'),
             ('Tax Code When Sold', 'GST'),
             ('Sell Price Inclusive', 'X'),
@@ -223,23 +224,23 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 
         ])
 
-        if not importName: importName = time.strftime("%Y-%m-%d %H:%M:%S")
-        cols = listUtils.combineLists( cols, extra_cols )
-        defaults = listUtils.combineOrderedDicts( defaults, extra_defaults )
-        taxoSubs = listUtils.combineOrderedDicts( taxoSubs, extra_taxoSubs )
-        itemSubs = listUtils.combineOrderedDicts( itemSubs, extra_itemSubs )
-        if not schema: schema = "MY"
+        if not importName:
+            importName = time.strftime("%Y-%m-%d %H:%M:%S")
+        cols = listUtils.combineLists(cols, extra_cols)
+        defaults = listUtils.combineOrderedDicts(defaults, extra_defaults)
+        taxoSubs = listUtils.combineOrderedDicts(taxoSubs, extra_taxoSubs)
+        itemSubs = listUtils.combineOrderedDicts(itemSubs, extra_itemSubs)
+        if not schema:
+            schema = "MY"
 
-        super(CSVParse_MYO, self).__init__( cols, defaults, schema, \
-                taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
+        super(CSVParse_MYO, self).__init__(cols, defaults, schema,
+                                           taxoSubs, itemSubs, taxoDepth, itemDepth, metaWidth)
         if self.DEBUG_MYO:
-            self.registerMessage( "csvparse initialized with cols: %s" %
+            self.registerMessage("csvparse initialized with cols: %s" %
                                  SanitationUtils.coerceUnicode(extra_cols))
 
-
-
     # def joinDescs(self, descs, fullnames):
-    #     return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
+    # return self.changeFullname(self.joinItems(fullnames[self.taxoDepth:]))
 
     # def processItemtype(self, itemData):
     #     if itemData['itemtype'] == 'Y':
@@ -247,7 +248,9 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
     #         # itemData['description'] = itemData['descsum'][:]
     #         self.registerProduct(itemData)
 
+
 class MYOProdList(ShopProdList):
+
     def getReportCols(self):
         return ColData_MYO.getProductCols()
 

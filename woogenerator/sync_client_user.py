@@ -9,14 +9,16 @@ from sshtunnel import SSHTunnelForwarder
 import pymysql
 
 from woogenerator.coldata import ColData_User
-from woogenerator.sync_client import SyncClientAbstract #, AbstractServiceInterface
+from woogenerator.sync_client import SyncClientAbstract  # , AbstractServiceInterface
 from woogenerator.sync_client import SyncClientWP
 from woogenerator.sync_client import SyncClientWC
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.utils import ProgressCounter, UnicodeCsvDialectUtils
 
+
 class UsrSyncClient_WC(SyncClientWC):
     endpoint_singular = 'customer'
+
 
 class UsrSyncClient_WP(SyncClientWP):
     endpoint_singular = 'user'
@@ -25,7 +27,9 @@ class UsrSyncClient_WP(SyncClientWP):
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
 
+
 class UsrSyncClient_SSH_ACT(SyncClientAbstract):
+
     def __init__(self, connect_params, dbParams, fsParams):
         self.dbParams = dbParams
         self.fsParams = fsParams
@@ -43,7 +47,8 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
     def execSilentCommandAssert(self, command):
         self.assert_connect()
         stdin, stdout, stderr = self.service.exec_command(command)
-        if stdin: pass #gets rid of annoying warnings
+        if stdin:
+            pass  # gets rid of annoying warnings
         possible_errors = stdout.readlines() + stderr.readlines()
         for error in possible_errors:
             if re.match("^Countries.*", error):
@@ -93,14 +98,14 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         # if not isinstance(exception, Exception):
         #     raise exception
 
-
-    def assertRemoteFileExists(self, remotePath, assertion = ""):
+    def assertRemoteFileExists(self, remotePath, assertion=""):
         self.assert_connect()
 
         # stdin, stdout, stderr = self.service.exec_command('stat "%s"' % remotePath)
         stderr = self.service.exec_command('stat "%s"' % remotePath)[2]
         possible_errors = stderr.readlines()
-        assert not possible_errors, " ".join([assertion, "stat returned possible errors", str(possible_errors)])
+        assert not possible_errors, " ".join(
+            [assertion, "stat returned possible errors", str(possible_errors)])
 
     @classmethod
     def printFileProgress(self, completed, total):
@@ -143,7 +148,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             del updates['MYOB Card ID']
 
         updates = OrderedDict(
-            [('MYOB Card ID', user_pkey)] \
+            [('MYOB Card ID', user_pkey)]
             + updates.items()
         )
 
@@ -154,7 +159,8 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         fileName = fileRoot + '.csv'
         localPath = os.path.join(outFolder, fileName)
         remotePath = os.path.join(remote_export_folder, fileName)
-        importedFile = os.path.join(remote_export_folder, fileRoot + '.imported')
+        importedFile = os.path.join(
+            remote_export_folder, fileRoot + '.imported')
 
         with open(localPath, 'w+') as out_file:
             csvdialect = UnicodeCsvDialectUtils.act_out
@@ -168,7 +174,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             dictwriter.writeheader()
             dictwriter.writerow(updates)
 
-        self.putFile( localPath, remotePath)
+        self.putFile(localPath, remotePath)
 
         tokens = [
             'cd ' + remote_export_folder + ';',
@@ -178,7 +184,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             ('"%s"' % fileName) if fileName else None
         ]
 
-        command = " ".join( token for token in tokens if token)
+        command = " ".join(token for token in tokens if token)
 
         # command = " ".join(filter(None,))
         #
@@ -240,13 +246,15 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         print "analysing file..."
         parser.analyseFile(localPath, dialect_suggestion='act_out')
 
+
 class UsrSyncClient_SQL_WP(SyncClientAbstract):
     service_builder = SSHTunnelForwarder
 
     """docstring for UsrSyncClient_SQL_WP"""
+
     def __init__(self, connect_params, dbParams):
         self.dbParams = dbParams
-        self.tbl_prefix = self.dbParams.pop('tbl_prefix','')
+        self.tbl_prefix = self.dbParams.pop('tbl_prefix', '')
         super(UsrSyncClient_SQL_WP, self).__init__(connect_params)
         # self.fsParams = fsParams
 
@@ -258,7 +266,7 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
         self.service.close()
 
     def attempt_connect(self):
-        self.service = SSHTunnelForwarder( **self.connect_params )
+        self.service = SSHTunnelForwarder(**self.connect_params)
 
     def analyse_remote(self, parser, since=None, limit=None, filterItems=None):
 
@@ -266,16 +274,17 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
 
         # srv_offset = self.dbParams.pop('srv_offset','')
         self.dbParams['port'] = self.service.local_bind_address[-1]
-        cursor = pymysql.connect( **self.dbParams ).cursor()
+        cursor = pymysql.connect(**self.dbParams).cursor()
 
         sm_where_clauses = []
 
         if since:
-            since_t = TimeUtils.wp_server_to_local_time( TimeUtils.wp_strp_mktime(since))
+            since_t = TimeUtils.wp_server_to_local_time(
+                TimeUtils.wp_strp_mktime(since))
             assert since_t, "Time should be valid format, got %s" % since
             since_s = TimeUtils.wp_time_to_string(since_t)
 
-            sm_where_clauses.append( "tu.`time` > '%s'" % since_s )
+            sm_where_clauses.append("tu.`time` > '%s'" % since_s)
 
         modtime_cols = [
             "tu.`user_id` as `user_id`",
@@ -285,10 +294,11 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
         for tracking_name, aliases in ColData_User.getWPTrackedCols().items():
             case_clauses = []
             for alias in aliases:
-                case_clauses.append("LOCATE('\"%s\"', tu.`changed`) > 0" % alias)
+                case_clauses.append(
+                    "LOCATE('\"%s\"', tu.`changed`) > 0" % alias)
             modtime_cols.append("MAX(CASE WHEN {case_clauses} THEN tu.`time` ELSE \"\" END) as `{tracking_name}`".format(
-                case_clauses = " OR ".join(case_clauses),
-                tracking_name = tracking_name
+                case_clauses=" OR ".join(case_clauses),
+                tracking_name=tracking_name
             ))
 
         if sm_where_clauses:
@@ -304,17 +314,19 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
     {sm_where_clause}
     GROUP BY
         tu.`user_id`""".format(
-            modtime_cols = ",\n\t\t".join(modtime_cols),
-            tbl_tu=self.tbl_prefix+'tansync_updates',
-            sm_where_clause = sm_where_clause,
+            modtime_cols=",\n\t\t".join(modtime_cols),
+            tbl_tu=self.tbl_prefix + 'tansync_updates',
+            sm_where_clause=sm_where_clause,
         )
 
         # print sql_select_modtime
 
         if since:
             cursor.execute(sql_select_modtime)
-            headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
-            results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
+            headers = [SanitationUtils.coerceUnicode(
+                i[0]) for i in cursor.description]
+            results = [[SanitationUtils.coerceUnicode(
+                cell) for cell in row] for row in cursor]
             # table = [headers] + results
             # print tabulate(table, headers='firstrow')
             # results = list(cursor)
@@ -329,14 +341,15 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
         wpDbCoreCols = ColData_User.getWPDBCols(meta=False)
 
         userdata_cols = ",\n\t\t".join(filter(None,
-            [
-                "u.%s as `%s`" % (key, name)\
-                    for key, name in wpDbCoreCols.items()
-            ] + [
-                "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (key, name) \
-                    for key, name in wpDbMetaCols.items()
-            ]
-        ))
+                                              [
+                                                  "u.%s as `%s`" % (key, name)
+                                                  for key, name in wpDbCoreCols.items()
+                                              ] + [
+                                                  "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (
+                                                      key, name)
+                                                  for key, name in wpDbMetaCols.items()
+                                              ]
+                                              ))
 
         # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.getWPCols().items()))
 
@@ -365,9 +378,9 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
         ON ( um.`user_id` = u.`ID`)
     GROUP BY
         u.`ID`""".format(
-            tbl_u = self.tbl_prefix+'users',
-            tbl_um = self.tbl_prefix+'usermeta',
-            usr_cols = userdata_cols,
+            tbl_u=self.tbl_prefix + 'users',
+            tbl_um=self.tbl_prefix + 'usermeta',
+            usr_cols=userdata_cols,
         )
 
         um_on_clauses = []
@@ -377,7 +390,7 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
 
         if filterItems:
             if 'cards' in filterItems:
-                um_where_clauses.append( "ud.`MYOB Card ID` IN (%s)" % (','.join([
+                um_where_clauses.append("ud.`MYOB Card ID` IN (%s)" % (','.join([
                     '"%s"' % card for card in filterItems['cards']
                 ])))
 
@@ -395,8 +408,6 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
         else:
             um_where_clause = ''
 
-
-
         # print sql_select_user
 
         sql_select_user_modtime = """
@@ -412,21 +423,24 @@ FROM
 ON {um_on_clause}
 {um_where_clause}
 {limit_clause};""".format(
-            sql_ud = sql_select_user,
-            sql_mt = sql_select_modtime,
-            join_type = "INNER" if sm_where_clause else "LEFT",
-            limit_clause = "LIMIT %d" % limit if limit else "",
-            um_on_clause = um_on_clause,
-            um_where_clause = um_where_clause
+            sql_ud=sql_select_user,
+            sql_mt=sql_select_modtime,
+            join_type="INNER" if sm_where_clause else "LEFT",
+            limit_clause="LIMIT %d" % limit if limit else "",
+            um_on_clause=um_on_clause,
+            um_where_clause=um_where_clause
         )
 
-        if Registrar.DEBUG_CLIENT: Registrar.registerMessage(sql_select_user_modtime)
+        if Registrar.DEBUG_CLIENT:
+            Registrar.registerMessage(sql_select_user_modtime)
 
         cursor.execute(sql_select_user_modtime)
 
-        headers = [SanitationUtils.coerceUnicode(i[0]) for i in cursor.description]
+        headers = [SanitationUtils.coerceUnicode(
+            i[0]) for i in cursor.description]
 
-        results = [[SanitationUtils.coerceUnicode(cell) for cell in row] for row in cursor]
+        results = [[SanitationUtils.coerceUnicode(
+            cell) for cell in row] for row in cursor]
 
         rows = [headers] + results
 

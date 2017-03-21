@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from woogenerator.sync_client import SyncClientWC
 
+
 class ProdSyncClient_WC(SyncClientWC):
     endpoint_singular = 'product'
     #
@@ -9,7 +10,8 @@ class ProdSyncClient_WC(SyncClientWC):
     #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
 
     def analyseRemoteCategories(self, parser):
-        taxoApiIterator = self.ApiIterator(self.service, '/products/categories')
+        taxoApiIterator = self.ApiIterator(
+            self.service, '/products/categories')
         categories = []
         for page in taxoApiIterator:
             if 'product_categories' in page:
@@ -21,7 +23,8 @@ class ProdSyncClient_WC(SyncClientWC):
             self.registerMessage(parser.toStrTree())
 
     # def analyse_remote(self, parser, since=None, limit=None):
-    #     return super(ProdSyncClient_WC, self).analyse_remote(parser, since, limit)
+    # return super(ProdSyncClient_WC, self).analyse_remote(parser, since,
+    # limit)
 
     def upload_changes(self, pkey, updates=None):
         # print "\n\n\ncalling uploadchanges on %s\n\n\n" % str(pkey)
@@ -30,19 +33,20 @@ class ProdSyncClient_WC(SyncClientWC):
         if self.DEBUG_API:
             categories = updates.get('categories')
             if categories:
-                self.registerMessage( "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
+                self.registerMessage(
+                    "WILL CHANGE THESE CATEGORIES: %s" % str(categories))
             else:
-                self.registerMessage( "NO CAT CHANGES IN %s" % str(updates))
+                self.registerMessage("NO CAT CHANGES IN %s" % str(updates))
             custom_meta = updates.get('custom_meta')
             if custom_meta:
-                self.registerMessage( "CUSTOM META: %s" % str(custom_meta))
+                self.registerMessage("CUSTOM META: %s" % str(custom_meta))
             else:
-                self.registerMessage( "NO CUSTOM META" )
-
+                self.registerMessage("NO CUSTOM META")
 
         response = None
         if updates:
-            response = super(ProdSyncClient_WC, self).upload_changes(pkey, updates)
+            response = super(ProdSyncClient_WC,
+                             self).upload_changes(pkey, updates)
         return response
 
     # def setCategories(self, pkey, categories):
@@ -62,7 +66,8 @@ class ProdSyncClient_WC(SyncClientWC):
     #     new_categories = list(set(categories) - set(current_categories))
         # delete_categories = list(set(current_categories) - set(categories))
 
-        #not efficient but whatever
+        # not efficient but whatever
+
 
 class CatSyncClient_WC(SyncClientWC):
     endpoint_singular = 'product_category'

@@ -4,7 +4,7 @@ import os
 # import shutil
 from utils import SanitationUtils, TimeUtils, listUtils, HtmlReporter
 from matching import Match, MatchList, UsernameMatcher, CardMatcher, NocardEmailMatcher
-from parsing.flat import CSVParse_User, UsrObjList #, ImportUser
+from parsing.flat import CSVParse_User, UsrObjList  # , ImportUser
 from contact_objects import ContactAddress
 import codecs
 from coldata import ColData_User
@@ -20,6 +20,7 @@ import io
 importName = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
 
+
 def timediff():
     return time.time() - start_time
 
@@ -34,7 +35,7 @@ with open(yamlPath) as stream:
     if 'outFolder' in config.keys():
         outFolder = config['outFolder']
 
-    #mandatory
+    # mandatory
     merge_mode = config.get('merge_mode', 'sync')
     MASTER_NAME = config.get('master_name', 'MASTER')
     SLAVE_NAME = config.get('slave_name', 'SLAVE')
@@ -69,12 +70,12 @@ since = "2016-03-13"
 # since = ""
 
 with \
-    SSHTunnelForwarder(
-        (ssh_host, ssh_port),
-        ssh_password=ssh_pass,
-        ssh_username=ssh_user,
-        remote_bind_address=(remote_bind_host, remote_bind_port)
-    ) as server:
+        SSHTunnelForwarder(
+            (ssh_host, ssh_port),
+            ssh_password=ssh_pass,
+            ssh_username=ssh_user,
+            remote_bind_address=(remote_bind_host, remote_bind_port)
+        ) as server:
 
     conn = MySQLdb.connect(
         host='127.0.0.1',
@@ -83,7 +84,8 @@ with \
         passwd=db_pass,
         db=db_name)
 
-    sql = ("SELECT user_id, time, changed, data FROM %stansync_updates" % tbl_prefix) + ( " WHERE time > '%s'" % since if since else "")
+    sql = ("SELECT user_id, time, changed, data FROM %stansync_updates" %
+           tbl_prefix) + (" WHERE time > '%s'" % since if since else "")
 
     cursor = conn.cursor()
     cursor.execute(sql)
@@ -95,15 +97,16 @@ with \
 
 print "formatting data..."
 
+
 def json2map(map_json):
     try:
         sanitizer = SanitationUtils.coerceUnicode
         map_obj = json.loads(map_json)
-        map_obj = OrderedDict([ \
-            ((map_key, [sanitizer(map_value)]) \
-                if not isinstance(map_value, list) \
-                else (map_key, map(sanitizer, map_value))) \
-            for map_key, map_value in sorted(map_obj.items()) if any (map_value) \
+        map_obj = OrderedDict([
+            ((map_key, [sanitizer(map_value)])
+                if not isinstance(map_value, list)
+                else (map_key, map(sanitizer, map_value)))
+            for map_key, map_value in sorted(map_obj.items()) if any(map_value)
         ])
         if not map_obj:
             raise Exception()
@@ -111,6 +114,7 @@ def json2map(map_json):
         # return tabulate(map_obj, headers="keys", tablefmt="html")
     except:
         return map_json
+
 
 def map2table(map_obj):
     return tabulate(map_obj, headers="keys", tablefmt="html")
@@ -121,18 +125,20 @@ for user_id, c_time, changed, data in sorted(changeData[1:]):
     if user_id == 1:
         SanitationUtils.safePrint(changed)
     changedMap = json2map(changed)
-    if not isinstance(changedMap, dict): continue
+    if not isinstance(changedMap, dict):
+        continue
     if user_id == 1:
         for value in changedMap.values():
-            for val in value: 
+            for val in value:
                 SanitationUtils.safePrint(val)
     dataMap = json2map(data)
-    diffMap = listUtils.keysNotIn(dataMap, changedMap.keys()) if isinstance(changedMap, dict) else dataMap
-    changeDataFmt.append( [
+    diffMap = listUtils.keysNotIn(dataMap, changedMap.keys()) if isinstance(
+        changedMap, dict) else dataMap
+    changeDataFmt.append([
         user_id,
         c_time,
         "C:%s<br/>S:%s" % (map2table(changedMap), map2table(diffMap))
-    ] )
+    ])
 
 print "creating report..."
 
@@ -144,12 +150,14 @@ with io.open(repPath, 'w+', encoding='utf-8') as resFile:
         HtmlReporter.Section(
             'wp_changes',
             'Wordpress Changes',
-            "modifications made to wordpress" + ( "since %s" % since if since else ""),
-            data = re.sub("<table>","<table class=\"table table-striped\">", 
-                tabulate(changeDataFmt, headers="firstrow", tablefmt="html")
-            ),
-            length = len(changeDataFmt)
+            "modifications made to wordpress" +
+            ("since %s" % since if since else ""),
+            data=re.sub("<table>", "<table class=\"table table-striped\">",
+                        tabulate(changeDataFmt, headers="firstrow",
+                                   tablefmt="html")
+                        ),
+            length=len(changeDataFmt)
         )
     )
 
-    resFile.write( SanitationUtils.coerceUnicode( reporter.getDocument() ))
+    resFile.write(SanitationUtils.coerceUnicode(reporter.getDocument()))

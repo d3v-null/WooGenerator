@@ -1,6 +1,7 @@
 """ Utils for dealing with inheritence in python """
 
-class InheritenceUtils(object): # pylint: disable=too-few-public-methods
+
+class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
     """ Groups inheritence utils together """
     @classmethod
     def gcs(cls, *instances):
@@ -38,6 +39,7 @@ class InheritenceUtils(object): # pylint: disable=too-few-public-methods
         #     Registrar.registerError(exc)
         #     raise exc
         #     return None
+
 
 def overrides(interface_class):
     """ decorator for specifying where attribute overrides a superclass """

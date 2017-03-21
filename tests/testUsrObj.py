@@ -5,7 +5,9 @@ from unittest import TestCase, main, skip
 from context import woogenerator
 from woogenerator.parsing.user import ImportUser
 
+
 class testUsrObj(TestCase):
+
     def setUp(self):
         self.usr = ImportUser(
             {

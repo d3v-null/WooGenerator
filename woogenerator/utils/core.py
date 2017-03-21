@@ -15,7 +15,9 @@ import cStringIO
 # from uniqid import uniqid
 from phpserialize import dumps, loads
 from kitchen.text import converters
-import time, math, random
+import time
+import math
+import random
 import io
 import base64
 from pympler import tracker
@@ -34,12 +36,13 @@ except ImportError:
 
 DEFAULT_ENCODING = 'utf8'
 
+
 class SanitationUtils:
     email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
     regex_url_simple = r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
     regex_url = \
-        ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)'+\
-        ur'(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+'+\
+        ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)' +\
+        ur'(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+' +\
         ur'(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?]))'
     regex_wc_link = ur"<(?P<url>{0})>; rel=\"(?P<rel>\w+)\"".format(regex_url)
     cell_email_regex = r"^%s$" % email_regex
@@ -58,31 +61,40 @@ class SanitationUtils:
     allowedPhonePunctuation = [
         r'\-', r'\.', r'(', r')', r'\+'
     ]
-    disallowedPunctuation = list(set(punctuationChars) - set(allowedPunctuation))
-    whitespaceChars = [ r' ', r'\t', r'\r', r'\n', 'r\f']
-    #disallowed punctuation and whitespace
-    disallowedPunctuationOrSpace = list(set(disallowedPunctuation + whitespaceChars))
-    #delimeter characters incl whitespace and disallowed punc
-    tokenDelimeters  =  list(set([ r"\d"] + disallowedPunctuation + whitespaceChars))
-    #delimeter characters including all punctuation and whitespace
-    tokenPunctuationDelimeters = list(set([r"\d"] + punctuationChars + whitespaceChars))
-    #delimeter characters excl space
-    tokenDelimetersNoSpace  = list(set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' ']))
+    disallowedPunctuation = list(
+        set(punctuationChars) - set(allowedPunctuation))
+    whitespaceChars = [r' ', r'\t', r'\r', r'\n', 'r\f']
+    # disallowed punctuation and whitespace
+    disallowedPunctuationOrSpace = list(
+        set(disallowedPunctuation + whitespaceChars))
+    # delimeter characters incl whitespace and disallowed punc
+    tokenDelimeters = list(
+        set([r"\d"] + disallowedPunctuation + whitespaceChars))
+    # delimeter characters including all punctuation and whitespace
+    tokenPunctuationDelimeters = list(
+        set([r"\d"] + punctuationChars + whitespaceChars))
+    # delimeter characters excl space
+    tokenDelimetersNoSpace = list(
+        set(disallowedPunctuation + whitespaceChars + [r"\d"]) - set([' ']))
     punctuationRegex = r"[%s]" % "".join(punctuationChars)
-    #delimeter characters incl space and disallowed punc
-    delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
-    #disallowed punctuation and whitespace
-    disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
-    #disallowed punctuation
+    # delimeter characters incl space and disallowed punc
+    delimeterRegex = r"[%s]" % "".join(tokenDelimeters)
+    # disallowed punctuation and whitespace
+    disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(
+        disallowedPunctuationOrSpace)
+    # disallowed punctuation
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
-    #not a delimeter (no whitespace or disallowed punc)
+    # not a delimeter (no whitespace or disallowed punc)
     nondelimeterRegex = r"[^%s]" % "".join(tokenDelimeters)
-    #not a delimeter or punctuation (no punctuation or whitespace)
-    nondelimeterPunctuationRegex = r"[^%s]" % "".join(tokenPunctuationDelimeters)
-    #not a delimeter except space (no whitespace except space, no disallowed punc)
+    # not a delimeter or punctuation (no punctuation or whitespace)
+    nondelimeterPunctuationRegex = r"[^%s]" % "".join(
+        tokenPunctuationDelimeters)
+    # not a delimeter except space (no whitespace except space, no disallowed
+    # punc)
     nondelimeterOrSpaceRegex = r"[^%s]" % "".join(tokenDelimetersNoSpace)
-    disallowedPhoneCharRegex = r"[^%s]" % "".join(allowedPhonePunctuation + [r'\d', r' '])
-    clearStartRegex  = r"(?<!%s)" % nondelimeterRegex
+    disallowedPhoneCharRegex = r"[^%s]" % "".join(
+        allowedPhonePunctuation + [r'\d', r' '])
+    clearStartRegex = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
 
     @classmethod
@@ -92,33 +104,35 @@ class SanitationUtils:
     @classmethod
     def identifyAbbreviation(cls, abbrvDict, string):
         for abbrvKey, abbrvs in abbrvDict.items():
-            if( string in [abbrvKey] + abbrvs):
+            if(string in [abbrvKey] + abbrvs):
                 return abbrvKey
         return string
 
     @classmethod
     def identifyAbbreviations(cls, abbrvDict, string):
         matches = re.findall(
-            '('+cls.compileAbbrvRegex(abbrvDict)+')',
+            '(' + cls.compileAbbrvRegex(abbrvDict) + ')',
             string
         )
 
         for candidate in [match for match in filter(None, matches)]:
             identified = cls.identifyAbbreviation(abbrvDict, candidate)
-            if identified: yield identified
+            if identified:
+                yield identified
 
     @classmethod
-    def compilePartialAbbrvRegex(cls,  abbrvKey, abbrvs ):
-        return "|".join(filter(None,[
-            "|".join(filter(None,abbrvs)),
+    def compilePartialAbbrvRegex(cls,  abbrvKey, abbrvs):
+        return "|".join(filter(None, [
+            "|".join(filter(None, abbrvs)),
             abbrvKey
         ]))
 
     @classmethod
-    def compileAbbrvRegex(cls,  abbrv ):
+    def compileAbbrvRegex(cls,  abbrv):
         return "|".join(filter(None,
-            [cls.compilePartialAbbrvRegex(abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
-        ))
+                               [cls.compilePartialAbbrvRegex(
+                                   abbrvKey, abbrvValue) for abbrvKey, abbrvValue in abbrv.items()]
+                               ))
 
     @classmethod
     def compose(cls, *functions):
@@ -129,51 +143,64 @@ class SanitationUtils:
     @classmethod
     def assertAscii(cls, string):
         for index, char in enumerate(string):
-            assert ord(char) < 128, "char %s of string %s ... is not ascii" % (index, (string[:index-1]))
+            assert ord(char) < 128, "char %s of string %s ... is not ascii" % (
+                index, (string[:index - 1]))
 
     @classmethod
     def unicodeToUTF8(cls, u_str):
-        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
+        assert isinstance(
+            u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "utf8")
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
     def unicodeToAscii(cls, u_str):
-        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
+        assert isinstance(
+            u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "ascii", "backslashreplace")
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
-    def unicodeToXml(cls, u_str, ascii_only = False):
-        assert isinstance(u_str, unicode), "parameter should be unicode not %s" % type(u_str)
+    def unicodeToXml(cls, u_str, ascii_only=False):
+        assert isinstance(
+            u_str, unicode), "parameter should be unicode not %s" % type(u_str)
         if ascii_only:
             byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
         else:
             byte_return = converters.unicode_to_xml(u_str)
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
     def utf8ToUnicode(cls, utf8_str):
-        assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
+        assert isinstance(
+            utf8_str, str), "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.to_unicode(utf8_str, "utf8")
-        assert isinstance(byte_return, unicode), "something went wrong, should return unicode not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, unicode), "something went wrong, should return unicode not %s" % type(byte_return)
         return byte_return
 
     @classmethod
     def xmlToUnicode(cls, utf8_str):
-        assert isinstance(utf8_str, str), "parameter should be str not %s" % type(utf8_str)
+        assert isinstance(
+            utf8_str, str), "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.xml_to_unicode(utf8_str)
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
     def asciiToUnicode(cls, ascii_str):
-        assert isinstance(ascii_str, str), "parameter should be str not %s" % type(ascii_str)
+        assert isinstance(
+            ascii_str, str), "parameter should be str not %s" % type(ascii_str)
         unicode_return = converters.to_unicode(ascii_str, "ascii")
-        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        assert isinstance(
+            unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
     @classmethod
@@ -182,7 +209,8 @@ class SanitationUtils:
             unicode_return = u""
         else:
             unicode_return = converters.to_unicode(thing, encoding="utf8")
-        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        assert isinstance(
+            unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
     @classmethod
@@ -191,7 +219,8 @@ class SanitationUtils:
             cls.unicodeToUTF8,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
@@ -200,7 +229,8 @@ class SanitationUtils:
             cls.unicodeToAscii,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
@@ -209,7 +239,8 @@ class SanitationUtils:
             cls.unicodeToXml,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
+        assert isinstance(
+            byte_return, str), "something went wrong, should return str not %s" % type(byte_return)
         return byte_return
 
     @classmethod
@@ -221,7 +252,8 @@ class SanitationUtils:
             float_return = float(unicode_thing)
         except ValueError:
             float_return = 0.0
-        assert isinstance(float_return, float), "something went wrong, should return str not %s" % type(float_return)
+        assert isinstance(
+            float_return, float), "something went wrong, should return str not %s" % type(float_return)
         return float_return
 
     @classmethod
@@ -240,7 +272,8 @@ class SanitationUtils:
             cls.escapeNewlines,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        assert isinstance(
+            unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
     @classmethod
@@ -251,12 +284,13 @@ class SanitationUtils:
             cls.unicodeToXml,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        assert isinstance(
+            unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
     @classmethod
     def safePrint(cls, *args):
-        print " ".join([cls.coerceBytes(arg) for arg in args ])
+        print " ".join([cls.coerceBytes(arg) for arg in args])
 
     @classmethod
     def normalizeVal(cls, thing):
@@ -268,85 +302,99 @@ class SanitationUtils:
             cls.stripExtraWhitespace,
             cls.coerceUnicode
         )(thing)
-        assert isinstance(unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
+        assert isinstance(
+            unicode_return, unicode), "something went wrong, should return unicode not %s" % type(unicode_return)
         return unicode_return
 
     @classmethod
     def removeLeadingDollarWhiteSpace(cls, string):
-        str_out = re.sub('^\W*\$','', string)
-        if Registrar.DEBUG_UTILS: print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
+        str_out = re.sub('^\W*\$', '', string)
+        if Registrar.DEBUG_UTILS:
+            print "removeLeadingDollarWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def removeLeadingPercentWhiteSpace(cls, string):
-        str_out = re.sub('%\W*$','', string)
-        if Registrar.DEBUG_UTILS: print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
+        str_out = re.sub('%\W*$', '', string)
+        if Registrar.DEBUG_UTILS:
+            print "removeLeadingPercentWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def removeLoneDashes(cls, string):
         str_out = re.sub('^-$', '', string)
-        if Registrar.DEBUG_UTILS: print "removeLoneDashes", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "removeLoneDashes", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def removeThousandsSeparator(cls, string):
         str_out = re.sub(r'(\d+),(\d{3})', '\g<1>\g<2>', string)
-        if Registrar.DEBUG_UTILS: print "removeThousandsSeparator", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "removeThousandsSeparator", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def removeLoneWhiteSpace(cls, string):
-        str_out = re.sub(r'^\s*$','', string)
-        if Registrar.DEBUG_UTILS: print "removeLoneWhiteSpace", repr(string), repr(str_out)
+        str_out = re.sub(r'^\s*$', '', string)
+        if Registrar.DEBUG_UTILS:
+            print "removeLoneWhiteSpace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def removeNULL(cls, string):
         str_out = re.sub(r'^NULL$', '', string)
-        if Registrar.DEBUG_UTILS: print "removeNULL", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "removeNULL", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripLeadingWhitespace(cls, string):
         str_out = re.sub(r'^\s*', '', string)
-        if Registrar.DEBUG_UTILS: print "stripLeadingWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripLeadingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripLeadingNewline(cls, string):
         str_out = re.sub(r'^(\\n|\n)*', '', string)
-        if Registrar.DEBUG_UTILS: print "stripLeadingNewline", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripLeadingNewline", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripTailingWhitespace(cls, string):
         str_out = re.sub(r'\s*$', '', string)
-        if Registrar.DEBUG_UTILS: print "stripTailingWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripTailingWhitespace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripTailingNewline(cls, string):
         str_out = re.sub(r'(\\n|\n)*$', '', string)
-        if Registrar.DEBUG_UTILS: print "stripTailingNewline", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripTailingNewline", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripAllWhitespace(cls, string):
         str_out = re.sub(r'\s', '', string)
-        if Registrar.DEBUG_UTILS: print "stripAllWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripAllWhitespace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripExtraWhitespace(cls, string):
         str_out = re.sub(r'\s{2,}', ' ', string)
-        if Registrar.DEBUG_UTILS: print "stripExtraWhitespace", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripExtraWhitespace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripNonNumbers(cls, string):
         str_out = re.sub(r'[^\d]', '', string)
-        if Registrar.DEBUG_UTILS: print "stripNonNumbers", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripNonNumbers", repr(string), repr(str_out)
         return str_out
 
     @classmethod
@@ -356,32 +404,37 @@ class SanitationUtils:
 
     @classmethod
     def stripPunctuation(cls, string):
-        str_out = re.sub(r'[%s]' % ''.join(cls.punctuationChars) , '', string)
-        if Registrar.DEBUG_UTILS: print "stripPunctuation", repr(string), repr(str_out)
+        str_out = re.sub(r'[%s]' % ''.join(cls.punctuationChars), '', string)
+        if Registrar.DEBUG_UTILS:
+            print "stripPunctuation", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripAreaCode(cls, string):
-        str_out = re.sub(r'\s*\+\d{2,3}\s*','', string)
-        if Registrar.DEBUG_UTILS: print "stripAreaCode", repr(string), repr(str_out)
+        str_out = re.sub(r'\s*\+\d{2,3}\s*', '', string)
+        if Registrar.DEBUG_UTILS:
+            print "stripAreaCode", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripURLProtocol(cls, string):
         str_out = re.sub(r"^\w+://", "", string)
-        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripPTags(cls, string):
         str_out = re.sub(r"</?p[^>]*>", "", string)
-        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def stripBrTags(cls, string):
         str_out = re.sub(r"</?\s*br\s*/?>", "", string)
-        if Registrar.DEBUG_UTILS: print "stripURLProtocol", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripURLProtocol", repr(string), repr(str_out)
         return str_out
 
     @classmethod
@@ -391,40 +444,43 @@ class SanitationUtils:
         if result:
             if result.scheme:
                 remove_str = '%s:' % result.scheme
-                if str_out.startswith( remove_str ):
+                if str_out.startswith(remove_str):
                     str_out = str_out[len(remove_str):]
             if result.netloc:
                 remove_str = '//%s' % result.netloc
                 if str_out.startswith(remove_str):
                     str_out = str_out[len(remove_str):]
 
-        if Registrar.DEBUG_UTILS: print "stripURLHost", repr(url), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "stripURLHost", repr(url), repr(str_out)
         return str_out
 
     @classmethod
     def toLower(cls, string):
         str_out = string.lower()
-        if Registrar.DEBUG_UTILS: print "toLower", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "toLower", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def toUpper(cls, string):
         str_out = string.upper()
-        if Registrar.DEBUG_UTILS: print "toUpper", repr(string), repr(str_out)
+        if Registrar.DEBUG_UTILS:
+            print "toUpper", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def sanitizeNewlines(cls, string):
-        return re.sub('\n','</br>', string)
+        return re.sub('\n', '</br>', string)
 
     @classmethod
     def escapeNewlines(cls, string):
-        return re.sub('\n',r'\\n', string)
+        return re.sub('\n', r'\\n', string)
 
     @classmethod
     def compileRegex(cls, subs):
         if subs:
-            return re.compile( "(%s)" % '|'.join(filter(None, map(re.escape, subs))) )
+            return re.compile("(%s)" % '|'.join(filter(None, map(re.escape, subs))))
         else:
             return None
 
@@ -582,15 +638,15 @@ class SanitationUtils:
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
         instring = cls.coerceUnicode(instring)
-        return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)',instring)
+        return re.findall(r'\s*([^.|]*\.[^.|\s]*)(?:\s*|\s*)', instring)
 
     @classmethod
-    def findAllTokens(cls, instring, delim = "|"):
+    def findAllTokens(cls, instring, delim="|"):
         # assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
         # if not isinstance(instring, unicode):
             # instring = instring.decode('utf-8')
         instring = cls.coerceUnicode(instring)
-        return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring )
+        return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring)
 
     @classmethod
     def findallDollars(cls, instring):
@@ -612,7 +668,7 @@ class SanitationUtils:
     def findallEmails(cls, instring):
         instring = cls.coerceUnicode(instring)
         return re.findall(
-            cls.wrapClearRegex( cls.email_regex ),
+            cls.wrapClearRegex(cls.email_regex),
             instring
         )
 
@@ -627,7 +683,7 @@ class SanitationUtils:
 
     @classmethod
     def findall_wp_links(cls, string):
-        #todo implement
+        # todo implement
         return []
 
     @classmethod
@@ -662,7 +718,8 @@ class SanitationUtils:
 
     @classmethod
     def titleSplitter(cls, instring):
-        assert isinstance(instring, (str, unicode)), "param must be a string not %s"% type(instring)
+        assert isinstance(instring, (str, unicode)
+                          ), "param must be a string not %s" % type(instring)
         if not isinstance(instring, unicode):
             instring = instring.decode('utf-8')
         found = re.findall(r"^\s*(.*?)\s+[^\s\w&\(\)]\s+(.*?)\s*$", instring)
@@ -708,11 +765,13 @@ class SanitationUtils:
 
     @classmethod
     def truishStringToBool(cls, string):
-        if( not string or 'n' in string or 'false' in string or string == '0' or string == 0):
-            if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'FALSE'
+        if(not string or 'n' in string or 'false' in string or string == '0' or string == 0):
+            if Registrar.DEBUG_UTILS:
+                print "truishStringToBool", repr(string), 'FALSE'
             return "FALSE"
         else:
-            if Registrar.DEBUG_UTILS: print "truishStringToBool", repr(string), 'TRUE'
+            if Registrar.DEBUG_UTILS:
+                print "truishStringToBool", repr(string), 'TRUE'
             return "TRUE"
 
     @classmethod
@@ -726,7 +785,8 @@ class SanitationUtils:
     def datetotimestamp(cls, datestring):
         raise DeprecationWarning()
         # assert isinstance(datestring, (str,unicode)), "param must be a string not %s"% type(datestring)
-        # return int(time.mktime(datetime.datetime.strptime(datestring, "%d/%m/%Y").timetuple()))
+        # return int(time.mktime(datetime.datetime.strptime(datestring,
+        # "%d/%m/%Y").timetuple()))
 
     @classmethod
     def decodeJSON(cls, json_str):
@@ -748,6 +808,7 @@ class SanitationUtils:
     @classmethod
     def decodeBase64(cls, b64_str):
         return base64.standard_b64decode(b64_str)
+
 
 def testSanitationUtils():
     pass
@@ -782,9 +843,9 @@ def testSanitationUtils():
     # fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
     # SanitationUtils.safePrint( fields_json_base64, repr(fields_json_base64) )
 
-
     # should be   eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm/wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
-    # is actually eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
+    # is actually
+    # eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS9hc2QifQ==
 
     # n1 = u"D\u00C8RWENT"
     # n2 = u"d\u00E8rwent"
@@ -813,7 +874,7 @@ def testSanitationUtils():
     #     SanitationUtils.similarTruStrComparison(0),\
     #     SanitationUtils.similarTruStrComparison('0'),\
     #     SanitationUtils.similarTruStrComparison(u"0")\
-        # a = u'TechnoTan Roll Up Banner Insert \u2014 Non personalised - Style D'
+    # a = u'TechnoTan Roll Up Banner Insert \u2014 Non personalised - Style D'
     # print 'a', repr(a)
     # b = SanitationUtils.makeSafeOutput(a)
     # print 'b', repr(b)
@@ -829,14 +890,17 @@ def testSanitationUtils():
 
 
 class descriptorUtils:
+
     @staticmethod
     def safeKeyProperty(key):
         def getter(self):
-            assert key in self.keys(), "{} must be set before get in {}".format(key, repr(type(self)))
+            assert key in self.keys(), "{} must be set before get in {}".format(
+                key, repr(type(self)))
             return self[key]
 
         def setter(self, value):
-            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(key, type(value))
+            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(
+                key, type(value))
             self[key] = value
 
         return property(getter, setter)
@@ -844,11 +908,13 @@ class descriptorUtils:
     @staticmethod
     def safeNormalizedKeyProperty(key):
         def getter(self):
-            assert key in self.keys(), "{} must be set before get in {}".format(key, repr(type(self)))
+            assert key in self.keys(), "{} must be set before get in {}".format(
+                key, repr(type(self)))
             return SanitationUtils.normalizeVal(self[key])
 
         def setter(self, value):
-            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(key, type(value))
+            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(
+                key, type(value))
             self[key] = value
 
         return property(getter, setter)
@@ -870,7 +936,9 @@ class descriptorUtils:
 
         return property(getter, setter)
 
+
 class listUtils:
+
     @staticmethod
     def combineLists(a, b):
         """
@@ -878,7 +946,8 @@ class listUtils:
         """
         if not a:
             return b if b else []
-        if not b: return a
+        if not b:
+            return a
         c = []
         for element in a + b:
             if element not in c:
@@ -893,7 +962,8 @@ class listUtils:
         """
         if not a:
             return b if b else OrderedDict()
-        if not b: return a
+        if not b:
+            return a
         c = OrderedDict(a.items())
         for key, value in b.items():
             c[key] = value
@@ -909,15 +979,15 @@ class listUtils:
 
     @staticmethod
     def getAllkeys(*args):
-        return listUtils.filterUniqueTrue(itertools.chain( *(
+        return listUtils.filterUniqueTrue(itertools.chain(*(
             arg.keys() for arg in args if isinstance(arg, dict)
         )))
 
     @staticmethod
     def keysNotIn(dictionary, keys):
         assert isinstance(dictionary, dict)
-        return type(dictionary)([ \
-            (key, value) for key, value in dictionary.items()\
+        return type(dictionary)([
+            (key, value) for key, value in dictionary.items()
             if key not in keys
         ])
 
@@ -931,29 +1001,30 @@ class listUtils:
             return True
         return all(first == rest for rest in iterator)
 
+
 class debugUtils:
+
     @classmethod
     def getProcedure(cls, level=1):
         try:
             procedure = inspect.stack()[level][3]
             # return procedure
             path = inspect.stack()[level][1]
-            basename = 'source/'+os.path.basename(path)
+            basename = 'source/' + os.path.basename(path)
             line = inspect.stack()[level][2]
             baseline = "%s:%s" % (basename, line)
-            return ".".join([baseline,str(procedure)])
+            return ".".join([baseline, str(procedure)])
         except:
             return None
 
     @classmethod
     def getCallerProcedure(cls, level=0):
-        return cls.getProcedure(3+level)
+        return cls.getProcedure(3 + level)
 
     @classmethod
     def getCallerProcedures(cls, levels=2):
-        procedures = map(cls.getCallerProcedure, range(1,levels+1))
+        procedures = map(cls.getCallerProcedure, range(1, levels + 1))
         return ">".join(reversed(filter(None, procedures)))
-
 
     @staticmethod
     def hashify(in_str):
@@ -961,6 +1032,7 @@ class debugUtils:
         out_str += "# " + in_str + " #\n"
         out_str += "#" * (len(in_str) + 4) + "\n"
         return out_str
+
 
 class Registrar(object):
     messages = OrderedDict()
@@ -996,18 +1068,19 @@ class Registrar(object):
     DEBUG_USR = False
 
     # def __init__(self):
-        # self.objectIndexer = id
-        # self.conflictResolver = self.passiveResolver
-        # self.Registrar.DEBUG_ERROR = True
-        # self.Registrar.DEBUG_WARN = False
-        # self.Registrar.DEBUG_MESSAGE = False
+    # self.objectIndexer = id
+    # self.conflictResolver = self.passiveResolver
+    # self.Registrar.DEBUG_ERROR = True
+    # self.Registrar.DEBUG_WARN = False
+    # self.Registrar.DEBUG_MESSAGE = False
 
     @classmethod
     def conflictResolver(self, *args):
         pass
 
-    def resolveConflict(self, new, old, index, registerName = ''):
-        self.registerError("Object [index: %s] already exists in register %s"%(index, registerName))
+    def resolveConflict(self, new, old, index, registerName=''):
+        self.registerError(
+            "Object [index: %s] already exists in register %s" % (index, registerName))
 
     @classmethod
     def getObjectRowcount(cls, objectData):
@@ -1025,35 +1098,40 @@ class Registrar(object):
         pass
 
     @classmethod
-    def exceptionResolver(cls, new, old, index, registerName = ''):
-        raise Exception("could not register %s in %s. \nDuplicate index: %s" % (str(new), registerName, index) )
+    def exceptionResolver(cls, new, old, index, registerName=''):
+        raise Exception("could not register %s in %s. \nDuplicate index: %s" % (
+            str(new), registerName, index))
 
     @classmethod
     def duplicateObjectExceptionResolver(cls, new, old, index, registerName=''):
-        assert hasattr(new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
-        assert hasattr(old, 'rowcount'), 'old object type: %s should have a .rowcount attr' % type(old)
-        raise Exception("could not register %s in %s. \nDuplicate index: %s appears in rowcounts %s and %s" % (str(new), registerName, index, new.rowcount, old.rowcount) )
+        assert hasattr(
+            new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
+        assert hasattr(
+            old, 'rowcount'), 'old object type: %s should have a .rowcount attr' % type(old)
+        raise Exception("could not register %s in %s. \nDuplicate index: %s appears in rowcounts %s and %s" % (
+            str(new), registerName, index, new.rowcount, old.rowcount))
 
-
-    def warningResolver(self, new, old, index, registerName = ''):
+    def warningResolver(self, new, old, index, registerName=''):
         try:
             self.exceptionResolver(new, old, index, registerName)
         except Exception as exc:
-            self.registerError(exc, new )
+            self.registerError(exc, new)
 
     @classmethod
     def stringAnything(self, index, thing, delimeter='|'):
-        return SanitationUtils.coerceBytes( u"%50s %s %s" % (index, delimeter, thing) )
+        return SanitationUtils.coerceBytes(u"%50s %s %s" % (index, delimeter, thing))
 
     @classmethod
     def printAnything(self, index, thing, delimeter):
         print Registrar.stringAnything(index, thing, delimeter)
 
     @classmethod
-    def registerAnything(self, thing, register, indexer = None, resolver = None, \
-                         singular = True, unique=True, registerName = ''):
-        if resolver is None: resolver = self.conflictResolver
-        if indexer is None: indexer = self.objectIndexer
+    def registerAnything(self, thing, register, indexer=None, resolver=None,
+                         singular=True, unique=True, registerName=''):
+        if resolver is None:
+            resolver = self.conflictResolver
+        if indexer is None:
+            indexer = self.objectIndexer
         index = None
         try:
             if callable(indexer):
@@ -1067,8 +1145,10 @@ class Registrar(object):
             assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
         except AssertionError as exc:
-            name = thing.__name__ if hasattr(thing, '__name__') else repr(indexer)
-            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (name, repr(index), str(exc)))
+            name = thing.__name__ if hasattr(
+                thing, '__name__') else repr(indexer)
+            raise Exception("Indexer [%s] produced invalid index: %s | %s" % (
+                name, repr(index), str(exc)))
         else:
             # if not register:
             #     register = OrderedDict()
@@ -1095,13 +1175,14 @@ class Registrar(object):
         else:
             index = debugUtils.getCallerProcedures()
         error_string = SanitationUtils.coerceUnicode(error)
-        if self.DEBUG_ERROR: Registrar.printAnything(index, error_string, '!')
+        if self.DEBUG_ERROR:
+            Registrar.printAnything(index, error_string, '!')
         self.registerAnything(
             error_string,
             Registrar.errors,
             index,
-            singular = False,
-            registerName = 'errors'
+            singular=False,
+            registerName='errors'
         )
 
     @classmethod
@@ -1115,26 +1196,28 @@ class Registrar(object):
         else:
             index = debugUtils.getCallerProcedures()
         error_string = SanitationUtils.coerceUnicode(message)
-        if self.DEBUG_WARN: Registrar.printAnything(index, error_string, '|')
+        if self.DEBUG_WARN:
+            Registrar.printAnything(index, error_string, '|')
         self.registerAnything(
             error_string,
             Registrar.warnings,
             index,
-            singular = False,
-            registerName = 'warnings'
+            singular=False,
+            registerName='warnings'
         )
 
     @classmethod
     def registerMessage(self, message, source=None):
         if source is None:
             source = debugUtils.getCallerProcedures()
-        if self.DEBUG_MESSAGE: Registrar.printAnything(source, message, '~')
+        if self.DEBUG_MESSAGE:
+            Registrar.printAnything(source, message, '~')
         self.registerAnything(
             message,
             Registrar.messages,
             source,
-            singular = False,
-            registerName = 'messages'
+            singular=False,
+            registerName='messages'
         )
 
     @classmethod
@@ -1156,9 +1239,11 @@ class Registrar(object):
         items = self.getMessageItems(verbosity)
         for key, messages in items.items():
             for message in messages:
-                 self.printAnything(key, message, '|')
+                self.printAnything(key, message, '|')
+
 
 class ValidationUtils:
+
     @staticmethod
     def isNotNone(arg):
         return arg is not None
@@ -1166,6 +1251,7 @@ class ValidationUtils:
     @staticmethod
     def isContainedIn(l):
         return lambda v: v in l
+
 
 def uniqid(prefix='', more_entropy=False):
     """uniqid([prefix=''[, more_entropy=False]]) -> str
@@ -1195,7 +1281,9 @@ def uniqid(prefix='', more_entropy=False):
     the_uniqid = prefix + the_uniqid
     return the_uniqid
 
+
 class PHPUtils:
+
     @staticmethod
     def uniqid(prefix="", more_entropy=False):
         # raise DeprecationWarning('uniqid deprecated')
@@ -1213,7 +1301,9 @@ class PHPUtils:
     def unserialize(string):
         return loads(string)
 
+
 class ProgressCounter(object):
+
     def __init__(self, total, printThreshold=1):
         self.total = total
         self.printThreshold = printThreshold
@@ -1230,7 +1320,8 @@ class ProgressCounter(object):
             percentage = 0
             if self.total > 0:
                 percentage = 100 * count / self.total
-            line = "(%3d%%) %10d of %10d items processed" % (percentage, count, self.total)
+            line = "(%3d%%) %10d of %10d items processed" % (
+                percentage, count, self.total)
             if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print
                 ratio = (float(self.total) / (count) - 1.0)
@@ -1239,11 +1330,12 @@ class ProgressCounter(object):
                 line += " | remaining: %3d seconds" % int(time_remaining)
             if self.printCount > 0:
                 line = "\r%s\r" % line
-            sys.stdout.write( line )
+            sys.stdout.write(line)
             sys.stdout.flush()
             self.printCount += 1
         if count == self.total - 1:
             print "\n"
+
 
 class UnicodeCsvDialectUtils(object):
     default_dialect = unicodecsv.excel
@@ -1304,7 +1396,9 @@ class UnicodeCsvDialectUtils(object):
             return cls.get_dialect_from_suggestion(suggestion)
         return csvdialect
 
+
 class FileUtils(object):
+
     @classmethod
     def getFileName(cls, path):
         fileName, ext = os.path.splitext(os.path.basename(path))

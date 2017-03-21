@@ -10,6 +10,7 @@ from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
 
 
 class TestCSVParseSpecialV2(TestCase):
+
     def setUp(self):
         # importName = TimeUtils.get_ms_timestamp()
 
@@ -54,7 +55,8 @@ class TestCSVParseSpecialV2(TestCase):
         Registrar.DEBUG_SPECIAL = True
         Registrar.DEBUG_MESSAGE = True
 
-        TimeUtils.set_override_time(time.strptime("2018-01-01", TimeUtils.dateFormat))
+        TimeUtils.set_override_time(time.strptime(
+            "2018-01-01", TimeUtils.dateFormat))
 
         eofySpecial = specialParser.ruleGroups.get('EOFY2016')
         # print "start time", eofySpecial.start_time
@@ -78,35 +80,43 @@ class TestCSVParseSpecialV2(TestCase):
             'override',
             'EOFY2016'
         )
-        self.assertEquals(overrideGroups, [specialParser.ruleGroups.get('EOFY2016')])
+        self.assertEquals(
+            overrideGroups, [specialParser.ruleGroups.get('EOFY2016')])
 
-        TimeUtils.set_override_time(time.strptime("2018-01-01", TimeUtils.dateFormat))
+        TimeUtils.set_override_time(time.strptime(
+            "2018-01-01", TimeUtils.dateFormat))
 
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
         self.assertEquals(autoNextGroups, [])
 
-        TimeUtils.set_override_time(time.strptime("2016-08-11", TimeUtils.dateFormat))
+        TimeUtils.set_override_time(time.strptime(
+            "2016-08-11", TimeUtils.dateFormat))
 
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
-        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('SP2016-08-12')])
+        self.assertEquals(
+            autoNextGroups, [specialParser.ruleGroups.get('SP2016-08-12')])
 
-        TimeUtils.set_override_time(time.strptime("2016-06-11", TimeUtils.dateFormat))
-
-        autoNextGroups = specialParser.determine_current_special_groups(
-            'auto_next'
-        )
-        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
-
-        TimeUtils.set_override_time(time.strptime("2016-06-13", TimeUtils.dateFormat))
+        TimeUtils.set_override_time(time.strptime(
+            "2016-06-11", TimeUtils.dateFormat))
 
         autoNextGroups = specialParser.determine_current_special_groups(
             'auto_next'
         )
-        self.assertEquals(autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
+        self.assertEquals(
+            autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
+
+        TimeUtils.set_override_time(time.strptime(
+            "2016-06-13", TimeUtils.dateFormat))
+
+        autoNextGroups = specialParser.determine_current_special_groups(
+            'auto_next'
+        )
+        self.assertEquals(
+            autoNextGroups, [specialParser.ruleGroups.get('EOFY2016')])
 
 
 if __name__ == '__main__':

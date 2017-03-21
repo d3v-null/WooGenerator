@@ -4,13 +4,16 @@ from woogenerator.parsing.abstract import CSVParse_Base, ImportObject, ObjList
 
 usrs_per_file = 1000
 
+
 class ImportFlat(ImportObject):
     pass
+
 
 class CSVParse_Flat(CSVParse_Base):
     objectContainer = ImportFlat
     # def __init__(self, cols, defaults):
     #     super(CSVParse_Flat, self).__init__(cols, defaults)
+
 
 class ImportSpecial(ImportFlat):
 
@@ -29,7 +32,8 @@ class ImportSpecial(ImportFlat):
             self.registerMessage(' ')
         for key in ["FROM", "TO"]:
             if key not in data:
-                raise UserWarning("Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
+                raise UserWarning(
+                    "Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
         super(ImportSpecial, self).__init__(data, **kwargs)
         try:
             self.ID
@@ -47,6 +51,7 @@ class ImportSpecial(ImportFlat):
         exc = DeprecationWarning("use .index instead of .getIndex()")
         self.registerError(exc)
         return self.index
+
 
 class CSVParse_Special(CSVParse_Flat):
 
@@ -81,14 +86,16 @@ class CSVParse_Special(CSVParse_Flat):
     def getObjectID(self, objectData):
         return objectData.ID
 
+
 class ImportSqlProduct(ImportFlat):
-    ID          = descriptorUtils.safeKeyProperty('ID')
-    codesum     = descriptorUtils.safeKeyProperty('codesum')
-    itemsum     = descriptorUtils.safeKeyProperty('itemsum')
+    ID = descriptorUtils.safeKeyProperty('ID')
+    codesum = descriptorUtils.safeKeyProperty('codesum')
+    itemsum = descriptorUtils.safeKeyProperty('itemsum')
 
     @property
     def index(self):
         return self.codesum
+
 
 class CSVParse_WPSQLProd(CSVParse_Flat):
 
@@ -96,4 +103,4 @@ class CSVParse_WPSQLProd(CSVParse_Flat):
 
     """docstring for CSVParse_WPSQLProd"""
     # def __init__(self, arg):
-        # super(CSVParse_WPSQLProd, self).__init__()
+    # super(CSVParse_WPSQLProd, self).__init__()

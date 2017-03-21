@@ -19,7 +19,9 @@ from woogenerator.parsing.shop import ImportShopCategoryMixin, CSVParse_Shop_Mix
 from woogenerator.parsing.flat import CSVParse_Flat, ImportFlat
 from woogenerator.parsing.woo import CSVParse_Woo_Mixin, ImportWooMixin
 
+
 class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
+
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('ImportApiObject')
@@ -44,15 +46,20 @@ class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
 
     def processMeta(self):
         # self.descsum = self.description
-        assert self.descsumKey in self, "descsum should be set in %s. data: %s " % (self, self.items())
+        assert self.descsumKey in self, "descsum should be set in %s. data: %s " % (
+            self, self.items())
         # self.namesum = self.title
-        assert self.namesumKey in self, "namesum should be set in %s. data: %s " % (self, self.items())
+        assert self.namesumKey in self, "namesum should be set in %s. data: %s " % (
+            self, self.items())
         # if self.isCategory:
         #     self.codesum = ''
-        assert self.codesumKey in self, "codesum should be set in %s. data: %s " % (self, self.items())
+        assert self.codesumKey in self, "codesum should be set in %s. data: %s " % (
+            self, self.items())
+
 
 class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
     isProduct = ImportShopProductMixin.isProduct
+
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage('ImportApiProduct')
@@ -61,8 +68,10 @@ class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
         ImportApiObject.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
+
 class ImportApiProductSimple(ImportApiProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
+
 
 class ImportApiProductVariable(ImportApiProduct, ImportShopProductVariableMixin):
     isVariable = ImportShopProductVariableMixin.isVariable
@@ -74,9 +83,11 @@ class ImportApiProductVariable(ImportApiProduct, ImportShopProductVariableMixin)
         ImportApiProduct.__init__(self, *args, **kwargs)
         ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
 
+
 class ImportApiProductVariation(ImportApiProduct, ImportShopProductVariationMixin):
     isVariation = ImportShopProductVariationMixin.isVariation
     product_type = ImportShopProductVariationMixin.product_type
+
 
 class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
     isCategory = ImportShopCategoryMixin.isCategory
@@ -106,7 +117,10 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
 
 # class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin, CSVParse_Tree_Mixin):
 # class CSVParse_Woo_Api(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
-# class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
+# class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Shop_Mixin,
+# CSVParse_Woo_Mixin):
+
+
 class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
     objectContainer = ImportApiObject
     productContainer = ImportApiProduct
@@ -120,7 +134,6 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
     categoryIndexer = CSVParse_Base.getObjectRowcount
     productIndexer = CSVParse_Shop_Mixin.productIndexer
     variationIndexer = CSVParse_Woo_Mixin.getTitle
-
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -143,7 +156,6 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         # super(CSVParse_Woo_Api, self).clearTransients()
         # CSVParse_Shop_Mixin.clearTransients(self)
 
-
     def registerObject(self, objectData):
         # CSVParse_Gen_Tree.registerObject(self, objectData)
         CSVParse_Base.registerObject(self, objectData)
@@ -153,7 +165,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
     # def processObject(self, objectData):
         # super(CSVParse_Woo_Api, self).processObject(objectData)
-        #todo: this
+        # todo: this
 
     # def registerObject(self, objectData):
     #     if self.DEBUG_MRO:
@@ -191,7 +203,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             if objectData:
                 identifier = objectData.identifier
                 self.registerMessage(
-                    "%s member of category %s" \
+                    "%s member of category %s"
                     % (identifier, category_title)
                 )
             else:
@@ -201,7 +213,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
         #
         if self.DEBUG_API:
-            self.registerMessage("ANALYSE CATEGORY: %s" % repr(categoryApiData))
+            self.registerMessage("ANALYSE CATEGORY: %s" %
+                                 repr(categoryApiData))
         core_translation = OrderedDict()
         for col, col_data in ColData_Woo.getWPAPICoreCols().items():
             try:
@@ -210,9 +223,10 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 wp_api_key = col
             core_translation[wp_api_key] = col
         categorySearchData = {}
-        categorySearchData.update(**self.translateKeys(categoryApiData, core_translation))
-        categorySearchData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
-                        for key, value in categorySearchData.items()])
+        categorySearchData.update(
+            **self.translateKeys(categoryApiData, core_translation))
+        categorySearchData = dict([(key, SanitationUtils.html_unescape_recursive(value))
+                                   for key, value in categorySearchData.items()])
 
         # if 'id' in categoryApiData:
         #     categorySearchData[self.categoryContainer.wpidKey] = categoryApiData['id']
@@ -225,7 +239,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         # if 'slug' in categoryApiData:
         #     categorySearchData[self.categoryContainer.slugKey] = categoryApiData['slug']
         if self.DEBUG_API:
-            self.registerMessage("SEARCHING FOR CATEGORY: %s" % repr(categorySearchData))
+            self.registerMessage("SEARCHING FOR CATEGORY: %s" %
+                                 repr(categorySearchData))
         catData = self.findCategory(categorySearchData)
         if not catData:
             if self.DEBUG_API:
@@ -258,8 +273,10 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             parentCategoryData = None
             if 'parent' in categoryApiData:
                 parentCategorySearchData = {}
-                parentCategorySearchData[self.categoryContainer.wpidKey] = categoryApiData['parent']
-                parentCategoryData = self.findCategory(parentCategorySearchData)
+                parentCategorySearchData[
+                    self.categoryContainer.wpidKey] = categoryApiData['parent']
+                parentCategoryData = self.findCategory(
+                    parentCategorySearchData)
             if parentCategoryData:
                 kwargs['parent'] = parentCategoryData
             else:
@@ -286,7 +303,6 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         #     self.registerMessage(repr(self.categoryIndexer))
         #     self.registerMessage("REGISTERING CATEGORY WITH INDEX %s" % repr(index))
 
-
         self.rowcount += 1
 
     def processApiCategories(self, categories):
@@ -297,7 +313,8 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             if category.get('parent'):
                 parent = category.get('parent')
                 # self.registerMessage("parent id: %s" % parent)
-                queue_category_ids = [queue_category.get('id') for queue_category in categories]
+                queue_category_ids = [queue_category.get(
+                    'id') for queue_category in categories]
                 if parent in queue_category_ids:
                     # self.registerMessage('analysing later')
                     categories.append(category)
@@ -310,13 +327,12 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 #         categories.append(category)
             self.processApiCategory(category)
 
-
-
     def processApiAttributes(self, objectData, attributes, var=False):
         varstr = 'var ' if var else ''
         for attribute in attributes:
             if self.DEBUG_API:
-                self.registerMessage("%s has %sattribute %s" % (objectData.identifier, varstr, attribute))
+                self.registerMessage("%s has %sattribute %s" % (
+                    objectData.identifier, varstr, attribute))
             if 'name' in attribute:
                 attr = attribute.get('name')
             elif 'slug' in attribute:
@@ -335,16 +351,15 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 for val in vals:
                     self.registerAttribute(objectData, attr, val, var)
 
-
     @classmethod
     def getParserData(cls, **kwargs):
         """
         Gets data ready for the parser, in this case from apiData
         """
         parserData = OrderedDict()
-        apiData = kwargs.get('apiData',{})
+        apiData = kwargs.get('apiData', {})
         # print "apiData before: %s" % str(apiData)
-        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))\
+        apiData = dict([(key, SanitationUtils.html_unescape_recursive(value))
                         for key, value in apiData.items()])
         # print "apiData after:  %s" % str(apiData)
         parserData = OrderedDict()
@@ -374,36 +389,41 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
             parserData.update(**cls.getApiStockStatusData(apiData['in_stock']))
         # if 'description' in apiData:
         #     parserData[cls.objectContainer.descriptionKey] = apiData['description']
-        # Stupid hack because 'name' is 'title' in products, but 'name' in categories
+        # Stupid hack because 'name' is 'title' in products, but 'name' in
+        # categories
         if 'title' in apiData:
             parserData[cls.objectContainer.titleKey] = apiData['title']
 
         assert \
             cls.objectContainer.descriptionKey in parserData, \
             "parserData should have description: %s\n original: %s\ntranslations: %s, %s" \
-                % (parserData, apiData, core_translation, meta_translation)
-        parserData[cls.objectContainer.descsumKey] = parserData[cls.objectContainer.descriptionKey]
+            % (parserData, apiData, core_translation, meta_translation)
+        parserData[cls.objectContainer.descsumKey] = parserData[
+            cls.objectContainer.descriptionKey]
         assert \
             cls.objectContainer.titleKey in parserData, \
             "parserData should have title: %s\n original: %s\ntranslations: %s, %s" \
-                % (parserData, apiData, core_translation, meta_translation)
+            % (parserData, apiData, core_translation, meta_translation)
         if apiData['type'] == 'category':
-            parserData[cls.categoryContainer.namesumKey] = parserData[cls.objectContainer.titleKey]
+            parserData[cls.categoryContainer.namesumKey] = parserData[
+                cls.objectContainer.titleKey]
             assert \
                 cls.objectContainer.slugKey in parserData, \
                 "parserData should have slug: %s\n original: %s\ntranslations: %s, %s" \
-                    % (parserData, apiData, core_translation, meta_translation)
-            parserData[cls.objectContainer.codesumKey] = parserData[cls.objectContainer.slugKey]
+                % (parserData, apiData, core_translation, meta_translation)
+            parserData[cls.objectContainer.codesumKey] = parserData[
+                cls.objectContainer.slugKey]
         else:
-            parserData[cls.objectContainer.namesumKey] = parserData[cls.objectContainer.titleKey]
+            parserData[cls.objectContainer.namesumKey] = parserData[
+                cls.objectContainer.titleKey]
         assert \
             cls.objectContainer.codesumKey in parserData, \
             "parserData should have codesum: %s\n original: %s\ntranslations: %s, %s" \
-                % (parserData, apiData, core_translation, meta_translation)
+            % (parserData, apiData, core_translation, meta_translation)
         assert \
             cls.objectContainer.namesumKey in parserData, \
             "parserData should have namesum: %s\n original: %s\ntranslations: %s, %s" \
-                % (parserData, apiData, core_translation, meta_translation)
+            % (parserData, apiData, core_translation, meta_translation)
 
         # title = parserData.get(cls.objectContainer.titleKey, '')
         # if not title and 'title' in apiData:
@@ -424,10 +444,10 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         parserData[cls.objectContainer.descriptionKey] = description
         parserData[cls.objectContainer.descsumKey] = description
 
-
-        if Registrar.DEBUG_API: Registrar.registerMessage( "parserData: {}".format(pformat(parserData)) )
+        if Registrar.DEBUG_API:
+            Registrar.registerMessage(
+                "parserData: {}".format(pformat(parserData)))
         return parserData
-
 
     def getKwargs(self, allData, container, **kwargs):
         if not 'parent' in kwargs:
@@ -437,11 +457,13 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
     def getNewObjContainer(self, allData, **kwargs):
         if self.DEBUG_MRO:
             self.registerMessage(' ')
-        container = super(CSVParse_Woo_Api, self).getNewObjContainer( allData, **kwargs)
+        container = super(CSVParse_Woo_Api, self).getNewObjContainer(
+            allData, **kwargs)
         apiData = kwargs.get('apiData', {})
         if self.DEBUG_API:
             self.registerMessage('apiData: %s' % str(apiData))
-            self.registerMessage('apiData[type]: %s' % repr(apiData.get('type')))
+            self.registerMessage('apiData[type]: %s' %
+                                 repr(apiData.get('type')))
         if 'type' in apiData:
             api_type = apiData['type']
             if self.DEBUG_API:
@@ -452,17 +474,20 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
                 exc = UserWarning("Unknown API product type: %s" % api_type)
                 source = apiData.get('SKU')
                 self.registerError(exc, source)
-        if self.DEBUG_API: self.registerMessage("container: {}".format(container.__name__))
+        if self.DEBUG_API:
+            self.registerMessage("container: {}".format(container.__name__))
         return container
 
     def analyseWpApiObj(self, apiData):
         if self.DEBUG_API:
-            self.registerMessage("API DATA CATEGORIES: %s" % repr(apiData.get('categories')))
+            self.registerMessage("API DATA CATEGORIES: %s" %
+                                 repr(apiData.get('categories')))
         if not apiData.get('categories'):
             if self.DEBUG_API:
-                self.registerMessage("NO CATEGORIES FOUND IN API DATA: %s" % repr(apiData))
+                self.registerMessage(
+                    "NO CATEGORIES FOUND IN API DATA: %s" % repr(apiData))
         kwargs = {
-            'apiData':apiData
+            'apiData': apiData
         }
         objectData = self.newObject(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
@@ -478,7 +503,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
         if 'categories' in apiData:
             for category in apiData['categories']:
-                self.processApiCategory({'title':category}, objectData)
+                self.processApiCategory({'title': category}, objectData)
                 # self.rowcount += 1
 
         if 'variations' in apiData:
@@ -491,21 +516,25 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
 
     def analyseWpApiVariation(self, objectData, variationApiData):
         if self.DEBUG_API:
-            self.registerMessage("parentData: %s" % pformat(objectData.items()))
-            self.registerMessage("variationApiData: %s" % pformat(variationApiData))
+            self.registerMessage("parentData: %s" %
+                                 pformat(objectData.items()))
+            self.registerMessage("variationApiData: %s" %
+                                 pformat(variationApiData))
         defaultVarData = dict(
             type='variation',
-            title='Variation #%s of %s' % (variationApiData.get('id'), objectData.title),
+            title='Variation #%s of %s' % (
+                variationApiData.get('id'), objectData.title),
             description=objectData.get('descsum'),
             parent_id=objectData.get('ID')
         )
         defaultVarData.update(**variationApiData)
         if self.DEBUG_API:
-            self.registerMessage("defaultVarData: %s" % pformat(defaultVarData))
+            self.registerMessage("defaultVarData: %s" %
+                                 pformat(defaultVarData))
 
         kwargs = {
-            'apiData':defaultVarData,
-            'parent':objectData
+            'apiData': defaultVarData,
+            'parent': objectData
         }
 
         variationData = self.newObject(rowcount=self.rowcount, **kwargs)
@@ -523,4 +552,5 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin, CSVParse_Shop_Mixin, 
         self.rowcount += 1
 
         if 'attributes' in variationApiData:
-            self.processApiAttributes(objectData, variationApiData['attributes'], True)
+            self.processApiAttributes(
+                objectData, variationApiData['attributes'], True)

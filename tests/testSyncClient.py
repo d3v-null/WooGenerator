@@ -2,7 +2,7 @@ import os
 from os import sys, path
 import unittest
 import yaml
-from unittest import TestCase #, main, skip
+from unittest import TestCase  # , main, skip
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
@@ -12,6 +12,7 @@ from woogenerator.sync_client_user import UsrSyncClient_WP
 from woogenerator.coldata import ColData_User, ColData_Woo
 from woogenerator.parsing.user import ImportUser
 from woogenerator.utils import Registrar, TimeUtils
+
 
 class abstractSyncClientTestCase(TestCase):
     # yamlPath = "generator_config.yaml"
@@ -32,6 +33,7 @@ class abstractSyncClientTestCase(TestCase):
         # Registrar.DEBUG_MESSAGE = True
         # Registrar.DEBUG_ERROR = True
         # Registrar.DEBUG_WARN = True
+
 
 @unittest.skip('have not created config file yet')
 class testSyncClient(abstractSyncClientTestCase):
@@ -62,17 +64,16 @@ class testSyncClient(abstractSyncClientTestCase):
         usGID = config.get('usGID')
         xsGID = config.get('xsGID')
 
-        wc_api_key = config.get(self.optionNamePrefix+'wc_api_key')
-        wc_api_secret = config.get(self.optionNamePrefix+'wc_api_secret')
-        wp_api_key = config.get(self.optionNamePrefix+'wp_api_key')
-        wp_api_secret = config.get(self.optionNamePrefix+'wp_api_secret')
-        wp_user = config.get(self.optionNamePrefix+'wp_user')
-        wp_pass = config.get(self.optionNamePrefix+'wp_pass')
-        wp_callback = config.get(self.optionNamePrefix+'wp_callback')
-
+        wc_api_key = config.get(self.optionNamePrefix + 'wc_api_key')
+        wc_api_secret = config.get(self.optionNamePrefix + 'wc_api_secret')
+        wp_api_key = config.get(self.optionNamePrefix + 'wp_api_key')
+        wp_api_secret = config.get(self.optionNamePrefix + 'wp_api_secret')
+        wp_user = config.get(self.optionNamePrefix + 'wp_user')
+        wp_pass = config.get(self.optionNamePrefix + 'wp_pass')
+        wp_callback = config.get(self.optionNamePrefix + 'wp_callback')
 
         # wp_srv_offset = config.get(self.optionNamePrefix+'wp_srv_offset', 0)
-        store_url = config.get(self.optionNamePrefix+'store_url', '')
+        store_url = config.get(self.optionNamePrefix + 'store_url', '')
 
         self.gDriveParams = {
             'scopes': gdrive_scopes,
@@ -94,22 +95,22 @@ class testSyncClient(abstractSyncClientTestCase):
         print "gDriveParams", self.gDriveParams
 
         self.wcApiParams = {
-            'api_key':wc_api_key,
-            'api_secret':wc_api_secret,
-            'url':store_url,
-            'limit':6
+            'api_key': wc_api_key,
+            'api_secret': wc_api_secret,
+            'url': store_url,
+            'limit': 6
             # 'version':'wc/v1'
         }
 
         print "wcApiParams", self.wcApiParams
 
         self.wpApiParams = {
-            'api_key':wp_api_key,
-            'api_secret':wp_api_secret,
-            'wp_user':wp_user,
-            'wp_pass':wp_pass,
-            'url':store_url,
-            'callback':wp_callback
+            'api_key': wp_api_key,
+            'api_secret': wp_api_secret,
+            'wp_user': wp_user,
+            'wp_pass': wp_pass,
+            'url': store_url,
+            'callback': wp_callback
         }
 
         print "wpApiParams", self.wpApiParams
@@ -128,7 +129,6 @@ class testSyncClient(abstractSyncClientTestCase):
         with SyncClientGDrive(self.gDriveParams) as client:
             print "drive file:", client.drive_file
             print "GID", client.get_gm_modtime(self.gDriveParams['genGID'])
-
 
     def test_ProdSyncClient_WC_Read(self):
         self.wcApiParams.update(timeout=1)
@@ -153,8 +153,6 @@ class testSyncClient(abstractSyncClientTestCase):
                 if 'users' in page:
                     for page_user in page.get('users'):
                         print "-> USER: ", str(page_user)[:50]
-
-
 
 
 if __name__ == '__main__':

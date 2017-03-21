@@ -10,10 +10,10 @@ import webbrowser
 import requests
 from collections import OrderedDict
 
-WP_CONSUMER_KEY='LCLwTOfxoXGh'
-WP_CONSUMER_SECRET='k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq'
-WC_CONSUMER_KEY='ck_681c2be361e415519dce4b65ee981682cda78bc6'
-WC_CONSUMER_SECRET='cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877'
+WP_CONSUMER_KEY = 'LCLwTOfxoXGh'
+WP_CONSUMER_SECRET = 'k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq'
+WC_CONSUMER_KEY = 'ck_681c2be361e415519dce4b65ee981682cda78bc6'
+WC_CONSUMER_SECRET = 'cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877'
 CONSUMER_KEY = 'your_app_key'
 CONSUMER_SECRET = 'your_app_secret'
 CALL_BACK = 'http://127.0.0.1/oauth1_callback'
@@ -27,6 +27,7 @@ get_timestamp = lambda: '1427366369'
 # get_timestamp = lambda: int(time.time())
 get_nonce = lambda: '27718007815082439851427366369'
 # get_nonce = lambda: str(str(random.getrandbits(64)) + str(get_timestamp()))
+
 
 def get_sign(params, url, http_method, consumer_secret='', oauth_token_secret=""):
     """returns HMAC-SHA1 sign"""
@@ -52,7 +53,8 @@ params_request_token = [
     ('oauth_callback', CALL_BACK),
     ('oauth_version', '1.0'),
 ]
-signature = get_sign(params_request_token, REQUEST_TOKEN_URL, "POST", CONSUMER_SECRET)
+signature = get_sign(params_request_token,
+                     REQUEST_TOKEN_URL, "POST", CONSUMER_SECRET)
 
 quit()
 
@@ -86,7 +88,8 @@ r = requests.post(url=target_url, params=params, data=target_data)
 # signature = get_sign(params, target_url, "POST", WP_CONSUMER_SECRET)
 # params.append(('oauth_signature', signature))
 #
-# r = requests.post(url=target_url, params=params, data='{"product": {"title": "Woo Single #2a"}}')
+# r = requests.post(url=target_url, params=params, data='{"product":
+# {"title": "Woo Single #2a"}}')
 
 print r.status_code
 print r.text

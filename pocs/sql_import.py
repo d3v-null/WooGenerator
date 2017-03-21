@@ -32,7 +32,7 @@ importName = time.strftime("%Y-%m-%d %H:%M:%S")
 
 with open(yamlPath) as stream:
     config = yaml.load(stream)
-    #overrides
+    # overrides
     if 'inFolder' in config.keys():
         inFolder = config['inFolder']
     if 'outFolder' in config.keys():
@@ -40,7 +40,7 @@ with open(yamlPath) as stream:
     if 'logFolder' in config.keys():
         logFolder = config['logFolder']
 
-    #mandatory  
+    # mandatory
     webFolder = config.get('webFolder')
     imgFolder_glb = config.get('imgFolder_glb')
     myo_schemas = config.get('myo_schemas')
@@ -48,7 +48,7 @@ with open(yamlPath) as stream:
     taxoDepth = config.get('taxoDepth')
     itemDepth = config.get('itemDepth')
 
-    #optional
+    # optional
     fallback_schema = config.get('fallback_schema')
     fallback_variant = config.get('fallback_variant')
     imgFolder_extra = config.get('imgFolder_extra')
@@ -64,15 +64,16 @@ with open(yamlPath) as stream:
     db_name = config.get('db_name')
     tbl_prefix = config.get('tbl_prefix', '')
 
-#mandatory params
-assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb, woo_schemas, myo_schemas, taxoDepth, itemDepth])
+# mandatory params
+assert all([inFolder, outFolder, logFolder, webFolder, imgFolder_glb,
+            woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
 genPath = os.path.join(inFolder, 'generator.csv')
-dprcPath= os.path.join(inFolder, 'DPRC.csv')
-dprpPath= os.path.join(inFolder, 'DPRP.csv')
-specPath= os.path.join(inFolder, 'specials.csv')
-usPath  = os.path.join(inFolder, 'US.csv')
-xsPath  = os.path.join(inFolder, 'XS.csv')
+dprcPath = os.path.join(inFolder, 'DPRC.csv')
+dprpPath = os.path.join(inFolder, 'DPRP.csv')
+specPath = os.path.join(inFolder, 'specials.csv')
+usPath = os.path.join(inFolder, 'US.csv')
+xsPath = os.path.join(inFolder, 'XS.csv')
 imgFolder = [imgFolder_glb]
 
 sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
@@ -81,7 +82,7 @@ colData = ColData_Woo()
 
 sql_run = True
 
-if sql_run: 
+if sql_run:
     with \
         SSHTunnelForwarder(
             (ssh_host, ssh_port),
@@ -89,7 +90,7 @@ if sql_run:
             ssh_username=ssh_user,
             remote_bind_address=(remote_bind_host, remote_bind_port)
         ) as server,\
-        open(sqlPath) as sqlFile:
+            open(sqlPath) as sqlFile:
         # server.start()
         print server.local_bind_address
         conn = MySQLdb.connect(
@@ -106,16 +107,16 @@ if sql_run:
             wpCols['ID'].get('wp', {}).get('key') == 'ID',
         ]), 'ColData should be configured correctly'
         postdata_select = ",\n\t".join([
-            ("MAX(CASE WHEN pm.meta_key = '%s' THEN pm.meta_value ELSE \"\" END) as `%s`" \
-                if data['wp']['meta'] \
-                else "p.%s as `%s`") % (data['wp']['key'], col) \
-                for col, data in wpCols.items()
+            ("MAX(CASE WHEN pm.meta_key = '%s' THEN pm.meta_value ELSE \"\" END) as `%s`"
+                if data['wp']['meta']
+                else "p.%s as `%s`") % (data['wp']['key'], col)
+            for col, data in wpCols.items()
         ])
 
         cursor = conn.cursor()
 
         sql = sqlFile.read() \
-            % (postdata_select, '%sposts'%tbl_prefix,'%spostmeta'%tbl_prefix,) 
+            % (postdata_select, '%sposts' % tbl_prefix, '%spostmeta' % tbl_prefix,)
         print sql
 
         cursor.execute(
@@ -131,8 +132,8 @@ print sqlRows
 sqlParser = CSVParse_TT
 
 sqlParser = CSVParse_TT(
-    cols = colData.getImportCols(),
-    defaults = colData.getDefaults()
+    cols=colData.getImportCols(),
+    defaults=colData.getDefaults()
 )
 if sqlRows:
     sqlParser.analyseRows(sqlRows)

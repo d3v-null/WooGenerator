@@ -4,6 +4,7 @@ from wordpress_xmlrpc import AuthenticatedMethod
 from utils import SanitationUtils
 # from wordpress_xmlrpc.methods import posts
 
+
 class UpdateUser(AuthenticatedMethod):
     method_name = 'tansync.update_user_fields'
     method_args = ('user_id', 'fields_json_base64')
@@ -33,6 +34,6 @@ SanitationUtils.safePrint(repr(fields_json))
 # fields_json_base64 = SanitationUtils.encodeBase64( fields_json )
 fields_json_base64 = "eyJidXNpbmVzc190eXBlIjogIk90aGVyIiwgInByZWZfdGVsIjogIkZhbHNlIiwgImFjdF9yb2xlIjogIlJOIiwgInByZWZfbW9iIjogIkZhbHNlIiwgImhvd19oZWFyX2Fib3V0IjogIkV2ZW50IiwgInVzZXJfZW1haWwiOiAiZW1tYS1hbGxlbjk0QGhvdG1haWwuY29tIn0="
 # print fields_json_base64
- # eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS8ifQ==
+# eyJ1c2VyX2xvZ2luIjogImFkbWluIiwgImZpcnN0X25hbWUiOiAibm_wn5GMb2Twn5GMbGUiLCAidXNlcl91cmwiOiAiaHR0cDovL3d3dy5sYXNlcnBoaWxlLmNvbS8ifQ==
 test_out = client.call(UpdateUser(1, fields_json_base64))
 print test_out

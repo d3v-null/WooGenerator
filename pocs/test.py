@@ -40,58 +40,61 @@ def get_credentials():
         flow.user_agent = APPLICATION_NAME
         if flags:
             credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
+        else:  # Needed only for compatibility with Python 2.6
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
 
+
 def download_file(service, drive_file):
-  """Download a file's content.
+    """Download a file's content.
 
-  Args:
-    service: Drive API service instance.
-    drive_file: Drive File instance.
+    Args:
+      service: Drive API service instance.
+      drive_file: Drive File instance.
 
-  Returns:
-    File's content if successful, None otherwise.
-  """
-  download_url = drive_file.get('downloadUrl')
-  if download_url:
-    resp, content = service._http.request(download_url)
-    if resp.status == 200:
-      print  ('Status: %s' % resp)
-      return content
+    Returns:
+      File's content if successful, None otherwise.
+    """
+    download_url = drive_file.get('downloadUrl')
+    if download_url:
+        resp, content = service._http.request(download_url)
+        if resp.status == 200:
+            print ('Status: %s' % resp)
+            return content
+        else:
+            print ('An error occurred: %s' % resp)
+            return None
     else:
-      print ('An error occurred: %s' % resp)
-      return None
-  else:
-    # The file doesn't have any content stored on Drive.
-    return None    
+        # The file doesn't have any content stored on Drive.
+        return None
+
 
 def download_file_csv(service, drive_file):
-  """Download a file's content.
+    """Download a file's content.
 
-  Args:
-    service: Drive API service instance.
-    drive_file: Drive File instance.
+    Args:
+      service: Drive API service instance.
+      drive_file: Drive File instance.
 
-  Returns:
-    File's content if successful, None otherwise.
-  """
-  print( type(drive_file) )
-  print( drive_file)
-  download_url = drive_file['exportLinks']['text/csv']
-  if download_url:
-    resp, content = service._http.request(download_url)
-    if resp.status == 200:
-      print ('Status: %s' % resp)
-      return content
+    Returns:
+      File's content if successful, None otherwise.
+    """
+    print(type(drive_file))
+    print(drive_file)
+    download_url = drive_file['exportLinks']['text/csv']
+    if download_url:
+        resp, content = service._http.request(download_url)
+        if resp.status == 200:
+            print ('Status: %s' % resp)
+            return content
+        else:
+            print ('An error occurred: %s' % resp)
+            return None
     else:
-      print ('An error occurred: %s' % resp)
-      return None
-  else:
-    # The file doesn't have any content stored on Drive.
-    return None      
+        # The file doesn't have any content stored on Drive.
+        return None
+
 
 def download_media_csv(service, fildId, local_fd):
     request = service.files().get_media(fileId=fildId, acknowledgeAbuse=True)
@@ -109,6 +112,7 @@ def download_media_csv(service, fildId, local_fd):
             print 'Download Complete'
             return
 
+
 def main():
     credentials = get_credentials()
     auth_http = credentials.authorize(httplib2.Http())
@@ -119,7 +123,6 @@ def main():
     drive_file = service.files().get(fileId=genFID).execute()
     print drive_file['exportLinks']['text/csv']
 
-
     # with open("test.csv") as testFD:
     #     download_media_csv(service, genFID, testFD)
 
@@ -128,8 +131,6 @@ def main():
     # csv = download_file_csv(service, genFile)
 
     # print (csv)
-
-
 
     # results = service.files().list(maxResults=10).execute()
     # items = results.get('items', [])

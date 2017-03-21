@@ -9,20 +9,24 @@ from woogenerator.utils import listUtils, descriptorUtils, ValidationUtils, PHPU
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 
+
 class ImportDynObject(ImportTreeObject):
 
     def isRuleLine(self): return False
+
     def validate(self):
         for key, validation in self.validations:
             assert callable(validation)
             if not validation(self.get(key)):
-                raise UserWarning("%s could be be validated by %s" % (key,self.__class__.__name__) )
+                raise UserWarning("%s could be be validated by %s" %
+                                  (key, self.__class__.__name__))
+
 
 class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
 
     validations = {
         'Discount': ValidationUtils.isNotNone,
-        'Discount Type': ValidationUtils.isContainedIn( ['PDSC'] )
+        'Discount Type': ValidationUtils.isContainedIn(['PDSC'])
     }
 
     discount = descriptorUtils.safeKeyProperty('Discount')
@@ -35,14 +39,15 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
             self.get('Min ( Buy )') is None,
             self.get('Max ( Receive )') is None
         ]):
-            raise UserWarning("one of buy or receiver must be visible to ImportDynObject")
+            raise UserWarning(
+                "one of buy or receiver must be visible to ImportDynObject")
 
     def isRuleLine(self): return True
 
     @property
     def pricing_rule_disc_type(self):
         return {
-            'PDSC':'percentage_discount'
+            'PDSC': 'percentage_discount'
         }.get(self.discount_type)
 
     @property
@@ -57,8 +62,8 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
 class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     validations = {
-        'ID':ValidationUtils.isNotNone,
-        'Qty. Base': ValidationUtils.isContainedIn(['PROD', 'VAR', 'CAT']) ,
+        'ID': ValidationUtils.isNotNone,
+        'Qty. Base': ValidationUtils.isContainedIn(['PROD', 'VAR', 'CAT']),
         'Rule Mode': ValidationUtils.isContainedIn(['BULK', 'SPECIAL']),
         'Roles': ValidationUtils.isNotNone
     }
@@ -80,24 +85,23 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     @property
     def pricing_rule_collector(self):
         collector_type = {
-            'PROD':'product'
+            'PROD': 'product'
         }.get(self.qty_base, 'product')
         assert collector_type, self.qty_base
-        return {'type':collector_type}
+        return {'type': collector_type}
 
     @property
     def pricing_rule_conditions(self):
         roles = map(unicode.lower, self.roles.split('|'))
         return {
             1: {
-                'args':{
-                    'applies_to':'roles',
-                    'roles':roles
+                'args': {
+                    'applies_to': 'roles',
+                    'roles': roles
                 },
-                'type':'apply_to'
+                'type': 'apply_to'
             }
         }
-
 
     # def addRuleData(self, ruleData):
     #     self.ruleData = ruleData
@@ -124,14 +128,14 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
             return OrderedDict([
                 ('Min ( Buy )', 'From'),
                 ('Max ( Receive )', 'To'),
-                ('Discount' , 'Discount'),
+                ('Discount', 'Discount'),
                 ('Meaning', 'Meaning')
             ])
         else:
             return OrderedDict([
                 ('Min ( Buy )', 'Buy'),
                 ('Max ( Receive )', 'Receive'),
-                ('Discount' , 'Discount'),
+                ('Discount', 'Discount'),
                 ('Meaning', 'Meaning)')
             ])
 
@@ -139,18 +143,19 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         rep = "<ImportDynRule | "
         rep += ', '.join(
             map(
-                lambda x: str( (x, self.get(x,'')) ),
+                lambda x: str((x, self.get(x, ''))),
                 ['Qty. Base', 'Rule Mode', 'Roles']
             )
         )
         if self.getRuleLines():
             rep += ' | '
-            rep += ', '.join([line.get('Meaning', '') for line in self.getRuleLines()])
+            rep += ', '.join([line.get('Meaning', '')
+                              for line in self.getRuleLines()])
         rep += ' >'
         return rep
 
     def to_pricing_rule(self):
-        #defaults (empty rules)
+        # defaults (empty rules)
         empty_blockrule = OrderedDict([
             ('adjust', ''),
             ('amount', ''),
@@ -168,29 +173,29 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         if(self.rule_mode == 'BULK'):
             mode = 'continuous'
             blockRules = {
-                1:empty_blockrule
+                1: empty_blockrule
             }
             rules = {}
             for i, ruleLine in enumerate(self.getRuleLines()):
                 rule = copy(empty_rule)
-                rule['from']    = ruleLine.pricing_rule_from
-                rule['to']      = ruleLine.pricing_rule_to
-                rule['amount']  = ruleLine.discount
-                rule['type']    = ruleLine.pricing_rule_disc_type
-                rules[i+1] = rule
+                rule['from'] = ruleLine.pricing_rule_from
+                rule['to'] = ruleLine.pricing_rule_to
+                rule['amount'] = ruleLine.discount
+                rule['type'] = ruleLine.pricing_rule_disc_type
+                rules[i + 1] = rule
         else:
             mode = 'block'
             rules = {
-                1:empty_rule
+                1: empty_rule
             }
             blockRules = {}
             for i, blockRuleLine in enumerate(self.getRuleLines()):
                 blockRule = copy(empty_blockrule)
-                blockRule['from']    = blockRuleLine.pricing_rule_from
-                blockRule['to']      = blockRuleLine.pricing_rule_to
-                blockRule['amount']  = blockRuleLine.discount
-                blockRule['type']    = blockRuleLine.pricing_rule_disc_type
-                blockRules[i+1] = blockRule
+                blockRule['from'] = blockRuleLine.pricing_rule_from
+                blockRule['to'] = blockRuleLine.pricing_rule_to
+                blockRule['amount'] = blockRuleLine.discount
+                blockRule['type'] = blockRuleLine.pricing_rule_disc_type
+                blockRules[i + 1] = blockRule
 
         pricing_rule = OrderedDict([
             ('conditions_type', 'all'),
@@ -205,29 +210,28 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
         return PHPUtils.serialize(pricing_rule)
 
-
     def toHTML(self):
         colNames = self.getColNames()
 
-        html  = u'<table class="shop_table lasercommerce pricing_table table table-striped">'
-        html +=   '<thead><tr>'
+        html = u'<table class="shop_table lasercommerce pricing_table table table-striped">'
+        html += '<thead><tr>'
         for col, name in colNames.items():
             colClass = SanitationUtils.sanitizeClass(col)
             html += '<th class=%s>' % colClass
-            html +=   bleach.clean(name)
+            html += bleach.clean(name)
             html += '</th>'
-        html +=   '</tr></thead>'
+        html += '</tr></thead>'
         ruleLines = self.getRuleLines()
         self.registerMessage("ruleLines: %s" % (ruleLines))
         for ruleLineData in ruleLines:
-            lineType = ruleLineData.get('Discount Type','')
+            lineType = ruleLineData.get('Discount Type', '')
             html += '<tr>'
             for col in colNames.keys():
                 value = ruleLineData.get(col, '')
                 if col == 'Discount' and lineType in ['PDSC']:
                     value += '%'
                 html += '<td>'
-                html +=  value #bleach.clean(value)
+                html += value  # bleach.clean(value)
                 html += '</td>'
             html += '</tr>'
         html += "</table>"
@@ -247,14 +251,14 @@ class CSVParse_Dyn(CSVParse_Tree):
             'Min ( Buy )', 'Max ( Receive )', 'Discount Type', 'Discount', 'Repeating', 'Meaning']
 
         extra_defaults = {
-            'Discount Type':'PDSC',
+            'Discount Type': 'PDSC',
             'Rule Mode': 'BULK'
         }
 
         cols = listUtils.combineLists(cols, extra_cols)
         defaults = listUtils.combineOrderedDicts(extra_defaults, defaults)
-        super(CSVParse_Dyn, self).__init__( cols, defaults, \
-                                taxoDepth=1, itemDepth=1, metaWidth=0)
+        super(CSVParse_Dyn, self).__init__(cols, defaults,
+                                           taxoDepth=1, itemDepth=1, metaWidth=0)
 
         self.taxoIndexer = self.getObjectIndex
 
@@ -279,7 +283,7 @@ class CSVParse_Dyn(CSVParse_Tree):
     #     print "registering rule ", itemData
 
     def depth(self, row):
-        for i,cell in enumerate(row):
+        for i, cell in enumerate(row):
             if cell:
                 if i < 4:
                     return 0
@@ -304,28 +308,31 @@ class CSVParse_Dyn(CSVParse_Tree):
 
 if __name__ == '__main__':
     inFolder = "../input/"
-    dprcPath= os.path.join(inFolder, 'DPRC.csv')
-    dprpPath= os.path.join(inFolder, 'DPRP.csv')
+    dprcPath = os.path.join(inFolder, 'DPRC.csv')
+    dprpPath = os.path.join(inFolder, 'DPRP.csv')
     outFolder = "../output/"
     out_path = os.path.join(outFolder, 'dynRules.html')
 
     dynParser = CSVParse_Dyn()
     dynParser.analyseFile(dprpPath)
 
-    #todo: rewrite in htmlReporter
+    # todo: rewrite in htmlReporter
 
     with open(out_path, 'w+') as out_file:
-        def writeSection(title, description, data, length = 0, html_class="results_section"):
+        def writeSection(title, description, data, length=0, html_class="results_section"):
             sectionID = SanitationUtils.makeSafeClass(title)
-            description = "%s %s" % (str(length) if length else "No", description)
-            out_file.write('<div class="%s">'% html_class )
-            out_file.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' % (sectionID, sectionID, sectionID))
+            description = "%s %s" % (
+                str(length) if length else "No", description)
+            out_file.write('<div class="%s">' % html_class)
+            out_file.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' %
+                           (sectionID, sectionID, sectionID))
             out_file.write('<h2>%s (%d)</h2>' % (title, length))
             out_file.write('</a>')
             out_file.write('<div class="collapse" id="%s">' % sectionID)
             out_file.write('<p class="description">%s</p>' % description)
-            out_file.write('<p class="data">' )
-            out_file.write( re.sub("<table>","<table class=\"table table-striped\">",data) )
+            out_file.write('<p class="data">')
+            out_file.write(
+                re.sub("<table>", "<table class=\"table table-striped\">", data))
             out_file.write('</p>')
             out_file.write('</div>')
             out_file.write('</div>')
@@ -347,18 +354,18 @@ if __name__ == '__main__':
             rule['_pricing_rule'] = rule.to_pricing_rule()
 
         # print '\n'.join(map(str , dynParser.taxos.values()))
-        dynList = ObjList(dynParser.taxos.values() )
+        dynList = ObjList(dynParser.taxos.values())
 
         writeSection(
             "Dynamic Pricing Rules",
             "all products and their dynaimc pricing rules",
-            re.sub("<table>","<table class=\"table table-striped\">",
-                dynList.tabulate(cols=OrderedDict([
+            re.sub("<table>", "<table class=\"table table-striped\">",
+                   dynList.tabulate(cols=OrderedDict([
                     ('html', {}),
                     ('_pricing_rule', {}),
-                ]), tablefmt="html")
-            ),
-            length = len(dynList.objects)
+                   ]), tablefmt="html")
+                   ),
+            length=len(dynList.objects)
         )
 
         out_file.write('</div>')

@@ -16,8 +16,10 @@ from woogenerator.parsing.woo import ImportWooProduct, CSVParse_Woo
 from woogenerator.parsing.api import CSVParse_Woo_Api
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 
+
 @skip("have not created config file yet")
 class testProdSyncClient(abstractSyncClientTestCase):
+
     def __init__(self, *args, **kwargs):
         super(testProdSyncClient, self).__init__(*args, **kwargs)
         self.wcApiParams = {}
@@ -31,10 +33,10 @@ class testProdSyncClient(abstractSyncClientTestCase):
         # if 'logFolder' in config.keys():
         #     logFolder = config['logFolder']
 
-        wc_api_key = config.get(self.optionNamePrefix+'wc_api_key')
-        wc_api_secret = config.get(self.optionNamePrefix+'wc_api_secret')
-        wp_srv_offset = config.get(self.optionNamePrefix+'wp_srv_offset', 0)
-        store_url = config.get(self.optionNamePrefix+'store_url', '')
+        wc_api_key = config.get(self.optionNamePrefix + 'wc_api_key')
+        wc_api_secret = config.get(self.optionNamePrefix + 'wc_api_secret')
+        wp_srv_offset = config.get(self.optionNamePrefix + 'wp_srv_offset', 0)
+        store_url = config.get(self.optionNamePrefix + 'store_url', '')
 
         # taxoDepth = config.get('taxoDepth')
         # itemDepth = config.get('itemDepth')
@@ -44,9 +46,9 @@ class testProdSyncClient(abstractSyncClientTestCase):
         # json_uri = store_url + 'wp-json/wp/v2'z
 
         self.wcApiParams = {
-            'api_key':wc_api_key,
-            'api_secret':wc_api_secret,
-            'url':store_url
+            'api_key': wc_api_key,
+            'api_secret': wc_api_secret,
+            'url': store_url
         }
 
         self.productParserArgs = {
@@ -94,13 +96,17 @@ class testProdSyncClient(abstractSyncClientTestCase):
             client.analyse_remote(productParser, limit=20)
 
         prodList = ShopProdList(productParser.products.values())
-        # print SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))
+        # print
+        # SanitationUtils.coerceBytes(prodList.tabulate(tablefmt='simple'))
         varList = ShopProdList(productParser.variations.values())
-        # print SanitationUtils.coerceBytes(varList.tabulate(tablefmt='simple'))
+        # print
+        # SanitationUtils.coerceBytes(varList.tabulate(tablefmt='simple'))
         catList = ShopCatList(productParser.categories.values())
-        # print SanitationUtils.coerceBytes(catList.tabulate(tablefmt='simple'))
+        # print
+        # SanitationUtils.coerceBytes(catList.tabulate(tablefmt='simple'))
         attrList = productParser.attributes.items()
-        # print SanitationUtils.coerceBytes(tabulate(attrList, headers='keys', tablefmt="simple"))
+        # print SanitationUtils.coerceBytes(tabulate(attrList, headers='keys',
+        # tablefmt="simple"))
 
     def testUploadChanges(self):
         pkey = 99
@@ -116,22 +122,23 @@ class testProdSyncClient(abstractSyncClientTestCase):
     def testUploadChangesMeta(self):
         pkey = 99
         updates = OrderedDict([
-            ('custom_meta',OrderedDict([
+            ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'37.00')
             ]))
         ])
         with ProdSyncClient_WC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
-            wn_regular_price = response.json()['product']['meta']['lc_wn_regular_price']
+            wn_regular_price = response.json()['product']['meta'][
+                'lc_wn_regular_price']
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadChangesMeta", response.json()
-            self.assertEqual(wn_regular_price,'37.00')
+            self.assertEqual(wn_regular_price, '37.00')
 
     def testUploadDeleteMeta(self):
         pkey = 99
         updates = OrderedDict([
-            ('custom_meta',OrderedDict([
+            ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'')
             ]))
         ])
@@ -140,8 +147,9 @@ class testProdSyncClient(abstractSyncClientTestCase):
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadDeleteMeta", response.json()
-            wn_regular_price = response.json()['product']['meta'].get('lc_wn_regular_price')
-            self.assertEqual(wn_regular_price,'')
+            wn_regular_price = response.json()['product'][
+                'meta'].get('lc_wn_regular_price')
+            self.assertEqual(wn_regular_price, '')
             # self.assertNotIn('lc_wn_regular_price', response.json()['product']['meta'])
 
     def testUploadChangesVariation(self):
@@ -155,13 +163,13 @@ class testProdSyncClient(abstractSyncClientTestCase):
             # if hasattr(response, 'json'):
             #     print "testUploadChangesVariation", response.json()
             description = response.json()['product']['weight']
-            self.assertEqual(description,'11.0')
+            self.assertEqual(description, '11.0')
 
     def testUploadChangesVariationMeta(self):
         pkey = 23
-        expected_result = str(random.randint(1,100))
+        expected_result = str(random.randint(1, 100))
         updates = dict([
-            ('custom_meta',dict([
+            ('custom_meta', dict([
                 ('lc_dn_regular_price', expected_result)
             ]))
         ])
@@ -171,14 +179,16 @@ class testProdSyncClient(abstractSyncClientTestCase):
             # if hasattr(response, 'json'):
             #     print "testUploadChangesVariationMeta", response.json()
             # self.assertIn('meta_test_key', str(response.json()))
-            self.assertIn('lc_dn_regular_price', (response.json()['product']['meta']))
-            wn_regular_price = response.json()['product']['meta']['lc_dn_regular_price']
+            self.assertIn('lc_dn_regular_price',
+                          (response.json()['product']['meta']))
+            wn_regular_price = response.json()['product']['meta'][
+                'lc_dn_regular_price']
             self.assertEqual(wn_regular_price, expected_result)
 
     def testUploadDeleteVariationMeta(self):
         pkey = 41
         updates = OrderedDict([
-            ('custom_meta',OrderedDict([
+            ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'')
             ]))
         ])
@@ -187,7 +197,8 @@ class testProdSyncClient(abstractSyncClientTestCase):
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadDeleteVariationMeta", response.json()
-            wn_regular_price = response.json()['product']['meta'].get('lc_wn_regular_price')
+            wn_regular_price = response.json()['product'][
+                'meta'].get('lc_wn_regular_price')
             self.assertFalse(wn_regular_price)
 
     def testGetSinglePage(self):

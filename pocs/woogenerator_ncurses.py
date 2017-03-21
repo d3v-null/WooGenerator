@@ -7,11 +7,13 @@ from collections import namedtuple
 
 Box = namedtuple('Box', ['top', 'right', 'bottom', 'left'])
 
+
 def cleanup(stdscr):
-    curses.nocbreak() # enable normal terminal line buffering
+    curses.nocbreak()  # enable normal terminal line buffering
     stdscr.keypad(0)  # escape sequences left as in the input stream
     curses.echo()     # each character input is echoed to the screen as it is entered
     curses.endwin()   # De-initialize the library
+
 
 def render_centered(stdscr, text, margin=None, border=None, max_cols=70):
     """ renders the given text in the center of the current window,
@@ -20,27 +22,27 @@ def render_centered(stdscr, text, margin=None, border=None, max_cols=70):
     (top, right, bottom, left). Default for both is (1,1,1,1)"""
 
     if not border:
-        border = Box(1,1,1,1)
+        border = Box(1, 1, 1, 1)
 
     if not margin:
-        margin = Box(1,1,1,1)
+        margin = Box(1, 1, 1, 1)
 
-    screen_rows, screen_cols  = stdscr.getmaxyx()
+    screen_rows, screen_cols = stdscr.getmaxyx()
 
     logging.info("screen cols %2d, rows %2d", screen_cols, screen_rows)
 
     overhead_col = sum([
-            border.right,
-            border.left,
-            margin.right,
-            margin.left
+        border.right,
+        border.left,
+        margin.right,
+        margin.left
     ])
 
     overhead_row = sum([
-            border.top,
-            border.bottom,
-            margin.top,
-            margin.bottom
+        border.top,
+        border.bottom,
+        margin.top,
+        margin.bottom
     ])
 
     logging.info("overhead col %2d, row %2d", overhead_col, overhead_row)
@@ -65,13 +67,12 @@ def render_centered(stdscr, text, margin=None, border=None, max_cols=70):
     offset_col = (avail_cols - text_cols) / 2 + border[3] + margin[3]
     offset_row = (avail_rows - text_rows) / 2 + border[0] + margin[0]
 
-    for count, line in enumerate( wrapped_lines ):
+    for count, line in enumerate(wrapped_lines):
         logging.info("writing to col %2d, row %2d; %s", offset_col, offset_row
                      + count, line)
         stdscr.addstr(offset_row + count, offset_col, line)
 
     return (offset_col, offset_row, text_cols, text_rows)
-
 
 
 def main(stdscr):
@@ -92,7 +93,7 @@ def main(stdscr):
         "\n" +
         "How about blank lines?\n" +
         "How about really really really really really really really really really really long lines?\n",
-        Box(2,2,2,2)
+        Box(2, 2, 2, 2)
     )
     while 1:
         stdscr.refresh()
@@ -105,5 +106,3 @@ if __name__ == '__main__':
     # try:
     # except Exception as exc:
     #     raise exc
-
-

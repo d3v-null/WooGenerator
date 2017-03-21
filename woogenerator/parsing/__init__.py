@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """ helper classes for parsing files and data """
 
-import sys, os
+import sys
+import os
 MODULE_PATH = os.path.dirname(__file__)
 MODULE_LOCATION = os.path.dirname(MODULE_PATH)
 SUPERMODULE_PATH = os.path.dirname(MODULE_LOCATION)

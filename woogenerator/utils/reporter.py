@@ -4,6 +4,7 @@ import io
 
 from core import SanitationUtils
 
+
 class HtmlReporter(object):
     """docstring for htmlReporter"""
 
@@ -11,8 +12,9 @@ class HtmlReporter(object):
         data_heading_fmt = "<h3>%s</h3>"
         data_separater = "<hr>"
 
-        def __init__(self, classname, title = None, description = "", data = "", length = None):
-            if title is None: title = classname.title()
+        def __init__(self, classname, title=None, description="", data="", length=None):
+            if title is None:
+                title = classname.title()
             self.title = title
             self.description = description
             self.data = data
@@ -21,24 +23,31 @@ class HtmlReporter(object):
 
         def toHtml(self):
             sectionID = SanitationUtils.makeSafeClass(self.classname)
-            out  = '<div class="section">'
-            out += '<a data-toggle="collapse" href="#{0}" aria-expanded="true" data-target="#{0}" aria-controls="{0}">'.format(sectionID)
-            out += '<h2>' + self.title + (' ({})'.format(self.length) if self.length else '') + '</h2>'
+            out = '<div class="section">'
+            out += '<a data-toggle="collapse" href="#{0}" aria-expanded="true" data-target="#{0}" aria-controls="{0}">'.format(
+                sectionID)
+            out += '<h2>' + self.title + \
+                (' ({})'.format(self.length) if self.length else '') + '</h2>'
             out += '</a>'
             out += '<div class="collapse" id="' + sectionID + '">'
-            out += '<p class="description">' + (str(self.length) if self.length else "No") + ' ' + self.description + '</p>'
+            out += '<p class="description">' + \
+                (str(self.length) if self.length else "No") + \
+                ' ' + self.description + '</p>'
             out += '<p class="data">'
-            out += re.sub("<table>","<table class=\"table table-striped\">",SanitationUtils.coerceUnicode(self.data))
+            out += re.sub("<table>", "<table class=\"table table-striped\">",
+                          SanitationUtils.coerceUnicode(self.data))
             out += '</p>'
             out += '</div>'
-            out = SanitationUtils.coerceUnicode( out )
+            out = SanitationUtils.coerceUnicode(out)
             return out
 
-
     class Group:
-        def __init__(self, classname, title = None, sections = None):
-            if title is None: title = classname.title()
-            if sections is None: sections = OrderedDict()
+
+        def __init__(self, classname, title=None, sections=None):
+            if title is None:
+                title = classname.title()
+            if sections is None:
+                sections = OrderedDict()
             self.title = title
             self.sections = sections
             self.classname = classname
@@ -47,19 +56,19 @@ class HtmlReporter(object):
             self.sections[section.classname] = section
 
         def toHtml(self):
-            out  = '<div class="group">'
+            out = '<div class="group">'
             out += '<h1>' + self.title + '</h1>'
             for section in self.sections.values():
                 out += section.toHtml()
             out += '</div>'
-            out = SanitationUtils.coerceUnicode( out )
+            out = SanitationUtils.coerceUnicode(out)
             return out
 
     def __init__(self, css=None):
         self.groups = OrderedDict()
         self.css = css
 
-    def addGroup( self, group):
+    def addGroup(self, group):
         self.groups[group.classname] = group
 
     def getHead(self):
@@ -89,7 +98,7 @@ class HtmlReporter(object):
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </body>
 """
-        out = SanitationUtils.coerceUnicode( out )
+        out = SanitationUtils.coerceUnicode(out)
         return out
 
     def getDocument(self):
@@ -102,16 +111,17 @@ class HtmlReporter(object):
 """ + body + """
 </html>
 """
-        out = SanitationUtils.coerceUnicode( out )
+        out = SanitationUtils.coerceUnicode(out)
         return out
 
     def getDocumentUnicode(self):
-        return SanitationUtils.coerceUnicode( self.getDocument() )
+        return SanitationUtils.coerceUnicode(self.getDocument())
+
 
 def testHTMLReporter():
     with\
-             open('../output/htmlReporterTest.html', 'w+') as resFile,\
-             io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as uresFile :
+            open('../output/htmlReporterTest.html', 'w+') as resFile,\
+            io.open('../output/htmlReporterTestU.html', 'w+', encoding="utf8") as uresFile:
         reporter = HtmlReporter()
 
         matchingGroup = HtmlReporter.Group('matching', 'Matching Results')
@@ -132,5 +142,5 @@ def testHTMLReporter():
 
         document = reporter.getDocument()
         # SanitationUtils.safePrint( document)
-        uresFile.write( SanitationUtils.coerceUnicode(document))
-        resFile.write( SanitationUtils.coerceAscii(document) )
+        uresFile.write(SanitationUtils.coerceUnicode(document))
+        resFile.write(SanitationUtils.coerceAscii(document))

@@ -2,13 +2,15 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')))
 import woogenerator
 
 tests_datadir = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),
-   'sample_data'
+    'sample_data'
 )
+
 
 def get_testdata(*paths):
     """Return test data"""

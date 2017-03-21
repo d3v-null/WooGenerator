@@ -21,6 +21,7 @@ import npyscreen
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
 logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
 
+
 class WooGenerator(npyscreen.NPSAppManaged):
     """ GUI Application for WooGenerator """
     PRODUCTS_FORM_ID = "PRODUCTS"
@@ -70,6 +71,7 @@ class WooGenerator(npyscreen.NPSAppManaged):
         if not cmd_out_widget:
             return
         return cmd_out_widget.value
+
     @property
     def command_args(self):
         """
@@ -83,8 +85,10 @@ class WooGenerator(npyscreen.NPSAppManaged):
             return
         return cmd_out_widget.value
 
+
 class SyncSelectOne(npyscreen.SelectOne):
     """ Widget which tracks command particle info """
+
     def __init__(self, *args, **kwargs):
         command_particles = kwargs.pop('cmd_particles', [])
         if command_particles:
@@ -102,22 +106,23 @@ class SyncSelectOne(npyscreen.SelectOne):
         )
         answer_index = self.value[0]
         if self.command_particles \
-        and len(self.command_particles) > answer_index:
+                and len(self.command_particles) > answer_index:
             return self.command_particles[answer_index]
 
-class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
+
+class SyncForm(npyscreen.ActionFormV2):  # pylint: disable=too-many-ancestors
     """ Form used in by WooGenerator app """
     BUTTON_META = OrderedDict([
         (
             'ok_button', {
-                'text':npyscreen.ActionFormV2.OK_BUTTON_TEXT,
-                'type':npyscreen.ActionFormV2.OKBUTTON_TYPE,
+                'text': npyscreen.ActionFormV2.OK_BUTTON_TEXT,
+                'type': npyscreen.ActionFormV2.OKBUTTON_TYPE,
             }
         ),
         (
             'cancel_button', {
-                'text':npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT,
-                'type':npyscreen.ActionFormV2.CANCELBUTTON_TYPE
+                'text': npyscreen.ActionFormV2.CANCEL_BUTTON_TEXT,
+                'type': npyscreen.ActionFormV2.CANCELBUTTON_TYPE
             }
         )
     ])
@@ -140,7 +145,8 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
             logging.info("%s ignore buttons: %s", self.__class__,
                          self.__class__.IGNORE_BUTTONS)
             if button_name in self.__class__.IGNORE_BUTTONS:
-                logging.info("%s ignoring button: %s", self.__class__, button_name)
+                logging.info("%s ignoring button: %s",
+                             self.__class__, button_name)
                 continue
             button_text = button_meta.get('text', '')
             button_br_offset = ScreenOffset(
@@ -257,7 +263,6 @@ class SyncForm(npyscreen.ActionFormV2): # pylint: disable=too-many-ancestors
             if widget_proxy == widget_ref:
                 logging.info("found widget ID: %s", widget_id)
 
-
         return widget_ref
 
     def create(self):
@@ -359,15 +364,16 @@ class ProductsForm(SyncForm):
             cmd_particles=['--skip-variations', '--do-variations']
         )
 
+
 class CustomersForm(SyncForm):
     """ Form for specifying customer sync parameters """
     welcomeLines = [
         "CUSTOMERS"
     ]
 
-
     def create(self):
         super(CustomersForm, self).create()
+
 
 class ConfirmForm(SyncForm):
     """ Form for confirming sync parameters """
@@ -387,7 +393,7 @@ class ConfirmForm(SyncForm):
         )
 
     @overrides(npyscreen.fm_form_edit_loop.FormNewEditLoop)
-    def pre_edit_loop(self): # pylint: disable=invalid-name,missing-docstring
+    def pre_edit_loop(self):  # pylint: disable=invalid-name,missing-docstring
         welcome_form = self.parentApp.getForm('MAIN')
         if welcome_form:
             command_particles = []
@@ -419,14 +425,17 @@ class ConfirmForm(SyncForm):
         logging.info("performing ok")
         self.parentApp.setNextForm(None)
 
+
 class FormSwitcher(npyscreen.MultiLineAction):
     """ Widget that selects which form to go to next """
+
     def __init__(self, *args, **kwargs):
         self.form_options = kwargs.pop('form_options', OrderedDict)
         kwargs.update(
             values=self.form_options.keys()
         )
-        self._activeFormName = kwargs.get('value') # pylint: disable=invalid-name
+        self._activeFormName = kwargs.get(
+            'value')  # pylint: disable=invalid-name
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):
@@ -487,9 +496,9 @@ class WelcomeForm(SyncForm):
             "██████████████      ██████      ██████    ██████ ██████████████ ",
         ]
         welcomeLines = [
-            ' '.join([tanLine, syncLine]) \
-                for tanLine, syncLine in \
-                zip(tanLines, syncLines)
+            ' '.join([tanLine, syncLine])
+            for tanLine, syncLine in
+            zip(tanLines, syncLines)
         ]
     welcomeLines += [
         "",
@@ -524,6 +533,7 @@ class WelcomeForm(SyncForm):
         logging.info("%s performing cancel", self.__class__)
         self.parentApp.setNextForm(None)
         self.parentApp.switchFormNow()
+
 
 def main():
     """ Main method for gui """

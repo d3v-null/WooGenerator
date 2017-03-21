@@ -32,7 +32,8 @@ class Match(object):
             AssertionError: if m_objects is not singular
         """
         assert self.m_len == 1, \
-            ".m_object assumes m_objects unique, instead it is %d long" % len(self._m_objects)
+            ".m_object assumes m_objects unique, instead it is %d long" % len(
+                self._m_objects)
         return self._m_objects[0]
 
     @property
@@ -51,7 +52,8 @@ class Match(object):
             AssertionError: if s_objects is not singular
         """
         assert self.s_len == 1, \
-            ".s_object assumes s_objects unique, instead it is %d long" % len(self._s_objects)
+            ".s_object assumes s_objects unique, instead it is %d long" % len(
+                self._s_objects)
         return self._s_objects[0]
 
     @property
@@ -173,7 +175,7 @@ class Match(object):
             len(objs),
             ','.join([obj.__repr__()[:200 / length] for obj in objs])
         )
-            # ",".join(map(lambda obj: obj.__repr__()[:200 / length], objs)))
+        # ",".join(map(lambda obj: obj.__repr__()[:200 / length], objs)))
 
     def __repr__(self):
         return " | ".join([
@@ -181,7 +183,7 @@ class Match(object):
             self.woo_obj_list_repr(self.s_objects)
         ])
 
-    def containerize(self): # pylint: disable=too-many-branches
+    def containerize(self):  # pylint: disable=too-many-branches
         """
         Return the objects within the match wrapped in the best possible container
         determined by the container attribute of the gcs of their classes
@@ -594,7 +596,8 @@ class AbstractMatcher(Registrar):
         """
         Process a list of master and slave objects as if they were from a match
         """
-        # print "processing match %s | %s" % (repr(ma_objects), repr(sa_objects))
+        # print "processing match %s | %s" % (repr(ma_objects),
+        # repr(sa_objects))
         ma_objects = self.m_filter(ma_objects)
         for ma_object in ma_objects:
             assert \
@@ -716,7 +719,8 @@ class CardMatcher(FilteringMatcher):
         """ the card index function for the class """
         assert \
             hasattr(user_object, 'MYOBID'), \
-            'must be able to get MYOBID, instead type is %s' % type(user_object)
+            'must be able to get MYOBID, instead type is %s' % type(
+                user_object)
         return user_object.MYOBID
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
