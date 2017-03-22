@@ -3,7 +3,7 @@ import os
 import paramiko
 from coldata import ColDataUser
 from parsing.flat import CsvParseUser, UsrObjList
-from utils import TimeUtils, SanitationUtils
+from woogenerator.utils import TimeUtils, SanitationUtils
 from itertools import chain
 
 srcFolder = "../source/"

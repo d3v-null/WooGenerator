@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 from woogenerator.utils import SeqUtils
 
+
 class ColDataBase(object):
     data = OrderedDict()
 

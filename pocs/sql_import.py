@@ -4,7 +4,7 @@ from collections import OrderedDict
 import os
 import time
 # from itertools import chain
-from utils import SeqUtils, SanitationUtils, UnicodeDictWriter
+from woogenerator.utils import SeqUtils, SanitationUtils, UnicodeDictWriter
 from parsing.abstract import Registrar
 from parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo, WooObjList
 from parsing.myo import CsvParseMyo

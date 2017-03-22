@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from utils import SanitationUtils
+from woogenerator.utils import SanitationUtils
 from kitchen.text import converters
 
 

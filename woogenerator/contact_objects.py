@@ -29,11 +29,13 @@ class FieldGroup(Registrar):
 
     def __init__(self, **kwargs):
         super(FieldGroup, self).__init__()
+        self.strict = None
         self.kwargs = kwargs
-        self.empty = self.mandatory_keys and not any(filter(None, map(
-            lambda key: self.kwargs.get(key),
-            self.mandatory_keys
-        )))
+        empty_mandatory_vals = [
+            self.kwargs.get(key) for key in self.mandatory_keys \
+            if not self.kwargs.get(key)
+        ]
+        self.empty = not any(empty_mandatory_vals)
         self.valid = True
         self.properties = OrderedDict()
         self.problematic = False
@@ -87,6 +89,9 @@ class FieldGroup(Registrar):
         retval = self.__class__(**deepcopy(self.kwargs, memodict))
         # print (" -> retval", retval, retval.kwargs)
         return retval
+
+    def __unicode__(self, tablefmt=None):
+        raise NotImplementedError()
 
     def get_prefix(self):
         if self.empty:
@@ -259,19 +264,19 @@ class ContactObject(FieldGroup):
 
     @property
     def names(self):
-        if self.properties.get('names') or self.properties.get(
-                'careof_names') or self.properties.get('organization_names'):
-            out = ", ".join(filter(None,
-                                   [
-                                       " ".join(filter(None, names)) for names in
-                                       [
-                                           [self.careof_names],
-                                           self.properties['names'],
-                                           [self.organization_names]
-                                       ]
-                                   ]
-                                   ))
-            # SanitationUtils.safe_print("NAMES", out)
+        if self.properties.get('names') or self.properties.get('careof_names') \
+        or self.properties.get('organization_names'):
+            out = ", ".join(filter(
+                None,
+                [
+                    " ".join(filter(None, names)) for names in
+                    [
+                        [self.careof_names],
+                        self.properties['names'],
+                        [self.organization_names]
+                    ]
+                ]
+            ))
             return out
 
     def normalize_val(self, val):
@@ -384,25 +389,9 @@ class ContactAddress(ContactObject):
                     note = NameUtils.get_note(token)
                     if note:
                         company_has_notes = True
-                        # self.enforce_strict("Company name contains notes: " + self.get_note_no_paranthesis(note))
                 if not company_has_notes:
                     self.words_to_remove.append(company_sanitized)
                     self.coerce_organization(self.kwargs.get('company'))
-
-            # numberLines = filter(
-            #     SanitationUtils.string_contains_numbers,
-            #     lines
-            # )
-            # numberlessLines = filter(
-            #     SanitationUtils.string_contains_no_numbers,
-            #     lines
-            # )
-            # if(numberlessLines):
-            #     self.properties['names'] += numberlessLines
-            #     if len(numberlessLines) > 1:
-            #         self.format = 'numberless_lines'
-
-            # Extract subunit numbers and floor level
 
             for i, line in enumerate(lines):
                 self.register_message(
@@ -460,35 +449,35 @@ class ContactAddress(ContactObject):
                     self.add_weak_thoroughfare((ambiguous_token, None, None))
                 else:
                     ambiguous_token = self.properties['ambiguous_tokens']
-                    self.enforce_strict('There are some ambiguous tokens: %s' %
-                                        SanitationUtils.coerce_unicode(self.properties['ambiguous_tokens']))
+                    self.enforce_strict(
+                        'There are some ambiguous tokens: %s' %
+                        SanitationUtils.coerce_unicode(
+                            self.properties['ambiguous_tokens'])
+                        )
                     break
 
-            # if self.properties['thoroughfares'] and self.properties['weak_thoroughfares'] and not self.properties['buildings']
-            #     self.enforce_strict('multiple thoroughfares and no building')
             all_thoroughfares = self.properties[
                 'thoroughfares'] + self.properties['weak_thoroughfares']
             if len(all_thoroughfares) > 1:
-                self.enforce_strict('multiple thoroughfares: %s' %
-                                    SanitationUtils.coerce_unicode(
-                                        all_thoroughfares)
-                                    )
+                self.enforce_strict(
+                    'multiple thoroughfares: %s' %
+                    SanitationUtils.coerce_unicode(all_thoroughfares)
+                )
 
             if self.properties['unknowns']:
                 self.invalidate("There are some unknown tokens: %s" %
                                 repr(" | ".join(self.properties['unknowns'])))
 
-            # if any unknowns match number, then add them as a blank subunit
 
     def parse_token(self, token_index, token):
         for getter, adder in [
-            (AddressUtils.get_delivery, self.add_delivery),
-            (AddressUtils.get_subunit, self.add_subunit),
-            (AddressUtils.get_floor, self.add_floor),
-            (AddressUtils.get_thoroughfare, self.add_thoroughfare),
-            (NameUtils.get_care_of, self.add_careof),
-            (NameUtils.get_organization, self.add_organization),
-            (AddressUtils.get_weak_subunit, self.add_weak_subunit)
+                (AddressUtils.get_delivery, self.add_delivery),
+                (AddressUtils.get_subunit, self.add_subunit),
+                (AddressUtils.get_floor, self.add_floor),
+                (AddressUtils.get_thoroughfare, self.add_thoroughfare),
+                (NameUtils.get_care_of, self.add_careof),
+                (NameUtils.get_organization, self.add_organization),
+                (AddressUtils.get_weak_subunit, self.add_weak_subunit)
         ]:
             result = getter(token)
             if result:
@@ -511,27 +500,12 @@ class ContactAddress(ContactObject):
             self.register_message("BUILDING AND WEAK THOROUGHFARE")
             self.add_name(token)
             return
-            # self.invalidate("Ambiguous thoroughfare or building (multiple buildings detected): %s" % repr(token))
         if weak_thoroughfare:
             self.add_weak_thoroughfare(weak_thoroughfare)
             return
         if building and not self.properties['buildings']:
             self.add_building(building)
             return
-        # ignore if unknown is city or state
-        # if token in self.words_to_remove:
-        #     self.properties['ignores'] += [token]
-        #     self.register_message( "IGNORING WORD ", token)
-        #     return
-
-        # state = AddressUtils.get_state(token)
-        # if(state and not self.properties['state']):
-        #     #this might be the state but can't rule it out being something else
-        #     self.properties['possible_states'] = list(
-        #         set( self.properties['possible_states'] ) + set([token])
-        #     )
-        #     self.register_message( "IGNORING STATE ", state)
-        #     return
 
         if name:
             self.register_message("FOUND NAME: %s" %
@@ -629,13 +603,15 @@ class ContactAddress(ContactObject):
                 weak_thoroughfare = (
                     thoroughfare_name, thoroughfare_type, None)
             self.add_weak_thoroughfare(weak_thoroughfare)
-        elif not (self.properties['buildings']) and \
-                (self.properties['subunits'] or self.properties['floors'] or self.properties['deliveries']):
+        elif not (self.properties['buildings']) \
+        and (self.properties['subunits'] or self.properties['floors'] \
+        or self.properties['deliveries']):
             if building:
                 self.add_building(building)
             else:
                 self.coerce_building(name)
-        elif weak_thoroughfare and not (self.properties['thoroughfares'] + self.properties['weak_thoroughfares']):
+        elif weak_thoroughfare \
+        and not self.properties['thoroughfares'] + self.properties['weak_thoroughfares']:
             self.add_weak_thoroughfare(weak_thoroughfare)
         elif building and not self.properties['buildings']:
             self.add_building(building)
@@ -643,7 +619,7 @@ class ContactAddress(ContactObject):
         #     self.add_weak_thoroughfare(weak_thoroughfare)
         elif name in self.words_to_remove:
             self.properties['ignores'] += [name]
-        elif not (self.properties['thoroughfares'] + self.properties['weak_thoroughfares']):
+        elif not self.properties['thoroughfares'] + self.properties['weak_thoroughfares']:
             self.properties['names'] += [name]
         else:
             self.properties['ambiguous_tokens'] += [name]
@@ -665,7 +641,7 @@ class ContactAddress(ContactObject):
             self.properties['subunits'] += [subunit]
 
     def add_weak_subunit(self, weak_subunit):
-        subunit_type, subunit_number = weak_subunit
+        subunit_type, _ = weak_subunit
         self.enforce_strict("Unknown subunit type: %s" % subunit_type)
         self.add_subunit(weak_subunit)
 
@@ -705,7 +681,7 @@ class ContactAddress(ContactObject):
     def add_thoroughfare(self, thoroughfare):
         self.register_message("ADDING THOROUGHFARE %s" %
                               SanitationUtils.coerce_unicode(thoroughfare))
-        thoroughfare_number, thoroughfare_name, thoroughfare_type, thoroughfare_suffix = thoroughfare
+        thoroughfare_number, thoroughfare_name, thoroughfare_type, _ = thoroughfare
         self.assert_valid_thoroughfare_type(
             thoroughfare_name, thoroughfare_type)
         # if legit thoroughfare is being added, remove weaklings before adding
@@ -740,7 +716,7 @@ class ContactAddress(ContactObject):
                 if self.properties['numbers']:
                     number = self.properties['numbers'].pop()
                 elif self.properties['coerced_subunits']:
-                    subunit_type, number = self.properties[
+                    _, number = self.properties[
                         'coerced_subunits'].pop()
 
                 # token = " ".join(names)
@@ -748,7 +724,7 @@ class ContactAddress(ContactObject):
                 return
             self.register_message("ADDING WEAK THOROUGHFARE:  %s" %
                                   SanitationUtils.coerce_unicode(weak_thoroughfare))
-            thoroughfare_name, thoroughfare_type, thoroughfare_suffix = weak_thoroughfare
+            thoroughfare_name, thoroughfare_type, _ = weak_thoroughfare
             self.assert_valid_thoroughfare_type(
                 thoroughfare_name, thoroughfare_type)
             self.properties['weak_thoroughfares'] += [weak_thoroughfare]
@@ -779,7 +755,7 @@ class ContactAddress(ContactObject):
 
     @property
     def subunits(self):
-        if(self.properties.get('subunits') or self.properties.get('coerced_subunits')):
+        if self.properties.get('subunits') or self.properties.get('coerced_subunits'):
             return ", ".join(
                 [" ".join(filter(None, subunit)) for subunit in (
                     self.properties['subunits'] + self.properties['coerced_subunits'])]
@@ -815,7 +791,7 @@ class ContactAddress(ContactObject):
                 'weak_thoroughfares'):
             return ", ".join(
                 [" ".join(filter(None, thoroughfares)) for thoroughfares in
-                    self.properties['thoroughfares'] + self.properties['weak_thoroughfares']]
+                 self.properties['thoroughfares'] + self.properties['weak_thoroughfares']]
             )
 
     @property
@@ -847,7 +823,7 @@ class ContactAddress(ContactObject):
 
     @property
     def line1(self):
-        if(self.properties_override):
+        if self.properties_override:
             elements = [
                 self.names,
                 self.deliveries,
@@ -863,7 +839,7 @@ class ContactAddress(ContactObject):
 
     @property
     def line2(self):
-        if(self.properties_override):
+        if self.properties_override:
             elements = [
                 self.thoroughfares,
                 self.end_names
@@ -881,9 +857,9 @@ class ContactAddress(ContactObject):
     def determine_schema(**kwargs):
         fields = filter(None, map(lambda key: kwargs.get(
             key, ''), ['line1', 'line2', 'city']))
-        if(fields):
+        if fields:
             act_like = all(map(SanitationUtils.string_capitalized, fields))
-            if(act_like):
+            if act_like:
                 return 'act'
             else:
                 return 'unknown'
@@ -902,7 +878,7 @@ class ContactAddress(ContactObject):
             self.line2,
             self.line3,
             (("|UNKN:" + " ".join(self.properties['unknowns']))
-                if self.debug and self.properties['unknowns'] else "")
+             if self.debug and self.properties['unknowns'] else "")
         ])))
 
     def __str__(self, tablefmt=None):
@@ -986,7 +962,6 @@ class ContactName(ContactObject):
                     note = NameUtils.get_note(token)
                     if note:
                         company_has_notes = True
-                        # self.enforce_strict("Company name contains notes: " + self.get_note_no_paranthesis(note))
                 if not company_has_notes:
                     self.words_to_remove.append(company_sanitized)
                     self.coerce_organization(self.kwargs.get('company'))
@@ -996,7 +971,7 @@ class ContactName(ContactObject):
             full_name_components = SanitationUtils.normalize_val(' '.join(filter(None, map(
                 lambda k: self.kwargs.get(k),
                 ['name_prefix', 'first_name', 'middle_name',
-                    'family_name', 'name_suffix']
+                 'family_name', 'name_suffix']
             ))))
 
             if full_name_contact and full_name_components:
@@ -1006,13 +981,19 @@ class ContactName(ContactObject):
                     # The names are effectively the same, can drop one
                     full_name_components = None
                 else:
-                    reverse_name_components = SanitationUtils.similar_no_punc_cmp(" ".join(filter(
-                        None, [self.kwargs.get('family_name'), self.kwargs.get('first_name'), self.kwargs.get('middle_name')])))
+                    reverse_name_components = SanitationUtils.similar_no_punc_cmp(
+                        " ".join(filter(
+                            None,
+                            [self.kwargs.get('family_name'),
+                             self.kwargs.get('first_name'),
+                             self.kwargs.get('middle_name')]
+                        ))
+                    )
                     # print reverse_name_components, no_punctuation_contact
                     if reverse_name_components == no_punctuation_contact:
                         self.register_message(
-                            "DETECTED REVERSE NAME:  %s" % SanitationUtils.coerce_unicode(full_name_contact))
-                        # self.enforce_strict("Ambiguous if format is family_name, first_name middle_name or just stray comma")
+                            "DETECTED REVERSE NAME:  %s" % \
+                            SanitationUtils.coerce_unicode(full_name_contact))
                         full_name_contact = None
 
             full_names = SeqUtils.filter_unique_true(
@@ -1028,7 +1009,6 @@ class ContactName(ContactObject):
                 tokens = NameUtils.tokenize_name(full_name)
                 self.register_message("TOKENS: %s" % repr(tokens))
                 self.name_combo.reset()
-                # SanitationUtils.safe_print(u"TOKENS {} FOR {} ARE {}".format(len(tokens), full_name, tokens))
                 for j, token in enumerate(tokens):
                     self.parse_token(j, token)
 
@@ -1061,34 +1041,58 @@ class ContactName(ContactObject):
                         'first_names'] += [self.properties['single_names'].pop(0)]
 
             if len(self.properties['family_names']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE FAMILY NAMES: %s" %
-                                    SanitationUtils.coerce_bytes(' / '.join(self.properties['family_names'])))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE FAMILY NAMES: %s" %
+                    SanitationUtils.coerce_bytes(' / '.join(self.properties['family_names'])))
             if len(self.properties['middle_names']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE MIDDLE NAMES: %s" %
-                                    SanitationUtils.coerce_bytes(' / '.join(self.properties['middle_names'])))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE MIDDLE NAMES: %s" %
+                    SanitationUtils.coerce_bytes(' / '.join(self.properties['middle_names'])))
             if len(self.properties['first_names']) > 2:
-                self.enforce_strict("THERE ARE MULTIPLE FIRST NAMES: %s" %
-                                    SanitationUtils.coerce_bytes(' / '.join(self.properties['first_names'])))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE FIRST NAMES: %s" %
+                    SanitationUtils.coerce_bytes(' / '.join(self.properties['first_names'])))
 
-            if len(self.properties['family_names'] + self.properties[
-                   'middle_names'] + self.properties['first_names']) == 0:
+            if len(
+                    self.properties['family_names'] +
+                    self.properties['middle_names'] +
+                    self.properties['first_names']
+            ) == 0:
                 self.empty = True
 
             if len(self.properties['titles']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE TITLES: " +
-                                    SanitationUtils.coerce_bytes(' / '.join(self.properties['titles'])))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE TITLES: " +
+                    SanitationUtils.coerce_bytes(
+                        ' / '.join(self.properties['titles'])
+                    )
+                )
 
             if len(self.properties['notes']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE NOTES: " + SanitationUtils.coerce_bytes(
-                    " / ".join(map(self.get_note_no_paranthesis, self.properties.get('notes', [])))))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE NOTES: " + SanitationUtils.coerce_bytes(
+                        " / ".join(map(
+                            self.get_note_no_paranthesis,
+                            self.properties.get('notes', [])
+                        ))
+                    )
+                )
 
             if len(self.properties['positions']) > 1:
-                self.enforce_strict("THERE ARE MULTIPLE POSITIONS: " +
-                                    SanitationUtils.coerce_bytes(' / '.join(self.properties['positions'])))
+                self.enforce_strict(
+                    "THERE ARE MULTIPLE POSITIONS: " +
+                    SanitationUtils.coerce_bytes(
+                        ' / '.join(self.properties['positions'])
+                    )
+                )
 
             if self.properties['unknowns']:
-                self.invalidate("There are some unknown tokens: %s" % SanitationUtils.coerce_bytes(
-                    ' / '.join(self.properties['unknowns'])))
+                self.invalidate(
+                    "There are some unknown tokens: %s" % \
+                    SanitationUtils.coerce_bytes(
+                        ' / '.join(self.properties['unknowns'])
+                    )
+                )
 
     def parse_token(self, token_index, token):
         if self.name_combo.broken(token_index):
@@ -1206,90 +1210,37 @@ class ContactName(ContactObject):
 
     first_name = DescriptorUtils.kwarg_alias_property(
         'first_name',
-        lambda self:
-            " ".join(filter(None, self.properties.get('first_names', [])))
+        lambda self: \
+        " ".join(filter(None, self.properties.get('first_names', [])))
     )
-
-    # @property
-    # def family_name(self):
-    #     if self.valid:
-    #         if len(self.properties.get('family_names', [])) > 1:
-    #             return self.properties.get('family_names')[-1]
-    #         elif len(self.properties.get('names', [])) > 1:
-    #             return self.properties.get('names')[-1]
-    #         else:
-    #             return ""
-    #     else:
-    #         return self.kwargs.get('family_name')
 
     family_name = DescriptorUtils.kwarg_alias_property(
         'family_name',
-        lambda self:
-            " ".join(filter(None, self.properties.get('family_names', [])))
+        lambda self:\
+        " ".join(filter(None, self.properties.get('family_names', [])))
     )
-
-    # @property
-    # def middle_name(self):
-    #     if self.valid:
-    #         if len(self.properties.get('names', [])) > 2 :
-    #             return " ".join(self.properties.get('names')[1:-1])
-    #         else:
-    #             return ""
-    #     else :
-    #         return self.kwargs.get('middle_name')
 
     middle_name = DescriptorUtils.kwarg_alias_property(
         'middle_name',
-        lambda self:
-            " ".join(filter(None, self.properties.get('middle_names', [])))
+        lambda self:\
+        " ".join(filter(None, self.properties.get('middle_names', [])))
     )
-
-    # @property
-    # def name_prefix(self):
-    #     if self.valid:
-    #         if len(self.properties.get('titles', [])) > 0:
-    #             return " ".join(self.properties.get('titles'))
-    #         else:
-    #             return ""
-    #     else:
-    #         return self.kwargs.get('name_prefix')
 
     name_prefix = DescriptorUtils.kwarg_alias_property(
         'name_prefix',
-        lambda self: " ".join(filter(None, self.properties.get('titles', [])))
+        lambda self: \
+        " ".join(filter(None, self.properties.get('titles', [])))
     )
-
-    # @property
-    # def name_suffix(self):
-    #     if self.valid:
-    #         positions_suffixes = self.properties.get('positions', []) + self.properties.get('suffixes', [])
-    #         if len(positions_suffixes) > 0:
-    #             return " ".join(positions_suffixes)
-    #         else:
-    #             return ""
-    #     else:
-    #         return self.kwargs.get('name_suffix')
 
     name_suffix = DescriptorUtils.kwarg_alias_property(
         'name_suffix',
-        lambda self: " ".join(filter(None,
-                                     self.properties.get(
-                                         'positions', []) + self.properties.get('suffixes', [])
-                                     ))
+        lambda self: \
+        " ".join(filter(
+            None,
+            self.properties.get('positions', []) \
+            + self.properties.get('suffixes', [])
+        ))
     )
-
-    # @property
-    # def contact(self):
-    #     if self.valid:
-    #         return " ".join(filter(None,[
-    #             self.name_prefix,
-    #             self.first_name,
-    #             self.middle_name,
-    #             self.family_name,
-    #             self.name_suffix
-    #         ]))
-    #     else:
-    #         return self.kwargs.get('contact')
 
     contact = DescriptorUtils.kwarg_alias_property(
         'contact',
@@ -1326,7 +1277,7 @@ class ContactName(ContactObject):
              if self.debug and self.name_suffix else self.name_suffix),
             (("NOTES: (%s)" % self.name_notes) if self.debug and self.name_notes else "(%s)" %
              self.name_notes if self.name_notes else None),
-            (("|UNKN:" + " ".join(self.properties['unknowns']))
+            (("|UNKN:" + " ".join(self.properties['unknowns']))\
                 if self.debug and self.properties.get('unknowns') else "")
         ])))
 

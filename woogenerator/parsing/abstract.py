@@ -340,7 +340,7 @@ class CsvParseBase(Registrar):
         self.limit = kwargs.pop('limit', None)
         self.cols = SeqUtils.combine_lists(cols, extra_cols)
         self.defaults = SeqUtils.combine_ordered_dicts(defaults,
-                                                        extra_defaults)
+                                                       extra_defaults)
         self.object_indexer = self.get_object_rowcount
         self.clear_transients()
         self.source = kwargs.get('source')

@@ -139,10 +139,6 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         #     CsvParseGenMixin.__init__(self, *args, **kwargs)
 
     def clear_transients(self):
-        # for base_class in CsvParseWooApi.__bases__:
-        #     if hasattr(base_class, 'clear_transients'):
-        #         base_class.clear_transients(self)
-        # CsvParseFlat.clear_transients(self)
         CsvParseBase.clear_transients(self)
         CsvParseTreeMixin.clear_transients(self)
         CsvParseShopMixin.clear_transients(self)

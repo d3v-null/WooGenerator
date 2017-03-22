@@ -1899,9 +1899,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 [
                     [
                         index,
-                        # api_product_parser.products[index],
-                        # api_product_parser.products[index].categories,
-                        # ", ".join(category.woo_cat_name for category in matches.merge().m_objects),
                         ", ".join(category.woo_cat_name for category in matches.merge().s_objects\
                                   if not re.search('Specials', category.woo_cat_name))
                     ] for index, matches in delete_categories.items()
@@ -2015,7 +2012,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         #     'update':update,
                         #     'master':SanitationUtils.coerce_unicode(update.new_m_object),
                         #     'slave':SanitationUtils.coerce_unicode(update.new_s_object),
-                        #     'mchanges':SanitationUtils.coerce_unicode(update.get_master_updates()),
+                            # 'mchanges':SanitationUtils.coerce_unicode(
+                            #         update.get_master_updates()
+                            # ),
                         #     'schanges':SanitationUtils.coerce_unicode(update.get_slave_updates()),
                         #     'exception':repr(exc)
                         # })
@@ -2044,7 +2043,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         print "open this link to view report %s" % settings.rep_web_link
 
 
-def catch_main():  # pylint: disable=too-many-statements,too-many-branches
+def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-many-branches
     # TODO: fix too-many-statements,too-many-branches
     """
     Run the main function within a try statement and attempt to analyse failure
@@ -2073,7 +2072,7 @@ def catch_main():  # pylint: disable=too-many-statements,too-many-branches
 
     status = 0
     try:
-        main(settings=settings)
+        main(settings=settings, override_args=override_args)
     except SystemExit:
         exit()
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):

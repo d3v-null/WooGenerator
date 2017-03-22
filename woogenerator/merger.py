@@ -1359,7 +1359,8 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-                UsrSyncClientSshAct(act_connect_params, act_db_params, fs_params) as master_client, \
+                UsrSyncClientSshAct(act_connect_params, act_db_params, fs_params) \
+                    as master_client, \
                 UsrSyncClientWP(wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
@@ -1447,12 +1448,13 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     # Registrar.register_error('testing errors')
 
 
-def catch_main():
+def catch_main(settings=None, override_args=None):
     """
     Run the main function within a try statement and attempt to analyse failure.
     """
 
-    settings = argparse.Namespace()
+    if settings is None:
+        settings = argparse.Namespace()
 
     settings.in_folder = "../input/"
     settings.out_folder = "../output/"
@@ -1481,7 +1483,7 @@ def catch_main():
     settings.since_s = False
 
     try:
-        main(settings)
+        main(settings=settings, override_args=override_args)
     except SystemExit:
         exit()
     except:

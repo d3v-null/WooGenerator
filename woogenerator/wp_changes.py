@@ -18,7 +18,7 @@ import yaml
 from sshtunnel import SSHTunnelForwarder
 from tabulate import tabulate
 
-from __init__ import MODULE_LOCATION, MODULE_PATH
+from woogenerator import MODULE_LOCATION, MODULE_PATH
 from woogenerator.utils import (HtmlReporter, Registrar, SanitationUtils,
                                 TimeUtils, SeqUtils)
 

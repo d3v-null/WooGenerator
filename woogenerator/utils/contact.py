@@ -3,6 +3,7 @@ import re
 from collections import OrderedDict
 from core import Registrar, SanitationUtils
 
+
 class NameUtils(object):
     ordinalNumberRegex = r"(\d+)(?:ST|ND|RD|TH)"
 
@@ -501,6 +502,7 @@ class NameUtils(object):
             lambda match: cls.sanitize_name_token(match[0]),
             matches
         )
+
 
 class AddressUtils(object):
     subunitAbbreviations = OrderedDict([
@@ -1262,7 +1264,7 @@ class AddressUtils(object):
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('subunit_type') \
-        and match_dict.get('subunit_number'):
+                and match_dict.get('subunit_number'):
             subunit_type = cls.identify_subunit(
                 match_dict.get('subunit_type'))
             subunit_number = match_dict.get('subunit_number')
@@ -1282,7 +1284,7 @@ class AddressUtils(object):
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('weak_subunit_type') \
-        and match_dict.get('weak_subunit_number'):
+                and match_dict.get('weak_subunit_number'):
             subunit_type = cls.identify_subunit(
                 match_dict.get('weak_subunit_type'))
             subunit_number = match_dict.get('weak_subunit_number')
@@ -1317,7 +1319,7 @@ class AddressUtils(object):
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('thoroughfare_name') \
-        and match_dict.get('thoroughfare_type'):
+                and match_dict.get('thoroughfare_type'):
             thoroughfare_name = match_dict.get('thoroughfare_name')
             thoroughfare_type = cls.identify_thoroughfare_type(
                 match_dict.get('thoroughfare_type')
@@ -1370,7 +1372,7 @@ class AddressUtils(object):
         )
         match_dict = match.groupdict() if match else None
         if match_dict and match_dict.get('weak_thoroughfare_name') \
-        and match_dict.get('weak_thoroughfare_type'):
+                and match_dict.get('weak_thoroughfare_type'):
             # print match_dict
             weak_thoroughfare_name = match_dict.get('weak_thoroughfare_name')
             weak_thoroughfare_type = match_dict.get('weak_thoroughfare_type')

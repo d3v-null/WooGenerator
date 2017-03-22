@@ -21,6 +21,7 @@ from kitchen.text import converters
 
 DEFAULT_ENCODING = 'utf8'
 
+
 class SanitationUtils(object):
     email_regex = r"[\w.+-]+@[\w-]+\.[\w.-]+"
     regex_url_simple = (
@@ -146,58 +147,64 @@ class SanitationUtils(object):
     @classmethod
     def unicode_to_utf8(cls, u_str):
         assert isinstance(u_str, unicode),\
-         "parameter should be unicode not %s" % type(u_str)
+            "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "utf8")
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
     def unicode_to_ascii(cls, u_str):
         assert isinstance(u_str, unicode),\
-         "parameter should be unicode not %s" % type(u_str)
+            "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "ascii", "backslashreplace")
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
     def unicode_to_xml(cls, u_str, ascii_only=False):
         assert isinstance(u_str, unicode),\
-         "parameter should be unicode not %s" % type(u_str)
+            "parameter should be unicode not %s" % type(u_str)
         if ascii_only:
             byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
         else:
             byte_return = converters.unicode_to_xml(u_str)
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
     def utf8_to_unicode(cls, utf8_str):
         assert isinstance(utf8_str, str),\
-         "parameter should be str not %s" % type(utf8_str)
+            "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.to_unicode(utf8_str, "utf8")
         assert isinstance(byte_return, unicode),\
-            "something went wrong, should return unicode not %s" % type(byte_return)
+            "something went wrong, should return unicode not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
     def xml_to_unicode(cls, utf8_str):
         assert isinstance(utf8_str, str),\
-         "parameter should be str not %s" % type(utf8_str)
+            "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.xml_to_unicode(utf8_str)
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
     def ascii_to_unicode(cls, ascii_str):
         assert isinstance(ascii_str, str),\
-         "parameter should be str not %s" % type(ascii_str)
+            "parameter should be str not %s" % type(ascii_str)
         unicode_return = converters.to_unicode(ascii_str, "ascii")
         assert isinstance(unicode_return, unicode),\
-            "something went wrong, should return unicode not %s" % type(unicode_return)
+            "something went wrong, should return unicode not %s" % type(
+                unicode_return)
         return unicode_return
 
     @classmethod
@@ -207,7 +214,8 @@ class SanitationUtils(object):
         else:
             unicode_return = converters.to_unicode(thing, encoding="utf8")
         assert isinstance(unicode_return, unicode),\
-            "something went wrong, should return unicode not %s" % type(unicode_return)
+            "something went wrong, should return unicode not %s" % type(
+                unicode_return)
         return unicode_return
 
     @classmethod
@@ -217,7 +225,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
@@ -227,7 +236,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
@@ -237,7 +247,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(byte_return)
+            "something went wrong, should return str not %s" % type(
+                byte_return)
         return byte_return
 
     @classmethod
@@ -250,7 +261,8 @@ class SanitationUtils(object):
         except ValueError:
             float_return = 0.0
         assert isinstance(float_return, float),\
-            "something went wrong, should return str not %s" % type(float_return)
+            "something went wrong, should return str not %s" % type(
+                float_return)
         return float_return
 
     @classmethod
@@ -270,7 +282,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(unicode_return, unicode),\
-             "something went wrong, should return unicode not %s" % type(unicode_return)
+            "something went wrong, should return unicode not %s" % type(
+                unicode_return)
         return unicode_return
 
     @classmethod
@@ -282,7 +295,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(unicode_return, unicode),\
-             "something went wrong, should return unicode not %s" % type(unicode_return)
+            "something went wrong, should return unicode not %s" % type(
+                unicode_return)
         return unicode_return
 
     @classmethod
@@ -300,7 +314,8 @@ class SanitationUtils(object):
             cls.coerce_unicode
         )(thing)
         assert isinstance(unicode_return, unicode),\
-            "something went wrong, should return unicode not %s" % type(unicode_return)
+            "something went wrong, should return unicode not %s" % type(
+                unicode_return)
         return unicode_return
 
     @classmethod
@@ -750,7 +765,7 @@ class SanitationUtils(object):
     @classmethod
     def truish_string_to_bool(cls, string):
         if not string or 'n' in string or 'false' in string \
-        or string == '0' or string == 0:
+                or string == '0' or string == 0:
             if Registrar.DEBUG_UTILS:
                 print "truish_string_to_bool", repr(string), 'FALSE'
             return "FALSE"
@@ -786,6 +801,7 @@ class SanitationUtils(object):
     @classmethod
     def decode_base64(cls, b64_str):
         return base64.standard_b64decode(b64_str)
+
 
 class DescriptorUtils(object):
 
@@ -1018,7 +1034,7 @@ class Registrar(object):
         raise Exception(
             ("could not register %s in %s. \n"
              "Duplicate index: %s appears in rowcounts %s and %s"
-            ) % (
+             ) % (
                 str(new), register_name, index, new.rowcount, old.rowcount
             )
         )

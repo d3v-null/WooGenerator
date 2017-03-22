@@ -10,9 +10,7 @@ from woogenerator.coldata import ColDataUser  # , ColDataWoo
 from woogenerator.contact_objects import ContactAddress, ContactName
 from woogenerator.contact_objects import ContactPhones, SocialMediaFields
 from woogenerator.utils import DescriptorUtils, SeqUtils, SanitationUtils, TimeUtils, Registrar
-from woogenerator.parsing.abstract import ObjList
-from woogenerator.parsing.flat import ImportFlat, CsvParseFlat
-
+from woogenerator.parsing.abstract import ObjList, CsvParseBase, ImportObject
 
 class UsrObjList(ObjList):
     """
@@ -38,7 +36,7 @@ class UsrObjList(ObjList):
         return ColDataUser.get_basic_cols()
 
 
-class ImportUser(ImportFlat):
+class ImportUser(ImportObject):
     container = UsrObjList
 
     wpid = DescriptorUtils.safe_key_property('Wordpress ID')
@@ -342,7 +340,7 @@ class ImportUser(ImportFlat):
             self.wpid)
 
 
-class CsvParseUser(CsvParseFlat):
+class CsvParseUser(CsvParseBase):
 
     objectContainer = ImportUser
 

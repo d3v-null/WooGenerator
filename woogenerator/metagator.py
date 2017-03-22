@@ -8,7 +8,7 @@ from PIL import PngImagePlugin
 
 import piexif
 
-from utils import SanitationUtils, Registrar
+from woogenerator.utils import SanitationUtils, Registrar
 
 
 class MetaGator(Registrar):

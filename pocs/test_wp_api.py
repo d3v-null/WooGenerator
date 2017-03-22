@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from utils import SanitationUtils
+from woogenerator.utils import SanitationUtils
 
 import json
 from wordpress_json import WordpressJsonWrapper

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from wordpress_xmlrpc import Client
 from wordpress_xmlrpc import AuthenticatedMethod
-from utils import SanitationUtils
+from woogenerator.utils import SanitationUtils
 # from wordpress_xmlrpc.methods import posts
 
 

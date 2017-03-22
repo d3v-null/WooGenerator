@@ -2,9 +2,8 @@
 with which it conflicts """
 
 from collections import OrderedDict
-from utils import SanitationUtils
 from tabulate import tabulate
-
+from woogenerator.utils import SanitationUtils
 
 def object_glb_index_fn(object_data):
     assert hasattr(object_data, 'index'), \
@@ -134,6 +133,7 @@ class Duplicates(OrderedDict):
         linedelim = "\n"
         if tablefmt == 'html':
             linedelim = '<br/>'
+        #pylint: disable=E1101
         out += linedelim.join(
             [duplicate.tabulate(cols, tablefmt, highlight_rules)
              for duplicate in sorted(self.values(), reverse=True)[:100]]

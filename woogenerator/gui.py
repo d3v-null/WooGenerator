@@ -429,8 +429,8 @@ class FormSwitcher(npyscreen.MultiLineAction):
         kwargs.update(
             values=self.form_options.keys()
         )
-        self._activeFormName = kwargs.get(
-            'value')  # pylint: disable=invalid-name
+        # pylint: disable=invalid-name
+        self._activeFormName = kwargs.get('value')
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):
@@ -531,7 +531,7 @@ class WelcomeForm(SyncForm):
 
 
 def main():
-    """ Main method for gui """
+    """ Main method for gui. """
     wg_app = WooGenerator()
     try:
         wg_app.run()
@@ -541,9 +541,9 @@ def main():
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
     if wg_app.command_script == 'generator.py':
         print "running generator with args: %s" % wg_app.command_args
-        generator.main(override_args=wg_app.command_args)
+        generator.catch_main(override_args=wg_app.command_args)
     if wg_app.command_script == 'merger.py':
-        merger.main(override_args=wg_app.command_args)
+        merger.catch_main(override_args=wg_app.command_args)
 
 
 if __name__ == "__main__":

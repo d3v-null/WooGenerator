@@ -36,7 +36,6 @@ def test_name_utils():
     # testNotes("DE-RWENT- FINALIST")
     # testNotes("JAGGERS HAIR- DO NOT WANT TO BE CALLED!!!!")
 
-
     # def testAddressUtils():
     #     # SanitationUtils.clearStartRegex = "<START>"
     #     # SanitationUtils.clearFinishRegex = "<FINISH>"
