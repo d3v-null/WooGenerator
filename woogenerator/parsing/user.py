@@ -23,7 +23,7 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-    reportCols = ColData_User.get_report_cols()
+    report_cols = ColData_User.get_report_cols()
 
     def get_sanitizer(self, tablefmt=None):
         if tablefmt is 'html':

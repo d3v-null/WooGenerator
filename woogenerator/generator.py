@@ -1286,7 +1286,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         for key in ['id', 'slug', 'sku']:
                             if key in m_api_data:
                                 del m_api_data[key]
-                        m_api_data['name'] = category.wooCatName
+                        m_api_data['name'] = category.woo_cat_name
                         # print "uploading category: %s" % m_api_data
                         # pprint(m_api_data)
                         if settings.update_slave:
@@ -1428,9 +1428,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     update_params['reason'] = 'updating'
                     # update_params['subject'] = SyncUpdate.master_name
 
-                    # master_categories = [category.wooCatName for category \
+                    # master_categories = [category.woo_cat_name for category \
                     #                      in change_match_list.merge().m_objects]
-                    # slave_categories =  [category.wooCatName for category \
+                    # slave_categories =  [category.woo_cat_name for category \
                     # in change_match_list.merge().s_objects]
 
                     sync_update.loser_update(**update_params)
@@ -1879,9 +1879,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 index,
                                 # api_product_parser.products[index],
                                 # api_product_parser.products[index].categories,
-                                # ", ".join(category.wooCatName \
+                                # ", ".join(category.woo_cat_name \
                                 # for category in matches.merge().m_objects),
-                                ", ".join(category.wooCatName
+                                ", ".join(category.woo_cat_name
                                           for category in matches.merge()
                                           .s_objects)
                             ] for index, matches in delete_categories.items()
@@ -1901,9 +1901,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         index,
                         # api_product_parser.products[index],
                         # api_product_parser.products[index].categories,
-                        # ", ".join(category.wooCatName for category in matches.merge().m_objects),
-                        ", ".join(category.wooCatName for category in matches.merge().s_objects\
-                                  if not re.search('Specials', category.wooCatName))
+                        # ", ".join(category.woo_cat_name for category in matches.merge().m_objects),
+                        ", ".join(category.woo_cat_name for category in matches.merge().s_objects\
+                                  if not re.search('Specials', category.woo_cat_name))
                     ] for index, matches in delete_categories.items()
                 ],
                 tablefmt="html"
@@ -1934,10 +1934,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 index,
                                 # api_product_parser.products[index],
                                 # api_product_parser.products[index].categories,
-                                ", ".join(category.wooCatName
+                                ", ".join(category.woo_cat_name
                                           for category in matches.merge()
                                           .m_objects),
-                                # ", ".join(category.wooCatName \
+                                # ", ".join(category.woo_cat_name \
                                 # for category in matches.merge().s_objects)
                             ] for index, matches in join_categories.items()
                         ],

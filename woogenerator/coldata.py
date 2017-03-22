@@ -2432,7 +2432,7 @@ class ColData_User(ColDataBase):
 #     col_data = ColData_User()
 #     # print "importCols", col_data.get_import_cols()
 #     # print "userCols", col_data.get_user_cols().keys()
-#     # print "reportCols", col_data.get_report_cols().keys()
+#     # print "report_cols", col_data.get_report_cols().keys()
 #     # print "capitalCols", col_data.get_capital_cols().keys()
 #     # print "syncCols", col_data.get_sync_cols().keys()
 #     print "actCols", col_data.get_act_cols().keys()

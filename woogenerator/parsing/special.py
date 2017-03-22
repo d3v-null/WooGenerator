@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from woogenerator.utils import listUtils, descriptorUtils, TimeUtils, Registrar, SanitationUtils
 from woogenerator.parsing.abstract import BLANK_CELL
-from woogenerator.parsing.tree import CSVParse_Tree
+from woogenerator.parsing.tree import CsvParseTree
 from woogenerator.parsing.tree import TaxoList, ItemList
 from woogenerator.parsing.tree import ImportTreeItem, ImportTreeObject, ImportTreeTaxo
 
@@ -119,7 +119,7 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
         return self.ID
 
 
-class CSVParse_Special(CSVParse_Tree):
+class CSVParse_Special(CsvParseTree):
 
     itemContainer = ImportSpecialRule
     taxoContainer = ImportSpecialGroup
@@ -157,7 +157,7 @@ class CSVParse_Special(CSVParse_Tree):
             itemDepth=1,
             meta_width=1
         )
-        self.objectIndexer = self.get_object_id
+        self.object_indexer = self.get_object_id
         self.register_item = self.register_rule
         self.register_taxo = self.register_rule_group
 
@@ -176,7 +176,7 @@ class CSVParse_Special(CSVParse_Tree):
         self.register_anything(
             groupData,
             self.ruleGroups,
-            indexer=self.objectIndexer,
+            indexer=self.object_indexer,
             singular=True,
             resolver=self.duplicate_object_exception_resolver,
             registerName='rule groups'
@@ -190,7 +190,7 @@ class CSVParse_Special(CSVParse_Tree):
         self.register_anything(
             ruleData,
             self.rules,
-            indexer=self.objectIndexer,
+            indexer=self.object_indexer,
             singular=True,
             resolver=self.duplicate_object_exception_resolver,
             registerName='rules'

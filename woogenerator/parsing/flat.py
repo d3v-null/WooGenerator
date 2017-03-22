@@ -1,6 +1,6 @@
 
 from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
-from woogenerator.parsing.abstract import CSVParse_Base, ImportObject, ObjList
+from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 
 usrs_per_file = 1000
 
@@ -9,7 +9,7 @@ class ImportFlat(ImportObject):
     pass
 
 
-class CSVParse_Flat(CSVParse_Base):
+class CSVParse_Flat(CsvParseBase):
     objectContainer = ImportFlat
     # def __init__(self, cols, defaults):
     #     super(CSVParse_Flat, self).__init__(cols, defaults)
@@ -80,7 +80,7 @@ class CSVParse_Special(CSVParse_Flat):
         cols = listUtils.combine_lists(cols, extra_cols)
 
         super(CSVParse_Special, self).__init__(cols, defaults)
-        self.objectIndexer = self.get_object_id
+        self.object_indexer = self.get_object_id
 
     @classmethod
     def get_object_id(self, object_data):

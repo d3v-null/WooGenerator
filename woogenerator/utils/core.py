@@ -1040,7 +1040,7 @@ class Registrar(object):
     messages = OrderedDict()
     errors = OrderedDict()
     warnings = OrderedDict()
-    objectIndexer = id
+    object_indexer = id
     DEBUG_ERROR = True
     DEBUG_WARN = True
     DEBUG_MESSAGE = False
@@ -1070,7 +1070,7 @@ class Registrar(object):
     DEBUG_USR = False
 
     # def __init__(self):
-    # self.objectIndexer = id
+    # self.object_indexer = id
     # self.conflict_resolver = self.passive_resolver
     # self.Registrar.DEBUG_ERROR = True
     # self.Registrar.DEBUG_WARN = False
@@ -1135,7 +1135,7 @@ class Registrar(object):
         if resolver is None:
             resolver = self.conflict_resolver
         if indexer is None:
-            indexer = self.objectIndexer
+            indexer = self.object_indexer
         index = None
         try:
             if callable(indexer):

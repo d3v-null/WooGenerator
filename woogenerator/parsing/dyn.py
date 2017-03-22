@@ -7,7 +7,7 @@ from copy import copy
 
 from woogenerator.utils import listUtils, descriptorUtils, ValidationUtils, PHPUtils, SanitationUtils
 from woogenerator.parsing.abstract import ObjList
-from woogenerator.parsing.tree import CSVParse_Tree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
+from woogenerator.parsing.tree import CsvParseTree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 
 
 class ImportDynObject(ImportTreeObject):
@@ -239,7 +239,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         return html.encode('UTF-8')
 
 
-class CSVParse_Dyn(CSVParse_Tree):
+class CSVParse_Dyn(CsvParseTree):
 
     itemContainer = ImportDynRuleLine
     taxoContainer = ImportDynRule

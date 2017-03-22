@@ -5,27 +5,27 @@ import re
 
 from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, descriptorUtils
 from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.abstract import ObjList, CSVParse_Base
+from woogenerator.parsing.abstract import ObjList, CsvParseBase
 from woogenerator.parsing.tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
 from woogenerator.parsing.gen import CSVParse_Gen_Tree, CSVParse_Gen_Mixin
 from woogenerator.parsing.gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
 from woogenerator.parsing.shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
 from woogenerator.parsing.shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from woogenerator.parsing.shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin, ShopObjList
+from woogenerator.parsing.shop import ImportShopCategoryMixin, CsvParseShopMixin, ShopObjList
 from woogenerator.parsing.flat import CSVParse_Flat, ImportFlat
 from woogenerator.parsing.special import ImportSpecialGroup
 
 
 class WooProdList(ItemList):
-    reportCols = ColData_Woo.get_product_cols()
+    report_cols = ColData_Woo.get_product_cols()
 
 
 class WooCatList(TaxoList):
-    reportCols = ColData_Woo.get_category_cols()
+    report_cols = ColData_Woo.get_category_cols()
 
 
 class WooVarList(ItemList):
-    reportCols = ColData_Woo.get_variation_cols()
+    report_cols = ColData_Woo.get_variation_cols()
 
 
 class ImportWooMixin(object):
@@ -281,7 +281,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
         return None
 
     @property
-    def wooCatName(self):
+    def woo_cat_name(self):
         cat_layers = self.namesum.split(' > ')
         return cat_layers[-1]
 
@@ -296,21 +296,21 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
             self.codesum,
             'r:%s' % str(self.rowcount),
             'w:%s' % str(self.get(self.wpidKey)),
-            self.wooCatName,
+            self.woo_cat_name,
         ])
 
     @property
     def title(self):
-        return self.wooCatName
+        return self.woo_cat_name
     #
     # def __getitem__(self, key):
     #     if key == self.titleKey:
-    #         return self.wooCatName
+    #         return self.woo_cat_name
     #     else:
     #         return super(ImportWooCategory, self).__getitem__(key)
 
 
-class CSVParse_Woo_Mixin(object):
+class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """
     objectContainer = ImportWooObject
 
@@ -357,7 +357,7 @@ class CSVParse_Woo_Mixin(object):
             self.objectContainer.slugKey: '',
             self.objectContainer.titleKey: ''
         }
-        # super_data = super(CSVParse_Woo_Mixin, self).get_parser_data(**kwargs)
+        # super_data = super(CsvParseWooMixin, self).get_parser_data(**kwargs)
         # defaults.update(super_data)
         # if self.DEBUG_PARSER:
         # self.register_message("PARSER DATA: %s" % repr(defaults))
@@ -370,7 +370,7 @@ class CSVParse_Woo_Mixin(object):
         pass
 
 
-class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
+class CSVParse_Woo(CSVParse_Gen_Tree, CsvParseShopMixin, CsvParseWooMixin):
     objectContainer = ImportWooObject
     itemContainer = ImportWooItem
     productContainer = ImportWooProduct
@@ -480,8 +480,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         if self.DEBUG_MRO:
             self.register_message(' ')
         CSVParse_Gen_Tree.clear_transients(self)
-        CSVParse_Shop_Mixin.clear_transients(self)
-        CSVParse_Woo_Mixin.clear_transients(self)
+        CsvParseShopMixin.clear_transients(self)
+        CsvParseWooMixin.clear_transients(self)
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
@@ -490,7 +490,7 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
 
     def register_object(self, object_data):
         CSVParse_Gen_Tree.register_object(self, object_data)
-        CSVParse_Shop_Mixin.register_object(self, object_data)
+        CsvParseShopMixin.register_object(self, object_data)
 
     def get_parser_data(self, **kwargs):
         if self.DEBUG_MRO:
@@ -499,8 +499,8 @@ class CSVParse_Woo(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
         for base_class in reversed(CSVParse_Woo.__bases__):
             if hasattr(base_class, 'get_parser_data'):
                 super_data.update(base_class.get_parser_data(self, **kwargs))
-        # super_data = CSVParse_Woo_Mixin.get_parser_data(self, **kwargs)
-        # super_data.update(CSVParse_Shop_Mixin.get_parser_data(self, **kwargs))
+        # super_data = CsvParseWooMixin.get_parser_data(self, **kwargs)
+        # super_data.update(CsvParseShopMixin.get_parser_data(self, **kwargs))
         # super_data.update(CSVParse_Gen_Tree.get_parser_data(self, **kwargs))
         if self.DEBUG_PARSER:
             self.register_message("PARSER DATA: %s" % repr(super_data))

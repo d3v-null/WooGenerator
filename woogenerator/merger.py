@@ -2,7 +2,6 @@
 """ Module for updating woocommerce and ACT databases from ACT import file. """
 # TODO: Fix too-many-lines
 
-import argparse
 import io
 import os
 import re
@@ -13,10 +12,12 @@ from bisect import insort
 from collections import OrderedDict
 from pprint import pprint
 
+import argparse
 import unicodecsv
 import yaml
-from __init__ import MODULE_LOCATION, MODULE_PATH
 from sshtunnel import check_address
+
+from __init__ import MODULE_LOCATION, MODULE_PATH
 from woogenerator.coldata import ColData_User
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
@@ -45,6 +46,8 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     """
     # TODO: fix too-many-branches,too-many-locals
     # TODO: implement override_args
+    if override_args:
+        pass
 
     ### OVERRIDE CONFIG WITH YAML FILE ###
 

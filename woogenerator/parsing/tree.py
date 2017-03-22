@@ -5,7 +5,7 @@ Classes that add the concept of heirarchy to the CSVParse classes and correspond
 from collections import OrderedDict
 from pprint import pformat
 from woogenerator.utils import Registrar
-from woogenerator.parsing.abstract import CSVParse_Base, ImportObject, ObjList
+from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 
 
 class ImportTreeRootableMixin(object):
@@ -390,14 +390,14 @@ class ImportStack(list):
         return ImportStack(self[:])
 
 
-class CSVParse_Tree_Mixin(object):
+class CsvParseTreeMixin(object):
     rootContainer = ImportTreeRoot
 
     def clear_transients(self):
         self.rootData = self.rootContainer()
 
 
-class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
+class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     objectContainer = ImportTreeObject
     itemContainer = ImportTreeItem
     taxoContainer = ImportTreeTaxo
@@ -405,14 +405,14 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     def __init__(self, cols, defaults, taxoDepth,
                  itemDepth, meta_width, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('CSVParse_Tree')
+            self.register_message('CsvParseTree')
         self.taxoDepth = taxoDepth
         self.itemDepth = itemDepth
         # self.maxDepth  = taxoDepth + itemDepth
         self.meta_width = meta_width
         self.itemIndexer = self.get_object_rowcount
         self.taxoIndexer = self.get_object_rowcount
-        super(CSVParse_Tree, self).__init__(cols, defaults, **kwargs)
+        super(CsvParseTree, self).__init__(cols, defaults, **kwargs)
 
         # if self.DEBUG_TREE:
         #     print "TREE initializing: "
@@ -427,9 +427,9 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
     def clear_transients(self):
         if self.DEBUG_MRO:
-            self.register_message('CSVParse_Tree')
-        CSVParse_Base.clear_transients(self)
-        CSVParse_Tree_Mixin.clear_transients(self)
+            self.register_message('CsvParseTree')
+        CsvParseBase.clear_transients(self)
+        CsvParseTreeMixin.clear_transients(self)
         self.items = OrderedDict()
         self.taxos = OrderedDict()
         self.stack = ImportStack()
@@ -460,7 +460,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
 
     def register_object(self, object_data):
         assert isinstance(object_data, ImportTreeObject)
-        super(CSVParse_Tree, self).register_object(object_data)
+        super(CsvParseTree, self).register_object(object_data)
         if self.DEBUG_MRO:
             self.register_message(' ')
         if object_data.isItem:
@@ -469,8 +469,8 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
             self.register_taxo(object_data)
 
     # def register_object(self, object_data):
-    #     CSVParse_Base.register_object(self, object_data)
-    #     CSVParse_Tree_Mixin.register_object(self, object_data)
+    #     CsvParseBase.register_object(self, object_data)
+    #     CsvParseTreeMixin.register_object(self, object_data)
 
         # self.register_message("ceated root: %s" % str(self.rootData))
 
@@ -511,12 +511,12 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         return depth >= self.taxoDepth and depth < self.maxDepth
 
     def get_new_obj_container(self, all_data, **kwargs):
-        container = super(CSVParse_Tree, self).get_new_obj_container(
+        container = super(CsvParseTree, self).get_new_obj_container(
             all_data, **kwargs)
         if self.DEBUG_MRO:
             self.register_message(' ')
         depth = kwargs['depth']
-        assert depth is not None, "depth should be available to CSVParse_Tree.get_new_obj_container"
+        assert depth is not None, "depth should be available to CsvParseTree.get_new_obj_container"
         if self.is_taxo_depth(depth):
             container = self.taxoContainer
         else:
@@ -527,7 +527,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         return container
 
     def get_kwargs(self, all_data, container, **kwargs):
-        kwargs = super(CSVParse_Tree, self).get_kwargs(
+        kwargs = super(CsvParseTree, self).get_kwargs(
             all_data, container, **kwargs)
         assert issubclass(container, ImportTreeObject)
 
@@ -618,7 +618,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
     #     #     self.register_message("parent: {}".format(parent))
     #     # kwargs['parent'] = parent
     #
-        return super(CSVParse_Tree, self).new_object(rowcount, **kwargs)
+        return super(CsvParseTree, self).new_object(rowcount, **kwargs)
 
     def refresh_stack(self, rowcount, row, thisDepth):
         try:
@@ -649,7 +649,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         assert oldstack == self.stack, 'self.stack (%s) is inconsistent with %s' % (
             oldstack.display(), self.stack.display())
         self.stack.append(object_data)
-        super(CSVParse_Tree, self).process_object(object_data)
+        super(CsvParseTree, self).process_object(object_data)
 
     def verify_item(self, itemData):
         index = self.itemIndexer(itemData)
@@ -659,7 +659,7 @@ class CSVParse_Tree(CSVParse_Base, CSVParse_Tree_Mixin):
         assert item_id == lookup_id, "item has deviated from its place in items"
 
     # def analyse_file(self, file_name):
-    #     super(CSVParse_Tree, self).analyse_file(file_name)
+    #     super(CsvParseTree, self).analyse_file(file_name)
 
     def find_taxo(self, taxoData):
         response = None

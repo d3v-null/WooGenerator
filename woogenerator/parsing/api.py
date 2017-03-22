@@ -1,23 +1,21 @@
-"""Introduces woo api structure to shop classes"""
+"""
+Introduce woo api structure to shop classes.
+"""
 from collections import OrderedDict
-import bisect
-import time
 from pprint import pformat
 
-from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, PHPUtils
-from woogenerator.utils import Registrar, descriptorUtils
 from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.abstract import ObjList, CSVParse_Base
-from woogenerator.parsing.tree import ItemList, TaxoList, ImportTreeObject
-from woogenerator.parsing.tree import CSVParse_Tree, CSVParse_Tree_Mixin
-from woogenerator.parsing.gen import CSVParse_Gen_Tree, ImportGenItem
-from woogenerator.parsing.gen import ImportGenTaxo, ImportGenObject
-from woogenerator.parsing.gen import ImportGenObject, CSVParse_Gen_Mixin
-from woogenerator.parsing.shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
-from woogenerator.parsing.shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from woogenerator.parsing.shop import ImportShopCategoryMixin, CSVParse_Shop_Mixin
-from woogenerator.parsing.flat import CSVParse_Flat, ImportFlat
-from woogenerator.parsing.woo import CSVParse_Woo_Mixin, ImportWooMixin
+from woogenerator.parsing.abstract import CsvParseBase
+from woogenerator.parsing.tree import CsvParseTreeMixin
+from woogenerator.parsing.gen import ImportGenObject
+from woogenerator.parsing.shop import (CsvParseShopMixin,
+                                       ImportShopCategoryMixin,
+                                       ImportShopMixin, ImportShopProductMixin,
+                                       ImportShopProductSimpleMixin,
+                                       ImportShopProductVariableMixin,
+                                       ImportShopProductVariationMixin)
+from woogenerator.parsing.woo import CsvParseWooMixin, ImportWooMixin
+from woogenerator.utils import Registrar, SanitationUtils
 
 
 class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
@@ -28,7 +26,7 @@ class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
-        self.category_indexer = CSVParse_Woo_Mixin.get_title
+        self.category_indexer = CsvParseWooMixin.get_title
 
     @property
     def index(self):
@@ -101,7 +99,7 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
         ImportShopCategoryMixin.__init__(self, *args, **kwargs)
 
     @property
-    def wooCatName(self):
+    def woo_cat_name(self):
         return self.title
 
     @property
@@ -110,21 +108,14 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
 
     @property
     def identifier(self):
-        # identifier = super(ImportApiObject, self).identifier
         return "|".join([
             'r:%s' % str(self.rowcount),
             'w:%s' % str(self.get(self.wpidKey)),
             self.title,
         ])
 
-# class CSVParse_Woo_Api(CSVParse_Flat, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin, CSVParse_Tree_Mixin):
-# class CSVParse_Woo_Api(CSVParse_Gen_Tree, CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
-# class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Shop_Mixin,
-# CSVParse_Woo_Mixin):
-
-
-class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
-                       CSVParse_Shop_Mixin, CSVParse_Woo_Mixin):
+class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
+                       CsvParseShopMixin, CsvParseWooMixin):
     objectContainer = ImportApiObject
     productContainer = ImportApiProduct
     simpleContainer = ImportApiProductSimple
@@ -132,18 +123,18 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
     variationContainer = ImportApiProductVariation
     categoryContainer = ImportApiCategory
     # category_indexer = CSVParse_Gen_Mixin.get_name_sum
-    # category_indexer = CSVParse_Woo_Mixin.get_title
-    # category_indexer = CSVParse_Woo_Mixin.get_wpid
-    category_indexer = CSVParse_Base.get_object_rowcount
-    productIndexer = CSVParse_Shop_Mixin.productIndexer
-    variationIndexer = CSVParse_Woo_Mixin.get_title
+    # category_indexer = CsvParseWooMixin.get_title
+    # category_indexer = CsvParseWooMixin.get_wpid
+    category_indexer = CsvParseBase.get_object_rowcount
+    productIndexer = CsvParseShopMixin.productIndexer
+    variationIndexer = CsvParseWooMixin.get_title
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.register_message('CSVParse_Woo_Api')
         super(CSVParse_Woo_Api, self).__init__(*args, **kwargs)
         # self.category_indexer = CSVParse_Gen_Mixin.get_name_sum
-        # if hasattr(CSVParse_Woo_Mixin, '__init__'):
+        # if hasattr(CsvParseWooMixin, '__init__'):
         #     CSVParse_Gen_Mixin.__init__(self, *args, **kwargs)
 
     def clear_transients(self):
@@ -151,20 +142,20 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         #     if hasattr(base_class, 'clear_transients'):
         #         base_class.clear_transients(self)
         # CSVParse_Flat.clear_transients(self)
-        CSVParse_Base.clear_transients(self)
-        CSVParse_Tree_Mixin.clear_transients(self)
-        CSVParse_Shop_Mixin.clear_transients(self)
-        CSVParse_Woo_Mixin.clear_transients(self)
+        CsvParseBase.clear_transients(self)
+        CsvParseTreeMixin.clear_transients(self)
+        CsvParseShopMixin.clear_transients(self)
+        CsvParseWooMixin.clear_transients(self)
 
         # super(CSVParse_Woo_Api, self).clear_transients()
-        # CSVParse_Shop_Mixin.clear_transients(self)
+        # CsvParseShopMixin.clear_transients(self)
 
     def register_object(self, object_data):
         # CSVParse_Gen_Tree.register_object(self, object_data)
-        CSVParse_Base.register_object(self, object_data)
-        # CSVParse_Tree_Mixin.register_object(self, object_data)
-        CSVParse_Shop_Mixin.register_object(self, object_data)
-        # CSVParse_Woo_Mixin.register_object(self, object_data)
+        CsvParseBase.register_object(self, object_data)
+        # CsvParseTreeMixin.register_object(self, object_data)
+        CsvParseShopMixin.register_object(self, object_data)
+        # CsvParseWooMixin.register_object(self, object_data)
 
     # def process_object(self, object_data):
         # super(CSVParse_Woo_Api, self).process_object(object_data)
@@ -199,7 +190,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
     def process_api_category(self, categoryApiData, object_data=None):
         """
         Create category if not exist or find if exist, then assign object_data to category
-        Has to emulate CSVParse_Base.new_object()
+        Has to emulate CsvParseBase.new_object()
         """
         if self.DEBUG_API:
             category_title = categoryApiData.get('title', '')
@@ -456,7 +447,7 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         return parser_data
 
     def get_kwargs(self, all_data, container, **kwargs):
-        if not 'parent' in kwargs:
+        if 'parent' not in kwargs:
             kwargs['parent'] = self.rootData
         return kwargs
 
@@ -485,6 +476,9 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
         return container
 
     def analyse_wp_api_obj(self, api_data):
+        """
+        Analyse an object from the wp api.
+        """
         if self.DEBUG_API:
             self.register_message("API DATA CATEGORIES: %s" %
                                   repr(api_data.get('categories')))
@@ -521,20 +515,23 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
             self.process_api_attributes(
                 object_data, api_data['attributes'], False)
 
-    def analyse_wp_api_variation(self, object_data, variationApiData):
+    def analyse_wp_api_variation(self, object_data, variation_api_data):
+        """
+        Analyse a variation of an object from the wp_api.
+        """
         if self.DEBUG_API:
             self.register_message("parent_data: %s" %
                                   pformat(object_data.items()))
-            self.register_message("variationApiData: %s" %
-                                  pformat(variationApiData))
+            self.register_message("variation_api_data: %s" %
+                                  pformat(variation_api_data))
         default_var_data = dict(
             type='variation',
             title='Variation #%s of %s' % (
-                variationApiData.get('id'), object_data.title),
+                variation_api_data.get('id'), object_data.title),
             description=object_data.get('descsum'),
             parent_id=object_data.get('ID')
         )
-        default_var_data.update(**variationApiData)
+        default_var_data.update(**variation_api_data)
         if self.DEBUG_API:
             self.register_message("default_var_data: %s" %
                                   pformat(default_var_data))
@@ -560,6 +557,6 @@ class CSVParse_Woo_Api(CSVParse_Base, CSVParse_Tree_Mixin,
 
         self.rowcount += 1
 
-        if 'attributes' in variationApiData:
+        if 'attributes' in variation_api_data:
             self.process_api_attributes(
-                object_data, variationApiData['attributes'], True)
+                object_data, variation_api_data['attributes'], True)

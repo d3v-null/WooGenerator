@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 from woogenerator.utils import descriptorUtils, SanitationUtils, Registrar
 from woogenerator.coldata import ColData_Prod, ColData_Woo
-from woogenerator.parsing.abstract import CSVParse_Base, ImportObject, ObjList
+from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 from woogenerator.parsing.tree import ItemList, TaxoList
 from woogenerator.parsing.gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
 from woogenerator.parsing.gen import ImportGenMixin, ImportGenObject
@@ -16,7 +16,7 @@ from woogenerator.parsing.gen import ImportGenMixin, ImportGenObject
 class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
-    reportCols = ColData_Prod.get_report_cols()
+    report_cols = ColData_Prod.get_report_cols()
 
     def append(self, object_data):
         assert issubclass(object_data.__class__, ImportShopMixin), \
@@ -28,7 +28,7 @@ class ShopProdList(ItemList):
 
 
 class ShopCatList(ItemList):
-    reportCols = ColData_Prod.get_report_cols()
+    report_cols = ColData_Prod.get_report_cols()
 
 
 class ShopObjList(ObjList):
@@ -341,7 +341,7 @@ class ImportShopCategoryMixin(object):
     #     return '|'.join([d for d in [delim, self.namesum] ])
 
 
-class CSVParse_Shop_Mixin(object):
+class CsvParseShopMixin(object):
     """
     Mixin class provides shop interface for Parser classes
     """
@@ -382,7 +382,7 @@ class CSVParse_Shop_Mixin(object):
     def clear_transients(self):
         if Registrar.DEBUG_MRO:
             Registrar.register_message(' ')
-        # super(CSVParse_Shop_Mixin,self).clear_transients()
+        # super(CsvParseShopMixin,self).clear_transients()
         self.products = OrderedDict()
         self.categories = OrderedDict()
         self.attributes = OrderedDict()
@@ -424,7 +424,7 @@ class CSVParse_Shop_Mixin(object):
     def register_object(self, object_data):
         if Registrar.DEBUG_MRO:
             Registrar.register_message(' ')
-        # super(CSVParse_Shop_Mixin, self).register_object(object_data)
+        # super(CsvParseShopMixin, self).register_object(object_data)
         if issubclass(type(object_data), ImportShopProductMixin):
             if issubclass(type(object_data), ImportShopProductVariationMixin):
                 assert \
@@ -458,7 +458,7 @@ class CSVParse_Shop_Mixin(object):
         self.register_anything(
             cat_data,
             self.categories_name,
-            indexer=cat_data.wooCatName,
+            indexer=cat_data.woo_cat_name,
             singular=False
         )
 
