@@ -22,7 +22,7 @@ out_folder = "../output/"
 logFolder = "../logs/"
 srcFolder = "../source"
 
-yamlPath = "generator_config.yaml"
+yaml_path = "generator_config.yaml"
 
 thumbsize = 1920, 1200
 
@@ -30,7 +30,7 @@ import_name = time.strftime("%Y-%m-%d %H:%M:%S")
 
 ### Process YAML file ###
 
-with open(yamlPath) as stream:
+with open(yaml_path) as stream:
     config = yaml.load(stream)
     # overrides
     if 'in_folder' in config.keys():

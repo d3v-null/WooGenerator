@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
 """ Provides GUI for syncing products and customers """
+import contextlib
+import logging
 import os
 import sys
-import logging
 import traceback
+from collections import OrderedDict, namedtuple
 from copy import deepcopy
-# from pprint import pprint
 from pprint import pformat
-import contextlib
-from collections import namedtuple, OrderedDict
-from utils import overrides
-import generator
-import merger
 
 import npyscreen
-# from npyscreen import NPSAppManaged
-# from npyscreen import Form, AProductsFormctionForm
-# from npyscreen import TitleText, TitleSelectOne, MultiLine, MultiLineEdit
+from woogenerator import generator, merger
+from woogenerator.utils import overrides
 
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
 logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
@@ -434,8 +429,7 @@ class FormSwitcher(npyscreen.MultiLineAction):
         kwargs.update(
             values=self.form_options.keys()
         )
-        self._activeFormName = kwargs.get(
-            'value')  # pylint: disable=invalid-name
+        self._activeFormName = kwargs.get('value')  # pylint: disable=invalid-name
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):
@@ -547,6 +541,8 @@ def main():
     if wg_app.command_script == 'generator.py':
         print "running generator with args: %s" % wg_app.command_args
         generator.main(override_args=wg_app.command_args)
+    if wg_app.command_script == 'merger.py':
+        merger.main(override_args=wg_app.command_args)
 
 
 if __name__ == "__main__":

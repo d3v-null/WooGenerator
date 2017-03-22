@@ -15,9 +15,9 @@ from woogenerator.contact_objects import FieldGroup
 
 class test_sanitation_utils(TestCase):
     # def setUp(self):
-    #     yamlPath = "source/merger_config.yaml"
+    #     yaml_path = "source/merger_config.yaml"
     #
-    #     with open(yamlPath) as stream:
+    #     with open(yaml_path) as stream:
     #         config = yaml.load(stream)
 
     def test_similarURL(self):

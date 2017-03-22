@@ -1,14 +1,13 @@
-# from __future__ import absolute_import
-import sys
-import os
+"""
+Container objects for storing contact data
+"""
 
-from utils import SanitationUtils, AddressUtils, NameUtils, listUtils
-from utils import descriptorUtils, Registrar
-# from pprint import pprint
 from collections import OrderedDict
-from tabulate import tabulate
 from copy import deepcopy
 
+from tabulate import tabulate
+from woogenerator.utils import (AddressUtils, NameUtils, Registrar,
+                                SanitationUtils, descriptorUtils, listUtils)
 
 STRICT_ADDRESS = False
 STRICT_ADDRESS = True

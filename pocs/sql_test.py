@@ -9,10 +9,10 @@ from collections import OrderedDict
 
 srcFolder = "../source/"
 in_folder = "../input/"
-yamlPath = "merger_config.yaml"
+yaml_path = "merger_config.yaml"
 import_name = time.strftime("%Y-%m-%d %H:%M:%S")
 
-with open(yamlPath) as stream:
+with open(yaml_path) as stream:
     config = yaml.load(stream)
 
     ssh_user = config.get('ssh_user')
@@ -31,7 +31,7 @@ sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 
 col_data = ColData_User()
 
-saRows = []
+sa_rows = []
 
 with \
     SSHTunnelForwarder(
@@ -74,15 +74,15 @@ with \
     # headers = wpCols.keys() + ['ID', 'user_id', 'updated']
     headers = [i[0] for i in cursor.description]
     # print headers
-    saRows = [headers] + list(cursor.fetchall())
+    sa_rows = [headers] + list(cursor.fetchall())
 
-# print saRows
+# print sa_rows
 
 saParser = CSVParse_User(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults()
 )
-if saRows:
-    saParser.analyse_rows(saRows)
+if sa_rows:
+    saParser.analyse_rows(sa_rows)
 
 print saParser.tabulate()

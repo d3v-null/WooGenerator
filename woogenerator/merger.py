@@ -34,16 +34,17 @@ from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
 
 def timediff(settings):
     """
-    return the difference in time since the start time according to settings
+    Return the difference in time since the start time according to settings.
     """
     return time.time() - settings.start_time
 
 
-def main(settings):  # pylint: disable=too-many-branches,too-many-locals
+def main(settings, override_args=None):  # pylint: disable=too-many-branches,too-many-locals
     """
-    Using the settings object, attempt to perform the specified functions
+    Use settings object to load config file and detect changes in wordpress.
     """
     # TODO: fix too-many-branches,too-many-locals
+    # TODO: implement override_args
 
     ### OVERRIDE CONFIG WITH YAML FILE ###
 
@@ -1445,7 +1446,7 @@ def main(settings):  # pylint: disable=too-many-branches,too-many-locals
 
 def catch_main():
     """
-    Run the main function within a try statement and attempt to analyse failure
+    Run the main function within a try statement and attempt to analyse failure.
     """
 
     settings = argparse.Namespace()

@@ -15,7 +15,7 @@ from woogenerator.utils import TimeUtils, Registrar
 
 @skip('no config file yet')
 class testUsrSyncClient(abstractSyncClientTestCase):
-    # yamlPath = "merger_config.yaml"
+    # yaml_path = "merger_config.yaml"
     optionNamePrefix = 'test_'
     # optionNamePrefix = 'dummy_'
 

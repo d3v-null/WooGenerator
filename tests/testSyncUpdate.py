@@ -17,18 +17,18 @@ from woogenerator.contact_objects import FieldGroup
 class testSyncUpdate_Usr(TestCase):
 
     def setUp(self):
-        # yamlPath = "source/merger_config.yaml"
-        yamlPath = os.path.join(tests_datadir, "generator_config_test.yaml")
+        # yaml_path = "source/merger_config.yaml"
+        yaml_path = os.path.join(tests_datadir, "generator_config_test.yaml")
 
-        with open(yamlPath) as stream:
+        with open(yaml_path) as stream:
             config = yaml.load(stream)
             merge_mode = config.get('merge_mode', 'sync')
-            MASTER_NAME = config.get('master_name', 'MASTER')
-            SLAVE_NAME = config.get('slave_name', 'SLAVE')
-            DEFAULT_LAST_SYNC = config.get('default_last_sync')
+            master_name = config.get('master_name', 'MASTER')
+            slave_name = config.get('slave_name', 'SLAVE')
+            default_last_sync = config.get('default_last_sync')
 
         SyncUpdate_Usr.set_globals(
-            MASTER_NAME, SLAVE_NAME, merge_mode, DEFAULT_LAST_SYNC)
+            master_name, slave_name, merge_mode, default_last_sync)
 
         # FieldGroup.performPost = True
         # FieldGroup.DEBUG_WARN = True

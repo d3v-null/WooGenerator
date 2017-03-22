@@ -1,0 +1,113 @@
+************* Module woogenerator.coldata
+************* Module woogenerator.contact_objects
+W:  2, 0: Unused import sys (unused-import)
+W:  3, 0: Unused import os (unused-import)
+************* Module woogenerator.duplicates
+************* Module woogenerator.generator
+************* Module woogenerator.gui
+W: 14, 0: Unused import merger (unused-import)
+************* Module woogenerator.matching
+************* Module woogenerator.merger
+************* Module woogenerator.metagator
+************* Module woogenerator.sync_client
+************* Module woogenerator.sync_client_prod
+************* Module woogenerator.sync_client_user
+************* Module woogenerator.syncupdate
+************* Module woogenerator.uniqid
+************* Module woogenerator.wp_changes
+W:  5, 0: Unused TimeUtils imported from utils (unused-import)
+W:  6, 0: Unused MatchList imported from matching (unused-import)
+W:  6, 0: Unused UsernameMatcher imported from matching (unused-import)
+W:  6, 0: Unused NocardEmailMatcher imported from matching (unused-import)
+W:  6, 0: Unused CardMatcher imported from matching (unused-import)
+W:  6, 0: Unused Match imported from matching (unused-import)
+W:  7, 0: Unused UsrObjList imported from parsing.flat (unused-import)
+W:  7, 0: Unused CSVParse_User imported from parsing.flat (unused-import)
+W:  8, 0: Unused ContactAddress imported from contact_objects (unused-import)
+W:  9, 0: Unused import codecs (unused-import)
+************* Module woogenerator.parsing
+************* Module woogenerator.parsing.abstract
+************* Module woogenerator.parsing.api
+W:  3, 0: Unused import bisect (unused-import)
+W:  4, 0: Unused import time (unused-import)
+W:  7, 0: Unused listUtils imported from woogenerator.utils (unused-import)
+W:  7, 0: Unused TimeUtils imported from woogenerator.utils (unused-import)
+W:  7, 0: Unused PHPUtils imported from woogenerator.utils (unused-import)
+W:  8, 0: Unused descriptorUtils imported from woogenerator.utils (unused-import)
+W: 10, 0: Unused ObjList imported from woogenerator.parsing.abstract (unused-import)
+W: 11, 0: Unused ImportTreeObject imported from woogenerator.parsing.tree (unused-import)
+W: 11, 0: Unused ItemList imported from woogenerator.parsing.tree (unused-import)
+W: 11, 0: Unused TaxoList imported from woogenerator.parsing.tree (unused-import)
+W: 12, 0: Unused CSVParse_Tree imported from woogenerator.parsing.tree (unused-import)
+W: 13, 0: Unused ImportGenItem imported from woogenerator.parsing.gen (unused-import)
+W: 13, 0: Unused CSVParse_Gen_Tree imported from woogenerator.parsing.gen (unused-import)
+W: 14, 0: Unused ImportGenTaxo imported from woogenerator.parsing.gen (unused-import)
+W: 15, 0: Unused CSVParse_Gen_Mixin imported from woogenerator.parsing.gen (unused-import)
+W: 19, 0: Unused CSVParse_Flat imported from woogenerator.parsing.flat (unused-import)
+W: 19, 0: Unused ImportFlat imported from woogenerator.parsing.flat (unused-import)
+************* Module woogenerator.parsing.dyn
+************* Module woogenerator.parsing.flat
+W:  2, 0: Unused SanitationUtils imported from woogenerator.utils (unused-import)
+W:  3, 0: Unused ObjList imported from woogenerator.parsing.abstract (unused-import)
+************* Module woogenerator.parsing.gen
+W: 14, 0: Unused CSVParse_Base imported from woogenerator.parsing.abstract (unused-import)
+W: 14, 0: Unused ObjList imported from woogenerator.parsing.abstract (unused-import)
+W: 14, 0: Unused ImportObject imported from woogenerator.parsing.abstract (unused-import)
+************* Module woogenerator.parsing.myo
+************* Module woogenerator.parsing.shop
+W:  8, 0: Unused descriptorUtils imported from woogenerator.utils (unused-import)
+W:  9, 0: Unused ColData_Woo imported from woogenerator.coldata (unused-import)
+W: 10, 0: Unused CSVParse_Base imported from woogenerator.parsing.abstract (unused-import)
+W: 10, 0: Unused ImportObject imported from woogenerator.parsing.abstract (unused-import)
+W: 11, 0: Unused TaxoList imported from woogenerator.parsing.tree (unused-import)
+W: 12, 0: Unused ImportGenItem imported from woogenerator.parsing.gen (unused-import)
+W: 12, 0: Unused CSVParse_Gen_Tree imported from woogenerator.parsing.gen (unused-import)
+W: 13, 0: Unused ImportGenMixin imported from woogenerator.parsing.gen (unused-import)
+W: 13, 0: Unused ImportGenObject imported from woogenerator.parsing.gen (unused-import)
+************* Module woogenerator.parsing.special
+************* Module woogenerator.parsing.tree
+W:  6, 0: Unused pformat imported from pprint (unused-import)
+************* Module woogenerator.parsing.user
+************* Module woogenerator.parsing.woo
+W:  3, 0: Unused import time (unused-import)
+W:  8, 0: Unused ObjList imported from woogenerator.parsing.abstract (unused-import)
+W:  8, 0: Unused CSVParse_Base imported from woogenerator.parsing.abstract (unused-import)
+W:  9, 0: Unused ImportTreeObject imported from woogenerator.parsing.tree (unused-import)
+W: 10, 0: Unused CSVParse_Gen_Mixin imported from woogenerator.parsing.gen (unused-import)
+W: 11, 0: Unused ImportGenMixin imported from woogenerator.parsing.gen (unused-import)
+W: 11, 0: Unused ImportGenFlat imported from woogenerator.parsing.gen (unused-import)
+W: 15, 0: Unused CSVParse_Flat imported from woogenerator.parsing.flat (unused-import)
+W: 15, 0: Unused ImportFlat imported from woogenerator.parsing.flat (unused-import)
+************* Module woogenerator.utils
+************* Module woogenerator.utils.clock
+************* Module woogenerator.utils.contact
+W:  2, 0: Unused import functools (unused-import)
+W:  3, 0: Unused import itertools (unused-import)
+W:  6, 0: Unused import time (unused-import)
+W:  7, 0: Unused import sys (unused-import)
+W:  9, 0: Unused import inspect (unused-import)
+W: 10, 0: Unused import json (unused-import)
+W: 12, 0: Unused import codecs (unused-import)
+W: 13, 0: Unused import unicodecsv (unused-import)
+W: 14, 0: Unused import cStringIO (unused-import)
+W: 16, 0: Unused dumps imported from phpserialize (unused-import)
+W: 16, 0: Unused loads imported from phpserialize (unused-import)
+W: 17, 0: Unused converters imported from kitchen.text (unused-import)
+W: 19, 0: Unused import math (unused-import)
+W: 20, 0: Unused import random (unused-import)
+W: 21, 0: Unused import io (unused-import)
+W: 22, 0: Unused import base64 (unused-import)
+W: 23, 0: Unused tracker imported from pympler (unused-import)
+W: 24, 0: Unused import cgi (unused-import)
+W: 25, 0: Unused import os (unused-import)
+W: 26, 0: Unused parse_qs imported from urlparse (unused-import)
+W: 26, 0: Unused urlparse imported from urlparse (unused-import)
+W: 31, 4: Unused HTMLParser imported from HTMLParser (unused-import)
+************* Module woogenerator.utils.core
+W: 12, 0: Unused import codecs (unused-import)
+W: 14, 0: Unused import cStringIO (unused-import)
+W: 21, 0: Unused import io (unused-import)
+W: 23, 0: Unused tracker imported from pympler (unused-import)
+************* Module woogenerator.utils.inheritence
+************* Module woogenerator.utils.reporter
+|unused-import                  |80          |

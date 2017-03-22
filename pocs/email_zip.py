@@ -67,7 +67,7 @@ def send_zipped_file(zipped_file, recipients, sender, connect_params):
 
 srcFolder = "../source/"
 in_folder = "../input/"
-yamlPath = os.path.join(srcFolder, "merger_config.yaml")
+yaml_path = os.path.join(srcFolder, "merger_config.yaml")
 try:
     os.stat('source')
     os.chdir('source')
@@ -77,7 +77,7 @@ except Exception as exc:
     os.chdir(srcFolder)
 print os.getcwd()
 
-with open(yamlPath) as stream:
+with open(yaml_path) as stream:
     config = yaml.load(stream)
 
     smtp_user = config.get('smtp_user')

@@ -21,7 +21,7 @@ from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
 
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
-    # yamlPath = "merger_config.yaml"
+    # yaml_path = "merger_config.yaml"
     optionNamePrefix = 'test_'
 
     def __init__(self, *args, **kwargs):
@@ -42,13 +42,13 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         wp_pass = config.get(self.optionNamePrefix + 'wp_pass')
         wp_callback = config.get(self.optionNamePrefix + 'wp_callback')
         merge_mode = config.get('merge_mode', 'sync')
-        MASTER_NAME = config.get('master_name', 'MASTER')
-        SLAVE_NAME = config.get('slave_name', 'SLAVE')
-        DEFAULT_LAST_SYNC = config.get('default_last_sync')
+        master_name = config.get('master_name', 'MASTER')
+        slave_name = config.get('slave_name', 'SLAVE')
+        default_last_sync = config.get('default_last_sync')
 
         TimeUtils.set_wp_srv_offset(wp_srv_offset)
-        SyncUpdate.set_globals(MASTER_NAME, SLAVE_NAME,
-                               merge_mode, DEFAULT_LAST_SYNC)
+        SyncUpdate.set_globals(master_name, slave_name,
+                               merge_mode, default_last_sync)
 
         self.wpApiParams = {
             'api_key': wp_api_key,

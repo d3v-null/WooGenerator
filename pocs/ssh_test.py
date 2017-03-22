@@ -9,12 +9,12 @@ from itertools import chain
 srcFolder = "../source/"
 in_folder = "../input/"
 remoteExportFolder = "act_usr_exp/"
-yamlPath = "merger_config.yaml"
+yaml_path = "merger_config.yaml"
 
 import_name = TimeUtils.get_ms_timestamp()
 dateStamp = TimeUtils.get_datestamp()
 
-with open(yamlPath) as stream:
+with open(yaml_path) as stream:
     config = yaml.load(stream)
 
     m_ssh_user = config.get('test_m_ssh_user')

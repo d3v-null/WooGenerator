@@ -15,8 +15,8 @@ from woogenerator.utils import Registrar, TimeUtils
 
 
 class abstractSyncClientTestCase(TestCase):
-    # yamlPath = "generator_config.yaml"
-    yamlPath = os.path.join(tests_datadir, 'generator_config_test.yaml')
+    # yaml_path = "generator_config.yaml"
+    yaml_path = os.path.join(tests_datadir, 'generator_config_test.yaml')
     optionNamePrefix = 'test_'
     # optionNamePrefix = ''
 
@@ -25,7 +25,7 @@ class abstractSyncClientTestCase(TestCase):
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
 
-        with open(self.yamlPath) as stream:
+        with open(self.yaml_path) as stream:
             config = yaml.load(stream)
             self.processConfig(config)
 
