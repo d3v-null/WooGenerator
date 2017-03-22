@@ -67,7 +67,6 @@ class SyncUpdate(
         self.important_cols = []
         self.m_deltas = False
         self.s_deltas = False
-
         self.m_time = 0
         self.s_time = 0
         self.b_time = 0
@@ -961,7 +960,6 @@ class SyncUpdateUsr(SyncUpdate):
                         updates = self.get_slave_updates_recursive(
                             alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates
@@ -1126,12 +1124,6 @@ class SyncUpdateProdWoo(SyncUpdateProd):
                     key = col
                     val = self.new_s_object.get(col)
                     updates[key] = val
-            # if data.get('aliases'):
-            #     data_aliases = data.get('aliases')
-            #     for alias in data_aliases:
-            #         if self.s_col_semi_static(alias):
-            #             continue
-            #         updates = self.get_slave_updates_native_rec(alias, updates)
         return updates
 
     def get_slave_updates_recursive(self, col, updates=None):
@@ -1152,17 +1144,7 @@ class SyncUpdateProdWoo(SyncUpdateProd):
                     updates[col] = new_val
                     if self.DEBUG_UPDATE:
                         self.register_message(u"newval: %s" % repr(new_val))
-            # if data.get('aliases'):
-            #     if self.DEBUG_UPDATE: self.register_message( u"has aliases" )
-            #     data_aliases = data['aliases']
-            #     for alias in data_aliases:
-            #         if self.s_col_semi_static(alias):
-            #             if self.DEBUG_UPDATE: self.register_message( u"Alias semistatic" )
-            #             continue
-            #         else:
-            #             updates = self.get_slave_updates_recursive(alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates
@@ -1190,15 +1172,6 @@ class SyncUpdateProdWoo(SyncUpdateProd):
                 updates[col] = new_val
                 if self.DEBUG_UPDATE:
                     self.register_message(u"newval: %s" % repr(new_val))
-            # if data.get('aliases'):
-            #     if self.DEBUG_UPDATE: self.register_message( u"has aliases" )
-            #     data_aliases = data['aliases']
-            #     for alias in data_aliases:
-            #         if self.m_col_semi_static(alias):
-            #             if self.DEBUG_UPDATE: self.register_message( u"Alias semistatic" )
-            #             continue
-            #         else:
-            #             updates = self.get_master_updates_recursive(alias, updates)
         else:
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
@@ -1263,12 +1236,6 @@ class SyncUpdateCatWoo(SyncUpdate):
                     key = col
                     val = self.new_s_object.get(col)
                     updates[key] = val
-            # if data.get('aliases'):
-            #     data_aliases = data.get('aliases')
-            #     for alias in data_aliases:
-            #         if self.s_col_semi_static(alias):
-            #             continue
-            #         updates = self.get_slave_updates_native_rec(alias, updates)
         return updates
 
     def get_slave_updates_recursive(self, col, updates=None):
@@ -1289,15 +1256,6 @@ class SyncUpdateCatWoo(SyncUpdate):
                     updates[col] = new_val
                     if self.DEBUG_UPDATE:
                         self.register_message(u"newval: %s" % repr(new_val))
-            # if data.get('aliases'):
-            #     if self.DEBUG_UPDATE: self.register_message( u"has aliases" )
-            #     data_aliases = data['aliases']
-            #     for alias in data_aliases:
-            #         if self.s_col_semi_static(alias):
-            #             if self.DEBUG_UPDATE: self.register_message( u"Alias semistatic" )
-            #             continue
-            #         else:
-            #             updates = self.get_slave_updates_recursive(alias, updates)
         else:
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
@@ -1326,15 +1284,6 @@ class SyncUpdateCatWoo(SyncUpdate):
                 updates[col] = new_val
                 if self.DEBUG_UPDATE:
                     self.register_message(u"newval: %s" % repr(new_val))
-            # if data.get('aliases'):
-            #     if self.DEBUG_UPDATE: self.register_message( u"has aliases" )
-            #     data_aliases = data['aliases']
-            #     for alias in data_aliases:
-            #         if self.m_col_semi_static(alias):
-            #             if self.DEBUG_UPDATE: self.register_message( u"Alias semistatic" )
-            #             continue
-            #         else:
-            #             updates = self.get_master_updates_recursive(alias, updates)
         else:
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")

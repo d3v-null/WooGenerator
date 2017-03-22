@@ -345,8 +345,8 @@ class CsvParseUser(CsvParseBase):
     objectContainer = ImportUser
 
     def __init__(self,
-                 cols=[],
-                 defaults={},
+                 cols=None,
+                 defaults=None,
                  contact_schema=None,
                  filter_items=None,
                  limit=None,
@@ -368,20 +368,6 @@ class CsvParseUser(CsvParseBase):
             cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
         self.filter_items = filter_items
-        # self.item_indexer = self.getUsername
-
-    # def get_kwargs(self, all_data, container, **kwargs):
-    #     kwargs = super(CsvParseUser, self).get_kwargs(all_data, container, **kwargs)
-    #     for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
-    #         assert kwargs[key] is not None
-    #     return kwargs
-
-    # def new_object(self, rowcount, row, **kwargs):
-    #     for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
-    #         try:
-    #             assert kwargs[key]
-    #         except:
-    #             kwargs[key] = self.retrieve_col_from_row
 
     def clear_transients(self):
         if self.DEBUG_MRO:

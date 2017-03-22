@@ -8,7 +8,7 @@ from core import SanitationUtils
 class HtmlReporter(object):
     """docstring for htmlReporter"""
 
-    class Section:
+    class Section(object):
         data_heading_fmt = "<h3>%s</h3>"
         data_separater = "<hr>"
 
@@ -25,8 +25,10 @@ class HtmlReporter(object):
         def to_html(self):
             section_id = SanitationUtils.make_safe_class(self.classname)
             out = '<div class="section">'
-            out += '<a data-toggle="collapse" href="#{0}" aria-expanded="true" data-target="#{0}" aria-controls="{0}">'.format(
-                section_id)
+            out += ('<a data-toggle="collapse" href="#{0}" aria-expanded="true" '
+                    'data-target="#{0}" aria-controls="{0}">').format(
+                        section_id
+                    )
             out += '<h2>' + self.title + \
                 (' ({})'.format(self.length) if self.length else '') + '</h2>'
             out += '</a>'
@@ -42,7 +44,7 @@ class HtmlReporter(object):
             out = SanitationUtils.coerce_unicode(out)
             return out
 
-    class Group:
+    class Group(object):
 
         def __init__(self, classname, title=None, sections=None):
             if title is None:

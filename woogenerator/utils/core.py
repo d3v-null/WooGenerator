@@ -320,28 +320,28 @@ class SanitationUtils(object):
 
     @classmethod
     def remove_leading_dollar_wspace(cls, string):
-        str_out = re.sub('^\W*\$', '', string)
+        str_out = re.sub(r'^\W*\$', '', string)
         if Registrar.DEBUG_UTILS:
             print "remove_leading_dollar_wspace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def remove_leading_percent_wspace(cls, string):
-        str_out = re.sub('%\W*$', '', string)
+        str_out = re.sub(r'%\W*$', '', string)
         if Registrar.DEBUG_UTILS:
             print "remove_leading_percent_wspace", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def remove_lone_dashes(cls, string):
-        str_out = re.sub('^-$', '', string)
+        str_out = re.sub(r'^-$', '', string)
         if Registrar.DEBUG_UTILS:
             print "remove_lone_dashes", repr(string), repr(str_out)
         return str_out
 
     @classmethod
     def remove_thousands_separator(cls, string):
-        str_out = re.sub(r'(\d+),(\d{3})', '\g<1>\g<2>', string)
+        str_out = re.sub(r'(\d+),(\d{3})', r'\g<1>\g<2>', string)
         if Registrar.DEBUG_UTILS:
             print "remove_thousands_separator", repr(string), repr(str_out)
         return str_out
@@ -653,7 +653,8 @@ class SanitationUtils(object):
     @classmethod
     def find_all_tokens(cls, instring, delim="|"):
         instring = cls.coerce_unicode(instring)
-        return re.findall(r'\s*(\b[^\s.|]+\b)\s*', instring)
+        escaped_delim = re.escape(delim)
+        return re.findall(r'\s*(\b[^\s.%s]+\b)\s*' % escaped_delim, instring)
 
     @classmethod
     def find_all_dollars(cls, instring):
@@ -682,10 +683,10 @@ class SanitationUtils(object):
             instring
         )
 
-    @classmethod
-    def findall_wp_links(cls, string):
-        # todo implement
-        return []
+    # @classmethod
+    # def findall_wp_links(cls, string):
+    #     # TODO: implement
+    #     return []
 
     @classmethod
     def findall_wc_links(cls, string):
@@ -794,8 +795,8 @@ class SanitationUtils(object):
         return json_str
 
     @classmethod
-    def encode_base64(cls, str):
-        utf8_str = cls.coerce_bytes(str)
+    def encode_base64(cls, string):
+        utf8_str = cls.coerce_bytes(string)
         return base64.standard_b64encode(utf8_str)
 
     @classmethod
@@ -989,18 +990,13 @@ class Registrar(object):
     DEBUG_DUPLICATES = False
     DEBUG_USR = False
 
-    # def __init__(self):
-    # self.object_indexer = id
-    # self.conflict_resolver = self.passive_resolver
-    # self.Registrar.DEBUG_ERROR = True
-    # self.Registrar.DEBUG_WARN = False
-    # self.Registrar.DEBUG_MESSAGE = False
-
     @classmethod
-    def conflict_resolver(cls, *args):
+    def conflict_resolver(cls, *_):
         pass
 
-    def resolve_conflict(self, new, old, index, register_name=''):
+    def resolve_conflict(self, new, _, index, register_name=''):
+        if new:
+            pass
         self.register_error(
             "Object [index: %s] already exists in register %s" % (index, register_name))
 
@@ -1020,13 +1016,12 @@ class Registrar(object):
         pass
 
     @classmethod
-    def exception_resolver(cls, new, old, index, register_name=''):
+    def exception_resolver(cls, new, _, index, register_name=''):
         raise Exception("could not register %s in %s. \nDuplicate index: %s" % (
             str(new), register_name, index))
 
     @classmethod
-    def duplicate_obj_exc_resolver(
-            cls, new, old, index, register_name=''):
+    def duplicate_obj_exc_resolver(cls, new, old, index, register_name=''):
         assert hasattr(
             new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
         assert hasattr(
@@ -1034,7 +1029,7 @@ class Registrar(object):
         raise Exception(
             ("could not register %s in %s. \n"
              "Duplicate index: %s appears in rowcounts %s and %s"
-             ) % (
+            ) % (
                 str(new), register_name, index, new.rowcount, old.rowcount
             )
         )

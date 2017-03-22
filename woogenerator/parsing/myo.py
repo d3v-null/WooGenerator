@@ -5,7 +5,6 @@ from woogenerator.utils import SeqUtils, SanitationUtils
 from woogenerator.coldata import ColDataMyo
 from woogenerator.parsing.gen import CsvParseGenTree
 from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
-# from woogenerator.parsing.abstract import ObjList
 
 
 class CsvParseMyo(CsvParseGenTree):
@@ -17,8 +16,16 @@ class CsvParseMyo(CsvParseGenTree):
             'Y': self.productContainer
         }
 
-    def __init__(self, cols={}, defaults={}, schema='MY', import_name="",
-                 taxo_subs={}, item_subs={}, taxo_depth=3, item_depth=2, meta_width=2):
+    def __init__(self, cols=None, defaults=None, schema='MY', import_name="",
+                 taxo_subs=None, item_subs=None, taxo_depth=3, item_depth=2, meta_width=2):
+        if defaults is None:
+            defaults = {}
+        if cols is None:
+            cols = {}
+        if taxo_subs is None:
+            taxo_subs = {}
+        if item_subs is None:
+            item_subs = {}
         if self.DEBUG_MRO:
             self.register_message(' ')
         extra_cols = ['WNRC', 'RNRC', 'HTML Description']
