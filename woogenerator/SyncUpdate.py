@@ -304,7 +304,6 @@ class SyncUpdate(
             self.sync_problematics[col] = []
         self.sync_problematics[col].append(update_params)
         self.register_warning(self.update_to_str('PROB', update_params))
-        # self.register_warning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
     def add_sync_warning(self, **update_params):
         for key in ['col', 'subject', 'reason']:
@@ -316,7 +315,6 @@ class SyncUpdate(
         self.sync_warnings[col].append(update_params)
         if self.DEBUG_UPDATE:
             self.register_warning(self.update_to_str('WARN', update_params))
-        # self.register_warning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
     def add_sync_pass(self, **update_params):
         for key in ['col']:
@@ -327,52 +325,51 @@ class SyncUpdate(
         self.sync_passes[col].append(update_params)
         if self.DEBUG_UPDATE:
             self.register_warning(self.update_to_str('PASS', update_params))
-        # if self.DEBUG_UPDATE: self.register_message("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
     def display_update_list(self, update_list, tablefmt=None):
-        if update_list:
-            delimeter = "<br/>" if tablefmt == "html" else "\n"
-            subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
-            # header = ["Column", "Reason", "Old", "New"]
-            header = OrderedDict([
-                ('col', 'Column'),
-                ('reason', 'Reason'),
-                ('oldLoserValue', 'Old'),
-                ('oldWinnerValue', 'New'),
-                ('mColTime', 'M TIME'),
-                ('sColTime', 'S TIME'),
-            ])
-            subjects = {}
-            for warnings in update_list.values():
-                for warning in warnings:
-                    subject = warning['subject']
-                    if subject not in subjects.keys():
-                        subjects[subject] = []
-                    warning_fmtd = dict([
-                        (key, SanitationUtils.sanitize_for_table(val))
-                        for key, val in warning.items()
-                        if key in header
-                    ])
-                    for key in ['mColTime', 'sColTime']:
-                        try:
-                            raw_time = int(warning[key])
-                            if raw_time:
-                                warning_fmtd[
-                                    key] = TimeUtils.wp_time_to_string(raw_time)
-                        except Exception as exc:
-                            if(exc):
-                                pass
-                    subjects[subject].append(warning_fmtd)
-            tables = []
-            for subject, warnings in subjects.items():
-                anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
-                table = [header] + warnings
-                table_fmtd = tabulate(table, headers='firstrow',
-                                      tablefmt=tablefmt)
-                tables.append(delimeter.join([anti_subject_fmtd, table_fmtd]))
-            return delimeter.join(tables)
-        else:
+        if not update_list:
             return ""
+
+        delimeter = "<br/>" if tablefmt == "html" else "\n"
+        subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
+        # header = ["Column", "Reason", "Old", "New"]
+        header = OrderedDict([
+            ('col', 'Column'),
+            ('reason', 'Reason'),
+            ('oldLoserValue', 'Old'),
+            ('oldWinnerValue', 'New'),
+            ('mColTime', 'M TIME'),
+            ('sColTime', 'S TIME'),
+        ])
+        subjects = {}
+        for warnings in update_list.values():
+            for warning in warnings:
+                subject = warning['subject']
+                if subject not in subjects.keys():
+                    subjects[subject] = []
+                warning_fmtd = dict([
+                    (key, SanitationUtils.sanitize_for_table(val))
+                    for key, val in warning.items()
+                    if key in header
+                ])
+                for key in ['mColTime', 'sColTime']:
+                    try:
+                        raw_time = int(warning[key])
+                        if raw_time:
+                            warning_fmtd[
+                                key] = TimeUtils.wp_time_to_string(raw_time)
+                    except Exception as exc:
+                        if exc:
+                            pass
+                subjects[subject].append(warning_fmtd)
+        tables = []
+        for subject, warnings in subjects.items():
+            anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
+            table = [header] + warnings
+            table_fmtd = tabulate(table, headers='firstrow',
+                                  tablefmt=tablefmt)
+            tables.append(delimeter.join([anti_subject_fmtd, table_fmtd]))
+        return delimeter.join(tables)
 
     def display_sync_warnings(self, tablefmt=None):
         return self.display_update_list(self.sync_warnings, tablefmt)
@@ -403,8 +400,7 @@ class SyncUpdate(
         reason = update_params.get('reason', '')
         data = update_params.get('data', {})
 
-        # self.register_message("loser_update " + SanitationUtils.coerce_unicode([winner, col, reason]))
-        if(winner == self.master_name):
+        if winner == self.master_name:
             # oldLoserObject = self.old_s_object
             update_params['oldLoserValue'] = self.get_s_value(col)
             # oldWinnerObject = self.old_m_object
@@ -415,7 +411,7 @@ class SyncUpdate(
             if data.get('delta') and reason in ['updating', 'deleting']:
                 # print "setting s_deltas"
                 self.s_deltas = True
-        elif(winner == self.slave_name):
+        elif winner == self.slave_name:
             # oldLoserObject = self.old_m_object
             update_params['oldLoserValue'] = self.get_m_value(col)
             # oldWinnerObject = self.old_s_object
@@ -429,19 +425,11 @@ class SyncUpdate(
         # if data.get('warn'):
 
         self.add_sync_warning(**update_params)
-        # self.add_sync_warning(col, winner, reason, oldLoserValue, oldWinnerValue, data, s_time, m_time)
-        # SanitationUtils.safe_print("loser %s was %s" % (col, repr(new_loser_object[col])))
-        # SanitationUtils.safe_print("updating to ", oldWinnerValue)
         if data.get('delta'):
-            # print "delta true for ", col, \
-            # "loser", update_params['oldLoserValue'], \
-            # "winner", update_params['oldWinnerValue']
             new_loser_object[self.col_data.delta_col(col)] = update_params[
                 'oldLoserValue']
 
         new_loser_object[col] = update_params['oldWinnerValue']
-        # SanitationUtils.safe_print( "loser %s is now %s" % (col, repr(new_loser_object[col])))
-        # SanitationUtils.safe_print( "loser Name is now ", new_loser_object['Name'])
         self.updates += 1
         if data.get('static'):
             self.static = False
@@ -475,17 +463,13 @@ class SyncUpdate(
             assert update_params[
                 key], 'missing mandatory update param %s' % key
         col = update_params['col']
-        # if self.DEBUG_UPDATE:
-        #     self.register_message('updating col: %s | data: %s' % (col, update_params.get('data')))
         try:
             data = update_params['data']
             sync_mode = data['sync']
         except KeyError:
             return
-        # sync_warn = data.get('warn')
-        # syncstatic = data.get('static')
 
-        if(self.col_identical(col)):
+        if self.col_identical(col):
             update_params['reason'] = 'identical'
             self.tie_update(**update_params)
             return
@@ -501,31 +485,14 @@ class SyncUpdate(
         winner = self.get_winner_name(update_params['mColTime'],
                                       update_params['sColTime'])
 
-        # if data.get('tracked'):
-        #     mTimeRaw =  self.old_m_object.get(ColDataUser.mod_time_col(col))
-        #     print "mTimeRaw:",mTimeRaw
-        #     m_time = self.parse_m_time(mTimeRaw)
-        #     print "mTimeRaw:",m_time
-        #     if not m_time: m_time = self.m_time
-        #
-        #     sTimeRaw = self.old_s_object.get(ColDataUser.mod_time_col(col))
-        #     print "sTimeRaw:",sTimeRaw
-        #     m_time = self.parse_s_time(sTimeRaw)
-        #     print "s_time:",s_time
-        #     if not s_time: s_time = self.s_time
-        #
-        #     winner = self.get_winner_name(m_time, s_time)
-        # else:
-        #     winner = self.winner
-
-        if('override' in str(sync_mode).lower()):
+        if 'override' in str(sync_mode).lower():
             # update_params['reason'] = 'overriding'
-            if('master' in str(sync_mode).lower()):
+            if 'master' in str(sync_mode).lower():
                 winner = self.master_name
-            elif('slave' in str(sync_mode).lower()):
+            elif 'slave' in str(sync_mode).lower():
                 winner = self.slave_name
         else:
-            if(self.col_similar(col)):
+            if self.col_similar(col):
                 update_params['reason'] = 'similar'
                 self.tie_update(**update_params)
                 return
@@ -572,7 +539,7 @@ class SyncUpdate(
         subtitle_fmt = heading_fmt = "%s"
         info_delimeter = "\n"
         info_fmt = "%s: %s"
-        if(tablefmt == "html"):
+        if tablefmt == "html":
             heading_fmt = "<h2>%s</h2>"
             subtitle_fmt = "<h3>%s</h3>"
             info_delimeter = "<br/>"
@@ -679,7 +646,7 @@ class SyncUpdate(
         if self.sync_warnings:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
-            if(tablefmt == "html"):
+            if tablefmt == "html":
                 info_delimeter = "<br/>"
                 # subtitle_fmt = "<h4>%s</h4>"
 
@@ -709,7 +676,6 @@ class SyncUpdate(
                                  tablefmt=tablefmt)
                     ])
                 )
-                # updates_json_base64 = SanitationUtils.encode_base64(SanitationUtils.encode_json(updates))
                 # print_elements.append(updates_json_base64)
                 # return (pkey, all_updates_json_base64)
             else:
@@ -723,7 +689,7 @@ class SyncUpdate(
         if self.sync_warnings:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
-            if(tablefmt == "html"):
+            if tablefmt == "html":
                 info_delimeter = "<br/>"
                 # subtitle_fmt = "<h4>%s</h4>"
 
@@ -734,7 +700,9 @@ class SyncUpdate(
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
-                    "NO %s CHANGES: must have a primary key to update user data: " % self.master_name + repr(exc))
+                    ("NO %s CHANGES: "
+                     "must have a primary key to update user data: ") % \
+                    self.master_name + repr(exc))
                 pkey = None
                 return info_delimeter.join(print_elements)
 
@@ -753,7 +721,6 @@ class SyncUpdate(
                                  tablefmt=tablefmt)
                     ])
                 )
-                # updates_json_base64 = SanitationUtils.encode_base64(SanitationUtils.encode_json(updates))
                 # print_elements.append(updates_json_base64)
                 # return (pkey, all_updates_json_base64)
             else:
@@ -861,7 +828,7 @@ class SyncUpdateUsr(SyncUpdate):
                 if m_role == s_role:
                     response = True
             elif "address" in col.lower() and isinstance(m_value, ContactAddress):
-                if(m_value != s_value):
+                if m_value != s_value:
                     pass
                     # print "M: ", m_value.__str__(out_schema="flat"), "S: ",
                     # s_value.__str__(out_schema="flat")
@@ -1028,7 +995,6 @@ class SyncUpdateUsr(SyncUpdate):
                         updates = self.get_master_updates_recursive(
                             alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates
@@ -1057,7 +1023,7 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
                     if 'key' in data_s:
                         new_key = data_s.get('key')
                     if data_s.get('meta'):
-                        if not 'meta' in updates:
+                        if 'meta' not in updates:
                             updates['meta'] = OrderedDict()
                         updates['meta'][new_key] = new_val
                     else:
@@ -1136,22 +1102,6 @@ class SyncUpdateProdWoo(SyncUpdateProd):
     def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
-        # SanitationUtils.safe_print("getting updates for col %s, updates: %s" % (col, str(updates)))
-        # if col == 'catlist':
-        #     if hasattr(self.old_s_object, 'isVariation') and self.old_s_object.isVariation:
-        #         # print "excluded item because isVariation"
-        #         return updates
-        #     else:
-        #         update_catlist = self.new_s_object.get('catlist')
-        #         actual_catlist = self.old_s_object.categories.keys()
-        #         print "comparing cats of %s" % repr(self.new_s_object)
-        #         static_catlist = list(set(update_catlist) | set(actual_catlist))
-        #         # updates['categories'] = static_catlist
-        #         # update_catids = []
-        #         return updates
-        #         # new_catlist = list(set(update_catlist) - set(actual_catlist))
-        #         # print update_catlist
-        #         # print actual_catlist
 
         if col in self.col_data.data:
             data = self.col_data.data[col]
@@ -1250,7 +1200,6 @@ class SyncUpdateProdWoo(SyncUpdateProd):
             #         else:
             #             updates = self.get_master_updates_recursive(alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates
@@ -1290,7 +1239,6 @@ class SyncUpdateCatWoo(SyncUpdate):
     def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
-        # SanitationUtils.safe_print("getting updates for col %s, updates: %s" % (col, str(updates)))
 
         if col in self.col_data.data:
             data = self.col_data.data[col]
@@ -1351,7 +1299,6 @@ class SyncUpdateCatWoo(SyncUpdate):
             #         else:
             #             updates = self.get_slave_updates_recursive(alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates
@@ -1389,7 +1336,6 @@ class SyncUpdateCatWoo(SyncUpdate):
             #         else:
             #             updates = self.get_master_updates_recursive(alias, updates)
         else:
-            pass
             if self.DEBUG_UPDATE:
                 self.register_message(u"col doesn't exist")
         return updates

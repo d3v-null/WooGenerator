@@ -71,7 +71,7 @@ class ImportWooMixin(object):
 
     def has_special_fuzzy(self, special):
         if isinstance(special, ImportSpecialGroup):
-            special = special.ID
+            special = special.special_id
         for spec in [
                 SanitationUtils.normalize_val(special) for special in self.specials
         ]:

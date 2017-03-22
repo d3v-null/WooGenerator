@@ -47,7 +47,7 @@ class ImportSpecialObject(ImportTreeObject, ImportSpecialMixin):
 class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     container = SpecialGruopList
 
-    ID = DescriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
+    special_id = DescriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
     start_time = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.startTimeKey)
     end_time = DescriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
@@ -67,13 +67,13 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
         super(ImportSpecialGroup, self).__init__(data, **kwargs)
 
         try:
-            self.ID
+            self.special_id
         except:
             raise UserWarning('ID exist for Special to be valid')
 
     @property
     def index(self):
-        return self.ID
+        return self.special_id
 
     @property
     def has_started(self):
@@ -108,15 +108,15 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
         return self.get_first_filtd_anc_self_key(self.endTimeKey)
 
     @property
-    def ID(self):
+    def special_id(self):
         if self.ruleCode == '-':
-            return self.parent.ID
+            return self.parent.special_id
         else:
-            return '-'.join([self.parent.ID, self.ruleCode])
+            return '-'.join([self.parent.special_id, self.ruleCode])
 
     @property
     def index(self):
-        return self.ID
+        return self.special_id
 
 
 class CsvParseSpecial(CsvParseTree):
@@ -201,7 +201,6 @@ class CsvParseSpecial(CsvParseTree):
         all_future = self.all_future()
         response = None
         if all_future:
-            # TODO: may have to sort this
             response = all_future[0]
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message("returning %s" % (response))
@@ -209,34 +208,11 @@ class CsvParseSpecial(CsvParseTree):
 
     def all_future(self):
         """ return all future rules """
-        # if True or Registrar.DEBUG_SPECIAL:
-        # print("entering all_future")
         all_future = []
-        for special_index, special_group in self.rule_groups.items():
+        for _, special_group in self.rule_groups.items():
             if special_group.has_finished:
                 continue
-                # if True or Registrar.DEBUG_SPECIAL:
-                #     print("special_group has finished: %s ended: %s, currently %s" % \
-                #           (
-                #               special_index,
-                #               TimeUtils.wp_time_to_string(special_group.end_time),
-                #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
-                #           )
-                #     )
-                # continue
-            else:
-                pass
-                # if True or Registrar.DEBUG_SPECIAL:
-                #     print("special_group has not finished: %s ends %s, currently %s" % \
-                #           (
-                #               special_index,
-                #               TimeUtils.wp_time_to_string(special_group.end_time),
-                #               TimeUtils.wp_time_to_string(TimeUtils.current_tsecs())
-                #           )
-                #     )
             all_future.append(special_group)
-        # if True or Registrar.DEBUG_SPECIAL:
-        #     print("returning %s" % (all_future))
         all_future = sorted(all_future, cmp=(
             lambda sa, sb: cmp(sa.start_time, sb.end_time)))
         return all_future
@@ -246,7 +222,6 @@ class CsvParseSpecial(CsvParseTree):
             self, specials_mode, current_special=None):
         TimeUtils.set_override_time(time.strptime(
             "2016-08-12", TimeUtils.dateFormat))
-        # modes: ['override', 'auto_next', 'all_future']
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message("starting")
         response = []
@@ -268,12 +243,12 @@ class CsvParseSpecial(CsvParseTree):
 
     @classmethod
     def get_object_id(cls, object_data):
-        return object_data.ID
+        return object_data.special_id
 
     def sanitize_cell(self, cell):
         return SanitationUtils.sanitize_special_cell(cell)
 
-    def tabulate(self, tablefmt=None):
+    def tabulate(self, tablefmt=None, **_):
         if not tablefmt:
             tablefmt = "simple"
         #

@@ -1194,7 +1194,7 @@ class ContactName(ContactObject):
             self.properties['names'] += [name]
 
     def get_note_no_paranthesis(self, note_tuple):
-        note_open_paren, names_before_note, note, names_after_note, note_close_paren = note_tuple
+        _, names_before_note, note, names_after_note, _ = note_tuple
         return " ".join(
             filter(None, [names_before_note, note, names_after_note]))
 
