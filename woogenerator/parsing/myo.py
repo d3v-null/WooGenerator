@@ -1,7 +1,7 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import ListUtils, SanitationUtils
+from woogenerator.utils import SeqUtils, SanitationUtils
 from woogenerator.coldata import ColDataMyo
 from woogenerator.parsing.gen import CsvParseGenTree
 from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
@@ -18,7 +18,7 @@ class CsvParseMyo(CsvParseGenTree):
         }
 
     def __init__(self, cols={}, defaults={}, schema='MY', import_name="",
-                 taxo_subs={}, item_subs={}, taxoDepth=3, itemDepth=2, meta_width=2):
+                 taxo_subs={}, item_subs={}, taxo_depth=3, item_depth=2, meta_width=2):
         if self.DEBUG_MRO:
             self.register_message(' ')
         extra_cols = ['WNRC', 'RNRC', 'HTML Description']
@@ -226,27 +226,27 @@ class CsvParseMyo(CsvParseGenTree):
 
         if not import_name:
             import_name = time.strftime("%Y-%m-%d %H:%M:%S")
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
-        taxo_subs = ListUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
-        item_subs = ListUtils.combine_ordered_dicts(item_subs, extra_item_subs)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
+        taxo_subs = SeqUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
+        item_subs = SeqUtils.combine_ordered_dicts(item_subs, extra_item_subs)
         if not schema:
             schema = "MY"
 
         super(CsvParseMyo, self).__init__(cols, defaults, schema,
-                                          taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
+                                          taxo_subs, item_subs, taxo_depth, item_depth, meta_width)
         if self.DEBUG_MYO:
             self.register_message("csvparse initialized with cols: %s" %
                                   SanitationUtils.coerce_unicode(extra_cols))
 
     # def join_descs(self, descs, fullnames):
-    # return self.change_fullname(self.joinItems(fullnames[self.taxoDepth:]))
+    # return self.change_fullname(self.joinItems(fullnames[self.taxo_depth:]))
 
-    # def processItemtype(self, itemData):
-    #     if itemData['itemtype'] == 'Y':
-    #         itemData['item_name'] = itemData['itemsum'][:32]
-    #         # itemData['description'] = itemData['descsum'][:]
-    #         self.register_product(itemData)
+    # def processItemtype(self, item_data):
+    #     if item_data['itemtype'] == 'Y':
+    #         item_data['item_name'] = item_data['itemsum'][:32]
+    #         # item_data['description'] = item_data['descsum'][:]
+    #         self.register_product(item_data)
 
 
 class MYOProdList(ShopProdList):

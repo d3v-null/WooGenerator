@@ -117,8 +117,8 @@ class testSyncClient(abstractSyncClientTestCase):
 
         self.productParserArgs = {
             'self.import_name': self.import_name,
-            # 'itemDepth': itemDepth,
-            # 'taxoDepth': taxoDepth,
+            # 'item_depth': item_depth,
+            # 'taxo_depth': taxo_depth,
             'cols': ColDataWoo.get_import_cols(),
             'defaults': ColDataWoo.get_defaults(),
         }

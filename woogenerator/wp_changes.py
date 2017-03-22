@@ -2,7 +2,6 @@
 module for detecting changes in a wordpress database
 """
 
-import codecs
 import io
 import json
 import os
@@ -21,7 +20,7 @@ from tabulate import tabulate
 
 from __init__ import MODULE_LOCATION, MODULE_PATH
 from woogenerator.utils import (HtmlReporter, Registrar, SanitationUtils,
-                                TimeUtils, ListUtils)
+                                TimeUtils, SeqUtils)
 
 
 def timediff(settings):
@@ -146,7 +145,7 @@ def main(settings):
                 for val in value:
                     SanitationUtils.safe_print(val)
         data_map = json2map(data)
-        diff_map = ListUtils.keys_not_in(
+        diff_map = SeqUtils.keys_not_in(
             data_map, changed_map.keys()) if isinstance(changed_map,
                                                         dict) else data_map
         change_data_fmt.append([

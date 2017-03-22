@@ -1,19 +1,24 @@
-"""Introduces woo structure to shop classes"""
-from collections import OrderedDict
-import time
-import re
+"""
+Introduce woo structure to shop classes.
+"""
 
-from woogenerator.utils import ListUtils, SanitationUtils, TimeUtils, PHPUtils, Registrar, DescriptorUtils
+import re
+from collections import OrderedDict
+
 from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.abstract import ObjList, CsvParseBase
-from woogenerator.parsing.tree import ItemList, TaxoList, ImportTreeObject, ImportTreeItem
-from woogenerator.parsing.gen import CsvParseGenTree, CsvParseGenMixin
-from woogenerator.parsing.gen import ImportGenTaxo, ImportGenObject, ImportGenFlat, ImportGenItem, ImportGenMixin
-from woogenerator.parsing.shop import ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin
-from woogenerator.parsing.shop import ImportShopProductVariableMixin, ImportShopProductVariationMixin
-from woogenerator.parsing.shop import ImportShopCategoryMixin, CsvParseShopMixin, ShopObjList
-from woogenerator.parsing.flat import CsvParseFlat, ImportFlat
+from woogenerator.parsing.gen import (CsvParseGenTree, ImportGenItem,
+                                      ImportGenObject, ImportGenTaxo)
+from woogenerator.parsing.shop import (CsvParseShopMixin,
+                                       ImportShopCategoryMixin,
+                                       ImportShopMixin, ImportShopProductMixin,
+                                       ImportShopProductSimpleMixin,
+                                       ImportShopProductVariableMixin,
+                                       ImportShopProductVariationMixin,
+                                       ShopObjList)
 from woogenerator.parsing.special import ImportSpecialGroup
+from woogenerator.parsing.tree import ImportTreeItem, ItemList, TaxoList
+from woogenerator.utils import (DescriptorUtils, SeqUtils, PHPUtils,
+                                Registrar, SanitationUtils, TimeUtils)
 
 
 class WooProdList(ItemList):
@@ -50,8 +55,8 @@ class ImportWooMixin(object):
         self.specials = []
 
     @property
-    def isUpdated(self):
-        return "Y" == SanitationUtils.normalize_val(self.get('Updated', ""))
+    def is_updated(self):
+        return SanitationUtils.normalize_val(self.get('Updated', "")) == 'Y'
 
     @property
     def splist(self):
@@ -67,10 +72,10 @@ class ImportWooMixin(object):
     def has_special_fuzzy(self, special):
         if isinstance(special, ImportSpecialGroup):
             special = special.ID
-        for sp in [
-            SanitationUtils.normalize_val(special) for special in self.specials
+        for spec in [
+                SanitationUtils.normalize_val(special) for special in self.specials
         ]:
-            if special in sp:
+            if special in spec:
                 return True
 
     def register_special(self, special):
@@ -94,17 +99,6 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
-    # def __init__(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.register_message(' ')
-    #     super(ImportWooObject, self).__init__(*args, **kwargs)
-    #
-    # @property
-    # def verifyMetaKeys(self):
-    #     superVerifyMetaKeys = super(ImportWooObject, self).verifyMetaKeys
-    #     # superVerifyMetaKeys += ImportShopMixin.verifyMetaKeys
-    #     superVerifyMetaKeys += ImportWooMixin.verifyMetaKeys
-    #     return superVerifyMetaKeys
 
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
@@ -149,7 +143,7 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         if not line2:
             name_ancestors = self.name_ancestors
             ancestors_self = name_ancestors + [self]
-            names = ListUtils.filter_unique_true(
+            names = SeqUtils.filter_unique_true(
                 map(lambda x: x.name, ancestors_self))
             if names and len(names) < 2:
                 line1 = names[0]
@@ -169,35 +163,35 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         return self.name_delimeter
 
     @property
-    def inheritenceAncestors(self):
-        return ListUtils.filter_unique_true(
-            self.categories.values() + super(ImportWooProduct, self).inheritenceAncestors
+    def inheritence_ancestors(self):
+        return SeqUtils.filter_unique_true(
+            self.categories.values() + super(ImportWooProduct, self).inheritence_ancestors
         )
 
     def get_inheritance_ancestors(self):
         exc = DeprecationWarning(
-            "use .inheritenceAncestors insetad of .get_inheritance_ancestors()")
+            "use .inheritence_ancestors insetad of .get_inheritance_ancestors()")
         self.register_error(exc)
-        return self.inheritenceAncestors
-        # return ListUtils.filter_unique_true(
+        return self.inheritence_ancestors
+        # return SeqUtils.filter_unique_true(
         #     self.get_categories().values() + \
         #         super(ImportWooProduct, self).get_inheritance_ancestors()
         # )
 
     @property
-    def extraSpecialCategory(self):
-        ancestors_self = self.taxoAncestors + [self]
-        names = ListUtils.filter_unique_true(
+    def extra_special_category(self):
+        ancestors_self = self.taxo_ancestors + [self]
+        names = SeqUtils.filter_unique_true(
             map(lambda x: x.fullname, ancestors_self))
         return "Specials > " + names[0] + " Specials"
 
     def get_extra_special_category(self):
         exc = DeprecationWarning(
-            "use .extraSpecialCategory insetad of .get_extra_special_category()")
+            "use .extra_special_category insetad of .get_extra_special_category()")
         self.register_error(exc)
-        return self.extraSpecialCategory
+        return self.extra_special_category
         # ancestors_self = self.getTaxoAncestors() + [self]
-        # names = ListUtils.filter_unique_true(map(lambda x: x.fullname, ancestors_self))
+        # names = SeqUtils.filter_unique_true(map(lambda x: x.fullname, ancestors_self))
         # return "Specials > " + names[0] + " Specials"
 
 
@@ -438,29 +432,29 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         extra_cat_maps = OrderedDict()
 
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = ListUtils.combine_ordered_dicts(
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = ListUtils.combine_ordered_dicts(
+        kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
         if not kwargs.get('schema'):
             kwargs['schema'] = "TT"
-        self.cat_mapping = ListUtils.combine_ordered_dicts(
+        self.cat_mapping = SeqUtils.combine_ordered_dicts(
             kwargs.pop('cat_mapping', {}), extra_cat_maps)
         self.dprc_rules = kwargs.pop('dprc_rules', {})
-        self.dprpRules = kwargs.pop('dprpRules', {})
-        self.specialRules = kwargs.pop('specialRules', {})
+        self.dprp_rules = kwargs.pop('dprp_rules', {})
+        self.special_rules = kwargs.pop('special_rules', {})
         self.current_special_groups = kwargs.pop(
             'current_special_groups', None)
         # self.specialGroups = kwargs.pop('specialGroups', {})
         if not kwargs.get('meta_width'):
             kwargs['meta_width'] = 2
-        if not kwargs.get('itemDepth'):
-            kwargs['itemDepth'] = 2
-        if not kwargs.get('taxoDepth'):
-            kwargs['taxoDepth'] = 2
+        if not kwargs.get('item_depth'):
+            kwargs['item_depth'] = 2
+        if not kwargs.get('taxo_depth'):
+            kwargs['taxo_depth'] = 2
 
         super(CsvParseWoo, self).__init__(cols, defaults, **kwargs)
 
@@ -471,9 +465,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         # if self.DEBUG_WOO:
         #     print "WOO initializing: "
-        #     print "-> taxoDepth: ", self.taxoDepth
-        #     print "-> itemDepth: ", self.itemDepth
-        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> taxo_depth: ", self.taxo_depth
+        #     print "-> item_depth: ", self.item_depth
+        #     print "-> max_depth: ", self.max_depth
         #     print "-> meta_width: ", self.meta_width
 
     def clear_transients(self):
@@ -546,7 +540,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.special_items,
             indexer=special,
             singular=False,
-            registerName='specials'
+            register_name='specials'
         )
         object_data.register_special(special)
 
@@ -565,7 +559,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.register_anything(
             object_data,
             self.updated_products,
-            registerName='updated_products',
+            register_name='updated_products',
             singular=True
         )
 
@@ -577,11 +571,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.register_anything(
             object_data,
             self.updated_variations,
-            registerName='updated_variations',
+            register_name='updated_variations',
             singular=True
         )
 
-    def register_current_special_product(self, object_data):
+    def register_current_spec_prod(self, object_data):
         assert \
             isinstance(object_data, ImportWooProduct), \
             "object should be ImportWooProduct not %s" % str(type(object_data))
@@ -591,11 +585,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.register_anything(
             object_data,
             self.onspecial_products,
-            registerName='onspecial_products',
+            register_name='onspecial_products',
             singular=True
         )
 
-    def register_current_special_variation(self, object_data):
+    def register_current_spec_var(self, object_data):
         assert \
             isinstance(object_data, ImportWooProductVariation), \
             "object should be ImportWooProductVariation not %s" % str(
@@ -603,7 +597,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.register_anything(
             object_data,
             self.onspecial_variations,
-            registerName='onspecial_variations',
+            register_name='onspecial_variations',
             singular=True
         )
 
@@ -614,7 +608,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.register_image(image, object_data)
         this_images = object_data.images
         if object_data.isItem:
-            ancestors = object_data.itemAncestors
+            ancestors = object_data.item_ancestors
         else:
             ancestors = []
         for ancestor in ancestors:
@@ -626,7 +620,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
     def process_categories(self, object_data):
         if object_data.isProduct:
-            for ancestor in object_data.taxoAncestors:
+            for ancestor in object_data.taxo_ancestors:
                 if ancestor.name and self.category_indexer(
                         ancestor) not in self.categories:
                     self.register_category(ancestor)
@@ -643,7 +637,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 # self.register_message("ANCESTOR TAXOSUM: %s" % str(object_data.get_ancestor_key('taxosum')))
                 # self.register_message("ANCESTOR NAME: %s" % str(object_data.get_ancestor_key('name')))
                 taxo_ancestor_names = [ancestorData.get(
-                    'name') for ancestorData in object_data.taxoAncestors]
+                    'name') for ancestorData in object_data.taxo_ancestors]
                 # self.register_message("TAXO ANCESTOR NAMES: %s" % str(taxo_ancestor_names))
 
                 # I'm so sorry for this code, it is utter horse shit but it
@@ -701,7 +695,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 elif re.search('Tanbience Product Packs', extra_taxo_name, flags=re.I):
                     extra_taxo_name = ''
 
-                extra_depth = self.taxoDepth - 1
+                extra_depth = self.taxo_depth - 1
                 extra_rowcount = object_data.rowcount
                 extra_stack = self.stack.get_left_slice(extra_depth)
                 extra_name = ' '.join(
@@ -782,15 +776,15 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 # self.register_join_category(extra_layer, object_data)
             # todo maybe something with extra categories
 
-    def process_variation(self, varData):
+    def process_variation(self, var_data):
         pass
 
     def process_attributes(self, object_data):
         ancestors = \
-            object_data.inheritenceAncestors + \
+            object_data.inheritence_ancestors + \
             [object_data]
 
-        palist = ListUtils.filter_unique_true(map(
+        palist = SeqUtils.filter_unique_true(map(
             lambda ancestor: ancestor.get('PA'),
             ancestors
         ))
@@ -854,34 +848,34 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.register_message(
                     "specials: {}".format(object_data.specials))
 
-    def add_dyn_rules(self, itemData, dynType, ruleIDs):
+    def add_dyn_rules(self, item_data, dyn_type, rule_ids):
         rules = {
             'dprc': self.dprc_rules,
-            'dprp': self.dprpRules
-        }[dynType]
-        dyn_list_index = dynType + 'list'
-        dyn_id_list_index = dynType + 'IDlist'
-        if not itemData.get(dyn_list_index):
-            itemData[dyn_list_index] = []
-        if not itemData.get(dyn_id_list_index):
-            itemData[dyn_id_list_index] = []
-        for rule_id in ruleIDs:
-            if rule_id not in itemData[dyn_id_list_index]:
-                itemData[dyn_id_list_index] = rule_id
-            # print "adding %s to %s" % (rule_id, itemData['codesum'])
+            'dprp': self.dprp_rules
+        }[dyn_type]
+        dyn_list_index = dyn_type + 'list'
+        dyn_id_list_index = dyn_type + 'IDlist'
+        if not item_data.get(dyn_list_index):
+            item_data[dyn_list_index] = []
+        if not item_data.get(dyn_id_list_index):
+            item_data[dyn_id_list_index] = []
+        for rule_id in rule_ids:
+            if rule_id not in item_data[dyn_id_list_index]:
+                item_data[dyn_id_list_index] = rule_id
+            # print "adding %s to %s" % (rule_id, item_data['codesum'])
             rule = rules.get(rule_id)
             if rule:
-                if rule not in itemData[dyn_list_index]:
-                    itemData[dyn_list_index].append(rule)
+                if rule not in item_data[dyn_list_index]:
+                    item_data[dyn_list_index].append(rule)
             else:
                 self.register_error(
                     'rule should exist: %s' %
-                    rule_id, itemData)
+                    rule_id, item_data)
 
     def post_process_dyns(self, object_data):
         # self.register_message(object_data.index)
         if object_data.isProduct:
-            ancestors = object_data.inheritenceAncestors + [object_data]
+            ancestors = object_data.inheritence_ancestors + [object_data]
             for ancestor in ancestors:
                 # print "%16s is a member of %s" % (object_data['codesum'],
                 # ancestor['taxosum'])
@@ -900,7 +894,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         self.register_message("found dprplist %s" % (dprplist))
                     self.add_dyn_rules(object_data, 'dprp', dprplist)
 
-            if(object_data.get('dprclist', '')):
+            if object_data.get('dprclist', ''):
                 object_data['dprcsum'] = '<br/>'.join(
                     filter(
                         None,
@@ -914,7 +908,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_message("dprcsum of %s is %s" % (
                         object_data.index, object_data.get('dprcsum')))
 
-            if(object_data.get('dprplist', '')):
+            if object_data.get('dprplist', ''):
                 object_data['dprpsum'] = '<br/>'.join(
                     filter(
                         None,
@@ -952,7 +946,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         if object_data.isProduct:
             categories = object_data.categories.values()
-            object_data['catsum'] = '|'.join(ListUtils.filter_unique_true(
+            object_data['catsum'] = '|'.join(SeqUtils.filter_unique_true(
                 map(
                     lambda x: x.namesum,
                     categories
@@ -1018,129 +1012,125 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     def post_process_specials(self, object_data):
         # self.register_message(object_data.index)
 
-        if object_data.isProduct or object_data.isVariation:
+        if not (object_data.isProduct or object_data.isVariation):
+            return
 
-            ancestors = object_data.inheritenceAncestors
-            for ancestor in reversed(ancestors):
-                ancestor_specials = ancestor.specials
-                for special in ancestor_specials:
-                    object_data.register_special(special)
+        ancestors = object_data.inheritence_ancestors
+        for ancestor in reversed(ancestors):
+            ancestor_specials = ancestor.specials
+            for special in ancestor_specials:
+                object_data.register_special(special)
 
-            specials = object_data.specials
-            object_data['spsum'] = '|'.join(specials)
+        specials = object_data.specials
+        object_data['spsum'] = '|'.join(specials)
+        if self.DEBUG_SPECIAL:
+            self.register_message("spsum of %s is %s" % (
+                object_data.index, object_data.get('spsum')))
+
+        for special in specials:
+            # print "--> all specials: ", self.specials.keys()
+            if special not in self.special_rules.keys():
+                self.register_error(
+                    "special %s does not exist " % special, object_data)
+                continue
+
             if self.DEBUG_SPECIAL:
-                self.register_message("spsum of %s is %s" % (
-                    object_data.index, object_data.get('spsum')))
+                self.register_message("special %s exists!" % special)
 
-            for special in specials:
-                # print "--> all specials: ", self.specials.keys()
-                if special in self.specialRules.keys():
-                    if self.DEBUG_SPECIAL:
-                        self.register_message("special %s exists!" % special)
+            if object_data.isVariable:
+                # TODO: Specials for variable products
+                continue
 
-                    if not object_data.isVariable:
+            specialparams = self.special_rules[special]
 
-                        specialparams = self.specialRules[special]
+            specialfrom = specialparams.start_time
+            assert specialfrom, "special should have from: %s" % dict(
+                specialparams)
+            specialto = specialparams.end_time
+            assert specialto, "special should have to: %s" % dict(
+                specialparams)
 
-                        specialfrom = specialparams.start_time
-                        assert specialfrom, "special should have from: %s" % dict(
-                            specialparams)
-                        specialto = specialparams.end_time
-                        assert specialto, "special should have to: %s" % dict(
-                            specialparams)
+            if not TimeUtils.has_happened_yet(specialto):
+                if self.DEBUG_SPECIAL:
+                    self.register_message(
+                        "special %s is over: %s" % (special, specialto))
+                continue
 
-                        if(not TimeUtils.has_happened_yet(specialto)):
-                            if self.DEBUG_SPECIAL:
-                                self.register_message(
-                                    "special %s is over: %s" % (special, specialto))
-                            continue
-                        else:
-                            special_from_string = TimeUtils.wp_time_to_string(
-                                specialfrom)
-                            special_to_string = TimeUtils.wp_time_to_string(
-                                specialto)
-                            if self.DEBUG_SPECIAL:
-                                self.register_message("special %s is from %s (%s) to %s (%s)" % (
-                                    special, specialfrom, special_from_string, specialto, special_to_string))
+            special_from_string = TimeUtils.wp_time_to_string(
+                specialfrom)
+            special_to_string = TimeUtils.wp_time_to_string(
+                specialto)
+            if self.DEBUG_SPECIAL:
+                self.register_message("special %s is from %s (%s) to %s (%s)" % (
+                    special, specialfrom, special_from_string, specialto, special_to_string))
 
-                        for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
-                            discount = specialparams.get(tier)
-                            if discount:
-                                # print "discount is ", discount
-                                special_price = None
+            for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
+                discount = specialparams.get(tier)
+                if not discount:
+                    continue
 
-                                percentages = SanitationUtils.find_all_percent(
-                                    discount)
-                                # print "percentages are", percentages
-                                if percentages:
-                                    coefficient = float(percentages[0]) / 100
-                                    regular_price_string = object_data.get(
-                                        tier[:-1] + "R")
-                                    # print "regular_price_string",
-                                    # regular_price_string
-                                    if regular_price_string:
-                                        regular_price = float(
-                                            regular_price_string)
-                                        special_price = regular_price * coefficient
-                                else:
-                                    dollars = SanitationUtils.find_all_dollars(
-                                        discount)
-                                    if dollars:
-                                        dollar = float(
-                                            self.sanitize_cell(dollars[0]))
-                                        if dollar:
-                                            special_price = dollar
+                special_price = None
 
-                                if special_price:
-                                    if self.DEBUG_SPECIAL:
-                                        self.register_message(
-                                            "special %s price is %s " % (special, special_price))
-                                    tier_key = tier
-                                    tier_from_key = tier[:-1] + "F"
-                                    tier_to_key = tier[:-1] + "T"
-                                    for key, value in {
-                                        tier_key: special_price,
-                                        tier_from_key: TimeUtils.localToServerTime(specialfrom),
-                                        tier_to_key: TimeUtils.localToServerTime(specialto)
-                                    }.items():
-                                        if self.DEBUG_SPECIAL:
-                                            self.register_message(
-                                                "special %s setting object_data[ %s ] to %s " % (special, key, value))
-                                        object_data[key] = value
-                                    # object_data[tier_key] = special_price
-                                    # object_data[tier_from_key] = specialfrom
-                                    # object_data[tier_to_key] = specialto
-                    break
-                    # only applies first special
+                percentages = SanitationUtils.find_all_percent(
+                    discount)
 
+                if percentages:
+                    coefficient = float(percentages[0]) / 100
+                    regular_price_string = object_data.get(
+                        tier[:-1] + "R")
+
+                    if regular_price_string:
+                        regular_price = float(
+                            regular_price_string)
+                        special_price = regular_price * coefficient
                 else:
-                    self.register_error(
-                        "special %s does not exist " % special, object_data)
+                    dollars = SanitationUtils.find_all_dollars(
+                        discount)
+                    if dollars:
+                        dollar = float(
+                            self.sanitize_cell(dollars[0]))
+                        if dollar:
+                            special_price = dollar
 
-            for key, value in {
+                if special_price:
+                    if self.DEBUG_SPECIAL:
+                        self.register_message(
+                            "special %s price is %s " % (special, special_price))
+                    tier_key = tier
+                    tier_from_key = tier[:-1] + "F"
+                    tier_to_key = tier[:-1] + "T"
+                    for key, value in {
+                            tier_key: special_price,
+                            tier_from_key: TimeUtils.local_to_server_time(specialfrom),
+                            tier_to_key: TimeUtils.local_to_server_time(specialto)
+                    }.items():
+                        if self.DEBUG_SPECIAL:
+                            self.register_message(
+                                "special %s setting object_data[ %s ] to %s " % (special, key, value))
+                        object_data[key] = value
+
+            break  # only applies first special
+
+        for key, value in {
                 'price': object_data.get('RNR'),
                 'sale_price': object_data.get('RNS')
-            }.items():
-                if value is not None:
-                    object_data[key] = value
+        }.items():
+            if value is not None:
+                object_data[key] = value
 
-            for key, value in {
+        for key, value in {
                 'sale_price_dates_from': object_data.get('RNF'),
                 'sale_price_dates_to': object_data.get('RNT')
-            }.items():
-                if value is not None:
-                    object_data[key] = TimeUtils.wp_time_to_string(
-                        TimeUtils.server_to_local_time(value))
-            # object_data['price'] = object_data.get('RNR')
-            # object_data['sale_price'] = object_data.get('RNS')
-            # object_data['sale_price_dates_from'] = object_data.get('RNF')
-            # object_data['sale_price_dates_to'] = object_data.get('RNT')
+        }.items():
+            if value is not None:
+                object_data[key] = TimeUtils.wp_time_to_string(
+                    TimeUtils.server_to_local_time(value))
 
     def post_process_updated(self, object_data):
         object_data.inherit_key('Updated')
 
         if object_data.isProduct:
-            if object_data.isUpdated:
+            if object_data.is_updated:
                 if isinstance(object_data, ImportShopProductVariationMixin):
                     # if object_data.isVariation:
                     self.register_updated_variation(object_data)
@@ -1187,7 +1177,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         'title': category_name,
                         'slug': SanitationUtils.slugify(category_name)
                     },
-                    parent=self.rootData,
+                    parent=self.root_data,
                     meta=[category_name, 'SP'],
                     rowcount=self.rowcount,
                     row=[]
@@ -1231,7 +1221,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                             filter(None, [
                                 object_data.get('catsum', ""),
                                 self.specialsCategory,
-                                object_data.extraSpecialCategory
+                                object_data.extra_special_category
                             ])
                         )
                         special_category_object = self.get_special_category()
@@ -1242,7 +1232,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                             special_category_object, object_data)
                         assert special_category_object.index in object_data.categories
                         extra_special_category_object = self.get_special_category(
-                            object_data.extraSpecialCategory)
+                            object_data.extra_special_category)
                         if self.DEBUG_SPECIAL:
                             self.register_message(
                                 "joining extra special category: %s" % extra_special_category_object.identifier)
@@ -1250,9 +1240,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                             extra_special_category_object, object_data)
                         assert extra_special_category_object.index in object_data.categories
                     if object_data.isVariation:
-                        self.register_current_special_variation(object_data)
+                        self.register_current_spec_var(object_data)
                     else:
-                        self.register_current_special_product(object_data)
+                        self.register_current_spec_prod(object_data)
                     break
             # else:
                 # print ("%s does not match special %s | %s"%(str(object_data), self.current_special, str(object_data.splist)))
@@ -1279,8 +1269,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         objects = super(CsvParseWoo, self).analyse_file(
             file_name, encoding=encoding, limit=limit)
         # post processing
-        # for itemData in self.taxos.values() + self.items.values():
-        # print 'POST analysing product', itemData.codesum, itemData.namesum
+        # for item_data in self.taxos.values() + self.items.values():
+        # print 'POST analysing product', item_data.codesum, item_data.namesum
 
         for index, object_data in self.objects.items():
             # print '%s POST' % object_data.get_identifier()
@@ -1361,25 +1351,25 @@ class CsvParseTT(CsvParseWoo):
             ('CTPP', 'CTKPP')
         ])
 
-        # cols = ListUtils.combine_lists( cols, extra_cols )
-        # defaults = ListUtils.combine_ordered_dicts( defaults, extra_defaults )
-        # taxo_subs = ListUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
-        # item_subs = ListUtils.combine_ordered_dicts( item_subs, extra_item_subs )
-        # cat_mapping = ListUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
+        # cols = SeqUtils.combine_lists( cols, extra_cols )
+        # defaults = SeqUtils.combine_ordered_dicts( defaults, extra_defaults )
+        # taxo_subs = SeqUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
+        # item_subs = SeqUtils.combine_ordered_dicts( item_subs, extra_item_subs )
+        # cat_mapping = SeqUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
         #
         #
         # super(CsvParseTT, self).__init__( cols, defaults, schema, import_name,\
-        #         taxo_subs, item_subs, taxoDepth, itemDepth, meta_width, \
-        #         dprc_rules, dprpRules, specials, cat_mapping)
+        #         taxo_subs, item_subs, taxo_depth, item_depth, meta_width, \
+        #         dprc_rules, dprp_rules, specials, cat_mapping)
 
         #
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = ListUtils.combine_ordered_dicts(
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = ListUtils.combine_ordered_dicts(
+        kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
-        kwargs['cat_mapping'] = ListUtils.combine_ordered_dicts(
+        kwargs['cat_mapping'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "TT"
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
@@ -1389,9 +1379,9 @@ class CsvParseTT(CsvParseWoo):
         #     self.register_message("cat_mapping: %s" % str(cat_mapping))
         # if self.DEBUG_WOO:
         #     print "WOO initializing: "
-        #     print "-> taxoDepth: ", self.taxoDepth
-        #     print "-> itemDepth: ", self.itemDepth
-        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> taxo_depth: ", self.taxo_depth
+        #     print "-> item_depth: ", self.item_depth
+        #     print "-> max_depth: ", self.max_depth
         #     print "-> meta_width: ", self.meta_width
 
 
@@ -1433,27 +1423,27 @@ class CsvParseVT(CsvParseWoo):
 
         extra_cat_maps = OrderedDict()
 
-        # cols = ListUtils.combine_lists( cols, extra_cols )
-        # defaults = ListUtils.combine_ordered_dicts( defaults, extra_defaults )
-        # taxo_subs = ListUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
-        # item_subs = ListUtils.combine_ordered_dicts( item_subs, extra_item_subs )
-        # cat_mapping = ListUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
+        # cols = SeqUtils.combine_lists( cols, extra_cols )
+        # defaults = SeqUtils.combine_ordered_dicts( defaults, extra_defaults )
+        # taxo_subs = SeqUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
+        # item_subs = SeqUtils.combine_ordered_dicts( item_subs, extra_item_subs )
+        # cat_mapping = SeqUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
         #
         # self.register_message("cat_mapping: %s" % str(cat_mapping))
         #
         # super(CsvParseVT, self).__init__( cols, defaults, schema, import_name,\
-        #         taxo_subs, item_subs, taxoDepth, itemDepth, meta_width, \
-        #         dprc_rules, dprpRules, specials, cat_mapping)
+        #         taxo_subs, item_subs, taxo_depth, item_depth, meta_width, \
+        #         dprc_rules, dprp_rules, specials, cat_mapping)
         #
 
         #
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
-        kwargs['taxo_subs'] = ListUtils.combine_ordered_dicts(
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
+        kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
-        kwargs['item_subs'] = ListUtils.combine_ordered_dicts(
+        kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
-        kwargs['cat_mapping'] = ListUtils.combine_ordered_dicts(
+        kwargs['cat_mapping'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "VT"
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )

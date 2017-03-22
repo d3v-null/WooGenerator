@@ -7,9 +7,9 @@ import os
 #
 # sys.path.insert(0, MODULE_PATH)
 
-from core import SanitationUtils, descriptorUtils, listUtils, debugUtils
-from core import Registrar, ValidationUtils, PHPUtils, ProgressCounter
-from core import UnicodeCsvDialectUtils, FileUtils
+from core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
+                  Registrar, ValidationUtils, PHPUtils, ProgressCounter,
+                  UnicodeCsvDialectUtils, FileUtils)
 from contact import NameUtils, AddressUtils
 from reporter import HtmlReporter
 from clock import TimeUtils

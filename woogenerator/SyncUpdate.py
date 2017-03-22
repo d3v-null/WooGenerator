@@ -139,19 +139,19 @@ class SyncUpdate(
         else:
             return self.slave_name if(s_time >= m_time) else self.master_name
 
-    def parse_m_time(self, rawMTime):
+    def parse_m_time(self, raw_m_time):
         """
         Parse a raw act-like time string
         """
         return TimeUtils.act_server_to_local_time(
-            TimeUtils.act_strp_mktime(rawMTime))
+            TimeUtils.act_strp_mktime(raw_m_time))
 
-    def parse_s_time(self, rawSTime):
+    def parse_s_time(self, raw_s_time):
         """
         Parse a raw wp-like time string
         """
         return TimeUtils.wp_server_to_local_time(
-            TimeUtils.wp_strp_mktime(rawSTime))
+            TimeUtils.wp_strp_mktime(raw_s_time))
 
     def sanitize_value(self, col, value):
         """
@@ -276,61 +276,61 @@ class SyncUpdate(
             SanitationUtils.bool_to_truish_string(res)
         )
 
-    def update_to_str(self, updateType, updateParams):
-        assert isinstance(updateType, str)
-        assert 'col' in updateParams
+    def update_to_str(self, update_type, update_params):
+        assert isinstance(update_type, str)
+        assert 'col' in update_params
         out = u""
-        out += "SYNC %s:" % updateType
+        out += "SYNC %s:" % update_type
         out += " | %s " % SanitationUtils.coerce_ascii(self)
-        out += " | col:  %s" % updateParams['col']
-        if 'subject' in updateParams:
-            out += " | subj: %s " % updateParams['subject']
-        if 'reason' in updateParams:
-            out += " | reas: %s " % updateParams['reason']
-        if updateType in ['WARN', 'PROB']:
-            if 'oldWinnerValue' in updateParams:
+        out += " | col:  %s" % update_params['col']
+        if 'subject' in update_params:
+            out += " | subj: %s " % update_params['subject']
+        if 'reason' in update_params:
+            out += " | reas: %s " % update_params['reason']
+        if update_type in ['WARN', 'PROB']:
+            if 'oldWinnerValue' in update_params:
                 out += " | OLD: %s " % SanitationUtils.coerce_ascii(
-                    updateParams['oldWinnerValue'])
-            if 'oldLoserValue' in updateParams:
+                    update_params['oldWinnerValue'])
+            if 'oldLoserValue' in update_params:
                 out += " | NEW: %s " % SanitationUtils.coerce_ascii(
-                    updateParams['oldLoserValue'])
+                    update_params['oldLoserValue'])
         return out
 
-    def add_problematic_update(self, **updateParams):
+    def add_problematic_update(self, **update_params):
         for key in ['col', 'subject', 'reason']:
-            assert updateParams[key], 'missing mandatory prob param %s' % key
-        col = updateParams['col']
+            assert update_params[key], 'missing mandatory prob param %s' % key
+        col = update_params['col']
         if col not in self.sync_problematics.keys():
             self.sync_problematics[col] = []
-        self.sync_problematics[col].append(updateParams)
-        self.register_warning(self.update_to_str('PROB', updateParams))
-        # self.register_warning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
+        self.sync_problematics[col].append(update_params)
+        self.register_warning(self.update_to_str('PROB', update_params))
+        # self.register_warning("SYNC PROB: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
-    def add_sync_warning(self, **updateParams):
+    def add_sync_warning(self, **update_params):
         for key in ['col', 'subject', 'reason']:
-            assert updateParams[
+            assert update_params[
                 key], 'missing mandatory warning param %s' % key
-        col = updateParams['col']
+        col = update_params['col']
         if col not in self.sync_warnings.keys():
             self.sync_warnings[col] = []
-        self.sync_warnings[col].append(updateParams)
+        self.sync_warnings[col].append(update_params)
         if self.DEBUG_UPDATE:
-            self.register_warning(self.update_to_str('WARN', updateParams))
-        # self.register_warning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
+            self.register_warning(self.update_to_str('WARN', update_params))
+        # self.register_warning("SYNC WARNING: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
-    def add_sync_pass(self, **updateParams):
+    def add_sync_pass(self, **update_params):
         for key in ['col']:
-            assert updateParams[key], 'missing mandatory pass param %s' % key
-        col = updateParams['col']
+            assert update_params[key], 'missing mandatory pass param %s' % key
+        col = update_params['col']
         if col not in self.sync_passes.keys():
             self.sync_passes[col] = []
-        self.sync_passes[col].append(updateParams)
+        self.sync_passes[col].append(update_params)
         if self.DEBUG_UPDATE:
-            self.register_warning(self.update_to_str('PASS', updateParams))
-        # if self.DEBUG_UPDATE: self.register_message("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(updateParams)))
+            self.register_warning(self.update_to_str('PASS', update_params))
+        # if self.DEBUG_UPDATE: self.register_message("SYNC PASS: %s | %s" % (self.__str__(), SanitationUtils.coerce_unicode(update_params)))
 
-    def display_update_list(self, updateList, tablefmt=None):
-        if updateList:
+    def display_update_list(self, update_list, tablefmt=None):
+        if update_list:
             delimeter = "<br/>" if tablefmt == "html" else "\n"
             subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
             # header = ["Column", "Reason", "Old", "New"]
@@ -343,7 +343,7 @@ class SyncUpdate(
                 ('sColTime', 'S TIME'),
             ])
             subjects = {}
-            for warnings in updateList.values():
+            for warnings in update_list.values():
                 for warning in warnings:
                     subject = warning['subject']
                     if subject not in subjects.keys():
@@ -393,22 +393,22 @@ class SyncUpdate(
 
     # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
     # m_time=None):
-    def loser_update(self, **updateParams):
+    def loser_update(self, **update_params):
         for key in ['col', 'subject']:
-            assert updateParams[key], 'missing mandatory update param, %s from %s' % (
-                key, updateParams)
+            assert update_params[key], 'missing mandatory update param, %s from %s' % (
+                key, update_params)
 
-        col = updateParams['col']
-        winner = updateParams['subject']
-        reason = updateParams.get('reason', '')
-        data = updateParams.get('data', {})
+        col = update_params['col']
+        winner = update_params['subject']
+        reason = update_params.get('reason', '')
+        data = update_params.get('data', {})
 
         # self.register_message("loser_update " + SanitationUtils.coerce_unicode([winner, col, reason]))
         if(winner == self.master_name):
             # oldLoserObject = self.old_s_object
-            updateParams['oldLoserValue'] = self.get_s_value(col)
+            update_params['oldLoserValue'] = self.get_s_value(col)
             # oldWinnerObject = self.old_m_object
-            updateParams['oldWinnerValue'] = self.get_m_value(col)
+            update_params['oldWinnerValue'] = self.get_m_value(col)
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
@@ -417,9 +417,9 @@ class SyncUpdate(
                 self.s_deltas = True
         elif(winner == self.slave_name):
             # oldLoserObject = self.old_m_object
-            updateParams['oldLoserValue'] = self.get_m_value(col)
+            update_params['oldLoserValue'] = self.get_m_value(col)
             # oldWinnerObject = self.old_s_object
-            updateParams['oldWinnerValue'] = self.get_s_value(col)
+            update_params['oldWinnerValue'] = self.get_s_value(col)
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
@@ -428,18 +428,18 @@ class SyncUpdate(
                 self.m_deltas = True
         # if data.get('warn'):
 
-        self.add_sync_warning(**updateParams)
+        self.add_sync_warning(**update_params)
         # self.add_sync_warning(col, winner, reason, oldLoserValue, oldWinnerValue, data, s_time, m_time)
         # SanitationUtils.safe_print("loser %s was %s" % (col, repr(new_loser_object[col])))
         # SanitationUtils.safe_print("updating to ", oldWinnerValue)
         if data.get('delta'):
             # print "delta true for ", col, \
-            # "loser", updateParams['oldLoserValue'], \
-            # "winner", updateParams['oldWinnerValue']
-            new_loser_object[self.col_data.delta_col(col)] = updateParams[
+            # "loser", update_params['oldLoserValue'], \
+            # "winner", update_params['oldWinnerValue']
+            new_loser_object[self.col_data.delta_col(col)] = update_params[
                 'oldLoserValue']
 
-        new_loser_object[col] = updateParams['oldWinnerValue']
+        new_loser_object[col] = update_params['oldWinnerValue']
         # SanitationUtils.safe_print( "loser %s is now %s" % (col, repr(new_loser_object[col])))
         # SanitationUtils.safe_print( "loser Name is now ", new_loser_object['Name'])
         self.updates += 1
@@ -449,20 +449,20 @@ class SyncUpdate(
             self.important_updates += 1
             self.important_cols.append(col)
             if data.get('static'):
-                self.add_problematic_update(**updateParams)
+                self.add_problematic_update(**update_params)
                 self.important_static = False
 
-    def tie_update(self, **updateParams):
+    def tie_update(self, **update_params):
         # print "tie_update ", col, reason
         for key in ['col']:
-            assert updateParams[
+            assert update_params[
                 key], 'missing mandatory update param, %s' % key
-        col = updateParams['col']
+        col = update_params['col']
         if self.old_s_object:
-            updateParams['value'] = self.old_s_object.get(col)
+            update_params['value'] = self.old_s_object.get(col)
         elif self.old_m_object:
-            updateParams['value'] = self.old_s_object.get(col)
-        self.add_sync_pass(**updateParams)
+            update_params['value'] = self.old_s_object.get(col)
+        self.add_sync_pass(**update_params)
 
     def get_m_col_mod_time(self, col):
         return None
@@ -470,14 +470,15 @@ class SyncUpdate(
     def get_s_col_mod_time(self, col):
         return None
 
-    def update_col(self, **updateParams):
+    def update_col(self, **update_params):
         for key in ['col', 'data']:
-            assert updateParams[key], 'missing mandatory update param %s' % key
-        col = updateParams['col']
+            assert update_params[
+                key], 'missing mandatory update param %s' % key
+        col = update_params['col']
         # if self.DEBUG_UPDATE:
-        #     self.register_message('updating col: %s | data: %s' % (col, updateParams.get('data')))
+        #     self.register_message('updating col: %s | data: %s' % (col, update_params.get('data')))
         try:
-            data = updateParams['data']
+            data = update_params['data']
             sync_mode = data['sync']
         except KeyError:
             return
@@ -485,8 +486,8 @@ class SyncUpdate(
         # syncstatic = data.get('static')
 
         if(self.col_identical(col)):
-            updateParams['reason'] = 'identical'
-            self.tie_update(**updateParams)
+            update_params['reason'] = 'identical'
+            self.tie_update(**update_params)
             return
         else:
             pass
@@ -494,11 +495,11 @@ class SyncUpdate(
         m_value = self.get_m_value(col)
         s_value = self.get_s_value(col)
 
-        updateParams['mColTime'] = self.get_m_col_mod_time(col)
-        updateParams['sColTime'] = self.get_s_col_mod_time(col)
+        update_params['mColTime'] = self.get_m_col_mod_time(col)
+        update_params['sColTime'] = self.get_s_col_mod_time(col)
 
-        winner = self.get_winner_name(updateParams['mColTime'],
-                                      updateParams['sColTime'])
+        winner = self.get_winner_name(update_params['mColTime'],
+                                      update_params['sColTime'])
 
         # if data.get('tracked'):
         #     mTimeRaw =  self.old_m_object.get(ColDataUser.mod_time_col(col))
@@ -518,43 +519,43 @@ class SyncUpdate(
         #     winner = self.winner
 
         if('override' in str(sync_mode).lower()):
-            # updateParams['reason'] = 'overriding'
+            # update_params['reason'] = 'overriding'
             if('master' in str(sync_mode).lower()):
                 winner = self.master_name
             elif('slave' in str(sync_mode).lower()):
                 winner = self.slave_name
         else:
             if(self.col_similar(col)):
-                updateParams['reason'] = 'similar'
-                self.tie_update(**updateParams)
+                update_params['reason'] = 'similar'
+                self.tie_update(**update_params)
                 return
 
             if self.merge_mode == 'merge' and not (m_value and s_value):
                 if winner == self.slave_name and not s_value:
                     winner = self.master_name
-                    updateParams['reason'] = 'merging'
+                    update_params['reason'] = 'merging'
                 elif winner == self.master_name and not m_value:
                     winner = self.slave_name
-                    updateParams['reason'] = 'merging'
+                    update_params['reason'] = 'merging'
 
-        if 'reason' not in updateParams:
+        if 'reason' not in update_params:
             if winner == self.slave_name:
                 w_value, l_value = s_value, m_value
             else:
                 w_value, l_value = m_value, s_value
 
             if not w_value:
-                updateParams['reason'] = 'deleting'
+                update_params['reason'] = 'deleting'
             elif not l_value:
-                updateParams['reason'] = 'inserting'
+                update_params['reason'] = 'inserting'
             else:
-                updateParams['reason'] = 'updating'
+                update_params['reason'] = 'updating'
 
-        updateParams['subject'] = winner
-        self.loser_update(**updateParams)
+        update_params['subject'] = winner
+        self.loser_update(**update_params)
 
-    def update(self, syncCols):
-        for col, data in syncCols.items():
+    def update(self, sync_cols):
+        for col, data in sync_cols.items():
             self.update_col(col=col, data=data)
         # if self.m_updated:
         #     self.new_m_object.refresh_contact_objects()
@@ -626,7 +627,7 @@ class SyncUpdate(
         return out_str
 
     #
-    def get_slave_updates_native_recursive(self, col, updates=None):
+    def get_slave_updates_native_rec(self, col, updates=None):
         return updates
 
     def get_slave_updates_recursive(self, col, updates=None):
@@ -646,7 +647,7 @@ class SyncUpdate(
                         u"-> checking warning %s" % unicode(warning))
                 subject = warning['subject']
                 if subject == self.opposite_src(self.slave_name):
-                    updates = self.get_slave_updates_native_recursive(
+                    updates = self.get_slave_updates_native_rec(
                         col, updates)
         if self.DEBUG_UPDATE:
             self.register_message(u"returned %s" % unicode(updates))
@@ -941,7 +942,7 @@ class SyncUpdateUsr(SyncUpdate):
                 )))
         return info_components
 
-    def get_slave_updates_native_recursive(self, col, updates=None):
+    def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
@@ -958,7 +959,7 @@ class SyncUpdateUsr(SyncUpdate):
                 for alias in data_aliases:
                     if self.s_col_semi_static(alias):
                         continue
-                    updates = self.get_slave_updates_native_recursive(
+                    updates = self.get_slave_updates_native_rec(
                         alias, updates)
         return updates
 
@@ -1036,7 +1037,7 @@ class SyncUpdateUsr(SyncUpdate):
 class SyncUpdateUsrApi(SyncUpdateUsr):
     s_meta_target = 'wp-api'
 
-    def get_slave_updates_native_recursive(self, col, updates=None):
+    def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
@@ -1075,7 +1076,7 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
                             self.register_message(u"Alias semistatic")
                         continue
                     else:
-                        updates = self.get_slave_updates_native_recursive(
+                        updates = self.get_slave_updates_native_rec(
                             alias, updates)
         else:
             if self.DEBUG_UPDATE:
@@ -1132,7 +1133,7 @@ class SyncUpdateProd(SyncUpdate):
 class SyncUpdateProdWoo(SyncUpdateProd):
     col_data = ColDataWoo
 
-    def get_slave_updates_native_recursive(self, col, updates=None):
+    def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
         # SanitationUtils.safe_print("getting updates for col %s, updates: %s" % (col, str(updates)))
@@ -1180,7 +1181,7 @@ class SyncUpdateProdWoo(SyncUpdateProd):
             #     for alias in data_aliases:
             #         if self.s_col_semi_static(alias):
             #             continue
-            #         updates = self.get_slave_updates_native_recursive(alias, updates)
+            #         updates = self.get_slave_updates_native_rec(alias, updates)
         return updates
 
     def get_slave_updates_recursive(self, col, updates=None):
@@ -1286,7 +1287,7 @@ class SyncUpdateCatWoo(SyncUpdate):
                 col, m_value.__repr__(), s_value.__repr__(), response))
         return response
 
-    def get_slave_updates_native_recursive(self, col, updates=None):
+    def get_slave_updates_native_rec(self, col, updates=None):
         if updates is None:
             updates = OrderedDict()
         # SanitationUtils.safe_print("getting updates for col %s, updates: %s" % (col, str(updates)))
@@ -1319,7 +1320,7 @@ class SyncUpdateCatWoo(SyncUpdate):
             #     for alias in data_aliases:
             #         if self.s_col_semi_static(alias):
             #             continue
-            #         updates = self.get_slave_updates_native_recursive(alias, updates)
+            #         updates = self.get_slave_updates_native_rec(alias, updates)
         return updates
 
     def get_slave_updates_recursive(self, col, updates=None):

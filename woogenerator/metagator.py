@@ -1,16 +1,20 @@
+"""
+Utilities for mitigating images metadata.
+"""
+
+import os
 from PIL import Image
 from PIL import PngImagePlugin
-# from pillow import Image
-# from pillow import PngImagePlugin
-from utils import SanitationUtils, Registrar
-# from pyexiv2.metadata import ImageMetadata
+
 import piexif
-# import iptcinfo
-import os
-# from time import time
+
+from utils import SanitationUtils, Registrar
 
 
 class MetaGator(Registrar):
+    """
+    Mitigates image metadata.
+    """
 
     def __init__(self, path):
         super(MetaGator, self).__init__()
@@ -22,18 +26,18 @@ class MetaGator(Registrar):
         self.name, self.ext = os.path.splitext(self.fname)
 
     @property
-    def isJPG(self):
+    def is_jpg(self):
         return self.ext.lower() in ['.jpg', '.jpeg']
 
     @property
-    def isPNG(self):
+    def is_png(self):
         return self.ext.lower() in ['.png']
 
     def write_meta(self, title, description):
         title, description = map(
             SanitationUtils.coerce_ascii, (title, description))
         # print "title, description: ", title, ', ', description
-        if self.isPNG:
+        if self.is_png:
             # print "image is PNG"
             try:
                 new = Image.open(os.path.join(self.dir, self.fname))
@@ -47,22 +51,22 @@ class MetaGator(Registrar):
             except Exception as exc:
                 raise Exception('unable to write image: ' + str(exc))
 
-        elif self.isJPG:
+        elif self.is_jpg:
             # print "image is JPG"
             fullname = os.path.join(self.dir, self.fname)
             try:
-                im = Image.open(fullname)
+                img = Image.open(fullname)
             except IOError:
                 raise Exception("file not found: " + fullname)
 
             # write exif
-            exif_dict = piexif.load(im.info["exif"])
+            exif_dict = piexif.load(img.info["exif"])
 
             exif_dict["0th"][piexif.ImageIFD.DocumentName] = title
             exif_dict["0th"][piexif.ImageIFD.ImageDescription] = description
 
             exif_bytes = piexif.dump(exif_dict)
-            im.save(fullname, "jpeg", exif=exif_bytes)
+            img.save(fullname, "jpeg", exif=exif_bytes)
 
             # write IPTC
 
@@ -86,20 +90,20 @@ class MetaGator(Registrar):
     def read_meta(self):
         title, description = u'', u''
 
-        if self.isPNG:
+        if self.is_png:
             oldimg = Image.open(os.path.join(self.dir, self.fname))
             title = oldimg.info.get('title', '')
             description = oldimg.info.get('description', '')
-        elif self.isJPG:
+        elif self.is_jpg:
             fullname = os.path.join(self.dir, self.fname)
             try:
-                im = Image.open(fullname)
+                img = Image.open(fullname)
                 # imgmeta = ImageMetadata(os.path.join(self.dir, self.fname))
                 # imgmeta.read()
             except IOError:
                 raise Exception("file not found")
 
-            exif_dict = piexif.load(im.info["exif"])
+            exif_dict = piexif.load(img.info["exif"])
 
             title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName)
             description = exif_dict["0th"].get(

@@ -545,7 +545,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     sa_parser = CsvParseUser(
         cols=ColDataUser.get_wp_import_cols(),
         defaults=ColDataUser.get_defaults(),
-        filterItems=filter_items,
+        filter_items=filter_items,
         limit=settings.limit,
         source=settings.slave_name)
     if download_slave:
@@ -587,7 +587,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
                                 py_my_sql_connect_params) as client:
             client.analyse_remote(
-                sa_parser, limit=settings.limit, filterItems=filter_items)
+                sa_parser, limit=settings.limit, filter_items=filter_items)
 
             sa_parser.get_obj_list().export_items(
                 os.path.join(settings.in_folder, s_x_filename),
@@ -606,7 +606,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         cols=ColDataUser.get_act_import_cols(),
         defaults=ColDataUser.get_defaults(),
         contact_schema='act',
-        filterItems=filter_items,
+        filter_items=filter_items,
         limit=settings.limit,
         source=settings.master_name)
 

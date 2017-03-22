@@ -26,7 +26,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         self.jsonconnect_params = {}
         self.actconnect_params = {}
         self.actDbParams = {}
-        self.fsParams = {}
+        self.fs_params = {}
 
     def processConfig(self, config):
         in_folder = "../input/"
@@ -142,7 +142,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             'fields': actFields,
         }
 
-        self.fsParams = {
+        self.fs_params = {
             'import_name': self.import_name,
             'remote_export_folder': remote_export_folder,
             'in_folder': in_folder,
@@ -189,7 +189,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             "MYOB Card ID": "C000001",
         }
 
-        with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+        with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fs_params) as client:
             response = client.upload_changes('C000001', fields)
         print response
 
@@ -410,7 +410,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         print saParser.tabulate()
 
     # def test_SSH_download(self):
-    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fs_params) as client:
     #         response = client.get_delete_file('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
 
     # def test_SSH_Upload(self):
@@ -420,7 +420,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     }
     #
     #     response = ''
-    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fs_params) as client:
     #         response = client.upload_changes('C004897', fields)
     #
     #     print response

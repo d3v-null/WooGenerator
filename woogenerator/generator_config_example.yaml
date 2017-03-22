@@ -1,6 +1,6 @@
 #Generator file info
-taxoDepth: <taxo depth here>
-itemDepth: <item depth here>
+taxo_depth: <taxo depth here>
+item_depth: <item depth here>
 
 myo_schemas:
     - <myo schemas here>

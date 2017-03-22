@@ -10,7 +10,7 @@ Should be dimensionally agnostic (doesn't know if using flat or tree type) but i
 
 from collections import OrderedDict
 
-from woogenerator.utils import DescriptorUtils, SanitationUtils, ListUtils, Registrar
+from woogenerator.utils import DescriptorUtils, SanitationUtils, SeqUtils, Registrar
 from woogenerator.parsing.abstract import ObjList, ImportObject, CsvParseBase
 from woogenerator.parsing.tree import CsvParseTree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 from woogenerator.parsing.flat import ImportFlat
@@ -203,14 +203,14 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 
     def join_names(self, ancestors):
         ancestors_self = ancestors + [self]
-        names = ListUtils.filter_unique_true(
+        names = SeqUtils.filter_unique_true(
             map(lambda x: x.name, ancestors_self))
         name_delimeter = self.name_delimeter
         return name_delimeter.join(names)
 
     def join_fullnames(self, ancestors):
         ancestors_self = ancestors + [self]
-        names = ListUtils.filter_unique_true(
+        names = SeqUtils.filter_unique_true(
             map(lambda x: x.fullname, ancestors_self))
         name_delimeter = self.name_delimeter
         return name_delimeter.join(names)
@@ -275,7 +275,7 @@ class ImportGenItem(ImportGenObject, ImportTreeItem):
 
     @property
     def name_ancestors(self):
-        return self.itemAncestors
+        return self.item_ancestors
 
     def get_name_ancestors(self):
         exc = DeprecationWarning(
@@ -385,8 +385,8 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
         ])
         extra_cols = [schema]
 
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         super(CsvParseGenTree, self).__init__(cols, defaults, **kwargs)
         # CsvParseGenMixin.__init__(self, schema)
 
@@ -394,20 +394,20 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
         assert meta_width >= 2, "meta_width must be greater than 2 for a GEN subclass"
 
         self.schema = schema
-        self.taxo_subs = ListUtils.combine_ordered_dicts(
+        self.taxo_subs = SeqUtils.combine_ordered_dicts(
             taxo_subs, extra_taxo_subs)
-        self.item_subs = ListUtils.combine_ordered_dicts(
+        self.item_subs = SeqUtils.combine_ordered_dicts(
             item_subs, extra_item_subs)
-        self.taxoRegex = SanitationUtils.compile_regex(self.taxo_subs)
-        self.itemRegex = SanitationUtils.compile_regex(self.item_subs)
+        self.taxo_regex = SanitationUtils.compile_regex(self.taxo_subs)
+        self.item_regex = SanitationUtils.compile_regex(self.item_subs)
 
         if self.DEBUG_GEN:
-            self.register_message("taxoDepth: {}".format(
-                self.taxoDepth), 'CsvParseGenTree.__init__')
-            self.register_message("itemDepth: {}".format(
-                self.itemDepth), 'CsvParseGenTree.__init__')
-            self.register_message("maxDepth: {}".format(
-                self.maxDepth), 'CsvParseGenTree.__init__')
+            self.register_message("taxo_depth: {}".format(
+                self.taxo_depth), 'CsvParseGenTree.__init__')
+            self.register_message("item_depth: {}".format(
+                self.item_depth), 'CsvParseGenTree.__init__')
+            self.register_message("max_depth: {}".format(
+                self.max_depth), 'CsvParseGenTree.__init__')
             self.register_message("meta_width: {}".format(
                 self.meta_width), 'CsvParseGenTree.__init__')
             self.register_message("schema: {}".format(
@@ -440,13 +440,13 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
     #     super(CsvParseGenTree, self).clear_transients()
         # CSVParse_Shop.clear_transients(self)
 
-    # def register_item(self, itemData):
-    #     super(CsvParseGenTree, self).register_item(itemData)
-    #     if itemData.isProduct:
-    #         self.register_product(itemData)
+    # def register_item(self, item_data):
+    #     super(CsvParseGenTree, self).register_item(item_data)
+    #     if item_data.isProduct:
+    #         self.register_product(item_data)
 
     def change_item(self, item):
-        return SanitationUtils.shorten(self.itemRegex, self.item_subs, item)
+        return SanitationUtils.shorten(self.item_regex, self.item_subs, item)
 
     def change_fullname(self, item):
         subs = OrderedDict([(' \xe2\x80\x94 ', ' ')])
@@ -460,12 +460,12 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
             all_data, container, **kwargs)
         assert issubclass(container, ImportGenObject)
         if issubclass(container, self.taxoContainer):
-            regex = self.taxoRegex
+            regex = self.taxo_regex
             subs = self.taxo_subs
         else:
             assert issubclass(
                 container, self.itemContainer), "class must be item or taxo subclass not %s" % container.__name__
-            regex = self.itemRegex
+            regex = self.item_regex
             subs = self.item_subs
         kwargs['regex'] = regex
         kwargs['subs'] = subs

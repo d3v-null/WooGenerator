@@ -9,7 +9,7 @@ from pprint import pformat  # pprint
 from woogenerator.coldata import ColDataUser  # , ColDataWoo
 from woogenerator.contact_objects import ContactAddress, ContactName
 from woogenerator.contact_objects import ContactPhones, SocialMediaFields
-from woogenerator.utils import DescriptorUtils, ListUtils, SanitationUtils, TimeUtils, Registrar
+from woogenerator.utils import DescriptorUtils, SeqUtils, SanitationUtils, TimeUtils, Registrar
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.flat import ImportFlat, CsvParseFlat
 
@@ -243,10 +243,10 @@ class ImportUser(ImportFlat):
 
         emails = []
         if data.get('E-mail'):
-            emails = ListUtils.combine_lists(
+            emails = SeqUtils.combine_lists(
                 emails, SanitationUtils.find_all_emails(data['E-mail']))
         if data.get('Personal E-mail'):
-            emails = ListUtils.combine_lists(
+            emails = SeqUtils.combine_lists(
                 emails,
                 SanitationUtils.find_all_emails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
@@ -254,7 +254,7 @@ class ImportUser(ImportFlat):
 
         urls = []
         if data.get('Web Site'):
-            urls = ListUtils.combine_lists(
+            urls = SeqUtils.combine_lists(
                 urls, SanitationUtils.find_all_urls(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
@@ -350,7 +350,7 @@ class CsvParseUser(CsvParseFlat):
                  cols=[],
                  defaults={},
                  contact_schema=None,
-                 filterItems=None,
+                 filter_items=None,
                  limit=None,
                  source=None):
         if self.DEBUG_MRO:
@@ -364,13 +364,13 @@ class CsvParseUser(CsvParseFlat):
             # ('post_status', 'publish'),
             # ('last_import', import_name),
         ])
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         super(CsvParseUser, self).__init__(
             cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
-        self.filterItems = filterItems
-        # self.itemIndexer = self.getUsername
+        self.filter_items = filter_items
+        # self.item_indexer = self.getUsername
 
     # def get_kwargs(self, all_data, container, **kwargs):
     #     kwargs = super(CsvParseUser, self).get_kwargs(all_data, container, **kwargs)
@@ -415,7 +415,7 @@ class CsvParseUser(CsvParseFlat):
             self.emails,
             email,
             singular=False,
-            registerName='emails')
+            register_name='emails')
 
     def register_no_email(self, object_data):
         self.register_anything(
@@ -423,11 +423,11 @@ class CsvParseUser(CsvParseFlat):
             self.noemails,
             object_data.index,
             singular=True,
-            registerName='noemails')
+            register_name='noemails')
 
     def register_role(self, object_data, role):
         self.register_anything(
-            object_data, self.roles, role, singular=False, registerName='roles')
+            object_data, self.roles, role, singular=False, register_name='roles')
 
     def register_no_role(self, object_data):
         self.register_anything(
@@ -435,11 +435,11 @@ class CsvParseUser(CsvParseFlat):
             self.noroles,
             object_data.index,
             singular=True,
-            registerName='noroles')
+            register_name='noroles')
 
     def register_card(self, object_data, card):
         self.register_anything(
-            object_data, self.cards, card, singular=False, registerName='cards')
+            object_data, self.cards, card, singular=False, register_name='cards')
 
     def register_no_card(self, object_data):
         self.register_anything(
@@ -447,7 +447,7 @@ class CsvParseUser(CsvParseFlat):
             self.nocards,
             object_data.index,
             singular=True,
-            registerName='nocards')
+            register_name='nocards')
 
     def register_username(self, object_data, username):
         self.register_anything(
@@ -455,7 +455,7 @@ class CsvParseUser(CsvParseFlat):
             self.usernames,
             username,
             singular=False,
-            registerName='usernames')
+            register_name='usernames')
 
     def register_no_username(self, object_data):
         self.register_anything(
@@ -463,7 +463,7 @@ class CsvParseUser(CsvParseFlat):
             self.nousernames,
             object_data.index,
             singular=True,
-            registerName='nousernames')
+            register_name='nousernames')
 
     # def registerCompany(self, object_data, company):
     #     self.register_anything(
@@ -471,7 +471,7 @@ class CsvParseUser(CsvParseFlat):
     #         self.companies,
     #         company,
     #         singular = False,
-    #         registerName = 'companies'
+    #         register_name = 'companies'
     #     )
 
     def register_filtered(self, object_data):
@@ -480,7 +480,7 @@ class CsvParseUser(CsvParseFlat):
             self.filtered,
             object_data.index,
             singular=True,
-            registerName='filtered')
+            register_name='filtered')
 
     def register_bad_address(self, object_data, address):
         self.register_anything(
@@ -488,7 +488,7 @@ class CsvParseUser(CsvParseFlat):
             self.bad_address,
             object_data.index,
             singular=True,
-            registerName='badaddress')
+            register_name='badaddress')
 
     def register_bad_name(self, object_data, name):
         self.register_anything(
@@ -496,7 +496,7 @@ class CsvParseUser(CsvParseFlat):
             self.bad_name,
             object_data.index,
             singular=True,
-            registerName='badname')
+            register_name='badname')
 
     # def registerBadEmail(self, object_data, name):
     #     self.register_anything(
@@ -504,7 +504,7 @@ class CsvParseUser(CsvParseFlat):
     #         self.badEmail,
     #         object_data.index,
     #         singular = True,
-    #         registerName = 'bademail'
+    #         register_name = 'bademail'
     #     )
 
     def register_address(self, object_data, address):
@@ -515,36 +515,36 @@ class CsvParseUser(CsvParseFlat):
                 self.addresses,
                 address_str,
                 singular=False,
-                registerName='address')
+                register_name='address')
 
     def validate_filters(self, object_data):
-        if self.filterItems:
-            if 'roles' in self.filterItems.keys(
-            ) and object_data.role not in self.filterItems['roles']:
+        if self.filter_items:
+            if 'roles' in self.filter_items.keys(
+            ) and object_data.role not in self.filter_items['roles']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not match role"
                         % object_data.__repr__())
                 return False
-            if 'sinceM' in self.filterItems.keys(
-            ) and object_data.act_modtime < self.filterItems['sinceM']:
+            if 'sinceM' in self.filter_items.keys(
+            ) and object_data.act_modtime < self.filter_items['sinceM']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not meet sinceM condition"
                         % object_data.__repr__())
                 return False
-            if 'sinceS' in self.filterItems.keys(
-            ) and object_data.wp_modtime < self.filterItems['sinceS']:
+            if 'sinceS' in self.filter_items.keys(
+            ) and object_data.wp_modtime < self.filter_items['sinceS']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not meet sinceS condition"
                         % object_data.__repr__())
                 return False
-            if object_data.username in self.filterItems.get('users', []):
+            if object_data.username in self.filter_items.get('users', []):
                 return True
-            if object_data.MYOBID in self.filterItems.get('cards', []):
+            if object_data.MYOBID in self.filter_items.get('cards', []):
                 return True
-            if object_data.email in self.filterItems.get('emails', []):
+            if object_data.email in self.filter_items.get('emails', []):
                 return True
             if self.DEBUG_USR:
                 self.register_message(
@@ -634,7 +634,7 @@ class CsvParseUser(CsvParseFlat):
     #         self.roles[role],
     #         self.getUsername,
     #         singular = True,
-    #         registerName = 'roles'
+    #         register_name = 'roles'
     #     )
 
     # def process_object(self, object_data):

@@ -31,7 +31,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         self.jsonconnect_params = {}
         self.actconnect_params = {}
         self.actDbParams = {}
-        self.fsParams = {}
+        self.fs_params = {}
 
     def processConfig(self, config):
         wp_srv_offset = config.get(self.optionNamePrefix + 'wp_srv_offset', 0)
@@ -112,14 +112,14 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
 
-        syncCols = ColDataUser.get_sync_cols()
+        sync_cols = ColDataUser.get_sync_cols()
 
         for count, match in enumerate(globalMatches):
             m_object = match.m_objects[0]
             s_object = match.s_objects[0]
 
             syncUpdate = SyncUpdateUsrApi(m_object, s_object)
-            syncUpdate.update(syncCols)
+            syncUpdate.update(sync_cols)
 
             print "SyncUpdate: ", syncUpdate.tabulate()
 

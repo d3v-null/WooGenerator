@@ -1,8 +1,8 @@
 
-from woogenerator.utils import DescriptorUtils, ListUtils, SanitationUtils, TimeUtils
+from woogenerator.utils import DescriptorUtils, SeqUtils, SanitationUtils, TimeUtils
 from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 
-usrs_per_file = 1000
+USRS_PER_FILE = 1000
 
 
 class ImportFlat(ImportObject):
@@ -77,7 +77,7 @@ class CsvParseSpecial(CsvParseFlat):
             "XWNS",
             "XWPS"
         ]
-        cols = ListUtils.combine_lists(cols, extra_cols)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
 
         super(CsvParseSpecial, self).__init__(cols, defaults)
         self.object_indexer = self.get_object_id

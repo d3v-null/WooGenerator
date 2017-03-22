@@ -161,3 +161,46 @@ class testColDataUser(TestCase):
 
 if __name__ == '__main__':
     main()
+
+# TODO: Implement these test cases
+#
+# def testColDataMyo():
+#     print "Testing ColDataMyo Class:"
+#     col_data = ColDataMyo()
+#     print col_data.get_import_cols()
+#     print col_data.get_defaults()
+#     print col_data.get_product_cols()
+#
+# def testColDataWoo():
+#     print "Testing ColDataWoo class:"
+#     col_data = ColDataWoo()
+#     print col_data.get_import_cols()
+#     print col_data.get_defaults()
+#     print col_data.get_product_cols()
+#
+# def testColDataUser():
+#     print "Testing ColDataUser class:"
+#     col_data = ColDataUser()
+#     # print "importCols", col_data.get_import_cols()
+#     # print "userCols", col_data.get_user_cols().keys()
+#     # print "report_cols", col_data.get_report_cols().keys()
+#     # print "capitalCols", col_data.get_capital_cols().keys()
+#     # print "sync_cols", col_data.get_sync_cols().keys()
+#     print "actCols", col_data.get_act_cols().keys()
+#     # print "wpcols", col_data.get_wp_cols().keys()
+#     print "get_wp_tracked_cols", col_data.get_wp_tracked_cols()
+#     print "get_act_tracked_cols", col_data.get_act_tracked_cols()
+#     print "get_act_future_tracked_cols", col_data.get_act_future_tracked_cols()
+#
+# def testTansyncDefaults():
+#     col_data = ColDataUser()
+#     print '{'
+#     for col, data in col_data.get_tansync_defaults().items():
+#         print '"%s": %s,' % (col, json.dumps(data))
+#     print '}'
+#
+# if __name__ == '__main__':
+#     # testColDataMyo()
+#     # testColDataWoo()
+#     testColDataUser()
+#     # testTansyncDefaults()

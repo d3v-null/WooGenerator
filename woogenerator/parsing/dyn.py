@@ -1,30 +1,38 @@
-import os
-import bleach
-import re
-# from phpserialize import dumps
+"""
+Utilities for parsing and handling dynamic pricing information.
+"""
+
 from collections import OrderedDict
 from copy import copy
 
-from context import woogenerator
-from woogenerator.utils import ListUtils, DescriptorUtils, ValidationUtils, PHPUtils, SanitationUtils
-from woogenerator.parsing.abstract import ObjList
-from woogenerator.parsing.tree import CsvParseTree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
+import bleach
+
+from woogenerator.utils import (SeqUtils, DescriptorUtils, ValidationUtils,
+                                PHPUtils, SanitationUtils)
+from woogenerator.parsing.tree import (CsvParseTree, ImportTreeItem,
+                                       ImportTreeTaxo, ImportTreeObject)
 
 
 class ImportDynObject(ImportTreeObject):
+    """
+    Abstract class encompasing Dynamic rule lines and rules.
+    """
 
-    def is_rule_line(self): return False
+    # def is_rule_line(self):
+    #     return False
 
-    def validate(self):
-        for key, validation in self.validations:
-            assert callable(validation)
-            if not validation(self.get(key)):
-                raise UserWarning("%s could be be validated by %s" %
-                                  (key, self.__class__.__name__))
+    # def validate(self):
+    #     for key, validation in self.validations:
+    #         assert callable(validation)
+    #         if not validation(self.get(key)):
+    #             raise UserWarning("%s could be be validated by %s" %
+    #                               (key, self.__class__.__name__))
 
 
 class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
-
+    """
+    ImportObject for individual dynamic pricing rule line.
+    """
     validations = {
         'Discount': ValidationUtils.is_not_none,
         'Discount Type': ValidationUtils.is_contained_in(['PDSC'])
@@ -37,13 +45,13 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
         super(ImportDynRuleLine, self).__init__(*args, **kwargs)
 
         if all([
-            self.get('Min ( Buy )') is None,
-            self.get('Max ( Receive )') is None
+                self.get('Min ( Buy )') is None,
+                self.get('Max ( Receive )') is None
         ]):
             raise UserWarning(
                 "one of buy or receiver must be visible to ImportDynObject")
 
-    def is_rule_line(self): return True
+    # def is_rule_line(self): return True
 
     @property
     def pricing_rule_disc_type(self):
@@ -61,6 +69,9 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
 
 
 class ImportDynRule(ImportDynObject, ImportTreeTaxo):
+    """
+    An ImportObject which is a parent to group of dynamic parsing rules.
+    """
 
     validations = {
         'ID': ValidationUtils.is_not_none,
@@ -72,16 +83,16 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     qty_base = DescriptorUtils.safe_key_property('Qty. Base')
     rule_mode = DescriptorUtils.safe_key_property('Rule Mode')
     roles = DescriptorUtils.safe_key_property('Roles')
+    rule_id = DescriptorUtils.safe_key_property('ID')
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         self.rule_lines = []
-        assert self.ID
-
-    ID = DescriptorUtils.safe_key_property('ID')
+        assert self.rule_id
 
     @property
-    def index(self): return self.ID
+    def index(self):
+        return self.rule_id
 
     @property
     def pricing_rule_collector(self):
@@ -104,24 +115,8 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
             }
         }
 
-    # def addRuleData(self, ruleData):
-    #     self.ruleData = ruleData
-
-    # def addLineData(self, rule_line_data):
-    #     if rule_line_data:
-    #         self['children'].append(rule_line_data)
-
-    # def registerRuleLine(self, lineData):
-    #     # assert isinstance(lineData, ImportDynObject)
-    #     assert lineData.is_rule_line()
-    #     self.register_anything(
-    #         lineData,
-    #         self.get_rule_lines()
-    #     )
-
     def get_rule_lines(self):
-        # return self.rule_lines
-        return self.getChildren()
+        return self.children
 
     def get_col_names(self):
         rule_mode = self.get('Rule Mode', 'BULK')
@@ -171,7 +166,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
             ('type', 'price_discount')
         ])
 
-        if(self.rule_mode == 'BULK'):
+        if self.rule_mode == 'BULK':
             mode = 'continuous'
             block_rules = {
                 1: empty_blockrule
@@ -241,12 +236,19 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
 
 class CsvParseDyn(CsvParseTree):
+    """
+    Parser for dynamic pricing rules.
+    """
 
     itemContainer = ImportDynRuleLine
     taxoContainer = ImportDynRule
     objectContainer = ImportDynObject
 
-    def __init__(self, cols=[], defaults={}):
+    def __init__(self, cols=None, defaults=None):
+        if cols is None:
+            cols = []
+        if defaults is None:
+            defaults = {}
         extra_cols = [
             'ID', 'Qty. Base', 'Rule Mode', 'Roles',
             'Min ( Buy )', 'Max ( Receive )', 'Discount Type', 'Discount', 'Repeating', 'Meaning']
@@ -256,12 +258,12 @@ class CsvParseDyn(CsvParseTree):
             'Rule Mode': 'BULK'
         }
 
-        cols = ListUtils.combine_lists(cols, extra_cols)
-        defaults = ListUtils.combine_ordered_dicts(extra_defaults, defaults)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+        defaults = SeqUtils.combine_ordered_dicts(extra_defaults, defaults)
         super(CsvParseDyn, self).__init__(cols, defaults,
-                                          taxoDepth=1, itemDepth=1, meta_width=0)
+                                          taxo_depth=1, item_depth=1, meta_width=0)
 
-        self.taxoIndexer = self.get_object_index
+        self.taxo_indexer = self.get_object_index
 
     def depth(self, row):
         for i, cell in enumerate(row):

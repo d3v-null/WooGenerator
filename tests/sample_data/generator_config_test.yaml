@@ -3,8 +3,8 @@
 master_name: GDrive
 slave_name: WooCommerce
 
-taxoDepth: 3
-itemDepth: 2
+taxo_depth: 3
+item_depth: 2
 
 myo_schemas:
     - MY

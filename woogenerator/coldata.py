@@ -1,8 +1,10 @@
-# from __future__ import absolute_import
-from collections import OrderedDict
-from utils import ListUtils  # , Registrar #, DebugUtils
-# import json
+"""
+Utility for keeping track of column metadata for translating between databases.
+"""
 
+from collections import OrderedDict
+
+from woogenerator.utils import SeqUtils
 
 class ColDataBase(object):
     data = OrderedDict()
@@ -24,7 +26,6 @@ class ColDataBase(object):
     @classmethod
     def get_defaults(cls):
         defaults = {}
-        # Registrar.register_message('called with class: '+ unicode(cls) + ', data=' + unicode(cls.data))
         for col, data in cls.data.items():
             # Registrar.register_message('col is %s' % col)
             if 'default' in data:
@@ -46,15 +47,15 @@ class ColDataBase(object):
         return export_cols
 
     @classmethod
-    def get_basic_cols(self):
-        return self.get_export_cols('basic')
+    def get_basic_cols(cls):
+        return cls.get_export_cols('basic')
 
     @classmethod
-    def get_delta_cols(self):
+    def get_delta_cols(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('delta'):
-                cols[col] = self.delta_col(col)
+                cols[col] = cls.delta_col(col)
         return cols
 
     @classmethod
@@ -140,11 +141,11 @@ class ColDataBase(object):
         return api_import_cols
 
     @classmethod
-    def get_sync_cols(self):
-        return self.get_export_cols('sync')
+    def get_sync_cols(cls):
+        return cls.get_export_cols('sync')
 
     @classmethod
-    def delta_col(self, col):
+    def delta_col(cls, col):
         return 'Delta ' + col
 
 
@@ -309,8 +310,8 @@ class ColDataMyo(ColDataProd):
         super(ColDataMyo, self).__init__(data)
 
     @classmethod
-    def get_product_cols(self):
-        return self.get_export_cols('product')
+    def get_product_cols(cls):
+        return cls.get_export_cols('product')
 
 
 class ColDataWoo(ColDataProd):
@@ -1163,7 +1164,7 @@ class ColDataWoo(ColDataProd):
     @classmethod
     def get_attribute_cols(cls, attributes, vattributes):
         attribute_cols = OrderedDict()
-        all_attrs = ListUtils.combine_lists(
+        all_attrs = SeqUtils.combine_lists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
             attribute_cols['attribute:' + attr] = {
@@ -1611,7 +1612,10 @@ class ColDataUser(ColDataBase):
             'static': True,
             'sync': True,
             'basic': True,
-            'aliases': ['Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode', 'Home State', 'Home Country'],
+            'aliases': [
+                'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
+                'Home State', 'Home Country'
+            ],
             'tracked': 'future',
         }),
         ('Address 1', {
@@ -2081,9 +2085,10 @@ class ColDataUser(ColDataBase):
 
         ('Social Media', {
             'sync': True,
-            'aliases': ['Facebook Username', 'Twitter Username',
-                        'GooglePlus Username', 'Instagram Username',
-                        ],
+            'aliases': [
+                'Facebook Username', 'Twitter Username',
+                'GooglePlus Username', 'Instagram Username',
+            ],
             #    'Web Site'],
             'tracked': True,
         }),
@@ -2192,54 +2197,54 @@ class ColDataUser(ColDataBase):
         super(ColDataUser, self).__init__(data)
 
     @classmethod
-    def get_user_cols(self):
-        return self.get_export_cols('user')
+    def get_user_cols(cls):
+        return cls.get_export_cols('user')
 
     @classmethod
-    def get_sync_cols(self):
-        return self.get_export_cols('sync')
+    def get_sync_cols(cls):
+        return cls.get_export_cols('sync')
 
     @classmethod
-    def get_capital_cols(self):
-        return self.get_export_cols('capitalized')
+    def get_capital_cols(cls):
+        return cls.get_export_cols('capitalized')
 
     @classmethod
-    def get_wp_cols(self):
-        return self.get_export_cols('wp')
+    def get_wp_cols(cls):
+        return cls.get_export_cols('wp')
 
     @classmethod
-    def get_act_cols(self):
-        return self.get_export_cols('act')
+    def get_act_cols(cls):
+        return cls.get_export_cols('act')
 
     @classmethod
-    def get_alias_cols(self):
-        return self.get_export_cols('aliases')
+    def get_alias_cols(cls):
+        return cls.get_export_cols('aliases')
 
     @classmethod
-    def get_wp_import_cols(self):
+    def get_wp_import_cols(cls):
         cols = []
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('wp') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(self.mod_time_col(col))
+                cols.append(cls.mod_time_col(col))
         return cols
 
     @classmethod
-    def get_wp_import_col_names(self):
+    def get_wp_import_col_names(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('wp') and data.get('import'):
                 cols[col] = col
             if data.get('tracked'):
-                mod_col = self.mod_time_col(col)
+                mod_col = cls.mod_time_col(col)
                 cols[mod_col] = mod_col
         return cols
 
     @classmethod
-    def get_wpdb_cols(self, meta=None):
+    def get_wpdb_cols(cls, meta=None):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('wp'):
                 wp_data = data['wp']
                 if hasattr(wp_data, '__getitem__'):
@@ -2252,14 +2257,14 @@ class ColDataUser(ColDataBase):
                         if key:
                             cols[key] = col
         if not meta:
-            assert self.wpdbPKey in cols.values()
+            assert cls.wpdbPKey in cols.values()
         return cols
 
     @classmethod
-    def get_all_wpdb_cols(self):
-        return ListUtils.combine_ordered_dicts(
-            self.get_wpdb_cols(True),
-            self.get_wpdb_cols(False)
+    def get_all_wpdb_cols(cls):
+        return SeqUtils.combine_ordered_dicts(
+            cls.get_wpdb_cols(True),
+            cls.get_wpdb_cols(False)
         )
 
     # @classmethod
@@ -2281,17 +2286,17 @@ class ColDataUser(ColDataBase):
     #     return cols
 
     @classmethod
-    def get_wp_tracked_cols(self):
+    def get_wp_tracked_cols(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('tracked'):
-                tracking_name = self.mod_time_col(col)
+                tracking_name = cls.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
-                    alias_data = self.data.get(alias, {})
+                    alias_data = cls.data.get(alias, {})
                     if alias_data.get('wp'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.mod_time_col(alias)
+                            this_tracking_name = cls.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
                         # wp_data = alias_data.get('wp')
@@ -2303,60 +2308,60 @@ class ColDataUser(ColDataBase):
         return cols
 
     @classmethod
-    def get_act_tracked_cols(self):
+    def get_act_tracked_cols(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('tracked'):
-                tracking_name = self.mod_time_col(col)
+                tracking_name = cls.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
-                    alias_data = self.data.get(alias, {})
+                    alias_data = cls.data.get(alias, {})
                     if alias_data.get('act'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.mod_time_col(alias)
+                            this_tracking_name = cls.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
-    def get_act_future_tracked_cols(self):
+    def get_act_future_tracked_cols(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('tracked') and data.get('tracked') == 'future':
-                tracking_name = self.mod_time_col(col)
+                tracking_name = cls.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
-                    alias_data = self.data.get(alias, {})
+                    alias_data = cls.data.get(alias, {})
                     if alias_data.get('act'):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
-                            this_tracking_name = self.mod_time_col(alias)
+                            this_tracking_name = cls.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
         return cols
 
     @classmethod
-    def get_act_import_cols(self):
+    def get_act_import_cols(cls):
         cols = []
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('act') and data.get('import'):
                 cols.append(col)
             if data.get('tracked'):
-                cols.append(self.mod_time_col(col))
+                cols.append(cls.mod_time_col(col))
         return cols
 
     @classmethod
-    def get_act_import_col_names(self):
+    def get_act_import_col_names(cls):
         cols = OrderedDict()
-        for col, data in self.data.items():
+        for col, data in cls.data.items():
             if data.get('act') and data.get('import'):
                 cols[col] = col
             if data.get('tracked'):
-                mod_col = self.mod_time_col(col)
+                mod_col = cls.mod_time_col(col)
                 cols[mod_col] = mod_col
         return cols
 
     @classmethod
-    def get_tansync_defaults_recursive(self, col, export_cols=None, data=None):
+    def get_tansync_defaults_recursive(cls, col, export_cols=None, data=None):
         if data is None:
             data = {}
         if export_cols is None:
@@ -2396,60 +2401,17 @@ class ColDataUser(ColDataBase):
 
         if data.get('aliases'):
             for alias in data['aliases']:
-                alias_data = self.data.get(alias, {})
+                alias_data = cls.data.get(alias, {})
                 alias_data['sync'] = data.get('sync')
-                export_cols = self.get_tansync_defaults_recursive(
+                export_cols = cls.get_tansync_defaults_recursive(
                     alias, export_cols, alias_data)
 
         return export_cols
 
     @classmethod
-    def get_tansync_defaults(self):
+    def get_tansync_defaults(cls):
         export_cols = OrderedDict()
-        for col, data in self.data.items():
-            export_cols = self.get_tansync_defaults_recursive(
+        for col, data in cls.data.items():
+            export_cols = cls.get_tansync_defaults_recursive(
                 col, export_cols, data)
         return export_cols
-
-#
-#
-# def testColDataMyo():
-#     print "Testing ColDataMyo Class:"
-#     col_data = ColDataMyo()
-#     print col_data.get_import_cols()
-#     print col_data.get_defaults()
-#     print col_data.get_product_cols()
-#
-# def testColDataWoo():
-#     print "Testing ColDataWoo class:"
-#     col_data = ColDataWoo()
-#     print col_data.get_import_cols()
-#     print col_data.get_defaults()
-#     print col_data.get_product_cols()
-#
-# def testColDataUser():
-#     print "Testing ColDataUser class:"
-#     col_data = ColDataUser()
-#     # print "importCols", col_data.get_import_cols()
-#     # print "userCols", col_data.get_user_cols().keys()
-#     # print "report_cols", col_data.get_report_cols().keys()
-#     # print "capitalCols", col_data.get_capital_cols().keys()
-#     # print "syncCols", col_data.get_sync_cols().keys()
-#     print "actCols", col_data.get_act_cols().keys()
-#     # print "wpcols", col_data.get_wp_cols().keys()
-#     print "get_wp_tracked_cols", col_data.get_wp_tracked_cols()
-#     print "get_act_tracked_cols", col_data.get_act_tracked_cols()
-#     print "get_act_future_tracked_cols", col_data.get_act_future_tracked_cols()
-#
-# def testTansyncDefaults():
-#     col_data = ColDataUser()
-#     print '{'
-#     for col, data in col_data.get_tansync_defaults().items():
-#         print '"%s": %s,' % (col, json.dumps(data))
-#     print '}'
-#
-# if __name__ == '__main__':
-#     # testColDataMyo()
-#     # testColDataWoo()
-#     testColDataUser()
-#     # testTansyncDefaults()

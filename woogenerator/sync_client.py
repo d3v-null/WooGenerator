@@ -19,8 +19,8 @@ from oauth2client import tools
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
-from utils import Registrar, SanitationUtils
-from utils import ProgressCounter
+from woogenerator.utils import Registrar, SanitationUtils
+from woogenerator.utils import ProgressCounter
 
 
 class AbstractServiceInterface(object):

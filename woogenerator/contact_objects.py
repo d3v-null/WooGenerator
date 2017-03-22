@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from tabulate import tabulate
 from woogenerator.utils import (AddressUtils, NameUtils, Registrar,
-                                SanitationUtils, DescriptorUtils, ListUtils)
+                                SanitationUtils, DescriptorUtils, SeqUtils)
 
 STRICT_ADDRESS = False
 STRICT_ADDRESS = True
@@ -328,14 +328,14 @@ class ContactAddress(ContactObject):
             self.properties['buildings'] = []
             self.properties['weak_thoroughfares'] = []
             self.properties['numbers'] = []
-            self.numberCombo = ContactObject.Combo()
+            self.number_combo = ContactObject.Combo()
             self.process_kwargs()
 
     def process_kwargs(self):
         if not self.empty:
             # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
 
-            lines = ListUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
+            lines = SeqUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
                 self.kwargs.get(key, '')), ['line1', 'line2']))
 
             if self.kwargs.get('country', ''):
@@ -411,23 +411,23 @@ class ContactAddress(ContactObject):
                 tokens = AddressUtils.tokenize_address(line)
                 self.register_message(u"TOKENS: %s" % repr(tokens))
                 self.name_combo.reset()
-                self.numberCombo.reset()
+                self.number_combo.reset()
                 for j, token in enumerate(tokens):
-                    if self.numberCombo.broken(j):
-                        self.add_number(self.numberCombo.flattened)
+                    if self.number_combo.broken(j):
+                        self.add_number(self.number_combo.flattened)
                     if self.name_combo.broken(j):
                         self.add_name(self.name_combo.flattened)
                     self.register_message(u"-> token[%d]: %s" % (j, token))
-                    if len(token) == 1 and SanitationUtils.string_contains_disallowed_punctuation(
+                    if len(token) == 1 and SanitationUtils.string_contains_bad_punc(
                             token):
                         continue
                     self.parse_token(j, token)
 
                     # break
-                if self.numberCombo:
+                if self.number_combo:
                     self.register_message("CONGRUENT NUMBERS AT END OF CYCLE: %s" %
-                                          SanitationUtils.coerce_unicode(self.numberCombo))
-                    self.add_number(self.numberCombo.flattened)
+                                          SanitationUtils.coerce_unicode(self.number_combo))
+                    self.add_number(self.number_combo.flattened)
                 if self.name_combo:
                     self.register_message("CONGRUENT NAMES AT END OF CYCLE:  %s" %
                                           SanitationUtils.coerce_unicode(self.name_combo))
@@ -480,7 +480,7 @@ class ContactAddress(ContactObject):
 
             # if any unknowns match number, then add them as a blank subunit
 
-    def parse_token(self, tokenIndex, token):
+    def parse_token(self, token_index, token):
         for getter, adder in [
             (AddressUtils.get_delivery, self.add_delivery),
             (AddressUtils.get_subunit, self.add_subunit),
@@ -504,8 +504,8 @@ class ContactAddress(ContactObject):
             if self.name_combo:
                 self.add_name(self.name_combo.flattened)
         if not number:
-            if self.numberCombo:
-                self.add_number(self.numberCombo.flattened)
+            if self.number_combo:
+                self.add_number(self.number_combo.flattened)
 
         if building and weak_thoroughfare:
             self.register_message("BUILDING AND WEAK THOROUGHFARE")
@@ -536,13 +536,13 @@ class ContactAddress(ContactObject):
         if name:
             self.register_message("FOUND NAME: %s" %
                                   SanitationUtils.coerce_unicode(name))
-            self.name_combo.add(tokenIndex, name)
+            self.name_combo.add(token_index, name)
             return
 
         if number:
             self.register_message("FOUND NUMBER: %s" %
                                   SanitationUtils.coerce_unicode(number))
-            self.numberCombo.add(tokenIndex, number)
+            self.number_combo.add(token_index, number)
             return
 
         self.register_message("UNKNOWN TOKEN %s" %
@@ -585,11 +585,11 @@ class ContactAddress(ContactObject):
     # SUBUNIT or FLOORS or DELIVERIES -> BUILDING
 
     def add_name(self, name):
-        # if self.numberCombo: self.add_number(self.numberCombo.flattened)
+        # if self.number_combo: self.add_number(self.number_combo.flattened)
         # name = NameUtils.get_multi_name(name)
         if not name:
             return
-        # if we haven't flushed numberCombo, do it now
+        # if we haven't flushed number_combo, do it now
         self.register_message("PROCESSING NAME %s" %
                               SanitationUtils.coerce_unicode(name))
         names = filter(None, NameUtils.get_single_names(name))
@@ -735,8 +735,8 @@ class ContactAddress(ContactObject):
                 not (self.properties['thoroughfares'] or self.properties['weak_thoroughfares']):
             if self.properties['numbers'] or self.properties[
                     'coerced_subunits']:
-                # if self.numberCombo:
-                #     number = AddressUtils.get_number(self.numberCombo.flattened)
+                # if self.number_combo:
+                #     number = AddressUtils.get_number(self.number_combo.flattened)
                 if self.properties['numbers']:
                     number = self.properties['numbers'].pop()
                 elif self.properties['coerced_subunits']:
@@ -1001,12 +1001,12 @@ class ContactName(ContactObject):
 
             if full_name_contact and full_name_components:
                 no_punctuation_contact, no_punctuation_components = map(
-                    SanitationUtils.similar_no_punctuation_comparison, [full_name_contact, full_name_components])
+                    SanitationUtils.similar_no_punc_cmp, [full_name_contact, full_name_components])
                 if no_punctuation_contact == no_punctuation_components:
                     # The names are effectively the same, can drop one
                     full_name_components = None
                 else:
-                    reverse_name_components = SanitationUtils.similar_no_punctuation_comparison(" ".join(filter(
+                    reverse_name_components = SanitationUtils.similar_no_punc_cmp(" ".join(filter(
                         None, [self.kwargs.get('family_name'), self.kwargs.get('first_name'), self.kwargs.get('middle_name')])))
                     # print reverse_name_components, no_punctuation_contact
                     if reverse_name_components == no_punctuation_contact:
@@ -1015,7 +1015,7 @@ class ContactName(ContactObject):
                         # self.enforce_strict("Ambiguous if format is family_name, first_name middle_name or just stray comma")
                         full_name_contact = None
 
-            full_names = ListUtils.filter_unique_true(
+            full_names = SeqUtils.filter_unique_true(
                 map(SanitationUtils.normalize_val, [full_name_contact, full_name_components]))
 
             if len(full_names) > 1:
@@ -1090,8 +1090,8 @@ class ContactName(ContactObject):
                 self.invalidate("There are some unknown tokens: %s" % SanitationUtils.coerce_bytes(
                     ' / '.join(self.properties['unknowns'])))
 
-    def parse_token(self, tokenIndex, token):
-        if self.name_combo.broken(tokenIndex):
+    def parse_token(self, token_index, token):
+        if self.name_combo.broken(token_index):
             self.add_name(self.name_combo.flattened)
 
         title = NameUtils.get_title(token)
@@ -1168,10 +1168,10 @@ class ContactName(ContactObject):
         if multi_name:
             self.register_message("FOUND NAME: %s" %
                                   SanitationUtils.coerce_unicode(multi_name))
-            self.name_combo.add(tokenIndex, multi_name)
+            self.name_combo.add(token_index, multi_name)
             return
 
-        if SanitationUtils.string_contains_disallowed_punctuation(
+        if SanitationUtils.string_contains_bad_punc(
                 token) and len(token) == 1:
             return
 

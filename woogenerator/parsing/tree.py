@@ -95,28 +95,28 @@ class ImportTreeObject(ImportObject):
         return ancestors
 
     #
-    def register_child(self, childData):
-        assert childData, "childData must be valid"
+    def register_child(self, child_data):
+        assert child_data, "child_data must be valid"
         # self.register_message("Registering child %s of %s with siblings: %s"\
         #     % (
-        #         childData.identifier,
+        #         child_data.identifier,
         #         self.identifier,
         #         str(self.children)
         #     ))
         # for child in self.children:
-        #     assert child.fullname != childData.fullname, "child %s of %s not unique to %s" \
+        #     assert child.fullname != child_data.fullname, "child %s of %s not unique to %s" \
         #                                             % (
-        #                                                 childData.identifier,
+        #                                                 child_data.identifier,
         #                                                 self.identifier,
         #                                                 self.children
         #                                             )
         self.register_anything(
-            childData,
+            child_data,
             self.child_register,
             indexer=self.child_indexer,
             singular=True,
             # resolver = self.passive_resolver,
-            registerName='parent'
+            register_name='parent'
         )
 
     @property
@@ -169,19 +169,19 @@ class ImportTreeObject(ImportObject):
     def process_meta(self): pass
 
     @property
-    def inheritenceAncestors(self):
+    def inheritence_ancestors(self):
         return self.ancestors
 
     # def get_inheritance_ancestors(self):
-    #     exc = DeprecationWarning("use .inheritenceAncestors insetad of .get_inheritance_ancestors()")
+    #     exc = DeprecationWarning("use .inheritence_ancestors insetad of .get_inheritance_ancestors()")
     #     self.register_error(exc)
-    #     return self.inheritenceAncestors
+    #     return self.inheritence_ancestors
 
     def inherit_key(self, key):
         if not self.get(key):
             inheritence = filter(None, map(
                 lambda x: x.get(key),
-                self.inheritenceAncestors
+                self.inheritence_ancestors
             ))
             if inheritence:
                 self[key] = inheritence[-1]
@@ -223,13 +223,13 @@ class ImportTreeObject(ImportObject):
     #     # return ancestors
 
     @property
-    def taxoAncestors(self):
+    def taxo_ancestors(self):
         return filter(lambda x: x.isTaxo, self.ancestors)
 
     # def getTaxoAncestors(self):
-    #     exc = DeprecationWarning("use .taxoAncestors instead of .getTaxoAncestors()")
+    #     exc = DeprecationWarning("use .taxo_ancestors instead of .getTaxoAncestors()")
     #     self.register_error(exc)
-    #     return self.taxoAncestors
+    #     return self.taxo_ancestors
     #     # ancestors = self.getAncestors()
     #     # return filter( lambda x: x.isTaxo, ancestors)
 
@@ -241,15 +241,15 @@ class ImportTreeObject(ImportObject):
         # ancestors = self.getAncestors()
         return [ancestor.get(key) for ancestor in [self] + self.ancestors]
 
-    def get_first_filtered_ancestor_self_key(self, key):
+    def get_first_filtd_anc_self_key(self, key):
         ancestor_values = self.get_ancestor_self_key(key)
         filtered_ancestor_values = [
             value for value in ancestor_values if value]
         if filtered_ancestor_values[0]:
             return filtered_ancestor_values[0]
     #
-    # def getChildren(self):
-    #     exc = DeprecationWarning("use .children instead of .getChildren()")
+    # def get_children(self):
+    #     exc = DeprecationWarning("use .children instead of .get_children()")
     #     self.register_error(exc)
     #     return self.children
     #
@@ -303,13 +303,13 @@ class ImportTreeItem(ImportTreeObject):
         # return super(ImportTreeItem, self).get_identifier_delimeter() + '>'
 
     @property
-    def itemAncestors(self):
+    def item_ancestors(self):
         return filter(lambda x: x.isItem, self.ancestors)
 
     # def getItemAncestors(self):
-    #     exc = DeprecationWarning("use .itemAncestors instead of .getItemAncestors()")
+    #     exc = DeprecationWarning("use .item_ancestors instead of .getItemAncestors()")
     #     self.register_error(exc)
-    #     return self.itemAncestors
+    #     return self.item_ancestors
     #     # ancestors = self.getAncestors()
     #     # return filter( lambda x: x.isItem, ancestors)
 
@@ -394,7 +394,7 @@ class CsvParseTreeMixin(object):
     rootContainer = ImportTreeRoot
 
     def clear_transients(self):
-        self.rootData = self.rootContainer()
+        self.root_data = self.rootContainer()
 
 
 class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
@@ -402,28 +402,28 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     itemContainer = ImportTreeItem
     taxoContainer = ImportTreeTaxo
 
-    def __init__(self, cols, defaults, taxoDepth,
-                 itemDepth, meta_width, **kwargs):
+    def __init__(self, cols, defaults, taxo_depth,
+                 item_depth, meta_width, **kwargs):
         if self.DEBUG_MRO:
             self.register_message('CsvParseTree')
-        self.taxoDepth = taxoDepth
-        self.itemDepth = itemDepth
-        # self.maxDepth  = taxoDepth + itemDepth
+        self.taxo_depth = taxo_depth
+        self.item_depth = item_depth
+        # self.max_depth  = taxo_depth + item_depth
         self.meta_width = meta_width
-        self.itemIndexer = self.get_object_rowcount
-        self.taxoIndexer = self.get_object_rowcount
+        self.item_indexer = self.get_object_rowcount
+        self.taxo_indexer = self.get_object_rowcount
         super(CsvParseTree, self).__init__(cols, defaults, **kwargs)
 
         # if self.DEBUG_TREE:
         #     print "TREE initializing: "
-        #     print "-> taxoDepth: ", self.taxoDepth
-        #     print "-> itemDepth: ", self.itemDepth
-        #     print "-> maxDepth: ", self.maxDepth
+        #     print "-> taxo_depth: ", self.taxo_depth
+        #     print "-> item_depth: ", self.item_depth
+        #     print "-> max_depth: ", self.max_depth
         #     print "-> meta_width: ", self.meta_width
 
     @property
-    def maxDepth(self):
-        return self.taxoDepth + self.itemDepth
+    def max_depth(self):
+        return self.taxo_depth + self.item_depth
 
     def clear_transients(self):
         if self.DEBUG_MRO:
@@ -435,27 +435,27 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         self.stack = ImportStack()
 
     #
-    def register_item(self, itemData):
-        assert isinstance(itemData, ImportTreeObject)
-        assert itemData.isItem
+    def register_item(self, item_data):
+        assert isinstance(item_data, ImportTreeObject)
+        assert item_data.isItem
         self.register_anything(
-            itemData,
+            item_data,
             self.items,
-            indexer=self.itemIndexer,
+            indexer=self.item_indexer,
             singular=True,
-            registerName='items'
+            register_name='items'
         )
 
-    def register_taxo(self, taxoData):
-        assert isinstance(taxoData, ImportTreeObject)
-        assert taxoData.isTaxo
+    def register_taxo(self, taxo_data):
+        assert isinstance(taxo_data, ImportTreeObject)
+        assert taxo_data.isTaxo
         self.register_anything(
-            taxoData,
+            taxo_data,
             self.taxos,
-            indexer=self.taxoIndexer,
+            indexer=self.taxo_indexer,
             singular=True,
             # resolver = self.passive_resolver,
-            registerName='taxos',
+            register_name='taxos',
         )
 
     def register_object(self, object_data):
@@ -472,43 +472,43 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     #     CsvParseBase.register_object(self, object_data)
     #     CsvParseTreeMixin.register_object(self, object_data)
 
-        # self.register_message("ceated root: %s" % str(self.rootData))
+        # self.register_message("ceated root: %s" % str(self.root_data))
 
-    def assign_parent(self, parent_data=None, itemData=None):
-        assert isinstance(itemData, ImportTreeObject)
+    def assign_parent(self, parent_data=None, item_data=None):
+        assert isinstance(item_data, ImportTreeObject)
         if not parent_data:
-            parent_data = self.rootData
+            parent_data = self.root_data
         assert isinstance(parent_data, ImportTreeObject)
-        parent_data.register_child(itemData)
-        itemData.registerParent(parent_data)
+        parent_data.register_child(item_data)
+        item_data.registerParent(parent_data)
 
     def depth(self, row):
         sanitized_row = [self.sanitize_cell(cell) for cell in row]
         for i, sanitized_cell in enumerate(sanitized_row):
             if sanitized_cell:
                 return i
-            if i >= self.maxDepth:
+            if i >= self.max_depth:
                 break
         return -1
 
-    def extract_meta(self, row, thisDepth):
-        # return [row[thisDepth+i*self.maxDepth]for i in
+    def extract_meta(self, row, this_depth):
+        # return [row[this_depth+i*self.max_depth]for i in
         # range(self.meta_width)]
         meta = [''] * self.meta_width
         if row:
             for i in range(self.meta_width):
                 try:
-                    meta[i] = row[thisDepth + i * self.maxDepth]
+                    meta[i] = row[this_depth + i * self.max_depth]
                 except IndexError as exc:
                     self.register_error(
                         "could not get meta[{}] | {}".format(i, exc))
         return meta
 
     def is_taxo_depth(self, depth):
-        return depth < self.taxoDepth and depth >= 0
+        return depth < self.taxo_depth and depth >= 0
 
     def is_item_depth(self, depth):
-        return depth >= self.taxoDepth and depth < self.maxDepth
+        return depth >= self.taxo_depth and depth < self.max_depth
 
     def get_new_obj_container(self, all_data, **kwargs):
         container = super(CsvParseTree, self).get_new_obj_container(
@@ -565,7 +565,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
 
         parent = stack.get_top()
         if parent is None:
-            parent = self.rootData
+            parent = self.root_data
         if self.DEBUG_TREE:
             self.register_message("parent: {}".format(parent))
         kwargs['parent'] = parent
@@ -613,25 +613,25 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     #     #     self.register_message("stack: {}".format(stack))
     #     #
     #     # parent = stack.get_top()
-    #     # if parent is None: parent = self.rootData
+    #     # if parent is None: parent = self.root_data
     #     # if self.DEBUG_TREE:
     #     #     self.register_message("parent: {}".format(parent))
     #     # kwargs['parent'] = parent
     #
         return super(CsvParseTree, self).new_object(rowcount, **kwargs)
 
-    def refresh_stack(self, rowcount, row, thisDepth):
+    def refresh_stack(self, rowcount, row, this_depth):
         try:
-            assert thisDepth >= 0, "stack should not be broken"
+            assert this_depth >= 0, "stack should not be broken"
         except AssertionError as exc:
             raise UserWarning(str(exc))
-        del self.stack[thisDepth:]
-        for depth in range(len(self.stack), thisDepth):
+        del self.stack[this_depth:]
+        for depth in range(len(self.stack), this_depth):
             layer = self.new_object(rowcount, row=row, depth=depth)
             self.stack.append(layer)
             # self.initializeObject(layer)
         assert len(
-            self.stack) == thisDepth, "stack should have been properly refreshed"
+            self.stack) == this_depth, "stack should have been properly refreshed"
 
     def refresh_stack_from_object(self, object_data):
         assert isinstance(object_data, ImportTreeObject)
@@ -651,9 +651,9 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         self.stack.append(object_data)
         super(CsvParseTree, self).process_object(object_data)
 
-    def verify_item(self, itemData):
-        index = self.itemIndexer(itemData)
-        item_id = id(itemData)
+    def verify_item(self, item_data):
+        index = self.item_indexer(item_data)
+        item_id = id(item_data)
         lookup_data = self.items[index]
         lookup_id = id(lookup_data)
         assert item_id == lookup_id, "item has deviated from its place in items"
@@ -661,10 +661,10 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     # def analyse_file(self, file_name):
     #     super(CsvParseTree, self).analyse_file(file_name)
 
-    def find_taxo(self, taxoData):
+    def find_taxo(self, taxo_data):
         response = None
         for key in [self.taxoContainer.rowcountKey]:
-            value = taxoData.get(key)
+            value = taxo_data.get(key)
             if value:
                 for taxo in self.taxos:
                     if taxo.get(key) == value:

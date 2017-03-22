@@ -1,7 +1,7 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import ListUtils, DescriptorUtils, TimeUtils, Registrar, SanitationUtils
+from woogenerator.utils import SeqUtils, DescriptorUtils, TimeUtils, Registrar, SanitationUtils
 from woogenerator.parsing.abstract import BLANK_CELL
 from woogenerator.parsing.tree import CsvParseTree
 from woogenerator.parsing.tree import TaxoList, ItemList
@@ -76,16 +76,16 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
         return self.ID
 
     @property
-    def hasStarted(self):
+    def has_started(self):
         return not TimeUtils.has_happened_yet(self.start_time)
 
     @property
-    def hasFinished(self):
+    def has_finished(self):
         return not TimeUtils.has_happened_yet(self.end_time)
 
     @property
-    def isActive(self):
-        return self.hasStarted and not self.hasFinished
+    def is_active(self):
+        return self.has_started and not self.has_finished
 
 
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
@@ -101,11 +101,11 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
 
     @property
     def start_time(self):
-        return self.get_first_filtered_ancestor_self_key(self.startTimeKey)
+        return self.get_first_filtd_anc_self_key(self.startTimeKey)
 
     @property
     def end_time(self):
-        return self.get_first_filtered_ancestor_self_key(self.endTimeKey)
+        return self.get_first_filtd_anc_self_key(self.endTimeKey)
 
     @property
     def ID(self):
@@ -148,13 +148,13 @@ class CsvParseSpecial(CsvParseTree):
             "XWNS",
             "XWPS"
         ]
-        cols = ListUtils.combine_lists(cols, extra_cols)
+        cols = SeqUtils.combine_lists(cols, extra_cols)
 
         super(CsvParseSpecial, self).__init__(
             cols,
             defaults,
-            taxoDepth=1,
-            itemDepth=1,
+            taxo_depth=1,
+            item_depth=1,
             meta_width=1
         )
         self.object_indexer = self.get_object_id
@@ -165,35 +165,35 @@ class CsvParseSpecial(CsvParseTree):
         if self.DEBUG_MRO:
             Registrar.register_message(' ')
         super(CsvParseSpecial, self).clear_transients()
-        self.ruleGroups = OrderedDict()
+        self.rule_groups = OrderedDict()
         self.rules = OrderedDict()
 
-    def register_rule_group(self, groupData):
+    def register_rule_group(self, group_data):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
-                "registering rule group: %s", groupData.identifier)
-        assert groupData.isTaxo
+                "registering rule group: %s", group_data.identifier)
+        assert group_data.isTaxo
         self.register_anything(
-            groupData,
-            self.ruleGroups,
+            group_data,
+            self.rule_groups,
             indexer=self.object_indexer,
             singular=True,
-            resolver=self.duplicate_object_exception_resolver,
-            registerName='rule groups'
+            resolver=self.duplicate_obj_exc_resolver,
+            register_name='rule groups'
         )
 
-    def register_rule(self, ruleData):
+    def register_rule(self, rule_data):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
-                "registering rule: %s", ruleData.identifier)
-        assert ruleData.isItem
+                "registering rule: %s", rule_data.identifier)
+        assert rule_data.isItem
         self.register_anything(
-            ruleData,
+            rule_data,
             self.rules,
             indexer=self.object_indexer,
             singular=True,
-            resolver=self.duplicate_object_exception_resolver,
-            registerName='rules'
+            resolver=self.duplicate_obj_exc_resolver,
+            register_name='rules'
         )
 
     def auto_next(self):
@@ -212,8 +212,8 @@ class CsvParseSpecial(CsvParseTree):
         # if True or Registrar.DEBUG_SPECIAL:
         # print("entering all_future")
         all_future = []
-        for special_index, special_group in self.ruleGroups.items():
-            if special_group.hasFinished:
+        for special_index, special_group in self.rule_groups.items():
+            if special_group.has_finished:
                 continue
                 # if True or Registrar.DEBUG_SPECIAL:
                 #     print("special_group has finished: %s ended: %s, currently %s" % \
@@ -242,7 +242,7 @@ class CsvParseSpecial(CsvParseTree):
         return all_future
 
     #
-    def determine_current_special_groups(
+    def determine_current_spec_grps(
             self, specials_mode, current_special=None):
         TimeUtils.set_override_time(time.strptime(
             "2016-08-12", TimeUtils.dateFormat))
@@ -251,8 +251,8 @@ class CsvParseSpecial(CsvParseTree):
             Registrar.register_message("starting")
         response = []
         if specials_mode == 'override':
-            if current_special and current_special in self.ruleGroups.keys():
-                response = [self.ruleGroups[current_special]]
+            if current_special and current_special in self.rule_groups.keys():
+                response = [self.rule_groups[current_special]]
         elif specials_mode == 'auto_next':
             auto_next = self.auto_next()
             if auto_next:
@@ -279,7 +279,7 @@ class CsvParseSpecial(CsvParseTree):
         #
 
         out = "\n"
-        for index, rule_group in self.ruleGroups.items():
+        for index, rule_group in self.rule_groups.items():
             out += "-> %s\n" % index
             rule_list = SpecialRuleList(rule_group.children)
             out += SanitationUtils.coerce_bytes(

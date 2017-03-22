@@ -1,5 +1,6 @@
 """
-CSVParse Abstract
+Utilities for parsing and handling data import files.
+
 Abstract base classes originally intended to be used for parsing and storing CSV data in a
 convenient accessible dictionary structure, but modified to parse data in other formats.
 Parse classes store Import objects in their internal structure and output ObjList instances
@@ -16,7 +17,7 @@ import re
 from tabulate import tabulate
 import unicodecsv
 
-from woogenerator.utils import (ListUtils, SanitationUtils, Registrar,
+from woogenerator.utils import (SeqUtils, SanitationUtils, Registrar,
                                 ProgressCounter, UnicodeCsvDialectUtils)
 
 BLANK_CELL = ''
@@ -24,7 +25,7 @@ BLANK_CELL = ''
 
 class ObjList(list, Registrar):
     """
-    An abstract list of `ImportObject`s
+    An abstract list of `ImportObject`s.
     """
 
     objList_type = 'objects'
@@ -46,7 +47,7 @@ class ObjList(list, Registrar):
     @property
     def objects(self):
         """
-        Returns a copy of the `ImportObject`s
+        Return a copy of the `ImportObject`s.
         """
         return self[:]
 
@@ -70,7 +71,7 @@ class ObjList(list, Registrar):
             self.append(obj)
 
     def get_key(self, key):
-        values = ListUtils.filter_unique_true(
+        values = SeqUtils.filter_unique_true(
             [obj.get(key) for obj in self.objects])
 
         if values:
@@ -88,8 +89,7 @@ class ObjList(list, Registrar):
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
         """
-        Create a table string representation of the list of objects given
-        the provided columns, table format and highlighting rules.
+        Create a table string representation of the list of objects.
         """
         objs = self.objects
         sanitizer = self.get_sanitizer(tablefmt)
@@ -142,7 +142,7 @@ class ObjList(list, Registrar):
     def export_items(self, file_path, col_names, dialect=None,
                      encoding="utf8"):
         """
-        Export the items in the object list to a csv file in the given file path
+        Export the items in the object list to a csv file in the given file path.
         """
         assert file_path, "needs a filepath"
         assert col_names, "needs col_names"
@@ -180,8 +180,7 @@ class ObjList(list, Registrar):
     @classmethod
     def get_basic_cols(cls):
         """
-        Get a list of columns used for basic reports of items contained in this
-        instance.
+        Get a list of columns used for basic reports of items contained in this instance.
         """
 
         return cls.report_cols
@@ -235,30 +234,33 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def index(self):
         """
-        Return a unique identifier for this object to differentiate it from
-        other objects in the same import.
+        Return a unique identifier to differentiate this from others within import.
         """
+
         return self.rowcount
 
     @property
     def identifier_delimeter(self):
         """
-        Return the delimeter used in creating the identifier for this instance
+        Return the delimeter used in creating the identifier for this instance.
+
+        Override in subclasses.
         """
+
         return ""
 
     @property
     def type_name(self):
         """
-        Return the name of the type of this instance for creating an identifier
+        Return the name of the type of this instance for creating an identifier.
         """
+
         return type(self).__name__
 
     @property
     def identifier(self):
         """
-        Return a unique identifier to distinguish this import object from other
-        import objects of different types.
+        Return a unique identifier to distinguish this from others outside import.
         """
 
         index = self.index
@@ -276,13 +278,14 @@ class ImportObject(OrderedDict, Registrar):
 
     def get_copy_args(self):
         """
-        Return the arguments provided to the copy method
-        (override in subclasses).
+        Return the arguments provided to the copy method.
+
+        Override in subclasses.
         """
         return {'rowcount': self.rowcount, 'row': self.row[:]}
 
     def containerize(self):
-        """ put self in a container by itself """
+        """ Put self in preferred container. """
         return self.container([self])
 
     def __getstate__(self):
@@ -335,8 +338,8 @@ class CsvParseBase(Registrar):
         extra_defaults = OrderedDict()
 
         self.limit = kwargs.pop('limit', None)
-        self.cols = ListUtils.combine_lists(cols, extra_cols)
-        self.defaults = ListUtils.combine_ordered_dicts(defaults,
+        self.cols = SeqUtils.combine_lists(cols, extra_cols)
+        self.defaults = SeqUtils.combine_ordered_dicts(defaults,
                                                         extra_defaults)
         self.object_indexer = self.get_object_rowcount
         self.clear_transients()
@@ -363,7 +366,7 @@ class CsvParseBase(Registrar):
             self.objects,
             self.object_indexer,
             singular=True,
-            registerName='objects')
+            register_name='objects')
 
     def analyse_header(self, row):
         # if self.DEBUG_PARSER: self.register_message( 'row: %s' % unicode(row) )
@@ -408,8 +411,9 @@ class CsvParseBase(Registrar):
 
     def sanitize_cell(self, cell):
         """
-        Sanitize a singular cell from the raw data before parsing
+        Sanitize a singular cell from the raw data before parsing.
         """
+
         return cell
 
     def get_parser_data(self, **kwargs):
@@ -435,27 +439,30 @@ class CsvParseBase(Registrar):
 
         Override in subclasses.
         """
+
         mandatory_data = OrderedDict()
         if self.source:
             mandatory_data['source'] = self.source
         return mandatory_data
 
-    def get_new_obj_container(self, all_data, **kwargs):
-        if kwargs:
-            pass  # gets rid of unused argument error
+    def get_new_obj_container(self, all_data, **kwargs):  # pylint: disable=unused-argument
+        """
+        Get container for new object.
+
+        Override in subclass.
+        """
+
         if self.DEBUG_MRO:
             self.register_message(' ')
         return self.objectContainer
 
-    def get_kwargs(self, all_data, container, **kwargs):
+    def get_kwargs(self, all_data, container, **kwargs):  # pylint: disable=unused-argument
         """
-        Use all_data, container and other kwargs to get kwargs for creating
-        new_object.
+        Use all_data, container and other kwargs to get kwargs for creating new_object.
 
         Override in subclasses.
         """
-        if all_data or container:
-            pass
+
         return kwargs
 
     def new_object(self, rowcount, **kwargs):
@@ -468,6 +475,7 @@ class CsvParseBase(Registrar):
         Subclasses of CsvParseBase override the get_kwargs and get_parser_data methods
         so that they can supply their own arguments to an object's initialization
         """
+
         if self.DEBUG_PARSER:
             self.register_message(
                 'rowcount: {} | kwargs {}'.format(rowcount, kwargs))
@@ -479,10 +487,10 @@ class CsvParseBase(Registrar):
         parser_data = self.get_parser_data(**kwargs)
         if self.DEBUG_PARSER:
             self.register_message("parser_data: {}".format(parser_data))
-        # all_data = ListUtils.combine_ordered_dicts(parser_data, default_data)
-        all_data = ListUtils.combine_ordered_dicts(default_data, parser_data)
+        # all_data = SeqUtils.combine_ordered_dicts(parser_data, default_data)
+        all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
         mandatory_data = self.get_mandatory_data(**kwargs)
-        all_data = ListUtils.combine_ordered_dicts(all_data, mandatory_data)
+        all_data = SeqUtils.combine_ordered_dicts(all_data, mandatory_data)
         if self.DEBUG_PARSER:
             self.register_message("all_data: {}".format(all_data))
         container = self.get_new_obj_container(all_data, **kwargs)
@@ -686,6 +694,7 @@ class CsvParseBase(Registrar):
         return translated
 
     def analyse_wp_api_obj(self, api_data):
+        # TODO: Why is this here and not lower in class tree?
         raise NotImplementedError()
 
     def get_obj_list(self):

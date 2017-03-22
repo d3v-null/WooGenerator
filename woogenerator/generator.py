@@ -27,7 +27,7 @@ from PIL import Image
 from exitstatus import ExitStatus
 
 from __init__ import MODULE_PATH, MODULE_LOCATION
-from woogenerator.utils import ListUtils, SanitationUtils, TimeUtils, ProgressCounter
+from woogenerator.utils import SeqUtils, SanitationUtils, TimeUtils, ProgressCounter
 from woogenerator.utils import HtmlReporter, Registrar
 from woogenerator.metagator import MetaGator
 from woogenerator.coldata import ColDataWoo, ColDataMyo, ColDataBase
@@ -466,7 +466,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                 parsers.dyn.clear_transients()
                 client.analyse_remote(
                     parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
-                settings.product_parser_args['dprpRules'] = parsers.dyn.taxos
+                settings.product_parser_args['dprp_rules'] = parsers.dyn.taxos
 
             if settings.do_specials:
                 Registrar.register_message("analysing specials")
@@ -476,11 +476,11 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                     Registrar.register_message("all specials: %s" %
                                                parsers.special.tabulate())
                 settings.product_parser_args[
-                    'specialRules'] = parsers.special.rules
+                    'special_rules'] = parsers.special.rules
 
                 # all_future_groups = parsers.special.all_future()
                 # print "all_future_groups: %s" % all_future_groups
-                current_special_groups = parsers.special.determine_current_special_groups(
+                current_special_groups = parsers.special.determine_current_spec_grps(
                     specials_mode=settings.specials_mode,
                     current_special=settings.current_special)
                 if Registrar.DEBUG_SPECIAL:
@@ -700,7 +700,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         attribute_cols = ColDataWoo.get_attribute_cols(
             parsers.product.attributes, parsers.product.vattributes)
         product_colnames = ColDataBase.get_col_names(
-            ListUtils.combine_ordered_dicts(product_cols, attribute_cols))
+            SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
         product_list = WooProdList(parsers.product.products.values())
         product_list.export_items(settings.fla_path, product_colnames)
@@ -712,7 +712,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         attribute_meta_cols = ColDataWoo.get_attribute_meta_cols(
             parsers.product.vattributes)
         variation_col_names = ColDataBase.get_col_names(
-            ListUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
+            SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
 
         if parsers.product.variations:
             variation_list = WooVarList(parsers.product.variations.values())
@@ -809,8 +809,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         settings.web_browser = config.get('webBrowser')
         settings.myo_schemas = config.get('myo_schemas')
         settings.woo_schemas = config.get('woo_schemas')
-        settings.taxo_depth = config.get('taxoDepth')
-        settings.item_depth = config.get('itemDepth')
+        settings.taxo_depth = config.get('taxo_depth')
+        settings.item_depth = config.get('item_depth')
 
         settings.img_cmp_folder = config.get('imgCmpFolder')
 
@@ -1047,16 +1047,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings.api_product_parser_args = {
         'import_name': settings.import_name,
-        'itemDepth': settings.item_depth,
-        'taxoDepth': settings.taxo_depth,
+        'item_depth': settings.item_depth,
+        'taxo_depth': settings.taxo_depth,
         'cols': ColDataWoo.get_import_cols(),
         'defaults': ColDataWoo.get_defaults(),
     }
 
     settings.product_parser_args = {
         'import_name': settings.import_name,
-        'itemDepth': settings.item_depth,
-        'taxoDepth': settings.taxo_depth,
+        'item_depth': settings.item_depth,
+        'taxo_depth': settings.taxo_depth,
     }
 
     parsers = populate_master_parsers(settings)
@@ -1064,7 +1064,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if ListUtils.check_equal(
+        if SeqUtils.check_equal(
                 [category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
@@ -1177,7 +1177,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 for match in category_matcher.duplicate_matches:
                     master_taxo_sums = [cat.namesum for cat in match.m_objects]
                     if all(master_taxo_sums) \
-                            and ListUtils.check_equal(master_taxo_sums) \
+                            and SeqUtils.check_equal(master_taxo_sums) \
                             and not len(match.s_objects) > 1:
                         valid_category_matches.append(match)
                     else:
@@ -1333,7 +1333,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             print "there are %s slave categories registered" % len(
                 api_product_parser.categories)
             print "there are %s children of API root" % len(
-                api_product_parser.rootData.children)
+                api_product_parser.root_data.children)
             print api_product_parser.to_str_tree()
             for key, category in api_product_parser.categories.items():
                 print "%5s | %50s" % (key, category.title[:50])

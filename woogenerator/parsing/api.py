@@ -188,13 +188,13 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         new_data['stock_status'] = stock_status
         return new_data
 
-    def process_api_category(self, categoryApiData, object_data=None):
+    def process_api_category(self, category_api_data, object_data=None):
         """
         Create category if not exist or find if exist, then assign object_data to category
         Has to emulate CsvParseBase.new_object()
         """
         if self.DEBUG_API:
-            category_title = categoryApiData.get('title', '')
+            category_title = category_api_data.get('title', '')
             if object_data:
                 identifier = object_data.identifier
                 self.register_message(
@@ -209,7 +209,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         #
         if self.DEBUG_API:
             self.register_message("ANALYSE CATEGORY: %s" %
-                                  repr(categoryApiData))
+                                  repr(category_api_data))
         core_translation = OrderedDict()
         for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
             try:
@@ -219,20 +219,20 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             core_translation[wp_api_key] = col
         category_search_data = {}
         category_search_data.update(
-            **self.translate_keys(categoryApiData, core_translation))
+            **self.translate_keys(category_api_data, core_translation))
         category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                                      for key, value in category_search_data.items()])
 
-        # if 'id' in categoryApiData:
-        #     category_search_data[self.categoryContainer.wpidKey] = categoryApiData['id']
-        # if 'name' in categoryApiData:
-        #     category_search_data[self.categoryContainer.titleKey] = categoryApiData['name']
-        #     category_search_data[self.categoryContainer.namesumKey] = categoryApiData['name']
-        # elif 'title' in categoryApiData:
-        #     category_search_data[self.categoryContainer.titleKey] = categoryApiData['title']
-        #     category_search_data[self.categoryContainer.namesumKey] = categoryApiData['title']
-        # if 'slug' in categoryApiData:
-        #     category_search_data[self.categoryContainer.slugKey] = categoryApiData['slug']
+        # if 'id' in category_api_data:
+        #     category_search_data[self.categoryContainer.wpidKey] = category_api_data['id']
+        # if 'name' in category_api_data:
+        #     category_search_data[self.categoryContainer.titleKey] = category_api_data['name']
+        #     category_search_data[self.categoryContainer.namesumKey] = category_api_data['name']
+        # elif 'title' in category_api_data:
+        #     category_search_data[self.categoryContainer.titleKey] = category_api_data['title']
+        #     category_search_data[self.categoryContainer.namesumKey] = category_api_data['title']
+        # if 'slug' in category_api_data:
+        #     category_search_data[self.categoryContainer.slugKey] = category_api_data['slug']
         if self.DEBUG_API:
             self.register_message("SEARCHING FOR CATEGORY: %s" %
                                   repr(category_search_data))
@@ -241,20 +241,20 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             if self.DEBUG_API:
                 self.register_message("CATEGORY NOT FOUND")
 
-            categoryApiData['type'] = 'category'
-            if not 'description' in categoryApiData:
-                categoryApiData['description'] = ''
-            if not 'slug' in categoryApiData:
-                categoryApiData['slug'] = ''
+            category_api_data['type'] = 'category'
+            if not 'description' in category_api_data:
+                category_api_data['description'] = ''
+            if not 'slug' in category_api_data:
+                category_api_data['slug'] = ''
 
             kwargs = OrderedDict()
-            kwargs['api_data'] = categoryApiData
+            kwargs['api_data'] = category_api_data
 
             # default_data = OrderedDict(self.defaults.items())
             #
             # parser_data = self.get_parser_data(**kwargs)
             #
-            # all_data = ListUtils.combine_ordered_dicts(default_data, parser_data)
+            # all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
             #
             # container = self.get_new_obj_container(all_data, **kwargs)
             #
@@ -263,19 +263,19 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             # kwargs = OrderedDict(self.defaults.items())
             # kwargs.update(category_search_data)
             # catRowcount = getattr(self, 'rowcount')
-            # if 'id' in categoryApiData:
-            #     catRowcount = categoryApiData['id']
+            # if 'id' in category_api_data:
+            #     catRowcount = category_api_data['id']
             parent_category_data = None
-            if 'parent' in categoryApiData:
+            if 'parent' in category_api_data:
                 parent_category_search_data = {}
                 parent_category_search_data[
-                    self.categoryContainer.wpidKey] = categoryApiData['parent']
+                    self.categoryContainer.wpidKey] = category_api_data['parent']
                 parent_category_data = self.find_category(
                     parent_category_search_data)
             if parent_category_data:
                 kwargs['parent'] = parent_category_data
             else:
-                kwargs['parent'] = self.rootData
+                kwargs['parent'] = self.root_data
 
             cat_data = self.new_object(rowcount=self.rowcount, **kwargs)
 
@@ -449,7 +449,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
 
     def get_kwargs(self, all_data, container, **kwargs):
         if 'parent' not in kwargs:
-            kwargs['parent'] = self.rootData
+            kwargs['parent'] = self.root_data
         return kwargs
 
     def get_new_obj_container(self, all_data, **kwargs):

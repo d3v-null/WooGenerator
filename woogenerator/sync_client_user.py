@@ -30,9 +30,9 @@ class UsrSyncClientWP(SyncClientWP):
 
 class UsrSyncClientSshAct(SyncClientAbstract):
 
-    def __init__(self, connect_params, db_params, fsParams):
+    def __init__(self, connect_params, db_params, fs_params):
         self.db_params = db_params
-        self.fsParams = fsParams
+        self.fs_params = fs_params
         super(UsrSyncClientSshAct, self).__init__(connect_params)
 
     def attempt_connect(self):
@@ -152,9 +152,9 @@ class UsrSyncClientSshAct(SyncClientAbstract):
             + updates.items()
         )
 
-        import_name = self.fsParams['import_name']
-        out_folder = self.fsParams['out_folder']
-        remote_export_folder = self.fsParams['remote_export_folder']
+        import_name = self.fs_params['import_name']
+        out_folder = self.fs_params['out_folder']
+        remote_export_folder = self.fs_params['remote_export_folder']
         file_root = 'act_i_' + import_name + '_' + user_pkey
         file_name = file_root + '.csv'
         local_path = os.path.join(out_folder, file_name)
@@ -211,11 +211,11 @@ class UsrSyncClientSshAct(SyncClientAbstract):
             # this gets rid of unused argument warnings
             pass
 
-        import_name = self.fsParams['import_name']
-        remote_export_folder = self.fsParams['remote_export_folder']
+        import_name = self.fs_params['import_name']
+        remote_export_folder = self.fs_params['remote_export_folder']
         file_root = 'act_x_' + import_name
         file_name = file_root + '.csv'
-        in_folder = self.fsParams['in_folder']
+        in_folder = self.fs_params['in_folder']
         local_path = os.path.join(in_folder, file_name)
         remote_path = os.path.join(remote_export_folder, file_name)
 
@@ -256,7 +256,7 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
         self.db_params = db_params
         self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
         super(UsrSyncClientSqlWP, self).__init__(connect_params)
-        # self.fsParams = fsParams
+        # self.fs_params = fs_params
 
     def __enter__(self):
         self.service.start()
@@ -268,7 +268,8 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
     def attempt_connect(self):
         self.service = SSHTunnelForwarder(**self.connect_params)
 
-    def analyse_remote(self, parser, since=None, limit=None, filterItems=None):
+    def analyse_remote(self, parser, since=None,
+                       limit=None, filter_items=None):
 
         self.assert_connect()
 
@@ -388,10 +389,10 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
 
         um_on_clauses.append('ud.`Wordpress ID` = lu.`user_id`')
 
-        if filterItems:
-            if 'cards' in filterItems:
+        if filter_items:
+            if 'cards' in filter_items:
                 um_where_clauses.append("ud.`MYOB Card ID` IN (%s)" % (','.join([
-                    '"%s"' % card for card in filterItems['cards']
+                    '"%s"' % card for card in filter_items['cards']
                 ])))
 
         if um_on_clauses:

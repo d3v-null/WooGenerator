@@ -38,8 +38,8 @@ class testProdSyncClient(abstractSyncClientTestCase):
         wp_srv_offset = config.get(self.optionNamePrefix + 'wp_srv_offset', 0)
         store_url = config.get(self.optionNamePrefix + 'store_url', '')
 
-        # taxoDepth = config.get('taxoDepth')
-        # itemDepth = config.get('itemDepth')
+        # taxo_depth = config.get('taxo_depth')
+        # item_depth = config.get('item_depth')
 
         TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
@@ -53,8 +53,8 @@ class testProdSyncClient(abstractSyncClientTestCase):
 
         self.productParserArgs = {
             'import_name': self.import_name,
-            # 'itemDepth': itemDepth,
-            # 'taxoDepth': taxoDepth,
+            # 'item_depth': item_depth,
+            # 'taxo_depth': taxo_depth,
             'cols': ColDataWoo.get_import_cols(),
             'defaults': ColDataWoo.get_defaults(),
         }
