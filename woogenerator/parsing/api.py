@@ -361,7 +361,6 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             except:
                 wp_api_key = col
             core_translation[wp_api_key] = col
-        # if Registrar.DEBUG_API: Registrar.register_message("core_translation: %s" % pformat(core_translation))
         parser_data.update(**cls.translate_keys(api_data, core_translation))
 
         meta_translation = OrderedDict()
@@ -382,18 +381,18 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             parser_data.update(
                 **cls.get_api_stock_status_data(api_data['in_stock']))
         # if 'description' in api_data:
-        #     parser_data[cls.objectContainer.descriptionKey] = api_data['description']
+        #     parser_data[cls.objectContainer.description_key] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
         # categories
         if 'title' in api_data:
             parser_data[cls.objectContainer.titleKey] = api_data['title']
 
         assert \
-            cls.objectContainer.descriptionKey in parser_data, \
+            cls.objectContainer.description_key in parser_data, \
             "parser_data should have description: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
         parser_data[cls.objectContainer.descsumKey] = parser_data[
-            cls.objectContainer.descriptionKey]
+            cls.objectContainer.description_key]
         assert \
             cls.objectContainer.titleKey in parser_data, \
             "parser_data should have title: %s\n original: %s\ntranslations: %s, %s" \
@@ -432,10 +431,10 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         #     slug = api_data['slug']
         # parser_data[cls.objectContainer.slugKey] = slug
         #
-        description = parser_data.get(cls.objectContainer.descriptionKey, '')
+        description = parser_data.get(cls.objectContainer.description_key, '')
         if not description and 'description' in api_data:
             description = api_data['description']
-        parser_data[cls.objectContainer.descriptionKey] = description
+        parser_data[cls.objectContainer.description_key] = description
         parser_data[cls.objectContainer.descsumKey] = description
 
         if Registrar.DEBUG_API:
