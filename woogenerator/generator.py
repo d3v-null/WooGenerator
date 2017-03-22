@@ -28,7 +28,7 @@ from exitstatus import ExitStatus
 
 from __init__ import MODULE_PATH, MODULE_LOCATION
 from woogenerator.utils import SeqUtils, SanitationUtils, TimeUtils, ProgressCounter
-from woogenerator.utils import HtmlReporter, Registrar
+from woogenerator.utils import HtmlReporter, Registrar, SeqUtils
 from woogenerator.metagator import MetaGator
 from woogenerator.coldata import ColDataWoo, ColDataMyo, ColDataBase
 from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
@@ -71,7 +71,7 @@ def check_warnings():
         Registrar.print_message_dict(1)
 
 
-def make_argparser(config):  # pylint: disable=too-many-statements
+def make_argparser(settings):  # pylint: disable=too-many-statements
     """ creates the argument parser, using defaults from config """
     # todo: fix too-many-statements
     parser = argparse.ArgumentParser(
@@ -98,7 +98,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--download-master',
         help='download the master data from google',
         action="store_true",
-        default=config.get('download_master'))
+        default=settings.download_master)
     group.add_argument(
         '--skip-download-master',
         help=('use the local master file'
@@ -110,7 +110,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--download-slave',
         help='download the slave data',
         action="store_true",
-        default=config.get('download_slave'))
+        default=settings.download_slave)
     group.add_argument(
         '--skip-download-slave',
         help='use the local slave file instead of downloading the slave data',
@@ -123,11 +123,11 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     parser.add_argument(
         '--schema',
         help='what schema to process the files as',
-        default=config.get('fallback_schema'))
+        default=settings.fallback_schema)
     parser.add_argument(
         '--variant',
         help='what variant of schema to process the files',
-        default=config.get('fallback_variant'))
+        default=settings.fallback_variant)
 
     update_group = parser.add_argument_group('Update options')
     group = update_group.add_mutually_exclusive_group()
@@ -135,7 +135,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--update-slave',
         help='update the slave database in WooCommerce',
         action="store_true",
-        default=config.get('update_slave'))
+        default=settings.update_slave)
     group.add_argument(
         '--skip-update-slave',
         help='don\'t update the slave database',
@@ -146,7 +146,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-problematic',
         help='perform problematic updates anyway',
         action="store_true",
-        default=config.get('do_problematic'))
+        default=settings.do_problematic)
     group.add_argument(
         '--skip-problematic',
         help='protect data from problematic updates',
@@ -157,7 +157,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--auto-create-new',
         help='automatically create new products if they don\'t exist yet',
         action="store_true",
-        default=config.get('auto_create_new'))
+        default=settings.auto_create_new)
     update_group.add_argument(
         '--no-create-new',
         help='do not create new items, print which need to be created',
@@ -168,7 +168,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--auto-delete-old',
         help='automatically delete old products if they don\'t exist any more',
         action="store_true",
-        default=config.get('auto_delete_old'))
+        default=settings.auto_delete_old)
     group.add_argument(
         '--no-delete-old',
         help='do not delete old items, print which need to be deleted',
@@ -177,15 +177,15 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     update_group.add_argument(
         '--slave-timeout',
         help='timeout when using the slave api',
-        default=config.get('slave_timeout'))
+        default=settings.slave_timeout)
     update_group.add_argument(
         '--slave-limit',
         help='limit per page when using the slave api',
-        default=config.get('slave_limit'))
+        default=settings.slave_limit)
     update_group.add_argument(
         '--slave-offset',
         help='offset when using the slave api (for debugging)',
-        default=config.get('slave_offset'))
+        default=settings.slave_offset)
     group = update_group.add_mutually_exclusive_group()
     group.add_argument(
         '--ask-before-update',
@@ -203,7 +203,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-sync',
         help='sync the databases',
         action="store_true",
-        default=config.get('do_sync'))
+        default=settings.do_sync)
     group.add_argument(
         '--skip-sync',
         help='don\'t sync the databases',
@@ -215,7 +215,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-categories',
         help='sync categories',
         action="store_true",
-        default=config.get('do_categories'))
+        default=settings.do_categories)
     group.add_argument(
         '--skip-categories',
         help='don\'t sync categories',
@@ -227,7 +227,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-variations',
         help='sync variations',
         action="store_true",
-        default=config.get('do_variations'))
+        default=settings.do_variations)
     group.add_argument(
         '--skip-variations',
         help='don\'t sync variations',
@@ -240,7 +240,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--show-report',
         help='generate report files',
         action="store_true",
-        default=config.get('show_report'))
+        default=settings.show_report)
     group.add_argument(
         '--skip-report',
         help='don\'t generate report files',
@@ -251,7 +251,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--print-report',
         help='pirnt report in terminal',
         action="store_true",
-        default=config.get('show_report'))
+        default=settings.show_report)
     group.add_argument(
         '--skip-print-report',
         help='don\'t print report in terminal',
@@ -262,7 +262,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--report-and-quit',
         help='quit after generating report',
         action="store_true",
-        default=config.get('report_and_quit'))
+        default=settings.report_and_quit)
 
     images_group = parser.add_argument_group('Image options')
     group = images_group.add_mutually_exclusive_group()
@@ -270,7 +270,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-images',
         help='process images',
         action="store_true",
-        default=config.get('do_images'))
+        default=settings.do_images)
     group.add_argument(
         '--skip-images',
         help='don\'t process images',
@@ -281,7 +281,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-delete-images',
         help='delete extra images in compressed folder',
         action="store_true",
-        default=config.get('do_delete_images'))
+        default=settings.do_delete_images)
     group.add_argument(
         '--skip-delete-images',
         help='protect images from deletion',
@@ -292,7 +292,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-resize-images',
         help='resize images in compressed folder',
         action="store_true",
-        default=config.get('do_resize_images'))
+        default=settings.do_resize_images)
     group.add_argument(
         '--skip-resize-images',
         help='protect images from resizing',
@@ -303,7 +303,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-remeta-images',
         help='remeta images in compressed folder',
         action="store_true",
-        default=config.get('do_remeta_images'))
+        default=settings.do_remeta_images)
     group.add_argument(
         '--skip-remeta-images',
         help='protect images from resizing',
@@ -312,11 +312,11 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     images_group.add_argument(
         '--img-raw-folder',
         help='location of raw images',
-        default=config.get('imgRawFolder'))
+        default=settings.imgRawFolder)
     images_group.add_argument(
         '--img-raw-extra-folder',
         help='location of additional raw images',
-        default=config.get('imgRawExtraFolder'))
+        default=settings.imgRawExtraFolder)
     images_group.add_argument(
         '--require-images',
         help='require that all items have images',
@@ -328,7 +328,7 @@ def make_argparser(config):  # pylint: disable=too-many-statements
         '--do-specials',
         help='process specials',
         action="store_true",
-        default=config.get('do_specials'))
+        default=settings.do_specials)
     group.add_argument(
         '--skip-specials',
         help='don\'t process specials',
@@ -342,18 +342,14 @@ def make_argparser(config):  # pylint: disable=too-many-statements
     specials_group.add_argument(
         '--current-special',
         help='prefix of current special code',
-        default=config.get('current_special', 'SP'))
-    # specials_group.add_argument('--add-special-categories',
-    #     help='add special items to special category',
-    #     action="store_true",
-    #     default=config.get('add_special_categories'))
+        default=settings.current_special)
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '--do-dyns',
         help='process dynamic pricing rules',
         action="store_true",
-        default=config.get('do_dyns'))
+        default=settings.do_dyns)
     group.add_argument(
         '--skip-dyns',
         help='don\'t process dynamic pricing rules',
@@ -786,49 +782,75 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     # Process YAML file for defaults
 
-    config = {}
+    config = vars(settings)
 
     with open(settings.yaml_path) as stream:
-        config = yaml.load(stream)
+        config = ListUtils.combine_ordered_dicts(config, yaml.load(stream))
 
-        # overrides
-        if 'in_folder' in config.keys():
-            settings.in_folder = config['in_folder']
-        if 'out_folder' in config.keys():
-            settings.out_folder = config['out_folder']
-        if 'logFolder' in config.keys():
-            settings.log_folder = config['logFolder']
+    # overrides
+    if 'in_folder' in config.keys():
+        settings.in_folder = config['in_folder']
+    if 'out_folder' in config.keys():
+        settings.out_folder = config['out_folder']
+    if 'logFolder' in config.keys():
+        settings.log_folder = config['logFolder']
 
-        # mandatory
-        settings.merge_mode = config.get('merge_mode', 'sync')
-        settings.master_name = config.get('master_name', 'MASTER')
-        settings.slave_name = config.get('slave_name', 'SLAVE')
-        settings.default_last_sync = config.get('default_last_sync')
-        settings.web_folder = config.get('webFolder')
-        settings.web_address = config.get('webAddress')
-        settings.web_browser = config.get('webBrowser')
-        settings.myo_schemas = config.get('myo_schemas')
-        settings.woo_schemas = config.get('woo_schemas')
-        settings.taxo_depth = config.get('taxo_depth')
-        settings.item_depth = config.get('item_depth')
+    settings.merge_mode = config.get('merge_mode', 'sync')
+    settings.master_name = config.get('master_name', 'MASTER')
+    settings.slave_name = config.get('slave_name', 'SLAVE')
+    settings.default_last_sync = config.get('default_last_sync')
 
-        settings.img_cmp_folder = config.get('imgCmpFolder')
+    settings.web_folder = config.get('webFolder')
+    settings.web_address = config.get('webAddress')
+    settings.web_browser = config.get('webBrowser')
+    settings.fallback_schema = config.get('fallback_schema')
+    settings.fallback_variant = config.get('fallback_variant')
+    settings.myo_schemas = config.get('myo_schemas')
+    settings.woo_schemas = config.get('woo_schemas')
+    settings.taxo_depth = config.get('taxo_depth')
+    settings.item_depth = config.get('item_depth')
+    settings.img_cmp_folder = config.get('imgCmpFolder')
 
-        settings.gdrive_scopes = config.get('gdrive_scopes')
-        settings.gdrive_client_secret_file = config.get(
-            'gdrive_client_secret_file')
-        settings.gdrive_app_name = config.get('gdrive_app_name')
-        settings.gdrive_oauth_client_id = config.get('gdrive_oauth_clientID')
-        settings.gdrive_oauth_client_secret = config.get(
-            'gdrive_oauth_clientSecret')
-        settings.gdrive_credentials_dir = config.get('gdrive_credentials_dir')
-        settings.gdrive_credentials_file = config.get(
-            'gdrive_credentials_file')
-        settings.gen_fid = config.get('genFID')
-        settings.gen_gid = config.get('genGID')
-        settings.dprc_gid = config.get('dprcGID')
-        settings.dprp_gid = config.get('dprpGID')
-        settings.spec_gid = config.get('specGID')
+    settings.download_master = config.get('download_master')
+    settings.download_slave = config.get('download_slave')
+    settings.update_slave = config.get('update_slave')
+    settings.auto_delete_old = config.get('auto_delete_old')
+    settings.auto_create_new = config.get('auto_create_new')
+    settings.slave_timeout = config.get('slave_timeout')
+    settings.slave_limit = config.get('slave_limit')
+    settings.slave_offset = config.get('slave_offset')
+    settings.do_problematic = config.get('do_problematic')
+    settings.do_sync = config.get('do_sync')
+    settings.do_categories = config.get('do_categories')
+    settings.do_variations = config.get('do_variations')
+    settings.do_images = config.get('do_images')
+    settings.do_delete_images = config.get('do_delete_images')
+    settings.do_resize_images = config.get('do_resize_images')
+    settings.do_remeta_images = config.get('do_remeta_images')
+    settings.do_dyns = config.get('do_dyns')
+    settings.do_specials = config.get('do_specials')
+    settings.show_report = config.get('show_report')
+    settings.report_and_quit = config.get('report_and_quit')
+    settings.imgRawFolder = config.get('imgRawFolder')
+    settings.imgRawExtraFolder = config.get('imgRawExtraFolder')
+    settings.current_special = config.get('current_special')
+
+    settings.gdrive_scopes = config.get('gdrive_scopes')
+    settings.gdrive_client_secret_file = config.get(
+        'gdrive_client_secret_file')
+    settings.gdrive_app_name = config.get('gdrive_app_name')
+    settings.gdrive_oauth_client_id = config.get('gdrive_oauth_clientID')
+    settings.gdrive_oauth_client_secret = config.get(
+        'gdrive_oauth_clientSecret')
+    settings.gdrive_credentials_dir = config.get('gdrive_credentials_dir')
+    settings.gdrive_credentials_file = config.get(
+        'gdrive_credentials_file')
+    settings.gen_fid = config.get('genFID')
+    settings.gen_gid = config.get('genGID')
+    settings.dprc_gid = config.get('dprcGID')
+    settings.dprp_gid = config.get('dprpGID')
+    settings.spec_gid = config.get('specGID')
+
 
     assert all([
         settings.in_folder, settings.out_folder, settings.log_folder,
@@ -843,7 +865,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     ### GET SHELL ARGS ###
 
-    argparser = make_argparser(config)
+    argparser = make_argparser(settings)
 
     parser_override = []
     if override_args:
