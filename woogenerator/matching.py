@@ -4,7 +4,7 @@ Utilities for matching lists of parsing.abstract.ImportObjects
 from collections import OrderedDict
 
 from woogenerator.parsing.abstract import ImportObject, ObjList
-from woogenerator.utils import SanitationUtils, Registrar, InheritenceUtils, listUtils
+from woogenerator.utils import SanitationUtils, Registrar, InheritenceUtils, ListUtils
 
 
 class Match(object):
@@ -326,7 +326,7 @@ class MatchList(list):
             match_s_indices.append(s_index)
         if match_s_indices:
             if self.check_indices:
-                assert listUtils.check_equal(
+                assert ListUtils.check_equal(
                     match_s_indices
                 ), "all s_indices should be equal: %s" % match_s_indices
             self.s_indices.append(match_s_indices[0])
@@ -345,7 +345,7 @@ class MatchList(list):
             match_m_indices.append(m_index)
         if match_m_indices:
             if self.check_indices:
-                assert listUtils.check_equal(
+                assert ListUtils.check_equal(
                     match_m_indices
                 ), "all m_indices should be equal: %s" % match_m_indices
             self.m_indices.append(match_m_indices[0])

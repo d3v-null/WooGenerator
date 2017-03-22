@@ -3,11 +3,11 @@ from collections import OrderedDict
 from woogenerator.sync_client import SyncClientWC
 
 
-class ProdSyncClient_WC(SyncClientWC):
+class ProdSyncClientWC(SyncClientWC):
     endpoint_singular = 'product'
     #
     # def __init__(self, *args, **kwargs):
-    #     super(ProdSyncClient_WC, self).__init__(*args, **kwargs)
+    #     super(ProdSyncClientWC, self).__init__(*args, **kwargs)
 
     def analyse_remote_categories(self, parser):
         taxo_api_iterator = self.ApiIterator(
@@ -23,7 +23,7 @@ class ProdSyncClient_WC(SyncClientWC):
             self.register_message(parser.to_str_tree())
 
     # def analyse_remote(self, parser, since=None, limit=None):
-    # return super(ProdSyncClient_WC, self).analyse_remote(parser, since,
+    # return super(ProdSyncClientWC, self).analyse_remote(parser, since,
     # limit)
 
     def upload_changes(self, pkey, updates=None):
@@ -45,7 +45,7 @@ class ProdSyncClient_WC(SyncClientWC):
 
         response = None
         if updates:
-            response = super(ProdSyncClient_WC,
+            response = super(ProdSyncClientWC,
                              self).upload_changes(pkey, updates)
         return response
 
@@ -69,6 +69,6 @@ class ProdSyncClient_WC(SyncClientWC):
         # not efficient but whatever
 
 
-class CatSyncClient_WC(SyncClientWC):
+class CatSyncClientWC(SyncClientWC):
     endpoint_singular = 'product_category'
     endpoint_plural = 'products/categories'

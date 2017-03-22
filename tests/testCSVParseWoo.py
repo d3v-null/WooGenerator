@@ -2,8 +2,8 @@ import os
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
 from context import woogenerator
-from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.woo import ImportWooProduct, CSVParse_Woo, CSVParse_TT, WooProdList
+from woogenerator.coldata import ColDataWoo
+from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
 from context import tests_datadir
@@ -18,8 +18,8 @@ class TestCSVParseWoo(TestCase):
 
         self.productParserArgs = {
             'import_name': import_name,
-            'cols': ColData_Woo.get_import_cols(),
-            'defaults': ColData_Woo.get_defaults(),
+            'cols': ColDataWoo.get_import_cols(),
+            'defaults': ColDataWoo.get_defaults(),
         }
 
         for var in ['self.productParserArgs']:
@@ -37,12 +37,12 @@ class TestCSVParseWoo(TestCase):
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_WOO = True
         # Registrar.DEBUG_API = True
-        CSVParse_TT.do_images = False
-        CSVParse_TT.do_specials = False
-        CSVParse_TT.do_dyns = False
+        CsvParseTT.do_images = False
+        CsvParseTT.do_specials = False
+        CsvParseTT.do_dyns = False
 
     def testCSVParseTT(self):
-        productParser = CSVParse_TT(
+        productParser = CsvParseTT(
             **self.productParserArgs
         )
 

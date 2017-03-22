@@ -6,12 +6,12 @@ from collections import OrderedDict
 from pprint import pformat  # pprint
 # from copy import deepcopy
 
-from woogenerator.coldata import ColData_User  # , ColData_Woo
+from woogenerator.coldata import ColDataUser  # , ColDataWoo
 from woogenerator.contact_objects import ContactAddress, ContactName
 from woogenerator.contact_objects import ContactPhones, SocialMediaFields
-from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils, Registrar
+from woogenerator.utils import DescriptorUtils, ListUtils, SanitationUtils, TimeUtils, Registrar
 from woogenerator.parsing.abstract import ObjList
-from woogenerator.parsing.flat import ImportFlat, CSVParse_Flat
+from woogenerator.parsing.flat import ImportFlat, CsvParseFlat
 
 
 class UsrObjList(ObjList):
@@ -23,7 +23,7 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-    report_cols = ColData_User.get_report_cols()
+    report_cols = ColDataUser.get_report_cols()
 
     def get_sanitizer(self, tablefmt=None):
         if tablefmt is 'html':
@@ -35,23 +35,23 @@ class UsrObjList(ObjList):
 
     @classmethod
     def get_basic_cols(cls, self):
-        return ColData_User.get_basic_cols()
+        return ColDataUser.get_basic_cols()
 
 
 class ImportUser(ImportFlat):
     container = UsrObjList
 
-    wpid = descriptorUtils.safe_key_property('Wordpress ID')
+    wpid = DescriptorUtils.safe_key_property('Wordpress ID')
     # TODO: does this break anything?
-    email = descriptorUtils.safe_normalized_key_property('E-mail')
-    # email = descriptorUtils.safe_key_property('E-mail')
-    MYOBID = descriptorUtils.safe_key_property('MYOB Card ID')
-    username = descriptorUtils.safe_key_property('Wordpress Username')
-    role = descriptorUtils.safe_key_property('Role')
-    # contact_schema = descriptorUtils.safe_key_property('contact_schema')
-    billing_address = descriptorUtils.safe_key_property('Address')
-    shipping_address = descriptorUtils.safe_key_property('Home Address')
-    name = descriptorUtils.safe_key_property('Name')
+    email = DescriptorUtils.safe_normalized_key_property('E-mail')
+    # email = DescriptorUtils.safe_key_property('E-mail')
+    MYOBID = DescriptorUtils.safe_key_property('MYOB Card ID')
+    username = DescriptorUtils.safe_key_property('Wordpress Username')
+    role = DescriptorUtils.safe_key_property('Role')
+    # contact_schema = DescriptorUtils.safe_key_property('contact_schema')
+    billing_address = DescriptorUtils.safe_key_property('Address')
+    shipping_address = DescriptorUtils.safe_key_property('Home Address')
+    name = DescriptorUtils.safe_key_property('Name')
 
     aliasMapping = {
         'Address':
@@ -243,10 +243,10 @@ class ImportUser(ImportFlat):
 
         emails = []
         if data.get('E-mail'):
-            emails = listUtils.combine_lists(
+            emails = ListUtils.combine_lists(
                 emails, SanitationUtils.find_all_emails(data['E-mail']))
         if data.get('Personal E-mail'):
-            emails = listUtils.combine_lists(
+            emails = ListUtils.combine_lists(
                 emails,
                 SanitationUtils.find_all_emails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
@@ -254,7 +254,7 @@ class ImportUser(ImportFlat):
 
         urls = []
         if data.get('Web Site'):
-            urls = listUtils.combine_lists(
+            urls = ListUtils.combine_lists(
                 urls, SanitationUtils.find_all_urls(data['Web Site']))
         self['Web Site'] = urls.pop(0) if urls else None
 
@@ -342,7 +342,7 @@ class ImportUser(ImportFlat):
             self.wpid)
 
 
-class CSVParse_User(CSVParse_Flat):
+class CsvParseUser(CsvParseFlat):
 
     objectContainer = ImportUser
 
@@ -364,16 +364,16 @@ class CSVParse_User(CSVParse_Flat):
             # ('post_status', 'publish'),
             # ('last_import', import_name),
         ])
-        cols = listUtils.combine_lists(cols, extra_cols)
-        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
-        super(CSVParse_User, self).__init__(
+        cols = ListUtils.combine_lists(cols, extra_cols)
+        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
+        super(CsvParseUser, self).__init__(
             cols, defaults, limit=limit, source=source)
         self.contact_schema = contact_schema
         self.filterItems = filterItems
         # self.itemIndexer = self.getUsername
 
     # def get_kwargs(self, all_data, container, **kwargs):
-    #     kwargs = super(CSVParse_User, self).get_kwargs(all_data, container, **kwargs)
+    #     kwargs = super(CsvParseUser, self).get_kwargs(all_data, container, **kwargs)
     #     for key in ['E-mail', 'MYOB Card ID', 'username', 'Role']:
     #         assert kwargs[key] is not None
     #     return kwargs
@@ -388,7 +388,7 @@ class CSVParse_User(CSVParse_Flat):
     def clear_transients(self):
         if self.DEBUG_MRO:
             self.register_message(' ')
-        super(CSVParse_User, self).clear_transients()
+        super(CsvParseUser, self).clear_transients()
         self.roles = OrderedDict()
         self.noroles = OrderedDict()
         self.emails = OrderedDict()
@@ -617,11 +617,11 @@ class CSVParse_User(CSVParse_Flat):
         #     reason = emails.reason
         #     self.registerBadEmail(object_data, emails)
 
-        super(CSVParse_User, self).register_object(object_data)
+        super(CsvParseUser, self).register_object(object_data)
 
     def get_kwargs(self, all_data, container, **kwargs):
-        kwargs = super(CSVParse_User, self).get_kwargs(all_data, container, **
-                                                       kwargs)
+        kwargs = super(CsvParseUser, self).get_kwargs(all_data, container, **
+                                                      kwargs)
         if not 'contact_schema' in kwargs.keys():
             kwargs['contact_schema'] = self.contact_schema
         return kwargs
@@ -639,15 +639,15 @@ class CSVParse_User(CSVParse_Flat):
 
     # def process_object(self, object_data):
     #     # object_data.username = self.getMYOBID(object_data)
-    #     super(CSVParse_Flat, self).process_object(object_data)
+    #     super(CsvParseFlat, self).process_object(object_data)
     #     self.processRoles(object_data)
 
     # def analyzeRow(self, row, object_data):
-    #     object_data = super(CSVParse_Flat, self).analyseRow(row, object_data)
+    #     object_data = super(CsvParseFlat, self).analyseRow(row, object_data)
     #     return object_data
 
 
-class CSVParse_User_Api(CSVParse_User):
+class CsvParseUserApi(CsvParseUser):
 
     @classmethod
     def get_parser_data(cls, **kwargs):
@@ -662,7 +662,7 @@ class CSVParse_User_Api(CSVParse_User):
         print "api_data after:  %s" % str(api_data)
         parser_data = OrderedDict()
         core_translation = OrderedDict()
-        for col, col_data in ColData_User.get_wpapi_core_cols().items():
+        for col, col_data in ColDataUser.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
@@ -676,8 +676,8 @@ class CSVParse_User_Api(CSVParse_User):
         if 'meta' in api_data:
             meta_translation = OrderedDict()
             meta_data = api_data['meta']
-            # if Registrar.DEBUG_API: Registrar.register_message("meta data: %s" % pformat(ColData_User.get_wpapi_meta_cols().items()))
-            for col, col_data in ColData_User.get_wpapi_meta_cols().items():
+            # if Registrar.DEBUG_API: Registrar.register_message("meta data: %s" % pformat(ColDataUser.get_wpapi_meta_cols().items()))
+            for col, col_data in ColDataUser.get_wpapi_meta_cols().items():
                 try:
                     if 'wp-api' in col_data:
                         wp_api_key = col_data['wp-api']['key']

@@ -3,8 +3,8 @@ from sshtunnel import SSHTunnelForwarder
 import yaml
 import os
 import time
-from coldata import ColData_User
-from parsing.flat import CSVParse_User
+from coldata import ColDataUser
+from parsing.flat import CsvParseUser
 from collections import OrderedDict
 
 srcFolder = "../source/"
@@ -29,7 +29,7 @@ with open(yaml_path) as stream:
 
 sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
 
-col_data = ColData_User()
+col_data = ColDataUser()
 
 sa_rows = []
 
@@ -52,7 +52,7 @@ with \
         db=db_name)
 
     wpCols = OrderedDict(filter(lambda k_v: not k_v[1].get(
-        'wp', {}).get('generated'), ColData_User.get_wp_cols().items()))
+        'wp', {}).get('generated'), ColDataUser.get_wp_cols().items()))
 
     assert all([
         'Wordpress ID' in wpCols.keys(),
@@ -78,7 +78,7 @@ with \
 
 # print sa_rows
 
-saParser = CSVParse_User(
+saParser = CsvParseUser(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults()
 )

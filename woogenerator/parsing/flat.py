@@ -1,5 +1,5 @@
 
-from woogenerator.utils import descriptorUtils, listUtils, SanitationUtils, TimeUtils
+from woogenerator.utils import DescriptorUtils, ListUtils, SanitationUtils, TimeUtils
 from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 
 usrs_per_file = 1000
@@ -9,17 +9,17 @@ class ImportFlat(ImportObject):
     pass
 
 
-class CSVParse_Flat(CsvParseBase):
+class CsvParseFlat(CsvParseBase):
     objectContainer = ImportFlat
     # def __init__(self, cols, defaults):
-    #     super(CSVParse_Flat, self).__init__(cols, defaults)
+    #     super(CsvParseFlat, self).__init__(cols, defaults)
 
 
 class ImportSpecial(ImportFlat):
 
-    ID = descriptorUtils.safe_key_property('ID')
-    start_time = descriptorUtils.safe_key_property('start_time')
-    end_time = descriptorUtils.safe_key_property('end_time')
+    ID = DescriptorUtils.safe_key_property('ID')
+    start_time = DescriptorUtils.safe_key_property('start_time')
+    end_time = DescriptorUtils.safe_key_property('end_time')
 
     # @property
     # def start_time_iso(self): return TimeUtils.isoTimeToString(self.start_time)
@@ -53,7 +53,7 @@ class ImportSpecial(ImportFlat):
         return self.index
 
 
-class CSVParse_Special(CSVParse_Flat):
+class CsvParseSpecial(CsvParseFlat):
 
     objectContainer = ImportSpecial
 
@@ -77,9 +77,9 @@ class CSVParse_Special(CSVParse_Flat):
             "XWNS",
             "XWPS"
         ]
-        cols = listUtils.combine_lists(cols, extra_cols)
+        cols = ListUtils.combine_lists(cols, extra_cols)
 
-        super(CSVParse_Special, self).__init__(cols, defaults)
+        super(CsvParseSpecial, self).__init__(cols, defaults)
         self.object_indexer = self.get_object_id
 
     @classmethod
@@ -88,19 +88,19 @@ class CSVParse_Special(CSVParse_Flat):
 
 
 class ImportSqlProduct(ImportFlat):
-    ID = descriptorUtils.safe_key_property('ID')
-    codesum = descriptorUtils.safe_key_property('codesum')
-    itemsum = descriptorUtils.safe_key_property('itemsum')
+    ID = DescriptorUtils.safe_key_property('ID')
+    codesum = DescriptorUtils.safe_key_property('codesum')
+    itemsum = DescriptorUtils.safe_key_property('itemsum')
 
     @property
     def index(self):
         return self.codesum
 
 
-class CSVParse_WPSQLProd(CSVParse_Flat):
+class CsvParseWpSqlProd(CsvParseFlat):
 
     objectContainer = ImportSqlProduct
 
-    """docstring for CSVParse_WPSQLProd"""
+    """docstring for CsvParseWpSqlProd"""
     # def __init__(self, arg):
-    # super(CSVParse_WPSQLProd, self).__init__()
+    # super(CsvParseWpSqlProd, self).__init__()

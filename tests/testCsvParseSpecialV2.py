@@ -4,8 +4,8 @@ from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
-from woogenerator.coldata import ColData_Woo
-from woogenerator.parsing.special import CSVParse_Special, SpecialGruopList, SpecialRuleList
+from woogenerator.coldata import ColDataWoo
+from woogenerator.parsing.special import CsvParseSpecial, SpecialGruopList, SpecialRuleList
 from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
 
 
@@ -23,7 +23,7 @@ class TestCSVParseSpecialV2(TestCase):
         # Registrar.DEBUG_MESSAGE = True
 
     def test_basic(self):
-        specialParser = CSVParse_Special(
+        specialParser = CsvParseSpecial(
             **self.specialParserArgs
         )
 
@@ -46,7 +46,7 @@ class TestCSVParseSpecialV2(TestCase):
         self.assertTrue(isSingularChild)
 
     def test_has_happened_yet(self):
-        specialParser = CSVParse_Special(
+        specialParser = CsvParseSpecial(
             **self.specialParserArgs
         )
 
@@ -67,7 +67,7 @@ class TestCSVParseSpecialV2(TestCase):
         self.assertFalse(eofySpecial.isActive)
 
     def test_determine_groups(self):
-        specialParser = CSVParse_Special(
+        specialParser = CsvParseSpecial(
             **self.specialParserArgs
         )
 

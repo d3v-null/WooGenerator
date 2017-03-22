@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from tabulate import tabulate
 from woogenerator.utils import (AddressUtils, NameUtils, Registrar,
-                                SanitationUtils, descriptorUtils, listUtils)
+                                SanitationUtils, DescriptorUtils, ListUtils)
 
 STRICT_ADDRESS = False
 STRICT_ADDRESS = True
@@ -249,7 +249,7 @@ class ContactObject(FieldGroup):
                  for organization in self.properties['organization_names']]
             )
 
-    company = descriptorUtils.kwarg_alias_property(
+    company = DescriptorUtils.kwarg_alias_property(
         'company',
         lambda self: ", ".join(
             [" ".join(filter(None, organization))
@@ -335,7 +335,7 @@ class ContactAddress(ContactObject):
         if not self.empty:
             # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
 
-            lines = listUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
+            lines = ListUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
                 self.kwargs.get(key, '')), ['line1', 'line2']))
 
             if self.kwargs.get('country', ''):
@@ -1015,7 +1015,7 @@ class ContactName(ContactObject):
                         # self.enforce_strict("Ambiguous if format is family_name, first_name middle_name or just stray comma")
                         full_name_contact = None
 
-            full_names = listUtils.filter_unique_true(
+            full_names = ListUtils.filter_unique_true(
                 map(SanitationUtils.normalize_val, [full_name_contact, full_name_components]))
 
             if len(full_names) > 1:
@@ -1204,7 +1204,7 @@ class ContactName(ContactObject):
     #     else :
     #         return self.kwargs.get('first_name')
 
-    first_name = descriptorUtils.kwarg_alias_property(
+    first_name = DescriptorUtils.kwarg_alias_property(
         'first_name',
         lambda self:
             " ".join(filter(None, self.properties.get('first_names', [])))
@@ -1222,7 +1222,7 @@ class ContactName(ContactObject):
     #     else:
     #         return self.kwargs.get('family_name')
 
-    family_name = descriptorUtils.kwarg_alias_property(
+    family_name = DescriptorUtils.kwarg_alias_property(
         'family_name',
         lambda self:
             " ".join(filter(None, self.properties.get('family_names', [])))
@@ -1238,7 +1238,7 @@ class ContactName(ContactObject):
     #     else :
     #         return self.kwargs.get('middle_name')
 
-    middle_name = descriptorUtils.kwarg_alias_property(
+    middle_name = DescriptorUtils.kwarg_alias_property(
         'middle_name',
         lambda self:
             " ".join(filter(None, self.properties.get('middle_names', [])))
@@ -1254,7 +1254,7 @@ class ContactName(ContactObject):
     #     else:
     #         return self.kwargs.get('name_prefix')
 
-    name_prefix = descriptorUtils.kwarg_alias_property(
+    name_prefix = DescriptorUtils.kwarg_alias_property(
         'name_prefix',
         lambda self: " ".join(filter(None, self.properties.get('titles', [])))
     )
@@ -1270,7 +1270,7 @@ class ContactName(ContactObject):
     #     else:
     #         return self.kwargs.get('name_suffix')
 
-    name_suffix = descriptorUtils.kwarg_alias_property(
+    name_suffix = DescriptorUtils.kwarg_alias_property(
         'name_suffix',
         lambda self: " ".join(filter(None,
                                      self.properties.get(
@@ -1291,7 +1291,7 @@ class ContactName(ContactObject):
     #     else:
     #         return self.kwargs.get('contact')
 
-    contact = descriptorUtils.kwarg_alias_property(
+    contact = DescriptorUtils.kwarg_alias_property(
         'contact',
         lambda self: " ".join(filter(None, [
             self.name_prefix,
@@ -1466,33 +1466,33 @@ class ContactPhones(FieldGroup):
                 kwargs[key] = SanitationUtils.strip_non_phone_characters(value)
         super(ContactPhones, self).__init__(**kwargs)
 
-    mob_number = descriptorUtils.kwarg_alias_property(
+    mob_number = DescriptorUtils.kwarg_alias_property(
         'mob_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('mob_number'))
         if 'mob_number' in self.properties else ""
     )
 
-    tel_number = descriptorUtils.kwarg_alias_property(
+    tel_number = DescriptorUtils.kwarg_alias_property(
         'tel_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('tel_number'))
         if 'tel_number' in self.properties else ""
     )
 
-    fax_number = descriptorUtils.kwarg_alias_property(
+    fax_number = DescriptorUtils.kwarg_alias_property(
         'fax_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('fax_number'))
         if 'fax_number' in self.properties else ""
     )
 
-    mob_pref = descriptorUtils.kwarg_alias_property(
+    mob_pref = DescriptorUtils.kwarg_alias_property(
         'mob_pref',
         lambda self: self.properties.get('mob_pref')
     )
 
-    tel_pref = descriptorUtils.kwarg_alias_property(
+    tel_pref = DescriptorUtils.kwarg_alias_property(
         'tel_pref',
         lambda self: self.properties.get('tel_pref')
     )
@@ -1555,27 +1555,27 @@ class SocialMediaFields(FieldGroup):
 
     # todo: test if pref number then number exist
 
-    facebook = descriptorUtils.kwarg_alias_property(
+    facebook = DescriptorUtils.kwarg_alias_property(
         'facebook',
         lambda self: self.properties.get('facebook')
     )
 
-    twitter = descriptorUtils.kwarg_alias_property(
+    twitter = DescriptorUtils.kwarg_alias_property(
         'twitter',
         lambda self: self.properties.get('twitter')
     )
 
-    gplus = descriptorUtils.kwarg_alias_property(
+    gplus = DescriptorUtils.kwarg_alias_property(
         'gplus',
         lambda self: self.properties.get('gplus')
     )
 
-    instagram = descriptorUtils.kwarg_alias_property(
+    instagram = DescriptorUtils.kwarg_alias_property(
         'instagram',
         lambda self: self.properties.get('instagram')
     )
 
-    # website = descriptorUtils.kwarg_alias_property(
+    # website = DescriptorUtils.kwarg_alias_property(
     #     'website',
     #     lambda self: self.properties.get('website')
     # )

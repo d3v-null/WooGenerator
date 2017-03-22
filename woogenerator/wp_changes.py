@@ -21,7 +21,7 @@ from tabulate import tabulate
 
 from __init__ import MODULE_LOCATION, MODULE_PATH
 from woogenerator.utils import (HtmlReporter, Registrar, SanitationUtils,
-                                TimeUtils, listUtils)
+                                TimeUtils, ListUtils)
 
 
 def timediff(settings):
@@ -70,7 +70,7 @@ def main(settings):
     # Download / Generate Slave Parser Object
     #########################################
 
-    # settings.col_data = ColData_User()
+    # settings.col_data = ColDataUser()
 
     # settings.sa_rows = []
 
@@ -81,7 +81,9 @@ def main(settings):
                 (settings.ssh_host, settings.ssh_port),
                 ssh_password=settings.ssh_pass,
                 ssh_username=settings.ssh_user,
-                remote_bind_address=(settings.remote_bind_host, settings.remote_bind_port)
+                remote_bind_address=(
+                    settings.remote_bind_host,
+                    settings.remote_bind_port)
             ) as server:
 
         conn = MySQLdb.connect(
@@ -144,7 +146,7 @@ def main(settings):
                 for val in value:
                     SanitationUtils.safe_print(val)
         data_map = json2map(data)
-        diff_map = listUtils.keys_not_in(
+        diff_map = ListUtils.keys_not_in(
             data_map, changed_map.keys()) if isinstance(changed_map,
                                                         dict) else data_map
         change_data_fmt.append([

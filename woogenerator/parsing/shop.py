@@ -5,18 +5,18 @@ Introduces the shop products and categories interfaces to CSV Parser classes
 import bisect
 from collections import OrderedDict
 
-from woogenerator.utils import descriptorUtils, SanitationUtils, Registrar
-from woogenerator.coldata import ColData_Prod, ColData_Woo
+from woogenerator.utils import DescriptorUtils, SanitationUtils, Registrar
+from woogenerator.coldata import ColDataProd, ColDataWoo
 from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 from woogenerator.parsing.tree import ItemList, TaxoList
-from woogenerator.parsing.gen import CSVParse_Gen_Tree, ImportGenItem, CSVParse_Gen_Mixin
+from woogenerator.parsing.gen import CsvParseGenTree, ImportGenItem, CsvParseGenMixin
 from woogenerator.parsing.gen import ImportGenMixin, ImportGenObject
 
 
 class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
-    report_cols = ColData_Prod.get_report_cols()
+    report_cols = ColDataProd.get_report_cols()
 
     def append(self, object_data):
         assert issubclass(object_data.__class__, ImportShopMixin), \
@@ -28,7 +28,7 @@ class ShopProdList(ItemList):
 
 
 class ShopCatList(ItemList):
-    report_cols = ColData_Prod.get_report_cols()
+    report_cols = ColDataProd.get_report_cols()
 
 
 class ShopObjList(ObjList):
@@ -212,8 +212,8 @@ class ImportShopProductMixin(object):
     container = ShopProdList
     # category_indexer = Registrar.get_object_index
     category_indexer = Registrar.get_object_rowcount
-    # category_indexer = CSVParse_Gen_Mixin.get_full_name_sum
-    # category_indexer = CSVParse_Gen_Mixin.get_name_sum
+    # category_indexer = CsvParseGenMixin.get_full_name_sum
+    # category_indexer = CsvParseGenMixin.get_name_sum
     product_type = None
     isProduct = True
 
@@ -351,9 +351,9 @@ class CsvParseShopMixin(object):
     variableContainer = ImportShopProductVariableMixin
     variationContainer = ImportShopProductVariationMixin
     categoryContainer = ImportShopCategoryMixin
-    productIndexer = CSVParse_Gen_Mixin.get_code_sum
-    category_indexer = CSVParse_Gen_Mixin.get_code_sum
-    variationIndexer = CSVParse_Gen_Mixin.get_code_sum
+    productIndexer = CsvParseGenMixin.get_code_sum
+    category_indexer = CsvParseGenMixin.get_code_sum
+    variationIndexer = CsvParseGenMixin.get_code_sum
     do_images = True
 
     # products = None

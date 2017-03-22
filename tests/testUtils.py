@@ -45,7 +45,7 @@ class testUnicodeCsvDialectUtils(TestCase):
 
     def test_get_act_dialect(self):
         csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
-            'act_out')
+            'ActOut')
         print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
 
 

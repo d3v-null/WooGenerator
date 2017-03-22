@@ -7,9 +7,9 @@ from pprint import pprint
 from context import woogenerator
 
 from testSyncClient import abstractSyncClientTestCase
-from woogenerator.sync_client_user import UsrSyncClient_SQL_WP, UsrSyncClient_SSH_ACT, UsrSyncClient_WC, UsrSyncClient_WP
-from woogenerator.coldata import ColData_User
-from woogenerator.parsing.user import ImportUser, CSVParse_User, CSVParse_User_Api
+from woogenerator.sync_client_user import UsrSyncClientSqlWP, UsrSyncClientSshAct, UsrSyncClientWC, UsrSyncClientWP
+from woogenerator.coldata import ColDataUser
+from woogenerator.parsing.user import ImportUser, CsvParseUser, CsvParseUserApi
 from woogenerator.utils import TimeUtils, Registrar
 
 
@@ -79,7 +79,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         TimeUtils.set_wp_srv_offset(wp_srv_offset)
 
-        actFields = ";".join(ColData_User.get_act_import_cols())
+        actFields = ";".join(ColDataUser.get_act_import_cols())
 
         SSHTunnelForwarderAddress = (ssh_host, ssh_port)
         SSHTunnelForwarderBindAddress = (remote_bind_host, remote_bind_port)
@@ -168,18 +168,18 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         # Registrar.DEBUG_UTILS = True
 
     def test_SQLWP_Analyse(self):
-        saParser = CSVParse_User(
-            cols=ColData_User.get_import_cols(),
-            defaults=ColData_User.get_defaults()
+        saParser = CsvParseUser(
+            cols=ColDataUser.get_import_cols(),
+            defaults=ColDataUser.get_defaults()
         )
 
-        with UsrSyncClient_SQL_WP(
+        with UsrSyncClientSqlWP(
             self.SSHTunnelForwarderParams,
             self.PyMySqlconnect_params
         ) as sqlClient:
             sqlClient.analyse_remote(saParser, since='2016-01-01 00:00:00')
 
-        # CSVParse_User.print_basic_columns( list(chain( *saParser.emails.values() )) )
+        # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', saParser.emails)
 
     @skip
@@ -189,7 +189,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
             "MYOB Card ID": "C000001",
         }
 
-        with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+        with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
             response = client.upload_changes('C000001', fields)
         print response
 
@@ -232,7 +232,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
-    #     with UsrSyncClient_SQL_WP(
+    #     with UsrSyncClientSqlWP(
     #         self.SSHTunnelForwarderParams,
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
@@ -266,7 +266,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
-    #     with UsrSyncClient_SQL_WP(
+    #     with UsrSyncClientSqlWP(
     #         self.SSHTunnelForwarderParams,
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
@@ -291,7 +291,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
     def test_WC_read(self):
         response = []
-        with UsrSyncClient_WC(self.wcApiParams) as client:
+        with UsrSyncClientWC(self.wcApiParams) as client:
             response = client.get_iterator()
         print tabulate(list(response)[:10], headers='keys')
         print list(response)
@@ -301,7 +301,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     fields = {"user_email": "neil@technotan.com.au"}
     #
     #     response = ''
-    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #     with UsrSyncClientWC(self.wcApiParams) as client:
     #         response = client.upload_changes(2, fields)
     #
     #     print response
@@ -310,7 +310,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     fields = {"first_name": "neil"}
     #
     #     response = ''
-    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #     with UsrSyncClientWC(self.wcApiParams) as client:
     #         response = client.upload_changes(1, fields)
     #
     #     self.assertTrue(response)
@@ -321,11 +321,11 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     user_id = 2508
     #
     #     response = None
-    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #     with UsrSyncClientWC(self.wcApiParams) as client:
     #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
-    #     with UsrSyncClient_SQL_WP(
+    #     with UsrSyncClientSqlWP(
     #         self.SSHTunnelForwarderParams,
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
@@ -354,11 +354,11 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     user_id = 2508
     #
     #     response = None
-    #     with UsrSyncClient_WC(self.wcApiParams) as client:
+    #     with UsrSyncClientWC(self.wcApiParams) as client:
     #         response = client.upload_changes(user_id, fields)
     #
     #     updated = ''
-    #     with UsrSyncClient_SQL_WP(
+    #     with UsrSyncClientSqlWP(
     #         self.SSHTunnelForwarderParams,
     #         self.PyMySqlconnect_params
     #     ) as sqlClient:
@@ -383,34 +383,34 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
     def test_WP_read(self):
         response = []
-        with UsrSyncClient_WP(self.wpApiParams) as client:
+        with UsrSyncClientWP(self.wpApiParams) as client:
             response = client.get_iterator()
         print tabulate(list(response)[:10], headers='keys')
         print list(response)
         self.assertTrue(response)
 
     def test_WP_iterator(self):
-        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+        with UsrSyncClientWP(self.wpApiParams) as slaveClient:
             iterator = slaveClient.get_iterator('users?context=edit')
             for page in iterator:
                 pprint(page)
 
     def test_WP_analyse(self):
         print "API Import cols: "
-        pprint(ColData_User.get_wpapi_import_cols())
+        pprint(ColDataUser.get_wpapi_import_cols())
 
-        saParser = CSVParse_User_Api(
-            cols=ColData_User.get_wp_import_cols(),
-            defaults=ColData_User.get_defaults()
+        saParser = CsvParseUserApi(
+            cols=ColDataUser.get_wp_import_cols(),
+            defaults=ColDataUser.get_defaults()
         )
 
-        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+        with UsrSyncClientWP(self.wpApiParams) as slaveClient:
             slaveClient.analyse_remote(saParser)
 
         print saParser.tabulate()
 
     # def test_SSH_download(self):
-    #     with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
     #         response = client.get_delete_file('act_usr_exp/act_x_2016-05-26_15-03-07.csv', 'downloadtest.csv')
 
     # def test_SSH_Upload(self):
@@ -420,7 +420,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
     #     }
     #
     #     response = ''
-    #     with UsrSyncClient_SSH_ACT(self.actconnect_params, self.actDbParams, self.fsParams) as client:
+    #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fsParams) as client:
     #         response = client.upload_changes('C004897', fields)
     #
     #     print response

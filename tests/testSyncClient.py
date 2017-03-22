@@ -7,9 +7,9 @@ from unittest import TestCase  # , main, skip
 from context import woogenerator
 from context import get_testdata, tests_datadir
 from woogenerator.sync_client import SyncClientGDrive
-from woogenerator.sync_client_prod import ProdSyncClient_WC
-from woogenerator.sync_client_user import UsrSyncClient_WP
-from woogenerator.coldata import ColData_User, ColData_Woo
+from woogenerator.sync_client_prod import ProdSyncClientWC
+from woogenerator.sync_client_user import UsrSyncClientWP
+from woogenerator.coldata import ColDataUser, ColDataWoo
 from woogenerator.parsing.user import ImportUser
 from woogenerator.utils import Registrar, TimeUtils
 
@@ -119,8 +119,8 @@ class testSyncClient(abstractSyncClientTestCase):
             'self.import_name': self.import_name,
             # 'itemDepth': itemDepth,
             # 'taxoDepth': taxoDepth,
-            'cols': ColData_Woo.get_import_cols(),
-            'defaults': ColData_Woo.get_defaults(),
+            'cols': ColDataWoo.get_import_cols(),
+            'defaults': ColDataWoo.get_defaults(),
         }
 
         print "productParserArgs", self.productParserArgs
@@ -132,7 +132,7 @@ class testSyncClient(abstractSyncClientTestCase):
 
     def test_ProdSyncClient_WC_Read(self):
         self.wcApiParams.update(timeout=1)
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             # print client.service.get('products').text
             for pagecount, page in enumerate(client.get_iterator('products')):
                 print "PAGE %d: " % pagecount
@@ -146,7 +146,7 @@ class testSyncClient(abstractSyncClientTestCase):
 
     @unittest.skip('out of scope')
     def test_UsrSyncClient_WP_Read(self):
-        with UsrSyncClient_WP(self.wpApiParams) as client:
+        with UsrSyncClientWP(self.wpApiParams) as client:
             print client.service.get('users').text
             for pagecount, page in enumerate(client.get_iterator('users')):
                 print "PAGE %d: " % pagecount

@@ -1,8 +1,8 @@
 import yaml
 import os
 import paramiko
-from coldata import ColData_User
-from parsing.flat import CSVParse_User, UsrObjList
+from coldata import ColDataUser
+from parsing.flat import CsvParseUser, UsrObjList
 from utils import TimeUtils, SanitationUtils
 from itertools import chain
 
@@ -39,7 +39,7 @@ paramikoSSHParams = {
     'password': m_ssh_pass,
 }
 
-col_data = ColData_User()
+col_data = ColDataUser()
 actCols = col_data.get_act_cols()
 fields = ";".join(actCols.keys())
 
@@ -86,7 +86,7 @@ except Exception as exc:
 finally:
     sshClient.close()
 
-maParser = CSVParse_User(
+maParser = CsvParseUser(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults(),
     contact_schema='act',

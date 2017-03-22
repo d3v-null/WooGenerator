@@ -4,13 +4,13 @@ from collections import OrderedDict
 import os
 import time
 # from itertools import chain
-from utils import listUtils, SanitationUtils, UnicodeDictWriter
+from utils import ListUtils, SanitationUtils, UnicodeDictWriter
 from parsing.abstract import Registrar
-from parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo, WooObjList
-from parsing.myo import CSVParse_MYO
-from parsing.dyn import CSVParse_Dyn
-from parsing.flat import CSVParse_Special
-from coldata import ColData_Woo
+from parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo, WooObjList
+from parsing.myo import CsvParseMyo
+from parsing.dyn import CsvParseDyn
+from parsing.flat import CsvParseSpecial
+from coldata import ColDataWoo
 import yaml
 import MySQLdb
 from sshtunnel import SSHTunnelForwarder
@@ -69,8 +69,8 @@ assert all([in_folder, out_folder, logFolder, webFolder, imgFolder_glb,
             woo_schemas, myo_schemas, taxoDepth, itemDepth])
 
 genPath = os.path.join(in_folder, 'generator.csv')
-dprcPath = os.path.join(in_folder, 'DPRC.csv')
-dprpPath = os.path.join(in_folder, 'DPRP.csv')
+dprc_path = os.path.join(in_folder, 'DPRC.csv')
+dprp_path = os.path.join(in_folder, 'DPRP.csv')
 specPath = os.path.join(in_folder, 'specials.csv')
 usPath = os.path.join(in_folder, 'US.csv')
 xsPath = os.path.join(in_folder, 'XS.csv')
@@ -78,7 +78,7 @@ imgFolder = [imgFolder_glb]
 
 sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
 
-col_data = ColData_Woo()
+col_data = ColDataWoo()
 
 sql_run = True
 
@@ -129,9 +129,9 @@ if sql_run:
 
 print sqlRows
 
-sqlParser = CSVParse_TT
+sqlParser = CsvParseTT
 
-sqlParser = CSVParse_TT(
+sqlParser = CsvParseTT(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults()
 )

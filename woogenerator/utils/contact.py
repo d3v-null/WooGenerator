@@ -49,7 +49,7 @@ class NameUtils:
     # #delimeter characters incl space and disallowed punc
     # delimeterRegex   = r"[%s]" % "".join(tokenDelimeters)
     # #disallowed punctuation and whitespace
-    # disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
+    # disallowed_punc_or_space_regex = r"[%s]" % "".join(disallowedPunctuationOrSpace)
     # #disallowed punctuation
     # disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
     # #not a delimeter (no whitespace or disallowed punc)
@@ -60,7 +60,7 @@ class NameUtils:
 
     singleNameRegex = r"(?!{Ds}+.*)({ndp}(?:{nd}*{ndp})?|{ord})".format(
         # disallowed punctuation and whitespace
-        Ds=SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        Ds=SanitationUtils.disallowed_punc_or_space_regex,
         # not a delimeter (no whitespace or disallowed punc)
         nd=SanitationUtils.nondelimeterRegex,
         # not a delimeter or punctuation (no punctuation or whitespace)
@@ -70,7 +70,7 @@ class NameUtils:
 
     LazyMultiNameNoOrdRegex = "(?!{Ds}+.*)(?:{nd}(?:{nds}*?{nd})?)".format(
         # disallowed punctuation and whitespace
-        Ds=SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        Ds=SanitationUtils.disallowed_punc_or_space_regex,
         # not a delimeter (no whitespace or disallowed punc)
         nd=SanitationUtils.nondelimeterRegex,
         # not a delimeter except space (no whitespace except space, no
@@ -79,7 +79,7 @@ class NameUtils:
     )
 
     greedyMultiNameNoOrdRegex = "(?!{Ds}+.*)(?:{nd}(?:{nds}*{nd})?)".format(
-        Ds=SanitationUtils.disallowedPunctuationOrSpaceRegex,
+        Ds=SanitationUtils.disallowed_punc_or_space_regex,
         nd=SanitationUtils.nondelimeterRegex,
         nds=SanitationUtils.nondelimeterOrSpaceRegex
     )

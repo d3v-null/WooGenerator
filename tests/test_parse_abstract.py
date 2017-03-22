@@ -8,7 +8,7 @@
 #     out_folder = "../output/"
 #     usrPath = os.path.join(out_folder, 'users.csv')
 #
-#     usrData = ColData_User()
+#     usrData = ColDataUser()
 #
 #     # print "import cols", usrData.get_import_cols()
 #     # print "defaults", usrData.get_defaults()

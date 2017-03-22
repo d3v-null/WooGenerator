@@ -8,8 +8,8 @@ from context import woogenerator
 
 from woogenerator.syncupdate import *
 from woogenerator import coldata
-from woogenerator.coldata import ColData_User
-from woogenerator.parsing.user import ImportUser, CSVParse_User
+from woogenerator.coldata import ColDataUser
+from woogenerator.parsing.user import ImportUser, CsvParseUser
 from woogenerator.contact_objects import FieldGroup
 
 

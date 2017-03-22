@@ -429,7 +429,8 @@ class FormSwitcher(npyscreen.MultiLineAction):
         kwargs.update(
             values=self.form_options.keys()
         )
-        self._activeFormName = kwargs.get('value')  # pylint: disable=invalid-name
+        self._activeFormName = kwargs.get(
+            'value')  # pylint: disable=invalid-name
         super(FormSwitcher, self).__init__(*args, **kwargs)
 
     def actionHighlighted(self, act_on_this, key_press):

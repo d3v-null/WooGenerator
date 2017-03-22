@@ -1,6 +1,6 @@
 # from __future__ import absolute_import
 from collections import OrderedDict
-from utils import listUtils  # , Registrar #, debugUtils
+from utils import ListUtils  # , Registrar #, DebugUtils
 # import json
 
 
@@ -148,7 +148,7 @@ class ColDataBase(object):
         return 'Delta ' + col
 
 
-class ColData_Prod(ColDataBase):
+class ColDataProd(ColDataBase):
     data = OrderedDict([
         ('codesum', {
             'label': 'SKU',
@@ -232,9 +232,9 @@ class ColData_Prod(ColDataBase):
     ])
 
 
-class ColData_MYO(ColData_Prod):
+class ColDataMyo(ColDataProd):
 
-    data = OrderedDict(ColData_Prod.data.items() + [
+    data = OrderedDict(ColDataProd.data.items() + [
         ('codesum', {
             'label': 'Item Number',
             'product': True,
@@ -306,16 +306,16 @@ class ColData_MYO(ColData_Prod):
     def __init__(self, data=None):
         if not data:
             data = self.data
-        super(ColData_MYO, self).__init__(data)
+        super(ColDataMyo, self).__init__(data)
 
     @classmethod
     def get_product_cols(self):
         return self.get_export_cols('product')
 
 
-class ColData_Woo(ColData_Prod):
+class ColDataWoo(ColDataProd):
 
-    data = OrderedDict(ColData_Prod.data.items() + [
+    data = OrderedDict(ColDataProd.data.items() + [
         ('ID', {
             'category': True,
             'product': True,
@@ -1130,7 +1130,7 @@ class ColData_Woo(ColData_Prod):
     def __init__(self, data=None):
         if not data:
             data = self.data
-        super(ColData_Woo, self).__init__(data)
+        super(ColDataWoo, self).__init__(data)
 
     @classmethod
     def get_product_cols(cls):
@@ -1163,7 +1163,7 @@ class ColData_Woo(ColData_Prod):
     @classmethod
     def get_attribute_cols(cls, attributes, vattributes):
         attribute_cols = OrderedDict()
-        all_attrs = listUtils.combine_lists(
+        all_attrs = ListUtils.combine_lists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
             attribute_cols['attribute:' + attr] = {
@@ -1189,7 +1189,7 @@ class ColData_Woo(ColData_Prod):
         return atttribute_meta_cols
 
 
-class ColData_User(ColDataBase):
+class ColDataUser(ColDataBase):
     # modTimeSuffix = ' Modified'
 
     modMapping = {
@@ -2189,7 +2189,7 @@ class ColData_User(ColDataBase):
     def __init__(self, data=None):
         if not data:
             data = self.data
-        super(ColData_User, self).__init__(data)
+        super(ColDataUser, self).__init__(data)
 
     @classmethod
     def get_user_cols(self):
@@ -2257,7 +2257,7 @@ class ColData_User(ColDataBase):
 
     @classmethod
     def get_all_wpdb_cols(self):
-        return listUtils.combine_ordered_dicts(
+        return ListUtils.combine_ordered_dicts(
             self.get_wpdb_cols(True),
             self.get_wpdb_cols(False)
         )
@@ -2414,22 +2414,22 @@ class ColData_User(ColDataBase):
 #
 #
 # def testColDataMyo():
-#     print "Testing ColData_MYO Class:"
-#     col_data = ColData_MYO()
+#     print "Testing ColDataMyo Class:"
+#     col_data = ColDataMyo()
 #     print col_data.get_import_cols()
 #     print col_data.get_defaults()
 #     print col_data.get_product_cols()
 #
 # def testColDataWoo():
-#     print "Testing ColData_Woo class:"
-#     col_data = ColData_Woo()
+#     print "Testing ColDataWoo class:"
+#     col_data = ColDataWoo()
 #     print col_data.get_import_cols()
 #     print col_data.get_defaults()
 #     print col_data.get_product_cols()
 #
 # def testColDataUser():
-#     print "Testing ColData_User class:"
-#     col_data = ColData_User()
+#     print "Testing ColDataUser class:"
+#     col_data = ColDataUser()
 #     # print "importCols", col_data.get_import_cols()
 #     # print "userCols", col_data.get_user_cols().keys()
 #     # print "report_cols", col_data.get_report_cols().keys()
@@ -2442,7 +2442,7 @@ class ColData_User(ColDataBase):
 #     print "get_act_future_tracked_cols", col_data.get_act_future_tracked_cols()
 #
 # def testTansyncDefaults():
-#     col_data = ColData_User()
+#     col_data = ColDataUser()
 #     print '{'
 #     for col, data in col_data.get_tansync_defaults().items():
 #         print '"%s": %s,' % (col, json.dumps(data))

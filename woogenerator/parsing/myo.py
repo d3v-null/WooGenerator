@@ -1,14 +1,14 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import listUtils, SanitationUtils
-from woogenerator.coldata import ColData_MYO
-from woogenerator.parsing.gen import CSVParse_Gen_Tree
+from woogenerator.utils import ListUtils, SanitationUtils
+from woogenerator.coldata import ColDataMyo
+from woogenerator.parsing.gen import CsvParseGenTree
 from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
 # from woogenerator.parsing.abstract import ObjList
 
 
-class CSVParse_MYO(CSVParse_Gen_Tree):
+class CsvParseMyo(CsvParseGenTree):
     productContainer = ImportShopProductMixin
 
     @property
@@ -226,15 +226,15 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 
         if not import_name:
             import_name = time.strftime("%Y-%m-%d %H:%M:%S")
-        cols = listUtils.combine_lists(cols, extra_cols)
-        defaults = listUtils.combine_ordered_dicts(defaults, extra_defaults)
-        taxo_subs = listUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
-        item_subs = listUtils.combine_ordered_dicts(item_subs, extra_item_subs)
+        cols = ListUtils.combine_lists(cols, extra_cols)
+        defaults = ListUtils.combine_ordered_dicts(defaults, extra_defaults)
+        taxo_subs = ListUtils.combine_ordered_dicts(taxo_subs, extra_taxo_subs)
+        item_subs = ListUtils.combine_ordered_dicts(item_subs, extra_item_subs)
         if not schema:
             schema = "MY"
 
-        super(CSVParse_MYO, self).__init__(cols, defaults, schema,
-                                           taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
+        super(CsvParseMyo, self).__init__(cols, defaults, schema,
+                                          taxo_subs, item_subs, taxoDepth, itemDepth, meta_width)
         if self.DEBUG_MYO:
             self.register_message("csvparse initialized with cols: %s" %
                                   SanitationUtils.coerce_unicode(extra_cols))
@@ -252,7 +252,7 @@ class CSVParse_MYO(CSVParse_Gen_Tree):
 class MYOProdList(ShopProdList):
 
     def get_report_cols(self):
-        return ColData_MYO.get_product_cols()
+        return ColDataMyo.get_product_cols()
 
 
 # if __name__ == '__main__':
@@ -263,8 +263,8 @@ class MYOProdList(ShopProdList):
 #     genPath = os.path.join(in_folder, 'generator.csv')
 #
 #
-#     col_data = ColData_MYO()
-#     productParser = CSVParse_MYO(
+#     col_data = ColDataMyo()
+#     productParser = CsvParseMyo(
 #         cols = col_data.get_import_cols(),
 #         defaults = col_data.get_defaults(),
 #     )

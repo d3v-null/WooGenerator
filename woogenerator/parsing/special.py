@@ -1,7 +1,7 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import listUtils, descriptorUtils, TimeUtils, Registrar, SanitationUtils
+from woogenerator.utils import ListUtils, DescriptorUtils, TimeUtils, Registrar, SanitationUtils
 from woogenerator.parsing.abstract import BLANK_CELL
 from woogenerator.parsing.tree import CsvParseTree
 from woogenerator.parsing.tree import TaxoList, ItemList
@@ -47,10 +47,10 @@ class ImportSpecialObject(ImportTreeObject, ImportSpecialMixin):
 class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     container = SpecialGruopList
 
-    ID = descriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
-    start_time = descriptorUtils.safe_key_property(
+    ID = DescriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
+    start_time = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.startTimeKey)
-    end_time = descriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
+    end_time = DescriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
     verifyMetaKeys = [
         ImportSpecialMixin.startTimeKey,
         ImportSpecialMixin.endTimeKey,
@@ -89,7 +89,7 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
 
 
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
-    ruleCode = descriptorUtils.safe_key_property(
+    ruleCode = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.ruleCodeKey)
     verifyMetaKeys = [
         ImportSpecialMixin.ruleCodeKey
@@ -119,7 +119,7 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
         return self.ID
 
 
-class CSVParse_Special(CsvParseTree):
+class CsvParseSpecial(CsvParseTree):
 
     itemContainer = ImportSpecialRule
     taxoContainer = ImportSpecialGroup
@@ -148,9 +148,9 @@ class CSVParse_Special(CsvParseTree):
             "XWNS",
             "XWPS"
         ]
-        cols = listUtils.combine_lists(cols, extra_cols)
+        cols = ListUtils.combine_lists(cols, extra_cols)
 
-        super(CSVParse_Special, self).__init__(
+        super(CsvParseSpecial, self).__init__(
             cols,
             defaults,
             taxoDepth=1,
@@ -164,7 +164,7 @@ class CSVParse_Special(CsvParseTree):
     def clear_transients(self):
         if self.DEBUG_MRO:
             Registrar.register_message(' ')
-        super(CSVParse_Special, self).clear_transients()
+        super(CsvParseSpecial, self).clear_transients()
         self.ruleGroups = OrderedDict()
         self.rules = OrderedDict()
 

@@ -27,23 +27,23 @@ from PIL import Image
 from exitstatus import ExitStatus
 
 from __init__ import MODULE_PATH, MODULE_LOCATION
-from woogenerator.utils import listUtils, SanitationUtils, TimeUtils, ProgressCounter
+from woogenerator.utils import ListUtils, SanitationUtils, TimeUtils, ProgressCounter
 from woogenerator.utils import HtmlReporter, Registrar
 from woogenerator.metagator import MetaGator
-from woogenerator.coldata import ColData_Woo, ColData_MYO, ColDataBase
+from woogenerator.coldata import ColDataWoo, ColDataMyo, ColDataBase
 from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
-from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
+from woogenerator.sync_client_prod import ProdSyncClientWC, CatSyncClientWC
 from woogenerator.matching import MatchList
 from woogenerator.matching import ProductMatcher, CategoryMatcher, VariationMatcher
-from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Cat_Woo
-from woogenerator.syncupdate import SyncUpdate_Var_Woo, SyncUpdate_Prod_Woo
+from woogenerator.syncupdate import SyncUpdate, SyncUpdateCatWoo
+from woogenerator.syncupdate import SyncUpdateVarWoo, SyncUpdateProdWoo
 from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
-from woogenerator.parsing.woo import CSVParse_TT, CSVParse_VT, CSVParse_Woo
+from woogenerator.parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from woogenerator.parsing.woo import WooCatList, WooProdList, WooVarList
-from woogenerator.parsing.api import CSVParse_Woo_Api
-from woogenerator.parsing.myo import CSVParse_MYO, MYOProdList
-from woogenerator.parsing.dyn import CSVParse_Dyn
-from woogenerator.parsing.special import CSVParse_Special
+from woogenerator.parsing.api import CsvParseWooApi
+from woogenerator.parsing.myo import CsvParseMyo, MYOProdList
+from woogenerator.parsing.dyn import CsvParseDyn
+from woogenerator.parsing.special import CsvParseSpecial
 
 
 def timediff(settings):
@@ -417,9 +417,9 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                                    (thing, getattr(settings, thing)))
 
     if settings.schema in settings.myo_schemas:
-        col_data_class = ColData_MYO
+        col_data_class = ColDataMyo
     elif settings.schema in settings.woo_schemas:
-        col_data_class = ColData_Woo
+        col_data_class = ColDataWoo
     else:
         col_data_class = ColDataBase
     settings.product_parser_args.update(**{
@@ -429,20 +429,20 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         col_data_class.get_defaults(),
     })
     if settings.schema in settings.myo_schemas:
-        product_parser_class = CSVParse_MYO
+        product_parser_class = CsvParseMyo
     elif settings.schema in settings.woo_schemas:
         if settings.schema == "TT":
-            product_parser_class = CSVParse_TT
+            product_parser_class = CsvParseTT
         elif settings.schema == "VT":
-            product_parser_class = CSVParse_VT
+            product_parser_class = CsvParseVT
         else:
             settings.product_parser_args['schema'] = settings.schema
-            product_parser_class = CSVParse_Woo
+            product_parser_class = CsvParseWoo
 
     parsers = argparse.Namespace()
 
-    parsers.dyn = CSVParse_Dyn()
-    parsers.special = CSVParse_Special()
+    parsers.dyn = CsvParseDyn()
+    parsers.special = CsvParseSpecial()
 
     if settings.download_master:
         if Registrar.DEBUG_GDRIVE:
@@ -686,33 +686,33 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
     Registrar.register_progress("Exporting info to spreadsheets")
 
     if settings.schema in settings.myo_schemas:
-        product_cols = ColData_MYO.get_product_cols()
+        product_cols = ColDataMyo.get_product_cols()
         product_list = MYOProdList(parsers.product.products.values())
         product_list.export_items(settings.myo_path,
                                   ColDataBase.get_col_names(product_cols))
     elif settings.schema in settings.woo_schemas:
-        product_cols = ColData_Woo.get_product_cols()
+        product_cols = ColDataWoo.get_product_cols()
 
         for col in settings.exclude_cols:
             if col in product_cols:
                 del product_cols[col]
 
-        attribute_cols = ColData_Woo.get_attribute_cols(
+        attribute_cols = ColDataWoo.get_attribute_cols(
             parsers.product.attributes, parsers.product.vattributes)
         product_colnames = ColDataBase.get_col_names(
-            listUtils.combine_ordered_dicts(product_cols, attribute_cols))
+            ListUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
         product_list = WooProdList(parsers.product.products.values())
         product_list.export_items(settings.fla_path, product_colnames)
 
         # variations
 
-        variation_cols = ColData_Woo.get_variation_cols()
+        variation_cols = ColDataWoo.get_variation_cols()
 
-        attribute_meta_cols = ColData_Woo.get_attribute_meta_cols(
+        attribute_meta_cols = ColDataWoo.get_attribute_meta_cols(
             parsers.product.vattributes)
         variation_col_names = ColDataBase.get_col_names(
-            listUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
+            ListUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
 
         if parsers.product.variations:
             variation_list = WooVarList(parsers.product.variations.values())
@@ -720,7 +720,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
         if parsers.product.categories:
             # categories
-            category_cols = ColData_Woo.get_category_cols()
+            category_cols = ColDataWoo.get_category_cols()
 
             category_list = WooCatList(parsers.product.categories.values())
             category_list.export_items(settings.cat_path,
@@ -988,13 +988,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     if settings.do_specials:
         if settings.current_special:
-            CSVParse_Woo.current_special = settings.current_special
-        CSVParse_Woo.specialsCategory = "Specials"
-        CSVParse_Woo.add_special_categories = settings.add_special_categories
+            CsvParseWoo.current_special = settings.current_special
+        CsvParseWoo.specialsCategory = "Specials"
+        CsvParseWoo.add_special_categories = settings.add_special_categories
 
-    CSVParse_Woo.do_images = settings.do_images
-    CSVParse_Woo.do_dyns = settings.do_dyns
-    CSVParse_Woo.do_specials = settings.do_specials
+    CsvParseWoo.do_images = settings.do_images
+    CsvParseWoo.do_dyns = settings.do_dyns
+    CsvParseWoo.do_specials = settings.do_specials
 
     settings.exclude_cols = []
 
@@ -1049,8 +1049,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'import_name': settings.import_name,
         'itemDepth': settings.item_depth,
         'taxoDepth': settings.taxo_depth,
-        'cols': ColData_Woo.get_import_cols(),
-        'defaults': ColData_Woo.get_defaults(),
+        'cols': ColDataWoo.get_import_cols(),
+        'defaults': ColDataWoo.get_defaults(),
     }
 
     settings.product_parser_args = {
@@ -1064,7 +1064,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     for category_name, category_list in parsers.product.categories_name.items():
         if len(category_list) < 2:
             continue
-        if listUtils.check_equal(
+        if ListUtils.check_equal(
                 [category.namesum for category in category_list]):
             continue
         print "bad category: %50s | %d | %s" % (
@@ -1091,10 +1091,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     if settings.download_slave:
 
-        api_product_parser = CSVParse_Woo_Api(
+        api_product_parser = CsvParseWooApi(
             **settings.api_product_parser_args)
 
-        with ProdSyncClient_WC(settings.wc_api_params) as client:
+        with ProdSyncClientWC(settings.wc_api_params) as client:
             # try:
             if settings.do_categories:
                 client.analyse_remote_categories(api_product_parser)
@@ -1177,7 +1177,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 for match in category_matcher.duplicate_matches:
                     master_taxo_sums = [cat.namesum for cat in match.m_objects]
                     if all(master_taxo_sums) \
-                            and listUtils.check_equal(master_taxo_sums) \
+                            and ListUtils.check_equal(master_taxo_sums) \
                             and not len(match.s_objects) > 1:
                         valid_category_matches.append(match)
                     else:
@@ -1204,7 +1204,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             slaveless_category_matches.add_matches(
                 category_matcher.slaveless_matches)
 
-            sync_cols = ColData_Woo.get_wpapi_category_cols()
+            sync_cols = ColDataWoo.get_wpapi_category_cols()
 
             # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
@@ -1213,7 +1213,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 for m_object in match.m_objects:
                     # m_object = match.m_objects[0]
 
-                    sync_update = SyncUpdate_Cat_Woo(m_object, s_object)
+                    sync_update = SyncUpdateCatWoo(m_object, s_object)
 
                     sync_update.update(sync_cols)
 
@@ -1263,7 +1263,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 if Registrar.DEBUG_CATS:
                     Registrar.DEBUG_API = True
 
-                with CatSyncClient_WC(settings.wc_api_params) as client:
+                with CatSyncClientWC(settings.wc_api_params) as client:
                     if Registrar.DEBUG_CATS:
                         Registrar.register_message("created cat client")
                     new_categories = [
@@ -1282,7 +1282,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 continue
 
                         m_api_data = category.to_api_data(
-                            ColData_Woo, 'wp-api')
+                            ColDataWoo, 'wp-api')
                         for key in ['id', 'slug', 'sku']:
                             if key in m_api_data:
                                 del m_api_data[key]
@@ -1299,7 +1299,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             api_product_parser.process_api_category(
                                 response_api_data)
                             api_cat_translation = OrderedDict()
-                            for key, data in ColData_Woo.get_wpapi_category_cols(
+                            for key, data in ColDataWoo.get_wpapi_category_cols(
                             ).items():
                                 try:
                                     wp_api_key = data['wp-api']['key']
@@ -1349,7 +1349,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         slaveless_product_matches.add_matches(
             product_matcher.slaveless_matches)
 
-        sync_cols = ColData_Woo.get_wpapi_cols()
+        sync_cols = ColDataWoo.get_wpapi_cols()
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("sync_cols: %s" % repr(sync_cols))
 
@@ -1371,7 +1371,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             m_object = prod_match.m_object
             s_object = prod_match.s_object
 
-            sync_update = SyncUpdate_Prod_Woo(m_object, s_object)
+            sync_update = SyncUpdateProdWoo(m_object, s_object)
 
             # , "gcs %s is not variation but object is" % repr(gcs)
             assert not m_object.isVariation
@@ -1501,7 +1501,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             slaveless_variation_matches.add_matches(
                 variation_matcher.slaveless_matches)
 
-            var_sync_cols = ColData_Woo.get_wpapi_variable_cols()
+            var_sync_cols = ColDataWoo.get_wpapi_variable_cols()
             if Registrar.DEBUG_UPDATE:
                 Registrar.register_message("var_sync_cols: %s" %
                                            repr(var_sync_cols))
@@ -1519,7 +1519,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 m_object = var_match.m_object
                 s_object = var_match.s_object
 
-                sync_update = SyncUpdate_Var_Woo(m_object, s_object)
+                sync_update = SyncUpdateVarWoo(m_object, s_object)
 
                 sync_update.update(var_sync_cols)
 
@@ -1544,7 +1544,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 assert var_match.has_no_slave
                 m_object = var_match.m_object
 
-                # sync_update = SyncUpdate_Var_Woo(m_object, None)
+                # sync_update = SyncUpdateVarWoo(m_object, None)
 
                 # sync_update.update(var_sync_cols)
 
@@ -1559,7 +1559,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 assert var_match.has_no_master
                 s_object = var_match.s_object
 
-                # sync_update = SyncUpdate_Var_Woo(None, s_object)
+                # sync_update = SyncUpdateVarWoo(None, s_object)
 
                 # sync_update.update(var_sync_cols)
 
@@ -1575,7 +1575,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 m_object = new_prod_match.m_object
                 print "will create product %d: %s" % (new_prod_count,
                                                       m_object.identifier)
-                api_data = m_object.to_api_data(ColData_Woo, 'wp-api')
+                api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
                 for key in ['id', 'slug']:
                     if key in api_data:
                         del api_data[key]
@@ -1597,9 +1597,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
-        # basic_cols = ColData_Woo.get_basic_cols()
-        # csv_colnames = ColData_Woo.get_col_names(
-        #     OrderedDict(basic_cols.items() + ColData_Woo.name_cols([
+        # basic_cols = ColDataWoo.get_basic_cols()
+        # csv_colnames = ColDataWoo.get_col_names(
+        #     OrderedDict(basic_cols.items() + ColDataWoo.name_cols([
         #         # 'address_reason',
         #         # 'name_reason',
         #         # 'Edited Name',
@@ -1623,10 +1623,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 ]
             )
 
-            delta_cols = ColData_Woo.get_delta_cols()
+            delta_cols = ColDataWoo.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColData_Woo.get_basic_cols().items() + ColData_Woo.name_cols(
+                ColDataWoo.get_basic_cols().items() + ColDataWoo.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if s_delta_list:
@@ -1645,7 +1645,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if s_delta_list:
                 s_delta_list.export_items(
                     settings.slave_delta_csv_path,
-                    ColData_Woo.get_col_names(all_delta_cols))
+                    ColDataWoo.get_col_names(all_delta_cols))
 
         #
         report_matching = settings.do_sync
@@ -2000,7 +2000,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_product_updates))
 
-        with ProdSyncClient_WC(settings.wc_api_params) as slave_client:
+        with ProdSyncClientWC(settings.wc_api_params) as slave_client:
             for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)

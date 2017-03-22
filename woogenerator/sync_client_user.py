@@ -8,7 +8,7 @@ import paramiko
 from sshtunnel import SSHTunnelForwarder
 import pymysql
 
-from woogenerator.coldata import ColData_User
+from woogenerator.coldata import ColDataUser
 from woogenerator.sync_client import SyncClientAbstract  # , AbstractServiceInterface
 from woogenerator.sync_client import SyncClientWP
 from woogenerator.sync_client import SyncClientWC
@@ -16,11 +16,11 @@ from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.utils import ProgressCounter, UnicodeCsvDialectUtils
 
 
-class UsrSyncClient_WC(SyncClientWC):
+class UsrSyncClientWC(SyncClientWC):
     endpoint_singular = 'customer'
 
 
-class UsrSyncClient_WP(SyncClientWP):
+class UsrSyncClientWP(SyncClientWP):
     endpoint_singular = 'user'
 
     @property
@@ -28,12 +28,12 @@ class UsrSyncClient_WP(SyncClientWP):
         return "%ss?context=edit" % self.endpoint_singular
 
 
-class UsrSyncClient_SSH_ACT(SyncClientAbstract):
+class UsrSyncClientSshAct(SyncClientAbstract):
 
     def __init__(self, connect_params, db_params, fsParams):
         self.db_params = db_params
         self.fsParams = fsParams
-        super(UsrSyncClient_SSH_ACT, self).__init__(connect_params)
+        super(UsrSyncClientSshAct, self).__init__(connect_params)
 
     def attempt_connect(self):
         self.service = paramiko.SSHClient()
@@ -163,7 +163,7 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
             remote_export_folder, file_root + '.imported')
 
         with open(local_path, 'w+') as out_file:
-            csvdialect = UnicodeCsvDialectUtils.act_out
+            csvdialect = UnicodeCsvDialectUtils.ActOut
             dictwriter = unicodecsv.DictWriter(
                 out_file,
                 dialect=csvdialect,
@@ -244,18 +244,18 @@ class UsrSyncClient_SSH_ACT(SyncClientAbstract):
         print "donloading file..."
         self.get_delete_file(remote_path, local_path)
         print "analysing file..."
-        parser.analyse_file(local_path, dialect_suggestion='act_out')
+        parser.analyse_file(local_path, dialect_suggestion='ActOut')
 
 
-class UsrSyncClient_SQL_WP(SyncClientAbstract):
+class UsrSyncClientSqlWP(SyncClientAbstract):
     service_builder = SSHTunnelForwarder
 
-    """docstring for UsrSyncClient_SQL_WP"""
+    """docstring for UsrSyncClientSqlWP"""
 
     def __init__(self, connect_params, db_params):
         self.db_params = db_params
         self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
-        super(UsrSyncClient_SQL_WP, self).__init__(connect_params)
+        super(UsrSyncClientSqlWP, self).__init__(connect_params)
         # self.fsParams = fsParams
 
     def __enter__(self):
@@ -291,7 +291,7 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
             "MAX(tu.`time`) as `Edited in Wordpress`"
         ]
 
-        for tracking_name, aliases in ColData_User.get_wp_tracked_cols().items():
+        for tracking_name, aliases in ColDataUser.get_wp_tracked_cols().items():
             case_clauses = []
             for alias in aliases:
                 case_clauses.append(
@@ -337,8 +337,8 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
             #     # n rows to analyse
             #     print "THERE ARE %d ITEMS" % len(results)
 
-        wp_db_meta_cols = ColData_User.get_wpdb_cols(meta=True)
-        wp_db_core_cols = ColData_User.get_wpdb_cols(meta=False)
+        wp_db_meta_cols = ColDataUser.get_wpdb_cols(meta=True)
+        wp_db_core_cols = ColDataUser.get_wpdb_cols(meta=False)
 
         userdata_cols = ",\n\t\t".join(filter(None,
                                               [
@@ -351,7 +351,7 @@ class UsrSyncClient_SQL_WP(SyncClientAbstract):
                                               ]
                                               ))
 
-        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColData_User.get_wp_cols().items()))
+        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColDataUser.get_wp_cols().items()))
 
         # assert all([
         #     'Wordpress ID' in wpCols.keys(),

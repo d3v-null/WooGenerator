@@ -33,9 +33,9 @@ to analyse the spreadsheet for each database. These are as follows:
 
 | Class | Usage |
 | --- | --- |
-| `myo.CSVParse_MYO` | All meridian products for MYOB |
-| `woo.CSVParse_TT` | All TechnoTan products for WooCommerce |
-| `woo.CSVParse_VT` | All VuTan products for WooCommerce |
+| `myo.CsvParseMyo` | All meridian products for MYOB |
+| `woo.CsvParseTT` | All TechnoTan products for WooCommerce |
+| `woo.CsvParseVT` | All VuTan products for WooCommerce |
 
 
 

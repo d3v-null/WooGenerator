@@ -16,7 +16,7 @@ import re
 from tabulate import tabulate
 import unicodecsv
 
-from woogenerator.utils import (listUtils, SanitationUtils, Registrar,
+from woogenerator.utils import (ListUtils, SanitationUtils, Registrar,
                                 ProgressCounter, UnicodeCsvDialectUtils)
 
 BLANK_CELL = ''
@@ -70,7 +70,7 @@ class ObjList(list, Registrar):
             self.append(obj)
 
     def get_key(self, key):
-        values = listUtils.filter_unique_true(
+        values = ListUtils.filter_unique_true(
             [obj.get(key) for obj in self.objects])
 
         if values:
@@ -149,7 +149,7 @@ class ObjList(list, Registrar):
         assert self.objects, "meeds items"
         with open(file_path, 'w+') as out_file:
             if dialect is None:
-                csvdialect = UnicodeCsvDialectUtils.act_out
+                csvdialect = UnicodeCsvDialectUtils.ActOut
             else:
                 csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
                     dialect)
@@ -335,8 +335,8 @@ class CsvParseBase(Registrar):
         extra_defaults = OrderedDict()
 
         self.limit = kwargs.pop('limit', None)
-        self.cols = listUtils.combine_lists(cols, extra_cols)
-        self.defaults = listUtils.combine_ordered_dicts(defaults,
+        self.cols = ListUtils.combine_lists(cols, extra_cols)
+        self.defaults = ListUtils.combine_ordered_dicts(defaults,
                                                         extra_defaults)
         self.object_indexer = self.get_object_rowcount
         self.clear_transients()
@@ -403,7 +403,7 @@ class CsvParseBase(Registrar):
         except Exception as exc:
             self.register_warning('Could not retrieve ' + str(
                 col) + ' from row[' + str(index) + '] | ' + str(exc) + ' | ' +
-                                  repr(row))
+                repr(row))
             return None
 
     def sanitize_cell(self, cell):
@@ -479,10 +479,10 @@ class CsvParseBase(Registrar):
         parser_data = self.get_parser_data(**kwargs)
         if self.DEBUG_PARSER:
             self.register_message("parser_data: {}".format(parser_data))
-        # all_data = listUtils.combine_ordered_dicts(parser_data, default_data)
-        all_data = listUtils.combine_ordered_dicts(default_data, parser_data)
+        # all_data = ListUtils.combine_ordered_dicts(parser_data, default_data)
+        all_data = ListUtils.combine_ordered_dicts(default_data, parser_data)
         mandatory_data = self.get_mandatory_data(**kwargs)
-        all_data = listUtils.combine_ordered_dicts(all_data, mandatory_data)
+        all_data = ListUtils.combine_ordered_dicts(all_data, mandatory_data)
         if self.DEBUG_PARSER:
             self.register_message("all_data: {}".format(all_data))
         container = self.get_new_obj_container(all_data, **kwargs)
@@ -536,7 +536,7 @@ class CsvParseBase(Registrar):
 
             if unicode_row:
                 non_unicode = [
-                    cell for cell in unicode_row \
+                    cell for cell in unicode_row
                     if not isinstance(cell, unicode)
                 ]
                 # non_unicode = filter(

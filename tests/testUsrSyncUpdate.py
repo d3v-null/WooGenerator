@@ -12,12 +12,12 @@ if __name__ == '__main__' and __package__ is None:
 from testSyncClient import abstractSyncClientTestCase
 from context import woogenerator
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
-from woogenerator.sync_client_user import UsrSyncClient_WP
-from woogenerator.coldata import ColData_User
-from woogenerator.parsing.user import CSVParse_User, CSVParse_User_Api  # , ImportUser
+from woogenerator.sync_client_user import UsrSyncClientWP
+from woogenerator.coldata import ColDataUser
+from woogenerator.parsing.user import CsvParseUser, CsvParseUserApi  # , ImportUser
 # , CardMatcher, NocardEmailMatcher, EmailMatcher
 from woogenerator.matching import UsernameMatcher, MatchList
-from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 
 
 class testUsrSyncUpdate(abstractSyncClientTestCase):
@@ -71,9 +71,9 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
     def testUploadSlaveChanges(self):
 
-        maParser = CSVParse_User(
-            cols=ColData_User.get_act_import_cols(),
-            defaults=ColData_User.get_defaults()
+        maParser = CsvParseUser(
+            cols=ColDataUser.get_act_import_cols(),
+            defaults=ColDataUser.get_defaults()
         )
 
         master_bus_type = "Salon"
@@ -91,12 +91,12 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         print "MASTER RECORDS: \n", maParser.tabulate()
 
-        saParser = CSVParse_User_Api(
-            cols=ColData_User.get_wp_import_cols(),
-            defaults=ColData_User.get_defaults()
+        saParser = CsvParseUserApi(
+            cols=ColDataUser.get_wp_import_cols(),
+            defaults=ColDataUser.get_defaults()
         )
 
-        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+        with UsrSyncClientWP(self.wpApiParams) as slaveClient:
             slaveClient.analyse_remote(saParser, search=master_uname)
 
         print "SLAVE RECORDS: \n", saParser.tabulate()
@@ -112,13 +112,13 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
 
-        syncCols = ColData_User.get_sync_cols()
+        syncCols = ColDataUser.get_sync_cols()
 
         for count, match in enumerate(globalMatches):
             m_object = match.m_objects[0]
             s_object = match.s_objects[0]
 
-            syncUpdate = SyncUpdate_Usr_Api(m_object, s_object)
+            syncUpdate = SyncUpdateUsrApi(m_object, s_object)
             syncUpdate.update(syncCols)
 
             print "SyncUpdate: ", syncUpdate.tabulate()
@@ -134,7 +134,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         #
         response_json = {}
 
-        with UsrSyncClient_WP(self.wpApiParams) as slaveClient:
+        with UsrSyncClientWP(self.wpApiParams) as slaveClient:
 
             for count, update in enumerate(updates):
                 try:

@@ -4,7 +4,7 @@ Introduce woo api structure to shop classes.
 from collections import OrderedDict
 from pprint import pformat
 
-from woogenerator.coldata import ColData_Woo
+from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.abstract import CsvParseBase
 from woogenerator.parsing.tree import CsvParseTreeMixin
 from woogenerator.parsing.gen import ImportGenObject
@@ -114,15 +114,16 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
             self.title,
         ])
 
-class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
-                       CsvParseShopMixin, CsvParseWooMixin):
+
+class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
+                     CsvParseShopMixin, CsvParseWooMixin):
     objectContainer = ImportApiObject
     productContainer = ImportApiProduct
     simpleContainer = ImportApiProductSimple
     variableContainer = ImportApiProductVariable
     variationContainer = ImportApiProductVariation
     categoryContainer = ImportApiCategory
-    # category_indexer = CSVParse_Gen_Mixin.get_name_sum
+    # category_indexer = CsvParseGenMixin.get_name_sum
     # category_indexer = CsvParseWooMixin.get_title
     # category_indexer = CsvParseWooMixin.get_wpid
     category_indexer = CsvParseBase.get_object_rowcount
@@ -131,34 +132,34 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('CSVParse_Woo_Api')
-        super(CSVParse_Woo_Api, self).__init__(*args, **kwargs)
-        # self.category_indexer = CSVParse_Gen_Mixin.get_name_sum
+            self.register_message('CsvParseWooApi')
+        super(CsvParseWooApi, self).__init__(*args, **kwargs)
+        # self.category_indexer = CsvParseGenMixin.get_name_sum
         # if hasattr(CsvParseWooMixin, '__init__'):
-        #     CSVParse_Gen_Mixin.__init__(self, *args, **kwargs)
+        #     CsvParseGenMixin.__init__(self, *args, **kwargs)
 
     def clear_transients(self):
-        # for base_class in CSVParse_Woo_Api.__bases__:
+        # for base_class in CsvParseWooApi.__bases__:
         #     if hasattr(base_class, 'clear_transients'):
         #         base_class.clear_transients(self)
-        # CSVParse_Flat.clear_transients(self)
+        # CsvParseFlat.clear_transients(self)
         CsvParseBase.clear_transients(self)
         CsvParseTreeMixin.clear_transients(self)
         CsvParseShopMixin.clear_transients(self)
         CsvParseWooMixin.clear_transients(self)
 
-        # super(CSVParse_Woo_Api, self).clear_transients()
+        # super(CsvParseWooApi, self).clear_transients()
         # CsvParseShopMixin.clear_transients(self)
 
     def register_object(self, object_data):
-        # CSVParse_Gen_Tree.register_object(self, object_data)
+        # CsvParseGenTree.register_object(self, object_data)
         CsvParseBase.register_object(self, object_data)
         # CsvParseTreeMixin.register_object(self, object_data)
         CsvParseShopMixin.register_object(self, object_data)
         # CsvParseWooMixin.register_object(self, object_data)
 
     # def process_object(self, object_data):
-        # super(CSVParse_Woo_Api, self).process_object(object_data)
+        # super(CsvParseWooApi, self).process_object(object_data)
         # todo: this
 
     # def register_object(self, object_data):
@@ -166,7 +167,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
     #         self.register_message(' ')
     #     if self.DEBUG_API:
     #         self.register_message("registering object_data: %s" % str(object_data))
-    #     super(CSVParse_Woo_Api, self).register_object(object_data)
+    #     super(CsvParseWooApi, self).register_object(object_data)
 
     @classmethod
     def get_api_dimension_data(cls, dimensions):
@@ -210,7 +211,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
             self.register_message("ANALYSE CATEGORY: %s" %
                                   repr(categoryApiData))
         core_translation = OrderedDict()
-        for col, col_data in ColData_Woo.get_wpapi_core_cols().items():
+        for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
@@ -253,7 +254,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
             #
             # parser_data = self.get_parser_data(**kwargs)
             #
-            # all_data = listUtils.combine_ordered_dicts(default_data, parser_data)
+            # all_data = ListUtils.combine_ordered_dicts(default_data, parser_data)
             #
             # container = self.get_new_obj_container(all_data, **kwargs)
             #
@@ -358,7 +359,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
         # print "api_data after:  %s" % str(api_data)
         parser_data = OrderedDict()
         core_translation = OrderedDict()
-        for col, col_data in ColData_Woo.get_wpapi_core_cols().items():
+        for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
             except:
@@ -370,7 +371,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
         meta_translation = OrderedDict()
         if 'meta' in api_data:
             meta_data = api_data['meta']
-            for col, col_data in ColData_Woo.get_wpapi_meta_cols().items():
+            for col, col_data in ColDataWoo.get_wpapi_meta_cols().items():
                 try:
                     wp_api_key = col_data['wp-api']['key']
                 except:
@@ -454,7 +455,7 @@ class CSVParse_Woo_Api(CsvParseBase, CsvParseTreeMixin,
     def get_new_obj_container(self, all_data, **kwargs):
         if self.DEBUG_MRO:
             self.register_message(' ')
-        container = super(CSVParse_Woo_Api, self).get_new_obj_container(
+        container = super(CsvParseWooApi, self).get_new_obj_container(
             all_data, **kwargs)
         api_data = kwargs.get('api_data', {})
         if self.DEBUG_API:

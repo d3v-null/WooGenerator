@@ -7,13 +7,13 @@ from tabulate import tabulate
 
 from testSyncClient import abstractSyncClientTestCase
 from context import woogenerator
-from woogenerator.sync_client_prod import ProdSyncClient_WC, CatSyncClient_WC
-from woogenerator.coldata import ColData_Woo
+from woogenerator.sync_client_prod import ProdSyncClientWC, CatSyncClientWC
+from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.abstract import ObjList
 # from woogenerator.parsing.gen import ProdList
 from woogenerator.parsing.shop import ShopProdList, ShopCatList
-from woogenerator.parsing.woo import ImportWooProduct, CSVParse_Woo
-from woogenerator.parsing.api import CSVParse_Woo_Api
+from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo
+from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 
 
@@ -55,8 +55,8 @@ class testProdSyncClient(abstractSyncClientTestCase):
             'import_name': self.import_name,
             # 'itemDepth': itemDepth,
             # 'taxoDepth': taxoDepth,
-            'cols': ColData_Woo.get_import_cols(),
-            'defaults': ColData_Woo.get_defaults(),
+            'cols': ColDataWoo.get_import_cols(),
+            'defaults': ColDataWoo.get_defaults(),
         }
 
     def setUp(self):
@@ -75,24 +75,24 @@ class testProdSyncClient(abstractSyncClientTestCase):
         # Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
-        CSVParse_Woo_Api.do_images = False
-        CSVParse_Woo_Api.do_specials = False
-        CSVParse_Woo_Api.do_dyns = False
+        CsvParseWooApi.do_images = False
+        CsvParseWooApi.do_specials = False
+        CsvParseWooApi.do_dyns = False
 
     def testRead(self):
         response = []
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.get_iterator()
         # print tabulate(list(response)[:10], headers='keys')
 
         self.assertTrue(response)
 
     def testAnalyseRemote(self):
-        productParser = CSVParse_Woo_Api(
+        productParser = CsvParseWooApi(
             **self.productParserArgs
         )
 
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             client.analyse_remote(productParser, limit=20)
 
         prodList = ShopProdList(productParser.products.values())
@@ -113,7 +113,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
         updates = {
             'regular_price': u'37.00'
         }
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -126,7 +126,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'37.00')
             ]))
         ])
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             wn_regular_price = response.json()['product']['meta'][
                 'lc_wn_regular_price']
@@ -142,7 +142,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -157,7 +157,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
         updates = OrderedDict([
             ('weight', u'11.0')
         ])
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -173,7 +173,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 ('lc_dn_regular_price', expected_result)
             ]))
         ])
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -192,7 +192,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -202,14 +202,14 @@ class testProdSyncClient(abstractSyncClientTestCase):
             self.assertFalse(wn_regular_price)
 
     def testGetSinglePage(self):
-        with ProdSyncClient_WC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wcApiParams) as client:
             response = client.service.get('products?page=9')
             # print response
             # if hasattr(response, 'json'):
             #     print "testUploadChangesEmpty", response.json()
 
     def testCatSyncClient(self):
-        with CatSyncClient_WC(self.wcApiParams) as client:
+        with CatSyncClientWC(self.wcApiParams) as client:
             for page in client.get_iterator():
                 print page
 

@@ -11,7 +11,7 @@ from tabulate import tabulate
 # , UnicodeCsvDialectUtils
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.contact_objects import ContactAddress
-from woogenerator.coldata import ColDataBase, ColData_User, ColData_Prod, ColData_Woo
+from woogenerator.coldata import ColDataBase, ColDataUser, ColDataProd, ColDataWoo
 from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
 
@@ -501,13 +501,13 @@ class SyncUpdate(
                                       updateParams['sColTime'])
 
         # if data.get('tracked'):
-        #     mTimeRaw =  self.old_m_object.get(ColData_User.mod_time_col(col))
+        #     mTimeRaw =  self.old_m_object.get(ColDataUser.mod_time_col(col))
         #     print "mTimeRaw:",mTimeRaw
         #     m_time = self.parse_m_time(mTimeRaw)
         #     print "mTimeRaw:",m_time
         #     if not m_time: m_time = self.m_time
         #
-        #     sTimeRaw = self.old_s_object.get(ColData_User.mod_time_col(col))
+        #     sTimeRaw = self.old_s_object.get(ColDataUser.mod_time_col(col))
         #     print "sTimeRaw:",sTimeRaw
         #     m_time = self.parse_s_time(sTimeRaw)
         #     print "s_time:",s_time
@@ -794,12 +794,12 @@ class SyncUpdate(
         return self.e_updated
 
 
-class SyncUpdate_Usr(SyncUpdate):
-    col_data = ColData_User
+class SyncUpdateUsr(SyncUpdate):
+    col_data = ColDataUser
     s_meta_target = 'wp'
 
     def __init__(self, *args, **kwargs):
-        super(SyncUpdate_Usr, self).__init__(*args, **kwargs)
+        super(SyncUpdateUsr, self).__init__(*args, **kwargs)
 
         self.m_time = self.old_m_object.act_modtime
         self.s_time = self.old_s_object.wp_modtime
@@ -831,7 +831,7 @@ class SyncUpdate_Usr(SyncUpdate):
         return self.get_s_value("Wordpress ID")
 
     def values_similar(self, col, m_value, s_value):
-        response = super(SyncUpdate_Usr, self).values_similar(
+        response = super(SyncUpdateUsr, self).values_similar(
             col, m_value, s_value)
         if not response:
             if "phone" in col.lower():
@@ -919,7 +919,7 @@ class SyncUpdate_Usr(SyncUpdate):
 
     def get_info_components(self, info_fmt="%s"):
         info_components = super(
-            SyncUpdate_Usr, self).get_info_components(info_fmt)
+            SyncUpdateUsr, self).get_info_components(info_fmt)
         info_components += [
             (info_fmt % ("Last Sale", TimeUtils.wp_time_to_string(
                 self.b_time))) if self.b_time else "No Last Sale",
@@ -1033,7 +1033,7 @@ class SyncUpdate_Usr(SyncUpdate):
         return updates
 
 
-class SyncUpdate_Usr_Api(SyncUpdate_Usr):
+class SyncUpdateUsrApi(SyncUpdateUsr):
     s_meta_target = 'wp-api'
 
     def get_slave_updates_native_recursive(self, col, updates=None):
@@ -1083,12 +1083,12 @@ class SyncUpdate_Usr_Api(SyncUpdate_Usr):
         return updates
 
 
-class SyncUpdate_Prod(SyncUpdate):
-    col_data = ColData_Prod
+class SyncUpdateProd(SyncUpdate):
+    col_data = ColDataProd
     s_meta_target = 'wp-api'
 
     def __init__(self, *args, **kwargs):
-        super(SyncUpdate_Prod, self).__init__(*args, **kwargs)
+        super(SyncUpdateProd, self).__init__(*args, **kwargs)
 
     @property
     def master_id(self):
@@ -1099,7 +1099,7 @@ class SyncUpdate_Prod(SyncUpdate):
         return self.get_s_value('ID')
 
     def values_similar(self, col, m_value, s_value):
-        response = super(SyncUpdate_Prod, self).values_similar(
+        response = super(SyncUpdateProd, self).values_similar(
             col, m_value, s_value)
         if col in self.col_data.data:
             col_data = self.col_data.data[col]
@@ -1129,8 +1129,8 @@ class SyncUpdate_Prod(SyncUpdate):
         return response
 
 
-class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
-    col_data = ColData_Woo
+class SyncUpdateProdWoo(SyncUpdateProd):
+    col_data = ColDataWoo
 
     def get_slave_updates_native_recursive(self, col, updates=None):
         if updates is None:
@@ -1255,12 +1255,12 @@ class SyncUpdate_Prod_Woo(SyncUpdate_Prod):
         return updates
 
 
-class SyncUpdate_Var_Woo(SyncUpdate_Prod_Woo):
+class SyncUpdateVarWoo(SyncUpdateProdWoo):
     pass
 
 
-class SyncUpdate_Cat_Woo(SyncUpdate):
-    col_data = ColData_Woo
+class SyncUpdateCatWoo(SyncUpdate):
+    col_data = ColDataWoo
     s_meta_target = 'wp-api'
 
     @property
@@ -1272,7 +1272,7 @@ class SyncUpdate_Cat_Woo(SyncUpdate):
         return self.get_s_value('ID')
 
     def values_similar(self, col, m_value, s_value):
-        response = super(SyncUpdate_Cat_Woo, self).values_similar(
+        response = super(SyncUpdateCatWoo, self).values_similar(
             col, m_value, s_value)
         if not response:
             if col is 'descsum':

@@ -18,19 +18,19 @@ import yaml
 from sshtunnel import check_address
 
 from __init__ import MODULE_LOCATION, MODULE_PATH
-from woogenerator.coldata import ColData_User
+from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
                                    EmailMatcher, Match, MatchList,
                                    NocardEmailMatcher, UsernameMatcher)
-from woogenerator.parsing.user import CSVParse_User, UsrObjList
-from woogenerator.sync_client_user import (UsrSyncClient_SQL_WP,
-                                           UsrSyncClient_SSH_ACT,
-                                           UsrSyncClient_WP)
-from woogenerator.syncupdate import SyncUpdate, SyncUpdate_Usr_Api
+from woogenerator.parsing.user import CsvParseUser, UsrObjList
+from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
+                                           UsrSyncClientSshAct,
+                                           UsrSyncClientWP)
+from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, TimeUtils, debugUtils)
+                                SanitationUtils, TimeUtils, DebugUtils)
 
 
 def timediff(settings):
@@ -450,7 +450,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     # xmlrpc_uri = store_url + 'xmlrpc.php'
     # json_uri = store_url + 'wp-json/wp/v2'
 
-    settings.act_fields = ";".join(ColData_User.get_act_import_cols())
+    settings.act_fields = ";".join(ColDataUser.get_act_import_cols())
 
     # jsonconnect_params = {
     #     'json_uri': json_uri,
@@ -503,7 +503,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     # Prepare Filter Data
     #########################################
 
-    print debugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
+    print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
 
     if do_filter:
         filter_files = {
@@ -539,12 +539,12 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     # Download / Generate Slave Parser Object
     #########################################
 
-    print debugUtils.hashify(
+    print DebugUtils.hashify(
         "Download / Generate Slave Parser Object"), timediff(settings)
 
-    sa_parser = CSVParse_User(
-        cols=ColData_User.get_wp_import_cols(),
-        defaults=ColData_User.get_defaults(),
+    sa_parser = CsvParseUser(
+        cols=ColDataUser.get_wp_import_cols(),
+        defaults=ColDataUser.get_defaults(),
         filterItems=filter_items,
         limit=settings.limit,
         source=settings.slave_name)
@@ -584,33 +584,33 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
         print "PyMySqlconnect_params", py_my_sql_connect_params
 
-        with UsrSyncClient_SQL_WP(ssh_tunnel_forwarder_params,
-                                  py_my_sql_connect_params) as client:
+        with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
+                                py_my_sql_connect_params) as client:
             client.analyse_remote(
                 sa_parser, limit=settings.limit, filterItems=filter_items)
 
             sa_parser.get_obj_list().export_items(
                 os.path.join(settings.in_folder, s_x_filename),
-                ColData_User.get_wp_import_col_names())
+                ColDataUser.get_wp_import_col_names())
 
     else:
         sa_parser.analyse_file(sa_path, sa_encoding)
 
-    # CSVParse_User.print_basic_columns( list(chain( *saParser.emails.values() )) )
+    # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
 
     #########################################
     # Generate and Analyse ACT CSV files using shell
     #########################################
 
-    ma_parser = CSVParse_User(
-        cols=ColData_User.get_act_import_cols(),
-        defaults=ColData_User.get_defaults(),
+    ma_parser = CsvParseUser(
+        cols=ColDataUser.get_act_import_cols(),
+        defaults=ColDataUser.get_defaults(),
         contact_schema='act',
         filterItems=filter_items,
         limit=settings.limit,
         source=settings.master_name)
 
-    print debugUtils.hashify("Generate and Analyse ACT data"), timediff(
+    print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
         settings)
 
     if download_master:
@@ -619,14 +619,14 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         ]:
             assert getattr(settings, thing), "settings must specify %s" % thing
 
-        with UsrSyncClient_SSH_ACT(act_connect_params, act_db_params,
-                                   fs_params) as master_client:
+        with UsrSyncClientSshAct(act_connect_params, act_db_params,
+                                 fs_params) as master_client:
             master_client.analyse_remote(ma_parser, limit=settings.limit)
     else:
         ma_parser.analyse_file(
-            ma_path, dialect_suggestion='act_out', encoding=ma_encoding)
+            ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
 
-    # CSVParse_User.print_basic_columns(  saParser.roles['WP'] )
+    # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
     #
     # exit()
     # quit()
@@ -681,7 +681,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         # for every username in slave, check that it exists in master
         # TODO: fix too-many-nested-blocks
 
-        print debugUtils.hashify("processing usernames")
+        print DebugUtils.hashify("processing usernames")
         print timediff(settings)
 
         deny_anomalous_parselist('saParser.nousernames', sa_parser.nousernames)
@@ -708,7 +708,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             print("username duplicates: %s" %
                   len(username_matcher.duplicate_matches))
 
-        print debugUtils.hashify("processing cards")
+        print DebugUtils.hashify("processing cards")
         print timediff(settings)
 
         # for every card in slave not already matched, check that it exists in
@@ -738,7 +738,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
         # #for every email in slave, check that it exists in master
 
-        print debugUtils.hashify("processing emails")
+        print DebugUtils.hashify("processing emails")
         print timediff(settings)
 
         deny_anomalous_parselist("saParser.noemails", sa_parser.noemails)
@@ -762,10 +762,10 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
         # TODO: further sort emailMatcher
 
-        print debugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
+        print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
         print timediff(settings)
 
-        sync_cols = ColData_User.get_sync_cols()
+        sync_cols = ColDataUser.get_sync_cols()
 
         if Registrar.DEBUG_PROGRESS:
             sync_progress_counter = ProgressCounter(len(global_matches))
@@ -780,7 +780,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             m_object = match.m_objects[0]
             s_object = match.s_objects[0]
 
-            sync_update = SyncUpdate_Usr_Api(m_object, s_object)
+            sync_update = SyncUpdateUsrApi(m_object, s_object)
             sync_update.update(sync_cols)
 
             # if(Registrar.DEBUG_MESSAGE):
@@ -841,7 +841,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                 if sync_update.s_updated and not sync_update.m_updated:
                     insort(slave_updates, sync_update)
 
-        print debugUtils.hashify("COMPLETED MERGE")
+        print DebugUtils.hashify("COMPLETED MERGE")
         print timediff(settings)
 
         # TODO: process duplicates here
@@ -850,7 +850,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     # Write Report
     #########################################
 
-    print debugUtils.hashify("Write Report")
+    print DebugUtils.hashify("Write Report")
     print timediff(settings)
 
     with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
@@ -862,7 +862,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         css = ""
         reporter = HtmlReporter(css=css)
 
-        basic_cols = ColData_User.get_basic_cols()
+        basic_cols = ColDataUser.get_basic_cols()
         address_cols = OrderedDict(basic_cols.items() + [
             ('address_reason', {}),
             ('Edited Address', {}),
@@ -872,8 +872,8 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             ('name_reason', {}),
             ('Edited Name', {}),
         ])
-        csv_colnames = ColData_User.get_col_names(
-            OrderedDict(basic_cols.items() + ColData_User.name_cols([
+        csv_colnames = ColDataUser.get_col_names(
+            OrderedDict(basic_cols.items() + ColDataUser.name_cols([
                 'address_reason',
                 'name_reason',
                 'Edited Name',
@@ -953,10 +953,10 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                 filter(None, [update.new_s_object
                               for update in s_delta_updates]))
 
-            delta_cols = ColData_User.get_delta_cols()
+            delta_cols = ColDataUser.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColData_User.get_basic_cols().items() + ColData_User.name_cols(
+                ColDataUser.get_basic_cols().items() + ColDataUser.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if m_delta_list:
@@ -985,11 +985,11 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             if m_delta_list:
                 m_delta_list.export_items(
                     master_delta_csv_path,
-                    ColData_User.get_col_names(all_delta_cols))
+                    ColDataUser.get_col_names(all_delta_cols))
             if s_delta_list:
                 s_delta_list.export_items(
                     slave_delta_csv_path,
-                    ColData_User.get_col_names(all_delta_cols))
+                    ColDataUser.get_col_names(all_delta_cols))
 
         report_matching = args.do_sync
         if report_matching:
@@ -1039,7 +1039,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                             'length': len(match_list)
                         }))
 
-            # print debugUtils.hashify("anomalous ParseLists: ")
+            # print DebugUtils.hashify("anomalous ParseLists: ")
 
             parse_list_instructions = {
                 "saParser.noemails":
@@ -1122,7 +1122,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             dup_reporter = HtmlReporter(css=dup_css)
             duplicate_group = HtmlReporter.Group('dup', 'Duplicate Results')
 
-            basic_cols = ColData_User.get_basic_cols()
+            basic_cols = ColDataUser.get_basic_cols()
             dup_cols = OrderedDict(basic_cols.items() + [
                 # ('Create Date', {}),
                 # ('Last Sale', {})
@@ -1338,7 +1338,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     if args.do_problematic:
         all_updates += problematic_updates
 
-    print debugUtils.hashify("Update databases (%d)" % len(all_updates))
+    print DebugUtils.hashify("Update databases (%d)" % len(all_updates))
     print timediff(settings)
 
     master_failures = []
@@ -1359,8 +1359,8 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-                UsrSyncClient_SSH_ACT(act_connect_params, act_db_params, fs_params) as master_client, \
-                UsrSyncClient_WP(wp_api_params) as slave_client:
+                UsrSyncClientSshAct(act_connect_params, act_db_params, fs_params) as master_client, \
+                UsrSyncClientWP(wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
             for count, update in enumerate(all_updates):

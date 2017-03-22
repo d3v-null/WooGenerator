@@ -80,7 +80,7 @@ class SanitationUtils:
     # delimeter characters incl space and disallowed punc
     delimeterRegex = r"[%s]" % "".join(tokenDelimeters)
     # disallowed punctuation and whitespace
-    disallowedPunctuationOrSpaceRegex = r"[%s]" % "".join(
+    disallowed_punc_or_space_regex = r"[%s]" % "".join(
         disallowedPunctuationOrSpace)
     # disallowed punctuation
     disallowedPunctuationRegex = r"[%s]" % "".join(disallowedPunctuation)
@@ -891,7 +891,7 @@ def test_sanitation_utils():
     # SanitationUtils.safe_print( SanitationUtils.escape_newlines(a))
 
 
-class descriptorUtils:
+class DescriptorUtils:
 
     @staticmethod
     def safe_key_property(key):
@@ -939,7 +939,7 @@ class descriptorUtils:
         return property(getter, setter)
 
 
-class listUtils:
+class ListUtils:
 
     @staticmethod
     def combine_lists(a, b):
@@ -981,7 +981,7 @@ class listUtils:
 
     @staticmethod
     def get_all_keys(*args):
-        return listUtils.filter_unique_true(itertools.chain(*(
+        return ListUtils.filter_unique_true(itertools.chain(*(
             arg.keys() for arg in args if isinstance(arg, dict)
         )))
 
@@ -1004,7 +1004,7 @@ class listUtils:
         return all(first == rest for rest in iterator)
 
 
-class debugUtils:
+class DebugUtils:
 
     @classmethod
     def get_procedure(cls, level=1):
@@ -1177,7 +1177,7 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.get_caller_procedures()
+            index = DebugUtils.get_caller_procedures()
         error_string = SanitationUtils.coerce_unicode(error)
         if self.DEBUG_ERROR:
             Registrar.print_anything(index, error_string, '!')
@@ -1198,7 +1198,7 @@ class Registrar(object):
             except:
                 index = source
         else:
-            index = debugUtils.get_caller_procedures()
+            index = DebugUtils.get_caller_procedures()
         error_string = SanitationUtils.coerce_unicode(message)
         if self.DEBUG_WARN:
             Registrar.print_anything(index, error_string, '|')
@@ -1213,7 +1213,7 @@ class Registrar(object):
     @classmethod
     def register_message(self, message, source=None):
         if source is None:
-            source = debugUtils.get_caller_procedures()
+            source = DebugUtils.get_caller_procedures()
         if self.DEBUG_MESSAGE:
             Registrar.print_anything(source, message, '~')
         self.register_anything(
@@ -1227,15 +1227,15 @@ class Registrar(object):
     @classmethod
     def register_progress(self, message):
         if self.DEBUG_PROGRESS:
-            print debugUtils.hashify(message)
+            print DebugUtils.hashify(message)
 
     @classmethod
     def get_message_items(self, verbosity=0):
         items = self.errors
         if verbosity > 0:
-            items = listUtils.combine_ordered_dicts(items, self.warnings)
+            items = ListUtils.combine_ordered_dicts(items, self.warnings)
         if verbosity > 1:
-            items = listUtils.combine_ordered_dicts(items, self.messages)
+            items = ListUtils.combine_ordered_dicts(items, self.messages)
         return items
 
     @classmethod
@@ -1344,7 +1344,7 @@ class ProgressCounter(object):
 class UnicodeCsvDialectUtils(object):
     default_dialect = unicodecsv.excel
 
-    class act_out(unicodecsv.Dialect):
+    class ActOut(unicodecsv.Dialect):
         delimiter = ','
         quoting = unicodecsv.QUOTE_ALL
         doublequote = True

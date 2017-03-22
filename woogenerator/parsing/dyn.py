@@ -5,7 +5,8 @@ import re
 from collections import OrderedDict
 from copy import copy
 
-from woogenerator.utils import listUtils, descriptorUtils, ValidationUtils, PHPUtils, SanitationUtils
+from context import woogenerator
+from woogenerator.utils import ListUtils, DescriptorUtils, ValidationUtils, PHPUtils, SanitationUtils
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.tree import CsvParseTree, ImportTreeItem, ImportTreeTaxo, ImportTreeObject
 
@@ -29,8 +30,8 @@ class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
         'Discount Type': ValidationUtils.is_contained_in(['PDSC'])
     }
 
-    discount = descriptorUtils.safe_key_property('Discount')
-    discount_type = descriptorUtils.safe_key_property('Discount Type')
+    discount = DescriptorUtils.safe_key_property('Discount')
+    discount_type = DescriptorUtils.safe_key_property('Discount Type')
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRuleLine, self).__init__(*args, **kwargs)
@@ -68,16 +69,16 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         'Roles': ValidationUtils.is_not_none
     }
 
-    qty_base = descriptorUtils.safe_key_property('Qty. Base')
-    rule_mode = descriptorUtils.safe_key_property('Rule Mode')
-    roles = descriptorUtils.safe_key_property('Roles')
+    qty_base = DescriptorUtils.safe_key_property('Qty. Base')
+    rule_mode = DescriptorUtils.safe_key_property('Rule Mode')
+    roles = DescriptorUtils.safe_key_property('Roles')
 
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         self.rule_lines = []
         assert self.ID
 
-    ID = descriptorUtils.safe_key_property('ID')
+    ID = DescriptorUtils.safe_key_property('ID')
 
     @property
     def index(self): return self.ID
@@ -239,7 +240,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         return html.encode('UTF-8')
 
 
-class CSVParse_Dyn(CsvParseTree):
+class CsvParseDyn(CsvParseTree):
 
     itemContainer = ImportDynRuleLine
     taxoContainer = ImportDynRule
@@ -255,32 +256,12 @@ class CSVParse_Dyn(CsvParseTree):
             'Rule Mode': 'BULK'
         }
 
-        cols = listUtils.combine_lists(cols, extra_cols)
-        defaults = listUtils.combine_ordered_dicts(extra_defaults, defaults)
-        super(CSVParse_Dyn, self).__init__(cols, defaults,
-                                           taxoDepth=1, itemDepth=1, meta_width=0)
+        cols = ListUtils.combine_lists(cols, extra_cols)
+        defaults = ListUtils.combine_ordered_dicts(extra_defaults, defaults)
+        super(CsvParseDyn, self).__init__(cols, defaults,
+                                          taxoDepth=1, itemDepth=1, meta_width=0)
 
         self.taxoIndexer = self.get_object_index
-
-    # def clear_transients(self):
-    #     super(CSVParse_Dyn, self).clear_transients()
-    #     self.rules = {}
-
-    # def getRuleData(self, itemData):
-    #     rule_id = itemData['ID']
-    #     assert rule_id, 'rule_id must exist to register rule'
-    #     if not rule_id in self.rules.keys():
-    #         self.rules[rule_id] = ImportDynRule(itemData)
-    #     return self.rules[rule_id]
-
-    # def registerRuleLine(self, parent_data, itemData):
-    #     ruleData = self.getRuleData(parent_data)
-    #     ruleData.addLineData(itemData)
-
-    # def register_rule(self, itemData):
-    #     ruleData = self.getRuleData(itemData)
-    #     ruleData.addRuleData(itemData)
-    #     print "registering rule ", itemData
 
     def depth(self, row):
         for i, cell in enumerate(row):
@@ -290,89 +271,3 @@ class CSVParse_Dyn(CsvParseTree):
                 else:
                     return 1
         return -1
-
-    # def processItem(self, itemData):
-    #     super(CSVParse_Dyn, self).processItem(itemData)
-        # assert len(self.stack) > 1, "Item must have a parent since taxoDepth = 1"
-        # parent_data = self.stack[-2]
-        # self.registerRuleLine(parent_data, itemData)
-
-    # def processTaxo(self, itemData):
-    #     super(CSVParse_Dyn, self).processTaxo(itemData)
-    #     self.register_rule(itemData)
-
-    # def analyseRow(self, row, itemData):
-    #     itemData = super(CSVParse_Dyn, self).analyseRow(row, itemData)
-    #     if is_rule_line
-
-
-if __name__ == '__main__':
-    in_folder = "../input/"
-    dprcPath = os.path.join(in_folder, 'DPRC.csv')
-    dprpPath = os.path.join(in_folder, 'DPRP.csv')
-    out_folder = "../output/"
-    out_path = os.path.join(out_folder, 'dynRules.html')
-
-    dynParser = CSVParse_Dyn()
-    dynParser.analyse_file(dprpPath)
-
-    # todo: rewrite in htmlReporter
-
-    with open(out_path, 'w+') as out_file:
-        def write_section(title, description, data, length=0,
-                          html_class="results_section"):
-            section_id = SanitationUtils.make_safe_class(title)
-            description = "%s %s" % (
-                str(length) if length else "No", description)
-            out_file.write('<div class="%s">' % html_class)
-            out_file.write('<a data-toggle="collapse" href="#%s" aria-expanded="true" data-target="#%s" aria-controls="%s">' %
-                           (section_id, section_id, section_id))
-            out_file.write('<h2>%s (%d)</h2>' % (title, length))
-            out_file.write('</a>')
-            out_file.write('<div class="collapse" id="%s">' % section_id)
-            out_file.write('<p class="description">%s</p>' % description)
-            out_file.write('<p class="data">')
-            out_file.write(
-                re.sub("<table>", "<table class=\"table table-striped\">", data))
-            out_file.write('</p>')
-            out_file.write('</div>')
-            out_file.write('</div>')
-        out_file.write('<!DOCTYPE html>')
-        out_file.write('<html lang="en">')
-        out_file.write('<head>')
-        out_file.write("""
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    """)
-        out_file.write('<body>')
-        out_file.write('<div class="matching">')
-        out_file.write('<h1>%s</h1>' % 'Dynamic Pricing Ruels Report')
-        for rule in dynParser.taxos.values():
-            rule['html'] = rule.to_html()
-            rule['_pricing_rule'] = rule.to_pricing_rule()
-
-        # print '\n'.join(map(str , dynParser.taxos.values()))
-        dynList = ObjList(dynParser.taxos.values())
-
-        write_section(
-            "Dynamic Pricing Rules",
-            "all products and their dynaimc pricing rules",
-            re.sub("<table>", "<table class=\"table table-striped\">",
-                   dynList.tabulate(cols=OrderedDict([
-                       ('html', {}),
-                       ('_pricing_rule', {}),
-                   ]), tablefmt="html")
-                   ),
-            length=len(dynList.objects)
-        )
-
-        out_file.write('</div>')
-        out_file.write("""
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-    """)
-        out_file.write('</body>')
-        out_file.write('</html>')
