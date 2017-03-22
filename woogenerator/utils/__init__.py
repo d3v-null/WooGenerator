@@ -7,10 +7,10 @@ import os
 #
 # sys.path.insert(0, MODULE_PATH)
 
-from utils.core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
-                  Registrar, ValidationUtils, PHPUtils, ProgressCounter,
-                  UnicodeCsvDialectUtils, FileUtils)
-from utils.contact import NameUtils, AddressUtils
-from utils.reporter import HtmlReporter
-from utils.clock import TimeUtils
-from utils.inheritence import InheritenceUtils, overrides
+from core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
+                        Registrar, ValidationUtils, PHPUtils, ProgressCounter,
+                        UnicodeCsvDialectUtils, FileUtils)
+from contact import NameUtils, AddressUtils
+from reporter import HtmlReporter
+from clock import TimeUtils
+from inheritence import InheritenceUtils, overrides

@@ -123,10 +123,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
     variableContainer = ImportApiProductVariable
     variationContainer = ImportApiProductVariation
     categoryContainer = ImportApiCategory
-    # category_indexer = CsvParseGenMixin.get_name_sum
-    # category_indexer = CsvParseWooMixin.get_title
-    # category_indexer = CsvParseWooMixin.get_wpid
-    category_indexer = CsvParseBase.get_object_rowcount
+    category_indexer = Registrar.get_object_rowcount
     productIndexer = CsvParseShopMixin.productIndexer
     variationIndexer = CsvParseWooMixin.get_title
 
