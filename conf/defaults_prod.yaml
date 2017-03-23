@@ -1,0 +1,11 @@
+
+taxo-depth: 3
+item-depth: 2
+
+myo-schemas:
+    - MY
+
+woo-schemas:
+    - WC
+
+schema: WC
