@@ -44,7 +44,7 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
-from woogenerator.config import ArgumentParserProd
+from woogenerator.config import ArgumentParserProd, LOCAL_PROD_TEST_PATH
 
 
 def timediff(settings):
@@ -449,80 +449,36 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     if not settings:
         settings = argparse.Namespace()
-    if not hasattr(settings, 'yaml_path'):
-        settings.yaml_path = "generator_config.yaml"
 
-    # Process YAML file for defaults
+    # DONE: change default-last-sync to just last-sync
+    # DONE: change fallback_schema to just schema
+    # TODO: implement "ask for password" feature
+    # DONE: Remove references to yaml_path
 
-    config = vars(settings)
+    argparser = ArgumentParserProd()
 
-    with open(settings.yaml_path) as stream:
-        config = SeqUtils.combine_ordered_dicts(config, yaml.load(stream))
+    # print parser
 
-    # overrides
-    if 'in_folder' in config.keys():
-        settings.in_folder = config['in_folder']
-    if 'out_folder' in config.keys():
-        settings.out_folder = config['out_folder']
-    if 'logFolder' in config.keys():
-        settings.log_folder = config['logFolder']
+    print "parser: %s " % pformat(argparser.get_actions())
 
-    settings.merge_mode = config.get('merge_mode', 'sync')
-    settings.master_name = config.get('master_name', 'MASTER')
-    settings.slave_name = config.get('slave_name', 'SLAVE')
-    settings.default_last_sync = config.get('default_last_sync')
+    parser_override = []
+    if override_args:
+        parser_override = override_args.split()
 
-    settings.web_folder = config.get('webFolder')
-    settings.web_address = config.get('webAddress')
-    settings.web_browser = config.get('webBrowser')
-    settings.fallback_schema = config.get('fallback_schema')
-    settings.fallback_variant = config.get('fallback_variant')
-    settings.myo_schemas = config.get('myo_schemas')
-    settings.woo_schemas = config.get('woo_schemas')
-    settings.taxo_depth = config.get('taxo_depth')
-    settings.item_depth = config.get('item_depth')
-    settings.img_cmp_folder = config.get('imgCmpFolder')
+    settings = argparser.parse_args(*parser_override, namespace=settings)
 
-    settings.download_master = config.get('download_master')
-    settings.download_slave = config.get('download_slave')
-    settings.update_slave = config.get('update_slave')
-    settings.auto_delete_old = config.get('auto_delete_old')
-    settings.auto_create_new = config.get('auto_create_new')
-    settings.slave_timeout = config.get('slave_timeout')
-    settings.slave_limit = config.get('slave_limit')
-    settings.slave_offset = config.get('slave_offset')
-    settings.do_problematic = config.get('do_problematic')
-    settings.do_sync = config.get('do_sync')
-    settings.do_categories = config.get('do_categories')
-    settings.do_variations = config.get('do_variations')
-    settings.do_images = config.get('do_images')
-    settings.do_delete_images = config.get('do_delete_images')
-    settings.do_resize_images = config.get('do_resize_images')
-    settings.do_remeta_images = config.get('do_remeta_images')
-    settings.do_dyns = config.get('do_dyns')
-    settings.do_specials = config.get('do_specials')
-    settings.show_report = config.get('show_report')
-    settings.report_and_quit = config.get('report_and_quit')
-    settings.imgRawFolder = config.get('imgRawFolder')
-    settings.imgRawExtraFolder = config.get('imgRawExtraFolder')
-    settings.current_special = config.get('current_special')
+    # If in testmode, process extra config file
 
-    settings.gdrive_scopes = config.get('gdrive_scopes')
-    settings.gdrive_client_secret_file = config.get(
-        'gdrive_client_secret_file')
-    settings.gdrive_app_name = config.get('gdrive_app_name')
-    settings.gdrive_oauth_client_id = config.get('gdrive_oauth_clientID')
-    settings.gdrive_oauth_client_secret = config.get(
-        'gdrive_oauth_clientSecret')
-    settings.gdrive_credentials_dir = config.get('gdrive_credentials_dir')
-    settings.gdrive_credentials_file = config.get(
-        'gdrive_credentials_file')
-    settings.gen_fid = config.get('genFID')
-    settings.gen_gid = config.get('genGID')
-    settings.dprc_gid = config.get('dprcGID')
-    settings.dprp_gid = config.get('dprpGID')
-    settings.spec_gid = config.get('specGID')
+    if settings.testmode:
+        argparser.add_default_config_file(LOCAL_PROD_TEST_PATH)
+        test_settings = argparser.parse_args(*parser_override)
+        for attr in ['master_name', 'slave_name', 'wc_api_key', 'wc_api_secret', 'wp_srv_offset', 'store_url']:
+            if hasattr(test_settings, attr):
+                setattr(settings, attr, getattr(test_settings, attr))
 
+    # PROCESS CONFIG
+
+    print "Raw settings: %s" % pformat(vars(settings))
 
     assert all([
         settings.in_folder, settings.out_folder, settings.log_folder,
@@ -535,128 +491,70 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings.dprp_path = os.path.join(settings.in_folder, 'DPRP.csv')
     settings.spec_path = os.path.join(settings.in_folder, 'specials.csv')
 
-    ### GET SHELL ARGS ###
+    # TODO: set up logging here instead of Registrar verbosity crap
 
-    argparser = ArgumentParserProd()
+    if settings.verbosity > 0:
+        Registrar.DEBUG_PROGRESS = True
+        Registrar.DEBUG_ERROR = True
+    if settings.verbosity > 1:
+        Registrar.DEBUG_MESSAGE = True
+        Registrar.register_message("raw settings: %s" % pformat(vars(settings)))
+    if settings.quiet:
+        Registrar.DEBUG_PROGRESS = False
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_MESSAGE = False
 
-    parser_override = []
-    if override_args:
-        parser_override = override_args.split(' ')
+    settings.add_special_categories = settings.do_specials and settings.do_categories
 
-    args = argparser.parse_args(*parser_override)
-    if args:
-        if args.verbosity > 0:
-            Registrar.DEBUG_PROGRESS = True
-            Registrar.DEBUG_ERROR = True
-        if args.verbosity > 1:
-            Registrar.DEBUG_MESSAGE = True
-            Registrar.register_message("raw args: %s" % pformat(vars(args)))
-        if args.quiet:
-            Registrar.DEBUG_PROGRESS = False
-            Registrar.DEBUG_ERROR = False
-            Registrar.DEBUG_MESSAGE = False
+    if settings.auto_create_new:
+        exc = UserWarning("auto-create not fully implemented yet")
+        Registrar.register_warning(exc)
+    if settings.auto_delete_old:
+        raise UserWarning("auto-delete not implemented yet")
 
-        settings.schema = args.schema
-        settings.download_master = args.download_master
-        settings.download_slave = args.download_slave
-        settings.do_sync = args.do_sync and settings.download_slave
-        settings.do_categories = args.do_categories
-        settings.do_dyns = args.do_dyns
-        settings.do_specials = args.do_specials
-        settings.do_variations = args.do_variations
-        settings.do_images = args.do_images
-        settings.do_remeta_images = args.do_remeta_images
-        settings.do_resize_images = args.do_resize_images
-        settings.do_delete_images = args.do_delete_images
-        settings.current_special = args.current_special
-        settings.add_special_categories = settings.do_specials and settings.do_categories
-        settings.download_limit = args.download_limit
-        settings.specials_mode = args.specials_mode
-        settings.slave_timeout = args.slave_timeout
-        settings.auto_create_new = args.auto_create_new
-        settings.update_slave = args.update_slave
-        settings.report_and_quit = args.report_and_quit
-        settings.do_problematic = args.do_problematic
-        settings.ask_before_update = args.ask_before_update
-        settings.show_report = args.show_report
+    if settings.do_images and os.name == 'nt':
+        raise UserWarning("Images not implemented on all platforms yet")
 
-        if settings.auto_create_new:
-            exc = UserWarning("auto-create not fully implemented yet")
-            Registrar.register_warning(exc)
-        if args.auto_delete_old:
-            raise UserWarning("auto-delete not implemented yet")
+    # if not settings.img_raw_folders:
+    #     settings.img_raw_folders = []
+    if settings.img_raw_folder is not None:
+        settings.img_raw_folders.append(settings.img_raw_folder)
+    if settings.img_raw_extra_folder is not None:
+        settings.img_raw_folders.append(settings.img_raw_extra_folder)
 
-        if settings.do_images and os.name == 'nt':
-            raise UserWarning("Images not implemented on all platforms yet")
-
-        settings.img_raw_folders = [args.img_raw_folder]
-        if args.img_raw_extra_folder is not None:
-            settings.img_raw_folders.append(args.img_raw_extra_folder)
-
-        if args.debug_abstract is not None:
-            Registrar.DEBUG_ABSTRACT = args.debug_abstract
-        if args.debug_parser is not None:
-            Registrar.DEBUG_PARSER = args.debug_parser
-        if args.debug_flat is not None:
-            Registrar.DEBUG_FLAT = args.debug_flat
-        if args.debug_gen is not None:
-            Registrar.DEBUG_GEN = args.debug_gen
-        if args.debug_myo is not None:
-            Registrar.DEBUG_MYO = args.debug_myo
-        if args.debug_tree is not None:
-            Registrar.DEBUG_TREE = args.debug_tree
-        if args.debug_woo is not None:
-            Registrar.DEBUG_WOO = args.debug_woo
-        if args.debug_name is not None:
-            Registrar.DEBUG_NAME = args.debug_name
-        if args.debug_img is not None:
-            Registrar.DEBUG_IMG = args.debug_img
-        if args.debug_api is not None:
-            Registrar.DEBUG_API = args.debug_api
-        if args.debug_shop is not None:
-            Registrar.DEBUG_SHOP = args.debug_shop
-        if args.debug_update is not None:
-            Registrar.DEBUG_UPDATE = args.debug_update
-        if args.debug_mro is not None:
-            Registrar.DEBUG_MRO = args.debug_mro
-        if args.debug_gdrive is not None:
-            Registrar.DEBUG_GDRIVE = args.debug_gdrive
-        if args.debug_special is not None:
-            Registrar.DEBUG_SPECIAL = args.debug_special
-        if args.debug_cats is not None:
-            Registrar.DEBUG_CATS = args.debug_cats
-        if args.debug_vars is not None:
-            Registrar.DEBUG_VARS = args.debug_vars
-
-    # process YAML file after determining mode
-
-    with open(settings.yaml_path) as stream:
-        option_name_prefix = 'test_' if args.testmode else ''
-        config = yaml.load(stream)
-        settings.wc_api_key = config.get(option_name_prefix + 'wc_api_key')
-        settings.wc_api_secret = config.get(option_name_prefix +
-                                            'wc_api_secret')
-        settings.wp_srv_offset = config.get(
-            option_name_prefix + 'wp_srv_offset', 0)
-        store_url = config.get(option_name_prefix + 'store_url', '')
-
-    # PROCESS CONFIG
+    Registrar.DEBUG_ABSTRACT = settings.debug_abstract
+    Registrar.DEBUG_PARSER = settings.debug_parser
+    Registrar.DEBUG_FLAT = settings.debug_flat
+    Registrar.DEBUG_GEN = settings.debug_gen
+    Registrar.DEBUG_MYO = settings.debug_myo
+    Registrar.DEBUG_TREE = settings.debug_tree
+    Registrar.DEBUG_WOO = settings.debug_woo
+    Registrar.DEBUG_NAME = settings.debug_name
+    Registrar.DEBUG_IMG = settings.debug_img
+    Registrar.DEBUG_API = settings.debug_api
+    Registrar.DEBUG_SHOP = settings.debug_shop
+    Registrar.DEBUG_UPDATE = settings.debug_update
+    Registrar.DEBUG_MRO = settings.debug_mro
+    Registrar.DEBUG_GDRIVE = settings.debug_gdrive
+    Registrar.DEBUG_SPECIAL = settings.debug_special
+    Registrar.DEBUG_CATS = settings.debug_cats
+    Registrar.DEBUG_VARS = settings.debug_vars
 
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.default_last_sync)
+                           settings.merge_mode, settings.last_sync)
 
-    if args.variant == "ACC":
+    if settings.variant == "ACC":
         settings.gen_path = os.path.join(settings.in_folder,
                                          'generator-solution.csv')
 
-    if args.variant == "SOL":
+    if settings.variant == "SOL":
         settings.gen_path = os.path.join(settings.in_folder,
                                          'generator-accessories.csv')
 
     suffix = settings.schema
-    if args.variant:
-        suffix += "-" + args.variant
+    if settings.variant:
+        suffix += "-" + settings.variant
 
     settings.fla_path = os.path.join(settings.out_folder,
                                      "flattened-" + suffix + ".csv")
@@ -669,10 +567,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # bunPath = os.path.join(settings.out_folder , "bundles-"+suffix+".csv")
     settings.rep_name = "prod_sync_report%s.html" % suffix
     settings.rep_path = os.path.join(settings.out_folder, settings.rep_name)
-    settings.rep_web_path = os.path.join(settings.web_folder,
-                                         settings.rep_name)
-    settings.rep_web_link = urlparse.urljoin(settings.web_address,
-                                             settings.rep_name)
+    settings.rep_web_path = os.path.join(settings.web_folder, settings.rep_name)
+    settings.rep_web_link = urlparse.urljoin(settings.web_address, settings.rep_name)
 
     settings.slave_delta_csv_path = os.path.join(
         settings.out_folder, "delta_report_wp%s.csv" % suffix)
@@ -690,7 +586,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     CsvParseWoo.do_dyns = settings.do_dyns
     CsvParseWoo.do_specials = settings.do_specials
 
-    settings.exclude_cols = []
+    # if not settings.exclude_cols:
+    #     settings.exclude_cols = []
 
     if not settings.do_images:
         settings.exclude_cols.extend(['Images', 'imgsum'])
@@ -720,11 +617,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'scopes': settings.gdrive_scopes,
         'client_secret_file': settings.gdrive_client_secret_file,
         'app_name': settings.gdrive_app_name,
-        'oauth_clientID': settings.gdrive_oauth_client_id,
-        'oauth_clientSecret': settings.gdrive_oauth_client_secret,
+        'oauth_client_id': settings.gdrive_oauth_client_id,
+        'oauth_client_secret': settings.gdrive_oauth_client_secret,
         'credentials_dir': settings.gdrive_credentials_dir,
         'credentials_file': settings.gdrive_credentials_file,
-        'genFID': settings.gen_fid,
+        'gen_fid': settings.gen_fid,
     }
 
     if not settings.download_master:
@@ -733,10 +630,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings.wc_api_params = {
         'api_key': settings.wc_api_key,
         'api_secret': settings.wc_api_secret,
-        'url': store_url,
+        'url': settings.store_url,
         'timeout': settings.slave_timeout,
-        'offset': args.slave_offset,
-        'limit': args.slave_limit
+        'offset': settings.slave_offset,
+        'limit': settings.slave_limit
     }
 
     settings.api_product_parser_args = {
@@ -1729,7 +1626,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     if settings.show_report:
         if settings.web_browser:
             os.environ['BROWSER'] = settings.web_browser
-            # print "set browser environ to %s" % repr(webBrowser)
+            # print "set browser environ to %s" % repr(web_browser)
         # print "moved file from %s to %s" % (settings.rep_path, repWebPath)
 
         webbrowser.open(settings.rep_web_link)
@@ -1744,6 +1641,8 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
     """
 
     settings = argparse.Namespace()
+
+    # settings absorbed by configargparse
 
     settings.in_folder = "../input/"
     settings.out_folder = "../output/"
@@ -1761,7 +1660,6 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
                                      "log_%s.txt" % settings.import_name)
     settings.zip_path = os.path.join(settings.log_folder,
                                      "zip_%s.zip" % settings.import_name)
-    settings.yaml_path = "generator_config.yaml"
     settings.thumbsize = 1920, 1200
 
     status = 0

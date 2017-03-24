@@ -11,19 +11,19 @@ woo_schemas:
 fallback_schema: <fallback_schema here>
 
 #File ID of generator file
-genFID: <FID here>
+gen_fid: <FID here>
 
 #GIDs of each tab
-genGID: <GID here>
-dprcGID: <GID here>
-dprpGID: <GID here>
-specGID: <GID here>
-usGID: <GID here>
-xsGID: <GID here>
+gen_gid: <GID here>
+dprc_gid: <GID here>
+dprp_gid: <GID here>
+spec_gid: <GID here>
+us_gid: <GID here>
+xs_gid: <GID here>
 
 #OAuth credentials
-oauth_clientID: <client ID here>
-oauth_clientSecret: <client secret here>
+oauth_client_id: <client ID here>
+oauth_client_secret: <client secret here>
 
 #Image Sources
 imgFolder_glb: <img dir here>
@@ -32,4 +32,4 @@ imgFolder_extra: {
 }
 
 # Location of webserver directory
-webFolder: <web dir here>
+web_folder: <web dir here>

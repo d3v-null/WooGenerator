@@ -19,8 +19,8 @@ fallback_variant:
 
 
 # Raw Image Sources
-imgRawFolder: /Users/Derwent/Dropbox/TechnoTan/flattened/
-imgRawExtraFolder: /Users/Derwent/Dropbox/VuTan/Website/Images\ &\ Logos/flattened/
+img_raw_folder: /Users/Derwent/Dropbox/TechnoTan/flattened/
+img_raw_extra_folder: /Users/Derwent/Dropbox/VuTan/Website/Images\ &\ Logos/flattened/
 
 # Compressed Image Destication
 imgCmpFolder: /Users/Derwent/Documents/TechnoTan/compressed/
@@ -86,8 +86,8 @@ usGID: 836642938
 xsGID: 931696965
 
 #OAuth credentials
-gdrive_oauth_clientID: 66307899970-0stmod3gm9j4lrnsg11ccmffv5v1c4h6.apps.googleusercontent.com
-gdrive_oauth_clientSecret: BpAfZhCULTB48MAfF2jhOf2K
+gdrive_oauth_client_id: 66307899970-0stmod3gm9j4lrnsg11ccmffv5v1c4h6.apps.googleusercontent.com
+gdrive_oauth_client_secret: BpAfZhCULTB48MAfF2jhOf2K
 gdrive_credentials_dir: ~/.credentials
 gdrive_credentials_file: drive-woogenerator.json
 

@@ -1,2 +1,6 @@
 master-name: MASTER
 slave-name: SLAVE
+
+merge-mode: sync
+
+last-sync: !!str 1970-01-01 00:00:00

@@ -118,15 +118,15 @@ def main():
     auth_http = credentials.authorize(httplib2.Http())
     service = discovery.build('drive', 'v2', http=auth_http)
 
-    genFID = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
+    gen_fid = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
 
-    drive_file = service.files().get(fileId=genFID).execute()
+    drive_file = service.files().get(fileId=gen_fid).execute()
     print drive_file['exportLinks']['text/csv']
 
     # with open("test.csv") as testFD:
-    #     download_media_csv(service, genFID, testFD)
+    #     download_media_csv(service, gen_fid, testFD)
 
-    # genFile = service.files().get_media(fileId=genFID, acknowledgeAbuse=True).execute()
+    # genFile = service.files().get_media(fileId=gen_fid, acknowledgeAbuse=True).execute()
 
     # csv = download_file_csv(service, genFile)
 

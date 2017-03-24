@@ -17,8 +17,8 @@ SCOPES = 'https://spreadsheets.google.com/feeds https://docs.google.com/feeds'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Laserphile WooGenerator Drive API'
 
-genFID = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
-genGID = "784188347"
+gen_fid = "1ps0Z7CYN4D3fQWTPlKJ0cjIkU-ODwlUnZj7ww1gN3xM"
+gen_gid = "784188347"
 
 
 def get_credentials():
@@ -76,7 +76,7 @@ def main():
     print repr(auth_http)
     service = discovery.build('drive', 'v2', http=auth_http)
     print repr(service)
-    drive_file = service.files().get(fileId=genFID).execute()
+    drive_file = service.files().get(fileId=gen_fid).execute()
     # content = download_file_gid_csv(service, drive_file )
     content = download_file_gid_csv(service, drive_file, "784188347")
     print content

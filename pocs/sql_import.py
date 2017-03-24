@@ -41,7 +41,7 @@ with open(yaml_path) as stream:
         logFolder = config['logFolder']
 
     # mandatory
-    webFolder = config.get('webFolder')
+    web_folder = config.get('web_folder')
     imgFolder_glb = config.get('imgFolder_glb')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
@@ -65,7 +65,7 @@ with open(yaml_path) as stream:
     tbl_prefix = config.get('tbl_prefix', '')
 
 # mandatory params
-assert all([in_folder, out_folder, logFolder, webFolder, imgFolder_glb,
+assert all([in_folder, out_folder, logFolder, web_folder, imgFolder_glb,
             woo_schemas, myo_schemas, taxo_depth, item_depth])
 
 genPath = os.path.join(in_folder, 'generator.csv')

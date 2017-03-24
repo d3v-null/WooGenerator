@@ -33,9 +33,9 @@ to analyse the spreadsheet for each database. These are as follows:
 
 | Class | Usage |
 | --- | --- |
-| `myo.CsvParseMyo` | All meridian products for MYOB |
-| `woo.CsvParseTT` | All TechnoTan products for WooCommerce |
-| `woo.CsvParseVT` | All VuTan products for WooCommerce |
+| `parsing.myo.CsvParseMyo` | All meridian products for MYOB |
+| `parsing.woo.CsvParseTT` | All TechnoTan products for WooCommerce |
+| `parsing.woo.CsvParseVT` | All VuTan products for WooCommerce |
 
 
 
@@ -50,13 +50,55 @@ pip install --upgrade google-api-python-client
 refer to these instructions on setting it up:
 https://developers.google.com/drive/web/quickstart/python
 
+Store the Google Drive credentials in your product syncing config file, default: `~/woogenerator/conf_prod.yaml` like so:
+
+```
+    ...
+    gdrive_oauth_client_id: XXXX.apps.googleusercontent.com
+    gdrive_oauth_client_secret: YYY
+    gdrive_credentials_dir: ~/.credentials
+    gdrive_credentials_file: drive-woogenerator.json
+```
+
+Store the app config in your config file:
+
+```
+    gdrive_scopes: https://spreadsheets.google.com/feeds https://docs.google.com/feeds
+    gdrive_client_secret_file: client_secret.json
+    gdrive_app_name: Laserphile WooGenerator Drive API
+```
+
+Store the File IDs and Sheet IDs of your generator spreadsheet in your config file:
+
+```
+
+```
+
 SSHTunnel
 ---------
 
 ssh tunnel requres extra dependencies on cygwin. you need to install the mingw toolchain for your system, and openssl-dev
 
+``` shell
 apt-cyg install libffi-devel
+```
 
+Store your ssh / mysql credentials in your product syncing config file, default: `~/woogenerator/config_prod.yaml` like so:
+
+```
+    ...
+    ssh_user: XXX
+    ssh_pass: XXX
+    ssh_host: XXX
+    ssh_port: 22
+    remote_bind_host: 127.0.0.1
+    remote_bind_port: 3306
+    db_user: XXX
+    db_pass: XXX
+    db_name: XXX
+    tbl_prefix: XXX
+
+```
 
 Other dependencies
 ------------------

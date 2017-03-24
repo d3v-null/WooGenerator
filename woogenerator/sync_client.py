@@ -180,7 +180,7 @@ class SyncClientGDrive(SyncClientAbstract):
 
         # pylint: disable=E1101
         self.drive_file = self.service.files().get(
-            fileId=self.gdrive_params['genFID']).execute()
+            fileId=self.gdrive_params['gen_fid']).execute()
 
     def __exit__(self, exit_type, value, traceback):
         pass
