@@ -1,1 +1,1 @@
-# TODO: test todo configuration
+# TODO: test todo configurations
