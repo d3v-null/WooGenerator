@@ -31,6 +31,8 @@ class TestConfigProd(unittest.TestCase):
         args = parser.parse_args(['--master-name', 'MASTER_OVERRIDE'])
         self.assertEqual(args.master_name, "MASTER_OVERRIDE")
 
+    def test_testmode(self):
+        """ test the logic of testmode, make sure configargparse detects test config """
 
 if __name__ == '__main__':
     unittest.main()

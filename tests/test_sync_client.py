@@ -52,17 +52,17 @@ class testSyncClient(abstractSyncClientTestCase):
         gdrive_scopes = config.get('gdrive_scopes')
         gdrive_client_secret_file = config.get('gdrive_client_secret_file')
         gdrive_app_name = config.get('gdrive_app_name')
-        gdrive_oauth_clientID = config.get('gdrive_oauth_clientID')
-        gdrive_oauth_clientSecret = config.get('gdrive_oauth_clientSecret')
+        gdrive_oauth_client_id = config.get('gdrive_oauth_client_id')
+        gdrive_oauth_client_secret = config.get('gdrive_oauth_client_secret')
         gdrive_credentials_dir = config.get('gdrive_credentials_dir')
         gdrive_credentials_file = config.get('gdrive_credentials_file')
-        genFID = config.get('genFID')
-        genGID = config.get('genGID')
-        dprcGID = config.get('dprcGID')
-        dprpGID = config.get('dprpGID')
-        specGID = config.get('specGID')
-        usGID = config.get('usGID')
-        xsGID = config.get('xsGID')
+        gen_fid = config.get('gen_fid')
+        gen_gid = config.get('gen_gid')
+        dprc_gid = config.get('dprc_gid')
+        dprp_gid = config.get('dprp_gid')
+        spec_gid = config.get('spec_gid')
+        us_gid = config.get('us_gid')
+        xs_gid = config.get('xs_gid')
 
         wc_api_key = config.get(self.optionNamePrefix + 'wc_api_key')
         wc_api_secret = config.get(self.optionNamePrefix + 'wc_api_secret')
@@ -79,17 +79,17 @@ class testSyncClient(abstractSyncClientTestCase):
             'scopes': gdrive_scopes,
             'client_secret_file': gdrive_client_secret_file,
             'app_name': gdrive_app_name,
-            'oauth_clientID': gdrive_oauth_clientID,
-            'oauth_clientSecret': gdrive_oauth_clientSecret,
+            'oauth_clientID': gdrive_oauth_client_id,
+            'oauth_clientSecret': gdrive_oauth_client_secret,
             'credentials_dir': gdrive_credentials_dir,
             'credentials_file': gdrive_credentials_file,
-            'genFID': genFID,
-            'genGID': genGID,
-            'dprcGID': dprcGID,
-            'dprpGID': dprpGID,
-            'specGID': specGID,
-            'usGID': usGID,
-            'xsGID': xsGID,
+            'gen_fid': gen_fid,
+            'gen_gid': gen_gid,
+            'dprc_gid': dprc_gid,
+            'dprp_gid': dprp_gid,
+            'spec_gid': spec_gid,
+            'us_gid': us_gid,
+            'xs_gid': xs_gid,
         }
 
         print "gDriveParams", self.gDriveParams
@@ -128,7 +128,7 @@ class testSyncClient(abstractSyncClientTestCase):
     def test_GDrive_Read(self):
         with SyncClientGDrive(self.gDriveParams) as client:
             print "drive file:", client.drive_file
-            print "GID", client.get_gm_modtime(self.gDriveParams['genGID'])
+            print "GID", client.get_gm_modtime(self.gDriveParams['gen_gid'])
 
     def test_ProdSyncClient_WC_Read(self):
         self.wcApiParams.update(timeout=1)
