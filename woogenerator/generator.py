@@ -44,7 +44,8 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
-from woogenerator.config import ArgumentParserProd, LOCAL_PROD_TEST_PATH
+from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
+                                 SettingsNamespaceProd)
 
 
 def timediff(settings):
@@ -448,33 +449,47 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # TODO: too-many-locals,too-many-branches,too-many-statements
 
     if not settings:
-        settings = argparse.Namespace()
+        settings = SettingsNamespaceProd()
+
+    # TODO: Two rounds of argument parsing
+
+    ### First round of argument parsing determines which config files to read
+    ### from core config files, CLI args and env vars
+
+    proto_argparser = ArgumentParserProtoProd()
+
+    print "proto_parser: \n%s" % pformat(proto_argparser.get_actions())
+
+    parser_override = {'namespace':settings}
+    if override_args:
+        parser_override['args'] = override_args.split()
+
+    settings, _ = proto_argparser.parse_known_args(**parser_override)
+
+    ### Second round gets all the arguments from all config files
 
     # DONE: change default-last-sync to just last-sync
     # DONE: change fallback_schema to just schema
     # TODO: implement "ask for password" feature
     # DONE: Remove references to yaml_path
-
+    # TODO: make parent of this argumentparser proto_argparser
     argparser = ArgumentParserProd()
 
-    # print parser
+    # TODO: test set local work dir
+    # TODO: test set live config
+    # TODO: test set test config
+    # TODO: move in, out, log folders to full
+
+    print "proto settings: \n%s" % pformat(vars(settings))
+
+    for conf in settings.second_stage_configs:
+        print "adding conf: %s" % conf
+        argparser.add_default_config_file(conf)
 
     print "parser: %s " % pformat(argparser.get_actions())
 
-    parser_override = []
-    if override_args:
-        parser_override = override_args.split()
+    settings = argparser.parse_args(**parser_override)
 
-    settings = argparser.parse_args(*parser_override, namespace=settings)
-
-    # If in testmode, process extra config file
-
-    if settings.testmode:
-        argparser.add_default_config_file(LOCAL_PROD_TEST_PATH)
-        test_settings = argparser.parse_args(*parser_override)
-        for attr in ['master_name', 'slave_name', 'wc_api_key', 'wc_api_secret', 'wp_srv_offset', 'store_url']:
-            if hasattr(test_settings, attr):
-                setattr(settings, attr, getattr(test_settings, attr))
 
     # PROCESS CONFIG
 
@@ -515,8 +530,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     if settings.do_images and os.name == 'nt':
         raise UserWarning("Images not implemented on all platforms yet")
 
-    # if not settings.img_raw_folders:
-    #     settings.img_raw_folders = []
     if settings.img_raw_folder is not None:
         settings.img_raw_folders.append(settings.img_raw_folder)
     if settings.img_raw_extra_folder is not None:
@@ -1640,7 +1653,7 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
     Run the main function within a try statement and attempt to analyse failure
     """
 
-    settings = argparse.Namespace()
+    settings = SettingsNamespaceProd()
 
     # settings absorbed by configargparse
 

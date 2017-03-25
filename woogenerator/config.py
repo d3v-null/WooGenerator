@@ -9,40 +9,121 @@ import configargparse
 
 from __init__ import MODULE_LOCATION
 
+# Core configuration
 CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
 DEFAULTS_COMMON_PATH = os.path.join(CONF_DIR, 'defaults_common.yaml')
 DEFAULTS_PROD_PATH = os.path.join(CONF_DIR, 'defaults_prod.yaml')
 DEFAULTS_USER_PATH = os.path.join(CONF_DIR, 'defaults_user.yaml')
 
-LOCAL_WORK_DIR = os.path.expanduser('~/woogenerator')
-LOCAL_PROD_PATH = os.path.join(LOCAL_WORK_DIR, 'conf_prod.yaml')
-LOCAL_PROD_TEST_PATH = os.path.join(LOCAL_WORK_DIR, 'conf_prod.yaml')
-LOCAL_USER_PATH = os.path.join(LOCAL_WORK_DIR, 'conf_user.yaml')
-LOCAL_USER_TEST_PATH = os.path.join(LOCAL_WORK_DIR, 'conf_user.yaml')
-DEFAULT_LOCAL_IN_DIR = os.path.join(LOCAL_WORK_DIR, 'input/')
-DEFAULT_LOCAL_OUT_DIR = os.path.join(LOCAL_WORK_DIR, 'output/')
-DEFAULT_LOCAL_LOG_DIR = os.path.join(LOCAL_WORK_DIR, 'log/')
-DEFAULT_LOCAL_IMG_RAW_DIR = os.path.join(LOCAL_WORK_DIR, 'imgs_raw/')
-DEFAULT_LOCAL_IMG_CMP_DIR = os.path.join(LOCAL_WORK_DIR, 'imgs_cmp/')
+# User controlled configuration
+DEFAULT_TESTMODE = True
+DEFAULT_LOCAL_WORK_DIR = os.path.expanduser('~/woogenerator')
+DEFAULT_LOCAL_PROD_PATH = 'conf_prod.yaml'
+DEFAULT_LOCAL_PROD_TEST_PATH = 'conf_prod_test.yaml'
+DEFAULT_LOCAL_USER_PATH = 'conf_user.yaml'
+DEFAULT_LOCAL_USER_TEST_PATH = 'conf_user_test.yaml'
+DEFAULT_LOCAL_IN_DIR = 'input/'
+DEFAULT_LOCAL_OUT_DIR = 'output/'
+DEFAULT_LOCAL_LOG_DIR = 'log/'
+DEFAULT_LOCAL_IMG_RAW_DIR = 'imgs_raw/'
+DEFAULT_LOCAL_IMG_CMP_DIR = 'imgs_cmp/'
 
-
-class ArgumentParserCommon(configargparse.ArgumentParser):
+class SettingsNamespaceProto(argparse.Namespace):
     """
-    Provide ArgumentParser superclass for product and user sync.
+    Provide namespace for settings in first stage
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.local_work_dir = getattr(self, 'local_work_dir', DEFAULT_LOCAL_WORK_DIR)
+        self.local_live_config = getattr(self, 'local_live_config', None)
+        self.local_test_config = getattr(self, 'local_test_config', None)
+        self.testmode = getattr(self, 'testmode', DEFAULT_TESTMODE)
+        self.in_folder = getattr(self, 'in_folder', DEFAULT_LOCAL_IN_DIR)
+        self.out_folder = getattr(self, 'out_folder', DEFAULT_LOCAL_OUT_DIR)
+        self.log_folder = getattr(self, 'log_folder', DEFAULT_LOCAL_LOG_DIR)
+        super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
+
+
+    def join_work_path(self, path):
+        """
+        Join a given path relative to the local-work-dir in this namespace.
+        """
+        response = path
+        if self.local_work_dir and path:
+            response = os.path.join(self.local_work_dir, path)
+        return response
+
+    @property
+    def second_stage_configs(self):
+        """
+        Return the second stage config files according to this namespace.
+        """
+        response = []
+        if self.local_live_config:
+            response.append(self.local_live_config_full)
+        if self.testmode and self.local_test_config:
+            response.append(self.local_test_config_full)
+        return response
+
+    @property
+    def local_test_config_full(self):
+        if self.local_test_config:
+            return self.join_work_path(self.local_test_config)
+
+    @property
+    def local_live_config_full(self):
+        if self.local_live_config:
+            return self.join_work_path(self.local_live_config)
+
+    @property
+    def in_folder_full(self):
+        if self.in_folder:
+            return self.join_work_path(self.in_folder)
+
+    @property
+    def out_folder_full(self):
+        if self.out_folder:
+            return self.join_work_path(self.out_folder)
+
+    @property
+    def log_folder_full(self):
+        if self.log_folder:
+            return self.join_work_path(self.log_folder)
+
+class SettingsNamespaceProd(SettingsNamespaceProto):
+    def __init__(self, *args, **kwargs):
+        self.local_live_config = DEFAULT_LOCAL_PROD_PATH
+        self.local_test_config = DEFAULT_LOCAL_PROD_TEST_PATH
+        super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
+
+class SettingsNamespaceUser(SettingsNamespaceProto):
+    def __init__(self, *args, **kwargs):
+        self.local_live_config = DEFAULT_LOCAL_USER_PATH
+        self.local_test_config = DEFAULT_LOCAL_USER_TEST_PATH
+        super(SettingsNamespaceUser, self).__init__(*args, **kwargs)
+
+
+class ArgumentParserProto(configargparse.ArgumentParser):
+    """
+    Provide ArgumentParser first stage argument parsing.
+
+    First stage of argument parsing determines which config files to parse in
+    the next stage of argument parsing and arguments required for setting up
+    logging.
     """
 
     def __init__(self, **kwargs):
-        # set common defaults
 
         if not isinstance(kwargs.get('default_config_files'), list):
             kwargs['default_config_files'] = [DEFAULTS_COMMON_PATH]
-        else:
-            if os.path.exists(DEFAULTS_COMMON_PATH):
-                print "path exists: %s" % DEFAULTS_COMMON_PATH
-                kwargs['default_config_files'].insert(0, DEFAULTS_COMMON_PATH)
-            else:
-                print "path not exists: %s " % DEFAULTS_COMMON_PATH
 
+        if os.path.exists(DEFAULTS_COMMON_PATH):
+            print "path exists: %s" % DEFAULTS_COMMON_PATH
+            kwargs['default_config_files'].insert(0, DEFAULTS_COMMON_PATH)
+        else:
+            print "path not exists: %s " % DEFAULTS_COMMON_PATH
+
+        #
         if not kwargs.get('args_for_setting_config_path'):
             kwargs['args_for_setting_config_path'] = ['-c', '--config-file']
 
@@ -50,47 +131,18 @@ class ArgumentParserCommon(configargparse.ArgumentParser):
             kwargs['config_arg_help_message'] = \
                 "the location of your config file"
 
+        #
         if not kwargs.get('config_file_parser_class'):
             kwargs['config_file_parser_class'] = configargparse.YAMLConfigFileParser
 
-        if not kwargs.get('ignore_unknown_config_file_keys'):
-            kwargs['ignore_unknown_config_file_keys'] = True
+        super(ArgumentParserProto, self).__init__(**kwargs)
 
-        skip_local_config = kwargs.pop('skip_local_config', None)
-        local_config = kwargs.pop('local_config', '')
-        if local_config and not skip_local_config and os.path.exists(local_config):
-            print "path exists: %s" % local_config
-            kwargs['default_config_files'].append(local_config)
-        else:
-            print "path not exists: %s" % local_config
-
-        super(ArgumentParserCommon, self).__init__(**kwargs)
-
-        # add args
-        self.add_global_options()
-        download_group = self.add_argument_group('Import options')
-        self.add_download_options(download_group)
-        processing_group = self.add_argument_group('Processing options')
-        self.add_processing_options(processing_group)
-        reporting_group = self.add_argument_group('Reporting options')
-        self.add_report_options(reporting_group)
-        update_group = self.add_argument_group('Update options')
-        self.add_update_options(update_group)
-        self.add_other_options()
-        self.add_debug_options()
-
-    def add_default_config_file(self, config_file):
-        if not config_file in self._default_config_files:
-            self._default_config_files.append(config_file)
-
-    def add_suppressed_argument(self, name, **kwargs):
-        kwargs['help'] = argparse.SUPPRESS
-        self.add_argument(name, **kwargs)
+        self.add_proto_options()
 
     def get_actions(self):
         return self._actions
 
-    def add_global_options(self):
+    def add_proto_options(self):
         """
         Add options to top of options list.
         """
@@ -111,18 +163,91 @@ class ArgumentParserCommon(configargparse.ArgumentParser):
             help='Run the script on the live servers',
             action='store_false',
             dest='testmode')
-        group.add_argument(
+        self.add_argument(
+            '--local-work-dir',
+            help='specify the directory containing all important folders'
+        )
+        self.add_argument(
+            '--local-live-config',
+            help=(
+                'In livemode, this config file overrides core configs. '
+                'Path relative to local-work-dir unless local-work-dir is falsey.'
+            ),
+        )
+        self.add_argument(
+            '--local-test-config',
+            help=(
+                'In testmode this config file overrides core configs and local-live-config. '
+                'Path relative to local-work-dir unless local-work-dir is falsey.'
+            ),
+        )
+        self.add_argument(
             '--in-folder',
+            help=(
+                'Folder for import files. '
+                'Path relative to local-work-dir unless local-work-dir is falsey.'
+            ),
             default=DEFAULT_LOCAL_IN_DIR,
         )
-        group.add_argument(
+        self.add_argument(
             '--out-folder',
+            help=(
+                'Folder for output files. '
+                'Path relative to local-work-dir unless local-work-dir is falsey.'
+            ),
             default=DEFAULT_LOCAL_OUT_DIR,
         )
-        group.add_argument(
+        self.add_argument(
             '--log-folder',
+            help=(
+                'Folder for log files. '
+                'Path relative to local-work-dir unless local-work-dir is falsey.'
+            ),
             default=DEFAULT_LOCAL_LOG_DIR,
         )
+
+class ArgumentParserProtoProd(ArgumentParserProto):
+    default_local_live_path = DEFAULT_LOCAL_PROD_PATH
+    default_local_test_path = DEFAULT_LOCAL_PROD_TEST_PATH
+
+class ArgumentParserProtoUser(ArgumentParserProto):
+    default_local_live_path = DEFAULT_LOCAL_USER_PATH
+    default_local_test_path = DEFAULT_LOCAL_USER_TEST_PATH
+
+class ArgumentParserCommon(ArgumentParserProto):
+    """
+    Provide second stage ArgumentParser for product and user sync.
+
+    Second stage is where all arguments are parsed from the config files specified
+    """
+
+    def __init__(self, **kwargs):
+        # set common defaults
+
+        if not kwargs.get('ignore_unknown_config_file_keys'):
+            kwargs['ignore_unknown_config_file_keys'] = True
+
+        super(ArgumentParserCommon, self).__init__(**kwargs)
+
+        # add args
+        download_group = self.add_argument_group('Import options')
+        self.add_download_options(download_group)
+        processing_group = self.add_argument_group('Processing options')
+        self.add_processing_options(processing_group)
+        reporting_group = self.add_argument_group('Reporting options')
+        self.add_report_options(reporting_group)
+        update_group = self.add_argument_group('Update options')
+        self.add_update_options(update_group)
+        self.add_other_options()
+        self.add_debug_options()
+
+    def add_default_config_file(self, config_file):
+        if not config_file in self._default_config_files:
+            self._default_config_files.append(config_file)
+
+    def add_suppressed_argument(self, name, **kwargs):
+        kwargs['help'] = argparse.SUPPRESS
+        self.add_argument(name, **kwargs)
 
 
     def add_download_options(self, download_group):
@@ -321,12 +446,10 @@ class ArgumentParserProd(ArgumentParserCommon):
         kwargs['default_config_files'] = [
             DEFAULTS_PROD_PATH,
         ]
-        kwargs['local_config'] = LOCAL_PROD_PATH
         super(ArgumentParserProd, self).__init__(**kwargs)
 
-    def add_global_options(self):
-        super(ArgumentParserProd, self).add_global_options()
-        # TODO: self.add_argument('--local-live-conf')
+    # def add_proto_options(self):
+    #     super(ArgumentParserProd, self).add_proto_options()
 
     def add_download_options(self, download_group):
         super(ArgumentParserProd, self).add_download_options(download_group)
@@ -450,7 +573,7 @@ class ArgumentParserProd(ArgumentParserCommon):
             help='location of raw images',
             default=DEFAULT_LOCAL_IMG_RAW_DIR
         )
-        self.add_suppressed_argument('--img-raw-folders', default=[])
+        images_group.add_argument('--img-raw-folders', default=[])
         images_group.add_argument(
             '--img-raw-extra-folder',
             help='location of additional raw images')
@@ -526,7 +649,6 @@ class ArgumentParserUser(ArgumentParserCommon):
         kwargs['default_config_files'] = [
             DEFAULTS_USER_PATH
         ]
-        kwargs['local_config'] = LOCAL_USER_PATH
         super(ArgumentParserUser, self).__init__(**kwargs)
 
     def add_download_options(self, download_group):

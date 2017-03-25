@@ -31,6 +31,21 @@ class TestConfigProd(unittest.TestCase):
         args = parser.parse_args(['--master-name', 'MASTER_OVERRIDE'])
         self.assertEqual(args.master_name, "MASTER_OVERRIDE")
 
+    def test_config_stages(self):
+        # TODO: complete this
+        parser = configargparse.ArgParser(
+            default_config_files=['sample_data/baseconfig.yaml'],
+            config_file_parser_class=configargparse.YAMLConfigFileParser
+        )
+        parser.add('-c', '--my-config', required=True, is_config_file=True, help='config file path')
+        parser.add('-o', '--my-other-config', is_config_file=True, help='other config file path')
+        parser.add('--an-argument')
+
+        arg_string = ("--my-config sample_data/overconfig.yaml "
+                      "--my-other-config sample_data/otherconfig.yaml")
+        options = parser.parse_args(args=arg_string.split())
+        print "parsed options: %s" % pformat(vars(options))
+
     def test_testmode(self):
         """ test the logic of testmode, make sure configargparse detects test config """
 
