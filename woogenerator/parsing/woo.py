@@ -448,6 +448,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.special_rules = kwargs.pop('special_rules', {})
         self.current_special_groups = kwargs.pop(
             'current_special_groups', None)
+        # print "settings current_special_groups: %s" % self.current_special_groups
         # self.specialGroups = kwargs.pop('specialGroups', {})
         if not kwargs.get('meta_width'):
             kwargs['meta_width'] = 2

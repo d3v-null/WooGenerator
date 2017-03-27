@@ -151,22 +151,22 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                 current_special_groups = parsers.special.determine_current_spec_grps(
                     specials_mode=settings.specials_mode,
                     current_special=settings.current_special)
-                print "current_special_groups: %s" % current_special_groups
+                # print "current_special_groups: %s" % current_special_groups
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.register_message("current_special_groups: %s" %
                                                current_special_groups)
 
-                print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
-                print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
+                # print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
+                # print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
 
+                settings.product_parser_args[
+                    'current_special_groups'] = current_special_groups
                 if settings.do_categories:
-                    # determine current specials
-
                     if current_special_groups:
                         settings.product_parser_args[
-                            'current_special_groups'] = current_special_groups
-                        settings.product_parser_args[
                             'add_special_categories'] = settings.add_special_categories
+
+        # print "calling product parser with kwargs: %s" % pformat(settings.product_parser_args)
 
         parsers.product = product_parser_class(**settings.product_parser_args)
 
@@ -399,10 +399,10 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
         # specials
         if settings.do_specials:
-            # current_special = settings.current_special
-            current_special = None
+            current_special = getattr(settings, 'current_special', None)
             if parsers.product.current_special_groups:
                 current_special = parsers.product.current_special_groups[0].special_id
+            # print "current special is %s" % current_special
             if current_special:
                 special_products = parsers.product.onspecial_products.values()
                 if special_products:
