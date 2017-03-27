@@ -1650,28 +1650,6 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
 
     settings = SettingsNamespaceProd()
 
-    # settings absorbed by configargparse
-
-    # settings.local_work_dir = MODULE_LOCATION
-
-    # settings.in_folder_full = "../input/"
-    # settings.out_folder_full = "../output/"
-    # settings.log_folder_full = "../logs/"
-    # settings.src_folder = MODULE_LOCATION
-
-    # os.chdir(MODULE_PATH)
-
-    # settings.import_name = TimeUtils.get_ms_timestamp()
-    # settings.rep_path_full = ''
-    # settings.m_fail_path_full = os.path.join(settings.out_folder_full,
-                                        # "gdrive_fails.csv")
-    # settings.s_fail_path_full = os.path.join(settings.out_folder_full, "wp_fails.csv")
-    # settings.log_path = os.path.join(settings.log_folder_full,
-    #                                  "log_%s.txt" % settings.import_name)
-    # settings.zip_path = os.path.join(settings.log_folder_full,
-    #                                  "zip_%s.zip" % settings.import_name)
-    # settings.thumbsize = 1920, 1200
-
     status = 0
     try:
         main(settings=settings, override_args=override_args)
