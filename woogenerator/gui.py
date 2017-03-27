@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import traceback
+import platform
 from collections import OrderedDict, namedtuple
 from copy import deepcopy
 from pprint import pformat
@@ -456,7 +457,7 @@ class FormSwitcher(npyscreen.MultiLineAction):
 
 class WelcomeForm(SyncForm):
     """ Main form used by WooGenerator app where user selects the sync type """
-    if os.name == 'nt':
+    if platform.system() != 'Darwin':
         welcomeLines = [
             r" _______ _______ __   _ _______ __   __ __   _ _______",
             r"    |    |_____| | \  | |______   \_/   | \  | |      ",
