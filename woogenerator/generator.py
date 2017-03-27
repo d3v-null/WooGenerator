@@ -14,6 +14,7 @@ import traceback
 import urlparse
 import webbrowser
 import zipfile
+import platform
 from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
@@ -194,7 +195,10 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
 
     def invalid_image(img_name, error):
         """ Register error globally and attribute to image """
-        Registrar.register_error(error, img_name)
+        if settings.require_images:
+            Registrar.register_error(error, img_name)
+        else:
+            Registrar.register_message(error, img_name)
         parsers.product.images[img_name].invalidate(error)
 
     ls_raw = {}
@@ -519,7 +523,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     if settings.auto_delete_old:
         raise UserWarning("auto-delete not implemented yet")
 
-    if settings.do_images and os.name == 'nt':
+    if settings.do_images and platform.system() != 'Darwin':
         raise UserWarning("Images not implemented on all platforms yet")
 
     if settings.img_raw_folder is not None:
