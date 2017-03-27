@@ -1066,6 +1066,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
             for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                 discount = specialparams.get(tier)
+                if self.DEBUG_SPECIAL:
+                    self.register_message("discount for %s: %s" % (tier, discount))
                 if not discount:
                     continue
 
@@ -1073,6 +1075,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
                 percentages = SanitationUtils.find_all_percent(
                     discount)
+
+                if self.DEBUG_SPECIAL:
+                    self.register_message(
+                        "percentages found for %s: %s" % (tier, percentages))
 
                 if percentages:
                     coefficient = float(percentages[0]) / 100
@@ -1092,10 +1098,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         if dollar:
                             special_price = dollar
 
+                if self.DEBUG_SPECIAL:
+                    self.register_message(
+                        "special  %s price is %s " % (tier, special_price))
+
                 if special_price:
-                    if self.DEBUG_SPECIAL:
-                        self.register_message(
-                            "special %s price is %s " % (special, special_price))
                     tier_key = tier
                     tier_from_key = tier[:-1] + "F"
                     tier_to_key = tier[:-1] + "T"
@@ -1106,7 +1113,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     }.items():
                         if self.DEBUG_SPECIAL:
                             self.register_message(
-                                "special %s setting object_data[ %s ] to %s " % (special, key, value))
+                                "special %s setting object_data[ %s ] to %s " % \
+                                    (special, key, value)
+                            )
                         object_data[key] = value
 
             break  # only applies first special

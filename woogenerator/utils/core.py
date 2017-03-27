@@ -518,8 +518,8 @@ class SanitationUtils(object):
     @classmethod
     def sanitize_special_cell(cls, cell):
         return cls.compose(
-            cls.remove_leading_dollar_wspace,
-            cls.remove_leading_percent_wspace,
+            # cls.remove_leading_dollar_wspace,
+            # cls.remove_leading_percent_wspace,
             # cls.remove_lone_dashes,
             # cls.strip_extra_whitespace,
             cls.remove_thousands_separator,

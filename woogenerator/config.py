@@ -2,6 +2,7 @@
 Provide configuration utilities.
 """
 import os
+import ast
 # import sys
 
 import argparse
@@ -118,6 +119,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.myo_schemas = getattr(self, 'myo_schemas', [])
         self.thumbsize_x = getattr(self, 'thumbsize_x', None)
         self.thumbsize_y = getattr(self, 'thumbsize_y', None)
+        self.img_raw_folder = getattr(self, 'img_raw_folder', None)
+        self.img_raw_extra_folder = getattr(self, 'img_raw_extra_folder', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -167,7 +170,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response = os.path.join(self.out_folder_full, response)
         return response
 
-
+    @property
+    def img_raw_folders(self):
+        response = []
+        if self.img_raw_folder:
+            response.append(self.img_raw_folder)
+        if self.img_raw_extra_folder:
+            response.append(self.img_raw_extra_folder)
+        return response
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
@@ -636,16 +646,18 @@ class ArgumentParserProd(ArgumentParserCommon):
             dest='do_remeta_images')
         images_group.add_argument(
             '--require-images',
-            help='require that all items have images',
+            help='require that all items have images and that all images exist',
+            type=ast.literal_eval,
             default=True)
         images_group.add_argument(
             '--img-raw-folder',
             help='location of raw images',
+            type=unicode,
             default=DEFAULT_LOCAL_IMG_RAW_DIR
         )
-        images_group.add_argument('--img-raw-folders', default=[])
         images_group.add_argument(
             '--img-raw-extra-folder',
+            type=unicode,
             help='location of additional raw images')
         images_group.add_argument(
             '--img-cmp-folder',
@@ -750,6 +762,7 @@ class ArgumentParserUser(ArgumentParserCommon):
             action="store_true")
 
     def add_update_options(self, update_group):
+        super(ArgumentParserUser, self).add_update_options(update_group)
         group = update_group.add_mutually_exclusive_group()
         group.add_argument(
             '--update-master',
@@ -760,7 +773,6 @@ class ArgumentParserUser(ArgumentParserCommon):
             help='don\'t update the master database',
             action="store_false",
             dest='update_master')
-        super(ArgumentParserUser, self).add_update_options(update_group)
 
     def add_other_options(self):
         filter_group = self.add_argument_group("Filter Options")
