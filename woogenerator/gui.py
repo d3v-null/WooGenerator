@@ -10,6 +10,7 @@ from copy import deepcopy
 from pprint import pformat
 
 import npyscreen
+import __init__
 from woogenerator import generator, merger
 from woogenerator.utils import overrides
 
@@ -326,7 +327,7 @@ class ProductsForm(SyncForm):
             ],
             cmd_particles=[
                 '--skip-specials',
-                '--specials-mode=\'auto_next\'',
+                '--specials-mode=auto_next',
                 # '--future-specials'
             ],
             value=0
