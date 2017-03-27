@@ -31,7 +31,7 @@ from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import ArgumentParerUser
+from woogenerator.config import ArgumentParserUser
 
 
 def timediff(settings):
