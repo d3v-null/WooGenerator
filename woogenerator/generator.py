@@ -1628,14 +1628,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     Registrar.register_progress("Displaying reports")
 
-    shutil.copyfile(settings.rep_path_full, settings.rep_web_path)
     if settings.show_report:
-        if settings.web_browser:
-            os.environ['BROWSER'] = settings.web_browser
-            # print "set browser environ to %s" % repr(web_browser)
-        # print "moved file from %s to %s" % (settings.rep_path_full, repWebPath)
+        if settings.rep_web_path:
+            shutil.copyfile(settings.rep_path_full, settings.rep_web_path)
+            if settings.web_browser:
+                os.environ['BROWSER'] = settings.web_browser
+                # print "set browser environ to %s" % repr(web_browser)
+            # print "moved file from %s to %s" % (settings.rep_path_full, repWebPath)
 
-        webbrowser.open(settings.rep_web_link)
+            webbrowser.open(settings.rep_web_link)
     else:
         print "open this link to view report %s" % settings.rep_web_link
 
