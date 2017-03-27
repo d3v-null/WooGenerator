@@ -1,10 +1,11 @@
 bleach
+configargparse
 dill
 exitstatus
 google-api-python-client
 httplib2
-npyscreen
 kitchen
+npyscreen
 paramiko
 pgi
 phpserialize

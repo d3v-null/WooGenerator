@@ -573,8 +573,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings.myo_path = os.path.join(settings.out_folder_full,
                                      "myob-" + suffix + ".csv")
     # bunPath = os.path.join(settings.out_folder_full , "bundles-"+suffix+".csv")
-    settings.rep_name = "prod_sync_report%s.html" % suffix
-    settings.rep_path_full = os.path.join(settings.out_folder_full, settings.rep_name)
     settings.rep_web_path = os.path.join(settings.web_folder, settings.rep_name)
     settings.rep_web_link = urlparse.urljoin(settings.web_address, settings.rep_name)
 
