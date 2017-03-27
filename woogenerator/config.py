@@ -8,6 +8,7 @@ import argparse
 import configargparse
 
 from __init__ import MODULE_LOCATION
+from woogenerator.utils import TimeUtils
 
 # Core configuration
 CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
@@ -24,16 +25,17 @@ DEFAULT_LOCAL_USER_PATH = 'conf_user.yaml'
 DEFAULT_LOCAL_USER_TEST_PATH = 'conf_user_test.yaml'
 DEFAULT_LOCAL_IN_DIR = 'input/'
 DEFAULT_LOCAL_OUT_DIR = 'output/'
-DEFAULT_LOCAL_LOG_DIR = 'log/'
+DEFAULT_LOCAL_LOG_DIR = 'logs/'
 DEFAULT_LOCAL_IMG_RAW_DIR = 'imgs_raw/'
 DEFAULT_LOCAL_IMG_CMP_DIR = 'imgs_cmp/'
+DEFAULT_MASTER_NAME = 'master'
+DEFAULT_SLAVE_NAME = 'slave'
 
 class SettingsNamespaceProto(argparse.Namespace):
-    """
-    Provide namespace for settings in first stage
-    """
+    """ Provide namespace for settings in first stage """
 
     def __init__(self, *args, **kwargs):
+        # This getattr stuff allows the attributes to be set in a subclass
         self.local_work_dir = getattr(self, 'local_work_dir', DEFAULT_LOCAL_WORK_DIR)
         self.local_live_config = getattr(self, 'local_live_config', None)
         self.local_test_config = getattr(self, 'local_test_config', None)
@@ -41,13 +43,15 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.in_folder = getattr(self, 'in_folder', DEFAULT_LOCAL_IN_DIR)
         self.out_folder = getattr(self, 'out_folder', DEFAULT_LOCAL_OUT_DIR)
         self.log_folder = getattr(self, 'log_folder', DEFAULT_LOCAL_LOG_DIR)
+        self.import_name = getattr(self, 'import_name', TimeUtils.get_ms_timestamp())
+        self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
+        self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
 
 
     def join_work_path(self, path):
-        """
-        Join a given path relative to the local-work-dir in this namespace.
-        """
+        """ Join a given path relative to the local-work-dir in this namespace. """
+
         response = path
         if self.local_work_dir and path:
             response = os.path.join(self.local_work_dir, path)
@@ -55,9 +59,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def second_stage_configs(self):
-        """
-        Return the second stage config files according to this namespace.
-        """
+        """ Return the second stage config files according to this namespace. """
         response = []
         if self.local_live_config:
             response.append(self.local_live_config_full)
@@ -90,6 +92,20 @@ class SettingsNamespaceProto(argparse.Namespace):
         if self.log_folder:
             return self.join_work_path(self.log_folder)
 
+    @property
+    def log_path_full(self):
+        response = '%s.log' % self.import_name
+        if self.log_folder_full:
+            response = os.path.join(self.log_folder_full, response)
+        return response
+
+    @property
+    def zip_path_full(self):
+        response = '%s.zip' % self.import_name
+        if self.log_folder_full:
+            response = os.path.join(self.log_folder_full, response)
+        return response
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
         self.local_live_config = getattr(self, 'local_live_config',
@@ -97,8 +113,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.local_test_config = getattr(self, 'local_test_config',
                                          DEFAULT_LOCAL_PROD_TEST_PATH)
         self.schema = getattr(self, 'schema', None)
+        self.variant = getattr(self, 'variant', None)
         self.woo_schemas = getattr(self, 'woo_schemas', [])
         self.myo_schemas = getattr(self, 'myo_schemas', [])
+        self.thumbsize_x = getattr(self, 'thumbsize_x', None)
+        self.thumbsize_y = getattr(self, 'thumbsize_y', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -108,6 +127,47 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def schema_is_myo(self):
         return self.schema in self.myo_schemas
+
+    @property
+    def thumbsize(self):
+        if self.thumbsize_x and self.thumbsize_y:
+            return (self.thumbsize_x, self.thumbsize_y)
+
+    @property
+    def out_suffix(self):
+        response = ''
+        if self.schema:
+            response = self.schema
+        if self.variant:
+            response = "-".join([response, self.variant])
+        return response
+
+    @property
+    def rep_name(self):
+        return 'prod_sync_report%s.html' % self.out_suffix
+
+    @property
+    def rep_path_full(self):
+        response = self.rep_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
+    @property
+    def m_fail_path_full(self):
+        response = "%s_fails.csv" % self.master_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
+    @property
+    def s_fail_path_full(self):
+        response = "%s_fails.csv" % self.slave_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
+
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
@@ -127,16 +187,6 @@ class ArgumentParserProto(configargparse.ArgumentParser):
 
     def __init__(self, **kwargs):
 
-        if not isinstance(kwargs.get('default_config_files'), list):
-            kwargs['default_config_files'] = [DEFAULTS_COMMON_PATH]
-
-        if os.path.exists(DEFAULTS_COMMON_PATH):
-            print "path exists: %s" % DEFAULTS_COMMON_PATH
-            kwargs['default_config_files'].insert(0, DEFAULTS_COMMON_PATH)
-        else:
-            print "path not exists: %s " % DEFAULTS_COMMON_PATH
-
-        #
         if not kwargs.get('args_for_setting_config_path'):
             kwargs['args_for_setting_config_path'] = ['-c', '--config-file']
 
@@ -144,7 +194,6 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             kwargs['config_arg_help_message'] = \
                 "the location of your config file"
 
-        #
         if not kwargs.get('config_file_parser_class'):
             kwargs['config_file_parser_class'] = configargparse.YAMLConfigFileParser
 
@@ -156,9 +205,7 @@ class ArgumentParserProto(configargparse.ArgumentParser):
         return self._actions
 
     def add_proto_options(self):
-        """
-        Add options to top of options list.
-        """
+        """ Add options to top of options list. """
         # TODO: refactor this when switch to logging
 
         group = self.add_mutually_exclusive_group()
@@ -222,10 +269,20 @@ class ArgumentParserProto(configargparse.ArgumentParser):
 class ArgumentParserProtoProd(ArgumentParserProto):
     default_local_live_path = DEFAULT_LOCAL_PROD_PATH
     default_local_test_path = DEFAULT_LOCAL_PROD_TEST_PATH
+    #
+    # def __init__(self, **kwargs):
+    #     if not kwargs.get('extra_default_config_files'):
+    #         kwargs['extra_default_config_files'] = [DEFAULTS_PROD_PATH]
+    #     super(ArgumentParserProtoProd, self).__init__(**kwargs)
 
 class ArgumentParserProtoUser(ArgumentParserProto):
     default_local_live_path = DEFAULT_LOCAL_USER_PATH
     default_local_test_path = DEFAULT_LOCAL_USER_TEST_PATH
+    #
+    # def __init__(self, **kwargs):
+    #     if not kwargs.get('extra_default_config_files'):
+    #         kwargs['extra_default_config_files'] = [DEFAULTS_USER_PATH]
+    #     super(ArgumentParserProtoUser, self).__init__(**kwargs)
 
 class ArgumentParserCommon(ArgumentParserProto):
     """
@@ -239,6 +296,15 @@ class ArgumentParserCommon(ArgumentParserProto):
 
         if not kwargs.get('ignore_unknown_config_file_keys'):
             kwargs['ignore_unknown_config_file_keys'] = True
+
+        if not kwargs.get('default_config_files'):
+            kwargs['default_config_files'] = []
+        if os.path.exists(DEFAULTS_COMMON_PATH):
+            kwargs['default_config_files'].append(DEFAULTS_COMMON_PATH)
+        if kwargs.get('extra_default_config_files'):
+            for path in kwargs.pop('extra_default_config_files'):
+                if os.path.exists(path):
+                    kwargs['default_config_files'].append(path)
 
         super(ArgumentParserCommon, self).__init__(**kwargs)
 
@@ -264,9 +330,7 @@ class ArgumentParserCommon(ArgumentParserProto):
 
 
     def add_download_options(self, download_group):
-        """
-        Add options pertaining to downloading data.
-        """
+        """ Add options pertaining to downloading data. """
 
         group = download_group.add_mutually_exclusive_group()
         group.add_argument(
@@ -295,9 +359,7 @@ class ArgumentParserCommon(ArgumentParserProto):
             type=int)
 
     def add_processing_options(self, processing_group):
-        """
-        Add options pertaining to processing data.
-        """
+        """ Add options pertaining to processing data. """
 
         group = processing_group.add_mutually_exclusive_group()
         group.add_argument(
@@ -324,9 +386,7 @@ class ArgumentParserCommon(ArgumentParserProto):
 
 
     def add_update_options(self, update_group):
-        """
-        Add options pertaining to updating database.
-        """
+        """ Add options pertaining to updating database. """
 
         group = update_group.add_mutually_exclusive_group()
         group.add_argument(
@@ -449,16 +509,13 @@ class ArgumentParserCommon(ArgumentParserProto):
 
 
 class ArgumentParserProd(ArgumentParserCommon):
-    """
-    Provide ArgumentParser class for product syncing.
-    """
+    """ Provide ArgumentParser class for product syncing. """
 
     def __init__(self, **kwargs):
         kwargs['description'] = \
             'Synchronize product data from multiple remote sources'
-        kwargs['default_config_files'] = [
-            DEFAULTS_PROD_PATH,
-        ]
+        if not kwargs.get('extra_default_config_files'):
+            kwargs['extra_default_config_files'] = [DEFAULTS_PROD_PATH]
         super(ArgumentParserProd, self).__init__(**kwargs)
 
     # def add_proto_options(self):
@@ -595,6 +652,15 @@ class ArgumentParserProd(ArgumentParserCommon):
             help='location of compressed images',
             default=DEFAULT_LOCAL_IMG_RAW_DIR
         )
+        images_group.add_argument(
+            '--thumbsize-x',
+            help='X value of thumbnail crop size',
+            type=int
+        )
+        images_group.add_argument(
+            '--thumbsize-y',
+            help='Y value of thumbnail crop size'
+        )
 
         specials_group = self.add_argument_group('Specials options')
         group = specials_group.add_mutually_exclusive_group()
@@ -653,15 +719,13 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--woo-schemas', nargs='+')
 
 class ArgumentParserUser(ArgumentParserCommon):
-    """
-    Provide ArgumentParser class for syncing contacts.
-    """
+    """ Provide ArgumentParser class for syncing contacts. """
+
     def __init__(self, **kwargs):
         kwargs['description'] = \
             'Merge contact records between two databases'
-        kwargs['default_config_files'] = [
-            DEFAULTS_USER_PATH
-        ]
+        if not kwargs.get('extra_default_config_files'):
+            kwargs['extra_default_config_files'] = [DEFAULTS_PROD_PATH]
         super(ArgumentParserUser, self).__init__(**kwargs)
 
     def add_download_options(self, download_group):

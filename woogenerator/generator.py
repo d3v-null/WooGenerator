@@ -406,7 +406,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                 if special_products:
                     fla_name, fla_ext = os.path.splitext(settings.fla_path)
                     fls_path = os.path.join(
-                        settings.out_folder,
+                        settings.out_folder_full,
                         fla_name + "-" + current_special + fla_ext)
                     special_product_list = WooProdList(special_products)
                     special_product_list.export_items(fls_path,
@@ -416,7 +416,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                 if special_variations:
                     flv_name, flv_ext = os.path.splitext(settings.flv_path)
                     flvs_path = os.path.join(
-                        settings.out_folder,
+                        settings.out_folder_full,
                         flv_name + "-" + current_special + flv_ext)
 
                     sp_variation_list = WooVarList(special_variations)
@@ -426,7 +426,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         updated_products = parsers.product.updated_products.values()
         if updated_products:
             fla_name, fla_ext = os.path.splitext(settings.fla_path)
-            flu_path = os.path.join(settings.out_folder,
+            flu_path = os.path.join(settings.out_folder_full,
                                     fla_name + "-Updated" + fla_ext)
 
             updated_product_list = WooProdList(updated_products)
@@ -436,7 +436,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
         if updated_variations:
             flv_name, flv_ext = os.path.splitext(settings.flv_path)
-            flvu_path = os.path.join(settings.out_folder,
+            flvu_path = os.path.join(settings.out_folder_full,
                                      flv_name + "-Updated" + flv_ext)
 
             updated_variations_list = WooVarList(updated_variations)
@@ -479,6 +479,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # TODO: test set live config
     # TODO: test set test config
     # TODO: move in, out, log folders to full
+    # TODO: move gen, dprc, dprp, spec to full calculated in settings
 
     print "proto settings: \n%s" % pformat(vars(settings))
 
@@ -495,16 +496,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     print "Raw settings: %s" % pformat(vars(settings))
 
-    assert all([
-        settings.in_folder, settings.out_folder, settings.log_folder,
-        settings.woo_schemas, settings.myo_schemas, settings.taxo_depth,
-        settings.item_depth
-    ])
-
-    settings.gen_path = os.path.join(settings.in_folder, 'generator.csv')
-    settings.dprc_path = os.path.join(settings.in_folder, 'DPRC.csv')
-    settings.dprp_path = os.path.join(settings.in_folder, 'DPRP.csv')
-    settings.spec_path = os.path.join(settings.in_folder, 'specials.csv')
+    settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
+    settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
+    settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
+    settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
 
     # TODO: set up logging here instead of Registrar verbosity crap
 
@@ -558,33 +553,33 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                            settings.merge_mode, settings.last_sync)
 
     if settings.variant == "ACC":
-        settings.gen_path = os.path.join(settings.in_folder,
+        settings.gen_path = os.path.join(settings.in_folder_full,
                                          'generator-solution.csv')
 
     if settings.variant == "SOL":
-        settings.gen_path = os.path.join(settings.in_folder,
+        settings.gen_path = os.path.join(settings.in_folder_full,
                                          'generator-accessories.csv')
 
     suffix = settings.schema
     if settings.variant:
         suffix += "-" + settings.variant
 
-    settings.fla_path = os.path.join(settings.out_folder,
+    settings.fla_path = os.path.join(settings.out_folder_full,
                                      "flattened-" + suffix + ".csv")
-    settings.flv_path = os.path.join(settings.out_folder,
+    settings.flv_path = os.path.join(settings.out_folder_full,
                                      "flattened-variations-" + suffix + ".csv")
-    settings.cat_path = os.path.join(settings.out_folder,
+    settings.cat_path = os.path.join(settings.out_folder_full,
                                      "categories-" + suffix + ".csv")
-    settings.myo_path = os.path.join(settings.out_folder,
+    settings.myo_path = os.path.join(settings.out_folder_full,
                                      "myob-" + suffix + ".csv")
-    # bunPath = os.path.join(settings.out_folder , "bundles-"+suffix+".csv")
+    # bunPath = os.path.join(settings.out_folder_full , "bundles-"+suffix+".csv")
     settings.rep_name = "prod_sync_report%s.html" % suffix
-    settings.rep_path = os.path.join(settings.out_folder, settings.rep_name)
+    settings.rep_path_full = os.path.join(settings.out_folder_full, settings.rep_name)
     settings.rep_web_path = os.path.join(settings.web_folder, settings.rep_name)
     settings.rep_web_link = urlparse.urljoin(settings.web_address, settings.rep_name)
 
     settings.slave_delta_csv_path = os.path.join(
-        settings.out_folder, "delta_report_wp%s.csv" % suffix)
+        settings.out_folder_full, "delta_report_wp%s.csv" % suffix)
 
     settings.img_dst = os.path.join(settings.img_cmp_folder,
                                     "images-" + settings.schema)
@@ -1198,7 +1193,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     Registrar.register_progress("Write Report")
 
-    with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
+    with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
         # basic_cols = ColDataWoo.get_basic_cols()
@@ -1635,12 +1630,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     Registrar.register_progress("Displaying reports")
 
-    shutil.copyfile(settings.rep_path, settings.rep_web_path)
+    shutil.copyfile(settings.rep_path_full, settings.rep_web_path)
     if settings.show_report:
         if settings.web_browser:
             os.environ['BROWSER'] = settings.web_browser
             # print "set browser environ to %s" % repr(web_browser)
-        # print "moved file from %s to %s" % (settings.rep_path, repWebPath)
+        # print "moved file from %s to %s" % (settings.rep_path_full, repWebPath)
 
         webbrowser.open(settings.rep_web_link)
     else:
@@ -1657,23 +1652,25 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
 
     # settings absorbed by configargparse
 
-    settings.in_folder = "../input/"
-    settings.out_folder = "../output/"
-    settings.log_folder = "../logs/"
-    settings.src_folder = MODULE_LOCATION
+    # settings.local_work_dir = MODULE_LOCATION
 
-    os.chdir(MODULE_PATH)
+    # settings.in_folder_full = "../input/"
+    # settings.out_folder_full = "../output/"
+    # settings.log_folder_full = "../logs/"
+    # settings.src_folder = MODULE_LOCATION
 
-    settings.import_name = TimeUtils.get_ms_timestamp()
-    settings.rep_path = ''
-    settings.m_fail_path = os.path.join(settings.out_folder,
-                                        "gdrive_fails.csv")
-    settings.s_fail_path = os.path.join(settings.out_folder, "wp_fails.csv")
-    settings.log_path = os.path.join(settings.log_folder,
-                                     "log_%s.txt" % settings.import_name)
-    settings.zip_path = os.path.join(settings.log_folder,
-                                     "zip_%s.zip" % settings.import_name)
-    settings.thumbsize = 1920, 1200
+    # os.chdir(MODULE_PATH)
+
+    # settings.import_name = TimeUtils.get_ms_timestamp()
+    # settings.rep_path_full = ''
+    # settings.m_fail_path_full = os.path.join(settings.out_folder_full,
+                                        # "gdrive_fails.csv")
+    # settings.s_fail_path_full = os.path.join(settings.out_folder_full, "wp_fails.csv")
+    # settings.log_path = os.path.join(settings.log_folder_full,
+    #                                  "log_%s.txt" % settings.import_name)
+    # settings.zip_path = os.path.join(settings.log_folder_full,
+    #                                  "zip_%s.zip" % settings.import_name)
+    # settings.thumbsize = 1920, 1200
 
     status = 0
     try:
@@ -1694,7 +1691,7 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
         status = 1
         Registrar.register_error(traceback.format_exc())
 
-    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
+    with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
@@ -1709,17 +1706,17 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
     #########################################
 
     files_to_zip = [
-        settings.m_fail_path, settings.s_fail_path, settings.rep_path
+        settings.m_fail_path_full, settings.s_fail_path_full, settings.rep_path_full
     ]
 
-    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
+    with zipfile.ZipFile(settings.zip_path_full, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)
                 zip_file.write(file_to_zip)
             except:
                 pass
-        Registrar.register_message('wrote file %s' % settings.zip_path)
+        Registrar.register_message('wrote file %s' % zip_file.filename)
 
     # print "\nexiting with status %s \n" % status
     sys.exit(status)

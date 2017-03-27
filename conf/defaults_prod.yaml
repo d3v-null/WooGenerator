@@ -9,4 +9,5 @@ woo-schemas:
 
 schema: WC
 
-thumbsize: 1920, 1200
+thumbsize-x: 1920
+thumbsize-y: 1200
