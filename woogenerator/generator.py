@@ -85,9 +85,9 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         Registrar.register_message("%s: %s" %
                                    (thing, getattr(settings, thing)))
 
-    if settings.schema in settings.myo_schemas:
+    if settings.schema_is_myo:
         col_data_class = ColDataMyo
-    elif settings.schema in settings.woo_schemas:
+    elif settings.schema_is_woo:
         col_data_class = ColDataWoo
     else:
         col_data_class = ColDataBase
@@ -97,9 +97,9 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         'defaults':
         col_data_class.get_defaults(),
     })
-    if settings.schema in settings.myo_schemas:
+    if settings.schema_is_myo:
         product_parser_class = CsvParseMyo
-    elif settings.schema in settings.woo_schemas:
+    elif settings.schema_is_woo:
         if settings.schema == "TT":
             product_parser_class = CsvParseTT
         elif settings.schema == "VT":
@@ -124,7 +124,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         client_args = []
     #
     with client_class(*client_args) as client:
-        if settings.schema in settings.woo_schemas:
+        if settings.schema_is_woo:
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
                 client.analyse_remote(
@@ -354,12 +354,12 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
     Registrar.register_progress("Exporting info to spreadsheets")
 
-    if settings.schema in settings.myo_schemas:
+    if settings.schema_is_myo:
         product_cols = ColDataMyo.get_product_cols()
         product_list = MYOProdList(parsers.product.products.values())
         product_list.export_items(settings.myo_path,
                                   ColDataBase.get_col_names(product_cols))
-    elif settings.schema in settings.woo_schemas:
+    elif settings.schema_is_woo:
         product_cols = ColDataWoo.get_product_cols()
 
         for col in settings.exclude_cols:
@@ -680,7 +680,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Images
     #########################################
 
-    if settings.do_images and settings.schema in settings.woo_schemas:
+    if settings.do_images and settings.schema_is_woo:
         process_images(settings, parsers)
 
     #########################################

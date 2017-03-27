@@ -92,9 +92,22 @@ class SettingsNamespaceProto(argparse.Namespace):
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
-        self.local_live_config = DEFAULT_LOCAL_PROD_PATH
-        self.local_test_config = DEFAULT_LOCAL_PROD_TEST_PATH
+        self.local_live_config = getattr(self, 'local_live_config',
+                                         DEFAULT_LOCAL_PROD_PATH)
+        self.local_test_config = getattr(self, 'local_test_config',
+                                         DEFAULT_LOCAL_PROD_TEST_PATH)
+        self.schema = getattr(self, 'schema', None)
+        self.woo_schemas = getattr(self, 'woo_schemas', [])
+        self.myo_schemas = getattr(self, 'myo_schemas', [])
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
+
+    @property
+    def schema_is_woo(self):
+        return self.schema in self.woo_schemas
+
+    @property
+    def schema_is_myo(self):
+        return self.schema in self.myo_schemas
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
