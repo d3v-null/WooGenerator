@@ -147,18 +147,16 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
                 settings.product_parser_args[
                     'special_rules'] = parsers.special.rules
 
-                # all_future_groups = parsers.special.all_future()
-                # print "all_future_groups: %s" % all_future_groups
                 current_special_groups = parsers.special.determine_current_spec_grps(
                     specials_mode=settings.specials_mode,
                     current_special=settings.current_special)
+                print "current_special_groups: %s" % current_special_groups
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.register_message("current_special_groups: %s" %
                                                current_special_groups)
 
-                # print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
-                # print "Registrar.DEBUG_SPECIAL: %s" %
-                # repr(Registrar.DEBUG_SPECIAL)
+                print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
+                print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
 
                 if settings.do_categories:
                     # determine current specials
@@ -400,7 +398,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
             # current_special = settings.current_special
             current_special = None
             if parsers.product.current_special_groups:
-                current_special = parsers.product.current_special_groups[0].ID
+                current_special = parsers.product.current_special_groups[0].special_id
             if current_special:
                 special_products = parsers.product.onspecial_products.values()
                 if special_products:
@@ -411,8 +409,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                     special_product_list = WooProdList(special_products)
                     special_product_list.export_items(fls_path,
                                                       product_colnames)
-                special_variations = parsers.product.onspecial_variations.values(
-                )
+                special_variations = parsers.product.onspecial_variations.values()
                 if special_variations:
                     flv_name, flv_ext = os.path.splitext(settings.flv_path)
                     flvs_path = os.path.join(
@@ -451,7 +448,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     if not settings:
         settings = SettingsNamespaceProd()
 
-    # TODO: Two rounds of argument parsing
+    # DONE: Two rounds of argument parsing
 
     ### First round of argument parsing determines which config files to read
     ### from core config files, CLI args and env vars
@@ -466,22 +463,22 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
+    print "proto settings: \n%s" % pformat(vars(settings))
+
     ### Second round gets all the arguments from all config files
 
-    # DONE: change default-last-sync to just last-sync
     # DONE: change fallback_schema to just schema
     # TODO: implement "ask for password" feature
-    # DONE: Remove references to yaml_path
-    # TODO: make parent of this argumentparser proto_argparser
     argparser = ArgumentParserProd()
 
+    # DONE: change default-last-sync to just last-sync
+    # DONE: Remove references to yaml_path
     # TODO: test set local work dir
     # TODO: test set live config
     # TODO: test set test config
     # TODO: move in, out, log folders to full
     # TODO: move gen, dprc, dprp, spec to full calculated in settings
 
-    print "proto settings: \n%s" % pformat(vars(settings))
 
     for conf in settings.second_stage_configs:
         print "adding conf: %s" % conf

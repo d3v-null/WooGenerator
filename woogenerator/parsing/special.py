@@ -220,8 +220,6 @@ class CsvParseSpecial(CsvParseTree):
     #
     def determine_current_spec_grps(
             self, specials_mode, current_special=None):
-        TimeUtils.set_override_time(time.strptime(
-            "2016-08-12", TimeUtils.dateFormat))
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message("starting")
         response = []

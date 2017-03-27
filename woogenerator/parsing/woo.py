@@ -1286,7 +1286,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.post_process_updated(object_data)
             self.post_process_visibility(object_data)
             self.post_process_shipping(object_data)
-            if self.specialsCategory and self.current_special:
+            if self.specialsCategory and self.current_special_groups:
                 self.post_process_current_special(object_data)
 
         return objects
