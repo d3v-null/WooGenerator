@@ -3,6 +3,7 @@ m-ssh-port: 22
 remote-bind-host: 127.0.0.1
 remote-bind-port: 3306
 wp-srv-offset: 0
+db-host: 127.0.0.1
 db-charset: utf8mb4
 old-threshold: !!str 2012-01-01 00:00:00
 oldish-threshold: !!str 2014-01-01 00:00:00

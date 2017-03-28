@@ -263,27 +263,27 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         limit=settings['download_limit'],
         source=settings.slave_name)
     if settings['download_slave']:
-        settings.ssh_tunnel_forwarder_address = (settings['ssh_host'],
-                                                 settings['ssh_port'])
-        settings.ssh_tunnel_forwarder_b_address = (settings['remote_bind_host'],
-                                                   settings['remote_bind_port'])
-        for host in [
+        settings['ssh_tunnel_forwarder_address'] = \
+            (settings['ssh_host'], settings['ssh_port'])
+        settings['ssh_tunnel_forwarder_b_address'] = \
+            (settings['remote_bind_host'], settings['remote_bind_port'])
+        for host_key in [
                 'ssh_tunnel_forwarder_address',
-                'ssh_tunnel_forwarder_bind_address'
+                'ssh_tunnel_forwarder_b_address'
         ]:
             try:
-                check_address(getattr(settings, host))
+                check_address(settings.get(host_key))
             except AttributeError:
-                Registrar.register_error("host not specified in settings: %s" %
-                                         host)
+                Registrar.register_error("invalid host: %s -> %s" % \
+                                         (host_key, settings.get(host_key)))
             except Exception as exc:
-                raise UserWarning("Host must be valid: %s [%s = %s]" % (
-                    str(exc), host, repr(getattr(settings, host))))
+                raise UserWarning("Host must be valid: %s [%s = %s]" % \
+                                  (str(exc), host_key, repr(settings.get(host_key))))
         ssh_tunnel_forwarder_params = {
-            'ssh_address_or_host': settings.ssh_tunnel_forwarder_address,
+            'ssh_address_or_host': settings['ssh_tunnel_forwarder_address'],
             'ssh_password': settings['ssh_pass'],
             'ssh_username': settings['ssh_user'],
-            'remote_bind_address': settings.ssh_tunnel_forwarder_b_address,
+            'remote_bind_address': settings['ssh_tunnel_forwarder_b_address'],
         }
         py_my_sql_connect_params = {
             'host': settings['db_host'],
