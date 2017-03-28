@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
-""" Module for updating woocommerce and ACT databases from ACT import file. """
+"""Module for updating woocommerce and ACT databases from ACT import file."""
+
 # TODO: Fix too-many-lines
 
 import io
@@ -10,14 +11,14 @@ import traceback
 import zipfile
 from bisect import insort
 from collections import OrderedDict
-from pprint import pprint
+from pprint import pprint, pformat
 
-import argparse
 import unicodecsv
-import yaml
 from sshtunnel import check_address
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from httplib2 import ServerNotFoundError
 
-from __init__ import MODULE_LOCATION, MODULE_PATH
+import __init__
 from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
@@ -31,7 +32,8 @@ from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import ArgumentParserUser
+from woogenerator.config import (ArgumentParserUser, ArgumentParserProtoUser,
+                                 SettingsNamespaceUser)
 
 
 def timediff(settings):
@@ -41,275 +43,148 @@ def timediff(settings):
     return time.time() - settings.start_time
 
 
-def main(settings, override_args=None):  # pylint: disable=too-many-branches,too-many-locals
+def main(override_args=None, settings=None):  # pylint: disable=too-many-branches,too-many-locals
     """
     Use settings object to load config file and detect changes in wordpress.
     """
     # TODO: fix too-many-branches,too-many-locals
-    # TODO: implement override_args
+    # DONE: implement override_args
+
+    if not settings:
+        settings = SettingsNamespaceUser()
+
+    proto_argparser = ArgumentParserProtoUser()
+
+    print "proto_parser: \n%s" % pformat(proto_argparser.get_actions())
+
+    parser_override = {'namespace':settings}
     if override_args:
-        pass
+        parser_override['args'] = override_args.split()
 
-    ### OVERRIDE CONFIG WITH YAML FILE ###
+    settings, _ = proto_argparser.parse_known_args(**parser_override)
 
-    config = {}
+    print "proto settings: \n%s" % pformat(vars(settings))
 
-    old_threshold = "2012-01-01 00:00:00"
-    oldish_threshold = "2014-01-01 00:00:00"
+    argparser = ArgumentParserUser()
 
-    with open(settings.yaml_path) as stream:
-        config = yaml.load(stream)
+    for conf in settings.second_stage_configs:
+        print "adding conf: %s" % conf
+        argparser.add_default_config_file(conf)
 
-        if 'in_folder' in config.keys():
-            settings.in_folder = config['in_folder']
-        if 'out_folder' in config.keys():
-            settings.out_folder = config['out_folder']
-        if 'logFolder' in config.keys():
-            settings.log_folder = config['logFolder']
+    print "parser: %s " % pformat(argparser.get_actions())
 
-        # mandatory
-        settings.merge_mode = config.get('merge_mode', 'sync')
-        settings.master_name = config.get('master_name', 'MASTER')
-        settings.slave_name = config.get('slave_name', 'SLAVE')
-        settings.default_last_sync = config.get('default_last_sync')
-        settings.master_file = config.get('master_file', '')
-        settings.slave_file = config.get('slave_file', '')
-        settings.user_file = config.get('userFile')
-        settings.card_file = config.get('cardFile')
-        settings.email_file = config.get('emailFile')
-        settings.since_m = config.get('sinceM')
-        settings.since_s = config.get('sinceS')
-        # download_slave = config.get('download_slave')
-        # download_master = config.get('download_master')
-        # update_slave = config.get('update_slave')
-        # update_master = config.get('update_master')
-        # do_filter = config.get('do_filter')
-        # do_problematic = config.get('do_problematic')
-        # do_post = config.get('do_post')
-        # do_sync = config.get('do_sync'
+    settings = argparser.parse_args(**parser_override)
 
-    ### OVERRIDE CONFIG WITH ARGPARSE ###
+    print "Raw settings: %s" % pformat(vars(settings))
 
-    parser = ArgumentParerUser()
 
-    args = parser.parse_args()
+    # DONE: change default-last-sync to just last-sync
+    # DONE: Remove references to yaml_path
+    # DONE: move in, out, log folders to full
 
-    if args:
-        print args
-        if args.verbosity > 0:
-            Registrar.DEBUG_PROGRESS = True
-            Registrar.DEBUG_ERROR = True
-        if args.verbosity > 1:
-            Registrar.DEBUG_MESSAGE = True
-        if args.quiet:
-            Registrar.DEBUG_PROGRESS = False
-            Registrar.DEBUG_ERROR = False
-            Registrar.DEBUG_MESSAGE = False
-        if args.testmode is not None:
-            settings.test_mode = args.testmode
-        if args.download_slave is not None:
-            download_slave = args.download_slave
-        if args.download_master is not None:
-            download_master = args.download_master
-        if args.update_slave is not None:
-            update_slave = args.update_slave
-        if args.update_master is not None:
-            update_master = args.update_master
-        if args.do_filter is not None:
-            do_filter = args.do_filter
-        # if args.do_sync is not None:
-        #     do_sync = args.do_sync
-        # if args.do_problematic is not None:
-        #     do_problematic = args.do_problematic
-        # if args.do_post is not None:
-        #     do_post = args.do_post
-        if args.m_ssh_port:
-            settings.m_ssh_port = args.m_ssh_port
-        if args.m_ssh_host:
-            settings.m_ssh_host = args.m_ssh_host
-        if args.master_file is not None:
-            # download_master = False
-            settings.master_file = args.master_file
-        if args.slave_file is not None:
-            # download_slave = False
-            settings.slave_file = args.slave_file
-        if args.card_file is not None:
-            settings.card_file = args.card_file
-            # do_filter = True
+    if settings.verbosity > 0:
+        Registrar.DEBUG_PROGRESS = True
+        Registrar.DEBUG_ERROR = True
+    if settings.verbosity > 1:
+        Registrar.DEBUG_MESSAGE = True
+    if settings.quiet:
+        Registrar.DEBUG_PROGRESS = False
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_MESSAGE = False
 
-        if args.debug_abstract is not None:
-            Registrar.DEBUG_ABSTRACT = args.debug_abstract
-        if args.debug_parser is not None:
-            Registrar.DEBUG_PARSER = args.debug_parser
-        if args.debug_update is not None:
-            Registrar.DEBUG_UPDATE = args.debug_update
-        if args.debug_flat is not None:
-            Registrar.DEBUG_FLAT = args.debug_flat
-        if args.debug_name is not None:
-            Registrar.DEBUG_NAME = args.debug_name
-        if args.debug_address is not None:
-            Registrar.DEBUG_ADDRESS = args.debug_address
-        if args.debug_client is not None:
-            Registrar.DEBUG_CLIENT = args.debug_client
-        if args.debug_utils is not None:
-            Registrar.DEBUG_UTILS = args.debug_utils
-        if args.debug_contact is not None:
-            Registrar.DEBUG_CONTACT = args.debug_contact
-        if args.debug_duplicates is not None:
-            Registrar.DEBUG_DUPLICATES = args.debug_duplicates
-
-        settings.limit = args.limit
-
-    # api config
-
-    with open(settings.yaml_path) as stream:
-        option_name_prefix = 'test_' if settings.test_mode else ''
-        config = yaml.load(stream)
-        settings.ssh_user = config.get(option_name_prefix + 'ssh_user')
-        settings.ssh_pass = config.get(option_name_prefix + 'ssh_pass')
-        settings.ssh_host = config.get(option_name_prefix + 'ssh_host')
-        settings.ssh_port = config.get(option_name_prefix + 'ssh_port', 22)
-        settings.m_ssh_user = config.get(option_name_prefix + 'm_ssh_user')
-        settings.m_ssh_pass = config.get(option_name_prefix + 'm_ssh_pass')
-        settings.m_ssh_host = config.get(option_name_prefix + 'm_ssh_host')
-        settings.m_ssh_port = config.get(option_name_prefix + 'm_ssh_port', 22)
-        settings.remote_bind_host = config.get(
-            option_name_prefix + 'remote_bind_host', '127.0.0.1')
-        settings.remote_bind_port = config.get(
-            option_name_prefix + 'remote_bind_port', 3306)
-        db_user = config.get(option_name_prefix + 'db_user')
-        db_pass = config.get(option_name_prefix + 'db_pass')
-        db_name = config.get(option_name_prefix + 'db_name')
-        db_charset = config.get(option_name_prefix + 'db_charset', 'utf8mb4')
-        wp_srv_offset = config.get(option_name_prefix + 'wp_srv_offset', 0)
-        m_db_user = config.get(option_name_prefix + 'm_db_user')
-        m_db_pass = config.get(option_name_prefix + 'm_db_pass')
-        m_db_name = config.get(option_name_prefix + 'm_db_name')
-        m_db_host = config.get(option_name_prefix + 'm_db_host')
-        settings.m_x_cmd = config.get(option_name_prefix + 'm_x_cmd')
-        settings.m_i_cmd = config.get(option_name_prefix + 'm_i_cmd')
-        tbl_prefix = config.get(option_name_prefix + 'tbl_prefix', '')
-        # wp_user = config.get(optionNamePrefix+'wp_user', '')
-        # wp_pass = config.get(optionNamePrefix+'wp_pass', '')
-        store_url = config.get(option_name_prefix + 'store_url', '')
-        wp_user = config.get(option_name_prefix + 'wp_user')
-        wp_pass = config.get(option_name_prefix + 'wp_pass')
-        wp_callback = config.get(option_name_prefix + 'wp_callback')
-        wp_api_key = config.get(option_name_prefix + 'wp_api_key')
-        wp_api_secret = config.get(option_name_prefix + 'wp_api_secret')
-        #  wc_api_key = config.get(optionNamePrefix+'wc_api_key')
-        #  wc_api_secret = config.get(optionNamePrefix+'wc_api_secret')
-        settings.remote_export_folder = config.get(
-            option_name_prefix + 'remote_export_folder', '')
+    Registrar.DEBUG_ABSTRACT = settings.debug_abstract
+    Registrar.DEBUG_PARSER = settings.debug_parser
+    Registrar.DEBUG_UPDATE = settings.debug_update
+    Registrar.DEBUG_FLAT = settings.debug_flat
+    Registrar.DEBUG_NAME = settings.debug_name
+    Registrar.DEBUG_ADDRESS = settings.debug_address
+    Registrar.DEBUG_CLIENT = settings.debug_client
+    Registrar.DEBUG_UTILS = settings.debug_utils
+    Registrar.DEBUG_CONTACT = settings.debug_contact
+    Registrar.DEBUG_DUPLICATES = settings.debug_duplicates
 
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
-        if settings.test_mode:
-            print "test_mode enabled"
+        if settings.testmode:
+            print "testmode enabled"
         else:
-            print "test_mode disabled"
-        if not download_slave:
+            print "testmode disabled"
+        if not settings['download_slave']:
             print "no download_slave"
-        if not download_master:
+        if not settings['download_master']:
             print "no download_master"
-        if not update_master:
+        if not settings['update_master']:
             print "not updating maseter"
-        if not update_slave:
+        if not settings['update_slave']:
             print "not updating slave"
-        if not do_filter:
+        if not settings['do_filter']:
             print "not doing filter"
-        if not args.do_sync:
+        if not settings['do_sync']:
             print "not doing sync"
-        if not args.do_post:
+        if not settings.do_post:
             print "not doing post"
 
     ### PROCESS CLASS PARAMS ###
 
-    FieldGroup.do_post = args.do_post
+    FieldGroup.do_post = settings.do_post
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.default_last_sync)
-    TimeUtils.set_wp_srv_offset(wp_srv_offset)
+                           settings.merge_mode, settings.last_sync)
+    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
 
     ### SET UP DIRECTORIES ###
 
-    for path in (settings.in_folder, settings.out_folder, settings.log_folder,
-                 settings.src_folder, settings.pkl_folder):
+    for path in (settings.in_folder_full, settings.out_folder_full):
         if not os.path.exists(path):
             os.mkdir(path)
 
-    file_suffix = "_test" if settings.test_mode else ""
-    file_suffix += "_filter" if do_filter else ""
-    m_x_filename = "act_x" + file_suffix + "_" + settings.import_name + ".csv"
-    # m_i_filename = "act_i"+file_suffix+"_"+import_name+".csv"
-    s_x_filename = "wp_x" + file_suffix + "_" + settings.import_name + ".csv"
-    # remoteExportPath = os.path.join(settings.remote_export_folder, m_x_filename)
-
-    if download_master:
-        ma_path = os.path.join(settings.in_folder, m_x_filename)
+    if settings['download_master']:
+        ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
         ma_encoding = "utf-8"
     else:
-        # ma_path = os.path.join(in_folder, "act_x_test_2016-05-03_23-01-48.csv")
-        ma_path = os.path.join(settings.in_folder, settings.master_file)
-        # ma_path = os.path.join(in_folder, "500-act-records-edited.csv")
-        # ma_path = os.path.join(in_folder, "500-act-records.csv")
+        assert settings['master_file'], "master file must be provided if not download_master"
+        ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
         ma_encoding = "utf8"
-    if download_slave:
-        sa_path = os.path.join(settings.in_folder, s_x_filename)
+    if settings['download_slave']:
+        sa_path = os.path.join(settings.in_folder_full, settings.s_x_name)
         sa_encoding = "utf8"
     else:
-        sa_path = os.path.join(settings.in_folder, settings.slave_file)
-        # sa_path = os.path.join(in_folder, "500-wp-records-edited.csv")
+        assert settings['slave_file'], "slave file must be provided if not download_slave"
+        sa_path = os.path.join(settings.in_folder_full, settings['slave_file'])
         sa_encoding = "utf8"
 
-    # moPath = os.path.join(out_folder, m_i_filename)
-    settings.rep_path = os.path.join(settings.out_folder,
-                                     "usr_sync_report%s.html" % file_suffix)
-    repd_path = os.path.join(settings.out_folder,
-                             "usr_sync_report_duplicate%s.html" % file_suffix)
-    w_pres_csv_path = os.path.join(settings.out_folder,
-                                   "sync_report_wp%s.csv" % file_suffix)
-    master_res_csv_path = os.path.join(settings.out_folder,
-                                       "sync_report_act%s.csv" % file_suffix)
-    master_delta_csv_path = os.path.join(
-        settings.out_folder, "delta_report_act%s.csv" % file_suffix)
-    slave_delta_csv_path = os.path.join(settings.out_folder,
-                                        "delta_report_wp%s.csv" % file_suffix)
-    settings.m_fail_path = os.path.join(settings.out_folder,
-                                        "act_fails%s.csv" % file_suffix)
-    settings.s_fail_path = os.path.join(settings.out_folder,
-                                        "wp_fails%s.csv" % file_suffix)
-    # sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
-    # pklPath = os.path.join(pklFolder, "parser_pickle%s.pkl" % file_suffix )
-    # settings.log_path = os.path.join(settings.log_folder, "log_%s.txt" % settings.import_name)
-    # settings.zip_path = os.path.join(settings.log_folder, "zip_%s.zip" % settings.import_name)
+    settings.repd_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
+    settings.w_pres_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
+    settings.master_res_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.master_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.slave_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
     ### PROCESS OTHER CONFIG ###
 
-    assert store_url, "store url must not be blank"
-    # xmlrpc_uri = store_url + 'xmlrpc.php'
-    # json_uri = store_url + 'wp-json/wp/v2'
+    assert settings.store_url, "store url must not be blank"
 
     settings.act_fields = ";".join(ColDataUser.get_act_import_cols())
 
-    # jsonconnect_params = {
-    #     'json_uri': json_uri,
-    #     'wp_user': wp_user,
-    #     'wp_pass': wp_pass
-    # }
-
-    # wcApiParams = {
-    # 'api_key':wc_api_key,
-    # 'api_secret':wc_api_secret,
-    # 'url':store_url
-    # }
-
     wp_api_params = {
-        'api_key': wp_api_key,
-        'api_secret': wp_api_secret,
-        'url': store_url,
-        'wp_user': wp_user,
-        'wp_pass': wp_pass,
-        'callback': wp_callback
+        'api_key': settings.wp_api_key,
+        'api_secret': settings.wp_api_secret,
+        'url': settings.store_url,
+        'wp_user': settings.wp_user,
+        'wp_pass': settings.wp_pass,
+        'callback': settings.wp_callback
     }
 
     act_connect_params = {
@@ -322,20 +197,20 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     act_db_params = {
         'db_x_exe': settings.m_x_cmd,
         'db_i_exe': settings.m_i_cmd,
-        'db_name': m_db_name,
-        'db_host': m_db_host,
-        'db_user': m_db_user,
-        'db_pass': m_db_pass,
+        'db_name': settings.m_db_name,
+        'db_host': settings.m_db_host,
+        'db_user': settings.m_db_user,
+        'db_pass': settings.m_db_pass,
         'fields': settings.act_fields,
     }
-    if settings.since_m:
-        act_db_params['since'] = settings.since_m
+    if 'since_m' in settings:
+        act_db_params['since'] = settings['since_m']
 
     fs_params = {
         'import_name': settings.import_name,
         'remote_export_folder': settings.remote_export_folder,
-        'in_folder': settings.in_folder,
-        'out_folder': settings.out_folder
+        'in_folder': settings.in_folder_full,
+        'out_folder': settings.out_folder_full
     }
 
     #########################################
@@ -344,17 +219,17 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
     print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
 
-    if do_filter:
+    if settings['do_filter']:
         filter_files = {
-            'users': settings.user_file,
-            'emails': settings.email_file,
-            'cards': settings.card_file,
+            'users': settings['user_file'],
+            'emails': settings['email_file'],
+            'cards': settings['card_file'],
         }
         filter_items = {}
         for key, filter_file in filter_files.items():
             if filter_file:
                 try:
-                    with open(os.path.join(settings.in_folder,
+                    with open(os.path.join(settings.in_folder_full,
                                            filter_file)) as filter_file_obj:
                         filter_items[key] = [
                             re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
@@ -365,10 +240,10 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                         "could not open %s file [%s] from %s" % (
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
-        if settings.since_m:
-            filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings.since_m)
-        if settings.since_s:
-            filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings.since_s)
+        if 'since_m' in settings:
+            filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+        if 'since_s' in settings:
+            filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
     else:
         filter_items = None
 
@@ -385,13 +260,13 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         cols=ColDataUser.get_wp_import_cols(),
         defaults=ColDataUser.get_defaults(),
         filter_items=filter_items,
-        limit=settings.limit,
+        limit=settings['download_limit'],
         source=settings.slave_name)
-    if download_slave:
-        settings.ssh_tunnel_forwarder_address = (settings.ssh_host,
-                                                 settings.ssh_port)
-        settings.ssh_tunnel_forwarder_b_address = (settings.remote_bind_host,
-                                                   settings.remote_bind_port)
+    if settings['download_slave']:
+        settings.ssh_tunnel_forwarder_address = (settings['ssh_host'],
+                                                 settings['ssh_port'])
+        settings.ssh_tunnel_forwarder_b_address = (settings['remote_bind_host'],
+                                                   settings['remote_bind_port'])
         for host in [
                 'ssh_tunnel_forwarder_address',
                 'ssh_tunnel_forwarder_bind_address'
@@ -406,18 +281,18 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                     str(exc), host, repr(getattr(settings, host))))
         ssh_tunnel_forwarder_params = {
             'ssh_address_or_host': settings.ssh_tunnel_forwarder_address,
-            'ssh_password': settings.ssh_pass,
-            'ssh_username': settings.ssh_user,
+            'ssh_password': settings['ssh_pass'],
+            'ssh_username': settings['ssh_user'],
             'remote_bind_address': settings.ssh_tunnel_forwarder_b_address,
         }
         py_my_sql_connect_params = {
-            'host': '127.0.0.1',
-            'user': db_user,
-            'password': db_pass,
-            'db': db_name,
-            'charset': db_charset,
+            'host': settings['db_host'],
+            'user': settings['db_user'],
+            'password': settings['db_pass'],
+            'db': settings['db_name'],
+            'charset': settings['db_charset'],
             'use_unicode': True,
-            'tbl_prefix': tbl_prefix,
+            'tbl_prefix': settings['tbl_prefix'],
         }
 
         print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
@@ -426,10 +301,10 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
                                 py_my_sql_connect_params) as client:
             client.analyse_remote(
-                sa_parser, limit=settings.limit, filter_items=filter_items)
+                sa_parser, limit=settings['download_limit'], filter_items=filter_items)
 
             sa_parser.get_obj_list().export_items(
-                os.path.join(settings.in_folder, s_x_filename),
+                os.path.join(settings.in_folder_full, settings.s_x_name),
                 ColDataUser.get_wp_import_col_names())
 
     else:
@@ -446,13 +321,13 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         defaults=ColDataUser.get_defaults(),
         contact_schema='act',
         filter_items=filter_items,
-        limit=settings.limit,
+        limit=settings['download_limit'],
         source=settings.master_name)
 
     print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
         settings)
 
-    if download_master:
+    if settings['download_master']:
         for thing in [
                 'm_x_cmd', 'm_i_cmd', 'remote_export_folder', 'act_fields'
         ]:
@@ -460,7 +335,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
         with UsrSyncClientSshAct(act_connect_params, act_db_params,
                                  fs_params) as master_client:
-            master_client.analyse_remote(ma_parser, limit=settings.limit)
+            master_client.analyse_remote(ma_parser, limit=settings['download_limit'])
     else:
         ma_parser.analyse_file(
             ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
@@ -500,7 +375,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
         index_fn=EmailMatcher.email_index_fn)
 
     def deny_anomalous_match_list(match_list_type, anomalous_match_list):
-        """ add the matchlist to the list of anomalous match lists if it is not empty """
+        """Add the matchlist to the list of anomalous match lists if it is not empty."""
         try:
             assert not anomalous_match_list
         except AssertionError:
@@ -509,14 +384,14 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             anomalous_match_lists[match_list_type] = anomalous_match_list
 
     def deny_anomalous_parselist(parselist_type, anomalous_parselist):
-        """ add the parselist to the list of anomalous parse lists if it is not empty """
+        """Add the parselist to the list of anomalous parse lists if it is not empty."""
         try:
             assert not anomalous_parselist
         except AssertionError:
             # print "could not deny anomalous parse list", parselist_type, exc
             anomalous_parselists[parselist_type] = anomalous_parselist
 
-    if args.do_sync:  # pylint: disable=too-many-nested-blocks
+    if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
         # for every username in slave, check that it exists in master
         # TODO: fix too-many-nested-blocks
 
@@ -692,11 +567,11 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     print DebugUtils.hashify("Write Report")
     print timediff(settings)
 
-    with io.open(settings.rep_path, 'w+', encoding='utf8') as res_file:
+    with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
 
         repd_file = None
-        if args.process_duplicates:
-            repd_file = io.open(repd_path, 'w+', encoding='utf8')
+        if settings['process_duplicates']:
+            repd_file = io.open(settings['repd_path'], 'w+', encoding='utf8')
 
         css = ""
         reporter = HtmlReporter(css=css)
@@ -748,7 +623,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                     length=len(sa_parser.bad_name)))
         if sa_parser.bad_name or sa_parser.bad_address:
             UsrObjList(sa_parser.bad_name.values() + ma_parser.bad_address.
-                       values()).export_items(w_pres_csv_path, csv_colnames)
+                       values()).export_items(settings['w_pres_csv_path'], csv_colnames)
 
         if ma_parser.bad_address:
             sanitizing_group.add_section(
@@ -776,11 +651,11 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
         if ma_parser.bad_name or ma_parser.bad_address:
             UsrObjList(ma_parser.bad_name.values() + ma_parser.bad_address.values())\
-                .export_items(master_res_csv_path, csv_colnames)
+                .export_items(settings['master_res_csv_path'], csv_colnames)
 
         reporter.add_group(sanitizing_group)
 
-        if args.do_sync and (m_delta_updates + s_delta_updates):
+        if settings['do_sync'] and (m_delta_updates + s_delta_updates):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -823,14 +698,14 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             reporter.add_group(delta_group)
             if m_delta_list:
                 m_delta_list.export_items(
-                    master_delta_csv_path,
+                    settings['master_delta_csv_path'],
                     ColDataUser.get_col_names(all_delta_cols))
             if s_delta_list:
                 s_delta_list.export_items(
-                    slave_delta_csv_path,
+                    settings['slave_delta_csv_path'],
                     ColDataUser.get_col_names(all_delta_cols))
 
-        report_matching = args.do_sync
+        report_matching = settings['do_sync']
         if report_matching:
 
             matching_group = HtmlReporter.Group('matching', 'Matching Results')
@@ -912,7 +787,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
             reporter.add_group(matching_group)
 
-        report_sync = args.do_sync
+        report_sync = settings['do_sync']
         if report_sync:
             syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
 
@@ -949,7 +824,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
 
             reporter.add_group(syncing_group)
 
-        report_duplicates = args.process_duplicates
+        report_duplicates = settings['process_duplicates']
         if report_duplicates:
 
             dup_css = """
@@ -972,16 +847,10 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             # they should be deleted.
 
             def fn_obj_source_is(target_source):
-                """
-                returns a function that checks if the source of the object is equal
-                to the given target source
-                """
+                """Return function that checks if object source equals target source."""
 
                 def obj_source_is(object_data):
-                    """
-                    checks if the source of the object is equal to the given
-                    target source
-                    """
+                    """Check if the object source equals target source."""
 
                     obj_source = object_data.get('source')
                     if obj_source and target_source == obj_source:
@@ -990,18 +859,12 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                 return obj_source_is
 
             def fn_user_older_than_wp(wp_time):
-                """
-                return a function that checks if the user is older than a date given
-                in wp_time format
-                """
+                """Return function ot check user is older than wp_time."""
                 wp_time_obj = TimeUtils.wp_strp_mktime(wp_time)
                 assert wp_time_obj, "should be valid time struct: %s" % wp_time
 
                 def user_older_than(user_data):
-                    """
-                    determine if user is older than the time time specified in
-                    fn_user_older_than_wp
-                    """
+                    """Determine if user is older than wp_time."""
                     if fn_obj_source_is(settings.master_name)(user_data):
                         assert hasattr(user_data, 'act_last_transaction'), \
                             "%s user should have act_last_transaction attr: %s, %s, source: %s" % (
@@ -1043,12 +906,12 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                         objects, "address", weighting=0.1)
 
             for object_data in ma_parser.objects.values():
-                if fn_user_older_than_wp(old_threshold)(object_data):
+                if fn_user_older_than_wp(settings['old_threshold'])(object_data):
                     details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
                     duplicates.add_conflictor(
                         object_data, "last_transaction_old", 0.5, details)
-                elif fn_user_older_than_wp(oldish_threshold)(object_data):
+                elif fn_user_older_than_wp(settings['oldish_threshold'])(object_data):
                     details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
                     duplicates.add_conflictor(
@@ -1060,8 +923,8 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             ]
 
             highlight_rules_old = [
-                ('highlight_oldish', fn_user_older_than_wp(oldish_threshold)),
-                ('highlight_old', fn_user_older_than_wp(old_threshold))
+                ('highlight_oldish', fn_user_older_than_wp(settings['oldish_threshold'])),
+                ('highlight_old', fn_user_older_than_wp(settings['old_threshold']))
             ]
 
             highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
@@ -1174,7 +1037,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     #########################################
 
     all_updates = static_updates
-    if args.do_problematic:
+    if settings.do_problematic:
         all_updates += problematic_updates
 
     print DebugUtils.hashify("Update databases (%d)" % len(all_updates))
@@ -1186,7 +1049,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
     if all_updates:
         Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
-        if args.ask_before_update:
+        if settings['ask_before_update']:
             try:
                 input(
                     "Please read reports and press Enter to continue or ctrl-c to stop..."
@@ -1209,7 +1072,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                 # if update.wpid == '1':
                 #     print repr(update.wpid)
                 #     continue
-                if update_master and update.m_updated:
+                if settings['update_master'] and update.m_updated:
                     try:
                         update.update_master(master_client)
                     except Exception as exc:
@@ -1237,7 +1100,7 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
                              traceback.format_exc()))
 
                         # continue
-                if update_slave and update.s_updated:
+                if settings['update_slave'] and update.s_updated:
                     try:
                         update.update_slave(slave_client)
                     except Exception as exc:
@@ -1281,54 +1144,40 @@ def main(settings, override_args=None):  # pylint: disable=too-many-branches,too
             dictwriter.writerows(failures)
             print "WROTE FILE: ", file_path
 
-    output_failures(master_failures, settings.m_fail_path)
-    output_failures(slave_failures, settings.s_fail_path)
+    output_failures(master_failures, settings.m_fail_path_full)
+    output_failures(slave_failures, settings.s_fail_path_full)
 
     # Registrar.register_error('testing errors')
 
 
-def catch_main(settings=None, override_args=None):
+def catch_main(override_args=None):
     """
     Run the main function within a try statement and attempt to analyse failure.
     """
 
-    if settings is None:
-        settings = argparse.Namespace()
+    settings = SettingsNamespaceUser()
 
-    settings.in_folder = "../input/"
-    settings.out_folder = "../output/"
-    settings.log_folder = "../logs/"
-    settings.src_folder = MODULE_LOCATION
-    settings.pkl_folder = "pickles/"
-
-    os.chdir(MODULE_PATH)
-
-    settings.import_name = TimeUtils.get_ms_timestamp()
-    settings.start_time = time.time()
-
-    settings.test_mode = True
-    settings.rep_path = ''
-    settings.yaml_path = os.path.join("merger_config.yaml")
-    settings.m_fail_path = os.path.join(settings.out_folder, "act_fails.csv")
-    settings.s_fail_path = os.path.join(settings.out_folder, "wp_fails.csv")
-    settings.log_path = os.path.join(settings.log_folder,
-                                     "log_%s.txt" % settings.import_name)
-    settings.zip_path = os.path.join(settings.log_folder,
-                                     "zip_%s.zip" % settings.import_name)
-    settings.user_file = False
-    settings.card_file = False
-    settings.email_file = False
-    settings.since_m = False
-    settings.since_s = False
+    status = 0
 
     try:
         main(settings=settings, override_args=override_args)
     except SystemExit:
         exit()
+    except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
+        status = 69  # service unavailable
+        Registrar.register_error(traceback.format_exc())
+    except IOError:
+        status = 74
+        print "cwd: %s" % os.getcwd()
+        Registrar.register_error(traceback.format_exc())
+    except UserWarning:
+        status = 65
+        Registrar.register_error(traceback.format_exc())
     except:
+        status = 1
         Registrar.register_error(traceback.format_exc())
 
-    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
+    with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
@@ -1343,10 +1192,10 @@ def catch_main(settings=None, override_args=None):
     #########################################
 
     files_to_zip = [
-        settings.m_fail_path, settings.s_fail_path, settings.rep_path
+        settings.m_fail_path_full, settings.s_fail_path_full, settings.rep_path_full
     ]
 
-    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
+    with zipfile.ZipFile(settings.zip_path_full, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)
@@ -1354,7 +1203,7 @@ def catch_main(settings=None, override_args=None):
             except Exception as exc:
                 if exc:
                     pass
-        Registrar.register_message('wrote file %s' % settings.zip_path)
+        Registrar.register_message('wrote file %s' % settings.zip_path_full)
 
 
 if __name__ == '__main__':

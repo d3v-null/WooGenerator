@@ -3,6 +3,7 @@ Provide configuration utilities.
 """
 import os
 import ast
+import time
 # import sys
 
 import argparse
@@ -33,7 +34,7 @@ DEFAULT_MASTER_NAME = 'master'
 DEFAULT_SLAVE_NAME = 'slave'
 
 class SettingsNamespaceProto(argparse.Namespace):
-    """ Provide namespace for settings in first stage """
+    """ Provide namespace for settings in first stage, supports getitem """
 
     def __init__(self, *args, **kwargs):
         # This getattr stuff allows the attributes to be set in a subclass
@@ -47,7 +48,24 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.import_name = getattr(self, 'import_name', TimeUtils.get_ms_timestamp())
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
+        self.start_time = getattr(self, 'start_time', time.time())
+
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
 
     def join_work_path(self, path):
@@ -107,6 +125,42 @@ class SettingsNamespaceProto(argparse.Namespace):
             response = os.path.join(self.log_folder_full, response)
         return response
 
+    @property
+    def file_prefix(self):
+        return ""
+
+    @property
+    def file_suffix(self):
+        response = ""
+        if self.testmode:
+            response += "_test"
+        return response
+
+    @property
+    def rep_name(self):
+        return '%ssync_report%s.html' % (self.file_prefix, self.file_suffix)
+
+    @property
+    def rep_path_full(self):
+        response = self.rep_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
+    @property
+    def m_fail_path_full(self):
+        response = "%s_fails.csv" % self.master_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
+    @property
+    def s_fail_path_full(self):
+        response = "%s_fails.csv" % self.slave_name
+        if self.out_folder_full:
+            response = os.path.join(self.out_folder_full, response)
+        return response
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
         self.local_live_config = getattr(self, 'local_live_config',
@@ -137,37 +191,16 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             return (self.thumbsize_x, self.thumbsize_y)
 
     @property
-    def out_suffix(self):
+    def file_prefix(self):
+        return "prod_"
+
+    @property
+    def file_suffix(self):
         response = ''
         if self.schema:
             response = self.schema
         if self.variant:
             response = "-".join([response, self.variant])
-        return response
-
-    @property
-    def rep_name(self):
-        return 'prod_sync_report%s.html' % self.out_suffix
-
-    @property
-    def rep_path_full(self):
-        response = self.rep_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
-        return response
-
-    @property
-    def m_fail_path_full(self):
-        response = "%s_fails.csv" % self.master_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
-        return response
-
-    @property
-    def s_fail_path_full(self):
-        response = "%s_fails.csv" % self.slave_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
         return response
 
     @property
@@ -179,11 +212,42 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response.append(self.img_raw_extra_folder)
         return response
 
+
 class SettingsNamespaceUser(SettingsNamespaceProto):
     def __init__(self, *args, **kwargs):
-        self.local_live_config = DEFAULT_LOCAL_USER_PATH
-        self.local_test_config = DEFAULT_LOCAL_USER_TEST_PATH
+        self.local_live_config = \
+            getattr(self, 'local_live_config', DEFAULT_LOCAL_USER_PATH)
+        self.local_test_config = \
+            getattr(self, 'local_test_config', DEFAULT_LOCAL_USER_TEST_PATH)
+        self.do_filter = getattr(self, 'do_filter', None)
+        self.do_post = getattr(self, 'do_post', None)
         super(SettingsNamespaceUser, self).__init__(*args, **kwargs)
+
+    @property
+    def file_prefix(self):
+        return "user_"
+
+    @property
+    def file_suffix(self):
+        response = ""
+        if self.testmode:
+            response += "_test"
+        if self.do_filter:
+            response += "_filter"
+        return response
+
+    @property
+    def m_x_name(self):
+        """ Name used for master export. """
+        return "%s_x%s_%s.csv" % (self.master_name, self.file_suffix, self.import_name)
+
+    @property
+    def s_x_name(self):
+        """ Name used for slave export. """
+        return "%s_x%s_%s.csv" % (self.slave_name, self.file_suffix, self.import_name)
+
+
+
 
 
 class ArgumentParserProto(configargparse.ArgumentParser):
@@ -327,6 +391,8 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_report_options(reporting_group)
         update_group = self.add_argument_group('Update options')
         self.add_update_options(update_group)
+        client_group = self.add_argument_group('Client options')
+        self.add_client_options(client_group)
         self.add_other_options()
         self.add_debug_options()
 
@@ -388,10 +454,23 @@ class ArgumentParserCommon(ArgumentParserProto):
             choices=['sync', 'merge'],
             help=''
         )
-
         processing_group.add_argument(
             '--last-sync',
             help="When the last sync was run ('YYYY-MM-DD HH:MM:SS')"
+        )
+        processing_group.add_argument(
+            '--wp-srv-offset',
+            help="the offset in seconds of the wp server",
+            type=int,
+            default=0
+        )
+
+
+        self.add_suppressed_argument(
+            '--old_threshold'
+        )
+        self.add_suppressed_argument(
+            '--oldish_threshold'
         )
 
 
@@ -481,6 +560,9 @@ class ArgumentParserCommon(ArgumentParserProto):
             default=False
         )
 
+    def add_client_options(self, client_group):
+        pass
+
     def add_other_options(self):
         self.add_suppressed_argument('--master-name')
         self.add_suppressed_argument('--slave-name')
@@ -540,46 +622,11 @@ class ArgumentParserProd(ArgumentParserCommon):
             '--variant',
             help='what variant of schema to process the files')
 
-        self.add_suppressed_argument('--gdrive-scopes')
-        self.add_suppressed_argument('--gdrive-client-secret-file')
-        self.add_suppressed_argument('--gdrive-app-name')
-        self.add_suppressed_argument('--gdrive-oauth-client-id')
-        self.add_suppressed_argument('--gdrive-oauth-client-secret')
-        self.add_suppressed_argument('--gdrive-credentials-dir')
-        self.add_suppressed_argument('--gdrive-credentials-file')
-        self.add_suppressed_argument('--gen-fid')
-        self.add_suppressed_argument('--gen-gid')
-        self.add_suppressed_argument('--dprc-gid')
-        self.add_suppressed_argument('--dprp-gid')
-        self.add_suppressed_argument('--spec-gid')
-        self.add_suppressed_argument('--us-gid')
-        self.add_suppressed_argument('--xs-gid')
-        self.add_suppressed_argument('--wc-api-key')
-        self.add_suppressed_argument('--wc-api-secret')
-        self.add_suppressed_argument('--store-url')
-        self.add_suppressed_argument('--ssh-user')
-        self.add_suppressed_argument('--ssh-pass')
-        self.add_suppressed_argument('--ssh-host')
-        self.add_suppressed_argument('--ssh-port')
-        self.add_suppressed_argument('--remote-bind-host')
-        self.add_suppressed_argument('--remote-bind-port')
-        self.add_suppressed_argument('--db-user')
-        self.add_suppressed_argument('--db-pass')
-        self.add_suppressed_argument('--db-name')
-        self.add_suppressed_argument('--tbl-prefix')
-
     def add_processing_options(self, processing_group):
         super(ArgumentParserProd, self).add_processing_options(processing_group)
 
         self.add_suppressed_argument('--item-depth', type=int)
         self.add_suppressed_argument('--taxo-depth', type=int)
-
-        self.add_argument(
-            '--wp-srv-offset',
-            help="the offset in seconds of the wp server",
-            type=int,
-            default=0
-        )
 
         group = processing_group.add_mutually_exclusive_group()
         group.add_argument(
@@ -730,6 +777,36 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--myo-schemas', nargs='+')
         self.add_suppressed_argument('--woo-schemas', nargs='+')
 
+    def add_client_options(self, client_group):
+        super(ArgumentParserProd, self).add_client_options(client_group)
+        self.add_suppressed_argument('--gdrive-scopes')
+        self.add_suppressed_argument('--gdrive-client-secret-file')
+        self.add_suppressed_argument('--gdrive-app-name')
+        self.add_suppressed_argument('--gdrive-oauth-client-id')
+        self.add_suppressed_argument('--gdrive-oauth-client-secret')
+        self.add_suppressed_argument('--gdrive-credentials-dir')
+        self.add_suppressed_argument('--gdrive-credentials-file')
+        self.add_suppressed_argument('--gen-fid')
+        self.add_suppressed_argument('--gen-gid')
+        self.add_suppressed_argument('--dprc-gid')
+        self.add_suppressed_argument('--dprp-gid')
+        self.add_suppressed_argument('--spec-gid')
+        self.add_suppressed_argument('--us-gid')
+        self.add_suppressed_argument('--xs-gid')
+        self.add_suppressed_argument('--wc-api-key')
+        self.add_suppressed_argument('--wc-api-secret')
+        self.add_suppressed_argument('--store-url')
+        self.add_suppressed_argument('--ssh-user')
+        self.add_suppressed_argument('--ssh-pass')
+        self.add_suppressed_argument('--ssh-host')
+        self.add_suppressed_argument('--ssh-port')
+        self.add_suppressed_argument('--remote-bind-host')
+        self.add_suppressed_argument('--remote-bind-port')
+        self.add_suppressed_argument('--db-user')
+        self.add_suppressed_argument('--db-pass')
+        self.add_suppressed_argument('--db-name')
+        self.add_suppressed_argument('--tbl-prefix')
+
 class ArgumentParserUser(ArgumentParserCommon):
     """ Provide ArgumentParser class for syncing contacts. """
 
@@ -742,6 +819,30 @@ class ArgumentParserUser(ArgumentParserCommon):
 
     def add_download_options(self, download_group):
         super(ArgumentParserUser, self).add_download_options(download_group)
+
+        filter_group = self.add_argument_group("Filter Options")
+        group = filter_group.add_mutually_exclusive_group()
+        group.add_argument(
+            '--do-filter',
+            help='filter the databases',
+            action="store_true")
+        group.add_argument(
+            '--skip-filter',
+            help='don\'t filter the databases',
+            action="store_false",
+            dest='do_filter')
+        filter_group.add_argument(
+            '--card-file',
+            help='file containing list of card IDs to filer on')
+        filter_group.add_argument(
+            '--email-file',
+            help='file containing list of email IDs to filer on')
+        filter_group.add_argument(
+            '--since-m',
+            help='filter out master records edited before this date')
+        filter_group.add_argument(
+            '--since-s',
+            help='filter out slave records edited before this date')
 
     def add_processing_options(self, processing_group):
         super(ArgumentParserUser, self).add_processing_options(processing_group)
@@ -774,24 +875,43 @@ class ArgumentParserUser(ArgumentParserCommon):
             action="store_false",
             dest='update_master')
 
-    def add_other_options(self):
-        filter_group = self.add_argument_group("Filter Options")
-        group = filter_group.add_mutually_exclusive_group()
-        group.add_argument(
-            '--do-filter',
-            help='filter the databases',
-            action="store_true")
-        group.add_argument(
-            '--skip-filter',
-            help='don\'t filter the databases',
-            action="store_false",
-            dest='do_filter')
-        filter_group.add_argument(
-            '--limit', type=int, help='global limit of objects to process')
-        filter_group.add_argument(
-            '--card-file',
-            help='list of cards to filter on')
+    def add_client_options(self, client_group):
+        super(ArgumentParserUser, self).add_client_options(client_group)
+        self.add_suppressed_argument('--wp-user', type=str)
+        self.add_suppressed_argument('--wp-pass', type=str)
+        self.add_suppressed_argument('--wp-api-key', type=str)
+        self.add_suppressed_argument('--wp-api-secret', type=str)
+        self.add_suppressed_argument('--wc-api-key', type=str)
+        self.add_suppressed_argument('--wc-api-secret', type=str)
+        self.add_suppressed_argument('--store-url', type=str)
 
-        self.add_argument('--m-ssh-host', help='location of master ssh server')
-        self.add_argument(
-            '--m-ssh-port', type=int, help='location of master ssh port')
+        self.add_suppressed_argument('--ssh-user', type=str)
+        self.add_suppressed_argument('--ssh-pass', type=str)
+        self.add_suppressed_argument('--ssh-host', type=str)
+        self.add_suppressed_argument('--remote-bind-port', type=int)
+        self.add_suppressed_argument('--db-user', type=str)
+        self.add_suppressed_argument('--db-pass', type=str)
+        self.add_suppressed_argument('--db-name', type=str)
+        self.add_suppressed_argument('--db-charset', type=str)
+        self.add_suppressed_argument('--tbl-prefix', type=str)
+
+        self.add_suppressed_argument('--m-ssh-user', type=str)
+        self.add_suppressed_argument('--m-ssh-pass', type=str)
+        self.add_suppressed_argument('--m-ssh-host', help='location of master ssh server')
+        self.add_suppressed_argument('--m-ssh-port', type=int, help='master ssh port')
+        self.add_suppressed_argument('--remote-export-folder', type=str)
+        self.add_suppressed_argument('--m-x-cmd', type=str)
+        self.add_suppressed_argument('--m-i-cmd', type=str)
+        self.add_suppressed_argument('--m-db-user', type=str)
+        self.add_suppressed_argument('--m-db-pass', type=str)
+        self.add_suppressed_argument('--m-db-name', type=str)
+        self.add_suppressed_argument('--m-db-host', type=str)
+
+        self.add_suppressed_argument('--smtp-host', type=str)
+        self.add_suppressed_argument('--smtp-port', type=int)
+        self.add_suppressed_argument('--smtp-user', type=str)
+        self.add_suppressed_argument('--smtp-pass', type=str)
+
+
+    def add_other_options(self):
+        super(ArgumentParserUser, self).add_other_options()

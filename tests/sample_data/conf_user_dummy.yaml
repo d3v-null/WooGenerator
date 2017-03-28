@@ -1,0 +1,10 @@
+wp-api-key: LCLwTOfxoXGh
+wp-api-secret: k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq
+wp-user: wordpress
+wp-pass: wordpress
+wp-callback: http://127.0.0.1:8888/wordpress
+
+wc-api-key: ck_681c2be361e415519dce4b65ee981682cda78bc6
+wc-api-secret: cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877
+# api_version: v3
+store-url: http://ich.local:8888/wordpress/

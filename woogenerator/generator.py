@@ -19,7 +19,6 @@ from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
 
-import yaml
 import argparse
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
@@ -27,7 +26,7 @@ from PIL import Image
 from tabulate import tabulate
 from exitstatus import ExitStatus
 
-from __init__ import MODULE_LOCATION, MODULE_PATH
+import __init__
 from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo
 from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
@@ -50,9 +49,7 @@ from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
 
 
 def timediff(settings):
-    """
-    return the difference in time since the start time according to settings
-    """
+    """Return time elapsed since start."""
     return time.time() - settings.start_time
 
 
@@ -75,7 +72,7 @@ def check_warnings():
 
 def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-many-statements
     """
-    Creates and populates the various parsers
+    Create and populates the various parsers.
     """
     # TODO: fix too-many-branches,too-many-statements
 
@@ -114,12 +111,12 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
 
-    if settings.download_master:
+    if settings['download_master']:
         if Registrar.DEBUG_GDRIVE:
             Registrar.register_message("GDrive params: %s" %
-                                       settings.g_drive_params)
+                                       settings['g_drive_params'])
         client_class = SyncClientGDrive
-        client_args = [settings.g_drive_params]
+        client_args = [settings['g_drive_params']]
     else:
         client_class = SyncClientLocal
         client_args = []
@@ -161,7 +158,7 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
 
                 settings.product_parser_args[
                     'current_special_groups'] = current_special_groups
-                if settings.do_categories:
+                if settings['do_categories']:
                     if current_special_groups:
                         settings.product_parser_args[
                             'add_special_categories'] = settings.add_special_categories
@@ -176,15 +173,13 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
             parsers.product,
             settings.gen_path,
             gid=settings.gen_gid,
-            limit=settings.download_limit)
+            limit=settings['download_limit'])
 
         return parsers
 
 
 def process_images(settings, parsers):  # pylint: disable=too-many-statements,too-many-branches,too-many-locals
-    """
-    Process the images information in from the parsers
-    """
+    """Process the images information in from the parsers."""
     # TODO: fix too-many-statements,too-many-branches,too-many-statements
 
     Registrar.register_progress("processing images")
@@ -194,7 +189,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
                                    settings.img_raw_folders)
 
     def invalid_image(img_name, error):
-        """ Register error globally and attribute to image """
+        """Register error globally and attribute to image."""
         if settings.require_images:
             Registrar.register_error(error, img_name)
         else:
@@ -208,7 +203,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
 
     def get_raw_image(img_name):
         """
-        finds the path of the image in the raw image folders
+        Find the path of the image in the raw image folders.
 
         Args:
             img_name (str):
@@ -351,7 +346,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
 
 
 def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-    """ Export key information from the parsers to spreadsheets """
+    """Export key information from the parsers to spreadsheets."""
     # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
     Registrar.register_progress("Exporting info to spreadsheets")
@@ -364,7 +359,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
     elif settings.schema_is_woo:
         product_cols = ColDataWoo.get_product_cols()
 
-        for col in settings.exclude_cols:
+        for col in settings['exclude_cols']:
             if col in product_cols:
                 del product_cols[col]
 
@@ -446,7 +441,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
 
 def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-    """ The main function for generator """
+    """Main function for generator."""
     # TODO: too-many-locals,too-many-branches,too-many-statements
 
     if not settings:
@@ -515,9 +510,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_MESSAGE = False
 
-    settings.add_special_categories = settings.do_specials and settings.do_categories
+    settings.add_special_categories = settings.do_specials and settings['do_categories']
 
-    if settings.auto_create_new:
+    if settings['auto_create_new']:
         exc = UserWarning("auto-create not fully implemented yet")
         Registrar.register_warning(exc)
     if settings.auto_delete_old:
@@ -574,42 +569,42 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings.myo_path = os.path.join(settings.out_folder_full,
                                      "myob-" + suffix + ".csv")
     # bunPath = os.path.join(settings.out_folder_full , "bundles-"+suffix+".csv")
-    settings.rep_web_path = os.path.join(settings.web_folder, settings.rep_name)
-    settings.rep_web_link = urlparse.urljoin(settings.web_address, settings.rep_name)
+    settings['rep_web_path'] = os.path.join(settings.web_folder, settings.rep_name)
+    settings['rep_web_link'] = urlparse.urljoin(settings.web_address, settings.rep_name)
 
-    settings.slave_delta_csv_path = os.path.join(
+    settings['slave_delta_csv_path'] = os.path.join(
         settings.out_folder_full, "delta_report_wp%s.csv" % suffix)
 
     settings.img_dst = os.path.join(settings.img_cmp_folder,
                                     "images-" + settings.schema)
 
     if settings.do_specials:
-        if settings.current_special:
-            CsvParseWoo.current_special = settings.current_special
+        if settings['current_special']:
+            CsvParseWoo.current_special = settings['current_special']
         CsvParseWoo.specialsCategory = "Specials"
-        CsvParseWoo.add_special_categories = settings.add_special_categories
+        CsvParseWoo.add_special_categories = settings['add_special_categories']
 
     CsvParseWoo.do_images = settings.do_images
     CsvParseWoo.do_dyns = settings.do_dyns
     CsvParseWoo.do_specials = settings.do_specials
 
-    # if not settings.exclude_cols:
-    #     settings.exclude_cols = []
+    if not settings.get('exclude_cols'):
+        settings['exclude_cols'] = []
 
     if not settings.do_images:
-        settings.exclude_cols.extend(['Images', 'imgsum'])
+        settings['exclude_cols'].extend(['Images', 'imgsum'])
 
-    if not settings.do_categories:
-        settings.exclude_cols.extend(['catsum', 'catlist'])
+    if not settings['do_categories']:
+        settings['exclude_cols'].extend(['catsum', 'catlist'])
 
     if not settings.do_dyns:
-        settings.exclude_cols.extend([
+        settings['exclude_cols'].extend([
             'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
             'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
         ])
 
     if not settings.do_specials:
-        settings.exclude_cols.extend([
+        settings['exclude_cols'].extend([
             'SCHEDULE', 'sale_price', 'sale_price_dates_from',
             'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
             'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
@@ -620,7 +615,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Create Product Parser object
     ########################################
 
-    settings.g_drive_params = {
+    settings['g_drive_params'] = {
         'scopes': settings.gdrive_scopes,
         'client_secret_file': settings.gdrive_client_secret_file,
         'app_name': settings.gdrive_app_name,
@@ -631,10 +626,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'gen_fid': settings.gen_fid,
     }
 
-    if not settings.download_master:
-        settings.g_drive_params['skip_download'] = True
+    if not settings['download_master']:
+        settings['g_drive_params']['skip_download'] = True
 
-    settings.wc_api_params = {
+    settings['wc_api_params'] = {
         'api_key': settings.wc_api_key,
         'api_secret': settings.wc_api_secret,
         'url': settings.store_url,
@@ -643,7 +638,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'limit': settings.slave_limit
     }
 
-    settings.api_product_parser_args = {
+    settings['api_product_parser_args'] = {
         'import_name': settings.import_name,
         'item_depth': settings.item_depth,
         'taxo_depth': settings.taxo_depth,
@@ -687,20 +682,20 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Attempt download API data
     #########################################
 
-    if settings.download_slave:
+    if settings['download_slave']:
 
         api_product_parser = CsvParseWooApi(
-            **settings.api_product_parser_args)
+            **settings['api_product_parser_args'])
 
-        with ProdSyncClientWC(settings.wc_api_params) as client:
+        with ProdSyncClientWC(settings['wc_api_params']) as client:
             # try:
-            if settings.do_categories:
+            if settings['do_categories']:
                 client.analyse_remote_categories(api_product_parser)
 
             Registrar.register_progress("analysing WC API data")
 
             client.analyse_remote(
-                api_product_parser, limit=settings.download_limit)
+                api_product_parser, limit=settings['download_limit'])
 
         # print api_product_parser.categories
     else:
@@ -726,7 +721,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     # product_index_fn = (lambda x: x.codesum)
     def product_index_fn(product):
-        """ return the codesum of the product """
+        """Return the codesum of the product."""
         return product.codesum
 
     global_product_matches = MatchList(index_fn=product_index_fn)
@@ -737,7 +732,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     slaveless_variation_matches = MatchList(index_fn=product_index_fn)
 
     def category_index_fn(category):
-        """ return the title of the category """
+        """Return the title of the category."""
         return category.title
 
     # category_index_fn = (lambda x: x.title)
@@ -747,9 +742,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     delete_categories = OrderedDict()
     join_categories = OrderedDict()
 
-    if settings.do_sync:  # pylint: disable=too-many-nested-blocks
+    if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
         # TODO: fix too-many-nested-blocks
-        if settings.do_categories:
+        if settings['do_categories']:
             if Registrar.DEBUG_CATS:
                 Registrar.register_message(
                     "matching %d master categories with %d slave categories" %
@@ -855,13 +850,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 Registrar.register_message("NEW CATEGORIES: %d" %
                                            (len(slaveless_category_matches)))
 
-            if settings.auto_create_new:
+            if settings['auto_create_new']:
                 # create categories that do not yet exist on slave
 
                 if Registrar.DEBUG_CATS:
                     Registrar.DEBUG_API = True
 
-                with CatSyncClientWC(settings.wc_api_params) as client:
+                with CatSyncClientWC(settings['wc_api_params']) as client:
                     if Registrar.DEBUG_CATS:
                         Registrar.register_message("created cat client")
                     new_categories = [
@@ -887,7 +882,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         m_api_data['name'] = category.woo_cat_name
                         # print "uploading category: %s" % m_api_data
                         # pprint(m_api_data)
-                        if settings.update_slave:
+                        if settings['update_slave']:
                             response = client.create_item(m_api_data)
                             # print response
                             # print response.json()
@@ -951,7 +946,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("sync_cols: %s" % repr(sync_cols))
 
-        for col in settings.exclude_cols:
+        for col in settings['exclude_cols']:
             if col in sync_cols:
                 del sync_cols[col]
 
@@ -979,7 +974,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             # print sync_update.tabulate()
 
-            if settings.do_categories:
+            if settings['do_categories']:
                 category_matcher.clear()
                 category_matcher.process_registers(s_object.categories,
                                                    m_object.categories)
@@ -1082,7 +1077,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if sync_update.s_updated:
                 insort(slave_product_updates, sync_update)
 
-        if settings.do_variations:
+        if settings['do_variations']:
 
             variation_matcher = VariationMatcher()
             variation_matcher.process_registers(api_product_parser.variations,
@@ -1167,7 +1162,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                 # TODO: figure out which attribute terms to delete
 
-        if settings.auto_create_new:
+        if settings['auto_create_new']:
             for new_prod_count, new_prod_match in enumerate(
                     product_matcher.slaveless_matches):
                 m_object = new_prod_match.m_object
@@ -1209,7 +1204,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         # unicode_colnames = map(SanitationUtils.coerce_unicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
-        if settings.do_sync and (s_delta_updates):
+        if settings['do_sync'] and (s_delta_updates):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -1242,11 +1237,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             if s_delta_list:
                 s_delta_list.export_items(
-                    settings.slave_delta_csv_path,
+                    settings['slave_delta_csv_path'],
                     ColDataWoo.get_col_names(all_delta_cols))
 
         #
-        report_matching = settings.do_sync
+        report_matching = settings['do_sync']
         if report_matching:
 
             matching_group = HtmlReporter.Group('product_matching',
@@ -1299,7 +1294,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if matching_group.sections:
                 reporter.add_group(matching_group)
 
-            if settings.do_categories:
+            if settings['do_categories']:
                 matching_group = HtmlReporter.Group(
                     'category_matching', 'Category Matching Results')
                 if global_category_matches:
@@ -1351,7 +1346,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 if matching_group.sections:
                     reporter.add_group(matching_group)
 
-            if settings.do_variations:
+            if settings['do_variations']:
                 matching_group = HtmlReporter.Group(
                     'variation_matching', 'Variation Matching Results')
                 if global_variation_matches:
@@ -1403,7 +1398,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 if matching_group.sections:
                     reporter.add_group(matching_group)
 
-        report_sync = settings.do_sync
+        report_sync = settings['do_sync']
         if report_sync:
             syncing_group = HtmlReporter.Group('prod_sync',
                                                'Product Syncing Results')
@@ -1431,7 +1426,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             reporter.add_group(syncing_group)
 
-            if settings.do_variations:
+            if settings['do_variations']:
                 syncing_group = HtmlReporter.Group('variation_sync',
                                                    'Variation Syncing Results')
 
@@ -1459,10 +1454,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                 reporter.add_group(syncing_group)
 
-        report_cats = settings.do_sync and settings.do_categories
+        report_cats = settings['do_sync'] and settings['do_categories']
         if report_cats:
-            # "reporting cats. settings.do_sync: %s, do_categories: %s" % (
-            #     repr(settings.do_sync), repr(settings.do_categories))
+            # "reporting cats. settings['do_sync']: %s, do_categories: %s" % (
+            #     repr(settings['do_sync']), repr(settings['do_categories']))
             syncing_group = HtmlReporter.Group('cats',
                                                'Category Syncing Results')
 
@@ -1571,15 +1566,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     #########################################
 
     all_product_updates = slave_product_updates
-    if settings.do_variations:
+    if settings['do_variations']:
         all_product_updates += slave_variation_updates
     if settings.do_problematic:
         all_product_updates += problematic_product_updates
-        if settings.do_variations:
+        if settings['do_variations']:
             all_product_updates += problematic_variation_updates
 
     # don't perform updates if limit was set
-    if settings.download_limit:
+    if settings['download_limit']:
         all_product_updates = []
 
     slave_failures = []
@@ -1587,7 +1582,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         Registrar.register_progress("UPDATING %d RECORDS" %
                                     len(all_product_updates))
 
-        if settings.ask_before_update:
+        if settings['ask_before_update']:
             input(
                 "Please read reports and press Enter to continue or ctrl-c to stop..."
             )
@@ -1595,12 +1590,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_product_updates))
 
-        with ProdSyncClientWC(settings.wc_api_params) as slave_client:
+        with ProdSyncClientWC(settings['wc_api_params']) as slave_client:
             for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)
 
-                if settings.update_slave and update.s_updated:
+                if settings['update_slave'] and update.s_updated:
                     # print "attempting update to %s " % str(update)
 
                     try:
@@ -1630,23 +1625,21 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     Registrar.register_progress("Displaying reports")
 
     if settings.show_report:
-        if settings.rep_web_path:
-            shutil.copyfile(settings.rep_path_full, settings.rep_web_path)
-            if settings.web_browser:
-                os.environ['BROWSER'] = settings.web_browser
+        if settings['rep_web_path']:
+            shutil.copyfile(settings.rep_path_full, settings['rep_web_path'])
+            if settings['web_browser']:
+                os.environ['BROWSER'] = settings['web_browser']
                 # print "set browser environ to %s" % repr(web_browser)
             # print "moved file from %s to %s" % (settings.rep_path_full, repWebPath)
 
-            webbrowser.open(settings.rep_web_link)
+            webbrowser.open(settings['rep_web_link'])
     else:
-        print "open this link to view report %s" % settings.rep_web_link
+        print "open this link to view report %s" % settings['rep_web_link']
 
 
 def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-many-branches
     # TODO: fix too-many-statements,too-many-branches
-    """
-    Run the main function within a try statement and attempt to analyse failure
-    """
+    """Run the main function within a try statement and attempt to analyse failure."""
 
     settings = SettingsNamespaceProd()
 
