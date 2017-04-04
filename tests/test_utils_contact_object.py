@@ -3,8 +3,9 @@ import unittest
 from unittest import TestCase, main, skip
 
 from context import woogenerator
-from woogenerator.contact_objects import FieldGroup, SocialMediaFields, ContactAddress, ContactName
-
+from woogenerator.contact_objects import (FieldGroup, SocialMediaFields,
+                                          ContactAddress, ContactName,
+                                          ContactPhones)
 
 class testFieldGroups(TestCase):
 
@@ -602,6 +603,16 @@ class testContactName(testFieldGroups):
         print name.__deepcopy__()
 
 
+class testContactPhones(testFieldGroups):
+    def test_phones_equality(self):
+        phones_1 = ContactPhones(
+            mob_number='0416160912'
+        )
+        phones_2 = ContactPhones(
+            tel_number='0416160912'
+        )
+        self.assertEqual(phones_1, phones_2)
+
 class testSocialMediaGroup(testFieldGroups):
 
     def test_print(self):
@@ -620,8 +631,8 @@ class testSocialMediaGroup(testFieldGroups):
         self.assertEqual(sm['Instagram Username'], '@insta')
 
 if __name__ == '__main__':
-    main()
+    # main()
 
-    # testSuite = unittest.TestSuite()
-    # testSuite.addTest(testSocialMediaGroup('test_print'))
-    # unittest.TextTestRunner().run(testSuite)
+    testSuite = unittest.TestSuite()
+    testSuite.addTest(testContactPhones('test_phones_equality'))
+    unittest.TextTestRunner().run(testSuite)
