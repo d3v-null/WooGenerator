@@ -458,7 +458,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     parser_override = {'namespace':settings}
     if override_args:
-        parser_override['args'] = override_args.split()
+        parser_override['args'] = override_args
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
