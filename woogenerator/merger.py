@@ -221,9 +221,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     if settings['do_filter']:
         filter_files = {
-            'users': settings['user_file'],
-            'emails': settings['email_file'],
-            'cards': settings['card_file'],
+            'users': settings.get('user_file'),
+            'emails': settings.get('email_file'),
+            'cards': settings.get('card_file'),
         }
         filter_items = {}
         for key, filter_file in filter_files.items():
@@ -303,9 +303,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
             client.analyse_remote(
                 sa_parser, limit=settings['download_limit'], filter_items=filter_items)
 
-            sa_parser.get_obj_list().export_items(
-                os.path.join(settings.in_folder_full, settings.s_x_name),
-                ColDataUser.get_wp_import_col_names())
+            if sa_parser.objects:
+                sa_parser.get_obj_list().export_items(
+                    os.path.join(settings.in_folder_full, settings.s_x_name),
+                    ColDataUser.get_wp_import_col_names())
 
     else:
         sa_parser.analyse_file(sa_path, sa_encoding)
@@ -339,6 +340,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
     else:
         ma_parser.analyse_file(
             ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
+
+    if Registrar.DEBUG_UPDATE:
+        Registrar.register_message(
+            "master parser: \n%s",
+            ma_parser.tabulate()
+        )
+        Registrar.register_message(
+            "slave parser: \n%s",
+            sa_parser.tabulate()
+        )
 
     # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
     #
@@ -594,6 +605,68 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
                 'Edited Address',
                 'Edited Alt Address',
             ]).items()))
+
+        help_instructions = (
+            "<p>This is a detailed report of all the changes that will be "
+            "made if this sync were to go ahead. </p>"
+            "<h3>Field Changes</h3>"
+            "<p>These reports show all the changes that will happen to "
+            "the most important fields (default: email and role). "
+            "The role field shows the new value for role, and the Delta role "
+            "field shows the previous value for role if the value will be "
+            "changed by the update. Same for email: the email field shows the "
+            "new value for email, and the delta email field shows the old value "
+            "for email if it will be changed in the update."
+            "These are the most important changes to check. You should look to "
+            "make sure that the value in the the Email and Role field is correct "
+            "and that the value in the delta email or delta role field is incorrect. "
+            "If an email or role is changed to the wrong value, it could stop the "
+            "customer from being able to log in or purchase items correctly.</p>"
+            "<h3>Matching Results</h3>"
+            "<p>These reports show the results of the matching algorithm. </p>"
+            "<p><strong>Perfect Matches</strong> show matches that were detected "
+            "without ambiguity. </p>"
+            "<p><strong>Cardmatcher.Masterless_Matches</strong> are instances where "
+            "a record in {slave_name} is seen to have a {master_pkey} value that is "
+            "that is not found in {master_name}. This could mean that the {master_name}"
+            "record associated with that user has been deleted or badly merged.</p>"
+            "<p><strong>Usernamematcher.Duplicate_Matches</strong> are instances where "
+            "multiple records from a single database were found to have the same username "
+            "which is certainly an indicator of erroneous data.</p>"
+            "<p><strong>Usernamematcher.Slaveless_Matches</strong> are instances "
+            "where a record in {master_name} has a username value that is not found in"
+            "{slave_name}. This could be because the {slave_name} account was deleted.</p>"
+            "<h3>Syncing Results</h3><p>Each of the items in these reports has "
+            "the following sections:<br/><ul>"
+            "<li><strong>Update Name</strong> - The primary keys of the records "
+            "being synchronized ({master_pkey} and {slave_pkey}) which should "
+            "be unique for any matched records.</li>"
+            "<li><strong>OLD</strong> - The {master_name} and {slave_name} records "
+            "before the sync.</li>"
+            "<li><strong>INFO</strong> - Mostly information about mod times for "
+            "debugging.</li>"
+            "<li><strong>PROBLEMATIC CHANGES</strong> - instances where an important "
+            "field has been changed. Important fields can be configured in coldata.py"
+            "by changing the 'static' property.</li>"
+            "<li><strong>CHANGES</strong> - all changes including problematic</li>"
+            "<li><strong>NEW</strong> - the end result of all changed records after"
+            "syncing</li>"
+        ).format(
+            master_name=settings.master_name,
+            slave_name=settings.slave_name,
+            master_pkey="MYOB Card ID",
+            slave_pkey="WP ID"
+        )
+
+        summary_group = HtmlReporter.Group('summary_group', 'Summary')
+        summary_group.add_section(
+            HtmlReporter.Section(
+                'instructions',
+                title='Instructions',
+                data=help_instructions
+            )
+        )
+        reporter.add_group(summary_group)
 
         sanitizing_group = HtmlReporter.Group('sanitizing',
                                               'Sanitizing Results')

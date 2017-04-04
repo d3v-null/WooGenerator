@@ -98,7 +98,7 @@ class ImportUser(ImportObject):
     @property
     def wp_modtime(self):
         time_str = self.get('Edited in Wordpress')
-        if time_str:
+        if time_str and time_str != u'False':
             return TimeUtils.wp_server_to_local_time(
                 TimeUtils.wp_strp_mktime(time_str))
 
