@@ -292,6 +292,13 @@ class ProductsForm(SyncForm):
     )
     BUTTON_META['ok_button']['text'] = 'Next'
 
+    welcomeLines = [
+        'Instructions: ',
+        (' - If you are uploading specials: tick '
+         '"auto next special", "process categories", "process variations"'),
+        ' - If you are uploading pricing changes: tick "no specials", "no variations"'
+    ]
+
     @contextlib.contextmanager
     def increase_indent(self):
         """ Context manager for increasing indent of widget """
@@ -311,12 +318,12 @@ class ProductsForm(SyncForm):
             value=1
         )
 
-        self.generate_report = self.add_simple_question(
-            name="Generate Report",
-            help_str="Would you like to generate a sync report? (slow)",
-            cmd_particles=['--skip-report', '--show-report'],
-            value=0
-        )
+        # self.generate_report = self.add_simple_question(
+        #     name="Generate Report",
+        #     help_str="Would you like to generate a sync report? (slow)",
+        #     cmd_particles=['--skip-report', '--show-report'],
+        #     value=0
+        # )
 
         self.process_specials = self.add_simple_question(
             name="Process Specials",
