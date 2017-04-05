@@ -1,7 +1,7 @@
+"""
+Module for generating woocommerce csv import files from Google Drive Data.
+"""
 # pylint: disable=too-many-lines
-"""
-Module for generating woocommerce csv import files from Google Drive Data
-"""
 # TODO: fix too-many-lines
 
 import io
@@ -569,8 +569,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings.myo_path = os.path.join(settings.out_folder_full,
                                      "myob-" + suffix + ".csv")
     # bunPath = os.path.join(settings.out_folder_full , "bundles-"+suffix+".csv")
-    settings['rep_web_path'] = os.path.join(settings.web_folder, settings.rep_name)
-    settings['rep_web_link'] = urlparse.urljoin(settings.web_address, settings.rep_name)
+    if settings.get('web_folder'):
+        settings['rep_web_path'] = os.path.join(
+            settings.get('web_folder'),
+            settings.rep_name
+        )
+        settings['rep_web_link'] = urlparse.urljoin(
+            settings.get('web_address'),
+            settings.rep_name
+        )
 
     settings['slave_delta_csv_path'] = os.path.join(
         settings.out_folder_full, "delta_report_wp%s.csv" % suffix)
