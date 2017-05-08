@@ -289,6 +289,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
                 })
         except Exception as exc:
             invalid_image(img, "error updating meta: " + str(exc))
+            Registrar.register_error(traceback.format_exc())
 
         # ------
         # RESIZE
@@ -318,9 +319,11 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
             shutil.copy(img_raw_path, img_dst_path)
 
             try:
-                # imgmeta = MetaGator(img_dst_path)
-                # imgmeta.write_meta(title, description)
-                # print imgmeta.read_meta()
+                imgmeta = MetaGator(img_dst_path)
+                imgmeta.write_meta(title, description)
+                if Registrar.DEBUG_IMG:
+                    Registrar.register_message("old dest img meta: %s" % imgmeta.read_meta(), img)
+
 
                 image = Image.open(img_dst_path)
                 image.thumbnail(settings.thumbsize)
@@ -329,7 +332,8 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
                 if settings.do_remeta_images:
                     imgmeta = MetaGator(img_dst_path)
                     imgmeta.write_meta(title, description)
-                    # print imgmeta.read_meta()
+                    if Registrar.DEBUG_IMG:
+                        Registrar.register_message("new dest img meta: %s" % imgmeta.read_meta(), img)
 
             except IOError as exc:
                 invalid_image(img, "could not resize: " + str(exc))

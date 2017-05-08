@@ -59,10 +59,14 @@ class MetaGator(Registrar):
                 raise Exception("file not found: " + fullname)
 
             # write exif
-            exif_dict = piexif.load(img.info["exif"])
+            exif_dict = dict()
+            if 'exif' in img.info:
+                exif_dict = piexif.load(img.info["exif"])
 
-            exif_dict["0th"][piexif.ImageIFD.DocumentName] = title
-            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = description
+            if '0th' not in exif_dict:
+                exif_dict['0th'] = {}
+            exif_dict['0th'][piexif.ImageIFD.DocumentName] = title
+            exif_dict['0th'][piexif.ImageIFD.ImageDescription] = description
 
             exif_bytes = piexif.dump(exif_dict)
             img.save(fullname, "jpeg", exif=exif_bytes)
@@ -104,9 +108,9 @@ class MetaGator(Registrar):
 
             exif_dict = piexif.load(img.info["exif"])
 
-            title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName)
+            title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName, '')
             description = exif_dict["0th"].get(
-                piexif.ImageIFD.ImageDescription)
+                piexif.ImageIFD.ImageDescription, '')
             #
             # for index, field in (
             #     ('Iptc.Application2.Headline', 'title'),
@@ -142,4 +146,8 @@ class MetaGator(Registrar):
                         self.fname
                     )
         if changed:
+            if 'title' not in changed:
+                newmeta['title'] = oldmeta['title']
+            if 'description' not in changed:
+                newmeta['description'] = oldmeta['description']
             self.write_meta(newmeta['title'], newmeta['description'])
