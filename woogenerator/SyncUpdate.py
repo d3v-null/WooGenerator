@@ -323,7 +323,7 @@ class SyncUpdate(
             self.sync_passes[col] = []
         self.sync_passes[col].append(update_params)
         if self.DEBUG_UPDATE:
-            self.register_warning(self.update_to_str('PASS', update_params))
+            self.register_message(self.update_to_str('PASS', update_params))
 
     def display_update_list(self, update_list, tablefmt=None):
         if not update_list:
@@ -656,7 +656,9 @@ class SyncUpdate(
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
-                    "NO %s CHANGES: must have a primary key to update user data: " % self.slave_name + repr(exc))
+                    "NO %s CHANGES: must have a primary key to update user data: " % \
+                        self.slave_name + repr(exc)
+                )
                 pkey = None
                 return info_delimeter.join(print_elements)
 
@@ -837,9 +839,13 @@ class SyncUpdateUsr(SyncUpdate):
                         m_value) == SanitationUtils.similar_url_comparison(s_value):
                     response = True
 
-        if self.DEBUG_UPDATE:
-            self.register_message(self.test_to_str(
-                col, m_value.__str__(), s_value.__str__(), response))
+        # if self.DEBUG_UPDATE:
+        #     self.register_message(self.test_to_str(
+        #         col,
+        #         SanitationUtils.coerce_unicode(m_value),
+        #         SanitationUtils.coerce_unicode(s_value),
+        #         response
+        #     ))
         return response
 
     #
