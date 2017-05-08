@@ -789,7 +789,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--gdrive-app-name')
         self.add_suppressed_argument('--gdrive-oauth-client-id')
         self.add_suppressed_argument('--gdrive-oauth-client-secret')
-        self.add_suppressed_argument('--gdrive-credentials-dir')
+        self.add_suppressed_argument('--gdrive-credentials-dir', default='~/.credentials')
         self.add_suppressed_argument('--gdrive-credentials-file')
         self.add_suppressed_argument('--gen-fid')
         self.add_suppressed_argument('--gen-gid')
