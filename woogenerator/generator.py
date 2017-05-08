@@ -525,10 +525,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         exc = UserWarning("auto-create not fully implemented yet")
         Registrar.register_warning(exc)
     if settings.auto_delete_old:
-        raise UserWarning("auto-delete not implemented yet")
-
+        raise UserWarning("auto-delete not implemented yet")        
     if settings.do_images and platform.system() != 'Darwin':
-        raise UserWarning("Images not implemented on all platforms yet")
+        exc = UserWarning("Images not implemented on all platforms yet")
+        Registrar.register_warning(exc)
+
 
     if settings.img_raw_folder is not None:
         settings.img_raw_folders.append(settings.img_raw_folder)
