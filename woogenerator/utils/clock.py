@@ -97,8 +97,17 @@ class TimeUtils(object):
 
     @classmethod
     def wp_time_to_string(cls, secs, fmt=None):
-        """ takes the nubmer of seconds since epoch,
-        converts to wp formatted local time string """
+        """
+    Convert time to formatted local time string.
+
+        Args:
+            secs (Number, basestring): The number of seconds since epoch.
+            fmt (basestring): The format string.
+
+        Returns:
+            str: formatted time string
+        """
+
         if not fmt:
             fmt = cls.wpTimeFormat
         if secs:
@@ -109,7 +118,16 @@ class TimeUtils(object):
 
     @classmethod
     def has_happened_yet(cls, secs):
-        """ takes seconds since epoch, determines if has happened yet according to overrides """
+        """
+        Determine if a time has happened yet according to overrides.
+
+        Args:
+            secs (Number, basestring): The number of seconds since epoch.
+
+        Returns:
+            bool: Whether the time has happened yet according to overrides.
+        """
+
         assert isinstance(secs, (Number, basestring)), \
             "param must be a number or string not %s" % type(secs)
         secs = float(secs)
