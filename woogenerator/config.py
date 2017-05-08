@@ -339,6 +339,11 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             ),
             default=DEFAULT_LOCAL_LOG_DIR,
         )
+        self.add_argument(
+            '--help-verbose',
+            help='Verbose help',
+            action='store_true'
+        )
 
 class ArgumentParserProtoProd(ArgumentParserProto):
     default_local_live_path = DEFAULT_LOCAL_PROD_PATH

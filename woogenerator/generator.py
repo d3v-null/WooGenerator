@@ -483,6 +483,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         print "adding conf: %s" % conf
         argparser.add_default_config_file(conf)
 
+    if settings.help_verbose:
+        if 'args' not in parser_override:
+            parser_override['args'] = []
+        parser_override['args'] += ['--help']
+
     print "parser: %s " % pformat(argparser.get_actions())
 
     settings = argparser.parse_args(**parser_override)

@@ -59,7 +59,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     parser_override = {'namespace':settings}
     if override_args:
-        parser_override['args'] = override_args.split()
+        parser_override['args'] = override_args
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
@@ -72,6 +72,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         argparser.add_default_config_file(conf)
 
     print "parser: %s " % pformat(argparser.get_actions())
+
+    if settings.help_verbose:
+        if 'args' not in parser_override:
+            parser_override['args'] = []
+        parser_override['args'] += ['--help']
 
     settings = argparser.parse_args(**parser_override)
 
@@ -341,14 +346,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         ma_parser.analyse_file(
             ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
 
-    if Registrar.DEBUG_UPDATE:
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
             "master parser: \n%s",
-            ma_parser.tabulate()
+            SanitationUtils.coerce_unicode(ma_parser.tabulate())
         )
         Registrar.register_message(
             "slave parser: \n%s",
-            sa_parser.tabulate()
+            SanitationUtils.coerce_unicode(sa_parser.tabulate())
         )
 
     # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
@@ -1142,6 +1147,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)
+                if Registrar.DEBUG_UPDATE:
+                    Registrar.register_message(
+                        "performing update: \n%s",
+                        SanitationUtils.coerce_unicode(update.tabulate())
+                    )
                 # if update.wpid == '1':
                 #     print repr(update.wpid)
                 #     continue
