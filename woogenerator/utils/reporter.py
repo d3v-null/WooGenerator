@@ -110,7 +110,7 @@ class HtmlReporter(object):
         out = """\
 <!DOCTYPE html>
 <html lang="en">
-""" + head + """"
+""" + head + """
 """ + body + """
 </html>
 """
