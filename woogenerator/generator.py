@@ -458,7 +458,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     proto_argparser = ArgumentParserProtoProd()
 
-    print "proto_parser: \n%s" % pformat(proto_argparser.get_actions())
+    Registrar.register_message( "proto_parser: \n%s" % pformat(proto_argparser.get_actions()) )
 
     parser_override = {'namespace':settings}
     if override_args:
@@ -466,7 +466,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
-    print "proto settings: \n%s" % pformat(vars(settings))
+    Registrar.register_message(  "proto settings: \n%s" % pformat(vars(settings)) )
 
     ### Second round gets all the arguments from all config files
 
@@ -492,14 +492,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             parser_override['args'] = []
         parser_override['args'] += ['--help']
 
-    print "parser: %s " % pformat(argparser.get_actions())
+    Registrar.register_message(  "parser: %s " % pformat(argparser.get_actions()) )
 
     settings = argparser.parse_args(**parser_override)
 
 
     # PROCESS CONFIG
 
-    print "Raw settings: %s" % pformat(vars(settings))
+    Registrar.register_message(  "Raw settings: %s" % pformat(vars(settings)) )
 
     settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')

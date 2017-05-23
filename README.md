@@ -176,10 +176,14 @@ to test X
 
 Running
 ====
+If you want to run the gui:
+
+`python woogenerator/gui.py`
+
 If you're syncing products:
 
-`python source/generator.py --help`
+`python woogenerator/generator.py --help`
 
 If you're syncing users:
 
-`python source/merger.py --help`
+`python woogenerator/merger.py --help`

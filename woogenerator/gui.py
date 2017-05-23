@@ -338,7 +338,7 @@ class ProductsForm(SyncForm):
             ],
             cmd_particles=[
                 '--skip-specials',
-                '--specials-mode=auto_next',
+                '--do-specials --specials-mode=auto_next',
                 # '--future-specials'
             ],
             value=0
@@ -367,7 +367,7 @@ class ProductsForm(SyncForm):
         self.process_variations = self.add_simple_question(
             name="Process Variations",
             help_str="Would you like to process variations?",
-            value=0,
+            value=1,
             cmd_particles=['--skip-variations', '--do-variations']
         )
 
