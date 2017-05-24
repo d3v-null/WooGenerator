@@ -69,13 +69,15 @@ class ImportWooMixin(object):
     def has_special(self, special):
         return special in map(SanitationUtils.normalize_val, self.specials)
 
-    def has_special_fuzzy(self, special):
-        if isinstance(special, ImportSpecialGroup):
-            special = special.special_id
-        for spec in [
+    def has_special_fuzzy(self, special_search):
+        if isinstance(special_search, ImportSpecialGroup):
+            special_search = special_search.special_id
+        for special_compare in [
                 SanitationUtils.normalize_val(special) for special in self.specials
         ]:
-            if special in spec:
+            if self.DEBUG_SPECIAL:
+                self.register_message("testing special %s matches special: %s" % (special_compare, special_search))
+            if special_search in special_compare:
                 return True
 
     def register_special(self, special):
