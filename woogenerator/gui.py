@@ -13,6 +13,7 @@ import npyscreen
 import __init__
 from woogenerator import generator, merger
 from woogenerator.utils import overrides
+from woogenerator.utils.core import SeqUtils
 
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
 logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)
@@ -370,6 +371,13 @@ class ProductsForm(SyncForm):
             cmd_particles=['--skip-variations', '--do-variations']
         )
 
+        self.process_images = self.add_simple_question(
+            name="Process Images",
+            help_str="Would you like to process images?",
+            value=0,
+            cmd_particles=['--skip-images', '--do-images']
+        )
+
 
 class CustomersForm(SyncForm):
     """ Form for specifying customer sync parameters """
@@ -551,11 +559,11 @@ def main():
         traceback.print_exception(*sys.exc_info())
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
     if wg_app.command_script == 'generator.py':
-        override_args = sys.argv[1:] + wg_app.command_args.split()
+        override_args = SeqUtils.filter_unique_true(sys.argv[1:] + wg_app.command_args.split())
         generator.catch_main(override_args=override_args)
     if wg_app.command_script == 'merger.py':
-        merger.catch_main(override_args=(sys.argv[1:] + wg_app.command_args.split()))
-
+        override_args = SeqUtils.filter_unique_true(sys.argv[1:] + wg_app.command_args.split())
+        merger.catch_main(override_args=override_args)
 
 if __name__ == "__main__":
     logging.debug("\n\nEntering main!")
