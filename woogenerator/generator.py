@@ -1658,6 +1658,13 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
     # TODO: fix too-many-statements,too-many-branches
     """Run the main function within a try statement and attempt to analyse failure."""
 
+    file_path = __file__
+    cur_dir = os.getcwd() + '/'
+    if file_path.startswith(cur_dir):
+        file_path = file_path[len(cur_dir):]
+
+    full_run_str = "%s %s %s" % (sys.executable, file_path, ' '.join(override_args))
+
     settings = SettingsNamespaceProd()
 
     status = 0
@@ -1707,6 +1714,8 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
         Registrar.register_message('wrote file %s' % zip_file.filename)
 
     # print "\nexiting with status %s \n" % status
+    Registrar.register_message("re-run with:\n%s" % full_run_str)
+
     sys.exit(status)
 
 

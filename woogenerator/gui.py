@@ -552,8 +552,9 @@ def main():
         traceback.print_exception(*sys.exc_info())
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
     if wg_app.command_script == 'generator.py':
-        print "running generator with old args: %s" % (' '.join(sys.argv[1:]) + " " + wg_app.command_args)
-        generator.catch_main(override_args=(sys.argv[1:] + wg_app.command_args.split()))
+        override_args = sys.argv[1:] + wg_app.command_args.split()
+        print "running generator with args: %s" % (' '.join(override_args))
+        generator.catch_main(override_args=override_args)
     if wg_app.command_script == 'merger.py':
         merger.catch_main(override_args=(sys.argv[1:] + wg_app.command_args.split()))
 
