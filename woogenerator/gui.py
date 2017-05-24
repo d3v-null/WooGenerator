@@ -2,7 +2,6 @@
 """ Provides GUI for syncing products and customers """
 import contextlib
 import logging
-import os
 import sys
 import traceback
 import platform
@@ -553,7 +552,6 @@ def main():
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
     if wg_app.command_script == 'generator.py':
         override_args = sys.argv[1:] + wg_app.command_args.split()
-        print "running generator with args: %s" % (' '.join(override_args))
         generator.catch_main(override_args=override_args)
     if wg_app.command_script == 'merger.py':
         merger.catch_main(override_args=(sys.argv[1:] + wg_app.command_args.split()))

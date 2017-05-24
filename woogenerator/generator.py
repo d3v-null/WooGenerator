@@ -1654,7 +1654,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         print "open this link to view report %s" % settings['rep_web_link']
 
 
-def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-many-branches
+def catch_main(override_args=[]):  # pylint: disable=too-many-statements,too-many-branches
     # TODO: fix too-many-statements,too-many-branches
     """Run the main function within a try statement and attempt to analyse failure."""
 
@@ -1663,7 +1663,7 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
     if file_path.startswith(cur_dir):
         file_path = file_path[len(cur_dir):]
 
-    full_run_str = "%s %s %s" % (sys.executable, file_path, ' '.join(override_args))
+    full_run_str = "%s %s %s" % (str(sys.executable), str(file_path), ' '.join(override_args))
 
     settings = SettingsNamespaceProd()
 
@@ -1674,17 +1674,19 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
         exit()
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
         status = 69  # service unavailable
-        Registrar.register_error(traceback.format_exc())
     except IOError:
         status = 74
         print "cwd: %s" % os.getcwd()
-        Registrar.register_error(traceback.format_exc())
     except UserWarning:
         status = 65
-        Registrar.register_error(traceback.format_exc())
+    except SystemExit:
+        status = ExitStatus.failure
     except:
         status = 1
-        Registrar.register_error(traceback.format_exc())
+    finally:
+        if status:
+            Registrar.register_error(traceback.format_exc())
+
 
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
@@ -1714,7 +1716,10 @@ def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-m
         Registrar.register_message('wrote file %s' % zip_file.filename)
 
     # print "\nexiting with status %s \n" % status
-    Registrar.register_message("re-run with:\n%s" % full_run_str)
+    if status:
+        print "re-run with: \n%s" % full_run_str
+    else:
+        Registrar.register_message("re-run with:\n%s" % full_run_str)
 
     sys.exit(status)
 
