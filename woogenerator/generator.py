@@ -451,14 +451,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     if not settings:
         settings = SettingsNamespaceProd()
 
-    # DONE: Two rounds of argument parsing
-
     ### First round of argument parsing determines which config files to read
     ### from core config files, CLI args and env vars
 
     proto_argparser = ArgumentParserProtoProd()
 
-    Registrar.register_message( "proto_parser: \n%s" % pformat(proto_argparser.get_actions()) )
+    Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
 
     parser_override = {'namespace':settings}
     if override_args:
@@ -466,16 +464,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
-    Registrar.register_message(  "proto settings: \n%s" % pformat(vars(settings)) )
+    Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
 
     ### Second round gets all the arguments from all config files
 
-    # DONE: change fallback_schema to just schema
     # TODO: implement "ask for password" feature
     argparser = ArgumentParserProd()
 
-    # DONE: change default-last-sync to just last-sync
-    # DONE: Remove references to yaml_path
     # TODO: test set local work dir
     # TODO: test set live config
     # TODO: test set test config
@@ -492,14 +487,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             parser_override['args'] = []
         parser_override['args'] += ['--help']
 
-    Registrar.register_message(  "parser: %s " % pformat(argparser.get_actions()) )
+    Registrar.register_message("parser: %s " % pformat(argparser.get_actions()))
 
     settings = argparser.parse_args(**parser_override)
 
 
     # PROCESS CONFIG
 
-    Registrar.register_message(  "Raw settings: %s" % pformat(vars(settings)) )
+    Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
 
     settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
@@ -513,7 +508,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         Registrar.DEBUG_ERROR = True
     if settings.verbosity > 1:
         Registrar.DEBUG_MESSAGE = True
-        Registrar.register_message("raw settings: %s" % pformat(vars(settings)))
     if settings.quiet:
         Registrar.DEBUG_PROGRESS = False
         Registrar.DEBUG_ERROR = False

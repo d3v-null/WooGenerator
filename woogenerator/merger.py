@@ -43,7 +43,7 @@ def timediff(settings):
     return time.time() - settings.start_time
 
 
-def main(override_args=None, settings=None):  # pylint: disable=too-many-branches,too-many-locals
+def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
     """
     Use settings object to load config file and detect changes in wordpress.
     """
@@ -53,9 +53,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
     if not settings:
         settings = SettingsNamespaceUser()
 
+    ### First round of argument parsing determines which config files to read
+    ### from core config files, CLI args and env vars
+
     proto_argparser = ArgumentParserProtoUser()
 
-    print "proto_parser: \n%s" % pformat(proto_argparser.get_actions())
+    Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
 
     parser_override = {'namespace':settings}
     if override_args:
@@ -63,7 +66,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
-    print "proto settings: \n%s" % pformat(vars(settings))
+    Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
+
+    ### Second round gets all the arguments from all config files
 
     argparser = ArgumentParserUser()
 
@@ -71,21 +76,17 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         print "adding conf: %s" % conf
         argparser.add_default_config_file(conf)
 
-    print "parser: %s " % pformat(argparser.get_actions())
-
     if settings.help_verbose:
         if 'args' not in parser_override:
             parser_override['args'] = []
         parser_override['args'] += ['--help']
 
+    Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
     settings = argparser.parse_args(**parser_override)
 
-    print "Raw settings: %s" % pformat(vars(settings))
+    # PROCESS CONFIG
 
-
-    # DONE: change default-last-sync to just last-sync
-    # DONE: Remove references to yaml_path
-    # DONE: move in, out, log folders to full
+    Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
 
     if settings.verbosity > 0:
         Registrar.DEBUG_PROGRESS = True

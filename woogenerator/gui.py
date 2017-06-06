@@ -296,7 +296,6 @@ class ProductsForm(SyncForm):
         'Instructions: ',
         'Use <Tab> to navigate to the next question',
         'Use <Control-C> to exit this program',
-        'if you tick "No download spreadhss"',
         (' - If you are uploading specials: tick '
          '"auto next special", "process categories", "process variations"'),
         ' - If you are uploading pricing changes: tick "no specials", "no variations"'
