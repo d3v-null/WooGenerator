@@ -583,7 +583,6 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--debug-abstract', action='store_true')
         self.add_suppressed_argument('--debug-parser', action='store_true')
         self.add_suppressed_argument('--debug-self', action='store_true')
-        self.add_suppressed_argument('--debug-flat', action='store_true')
         self.add_suppressed_argument('--debug-client', action='store_true')
         self.add_suppressed_argument('--debug-utils', action='store_true')
         self.add_suppressed_argument('--debug-gen', action='store_true')

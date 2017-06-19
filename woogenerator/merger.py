@@ -101,7 +101,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     Registrar.DEBUG_ABSTRACT = settings.debug_abstract
     Registrar.DEBUG_PARSER = settings.debug_parser
     Registrar.DEBUG_UPDATE = settings.debug_update
-    Registrar.DEBUG_FLAT = settings.debug_flat
     Registrar.DEBUG_NAME = settings.debug_name
     Registrar.DEBUG_ADDRESS = settings.debug_address
     Registrar.DEBUG_CLIENT = settings.debug_client

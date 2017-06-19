@@ -969,7 +969,6 @@ class Registrar(object):
     DEBUG_ABSTRACT = False
     DEBUG_PARSER = False
     DEBUG_UPDATE = False
-    DEBUG_FLAT = False
     DEBUG_GEN = False
     DEBUG_MYO = False
     DEBUG_TREE = False

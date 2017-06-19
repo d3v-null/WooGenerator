@@ -175,6 +175,19 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
             gid=settings.gen_gid,
             limit=settings['download_limit'])
 
+        # check categories are valid
+
+        if Registrar.DEBUG_PARSER and hasattr(parsers.product, 'categories_name'):
+            for category_name, category_list in getattr(parsers.product, 'categories_name').items():
+                if len(category_list) < 2:
+                    continue
+                if SeqUtils.check_equal(
+                        [category.namesum for category in category_list]):
+                    continue
+                Registrar.register_warning("bad category: %50s | %d | %s" % (
+                    category_name[:50], len(category_list), str(category_list)
+                ))
+
         return parsers
 
 
@@ -491,10 +504,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings = argparser.parse_args(**parser_override)
 
+    Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
 
     # PROCESS CONFIG
-
-    Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
 
     settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
@@ -532,7 +544,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     Registrar.DEBUG_ABSTRACT = settings.debug_abstract
     Registrar.DEBUG_PARSER = settings.debug_parser
-    Registrar.DEBUG_FLAT = settings.debug_flat
     Registrar.DEBUG_GEN = settings.debug_gen
     Registrar.DEBUG_MYO = settings.debug_myo
     Registrar.DEBUG_TREE = settings.debug_tree
@@ -664,15 +675,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     }
 
     parsers = populate_master_parsers(settings)
-
-    for category_name, category_list in parsers.product.categories_name.items():
-        if len(category_list) < 2:
-            continue
-        if SeqUtils.check_equal(
-                [category.namesum for category in category_list]):
-            continue
-        print "bad category: %50s | %d | %s" % (
-            category_name[:50], len(category_list), str(category_list))
 
     check_warnings()
 

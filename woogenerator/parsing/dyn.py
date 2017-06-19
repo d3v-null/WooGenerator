@@ -88,7 +88,10 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     def __init__(self, *args, **kwargs):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         self.rule_lines = []
-        assert self.rule_id
+        assert self.rule_id, \
+            "Rule ID must be valid in ImportDynRule initialized with args %s and kwargs %s" % (
+                str(args), str(kwargs)
+            )
 
     @property
     def index(self):
@@ -264,6 +267,9 @@ class CsvParseDyn(CsvParseTree):
                                           taxo_depth=1, item_depth=1, meta_width=0)
 
         self.taxo_indexer = self.get_object_index
+
+    def sanitize_cell(self, cell):
+        return SanitationUtils.sanitize_special_cell(cell)
 
     def depth(self, row):
         for i, cell in enumerate(row):

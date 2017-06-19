@@ -152,6 +152,12 @@ class SyncClientLocal(SyncClientAbstract):
         # return parser.analyse_stream(out_file, limit=limit,
         # encoding=out_encoding)
 
+class SyncClientLocalStream(SyncClientLocal):
+    """ Designed to act like a GDrive client but work on a local stream instead """
+
+    def analyse_remote(self, parser, byte_file_obj, limit=None, **kwargs):
+        return parser.analyse_stream(byte_file_obj, limit=limit)
+
 
 class SyncClientGDrive(SyncClientAbstract):
     """

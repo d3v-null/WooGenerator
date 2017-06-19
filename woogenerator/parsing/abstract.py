@@ -16,7 +16,6 @@ import re
 
 from tabulate import tabulate
 import unicodecsv
-
 from woogenerator.utils import (SeqUtils, SanitationUtils, Registrar,
                                 ProgressCounter, UnicodeCsvDialectUtils)
 
@@ -376,7 +375,7 @@ class CsvParseBase(Registrar):
             if sanitized_col in sanitized_row:
                 self.indices[col] = sanitized_row.index(sanitized_col)
                 continue
-            if self.indices[col]:
+            if self.indices.get(col):
                 if self.DEBUG_ABSTRACT:
                     self.register_message("indices [%s] = %s" %
                                           (col, self.indices.get(col)))

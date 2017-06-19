@@ -547,11 +547,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         )
         object_data.register_special(special)
 
-    # def register_product(self, object_data):
-    #     assert isinstance(object_data, ImportWooProduct)
-    #     if not object_data.isVariation:
-    #         super(CsvParseWoo, self).register_product(object_data)
-
     def register_updated_product(self, object_data):
         assert \
             isinstance(object_data, ImportWooProduct), \
@@ -621,6 +616,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             elif not len(this_images) and len(ancestor_images):
                 self.register_image(ancestor_images[0], object_data)
 
+
     def process_categories(self, object_data):
         if object_data.isProduct:
             for ancestor in object_data.taxo_ancestors:
@@ -629,16 +625,25 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_category(ancestor)
                 self.join_category(ancestor, object_data)
 
+        # TODO: update description if category is part of a special
+
+        # TODO: fix for VuTan
         if object_data.get('E'):
             if self.DEBUG_WOO:
                 self.register_message("HAS EXTRA LAYERS")
             if object_data.isProduct:
-                # self.register_message("ANCESTOR NAMESUM: %s" % str(object_data.get_ancestor_key('namesum')))
-                # self.register_message("ANCESTOR DESCSUM: %s" % str(object_data.get_ancestor_key('descsum')))
-                # self.register_message("ANCESTOR CATSUM: %s" % str(object_data.get_ancestor_key('catsum')))
-                # self.register_message("ANCESTOR ITEMSUM: %s" % str(object_data.get_ancestor_key('itemsum')))
-                # self.register_message("ANCESTOR TAXOSUM: %s" % str(object_data.get_ancestor_key('taxosum')))
-                # self.register_message("ANCESTOR NAME: %s" % str(object_data.get_ancestor_key('name')))
+                # self.register_message("ANCESTOR NAMESUM: %s" % \
+                #     str(object_data.get_ancestor_key('namesum')))
+                # self.register_message("ANCESTOR DESCSUM: %s" % \
+                #     str(object_data.get_ancestor_key('descsum')))
+                # self.register_message("ANCESTOR CATSUM: %s" % \
+                #     str(object_data.get_ancestor_key('catsum')))
+                # self.register_message("ANCESTOR ITEMSUM: %s" % \
+                #     str(object_data.get_ancestor_key('itemsum')))
+                # self.register_message("ANCESTOR TAXOSUM: %s" % \
+                #     str(object_data.get_ancestor_key('taxosum')))
+                # self.register_message("ANCESTOR NAME: %s" % \
+                #     str(object_data.get_ancestor_key('name')))
                 taxo_ancestor_names = [ancestorData.get(
                     'name') for ancestorData in object_data.taxo_ancestors]
                 # self.register_message("TAXO ANCESTOR NAMES: %s" % str(taxo_ancestor_names))
@@ -777,7 +782,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 # print "-> FINAL EXTRA LAYER: %s" % repr(extra_layer)
 
                 # self.register_join_category(extra_layer, object_data)
-            # todo maybe something with extra categories
 
     def process_variation(self, var_data):
         pass
@@ -936,6 +940,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     def post_process_categories(self, object_data):
         # self.register_message(object_data.index)
         if object_data.isCategory:
+            # join extra parent categories
             if object_data.get('E'):
                 # print object_data
                 object_index = self.category_indexer(object_data)
@@ -1041,7 +1046,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.register_message("special %s exists!" % special)
 
             if object_data.isVariable:
-                # TODO: Specials for variable products
+                # special is calculated for variations but not variables, which is fine
                 continue
 
             specialparams = self.special_rules[special]
