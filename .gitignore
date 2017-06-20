@@ -136,3 +136,4 @@ bad_variable_names.txt
 
 .github-todos
 .tags*
+*.csv
