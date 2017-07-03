@@ -20,7 +20,7 @@ DEFAULTS_USER_PATH = os.path.join(CONF_DIR, 'defaults_user.yaml')
 
 # User controlled configuration
 DEFAULT_TESTMODE = True
-DEFAULT_LOCAL_WORK_DIR = os.path.expanduser('~/woogenerator')
+DEFAULT_LOCAL_WORK_DIR = os.path.expanduser('~/Documents/woogenerator')
 DEFAULT_LOCAL_PROD_PATH = 'conf_prod.yaml'
 DEFAULT_LOCAL_PROD_TEST_PATH = 'conf_prod_test.yaml'
 DEFAULT_LOCAL_USER_PATH = 'conf_user.yaml'
