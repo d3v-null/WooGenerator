@@ -234,6 +234,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def file_suffix(self):
         response = ""
+        if self.schema:
+            response = self.schema
         if self.testmode:
             response += "_test"
         if self.do_filter:
