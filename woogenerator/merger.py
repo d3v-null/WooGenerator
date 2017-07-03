@@ -245,6 +245,10 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         "could not open %s file [%s] from %s" % (
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
+        if 'emails' in settings and settings.emails:
+            if not 'emails' in filter_items or not filter_items['emails']:
+                filter_items['emails'] = []
+            filter_items['emails'].extend(settings.emails.split(','))
         if 'since_m' in settings:
             filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
         if 'since_s' in settings:
@@ -252,7 +256,8 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     else:
         filter_items = None
 
-    print filter_items
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message("filter_items: %s" % filter_items)
 
     #########################################
     # Download / Generate Slave Parser Object
@@ -351,10 +356,16 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             "master parser: \n%s",
             SanitationUtils.coerce_unicode(ma_parser.tabulate())
         )
+        ma_parser.get_obj_list().export_items(
+            os.path.join(settings.in_folder_full, settings.m_x_name + '_filtered'),
+            ColDataUser.get_act_import_col_names())
         Registrar.register_message(
             "slave parser: \n%s",
             SanitationUtils.coerce_unicode(sa_parser.tabulate())
         )
+        sa_parser.get_obj_list().export_items(
+            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
+            ColDataUser.get_wp_import_col_names())
 
     # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
     #
