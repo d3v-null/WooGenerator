@@ -841,7 +841,10 @@ class ArgumentParserUser(ArgumentParserCommon):
             help='file containing list of card IDs to filer on')
         filter_group.add_argument(
             '--email-file',
-            help='file containing list of email IDs to filer on')
+            help='file containing list of emails to filer on (one per line)')
+        filter_group.add_argument(
+            '--emails',
+            help='list of emails to filer on')
         filter_group.add_argument(
             '--since-m',
             help='filter out master records edited before this date')
