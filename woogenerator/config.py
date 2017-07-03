@@ -876,6 +876,13 @@ class ArgumentParserUser(ArgumentParserCommon):
             help="do extra processing to figure out duplicates",
             default=False,
             action="store_true")
+        processing_group.add_argument(
+            '--master-parse-limit',
+            help="limit number of items parsed by master parser",
+            type=int,
+            default=0
+        )
+
 
     def add_update_options(self, update_group):
         super(ArgumentParserUser, self).add_update_options(update_group)

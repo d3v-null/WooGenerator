@@ -140,10 +140,22 @@ def populate_master_parsers(parsers, settings):
 
         with UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params,
                                  settings.fs_params) as master_client:
-            master_client.analyse_remote(parsers.ma, limit=settings['download_limit'])
+            master_client.analyse_remote(
+                parsers.ma,
+                limit=settings['download_limit']
+            )
     else:
+        for thing in [
+                'ma_path'
+        ]:
+            assert getattr(settings, thing), "settings must specify %s" % thing
+        print( "master parse limit is %s" % settings['master_parse_limit'])
         parsers.ma.analyse_file(
-            settings.ma_path, dialect_suggestion='ActOut', encoding=settings.ma_encoding)
+            settings.ma_path,
+            dialect_suggestion='ActOut',
+            encoding=settings.ma_encoding,
+            limit=settings['master_parse_limit']
+        )
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
