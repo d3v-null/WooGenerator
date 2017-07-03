@@ -454,10 +454,10 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
             updated_variations_list.export_items(
                 flvu_path, variation_col_names)
 
-
-def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-    """Main function for generator."""
-    # TODO: too-many-locals,too-many-branches,too-many-statements
+def init_settings(override_args=None, settings=None):
+    """
+    Load config file and initialise settings object.
+    """
 
     if not settings:
         settings = SettingsNamespaceProd()
@@ -503,16 +503,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     settings = argparser.parse_args(**parser_override)
 
     Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
+    return settings
 
-    # PROCESS CONFIG
-
-    settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
-    settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
-    settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
-    settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
-
-    # TODO: set up logging here instead of Registrar verbosity crap
-
+def init_registrar(settings):
     if settings.verbosity > 0:
         Registrar.DEBUG_PROGRESS = True
         Registrar.DEBUG_ERROR = True
@@ -522,23 +515,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         Registrar.DEBUG_PROGRESS = False
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_MESSAGE = False
-
-    settings.add_special_categories = settings.do_specials and settings['do_categories']
-
-    if settings['auto_create_new']:
-        exc = UserWarning("auto-create not fully implemented yet")
-        Registrar.register_warning(exc)
-    if settings.auto_delete_old:
-        raise UserWarning("auto-delete not implemented yet")
-    # if settings.do_images and platform.system() != 'Darwin':
-    #     exc = UserWarning("Images not implemented on all platforms yet")
-    #     Registrar.register_warning(exc)
-
-
-    if settings.img_raw_folder is not None:
-        settings.img_raw_folders.append(settings.img_raw_folder)
-    if settings.img_raw_extra_folder is not None:
-        settings.img_raw_folders.append(settings.img_raw_extra_folder)
 
     Registrar.DEBUG_ABSTRACT = settings.debug_abstract
     Registrar.DEBUG_PARSER = settings.debug_parser
@@ -556,6 +532,40 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     Registrar.DEBUG_SPECIAL = settings.debug_special
     Registrar.DEBUG_CATS = settings.debug_cats
     Registrar.DEBUG_VARS = settings.debug_vars
+
+def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    """Main function for generator."""
+    # TODO: too-many-locals,too-many-branches,too-many-statements
+
+    settings = init_settings(override_args, settings)
+
+    # PROCESS CONFIG
+
+    settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
+    settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
+    settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
+    settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
+
+    settings.add_special_categories = settings.do_specials and settings['do_categories']
+
+    # TODO: set up logging here instead of Registrar verbosity crap
+
+    init_registrar(settings)
+
+    if settings['auto_create_new']:
+        exc = UserWarning("auto-create not fully implemented yet")
+        Registrar.register_warning(exc)
+    if settings.auto_delete_old:
+        raise UserWarning("auto-delete not implemented yet")
+    # if settings.do_images and platform.system() != 'Darwin':
+    #     exc = UserWarning("Images not implemented on all platforms yet")
+    #     Registrar.register_warning(exc)
+
+
+    if settings.img_raw_folder is not None:
+        settings.img_raw_folders.append(settings.img_raw_folder)
+    if settings.img_raw_extra_folder is not None:
+        settings.img_raw_folders.append(settings.img_raw_extra_folder)
 
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,

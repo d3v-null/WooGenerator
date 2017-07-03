@@ -12,10 +12,10 @@ import zipfile
 from bisect import insort
 from collections import OrderedDict
 from pprint import pprint, pformat
+import argparse
 
 import unicodecsv
 from sshtunnel import check_address
-import argparse
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
 
@@ -45,7 +45,7 @@ def timediff(settings):
 
 def populate_slave_parsers(parsers, settings):
     """
-    Populates the parsers for data from the slave database
+    Populate the parsers for data from the slave database.
     """
     print DebugUtils.hashify(
         "Download / Generate Slave Parser Object"), timediff(settings)
@@ -104,9 +104,21 @@ def populate_slave_parsers(parsers, settings):
 
     else:
         parsers.sa.analyse_file(settings.sa_path, settings.sa_encoding)
+
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message(
+            "slave parser: \n%s",
+            SanitationUtils.coerce_unicode(parsers.sa.tabulate())
+        )
+        parsers.sa.get_obj_list().export_items(
+            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
+            ColDataUser.get_wp_import_col_names())
     return parsers
 
 def populate_master_parsers(parsers, settings):
+    """
+    Populate the parsers for data from the slave database.
+    """
     parsers.ma = CsvParseUser(
         cols=ColDataUser.get_act_import_cols(),
         defaults=ColDataUser.get_defaults(),
@@ -139,22 +151,12 @@ def populate_master_parsers(parsers, settings):
         parsers.ma.get_obj_list().export_items(
             os.path.join(settings.in_folder_full, settings.m_x_name + '_filtered'),
             ColDataUser.get_act_import_col_names())
-        Registrar.register_message(
-            "slave parser: \n%s",
-            SanitationUtils.coerce_unicode(parsers.sa.tabulate())
-        )
-        parsers.sa.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
-            ColDataUser.get_wp_import_col_names())
     return parsers
 
-def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
+def init_settings(override_args=None, settings=None):
     """
-    Use settings object to load config file and detect changes in wordpress.
+    Load config file and initialise settings object.
     """
-    # TODO: fix too-many-branches,too-many-locals
-    # DONE: implement override_args
-
     if not settings:
         settings = SettingsNamespaceUser()
 
@@ -189,10 +191,10 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
     settings = argparser.parse_args(**parser_override)
 
-    # PROCESS CONFIG
-
     Registrar.register_message("Raw settings: %s" % pformat(vars(settings)))
+    return settings
 
+def init_registrar(settings):
     if settings.verbosity > 0:
         Registrar.DEBUG_PROGRESS = True
         Registrar.DEBUG_ERROR = True
@@ -212,6 +214,18 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     Registrar.DEBUG_UTILS = settings.debug_utils
     Registrar.DEBUG_CONTACT = settings.debug_contact
     Registrar.DEBUG_DUPLICATES = settings.debug_duplicates
+
+def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
+    """
+    Use settings object to load config file and detect changes in wordpress.
+    """
+    # TODO: fix too-many-branches,too-many-locals
+    # DONE: implement override_args
+
+    settings = init_settings(override_args, settings)
+
+    # PROCESS CONFIG
+    init_registrar(settings)
 
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
@@ -249,7 +263,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     if settings['download_master']:
         settings.ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
-        settings.ma_encoding = "utf-8"
+        settings['ma_encoding'] = "utf-8"
     else:
         assert settings['master_file'], "master file must be provided if not download_master"
         settings.ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
