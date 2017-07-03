@@ -49,6 +49,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
         self.start_time = getattr(self, 'start_time', time.time())
+        self.schema = getattr(self, 'schema', None)
 
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
 
@@ -167,7 +168,6 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
                                          DEFAULT_LOCAL_PROD_PATH)
         self.local_test_config = getattr(self, 'local_test_config',
                                          DEFAULT_LOCAL_PROD_TEST_PATH)
-        self.schema = getattr(self, 'schema', None)
         self.variant = getattr(self, 'variant', None)
         self.woo_schemas = getattr(self, 'woo_schemas', [])
         self.myo_schemas = getattr(self, 'myo_schemas', [])
