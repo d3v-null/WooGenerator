@@ -562,6 +562,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         report_group.add_argument(
             '--report-and-quit',
             help='quit after generating report',
+            action="store_true",
             default=False
         )
 
