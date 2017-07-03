@@ -129,7 +129,7 @@ def populate_master_parsers(parsers, settings):
             master_client.analyse_remote(parsers.ma, limit=settings['download_limit'])
     else:
         parsers.ma.analyse_file(
-            settings.ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
+            settings.ma_path, dialect_suggestion='ActOut', encoding=settings.ma_encoding)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
@@ -249,11 +249,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     if settings['download_master']:
         settings.ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
-        ma_encoding = "utf-8"
+        settings.ma_encoding = "utf-8"
     else:
         assert settings['master_file'], "master file must be provided if not download_master"
         settings.ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
-        ma_encoding = "utf8"
+        settings.ma_encoding = "utf8"
     if settings['download_slave']:
         settings.sa_path = os.path.join(settings.in_folder_full, settings.s_x_name)
         settings.sa_encoding = "utf8"
