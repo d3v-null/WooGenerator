@@ -70,7 +70,7 @@ def check_warnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-many-statements
+def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-branches,too-many-statements
     """
     Create and populates the various parsers.
     """
@@ -105,8 +105,6 @@ def populate_master_parsers(settings):  # pylint: disable=too-many-branches,too-
         else:
             settings.product_parser_args['schema'] = settings.schema
             product_parser_class = CsvParseWoo
-
-    parsers = argparse.Namespace()
 
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
@@ -674,7 +672,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'taxo_depth': settings.taxo_depth,
     }
 
-    parsers = populate_master_parsers(settings)
+    parsers = argparse.Namespace()
+    parsers = populate_master_parsers(parsers, settings)
 
     check_warnings()
 
