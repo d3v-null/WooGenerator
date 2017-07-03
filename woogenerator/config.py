@@ -163,6 +163,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
+    """ Provide namespace for product settings. """
+
     def __init__(self, *args, **kwargs):
         self.local_live_config = getattr(self, 'local_live_config',
                                          DEFAULT_LOCAL_PROD_PATH)
@@ -214,6 +216,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
+    """ Provide namespace for user settings. """
+
     def __init__(self, *args, **kwargs):
         self.local_live_config = \
             getattr(self, 'local_live_config', DEFAULT_LOCAL_USER_PATH)
@@ -246,10 +250,6 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ Name used for slave export. """
         return "%s_x%s_%s.csv" % (self.slave_name, self.file_suffix, self.import_name)
 
-
-
-
-
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
     Provide ArgumentParser first stage argument parsing.
@@ -276,6 +276,7 @@ class ArgumentParserProto(configargparse.ArgumentParser):
         self.add_proto_options()
 
     def get_actions(self):
+        """ Returns the actions object (hidden in configargparse super). """
         return self._actions
 
     def add_proto_options(self):
@@ -346,6 +347,8 @@ class ArgumentParserProto(configargparse.ArgumentParser):
         )
 
 class ArgumentParserProtoProd(ArgumentParserProto):
+    """ Provide namespace for product sync settings in first stage. """
+
     default_local_live_path = DEFAULT_LOCAL_PROD_PATH
     default_local_test_path = DEFAULT_LOCAL_PROD_TEST_PATH
     #
@@ -355,6 +358,8 @@ class ArgumentParserProtoProd(ArgumentParserProto):
     #     super(ArgumentParserProtoProd, self).__init__(**kwargs)
 
 class ArgumentParserProtoUser(ArgumentParserProto):
+    """ Provide namespace for user sync settings in first stage. """
+
     default_local_live_path = DEFAULT_LOCAL_USER_PATH
     default_local_test_path = DEFAULT_LOCAL_USER_TEST_PATH
     #
