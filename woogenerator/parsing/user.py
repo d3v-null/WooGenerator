@@ -350,7 +350,8 @@ class CsvParseUser(CsvParseBase):
                  contact_schema=None,
                  filter_items=None,
                  limit=None,
-                 source=None):
+                 source=None,
+                 schema=None):
         if self.DEBUG_MRO:
             self.register_message(' ')
         extra_cols = [

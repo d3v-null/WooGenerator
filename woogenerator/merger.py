@@ -111,7 +111,7 @@ def populate_slave_parsers(parsers, settings):
             SanitationUtils.coerce_unicode(parsers.sa.tabulate())
         )
         parsers.sa.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
+            os.path.join(settings.in_folder_full, settings.s_x_name),
             ColDataUser.get_wp_import_col_names())
     return parsers
 
@@ -125,7 +125,9 @@ def populate_master_parsers(parsers, settings):
         contact_schema='act',
         filter_items=settings.filter_items,
         limit=settings['download_limit'],
-        source=settings.master_name)
+        source=settings.master_name,
+        schema=settings.schema
+    )
 
     print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
         settings)
@@ -149,7 +151,7 @@ def populate_master_parsers(parsers, settings):
             SanitationUtils.coerce_unicode(parsers.ma.tabulate())
         )
         parsers.ma.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.m_x_name + '_filtered'),
+            os.path.join(settings.in_folder_full, settings.m_x_name),
             ColDataUser.get_act_import_col_names())
     return parsers
 
