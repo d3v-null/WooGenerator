@@ -335,9 +335,14 @@ class ImportUser(ImportObject):
         return self.username == self.MYOBID
 
     def __repr__(self):
-        return "<%s> %s | %s | %s | %s | %s" % (
-            self.index, self.email, self.MYOBID, self.role, self.username,
-            self.wpid)
+        return "<%s> %s" % (
+            self.index,
+            " | ".join([
+                self.email,
+                self.role,
+                self.username,
+            ])
+        )
 
 
 class CsvParseUser(CsvParseBase):

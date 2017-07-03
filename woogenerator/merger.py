@@ -1341,6 +1341,7 @@ def catch_main(override_args=None):
                     pass
         Registrar.register_message('wrote file %s' % settings.zip_path_full)
 
-
+    sys.exit(status)
+    
 if __name__ == '__main__':
     catch_main()
