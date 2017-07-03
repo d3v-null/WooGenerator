@@ -15,6 +15,7 @@ from pprint import pprint, pformat
 
 import unicodecsv
 from sshtunnel import check_address
+import argparse
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
 
@@ -42,6 +43,110 @@ def timediff(settings):
     """
     return time.time() - settings.start_time
 
+def populate_slave_parsers(parsers, settings):
+    """
+    Populates the parsers for data from the slave database
+    """
+    print DebugUtils.hashify(
+        "Download / Generate Slave Parser Object"), timediff(settings)
+
+    parsers.sa = CsvParseUser(
+        cols=ColDataUser.get_wp_import_cols(),
+        defaults=ColDataUser.get_defaults(),
+        filter_items=settings.filter_items,
+        limit=settings['download_limit'],
+        source=settings.slave_name)
+    if settings['download_slave']:
+        settings['ssh_tunnel_forwarder_address'] = \
+            (settings['ssh_host'], settings['ssh_port'])
+        settings['ssh_tunnel_forwarder_b_address'] = \
+            (settings['remote_bind_host'], settings['remote_bind_port'])
+        for host_key in [
+                'ssh_tunnel_forwarder_address',
+                'ssh_tunnel_forwarder_b_address'
+        ]:
+            try:
+                check_address(settings.get(host_key))
+            except AttributeError:
+                Registrar.register_error("invalid host: %s -> %s" % \
+                                         (host_key, settings.get(host_key)))
+            except Exception as exc:
+                raise UserWarning("Host must be valid: %s [%s = %s]" % \
+                                  (str(exc), host_key, repr(settings.get(host_key))))
+        ssh_tunnel_forwarder_params = {
+            'ssh_address_or_host': settings['ssh_tunnel_forwarder_address'],
+            'ssh_password': settings['ssh_pass'],
+            'ssh_username': settings['ssh_user'],
+            'remote_bind_address': settings['ssh_tunnel_forwarder_b_address'],
+        }
+        py_my_sql_connect_params = {
+            'host': settings['db_host'],
+            'user': settings['db_user'],
+            'password': settings['db_pass'],
+            'db': settings['db_name'],
+            'charset': settings['db_charset'],
+            'use_unicode': True,
+            'tbl_prefix': settings['tbl_prefix'],
+        }
+
+        print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
+        print "PyMySqlconnect_params", py_my_sql_connect_params
+
+        with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
+                                py_my_sql_connect_params) as client:
+            client.analyse_remote(
+                parsers.sa, limit=settings['download_limit'], filter_items=settings.filter_items)
+
+            if parsers.sa.objects:
+                parsers.sa.get_obj_list().export_items(
+                    os.path.join(settings.in_folder_full, settings.s_x_name),
+                    ColDataUser.get_wp_import_col_names())
+
+    else:
+        parsers.sa.analyse_file(settings.sa_path, settings.sa_encoding)
+    return parsers
+
+def populate_master_parsers(parsers, settings):
+    parsers.ma = CsvParseUser(
+        cols=ColDataUser.get_act_import_cols(),
+        defaults=ColDataUser.get_defaults(),
+        contact_schema='act',
+        filter_items=settings.filter_items,
+        limit=settings['download_limit'],
+        source=settings.master_name)
+
+    print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
+        settings)
+
+    if settings['download_master']:
+        for thing in [
+                'm_x_cmd', 'm_i_cmd', 'remote_export_folder', 'act_fields'
+        ]:
+            assert getattr(settings, thing), "settings must specify %s" % thing
+
+        with UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params,
+                                 settings.fs_params) as master_client:
+            master_client.analyse_remote(parsers.ma, limit=settings['download_limit'])
+    else:
+        parsers.ma.analyse_file(
+            settings.ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
+
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message(
+            "master parser: \n%s",
+            SanitationUtils.coerce_unicode(parsers.ma.tabulate())
+        )
+        parsers.ma.get_obj_list().export_items(
+            os.path.join(settings.in_folder_full, settings.m_x_name + '_filtered'),
+            ColDataUser.get_act_import_col_names())
+        Registrar.register_message(
+            "slave parser: \n%s",
+            SanitationUtils.coerce_unicode(parsers.sa.tabulate())
+        )
+        parsers.sa.get_obj_list().export_items(
+            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
+            ColDataUser.get_wp_import_col_names())
+    return parsers
 
 def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
     """
@@ -143,19 +248,19 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             os.mkdir(path)
 
     if settings['download_master']:
-        ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
+        settings.ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
         ma_encoding = "utf-8"
     else:
         assert settings['master_file'], "master file must be provided if not download_master"
-        ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
+        settings.ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
         ma_encoding = "utf8"
     if settings['download_slave']:
-        sa_path = os.path.join(settings.in_folder_full, settings.s_x_name)
-        sa_encoding = "utf8"
+        settings.sa_path = os.path.join(settings.in_folder_full, settings.s_x_name)
+        settings.sa_encoding = "utf8"
     else:
         assert settings['slave_file'], "slave file must be provided if not download_slave"
-        sa_path = os.path.join(settings.in_folder_full, settings['slave_file'])
-        sa_encoding = "utf8"
+        settings.sa_path = os.path.join(settings.in_folder_full, settings['slave_file'])
+        settings.sa_encoding = "utf8"
 
     settings.repd_path = os.path.join(
         settings.out_folder_full,
@@ -183,7 +288,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     settings.act_fields = ";".join(ColDataUser.get_act_import_cols())
 
-    wp_api_params = {
+    settings.wp_api_params = {
         'api_key': settings.wp_api_key,
         'api_secret': settings.wp_api_secret,
         'url': settings.store_url,
@@ -192,14 +297,14 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         'callback': settings.wp_callback
     }
 
-    act_connect_params = {
+    settings.act_connect_params = {
         'hostname': settings.m_ssh_host,
         'port': settings.m_ssh_port,
         'username': settings.m_ssh_user,
         'password': settings.m_ssh_pass,
     }
 
-    act_db_params = {
+    settings.act_db_params = {
         'db_x_exe': settings.m_x_cmd,
         'db_i_exe': settings.m_i_cmd,
         'db_name': settings.m_db_name,
@@ -209,9 +314,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         'fields': settings.act_fields,
     }
     if 'since_m' in settings:
-        act_db_params['since'] = settings['since_m']
+        settings.act_db_params['since'] = settings['since_m']
 
-    fs_params = {
+    settings.fs_params = {
         'import_name': settings.import_name,
         'remote_export_folder': settings.remote_export_folder,
         'in_folder': settings.in_folder_full,
@@ -225,18 +330,19 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
 
     if settings['do_filter']:
+        # TODO: I don't think emails filter is actually working
         filter_files = {
             'users': settings.get('user_file'),
             'emails': settings.get('email_file'),
             'cards': settings.get('card_file'),
         }
-        filter_items = {}
+        settings.filter_items = {}
         for key, filter_file in filter_files.items():
             if filter_file:
                 try:
                     with open(os.path.join(settings.in_folder_full,
                                            filter_file)) as filter_file_obj:
-                        filter_items[key] = [
+                        settings.filter_items[key] = [
                             re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
                             for line in filter_file_obj
                         ]
@@ -246,80 +352,25 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
         if 'emails' in settings and settings.emails:
-            if not 'emails' in filter_items or not filter_items['emails']:
-                filter_items['emails'] = []
-            filter_items['emails'].extend(settings.emails.split(','))
+            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
+                settings.filter_items['emails'] = []
+            settings.filter_items['emails'].extend(settings.emails.split(','))
         if 'since_m' in settings:
-            filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
         if 'since_s' in settings:
-            filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
     else:
-        filter_items = None
+        settings.filter_items = None
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
-        Registrar.register_message("filter_items: %s" % filter_items)
+        Registrar.register_message("filter_items: %s" % settings.filter_items)
 
     #########################################
     # Download / Generate Slave Parser Object
     #########################################
 
-    print DebugUtils.hashify(
-        "Download / Generate Slave Parser Object"), timediff(settings)
-
-    sa_parser = CsvParseUser(
-        cols=ColDataUser.get_wp_import_cols(),
-        defaults=ColDataUser.get_defaults(),
-        filter_items=filter_items,
-        limit=settings['download_limit'],
-        source=settings.slave_name)
-    if settings['download_slave']:
-        settings['ssh_tunnel_forwarder_address'] = \
-            (settings['ssh_host'], settings['ssh_port'])
-        settings['ssh_tunnel_forwarder_b_address'] = \
-            (settings['remote_bind_host'], settings['remote_bind_port'])
-        for host_key in [
-                'ssh_tunnel_forwarder_address',
-                'ssh_tunnel_forwarder_b_address'
-        ]:
-            try:
-                check_address(settings.get(host_key))
-            except AttributeError:
-                Registrar.register_error("invalid host: %s -> %s" % \
-                                         (host_key, settings.get(host_key)))
-            except Exception as exc:
-                raise UserWarning("Host must be valid: %s [%s = %s]" % \
-                                  (str(exc), host_key, repr(settings.get(host_key))))
-        ssh_tunnel_forwarder_params = {
-            'ssh_address_or_host': settings['ssh_tunnel_forwarder_address'],
-            'ssh_password': settings['ssh_pass'],
-            'ssh_username': settings['ssh_user'],
-            'remote_bind_address': settings['ssh_tunnel_forwarder_b_address'],
-        }
-        py_my_sql_connect_params = {
-            'host': settings['db_host'],
-            'user': settings['db_user'],
-            'password': settings['db_pass'],
-            'db': settings['db_name'],
-            'charset': settings['db_charset'],
-            'use_unicode': True,
-            'tbl_prefix': settings['tbl_prefix'],
-        }
-
-        print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
-        print "PyMySqlconnect_params", py_my_sql_connect_params
-
-        with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
-                                py_my_sql_connect_params) as client:
-            client.analyse_remote(
-                sa_parser, limit=settings['download_limit'], filter_items=filter_items)
-
-            if sa_parser.objects:
-                sa_parser.get_obj_list().export_items(
-                    os.path.join(settings.in_folder_full, settings.s_x_name),
-                    ColDataUser.get_wp_import_col_names())
-
-    else:
-        sa_parser.analyse_file(sa_path, sa_encoding)
+    parsers = argparse.Namespace()
+    parsers = populate_slave_parsers(parsers, settings)
 
     # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
 
@@ -327,45 +378,8 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     # Generate and Analyse ACT CSV files using shell
     #########################################
 
-    ma_parser = CsvParseUser(
-        cols=ColDataUser.get_act_import_cols(),
-        defaults=ColDataUser.get_defaults(),
-        contact_schema='act',
-        filter_items=filter_items,
-        limit=settings['download_limit'],
-        source=settings.master_name)
+    parsers = populate_master_parsers(parsers, settings)
 
-    print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
-        settings)
-
-    if settings['download_master']:
-        for thing in [
-                'm_x_cmd', 'm_i_cmd', 'remote_export_folder', 'act_fields'
-        ]:
-            assert getattr(settings, thing), "settings must specify %s" % thing
-
-        with UsrSyncClientSshAct(act_connect_params, act_db_params,
-                                 fs_params) as master_client:
-            master_client.analyse_remote(ma_parser, limit=settings['download_limit'])
-    else:
-        ma_parser.analyse_file(
-            ma_path, dialect_suggestion='ActOut', encoding=ma_encoding)
-
-    if Registrar.DEBUG_UPDATE and settings.do_filter:
-        Registrar.register_message(
-            "master parser: \n%s",
-            SanitationUtils.coerce_unicode(ma_parser.tabulate())
-        )
-        ma_parser.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.m_x_name + '_filtered'),
-            ColDataUser.get_act_import_col_names())
-        Registrar.register_message(
-            "slave parser: \n%s",
-            SanitationUtils.coerce_unicode(sa_parser.tabulate())
-        )
-        sa_parser.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.s_x_name + '_filtered'),
-            ColDataUser.get_wp_import_col_names())
 
     # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
     #
@@ -425,11 +439,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing usernames")
         print timediff(settings)
 
-        deny_anomalous_parselist('saParser.nousernames', sa_parser.nousernames)
+        deny_anomalous_parselist('saParser.nousernames', parsers.sa.nousernames)
 
         username_matcher = UsernameMatcher()
-        username_matcher.process_registers(sa_parser.usernames,
-                                           ma_parser.usernames)
+        username_matcher.process_registers(parsers.sa.usernames,
+                                           parsers.ma.usernames)
 
         deny_anomalous_match_list('usernameMatcher.slaveless_matches',
                                   username_matcher.slaveless_matches)
@@ -455,11 +469,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         # for every card in slave not already matched, check that it exists in
         # master
 
-        deny_anomalous_parselist('maParser.nocards', ma_parser.nocards)
+        deny_anomalous_parselist('maParser.nocards', parsers.ma.nocards)
 
         card_matcher = CardMatcher(global_matches.s_indices,
                                    global_matches.m_indices)
-        card_matcher.process_registers(sa_parser.cards, ma_parser.cards)
+        card_matcher.process_registers(parsers.sa.cards, parsers.ma.cards)
 
         deny_anomalous_match_list('cardMatcher.duplicate_matches',
                                   card_matcher.duplicate_matches)
@@ -482,12 +496,12 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing emails")
         print timediff(settings)
 
-        deny_anomalous_parselist("saParser.noemails", sa_parser.noemails)
+        deny_anomalous_parselist("saParser.noemails", parsers.sa.noemails)
 
         email_matcher = NocardEmailMatcher(global_matches.s_indices,
                                            global_matches.m_indices)
 
-        email_matcher.process_registers(sa_parser.nocards, ma_parser.emails)
+        email_matcher.process_registers(parsers.sa.nocards, parsers.ma.emails)
 
         new_masters.add_matches(email_matcher.masterless_matches)
         new_slaves.add_matches(email_matcher.slaveless_matches)
@@ -541,9 +555,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 sync_slave_updates = sync_update.get_slave_updates()
                 if 'E-mail' in sync_slave_updates:
                     new_email = sync_slave_updates['E-mail']
-                    if new_email in sa_parser.emails:
+                    if new_email in parsers.sa.emails:
                         m_objects = [m_object]
-                        s_objects = [s_object] + sa_parser.emails[new_email]
+                        s_objects = [s_object] + parsers.sa.emails[new_email]
                         SanitationUtils.safe_print("duplicate emails",
                                                    m_objects, s_objects)
                         try:
@@ -687,59 +701,59 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         sanitizing_group = HtmlReporter.Group('sanitizing',
                                               'Sanitizing Results')
 
-        if sa_parser.bad_address:
+        if parsers.sa.bad_address:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_addresses_list',
                     title='Bad %s Address List' % settings.slave_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.slave_name,
-                    data=UsrObjList(sa_parser.bad_address.values()).tabulate(
+                    data=UsrObjList(parsers.sa.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(sa_parser.bad_address)))
+                    length=len(parsers.sa.bad_address)))
 
-        if sa_parser.bad_name:
+        if parsers.sa.bad_name:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_names_list',
                     title='Bad %s Names List' % settings.slave_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.slave_name,
-                    data=UsrObjList(sa_parser.bad_name.values()).tabulate(
+                    data=UsrObjList(parsers.sa.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(sa_parser.bad_name)))
-        if sa_parser.bad_name or sa_parser.bad_address:
-            UsrObjList(sa_parser.bad_name.values() + ma_parser.bad_address.
+                    length=len(parsers.sa.bad_name)))
+        if parsers.sa.bad_name or parsers.sa.bad_address:
+            UsrObjList(parsers.sa.bad_name.values() + parsers.ma.bad_address.
                        values()).export_items(settings['w_pres_csv_path'], csv_colnames)
 
-        if ma_parser.bad_address:
+        if parsers.ma.bad_address:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_addresses_list',
                     title='Bad %s Address List' % settings.master_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.master_name,
-                    data=UsrObjList(ma_parser.bad_address.values()).tabulate(
+                    data=UsrObjList(parsers.ma.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(ma_parser.bad_address)))
+                    length=len(parsers.ma.bad_address)))
 
-        if ma_parser.bad_name:
+        if parsers.ma.bad_name:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_names_list',
                     title='Bad %s Names List' % settings.master_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.master_name,
-                    data=UsrObjList(ma_parser.bad_name.values()).tabulate(
+                    data=UsrObjList(parsers.ma.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(ma_parser.bad_name)))
+                    length=len(parsers.ma.bad_name)))
 
-        if ma_parser.bad_name or ma_parser.bad_address:
-            UsrObjList(ma_parser.bad_name.values() + ma_parser.bad_address.values())\
+        if parsers.ma.bad_name or parsers.ma.bad_address:
+            UsrObjList(parsers.ma.bad_name.values() + parsers.ma.bad_address.values())\
                 .export_items(settings['master_res_csv_path'], csv_colnames)
 
         reporter.add_group(sanitizing_group)
@@ -983,7 +997,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                                                duplicate_type)
 
             address_duplicates = {}
-            for address, objects in ma_parser.addresses.items():
+            for address, objects in parsers.ma.addresses.items():
                 # print "analysing address %s " % address
                 # for object_data in objects:
                 # print " -> associated object: %s" % object_data
@@ -994,7 +1008,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                     duplicates.add_conflictors(
                         objects, "address", weighting=0.1)
 
-            for object_data in ma_parser.objects.values():
+            for object_data in parsers.ma.objects.values():
                 if fn_user_older_than_wp(settings['old_threshold'])(object_data):
                     details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
@@ -1150,9 +1164,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-                UsrSyncClientSshAct(act_connect_params, act_db_params, fs_params) \
+                UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params, settings.fs_params) \
                     as master_client, \
-                UsrSyncClientWP(wp_api_params) as slave_client:
+                UsrSyncClientWP(settings.wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
             for count, update in enumerate(all_updates):
