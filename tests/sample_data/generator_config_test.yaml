@@ -20,4 +20,4 @@ show-report: true
 do-images: false
 do-delete-images: false
 do-resize-images: false
-download-master: false
+skip-download-master: true
