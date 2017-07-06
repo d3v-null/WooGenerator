@@ -80,20 +80,15 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
             'g_drive_params', 'wc_api_params', 'api_product_parser_args',
             'product_parser_args'
     ]:
-        Registrar.register_message("%s: %s" %
-                                   (thing, getattr(settings, thing)))
+        Registrar.register_message(
+            "%s: %s" % (thing, getattr(settings, thing))
+        )
 
-    if settings.schema_is_myo:
-        col_data_class = ColDataMyo
-    elif settings.schema_is_woo:
-        col_data_class = ColDataWoo
-    else:
-        col_data_class = ColDataBase
     settings.product_parser_args.update(**{
         'cols':
-        col_data_class.get_import_cols(),
+        settings.col_data_class.get_import_cols(),
         'defaults':
-        col_data_class.get_defaults(),
+        settings.col_data_class.get_defaults(),
     })
     if settings.schema_is_myo:
         product_parser_class = CsvParseMyo

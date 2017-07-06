@@ -11,6 +11,8 @@ import configargparse
 
 from __init__ import MODULE_LOCATION
 from woogenerator.utils import TimeUtils
+from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo
+
 
 # Core configuration
 CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
@@ -214,6 +216,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response.append(self.img_raw_extra_folder)
         return response
 
+    @property
+    def col_data_class(self):
+        """ Class used to obtain column metadata. """
+        if self.schema_is_myo:
+            return ColDataMyo
+        if self.schema_is_woo:
+            return ColDataWoo
+        return ColDataBase
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     """ Provide namespace for user settings. """
@@ -251,6 +261,11 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def s_x_name(self):
         """ Name used for slave export. """
         return "%s_x%s_%s.csv" % (self.slave_name, self.file_suffix, self.import_name)
+
+    @property
+    def col_data_class(self):
+        """ Class used to obtain column metadata. """
+        return ColDataUser
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """

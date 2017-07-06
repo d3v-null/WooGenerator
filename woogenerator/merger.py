@@ -119,6 +119,8 @@ def populate_master_parsers(parsers, settings):
     """
     Populate the parsers for data from the slave database.
     """
+    col_data_class = settings.col_data_class
+
     parsers.ma = CsvParseUser(
         cols=ColDataUser.get_act_import_cols(),
         defaults=ColDataUser.get_defaults(),
@@ -1342,6 +1344,6 @@ def catch_main(override_args=None):
         Registrar.register_message('wrote file %s' % settings.zip_path_full)
 
     sys.exit(status)
-    
+
 if __name__ == '__main__':
     catch_main()
