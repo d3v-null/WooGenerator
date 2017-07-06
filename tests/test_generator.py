@@ -27,8 +27,8 @@ class TestGenerator(TestCase):
         # self.override_args = "--config-file=" + self.config_path
 
     def test_init_settings(self):
-        Registrar.DEBUG_MESSAGE = True
-        Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_ERROR = True
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,

@@ -435,15 +435,15 @@ class ArgumentParserCommon(ArgumentParserProto):
     def default_config_files(self):
         return self._default_config_files
 
-    def _open_config_files(self, command_line_args):
-        Registrar.register_message(
-            "default_config_files: %s" % pformat(self._default_config_files)
-        )
-        response = super(ArgumentParserCommon, self)._open_config_files(command_line_args)
-        Registrar.register_message(
-            "response: %s" % pformat(response)
-        )
-        return response
+    # def _open_config_files(self, command_line_args):
+    #     Registrar.register_message(
+    #         "default_config_files: %s" % pformat(self._default_config_files)
+    #     )
+    #     response = super(ArgumentParserCommon, self)._open_config_files(command_line_args)
+    #     Registrar.register_message(
+    #         "response: %s" % pformat(response)
+    #     )
+    #     return response
 
     def add_suppressed_argument(self, name, **kwargs):
         kwargs['help'] = argparse.SUPPRESS
@@ -1016,7 +1016,7 @@ def init_settings(override_args=None, settings=None, argparser_class=ArgumentPar
 
 
     for conf in settings.second_stage_configs:
-        print "adding conf: %s" % conf
+        # print "adding conf: %s" % conf
         argparser.add_default_config_file(conf)
 
     if settings.help_verbose:
