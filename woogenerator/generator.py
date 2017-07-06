@@ -76,10 +76,13 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
     """
     # TODO: fix too-many-branches,too-many-statements
 
-    for thing in [
-            'g_drive_params', 'wc_api_params', 'api_product_parser_args',
-            'product_parser_args'
-    ]:
+    things_to_check = [
+        'product_parser_args'
+    ]
+    if settings['download_master']:
+        things_to_check.extend(['g_drive_params', 'wc_api_params', 'api_product_parser_args'])
+
+    for thing in things_to_check:
         Registrar.register_message(
             "%s: %s" % (thing, getattr(settings, thing))
         )
@@ -619,6 +622,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'cols': ColDataWoo.get_import_cols(),
         'defaults': ColDataWoo.get_defaults(),
     }
+
+    # TODO: move product_parser_args into config
 
     settings.product_parser_args = {
         'import_name': settings.import_name,
