@@ -457,7 +457,9 @@ class ArgumentParserCommon(ArgumentParserProto):
         group.add_argument(
             '--download-master',
             help='download the master data',
-            action="store_true")
+            action="store_true",
+            default=False
+        )
         group.add_argument(
             '--skip-download-master',
             help=('use the local master file'
@@ -478,6 +480,9 @@ class ArgumentParserCommon(ArgumentParserProto):
             '--download-limit',
             help='global limit of objects to download (for debugging)',
             type=int)
+        download_group.add_argument(
+            '--schema',
+            help='what schema to process the files as')
 
     def add_processing_options(self, processing_group):
         """ Add options pertaining to processing data. """
@@ -669,9 +674,6 @@ class ArgumentParserProd(ArgumentParserCommon):
 
     def add_download_options(self, download_group):
         super(ArgumentParserProd, self).add_download_options(download_group)
-        download_group.add_argument(
-            '--schema',
-            help='what schema to process the files as')
         download_group.add_argument(
             '--variant',
             help='what variant of schema to process the files')
@@ -1030,6 +1032,8 @@ def init_settings(override_args=None, settings=None, argparser_class=ArgumentPar
     # defaults first
     settings = argparser.parse_args(**parser_override)
 
+    # argparser.print_values()
+
     Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
 
     # then user config
@@ -1037,5 +1041,5 @@ def init_settings(override_args=None, settings=None, argparser_class=ArgumentPar
     #     with open(conf, 'r') as config_file:
     #         settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
 
-    Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
+    # Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
     return settings
