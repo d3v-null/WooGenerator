@@ -1,5 +1,5 @@
 """
-Provide configuration utilities.
+Provide configuration utilities including settings namespaces and argument parsers.
 """
 import os
 import ast
@@ -8,10 +8,11 @@ import time
 
 import argparse
 import configargparse
+from pprint import pformat
 
 from __init__ import MODULE_LOCATION
-from woogenerator.utils import TimeUtils
-from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo
+from woogenerator.utils import TimeUtils, Registrar
+from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataUser
 
 
 # Core configuration
@@ -392,6 +393,9 @@ class ArgumentParserCommon(ArgumentParserProto):
     Second stage is where all arguments are parsed from the config files specified
     """
 
+    proto_argparser = ArgumentParserProto
+    namespace = SettingsNamespaceProto
+
     def __init__(self, **kwargs):
         # set common defaults
 
@@ -401,11 +405,11 @@ class ArgumentParserCommon(ArgumentParserProto):
         if not kwargs.get('default_config_files'):
             kwargs['default_config_files'] = []
         if os.path.exists(DEFAULTS_COMMON_PATH):
-            kwargs['default_config_files'].append(DEFAULTS_COMMON_PATH)
+            kwargs['default_config_files'].insert(0, DEFAULTS_COMMON_PATH)
         if kwargs.get('extra_default_config_files'):
             for path in kwargs.pop('extra_default_config_files'):
                 if os.path.exists(path):
-                    kwargs['default_config_files'].append(path)
+                    kwargs['default_config_files'].insert(0, path)
 
         super(ArgumentParserCommon, self).__init__(**kwargs)
 
@@ -425,7 +429,21 @@ class ArgumentParserCommon(ArgumentParserProto):
 
     def add_default_config_file(self, config_file):
         if not config_file in self._default_config_files:
-            self._default_config_files.append(config_file)
+            self._default_config_files.insert(0, config_file)
+
+    @property
+    def default_config_files(self):
+        return self._default_config_files
+
+    def _open_config_files(self, command_line_args):
+        Registrar.register_message(
+            "default_config_files: %s" % pformat(self._default_config_files)
+        )
+        response = super(ArgumentParserCommon, self)._open_config_files(command_line_args)
+        Registrar.register_message(
+            "response: %s" % pformat(response)
+        )
+        return response
 
     def add_suppressed_argument(self, name, **kwargs):
         kwargs['help'] = argparse.SUPPRESS
@@ -636,6 +654,9 @@ class ArgumentParserCommon(ArgumentParserProto):
 class ArgumentParserProd(ArgumentParserCommon):
     """ Provide ArgumentParser class for product syncing. """
 
+    proto_argparser = ArgumentParserProtoProd
+    namespace = SettingsNamespaceProd
+
     def __init__(self, **kwargs):
         kwargs['description'] = \
             'Synchronize product data from multiple remote sources'
@@ -843,6 +864,9 @@ class ArgumentParserProd(ArgumentParserCommon):
 class ArgumentParserUser(ArgumentParserCommon):
     """ Provide ArgumentParser class for syncing contacts. """
 
+    proto_argparser = ArgumentParserProtoUser
+    namespace = SettingsNamespaceUser
+
     def __init__(self, **kwargs):
         kwargs['description'] = \
             'Merge contact records between two databases'
@@ -955,3 +979,63 @@ class ArgumentParserUser(ArgumentParserCommon):
 
     def add_other_options(self):
         super(ArgumentParserUser, self).add_other_options()
+
+def init_settings(override_args=None, settings=None, argparser_class=ArgumentParserCommon):
+    """
+    Load config file and initialise settings object from given argparser class.
+    """
+
+    if not settings:
+        settings = argparser_class.namespace()
+
+    ### First round of argument parsing determines which config files to read
+    ### from core config files, CLI args and env vars
+
+    proto_argparser = argparser_class.proto_argparser()
+
+    Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
+
+    parser_override = {'namespace':settings}
+    if override_args:
+        parser_override['args'] = override_args
+
+    settings, _ = proto_argparser.parse_known_args(**parser_override)
+
+    Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
+
+    ### Second round gets all the arguments from all config files
+
+    # TODO: implement "ask for password" feature
+    argparser = argparser_class()
+
+    # TODO: test set local work dir
+    # TODO: test set live config
+    # TODO: test set test config
+    # TODO: move in, out, log folders to full
+    # TODO: move gen, dprc, dprp, spec to full calculated in settings
+
+
+    # for conf in settings.second_stage_configs:
+    #     print "adding conf: %s" % conf
+    #     argparser.add_default_config_file(conf)
+
+    if settings.help_verbose:
+        if 'args' not in parser_override:
+            parser_override['args'] = []
+        parser_override['args'] += ['--help']
+
+    Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
+    Registrar.register_message("default_config_files: \n%s" % pformat(argparser.default_config_files))
+
+    # defaults first
+    settings = argparser.parse_args(**parser_override)
+
+    Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
+
+    # then user config
+    for conf in settings.second_stage_configs:
+        with open(conf, 'r') as config_file:
+            settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
+
+    Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
+    return settings
