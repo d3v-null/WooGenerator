@@ -405,11 +405,11 @@ class ArgumentParserCommon(ArgumentParserProto):
         if not kwargs.get('default_config_files'):
             kwargs['default_config_files'] = []
         if os.path.exists(DEFAULTS_COMMON_PATH):
-            kwargs['default_config_files'].insert(0, DEFAULTS_COMMON_PATH)
+            kwargs['default_config_files'].append(DEFAULTS_COMMON_PATH)
         if kwargs.get('extra_default_config_files'):
             for path in kwargs.pop('extra_default_config_files'):
                 if os.path.exists(path):
-                    kwargs['default_config_files'].insert(0, path)
+                    kwargs['default_config_files'].append(path)
 
         super(ArgumentParserCommon, self).__init__(**kwargs)
 
@@ -429,7 +429,7 @@ class ArgumentParserCommon(ArgumentParserProto):
 
     def add_default_config_file(self, config_file):
         if not config_file in self._default_config_files:
-            self._default_config_files.insert(0, config_file)
+            self._default_config_files.append(config_file)
 
     @property
     def default_config_files(self):
@@ -1015,9 +1015,9 @@ def init_settings(override_args=None, settings=None, argparser_class=ArgumentPar
     # TODO: move gen, dprc, dprp, spec to full calculated in settings
 
 
-    # for conf in settings.second_stage_configs:
-    #     print "adding conf: %s" % conf
-    #     argparser.add_default_config_file(conf)
+    for conf in settings.second_stage_configs:
+        print "adding conf: %s" % conf
+        argparser.add_default_config_file(conf)
 
     if settings.help_verbose:
         if 'args' not in parser_override:
@@ -1033,9 +1033,9 @@ def init_settings(override_args=None, settings=None, argparser_class=ArgumentPar
     Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
 
     # then user config
-    for conf in settings.second_stage_configs:
-        with open(conf, 'r') as config_file:
-            settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
+    # for conf in settings.second_stage_configs:
+    #     with open(conf, 'r') as config_file:
+    #         settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
 
     Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
     return settings
