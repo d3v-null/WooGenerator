@@ -428,7 +428,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     # PROCESS CONFIG
 
-    # settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
     settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
     settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
