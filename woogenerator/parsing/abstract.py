@@ -368,13 +368,13 @@ class CsvParseBase(Registrar):
             register_name='objects')
 
     def analyse_header(self, row):
-        # if self.DEBUG_PARSER: self.register_message( 'row: %s' % unicode(row) )
         sanitized_row = [self.sanitize_cell(cell) for cell in row]
+        if self.DEBUG_PARSER:
+            self.register_message('sanitized row: %s' % repr(sanitized_row))
         for col in self.cols:
             sanitized_col = self.sanitize_cell(col)
             if sanitized_col in sanitized_row:
                 self.indices[col] = sanitized_row.index(sanitized_col)
-                continue
             if self.indices.get(col):
                 if self.DEBUG_ABSTRACT:
                     self.register_message("indices [%s] = %s" %
@@ -403,9 +403,11 @@ class CsvParseBase(Registrar):
             # this may break shit
             return row[index]
         except Exception as exc:
-            self.register_warning('Could not retrieve ' + str(
-                col) + ' from row[' + str(index) + '] | ' + str(exc) + ' | ' +
-                repr(row))
+            self.register_warning(
+                'Could not retrieve ' + str(col) +
+                ' from row[' + str(index) + '] | ' +
+                str(exc) + ' | ' + repr(row)
+            )
             return None
 
     def sanitize_cell(self, cell):

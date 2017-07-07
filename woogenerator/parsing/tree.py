@@ -493,10 +493,11 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         # return [row[this_depth+i*self.max_depth]for i in
         # range(self.meta_width)]
         meta = [''] * self.meta_width
-        if row:
+        sanitized_row = map(self.sanitize_cell, row)
+        if sanitized_row:
             for i in range(self.meta_width):
                 try:
-                    meta[i] = row[this_depth + i * self.max_depth]
+                    meta[i] = sanitized_row[this_depth + i * self.max_depth]
                 except IndexError as exc:
                     self.register_error(
                         "could not get meta[{}] | {}".format(i, exc))
