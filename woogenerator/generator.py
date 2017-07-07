@@ -117,7 +117,11 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
     #     settings.master_client_class = SyncClientLocal
     #     settings.master_client_args = []
     #
-    with settings.master_client_class(*settings.master_client_args) as client:
+
+    if Registrar.DEBUG_GEN:
+        Registrar.register_message("master_client_args: %s" % settings.master_client_args)
+
+    with settings.master_client_class(**settings.master_client_args) as client:
         if settings.schema_is_woo:
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
@@ -470,8 +474,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     # TODO: set up logging here instead of Registrar verbosity crap
 
-    init_registrar(settings)
-
     if settings['auto_create_new']:
         exc = UserWarning("auto-create not fully implemented yet")
         Registrar.register_warning(exc)
@@ -566,7 +568,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     ########################################
 
     # settings['g_drive_params'] = {
-    #     'scopes': settings.gdrive_scopes,
+    #     'scopes': settings.gdri_scopes,
     #     'client_secret_file': settings.gdrive_client_secret_file,
     #     'app_name': settings.gdrive_app_name,
     #     'oauth_client_id': settings.gdrive_oauth_client_id,

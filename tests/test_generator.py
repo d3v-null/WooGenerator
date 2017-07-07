@@ -12,7 +12,7 @@ from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
                                  SettingsNamespaceProd, init_settings)
-from woogenerator.generator import populate_master_parsers, init_registrar
+from woogenerator.generator import populate_master_parsers
 
 from context import tests_datadir
 
@@ -47,7 +47,6 @@ class TestGenerator(TestCase):
         self.assertEqual(self.settings.download_master, False)
         self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "SublimeCsvTable")
 
-
     def test_populate_master_parsers(self):
         self.test_init_settings()
         self.parsers = argparse.Namespace()
@@ -68,7 +67,7 @@ class TestGenerator(TestCase):
             163
         )
         self.assertEqual(
-            len(self.parsers.master.items.values()),
+                len(self.parsers.master.items.values()),
             144
         )
         self.assertEqual(

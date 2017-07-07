@@ -179,7 +179,11 @@ class SyncClientGDrive(SyncClientAbstract):
                 'credentials_dir', 'credentials_file', 'client_secret_file',
                 'scopes', 'app_name'
         ]:
-            assert key in gdrive_params, "key %s should be specified" % key
+            assert key in gdrive_params, \
+                "key %s should be specified in gdrive_params: %s" % (
+                    key,
+                    repr(gdrive_params)
+                )
         self.skip_download = gdrive_params.pop('skip_download', None)
         self.gdrive_params = gdrive_params
         credentials = self.get_credentials()
