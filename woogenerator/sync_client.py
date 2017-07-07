@@ -139,14 +139,23 @@ class SyncClientAbstract(Registrar):
 class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
 
-    def __init__(self):
-        pass
+    def __init__(self, dialect_suggestion=None):
+        self.dialect_suggestion = dialect_suggestion
 
     def __exit__(self, exit_type, value, traceback):
         pass
 
     def analyse_remote(self, parser, out_path=None, limit=None, **kwargs):
-        return parser.analyse_file(out_path, limit=limit)
+        dialect_suggestion = kwargs.get('dialect_suggestion', None)
+        if self.DEBUG_PARSER:
+            self.register_message(
+                "kwargs: %s" % kwargs
+            )
+        return parser.analyse_file(
+            out_path,
+            limit=limit,
+            dialect_suggestion=self.dialect_suggestion
+        )
         # out_encoding='utf8'
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
         # return parser.analyse_stream(out_file, limit=limit,

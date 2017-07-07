@@ -646,6 +646,11 @@ class CsvParseBase(Registrar):
         byte_sample = SanitationUtils.coerce_bytes(byte_file_obj.read(1000))
         byte_file_obj.seek(0)
 
+        if self.DEBUG_PARSER:
+            self.register_message(
+                "dialect_suggestion: %s" % dialect_suggestion
+            )
+
         if dialect_suggestion:
             csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
                 dialect_suggestion)
@@ -657,7 +662,8 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_PARSER:
             self.register_message(
-                UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+                UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
+            )
 
         unicodecsvreader = unicodecsv.reader(
             byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
@@ -672,6 +678,11 @@ class CsvParseBase(Registrar):
         """
         Call analyse_stream on a given file.
         """
+        if self.DEBUG_PARSER:
+            self.register_message(
+                "dialect_suggestion: %s" % dialect_suggestion
+            )
+
         with open(file_name, 'rbU') as byte_file_obj:
             return self.analyse_stream(
                 byte_file_obj,
