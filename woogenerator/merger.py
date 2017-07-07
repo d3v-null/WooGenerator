@@ -177,27 +177,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
-    ### DISPLAY CONFIG ###
-    if Registrar.DEBUG_MESSAGE:
-        if settings.testmode:
-            print "testmode enabled"
-        else:
-            print "testmode disabled"
-        if not settings['download_slave']:
-            print "no download_slave"
-        if not settings['download_master']:
-            print "no download_master"
-        if not settings['update_master']:
-            print "not updating maseter"
-        if not settings['update_slave']:
-            print "not updating slave"
-        if not settings['do_filter']:
-            print "not doing filter"
-        if not settings['do_sync']:
-            print "not doing sync"
-        if not settings.do_post:
-            print "not doing post"
-
     ### PROCESS CLASS PARAMS ###
 
     FieldGroup.do_post = settings.do_post
