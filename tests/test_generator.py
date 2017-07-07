@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import sys
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import argparse
 
@@ -22,15 +23,18 @@ class TestGenerator(TestCase):
         self.settings.local_work_dir = tests_datadir
         self.settings.local_live_config = None
         self.settings.local_test_config = "generator_config_test.yaml"
+        self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
         self.settings.master_file = os.path.join(tests_datadir, "generator_sample.csv")
-        # self.config_path = os.path.join(tests_datadir, "generator_config_test.yaml")
+        # self.settings.download_limit = 10
         self.override_args = ""
-        # self.override_args = "--skip-download-master"
 
-    def test_init_settings(self):
         Registrar.DEBUG_MESSAGE = True
         Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_ABSTRACT = True
+        # Registrar.DEBUG_PARSER = True
+
+    def test_init_settings(self):
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,
@@ -39,8 +43,9 @@ class TestGenerator(TestCase):
         self.assertEqual(self.settings.master_name, "GDrive")
         self.assertEqual(self.settings.slave_name, "WooCommerce")
         self.assertEqual(self.settings.merge_mode, "sync")
-        self.assertEqual(self.settings.schema, "WC")
+        self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
+        self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "SublimeCsvTable")
 
 
     def test_populate_master_parsers(self):
@@ -57,7 +62,26 @@ class TestGenerator(TestCase):
             self.settings
         )
 
-        print(getattr(self.parsers, 'ma').tabulate())
+        #number of objects:
+        self.assertEqual(
+            len(self.parsers.master.objects.values()),
+            163
+        )
+        self.assertEqual(
+            len(self.parsers.master.items.values()),
+            144
+        )
+        self.assertEqual(
+            len(self.parsers.master.products.values()),
+            48
+        )
+
+        prodList = WooProdList(self.parsers.master.products.values())
+        self.assertEqual(
+            prodList[0].codesum,
+            "ACARA-CAL"
+        )
+        # print(SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple')))
 
 
 if __name__ == '__main__':
