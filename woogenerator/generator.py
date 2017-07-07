@@ -45,7 +45,7 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
 from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
-                                 SettingsNamespaceProd, init_settings)
+                                 SettingsNamespaceProd, init_settings, ParsersNamespace)
 
 
 def timediff(settings):
@@ -453,34 +453,6 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
             updated_variations_list.export_items(
                 flvu_path, variation_col_names)
 
-def init_registrar(settings):
-    if settings.verbosity > 0:
-        Registrar.DEBUG_PROGRESS = True
-        Registrar.DEBUG_ERROR = True
-    if settings.verbosity > 1:
-        Registrar.DEBUG_MESSAGE = True
-    if settings.quiet:
-        Registrar.DEBUG_PROGRESS = False
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_MESSAGE = False
-
-    Registrar.DEBUG_ABSTRACT = settings.debug_abstract
-    Registrar.DEBUG_PARSER = settings.debug_parser
-    Registrar.DEBUG_GEN = settings.debug_gen
-    Registrar.DEBUG_MYO = settings.debug_myo
-    Registrar.DEBUG_TREE = settings.debug_tree
-    Registrar.DEBUG_WOO = settings.debug_woo
-    Registrar.DEBUG_NAME = settings.debug_name
-    Registrar.DEBUG_IMG = settings.debug_img
-    Registrar.DEBUG_API = settings.debug_api
-    Registrar.DEBUG_SHOP = settings.debug_shop
-    Registrar.DEBUG_UPDATE = settings.debug_update
-    Registrar.DEBUG_MRO = settings.debug_mro
-    Registrar.DEBUG_GDRIVE = settings.debug_gdrive
-    Registrar.DEBUG_SPECIAL = settings.debug_special
-    Registrar.DEBUG_CATS = settings.debug_cats
-    Registrar.DEBUG_VARS = settings.debug_vars
-
 def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Main function for generator."""
     # TODO: too-many-locals,too-many-branches,too-many-statements
@@ -632,7 +604,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     #     'taxo_depth': settings.taxo_depth,
     # }
 
-    parsers = argparse.Namespace()
+    parsers = ParsersNamespace()
     parsers = populate_master_parsers(parsers, settings)
 
     check_warnings()
