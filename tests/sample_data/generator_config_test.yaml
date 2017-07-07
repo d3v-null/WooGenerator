@@ -13,7 +13,7 @@ woo-schemas:
     - CA
     - CB
 
-fallback-schema: CA
+schema: CA
 
 add-special-categories: false
 show-report: true
