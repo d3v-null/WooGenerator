@@ -87,36 +87,8 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
             "%s: %s" % (thing, getattr(settings, thing))
         )
 
-    # settings.master_parser_args.update(**{
-    #     'cols':
-    #     settings.col_data_class.get_import_cols(),
-    #     'defaults':
-    #     settings.col_data_class.get_defaults(),
-    # })
-    # if settings.schema_is_myo:
-    #     settings.master_parser_class = CsvParseMyo
-    # elif settings.schema_is_woo:
-    #     if settings.schema == "TT":
-    #         settings.master_parser_class = CsvParseTT
-    #     elif settings.schema == "VT":
-    #         settings.master_parser_class = CsvParseVT
-    #     else:
-    #         settings.master_parser_args['schema'] = settings.schema
-    #         settings.master_parser_class = CsvParseWoo
-
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
-
-    # if settings['download_master']:
-    #     if Registrar.DEBUG_GDRIVE:
-    #         Registrar.register_message("GDrive params: %s" %
-    #                                    settings['g_drive_params'])
-    #     settings.master_client_class = SyncClientGDrive
-    #     settings.master_client_args = [settings['g_drive_params']]
-    # else:
-    #     settings.master_client_class = SyncClientLocal
-    #     settings.master_client_args = []
-    #
 
     if Registrar.DEBUG_GEN:
         Registrar.register_message("master_client_args: %s" % settings.master_client_args)
@@ -158,13 +130,6 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
                         "current_special_groups: %s" % settings.current_special_groups
                     )
 
-                # if settings['do_categories']:
-                #     if settings.current_special_groups:
-                #         settings.master_parser_args[
-                #             'add_special_categories'] = settings.add_special_categories
-
-        # print "calling product parser with kwargs: %s" % pformat(settings.master_parser_args)
-
         parsers.master = settings.master_parser_class(**settings.master_parser_args)
 
         Registrar.register_progress("analysing product data")
@@ -175,8 +140,6 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
             gid=settings.gen_gid,
             limit=settings['download_limit']
         )
-
-        # check categories are valid
 
         if Registrar.DEBUG_PARSER and hasattr(parsers.master, 'categories_name'):
             for category_name, category_list in getattr(parsers.master, 'categories_name').items():
@@ -479,10 +442,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         Registrar.register_warning(exc)
     if settings.auto_delete_old:
         raise UserWarning("auto-delete not implemented yet")
-    # if settings.do_images and platform.system() != 'Darwin':
-    #     exc = UserWarning("Images not implemented on all platforms yet")
-    #     Registrar.register_warning(exc)
-
 
     if settings.img_raw_folder is not None:
         settings.img_raw_folders.append(settings.img_raw_folder)
@@ -492,14 +451,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
                            settings.merge_mode, settings.last_sync)
-
-    # if settings.variant == "ACC":
-    #     settings.gen_path = os.path.join(settings.in_folder_full,
-    #                                      'generator-solution.csv')
-    #
-    # if settings.variant == "SOL":
-    #     settings.gen_path = os.path.join(settings.in_folder_full,
-    #                                      'generator-accessories.csv')
 
     suffix = settings.schema
     if settings.variant:
@@ -567,17 +518,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Create Product Parser object
     ########################################
 
-    # settings['g_drive_params'] = {
-    #     'scopes': settings.gdri_scopes,
-    #     'client_secret_file': settings.gdrive_client_secret_file,
-    #     'app_name': settings.gdrive_app_name,
-    #     'oauth_client_id': settings.gdrive_oauth_client_id,
-    #     'oauth_client_secret': settings.gdrive_oauth_client_secret,
-    #     'credentials_dir': settings.gdrive_credentials_dir,
-    #     'credentials_file': settings.gdrive_credentials_file,
-    #     'gen_fid': settings.gen_fid,
-    # }
-
     if not settings['download_master']:
         settings['g_drive_params']['skip_download'] = True
 
@@ -597,14 +537,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'cols': ColDataWoo.get_import_cols(),
         'defaults': ColDataWoo.get_defaults(),
     }
-
-    # TODO: move master_parser_args into config
-
-    # settings.master_parser_args = {
-    #     'import_name': settings.import_name,
-    #     'item_depth': settings.item_depth,
-    #     'taxo_depth': settings.taxo_depth,
-    # }
 
     parsers = ParsersNamespace()
     parsers = populate_master_parsers(parsers, settings)
