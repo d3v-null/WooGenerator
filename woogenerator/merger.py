@@ -120,11 +120,10 @@ def populate_master_parsers(parsers, settings):
     """
     Populate the parsers for data from the slave database.
     """
-    col_data_class = settings.col_data_class
 
     parsers.master = CsvParseUser(
-        cols=ColDataUser.get_act_import_cols(),
-        defaults=ColDataUser.get_defaults(),
+        cols=settings.col_data_class.get_act_import_cols(),
+        defaults=settings.col_data_class.get_defaults(),
         contact_schema='act',
         filter_items=settings.filter_items,
         limit=settings['download_limit'],
@@ -165,7 +164,7 @@ def populate_master_parsers(parsers, settings):
         )
         parsers.master.get_obj_list().export_items(
             os.path.join(settings.in_folder_full, settings.m_x_name),
-            ColDataUser.get_act_import_col_names())
+            settings.col_data_class.get_act_import_col_names())
     return parsers
 
 def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
