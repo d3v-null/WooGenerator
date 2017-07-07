@@ -13,7 +13,10 @@ from pprint import pformat
 from __init__ import MODULE_LOCATION
 from woogenerator.utils import TimeUtils, Registrar
 from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataUser
-
+from woogenerator.parsing.myo import CsvParseMyo
+from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
+                                      WooCatList, WooProdList, WooVarList)
+from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
 
 # Core configuration
 CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
@@ -53,6 +56,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
         self.start_time = getattr(self, 'start_time', time.time())
         self.schema = getattr(self, 'schema', None)
+        self.download_master = getattr(self, 'download_master', False)
 
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
 
@@ -176,6 +180,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.variant = getattr(self, 'variant', None)
         self.woo_schemas = getattr(self, 'woo_schemas', [])
         self.myo_schemas = getattr(self, 'myo_schemas', [])
+        self.taxo_depth = getattr(self, 'taxo_depth', None)
+        self.item_depth = getattr(self, 'item_depth', None)
         self.thumbsize_x = getattr(self, 'thumbsize_x', None)
         self.thumbsize_y = getattr(self, 'thumbsize_y', None)
         self.img_raw_folder = getattr(self, 'img_raw_folder', None)
@@ -225,6 +231,88 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.schema_is_woo:
             return ColDataWoo
         return ColDataBase
+
+    @property
+    def gen_path(self):
+        """ The path which the generator data is downloaded to and read from. """
+        if not self.download_master and hasattr(self, 'master_file'):
+            return getattr(self, 'master_file')
+        response = 'generator'
+        if self.variant:
+            response = "-".join([response, self.variant])
+        response += self.import_name
+        return response + '.csv'
+
+    @property
+    def master_parser_class(self):
+        """ Class used to parse master data """
+        if self.schema_is_myo:
+            return CsvParseMyo
+        if self.schema_is_woo:
+            if self.schema == CsvParseTT.target_schema:
+                return CsvParseTT
+            if self.schema == CsvParseVT.target_schema:
+                return CsvParseVT
+            return CsvParseWoo
+
+    @property
+    def master_parser_args(self):
+        response = {
+            'import_name': self.import_name,
+            'cols': self.col_data_class.get_import_cols(),
+            'defaults': self.col_data_class.get_defaults(),
+            'schema':self.schema,
+        }
+        for key, settings_key in [
+                ('item_depth', 'item_depth'),
+                ('taxo_depth', 'taxo_depth'),
+                ('special_rules', 'special_rules'),
+                ('current_special_groups', 'current_special_groups'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        if getattr(self, 'do_categories', None) and getattr(self, 'current_special_groups', None):
+            response['add_special_categories'] = getattr(self, 'add_special_categories', None)
+        return response
+
+    @property
+    def master_client_class(self):
+        response = SyncClientLocal
+        if self.download_master:
+            response = SyncClientGDrive
+        return response
+
+    @property
+    def g_drive_params(self):
+        response = {}
+        for key, settings_key in [
+                ('scopes', 'gdrive_scopes'),
+                ('client_secret_file', 'gdrive_client_secret_file'),
+                ('app_name', 'gdrive_app_name'),
+                ('oauth_client_id', 'gdrive_oauth_client_id'),
+                ('oauth_client_secret', 'gdrive_oauth_client_secret'),
+                ('credentials_dir', 'gdrive_credentials_dir'),
+                ('credentials_file', 'gdrive_credentials_file'),
+                ('gen_fid', 'gen_fid')
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def master_client_args(self):
+        response = {}
+        if self.master_client_class == SyncClientGDrive:
+            response = {
+                'gdrive_params': self.g_drive_params
+            }
+        for key, settings_key in [
+                ('dialect_suggestion', 'master_dialect_suggestion'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     """ Provide namespace for user settings. """
@@ -981,6 +1069,12 @@ class ArgumentParserUser(ArgumentParserCommon):
 
     def add_other_options(self):
         super(ArgumentParserUser, self).add_other_options()
+
+class ParsersNamespace(argparse.Namespace):
+    def __init__(self, *args, **kwargs):
+        super(ParsersNamespace, self).__init__(*args, **kwargs)
+        self.master = getattr(self, 'master', None)
+        self.slave = getattr(self, 'slave', None)
 
 def init_settings(override_args=None, settings=None, argparser_class=ArgumentParserCommon):
     """

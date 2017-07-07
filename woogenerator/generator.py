@@ -70,111 +70,112 @@ def check_warnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-branches,too-many-statements
+def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-branches,too-many-statements
     """
     Create and populates the various parsers.
     """
     # TODO: fix too-many-branches,too-many-statements
 
     things_to_check = [
-        'product_parser_args'
+        'master_parser_args'
     ]
     if settings['download_master']:
-        things_to_check.extend(['g_drive_params', 'wc_api_params', 'api_product_parser_args'])
+        things_to_check.extend(['g_drive_params'])
 
     for thing in things_to_check:
         Registrar.register_message(
             "%s: %s" % (thing, getattr(settings, thing))
         )
 
-    settings.product_parser_args.update(**{
-        'cols':
-        settings.col_data_class.get_import_cols(),
-        'defaults':
-        settings.col_data_class.get_defaults(),
-    })
-    if settings.schema_is_myo:
-        product_parser_class = CsvParseMyo
-    elif settings.schema_is_woo:
-        if settings.schema == "TT":
-            product_parser_class = CsvParseTT
-        elif settings.schema == "VT":
-            product_parser_class = CsvParseVT
-        else:
-            settings.product_parser_args['schema'] = settings.schema
-            product_parser_class = CsvParseWoo
+    # settings.master_parser_args.update(**{
+    #     'cols':
+    #     settings.col_data_class.get_import_cols(),
+    #     'defaults':
+    #     settings.col_data_class.get_defaults(),
+    # })
+    # if settings.schema_is_myo:
+    #     settings.master_parser_class = CsvParseMyo
+    # elif settings.schema_is_woo:
+    #     if settings.schema == "TT":
+    #         settings.master_parser_class = CsvParseTT
+    #     elif settings.schema == "VT":
+    #         settings.master_parser_class = CsvParseVT
+    #     else:
+    #         settings.master_parser_args['schema'] = settings.schema
+    #         settings.master_parser_class = CsvParseWoo
 
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
 
-    if settings['download_master']:
-        if Registrar.DEBUG_GDRIVE:
-            Registrar.register_message("GDrive params: %s" %
-                                       settings['g_drive_params'])
-        client_class = SyncClientGDrive
-        client_args = [settings['g_drive_params']]
-    else:
-        client_class = SyncClientLocal
-        client_args = []
+    # if settings['download_master']:
+    #     if Registrar.DEBUG_GDRIVE:
+    #         Registrar.register_message("GDrive params: %s" %
+    #                                    settings['g_drive_params'])
+    #     settings.master_client_class = SyncClientGDrive
+    #     settings.master_client_args = [settings['g_drive_params']]
+    # else:
+    #     settings.master_client_class = SyncClientLocal
+    #     settings.master_client_args = []
     #
-    with client_class(*client_args) as client:
+    with settings.master_client_class(*settings.master_client_args) as client:
         if settings.schema_is_woo:
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
                 client.analyse_remote(
-                    parsers.dyn, settings.dprc_path, gid=settings.dprc_gid)
-                settings.product_parser_args['dprc_rules'] = parsers.dyn.taxos
+                    parsers.dyn, settings.dprc_path, gid=settings.dprc_gid
+                )
+                settings.master_parser_args['dprc_rules'] = parsers.dyn.taxos
 
                 Registrar.register_message("analysing dprp rules")
                 parsers.dyn.clear_transients()
                 client.analyse_remote(
-                    parsers.dyn, settings.dprp_path, gid=settings.dprp_gid)
-                settings.product_parser_args['dprp_rules'] = parsers.dyn.taxos
+                    parsers.dyn, settings.dprp_path, gid=settings.dprp_gid
+                )
+                settings.master_parser_args['dprp_rules'] = parsers.dyn.taxos
 
             if settings.do_specials:
                 Registrar.register_message("analysing specials")
                 client.analyse_remote(
-                    parsers.special, settings.spec_path, gid=settings.spec_gid)
+                    parsers.special, settings.spec_path, gid=settings.spec_gid
+                )
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.register_message("all specials: %s" %
-                                               parsers.special.tabulate())
-                settings.product_parser_args[
-                    'special_rules'] = parsers.special.rules
+                    Registrar.register_message(
+                        "all specials: %s" % parsers.special.tabulate()
+                    )
 
-                current_special_groups = parsers.special.determine_current_spec_grps(
+                settings.special_rules = parsers.special.rules
+
+                settings.current_special_groups = parsers.special.determine_current_spec_grps(
                     specials_mode=settings.specials_mode,
-                    current_special=settings.current_special)
-                # print "current_special_groups: %s" % current_special_groups
+                    current_special=settings.current_special
+                )
                 if Registrar.DEBUG_SPECIAL:
-                    Registrar.register_message("current_special_groups: %s" %
-                                               current_special_groups)
+                    Registrar.register_message(
+                        "current_special_groups: %s" % settings.current_special_groups
+                    )
 
-                # print "parsers.special.DEBUG_SPECIAL: %s" % repr(parsers.special.DEBUG_SPECIAL)
-                # print "Registrar.DEBUG_SPECIAL: %s" % repr(Registrar.DEBUG_SPECIAL)
+                # if settings['do_categories']:
+                #     if settings.current_special_groups:
+                #         settings.master_parser_args[
+                #             'add_special_categories'] = settings.add_special_categories
 
-                settings.product_parser_args[
-                    'current_special_groups'] = current_special_groups
-                if settings['do_categories']:
-                    if current_special_groups:
-                        settings.product_parser_args[
-                            'add_special_categories'] = settings.add_special_categories
+        # print "calling product parser with kwargs: %s" % pformat(settings.master_parser_args)
 
-        # print "calling product parser with kwargs: %s" % pformat(settings.product_parser_args)
-
-        parsers.product = product_parser_class(**settings.product_parser_args)
+        parsers.master = settings.master_parser_class(**settings.master_parser_args)
 
         Registrar.register_progress("analysing product data")
 
         client.analyse_remote(
-            getattr(parsers, 'product'),
+            parsers.master,
             settings.gen_path,
             gid=settings.gen_gid,
-            limit=settings['download_limit'])
+            limit=settings['download_limit']
+        )
 
         # check categories are valid
 
-        if Registrar.DEBUG_PARSER and hasattr(getattr(parsers, 'product'), 'categories_name'):
-            for category_name, category_list in getattr(getattr(parsers, 'product'), 'categories_name').items():
+        if Registrar.DEBUG_PARSER and hasattr(parsers.master, 'categories_name'):
+            for category_name, category_list in getattr(parsers.master, 'categories_name').items():
                 if len(category_list) < 2:
                     continue
                 if SeqUtils.check_equal(
@@ -203,7 +204,7 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
             Registrar.register_error(error, img_name)
         else:
             Registrar.register_message(error, img_name)
-        getattr(parsers, 'product').images[img_name].invalidate(error)
+        parsers.master.images[img_name].invalidate(error)
 
     ls_raw = {}
     for folder in settings.img_raw_folders:
@@ -235,12 +236,12 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
     # list of images in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
     for fname in ls_cmp:
-        if fname not in getattr(parsers, 'product').images.keys():
+        if fname not in parsers.master.images.keys():
             Registrar.register_warning("DELETING FROM REFLATTENED", fname)
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))
 
-    for img, data in getattr(parsers, 'product').images.items():
+    for img, data in parsers.master.images.items():
         if not data.products:
             continue
             # we only care about product images atm
@@ -366,7 +367,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
     if settings.schema_is_myo:
         product_cols = ColDataMyo.get_product_cols()
-        product_list = MYOProdList(getattr(parsers, 'product').products.values())
+        product_list = MYOProdList(parsers.master.products.values())
         product_list.export_items(settings.myo_path,
                                   ColDataBase.get_col_names(product_cols))
     elif settings.schema_is_woo:
@@ -377,11 +378,11 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                 del product_cols[col]
 
         attribute_cols = ColDataWoo.get_attribute_cols(
-            getattr(parsers, 'product').attributes, getattr(parsers, 'product').vattributes)
+            parsers.master.attributes, parsers.master.vattributes)
         product_colnames = ColDataBase.get_col_names(
             SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
-        product_list = WooProdList(getattr(parsers, 'product').products.values())
+        product_list = WooProdList(parsers.master.products.values())
         product_list.export_items(settings.fla_path, product_colnames)
 
         # variations
@@ -389,30 +390,30 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
         variation_cols = ColDataWoo.get_variation_cols()
 
         attribute_meta_cols = ColDataWoo.get_attribute_meta_cols(
-            getattr(parsers, 'product').vattributes)
+            parsers.master.vattributes)
         variation_col_names = ColDataBase.get_col_names(
             SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
 
-        if getattr(parsers, 'product').variations:
-            variation_list = WooVarList(getattr(parsers, 'product').variations.values())
+        if parsers.master.variations:
+            variation_list = WooVarList(parsers.master.variations.values())
             variation_list.export_items(settings.flv_path, variation_col_names)
 
-        if getattr(parsers, 'product').categories:
+        if parsers.master.categories:
             # categories
             category_cols = ColDataWoo.get_category_cols()
 
-            category_list = WooCatList(getattr(parsers, 'product').categories.values())
+            category_list = WooCatList(parsers.master.categories.values())
             category_list.export_items(settings.cat_path,
                                        ColDataBase.get_col_names(category_cols))
 
         # specials
         if settings.do_specials:
             current_special = getattr(settings, 'current_special', None)
-            if getattr(parsers, 'product').current_special_groups:
-                current_special = getattr(parsers, 'product').current_special_groups[0].special_id
+            if settings.current_special_groups:
+                current_special = settings.current_special_groups[0].special_id
             # print "current special is %s" % current_special
             if current_special:
-                special_products = getattr(parsers, 'product').onspecial_products.values()
+                special_products = parsers.master.onspecial_products.values()
                 if special_products:
                     fla_name, fla_ext = os.path.splitext(settings.fla_path)
                     fls_path = os.path.join(
@@ -421,7 +422,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                     special_product_list = WooProdList(special_products)
                     special_product_list.export_items(fls_path,
                                                       product_colnames)
-                special_variations = getattr(parsers, 'product').onspecial_variations.values()
+                special_variations = parsers.master.onspecial_variations.values()
                 if special_variations:
                     flv_name, flv_ext = os.path.splitext(settings.flv_path)
                     flvs_path = os.path.join(
@@ -432,7 +433,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
                     sp_variation_list.export_items(flvs_path,
                                                    variation_col_names)
 
-        updated_products = getattr(parsers, 'product').updated_products.values()
+        updated_products = parsers.master.updated_products.values()
         if updated_products:
             fla_name, fla_ext = os.path.splitext(settings.fla_path)
             flu_path = os.path.join(settings.out_folder_full,
@@ -441,7 +442,7 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
             updated_product_list = WooProdList(updated_products)
             updated_product_list.export_items(flu_path, product_colnames)
 
-        updated_variations = getattr(parsers, 'product').updated_variations.values()
+        updated_variations = parsers.master.updated_variations.values()
 
         if updated_variations:
             flv_name, flv_ext = os.path.splitext(settings.flv_path)
@@ -488,7 +489,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     # PROCESS CONFIG
 
-    settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
+    # settings.gen_path = os.path.join(settings.in_folder_full, 'generator.csv')
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
     settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
     settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
@@ -518,13 +519,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
                            settings.merge_mode, settings.last_sync)
 
-    if settings.variant == "ACC":
-        settings.gen_path = os.path.join(settings.in_folder_full,
-                                         'generator-solution.csv')
-
-    if settings.variant == "SOL":
-        settings.gen_path = os.path.join(settings.in_folder_full,
-                                         'generator-accessories.csv')
+    # if settings.variant == "ACC":
+    #     settings.gen_path = os.path.join(settings.in_folder_full,
+    #                                      'generator-solution.csv')
+    #
+    # if settings.variant == "SOL":
+    #     settings.gen_path = os.path.join(settings.in_folder_full,
+    #                                      'generator-accessories.csv')
 
     suffix = settings.schema
     if settings.variant:
@@ -592,16 +593,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Create Product Parser object
     ########################################
 
-    settings['g_drive_params'] = {
-        'scopes': settings.gdrive_scopes,
-        'client_secret_file': settings.gdrive_client_secret_file,
-        'app_name': settings.gdrive_app_name,
-        'oauth_client_id': settings.gdrive_oauth_client_id,
-        'oauth_client_secret': settings.gdrive_oauth_client_secret,
-        'credentials_dir': settings.gdrive_credentials_dir,
-        'credentials_file': settings.gdrive_credentials_file,
-        'gen_fid': settings.gen_fid,
-    }
+    # settings['g_drive_params'] = {
+    #     'scopes': settings.gdrive_scopes,
+    #     'client_secret_file': settings.gdrive_client_secret_file,
+    #     'app_name': settings.gdrive_app_name,
+    #     'oauth_client_id': settings.gdrive_oauth_client_id,
+    #     'oauth_client_secret': settings.gdrive_oauth_client_secret,
+    #     'credentials_dir': settings.gdrive_credentials_dir,
+    #     'credentials_file': settings.gdrive_credentials_file,
+    #     'gen_fid': settings.gen_fid,
+    # }
 
     if not settings['download_master']:
         settings['g_drive_params']['skip_download'] = True
@@ -623,13 +624,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'defaults': ColDataWoo.get_defaults(),
     }
 
-    # TODO: move product_parser_args into config
+    # TODO: move master_parser_args into config
 
-    settings.product_parser_args = {
-        'import_name': settings.import_name,
-        'item_depth': settings.item_depth,
-        'taxo_depth': settings.taxo_depth,
-    }
+    # settings.master_parser_args = {
+    #     'import_name': settings.import_name,
+    #     'item_depth': settings.item_depth,
+    #     'taxo_depth': settings.taxo_depth,
+    # }
 
     parsers = argparse.Namespace()
     parsers = populate_master_parsers(parsers, settings)
@@ -719,13 +720,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if Registrar.DEBUG_CATS:
                 Registrar.register_message(
                     "matching %d master categories with %d slave categories" %
-                    (len(getattr(parsers, 'product').categories),
+                    (len(parsers.master.categories),
                      len(api_product_parser.categories)))
 
             category_matcher = CategoryMatcher()
             category_matcher.clear()
             category_matcher.process_registers(api_product_parser.categories,
-                                               getattr(parsers, 'product').categories)
+                                               parsers.master.categories)
 
             if Registrar.DEBUG_CATS:
                 if category_matcher.pure_matches:
@@ -799,9 +800,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         "performing update < %5s | %5s > = \n%100s, %100s " %
                         (update.master_id, update.slave_id,
                          str(update.old_m_object), str(update.old_s_object)))
-                if not update.master_id in getattr(parsers, 'product').categories:
+                if not update.master_id in parsers.master.categories:
                     exc = UserWarning(
-                        "couldn't fine pkey %s in getattr(parsers, 'product').categories" %
+                        "couldn't fine pkey %s in parsers.master.categories" %
                         update.master_id)
                     Registrar.register_error(exc)
                     continue
@@ -814,7 +815,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             continue
 
                         new_val = warning['oldWinnerValue']
-                        getattr(parsers, 'product').categories[update.master_id][
+                        parsers.master.categories[update.master_id][
                             col] = new_val
 
             if Registrar.DEBUG_CATS:
@@ -886,10 +887,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                       slaveless_category_match.m_objects[0])
                     Registrar.register_warning(exc)
 
-        # print getattr(parsers, 'product').to_str_tree()
+        # print parsers.master.to_str_tree()
         if Registrar.DEBUG_CATS:
             print "product parser"
-            for key, category in getattr(parsers, 'product').categories.items():
+            for key, category in parsers.master.categories.items():
                 print "%5s | %50s | %s" % (key, category.title[:50],
                                            category.wpid)
         if Registrar.DEBUG_CATS:
@@ -904,7 +905,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
         product_matcher = ProductMatcher()
         product_matcher.process_registers(api_product_parser.products,
-                                          getattr(parsers, 'product').products)
+                                          parsers.master.products)
         # print product_matcher.__repr__()
 
         global_product_matches.add_matches(product_matcher.pure_matches)
@@ -1052,7 +1053,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             variation_matcher = VariationMatcher()
             variation_matcher.process_registers(api_product_parser.variations,
-                                                getattr(parsers, 'product').variations)
+                                                parsers.master.variations)
 
             if Registrar.DEBUG_VARS:
                 Registrar.register_message("variation matcher:\n%s" %
