@@ -1282,9 +1282,12 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_warning(exc, object_data)
                     break
 
-    def analyse_file(self, file_name, encoding=None, limit=None):
-        objects = super(CsvParseWoo, self).analyse_file(
-            file_name, encoding=encoding, limit=limit)
+    def analyse_stream(self, byte_file_obj, **kwargs):
+        objects = super(CsvParseWoo, self).analyse_stream(
+            byte_file_obj,
+            **kwargs
+        )
+
         # post processing
         # for item_data in self.taxos.values() + self.items.values():
         # print 'POST analysing product', item_data.codesum, item_data.namesum
@@ -1330,6 +1333,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
 
 class CsvParseTT(CsvParseWoo):
+
+    target_schema = "TT"
 
     def __init__(self, cols=None, defaults=None, **kwargs):
         if cols is None:
@@ -1403,6 +1408,8 @@ class CsvParseTT(CsvParseWoo):
 
 
 class CsvParseVT(CsvParseWoo):
+
+    target_schema = "VT"
 
     def __init__(self, cols=None, defaults=None, **kwargs):
         if cols is None:
