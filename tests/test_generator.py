@@ -76,12 +76,12 @@ class TestGenerator(TestCase):
             48
         )
 
-        prodList = WooProdList(self.parsers.master.products.values())
+        prod_list = WooProdList(self.parsers.master.products.values())
         self.assertEqual(
-            prodList[0].codesum,
+            prod_list[0].codesum,
             "ACARA-CAL"
         )
-        # print(SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple')))
+        # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
 
 if __name__ == '__main__':
