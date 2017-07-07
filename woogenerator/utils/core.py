@@ -504,6 +504,7 @@ class SanitationUtils(object):
             cls.remove_leading_percent_wspace,
             cls.remove_lone_dashes,
             # cls.strip_extra_whitespace,
+            cls.strip_all_whitespace,
             cls.remove_thousands_separator,
             cls.remove_lone_white_space,
             cls.strip_leading_whitespace,
@@ -512,7 +513,7 @@ class SanitationUtils(object):
             cls.strip_tailing_newline,
             cls.strip_leading_newline,
             cls.remove_null,
-            cls.coerce_unicode
+            cls.coerce_unicode,
         )(cell)
 
     @classmethod
@@ -1272,6 +1273,16 @@ class UnicodeCsvDialectUtils(object):
         escapechar = None
         skipinitialspace = False
         lineterminator = '\r\n'
+
+    class SublimeCsvTable(unicodecsv.Dialect):
+        delimiter = ','
+        quoting = unicodecsv.QUOTE_MINIMAL
+        doublequote = True
+        strict = False
+        quotechar = "\""
+        escapechar = None
+        skipinitialspace = True
+        lineterminator = '\n'
 
     @classmethod
     def get_dialect_from_suggestion(cls, suggestion):
