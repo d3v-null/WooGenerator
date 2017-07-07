@@ -233,8 +233,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return ColDataBase
 
     @property
-    def gen_path(self):
-        """ The path which the generator data is downloaded to and read from. """
+    def master_path(self):
+        """ The path which the master data is downloaded to and read from. """
         if not self.download_master and hasattr(self, 'master_file'):
             return getattr(self, 'master_file')
         response = 'generator'
