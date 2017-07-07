@@ -14,8 +14,8 @@ from __init__ import MODULE_LOCATION
 from woogenerator.utils import TimeUtils, Registrar
 from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataUser
 from woogenerator.parsing.myo import CsvParseMyo
-from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
-                                      WooCatList, WooProdList, WooVarList)
+from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
+from woogenerator.parsing.user import CsvParseUser
 from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
 
 # Core configuration
@@ -355,6 +355,11 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def col_data_class(self):
         """ Class used to obtain column metadata. """
         return ColDataUser
+
+    @property
+    def master_parser_class(self):
+        """ Class used to parse master data """
+        return CsvParseUser
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
