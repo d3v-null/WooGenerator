@@ -1088,21 +1088,26 @@ def init_registrar(settings):
         Registrar.DEBUG_MESSAGE = False
 
     Registrar.DEBUG_ABSTRACT = settings.debug_abstract
-    Registrar.DEBUG_PARSER = settings.debug_parser
-    Registrar.DEBUG_GEN = settings.debug_gen
-    Registrar.DEBUG_MYO = settings.debug_myo
-    Registrar.DEBUG_TREE = settings.debug_tree
-    Registrar.DEBUG_WOO = settings.debug_woo
-    Registrar.DEBUG_NAME = settings.debug_name
-    Registrar.DEBUG_IMG = settings.debug_img
+    Registrar.DEBUG_ADDRESS = settings.debug_address
     Registrar.DEBUG_API = settings.debug_api
-    Registrar.DEBUG_SHOP = settings.debug_shop
-    Registrar.DEBUG_UPDATE = settings.debug_update
-    Registrar.DEBUG_MRO = settings.debug_mro
-    Registrar.DEBUG_GDRIVE = settings.debug_gdrive
-    Registrar.DEBUG_SPECIAL = settings.debug_special
     Registrar.DEBUG_CATS = settings.debug_cats
+    Registrar.DEBUG_CLIENT = settings.debug_client
+    Registrar.DEBUG_CONTACT = settings.debug_contact
+    Registrar.DEBUG_DUPLICATES = settings.debug_duplicates
+    Registrar.DEBUG_GDRIVE = settings.debug_gdrive
+    Registrar.DEBUG_GEN = settings.debug_gen
+    Registrar.DEBUG_IMG = settings.debug_img
+    Registrar.DEBUG_MRO = settings.debug_mro
+    Registrar.DEBUG_MYO = settings.debug_myo
+    Registrar.DEBUG_NAME = settings.debug_name
+    Registrar.DEBUG_PARSER = settings.debug_parser
+    Registrar.DEBUG_SHOP = settings.debug_shop
+    Registrar.DEBUG_SPECIAL = settings.debug_special
+    Registrar.DEBUG_TREE = settings.debug_tree
+    Registrar.DEBUG_UPDATE = settings.debug_update
+    Registrar.DEBUG_UTILS = settings.debug_utils
     Registrar.DEBUG_VARS = settings.debug_vars
+    Registrar.DEBUG_WOO = settings.debug_woo
 
 def init_settings(override_args=None, settings=None, argparser_class=ArgumentParserCommon):
     """

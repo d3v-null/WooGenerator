@@ -35,7 +35,7 @@ from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.config import (ArgumentParserUser, ArgumentParserProtoUser,
-                                 SettingsNamespaceUser, init_settings)
+                                 SettingsNamespaceUser, init_settings, ParsersNamespace)
 
 
 def timediff(settings):
@@ -51,7 +51,7 @@ def populate_slave_parsers(parsers, settings):
     print DebugUtils.hashify(
         "Download / Generate Slave Parser Object"), timediff(settings)
 
-    parsers.sa = CsvParseUser(
+    parsers.slave = CsvParseUser(
         cols=ColDataUser.get_wp_import_cols(),
         defaults=ColDataUser.get_defaults(),
         filter_items=settings.filter_items,
@@ -96,22 +96,22 @@ def populate_slave_parsers(parsers, settings):
         with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
                                 py_my_sql_connect_params) as client:
             client.analyse_remote(
-                getattr(parsers, 'sa'), limit=settings['download_limit'], filter_items=settings.filter_items)
+                parsers.slave, limit=settings['download_limit'], filter_items=settings.filter_items)
 
-            if getattr(parsers, 'sa').objects:
-                getattr(parsers, 'sa').get_obj_list().export_items(
+            if parsers.slave.objects:
+                parsers.slave.get_obj_list().export_items(
                     os.path.join(settings.in_folder_full, settings.s_x_name),
                     ColDataUser.get_wp_import_col_names())
 
     else:
-        getattr(parsers, 'sa').analyse_file(settings.sa_path, settings.sa_encoding)
+        parsers.slave.analyse_file(settings.sa_path, settings.sa_encoding)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
             "slave parser: \n%s",
-            SanitationUtils.coerce_unicode(getattr(parsers, 'sa').tabulate())
+            SanitationUtils.coerce_unicode(parsers.slave.tabulate())
         )
-        getattr(parsers, 'sa').get_obj_list().export_items(
+        parsers.slave.get_obj_list().export_items(
             os.path.join(settings.in_folder_full, settings.s_x_name),
             ColDataUser.get_wp_import_col_names())
     return parsers
@@ -122,7 +122,7 @@ def populate_master_parsers(parsers, settings):
     """
     col_data_class = settings.col_data_class
 
-    parsers.ma = CsvParseUser(
+    parsers.master = CsvParseUser(
         cols=ColDataUser.get_act_import_cols(),
         defaults=ColDataUser.get_defaults(),
         contact_schema='act',
@@ -144,14 +144,14 @@ def populate_master_parsers(parsers, settings):
         with UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params,
                                  settings.fs_params) as master_client:
             master_client.analyse_remote(
-                getattr(parsers, 'ma'),
+                parsers.master,
                 limit=settings['download_limit']
             )
     else:
         for thing in [ 'ma_path' ]:
             assert getattr(settings, thing), "settings must specify %s" % thing
         print( "master parse limit is %s" % settings['master_parse_limit'])
-        getattr(parsers, 'ma').analyse_file(
+        parsers.master.analyse_file(
             settings.ma_path,
             dialect_suggestion='ActOut',
             encoding=settings.ma_encoding,
@@ -161,33 +161,12 @@ def populate_master_parsers(parsers, settings):
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
             "master parser: \n%s",
-            SanitationUtils.coerce_unicode(getattr(parsers, 'ma').tabulate())
+            SanitationUtils.coerce_unicode(parsers.master.tabulate())
         )
-        getattr(parsers, 'ma').get_obj_list().export_items(
+        parsers.master.get_obj_list().export_items(
             os.path.join(settings.in_folder_full, settings.m_x_name),
             ColDataUser.get_act_import_col_names())
     return parsers
-
-def init_registrar(settings):
-    if settings.verbosity > 0:
-        Registrar.DEBUG_PROGRESS = True
-        Registrar.DEBUG_ERROR = True
-    if settings.verbosity > 1:
-        Registrar.DEBUG_MESSAGE = True
-    if settings.quiet:
-        Registrar.DEBUG_PROGRESS = False
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_MESSAGE = False
-
-    Registrar.DEBUG_ABSTRACT = settings.debug_abstract
-    Registrar.DEBUG_PARSER = settings.debug_parser
-    Registrar.DEBUG_UPDATE = settings.debug_update
-    Registrar.DEBUG_NAME = settings.debug_name
-    Registrar.DEBUG_ADDRESS = settings.debug_address
-    Registrar.DEBUG_CLIENT = settings.debug_client
-    Registrar.DEBUG_UTILS = settings.debug_utils
-    Registrar.DEBUG_CONTACT = settings.debug_contact
-    Registrar.DEBUG_DUPLICATES = settings.debug_duplicates
 
 def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
     """
@@ -357,7 +336,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     # Download / Generate Slave Parser Object
     #########################################
 
-    parsers = argparse.Namespace()
+    parsers = ParsersNamespace()
     parsers = populate_slave_parsers(parsers, settings)
 
     # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
@@ -427,11 +406,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing usernames")
         print timediff(settings)
 
-        deny_anomalous_parselist('saParser.nousernames', getattr(parsers, 'sa').nousernames)
+        deny_anomalous_parselist('saParser.nousernames', parsers.slave.nousernames)
 
         username_matcher = UsernameMatcher()
-        username_matcher.process_registers(getattr(parsers, 'sa').usernames,
-                                           getattr(parsers, 'ma').usernames)
+        username_matcher.process_registers(parsers.slave.usernames,
+                                           parsers.master.usernames)
 
         deny_anomalous_match_list('usernameMatcher.slaveless_matches',
                                   username_matcher.slaveless_matches)
@@ -457,11 +436,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         # for every card in slave not already matched, check that it exists in
         # master
 
-        deny_anomalous_parselist('maParser.nocards', getattr(parsers, 'ma').nocards)
+        deny_anomalous_parselist('maParser.nocards', parsers.master.nocards)
 
         card_matcher = CardMatcher(global_matches.s_indices,
                                    global_matches.m_indices)
-        card_matcher.process_registers(getattr(parsers, 'sa').cards, getattr(parsers, 'ma').cards)
+        card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
 
         deny_anomalous_match_list('cardMatcher.duplicate_matches',
                                   card_matcher.duplicate_matches)
@@ -484,12 +463,12 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing emails")
         print timediff(settings)
 
-        deny_anomalous_parselist("saParser.noemails", getattr(parsers, 'sa').noemails)
+        deny_anomalous_parselist("saParser.noemails", parsers.slave.noemails)
 
         email_matcher = NocardEmailMatcher(global_matches.s_indices,
                                            global_matches.m_indices)
 
-        email_matcher.process_registers(getattr(parsers, 'sa').nocards, getattr(parsers, 'ma').emails)
+        email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
 
         new_masters.add_matches(email_matcher.masterless_matches)
         new_slaves.add_matches(email_matcher.slaveless_matches)
@@ -543,9 +522,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 sync_slave_updates = sync_update.get_slave_updates()
                 if 'E-mail' in sync_slave_updates:
                     new_email = sync_slave_updates['E-mail']
-                    if new_email in getattr(parsers, 'sa').emails:
+                    if new_email in parsers.slave.emails:
                         m_objects = [m_object]
-                        s_objects = [s_object] + getattr(parsers, 'sa').emails[new_email]
+                        s_objects = [s_object] + parsers.slave.emails[new_email]
                         SanitationUtils.safe_print("duplicate emails",
                                                    m_objects, s_objects)
                         try:
@@ -689,59 +668,59 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         sanitizing_group = HtmlReporter.Group('sanitizing',
                                               'Sanitizing Results')
 
-        if getattr(parsers, 'sa').bad_address:
+        if parsers.slave.bad_address:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_addresses_list',
                     title='Bad %s Address List' % settings.slave_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.slave_name,
-                    data=UsrObjList(getattr(parsers, 'sa').bad_address.values()).tabulate(
+                    data=UsrObjList(parsers.slave.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(getattr(parsers, 'sa').bad_address)))
+                    length=len(parsers.slave.bad_address)))
 
-        if getattr(parsers, 'sa').bad_name:
+        if parsers.slave.bad_name:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     's_bad_names_list',
                     title='Bad %s Names List' % settings.slave_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.slave_name,
-                    data=UsrObjList(getattr(parsers, 'sa').bad_name.values()).tabulate(
+                    data=UsrObjList(parsers.slave.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(getattr(parsers, 'sa').bad_name)))
-        if getattr(parsers, 'sa').bad_name or getattr(parsers, 'sa').bad_address:
-            UsrObjList(getattr(parsers, 'sa').bad_name.values() + getattr(parsers, 'ma').bad_address.
+                    length=len(parsers.slave.bad_name)))
+        if parsers.slave.bad_name or parsers.slave.bad_address:
+            UsrObjList(parsers.slave.bad_name.values() + parsers.master.bad_address.
                        values()).export_items(settings['w_pres_csv_path'], csv_colnames)
 
-        if getattr(parsers, 'ma').bad_address:
+        if parsers.master.bad_address:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_addresses_list',
                     title='Bad %s Address List' % settings.master_name.title(),
                     description='%s records that have badly formatted addresses'
                     % settings.master_name,
-                    data=UsrObjList(getattr(parsers, 'ma').bad_address.values()).tabulate(
+                    data=UsrObjList(parsers.master.bad_address.values()).tabulate(
                         cols=address_cols,
                         tablefmt='html', ),
-                    length=len(getattr(parsers, 'ma').bad_address)))
+                    length=len(parsers.master.bad_address)))
 
-        if getattr(parsers, 'ma').bad_name:
+        if parsers.master.bad_name:
             sanitizing_group.add_section(
                 HtmlReporter.Section(
                     'm_bad_names_list',
                     title='Bad %s Names List' % settings.master_name.title(),
                     description='%s records that have badly formatted names' %
                     settings.master_name,
-                    data=UsrObjList(getattr(parsers, 'ma').bad_name.values()).tabulate(
+                    data=UsrObjList(parsers.master.bad_name.values()).tabulate(
                         cols=name_cols,
                         tablefmt='html', ),
-                    length=len(getattr(parsers, 'ma').bad_name)))
+                    length=len(parsers.master.bad_name)))
 
-        if getattr(parsers, 'ma').bad_name or getattr(parsers, 'ma').bad_address:
-            UsrObjList(getattr(parsers, 'ma').bad_name.values() + getattr(parsers, 'ma').bad_address.values())\
+        if parsers.master.bad_name or parsers.master.bad_address:
+            UsrObjList(parsers.master.bad_name.values() + parsers.master.bad_address.values())\
                 .export_items(settings['master_res_csv_path'], csv_colnames)
 
         reporter.add_group(sanitizing_group)
@@ -985,7 +964,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                                                duplicate_type)
 
             address_duplicates = {}
-            for address, objects in getattr(parsers, 'ma').addresses.items():
+            for address, objects in parsers.master.addresses.items():
                 # print "analysing address %s " % address
                 # for object_data in objects:
                 # print " -> associated object: %s" % object_data
@@ -996,7 +975,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                     duplicates.add_conflictors(
                         objects, "address", weighting=0.1)
 
-            for object_data in getattr(parsers, 'ma').objects.values():
+            for object_data in parsers.master.objects.values():
                 if fn_user_older_than_wp(settings['old_threshold'])(object_data):
                     details = TimeUtils.wp_time_to_string(
                         object_data.act_last_transaction)
