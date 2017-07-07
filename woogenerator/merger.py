@@ -177,9 +177,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
-    # PROCESS CONFIG
-    init_registrar(settings)
-
     ### DISPLAY CONFIG ###
     if Registrar.DEBUG_MESSAGE:
         if settings.testmode:
