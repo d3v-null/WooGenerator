@@ -17,6 +17,11 @@ from woogenerator.parsing.myo import CsvParseMyo
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
 from woogenerator.parsing.user import CsvParseUser
 from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
+from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
+                                           UsrSyncClientSshAct,
+                                           UsrSyncClientWP)
+
+# TODO: split file into namespace and argumentparsers
 
 # Core configuration
 CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
@@ -237,7 +242,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if not self.download_master and hasattr(self, 'master_file'):
             return getattr(self, 'master_file')
-        response = 'generator'
+        response = '%s%s' % (self.file_prefix, 'master')
         if self.variant:
             response = "-".join([response, self.variant])
         response += self.import_name
@@ -258,7 +263,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def master_parser_args(self):
         """ Arguments used to create the master parser. """
-        
+
         response = {
             'import_name': self.import_name,
             'cols': self.col_data_class.get_import_cols(),
@@ -279,6 +284,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_client_class(self):
+        """ The class which is used to download and parse master data. """
         response = SyncClientLocal
         if self.download_master:
             response = SyncClientGDrive
@@ -299,17 +305,26 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
+        if not self.download_master:
+            response['skip_download'] = True
         return response
 
     @property
     def master_client_args(self):
+        """ Return the arguments which are used by the client to analyse master data. """
+
         response = {}
         if self.master_client_class == SyncClientGDrive:
-            response = {
+            response.update({
                 'gdrive_params': self.g_drive_params
-            }
+            })
+        else:
+            response.update({
+                'encoding': self.get('master_encoding', 'utf8')
+            })
         for key, settings_key in [
                 ('dialect_suggestion', 'master_dialect_suggestion'),
+                ('limit', 'master_parse_limit'),
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -359,6 +374,15 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return ColDataUser
 
     @property
+    def master_path(self):
+        """ The path which the master data is downloaded to and read from. """
+        if not self.download_master and hasattr(self, 'master_file'):
+            return getattr(self, 'master_file')
+        response = '%s%s' % (self.file_prefix, 'master')
+        response += self.import_name
+        return response + '.csv'
+
+    @property
     def master_parser_class(self):
         """ Class used to parse master data """
         return CsvParseUser
@@ -370,17 +394,97 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             'cols':self.col_data_class.get_act_import_cols(),
             'defaults':self.col_data_class.get_defaults(),
             'contact_schema':'act',
-            'filter':self['filter_items'],
-            'limit':self['download_limit'],
             'source':self.master_name,
             'schema':self.schema
         }
+        for key, settings_key in [
+                ('filter', 'filter_items'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
         return response
+
+    @property
+    def master_client_class(self):
+        """ The class which is used to download and parse master data. """
+
+        response = SyncClientLocal
+        if self.download_master:
+            response = UsrSyncClientSshAct
+        return response
+
+    @property
+    def act_connect_params(self):
+        response = {}
+        for key, settings_key in [
+                ('hostname', 'm_ssh_host'),
+                ('port', 'm_ssh_port'),
+                ('username', 'm_ssh_user'),
+                ('password', 'm_ssh_pass'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def act_fields(self):
+        return ";".join(self.col_data_class.get_act_import_cols())
+
+    @property
+    def act_db_params(self):
+        response = {
+            'fields': self.act_fields,
+        }
+        for key, settings_key in [
+                ('db_x_exe', 'm_x_cmd'),
+                ('db_i_exe', 'm_i_cmd'),
+                ('db_name', 'm_db_name'),
+                ('db_host', 'm_db_host'),
+                ('db_user', 'm_db_user'),
+                ('db_pass', 'm_db_pass'),
+                ('since', 'since_m'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def fs_params(self):
+        response = {
+            'import_name': self.import_name,
+            'remote_export_folder': self['remote_export_folder'],
+            'in_folder': self.in_folder_full,
+            'out_folder': self.out_folder_full
+        }
+        return response
+
+    @property
+    def master_client_args(self):
+        """ Return the arguments which are used by the client to analyse master data. """
+
+        response = {
+            'encoding': self.get('master_encoding', 'utf8'),
+            'dialect_suggestion': self.get('master_dialect_suggestion', 'ActOut')
+        }
+        if self.master_client_class == UsrSyncClientSshAct:
+            response.update({
+                'connect_params':self.act_connect_params,
+                'db_params':self.act_db_params,
+                'fs_params':self.fs_params,
+            })
+        for key, settings_key in [
+                ('limit', 'master_parse_limit')
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
 
     @property
     def slave_parser_class(self):
         """ Class used to parse master data """
         return CsvParseUser
+
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
