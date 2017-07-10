@@ -70,7 +70,7 @@ def check_warnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-branches,too-many-statements
+def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-branches,too-many-statements
     """
     Create and populates the various parsers.
     """
@@ -86,6 +86,7 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
         Registrar.register_message(
             "%s: %s" % (thing, getattr(settings, thing))
         )
+        assert getattr(settings, thing), "settings must specify %s" % thing
 
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
@@ -138,7 +139,7 @@ def populate_master_parsers(parsers, settings):  # pylint: # disable=too-many-br
             parsers.master,
             settings.master_path,
             gid=settings.gen_gid,
-            limit=settings['download_limit']
+            limit=settings['master_parse_limit']
         )
 
         if Registrar.DEBUG_PARSER and hasattr(parsers.master, 'categories_name'):
@@ -516,9 +517,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     ########################################
     # Create Product Parser object
     ########################################
-
-    if not settings['download_master']:
-        settings['g_drive_params']['skip_download'] = True
 
     settings['wc_api_params'] = {
         'api_key': settings.wc_api_key,

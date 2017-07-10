@@ -55,7 +55,8 @@ def populate_slave_parsers(parsers, settings):
         defaults=settings.col_data_class.get_defaults(),
         filter_items=settings.filter_items,
         limit=settings['download_limit'],
-        source=settings.slave_name)
+        source=settings.slave_name
+    )
     if settings['download_slave']:
         settings['ssh_tunnel_forwarder_address'] = \
             (settings['ssh_host'], settings['ssh_port'])
@@ -103,7 +104,7 @@ def populate_slave_parsers(parsers, settings):
                     settings.col_data_class.get_wp_import_col_names())
 
     else:
-        parsers.slave.analyse_file(settings.sa_path, settings.sa_encoding)
+        parsers.slave.analyse_file(settings.slave_path, settings.slave_encoding)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
@@ -120,35 +121,23 @@ def populate_master_parsers(parsers, settings):
     Populate the parsers for data from the slave database.
     """
 
+    things_to_check = []
+    if settings['download_master']:
+        things_to_check.extend(['act_connect_params', 'act_db_params', 'fs_params'])
+    else:
+        things_to_check.extend(['master_path'])
+    for thing in things_to_check:
+        Registrar.register_message(
+            "%s: %s" % (thing, getattr(settings, thing))
+        )
+        assert getattr(settings, thing), "settings must specify %s" % thing
+
     parsers.master = settings.master_parser_class(
-        **settings.matser_parser_args
+        **settings.master_parser_args
     )
 
-    print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
-        settings)
-
-    if settings['download_master']:
-        for thing in [
-                'm_x_cmd', 'm_i_cmd', 'remote_export_folder', 'act_fields'
-        ]:
-            assert getattr(settings, thing), "settings must specify %s" % thing
-
-        with UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params,
-                                 settings.fs_params) as master_client:
-            master_client.analyse_remote(
-                parsers.master,
-                limit=settings['download_limit']
-            )
-    else:
-        for thing in [ 'ma_path' ]:
-            assert getattr(settings, thing), "settings must specify %s" % thing
-        print( "master parse limit is %s" % settings['master_parse_limit'])
-        parsers.master.analyse_file(
-            settings.ma_path,
-            dialect_suggestion='ActOut',
-            encoding=settings.ma_encoding,
-            limit=settings['master_parse_limit']
-        )
+    with settings.master_client_class(**settings.master_client_args) as client:
+        client.analyse_remote(parsers.master, data_file=settings.master_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
@@ -183,19 +172,17 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             os.mkdir(path)
 
     if settings['download_master']:
-        settings.ma_path = os.path.join(settings.in_folder_full, settings.m_x_name)
-        settings['ma_encoding'] = "utf-8"
+        settings.master_path = os.path.join(settings.in_folder_full, settings.m_x_name)
     else:
         assert settings['master_file'], "master file must be provided if not download_master"
-        settings.ma_path = os.path.join(settings.in_folder_full, settings['master_file'])
-        settings.ma_encoding = "utf8"
+        settings.master_path = os.path.join(settings.in_folder_full, settings['master_file'])
     if settings['download_slave']:
-        settings.sa_path = os.path.join(settings.in_folder_full, settings.s_x_name)
-        settings.sa_encoding = "utf8"
+        settings.slave_path = os.path.join(settings.in_folder_full, settings.s_x_name)
+        settings.slave_encoding = "utf8"
     else:
         assert settings['slave_file'], "slave file must be provided if not download_slave"
-        settings.sa_path = os.path.join(settings.in_folder_full, settings['slave_file'])
-        settings.sa_encoding = "utf8"
+        settings.slave_path = os.path.join(settings.in_folder_full, settings['slave_file'])
+        settings.slave_encoding = "utf8"
 
     settings.repd_path = os.path.join(
         settings.out_folder_full,
@@ -221,8 +208,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     assert settings.store_url, "store url must not be blank"
 
-    settings.act_fields = ";".join(settings.col_data_class.get_act_import_cols())
-
     settings.wp_api_params = {
         'api_key': settings.wp_api_key,
         'api_secret': settings.wp_api_secret,
@@ -230,32 +215,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         'wp_user': settings.wp_user,
         'wp_pass': settings.wp_pass,
         'callback': settings.wp_callback
-    }
-
-    settings.act_connect_params = {
-        'hostname': settings.m_ssh_host,
-        'port': settings.m_ssh_port,
-        'username': settings.m_ssh_user,
-        'password': settings.m_ssh_pass,
-    }
-
-    settings.act_db_params = {
-        'db_x_exe': settings.m_x_cmd,
-        'db_i_exe': settings.m_i_cmd,
-        'db_name': settings.m_db_name,
-        'db_host': settings.m_db_host,
-        'db_user': settings.m_db_user,
-        'db_pass': settings.m_db_pass,
-        'fields': settings.act_fields,
-    }
-    if 'since_m' in settings:
-        settings.act_db_params['since'] = settings['since_m']
-
-    settings.fs_params = {
-        'import_name': settings.import_name,
-        'remote_export_folder': settings.remote_export_folder,
-        'in_folder': settings.in_folder_full,
-        'out_folder': settings.out_folder_full
     }
 
     #########################################
