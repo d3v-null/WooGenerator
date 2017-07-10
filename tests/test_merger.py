@@ -12,7 +12,7 @@ from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.config import (ArgumentParserUser, SettingsNamespaceUser, 
                                  init_settings, ParsersNamespace)
-from woogenerator.merger import populate_master_parsers
+from woogenerator.merger import populate_master_parsers, populate_slave_parsers
 
 from context import tests_datadir
 
@@ -25,7 +25,8 @@ class TestGenerator(TestCase):
         self.settings.local_test_config = "merger_config_test.yaml"
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
-        self.settings.master_file = os.path.join(tests_datadir, "100_users.csv")
+        self.settings.master_file = os.path.join(tests_datadir, "merger_master_sample.csv")
+        self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_sample.csv")
         # self.settings.master_parse_limit = 10
         self.override_args = ""
         self.parsers = ParsersNamespace()
@@ -59,18 +60,26 @@ class TestGenerator(TestCase):
         # }
 
         self.parsers = populate_master_parsers(
-            self.parsers,
-            self.settings
-        )
-
-        #number of objects:
-        self.assertEqual(
-            len(self.parsers.master.objects.values()),
-            99
+            self.parsers, self.settings
         )
 
         obj_list = self.parsers.master.get_obj_list()
+
+        #number of objects:
+        self.assertEqual(len(obj_list), 99)
+
         print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
+
+    def test_populate_slave_parsers(self):
+        self.test_init_settings()
+
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+
+        obj_list = self.parsers.slave.get_obj_list()
+
+        self.assertTrue(len(obj_list))
 
 if __name__ == '__main__':
     main()
