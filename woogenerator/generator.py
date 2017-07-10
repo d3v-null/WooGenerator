@@ -14,12 +14,10 @@ import traceback
 import urlparse
 import webbrowser
 import zipfile
-import platform
 from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
 
-import argparse
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
 from PIL import Image
