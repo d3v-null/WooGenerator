@@ -745,6 +745,12 @@ class ArgumentParserCommon(ArgumentParserProto):
             type=int,
             default=0
         )
+        processing_group.add_argument(
+            '--slave-parse-limit',
+            help="limit number of items parsed by slave parser",
+            type=int,
+            default=0
+        )
 
 
         self.add_suppressed_argument(
