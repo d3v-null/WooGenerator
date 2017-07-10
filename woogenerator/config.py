@@ -485,6 +485,17 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ Class used to parse master data """
         return CsvParseUser
 
+    @property
+    def slave_parser_args(self):
+        response = {
+            'cols':self.col_data_class.get_wp_import_cols(),
+            'defaults':self.col_data_class.get_defaults(),
+            'filter_items':self.get('filter_items'),
+            'limit':self.get('slave_parse_limit'),
+            'source':self.slave_name
+        }
+        return response
+
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
@@ -694,10 +705,6 @@ class ArgumentParserCommon(ArgumentParserProto):
             help='use the local slave file instead of downloading the slave data',
             action="store_false",
             dest='download_slave')
-        download_group.add_argument(
-            '--download-limit',
-            help='global limit of objects to download (for debugging)',
-            type=int)
         download_group.add_argument(
             '--schema',
             help='what schema to process the files as')

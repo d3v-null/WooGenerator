@@ -47,16 +47,9 @@ def populate_slave_parsers(parsers, settings):
     """
     Populate the parsers for data from the slave database.
     """
-    print DebugUtils.hashify(
-        "Download / Generate Slave Parser Object"), timediff(settings)
 
-    parsers.slave = settings.slave_parser_class(
-        cols=settings.col_data_class.get_wp_import_cols(),
-        defaults=settings.col_data_class.get_defaults(),
-        filter_items=settings.filter_items,
-        limit=settings['download_limit'],
-        source=settings.slave_name
-    )
+    parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
+    
     if settings['download_slave']:
         settings['ssh_tunnel_forwarder_address'] = \
             (settings['ssh_host'], settings['ssh_port'])
