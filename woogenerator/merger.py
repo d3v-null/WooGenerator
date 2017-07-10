@@ -144,19 +144,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         if not os.path.exists(path):
             os.mkdir(path)
 
-    if settings['download_master']:
-        settings.master_path = os.path.join(settings.in_folder_full, settings.m_x_name)
-    else:
-        assert settings['master_file'], "master file must be provided if not download_master"
-        settings.master_path = os.path.join(settings.in_folder_full, settings['master_file'])
-    if settings['download_slave']:
-        settings.slave_path = os.path.join(settings.in_folder_full, settings.s_x_name)
-        settings.slave_encoding = "utf8"
-    else:
-        assert settings['slave_file'], "slave file must be provided if not download_slave"
-        settings.slave_path = os.path.join(settings.in_folder_full, settings['slave_file'])
-        settings.slave_encoding = "utf8"
-
     settings.repd_path = os.path.join(
         settings.out_folder_full,
         "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
