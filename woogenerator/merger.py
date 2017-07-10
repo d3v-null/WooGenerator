@@ -130,7 +130,7 @@ def populate_master_parsers(parsers, settings):
     )
 
     with settings.master_client_class(**settings.master_client_args) as client:
-        client.analyse_remote(parsers.master, data_file=settings.master_path)
+        client.analyse_remote(parsers.master, data_path=settings.master_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(

@@ -210,7 +210,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         limit = kwargs.get('limit', self.limit)
         dialect_suggestion = kwargs.get('dialect_suggestion', self.dialect_suggestion)
         encoding = kwargs.get('encoding', self.encoding)
-        data_file = kwargs.get('data_file')
+        data_path = kwargs.get('data_path')
 
         # TODO: implement limit
         if limit:
@@ -220,8 +220,8 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         remote_export_folder = self.fs_params['remote_export_folder']
         file_root = 'act_x_' + import_name
         file_name = file_root + '.csv'
-        if not data_file:
-            data_file = os.path.join(self.fs_params['in_folder'], file_name)
+        if not data_path:
+            data_path = os.path.join(self.fs_params['in_folder'], file_name)
         remote_path = os.path.join(remote_export_folder, file_name)
 
         tokens = [
@@ -247,10 +247,10 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         print "executing export command..."
         self.exec_silent_command_assert(command)
         print "donloading file..."
-        self.get_delete_file(remote_path, data_file)
+        self.get_delete_file(remote_path, data_path)
         print "analysing file..."
         parser.analyse_file(
-            data_file, 
+            data_path, 
             dialect_suggestion=dialect_suggestion, 
             limit=limit,
             encoding=encoding

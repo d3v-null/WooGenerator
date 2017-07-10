@@ -137,7 +137,7 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
 
         client.analyse_remote(
             parsers.master,
-            settings.master_path,
+            data_path=settings.master_path,
             gid=settings.gen_gid,
             limit=settings['master_parse_limit']
         )

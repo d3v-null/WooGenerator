@@ -152,7 +152,7 @@ class SyncClientLocal(SyncClientAbstract):
         pass
 
     def analyse_remote(self, parser, **kwargs):
-        data_file = kwargs.pop('data_file', None)
+        data_path = kwargs.pop('data_path', None)
         analysis_kwargs = {
             'dialect_suggestion': kwargs.get('dialect_suggestion', self.dialect_suggestion),
             'encoding': kwargs.get('encoding', self.encoding),
@@ -163,7 +163,7 @@ class SyncClientLocal(SyncClientAbstract):
                 "kwargs: %s" % kwargs
             )
         return parser.analyse_file(
-            data_file,
+            data_path,
             **analysis_kwargs
         )
         # out_encoding='utf8'
@@ -272,7 +272,7 @@ class SyncClientGDrive(SyncClientAbstract):
         return time.strptime(self.drive_file['modifiedDate'],
                              '%Y-%m-%dT%H:%M:%S.%fZ')
 
-    def analyse_remote(self, parser, data_file=None, **kwargs):
+    def analyse_remote(self, parser, data_path=None, **kwargs):
         gid = kwargs.pop('gid', None)
 
         analysis_kwargs = {
@@ -285,22 +285,22 @@ class SyncClientGDrive(SyncClientAbstract):
                 message = "Downloading spreadsheet"
                 if gid:
                     message += " with gid %s" % gid
-                if data_file:
-                    message += " to: %s" % data_file
+                if data_path:
+                    message += " to: %s" % data_path
                 Registrar.register_message(message)
 
             content = self.download_file_content_csv(gid)
             if not content:
                 return
-            if data_file:
+            if data_path:
                 with codecs.open(
-                    data_file,
+                    data_path,
                     encoding=analysis_kwargs['encoding'],
                     mode='w'
                 ) as out_file:
                     out_file.write(content)
                 parser.analyse_file(
-                    data_file, **analysis_kwargs)
+                    data_path, **analysis_kwargs)
             else:
                 with closing(StringIO(content)) as content_stream:
                     parser.analyse_stream(
@@ -313,7 +313,7 @@ class SyncClientGDrive(SyncClientAbstract):
                 if gid:
                     message += ' with gid %s' % gid
                 if out_file:
-                    message += ' to file %s' % data_file
+                    message += ' to file %s' % data_path
 
 
 class SyncClientRest(SyncClientAbstract):

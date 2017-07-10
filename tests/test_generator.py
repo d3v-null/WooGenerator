@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-import sys
+# import sys
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import argparse
 
