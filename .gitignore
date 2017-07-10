@@ -60,13 +60,9 @@ input/
 output/
 logs/
 source/test.py
-
 source/config.yaml
-
 test/My Project-db965bac73b4.json
-
 test/client_secret.json
-
 *.tex
 
 *.pkl
@@ -74,39 +70,21 @@ test/client_secret.json
 *.pkl
 
 source/sql_test.py
-
-source/generator_config.yaml
-
+woogenerator/conf/generator_config.yaml
 source/parser_pickle.pkl
-
-source/parser_pickle.pkl
-
-source/merger_config.yaml
-
+woogenerator/conf/merger_config.yaml
 source/utils.py.orig
-
 source/merger.py.orig
-
 source/coldata.py.orig
-
 README.md.orig
-
 usernames.py
-
 usernames.txt
-
 source/fileregextest.py
-
 source/test_wp_api.py
-
 output test merge
-
 scripttest.py
-
 .remote-sync.json
-
 ids that were deleted.txt
-
 html/*
 source/.DS_Store
 pocs/.DS_Store
@@ -115,23 +93,10 @@ debug_out
 log
 input archive*.zip
 logs archive*.zip
-
 bad_names.txt
-
 woogenerator.pylint
-
 bad_variable_names.txt
-
-bad_variable_names.txt
-
 bad_imports.txt
-
-bad_variable_names.txt
-
-bad_variable_names.txt
-
-bad_variable_names.txt
-
 .github-todos
 .tags*
 *.csv
