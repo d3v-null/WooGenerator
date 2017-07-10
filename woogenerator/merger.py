@@ -16,7 +16,7 @@ from pprint import pprint, pformat
 import argparse
 
 import unicodecsv
-from sshtunnel import check_address
+import sshtunnel
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
 
@@ -49,55 +49,35 @@ def populate_slave_parsers(parsers, settings):
     """
 
     parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
-    
+
     if settings['download_slave']:
-        settings['ssh_tunnel_forwarder_address'] = \
-            (settings['ssh_host'], settings['ssh_port'])
-        settings['ssh_tunnel_forwarder_b_address'] = \
-            (settings['remote_bind_host'], settings['remote_bind_port'])
         for host_key in [
-                'ssh_tunnel_forwarder_address',
-                'ssh_tunnel_forwarder_b_address'
+                'ssh_address_or_host',
+                'remote_bind_address'
         ]:
             try:
-                check_address(settings.get(host_key))
+                sshtunnel.check_address(settings.slave_connect_params.get(host_key))
             except AttributeError:
                 Registrar.register_error("invalid host: %s -> %s" % \
                                          (host_key, settings.get(host_key)))
             except Exception as exc:
                 raise UserWarning("Host must be valid: %s [%s = %s]" % \
                                   (str(exc), host_key, repr(settings.get(host_key))))
-        ssh_tunnel_forwarder_params = {
-            'ssh_address_or_host': settings['ssh_tunnel_forwarder_address'],
-            'ssh_password': settings['ssh_pass'],
-            'ssh_username': settings['ssh_user'],
-            'remote_bind_address': settings['ssh_tunnel_forwarder_b_address'],
-        }
-        py_my_sql_connect_params = {
-            'host': settings['db_host'],
-            'user': settings['db_user'],
-            'password': settings['db_pass'],
-            'db': settings['db_name'],
-            'charset': settings['db_charset'],
-            'use_unicode': True,
-            'tbl_prefix': settings['tbl_prefix'],
-        }
+        if Registrar.DEBUG_CLIENT:
+            Registrar.register_message(
+                "SSHTunnelForwarderParams: %s\nPyMySqlconnect_params: %s" % (
+                    settings.slave_connect_params,
+                    settings.slave_db_params
+                )
+            )
 
-        print "SSHTunnelForwarderParams", ssh_tunnel_forwarder_params
-        print "PyMySqlconnect_params", py_my_sql_connect_params
+    if Registrar.DEBUG_PARSER:
+        Registrar.register_message(
+            "client_args: %s" % settings.slave_client_args
+        )
 
-        with UsrSyncClientSqlWP(ssh_tunnel_forwarder_params,
-                                py_my_sql_connect_params) as client:
-            client.analyse_remote(
-                parsers.slave, limit=settings['download_limit'], filter_items=settings.filter_items)
-
-            if parsers.slave.objects:
-                parsers.slave.get_obj_list().export_items(
-                    os.path.join(settings.in_folder_full, settings.s_x_name),
-                    settings.col_data_class.get_wp_import_col_names())
-
-    else:
-        parsers.slave.analyse_file(settings.slave_path, settings.slave_encoding)
+    with settings.slave_client_class(**settings.slave_client_args) as client:
+        client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
@@ -116,7 +96,7 @@ def populate_master_parsers(parsers, settings):
 
     things_to_check = []
     if settings['download_master']:
-        things_to_check.extend(['act_connect_params', 'act_db_params', 'fs_params'])
+        things_to_check.extend(['master_connect_params', 'master_db_params', 'fs_params'])
     else:
         things_to_check.extend(['master_path'])
     for thing in things_to_check:
@@ -1051,7 +1031,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             update_progress_counter = ProgressCounter(len(all_updates))
 
         with \
-                UsrSyncClientSshAct(settings.act_connect_params, settings.act_db_params, settings.fs_params) \
+                UsrSyncClientSshAct(settings.master_connect_params, settings.master_db_params, settings.fs_params) \
                     as master_client, \
                 UsrSyncClientWP(settings.wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:

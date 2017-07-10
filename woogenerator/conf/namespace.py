@@ -65,7 +65,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
 
     def join_work_path(self, path):
-        
+
         """ Join a given path relative to the local-work-dir in this namespace. """
 
         response = path
@@ -224,7 +224,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def master_path(self):
         """ The path which the master data is downloaded to and read from. """
-        if not self.download_master and hasattr(self, 'master_file'):
+        if hasattr(self, 'master_file'):
             return getattr(self, 'master_file')
         response = '%s%s' % (self.file_prefix, 'master')
         if self.variant:
@@ -360,9 +360,18 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def master_path(self):
         """ The path which the master data is downloaded to and read from. """
-        if not self.download_master and hasattr(self, 'master_file'):
+        if hasattr(self, 'master_file'):
             return getattr(self, 'master_file')
         response = '%s%s' % (self.file_prefix, 'master')
+        response += self.import_name
+        return response + '.csv'
+
+    @property
+    def slave_path(self):
+        """ The path which the slave data is downloaded to and read from. """
+        if hasattr(self, 'slave_file'):
+            return getattr(self, 'slave_file')
+        response = '%s%s' % (self.file_prefix, 'slave')
         response += self.import_name
         return response + '.csv'
 
@@ -398,7 +407,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def act_connect_params(self):
+    def master_connect_params(self):
         response = {}
         for key, settings_key in [
                 ('hostname', 'm_ssh_host'),
@@ -415,7 +424,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return ";".join(self.col_data_class.get_act_import_cols())
 
     @property
-    def act_db_params(self):
+    def master_db_params(self):
         response = {
             'fields': self.act_fields,
         }
@@ -452,12 +461,12 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         }
         if self.master_client_class == UsrSyncClientSshAct:
             response.update({
-                'connect_params':self.act_connect_params,
-                'db_params':self.act_db_params,
+                'connect_params':self.master_connect_params,
+                'db_params':self.master_db_params,
                 'fs_params':self.fs_params,
             })
         for key, settings_key in [
-                ('limit', 'master_parse_limit')
+            ('limit', 'master_parse_limit')
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -474,10 +483,61 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         response = {
             'cols':self.col_data_class.get_wp_import_cols(),
             'defaults':self.col_data_class.get_defaults(),
-            'filter_items':self.get('filter_items'),
-            'limit':self.get('slave_parse_limit'),
             'source':self.slave_name
         }
+        for key, settings_key in [
+                ('filter_items', 'filter_items'),
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def slave_client_class(self):
+        if self.get('download_slave'):
+            return UsrSyncClientSqlWP
+        return SyncClientLocal
+
+    @property
+    def slave_connect_params(self):
+        response = {
+            'ssh_address_or_host': (self['ssh_host'], self['ssh_port']),
+            'ssh_password': self['ssh_pass'],
+            'ssh_username': self['ssh_user'],
+            'remote_bind_address': (self['remote_bind_host'], self['remote_bind_port']),
+        }
+        return response
+
+    @property
+    def slave_db_params(self):
+        response = {
+            'host': self['db_host'],
+            'user': self['db_user'],
+            'password': self['db_pass'],
+            'db': self['db_name'],
+            'charset': self['db_charset'],
+            'use_unicode': True,
+            'tbl_prefix': self['tbl_prefix'],
+        }
+        return response
+
+    @property
+    def slave_client_args(self):
+        response = {
+            'encoding': self.get('slave_encoding', 'utf8'),
+            'dialect_suggestion': self.get('slave_dialect_suggestion', 'ActOut')
+        }
+        if self.get('download_slave'):
+            response.update({
+                'connect_params':self['slave_connect_params'],
+                'db_params':self['slave_db_params'],
+                'filter_items':self['filter_items']
+            })
+        for key, settings_key in [
+                ('limit', 'slave_parse_limit')
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
         return response
 
 class ParsersNamespace(argparse.Namespace):
