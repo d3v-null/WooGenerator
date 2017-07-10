@@ -30,10 +30,12 @@ class UsrSyncClientWP(SyncClientWP):
 
 class UsrSyncClientSshAct(SyncClientAbstract):
 
-    def __init__(self, connect_params, db_params, fs_params):
+    def __init__(self, connect_params, db_params, fs_params, **kwargs):
         self.db_params = db_params
         self.fs_params = fs_params
-        super(UsrSyncClientSshAct, self).__init__(connect_params)
+        self.dialect_suggestion = kwargs.get('dialect_suggestion', 'ActOut')
+        self.encoding = kwargs.get('encoding', 'utf8')
+        super(UsrSyncClientSshAct, self).__init__(connect_params, **kwargs)
 
     def attempt_connect(self):
         self.service = paramiko.SSHClient()
@@ -203,20 +205,23 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         except:
             raise Exception("import didn't produce a .imported file")
 
-    def analyse_remote(self, parser, since=None, limit=None):
-        if not since:
-            since = '1970-01-01'
+    def analyse_remote(self, parser, **kwargs): # since=None, limit=None):
+        since = kwargs.get('since', '1970-01-01')
+        limit = kwargs.get('limit', self.limit)
+        dialect_suggestion = kwargs.get('dialect_suggestion', self.dialect_suggestion)
+        encoding = kwargs.get('encoding', self.encoding)
+        data_file = kwargs.get('data_file')
+
+        # TODO: implement limit
         if limit:
-            # todo: implement limit
-            # this gets rid of unused argument warnings
             pass
 
         import_name = self.fs_params['import_name']
         remote_export_folder = self.fs_params['remote_export_folder']
         file_root = 'act_x_' + import_name
         file_name = file_root + '.csv'
-        in_folder = self.fs_params['in_folder']
-        local_path = os.path.join(in_folder, file_name)
+        if not data_file:
+            data_file = os.path.join(self.fs_params['in_folder'], file_name)
         remote_path = os.path.join(remote_export_folder, file_name)
 
         tokens = [
@@ -242,9 +247,14 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         print "executing export command..."
         self.exec_silent_command_assert(command)
         print "donloading file..."
-        self.get_delete_file(remote_path, local_path)
+        self.get_delete_file(remote_path, data_file)
         print "analysing file..."
-        parser.analyse_file(local_path, dialect_suggestion='ActOut')
+        parser.analyse_file(
+            data_file, 
+            dialect_suggestion=dialect_suggestion, 
+            limit=limit,
+            encoding=encoding
+        )
 
 
 class UsrSyncClientSqlWP(SyncClientAbstract):
@@ -252,10 +262,11 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
 
     """docstring for UsrSyncClientSqlWP"""
 
-    def __init__(self, connect_params, db_params):
+    def __init__(self, connect_params, db_params, **kwargs):
         self.db_params = db_params
         self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
-        super(UsrSyncClientSqlWP, self).__init__(connect_params)
+        self.since = kwargs.get('since')
+        super(UsrSyncClientSqlWP, self).__init__(connect_params, **kwargs)
         # self.fs_params = fs_params
 
     def __enter__(self):
@@ -268,8 +279,9 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
     def attempt_connect(self):
         self.service = SSHTunnelForwarder(**self.connect_params)
 
-    def analyse_remote(self, parser, since=None,
-                       limit=None, filter_items=None):
+    def analyse_remote(self, parser, filter_items=None, **kwargs):
+        since = kwargs.get('since', self.since)
+        limit = kwargs.get('limit', self.limit)
 
         self.assert_connect()
 

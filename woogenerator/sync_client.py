@@ -69,8 +69,9 @@ class SyncClientAbstract(Registrar):
     """docstring for UsrSyncClient_Abstract"""
     service_builder = AbstractServiceInterface
 
-    def __init__(self, connect_params):
+    def __init__(self, connect_params, **kwargs):
         self.connect_params = connect_params
+        self.limit = kwargs.get('limit')
         self.attempt_connect()
 
     def __enter__(self):
@@ -139,22 +140,31 @@ class SyncClientAbstract(Registrar):
 class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
 
-    def __init__(self, dialect_suggestion=None):
-        self.dialect_suggestion = dialect_suggestion
+    def __init__(self, **kwargs):
+        super(SyncClientLocal, self).__init__(None, **kwargs)
+        self.dialect_suggestion = kwargs.get('dialect_suggestion')
+        self.encoding = kwargs.get('encoding')
+
+    def attempt_connect(self):
+        pass
 
     def __exit__(self, exit_type, value, traceback):
         pass
 
-    def analyse_remote(self, parser, out_path=None, limit=None, **kwargs):
-        dialect_suggestion = kwargs.get('dialect_suggestion', None)
+    def analyse_remote(self, parser, **kwargs):
+        data_file = kwargs.pop('data_file', None)
+        analysis_kwargs = {
+            'dialect_suggestion': kwargs.get('dialect_suggestion', self.dialect_suggestion),
+            'encoding': kwargs.get('encoding', self.encoding),
+            'limit': kwargs.get('limit', self.limit)
+        }
         if self.DEBUG_PARSER:
             self.register_message(
                 "kwargs: %s" % kwargs
             )
         return parser.analyse_file(
-            out_path,
-            limit=limit,
-            dialect_suggestion=self.dialect_suggestion
+            data_file,
+            **analysis_kwargs
         )
         # out_encoding='utf8'
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
@@ -174,7 +184,7 @@ class SyncClientGDrive(SyncClientAbstract):
     """
     service_builder = discovery.build
 
-    def __init__(self, gdrive_params):
+    def __init__(self, gdrive_params, **kwargs):
         for key in [
                 'credentials_dir', 'credentials_file', 'client_secret_file',
                 'scopes', 'app_name'
@@ -193,13 +203,15 @@ class SyncClientGDrive(SyncClientAbstract):
             'positional': ['drive', 'v2'],
             'http': auth_http
         }
-        super(SyncClientGDrive, self).__init__(superconnect_params)
+        super(SyncClientGDrive, self).__init__(superconnect_params, **kwargs)
         self.service = discovery.build(
             *superconnect_params.pop('positional', []), **superconnect_params)
 
         # pylint: disable=E1101
         self.drive_file = self.service.files().get(
             fileId=self.gdrive_params['gen_fid']).execute()
+
+        self.encoding = kwargs.get('encoding', 'utf8')
 
     def __exit__(self, exit_type, value, traceback):
         pass
@@ -260,41 +272,48 @@ class SyncClientGDrive(SyncClientAbstract):
         return time.strptime(self.drive_file['modifiedDate'],
                              '%Y-%m-%dT%H:%M:%S.%fZ')
 
-    def analyse_remote(self, parser, out_path=None, limit=None, **kwargs):
+    def analyse_remote(self, parser, data_file=None, **kwargs):
         gid = kwargs.pop('gid', None)
+
+        analysis_kwargs = {
+            'encoding': kwargs.get('encoding', self.encoding),
+            'limit': kwargs.get('limit', self.limit)
+        }
 
         if not self.skip_download:
             if Registrar.DEBUG_GDRIVE:
                 message = "Downloading spreadsheet"
                 if gid:
                     message += " with gid %s" % gid
-                if out_path:
-                    message += " to: %s" % out_path
+                if data_file:
+                    message += " to: %s" % data_file
                 Registrar.register_message(message)
 
             content = self.download_file_content_csv(gid)
             if not content:
                 return
-            if out_path:
-                out_encoding = 'utf8'
+            if data_file:
                 with codecs.open(
-                    out_path,
-                    encoding=out_encoding,
+                    data_file,
+                    encoding=analysis_kwargs['encoding'],
                     mode='w'
                 ) as out_file:
                     out_file.write(content)
                 parser.analyse_file(
-                    out_path, limit=limit, encoding=out_encoding)
+                    data_file, **analysis_kwargs)
             else:
                 with closing(StringIO(content)) as content_stream:
-                    parser.analyse_stream(content_stream, limit=limit)
+                    parser.analyse_stream(
+                        content_stream,
+                        limit=analysis_kwargs['limit']
+                    )
 
             if Registrar.DEBUG_GDRIVE:
                 message = "downloaded contents of spreadsheet"
                 if gid:
                     message += ' with gid %s' % gid
                 if out_file:
-                    message += ' to file %s' % out_path
+                    message += ' to file %s' % data_file
 
 
 class SyncClientRest(SyncClientAbstract):
@@ -469,10 +488,11 @@ class SyncClientRest(SyncClientAbstract):
     def endpoint_plural(self):
         return "%ss" % self.endpoint_singular
 
-    def __init__(self, connect_params):
+    def __init__(self, connect_params, **kwargs):
 
         self.limit = connect_params.get('limit')
         self.offset = connect_params.get('offset')
+        self.since = kwargs.get('since')
 
         key_translation = {
             'api_key': 'consumer_key',
@@ -503,7 +523,7 @@ class SyncClientRest(SyncClientAbstract):
         if superconnect_params['api'] == 'wp-json':
             superconnect_params['oauth1a_3leg'] = True
 
-        super(SyncClientRest, self).__init__(superconnect_params)
+        super(SyncClientRest, self).__init__(superconnect_params, **kwargs)
         #
         # self.service = WCAPI(
         #     url=connect_params['url'],
@@ -517,9 +537,11 @@ class SyncClientRest(SyncClientAbstract):
 
     #
 
-    def analyse_remote(self, parser, since=None, limit=None, search=None):
-        if since:
-            pass  # todo: implement since
+    def analyse_remote(self, parser, **kwargs):# since=None, limit=None, search=None):
+        # TODO: implement kwargs['since']
+        limit = kwargs.get('limit', self.limit)
+        since = kwargs.get('since', self.since)
+        search = kwargs['search']
 
         result_count = 0
 
