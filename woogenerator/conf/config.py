@@ -10,7 +10,7 @@ import argparse
 import configargparse
 from pprint import pformat
 
-from __init__ import MODULE_LOCATION
+from __init__ import MODULE_PATH
 from woogenerator.utils import TimeUtils, Registrar
 from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataUser
 from woogenerator.parsing.myo import CsvParseMyo
@@ -24,7 +24,7 @@ from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
 # TODO: split file into namespace and argumentparsers
 
 # Core configuration
-CONF_DIR = os.path.join(MODULE_LOCATION, 'conf')
+CONF_DIR = os.path.join(MODULE_PATH, 'conf')
 DEFAULTS_COMMON_PATH = os.path.join(CONF_DIR, 'defaults_common.yaml')
 DEFAULTS_PROD_PATH = os.path.join(CONF_DIR, 'defaults_prod.yaml')
 DEFAULTS_USER_PATH = os.path.join(CONF_DIR, 'defaults_user.yaml')
