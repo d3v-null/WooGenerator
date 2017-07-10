@@ -26,6 +26,7 @@ class TestGenerator(TestCase):
         self.settings.master_file = os.path.join(tests_datadir, "merger_master_sample.csv")
         self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_sample.csv")
         # self.settings.master_parse_limit = 10
+        # self.settings.slave_parse_limit = 10
         self.override_args = ""
         self.parsers = ParsersNamespace()
 
@@ -71,6 +72,10 @@ class TestGenerator(TestCase):
         )
 
         obj_list = self.parsers.slave.get_obj_list()
+
+        self.assertEqual(len(obj_list), 98)
+
+        print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
 
         self.assertTrue(len(obj_list))
 
