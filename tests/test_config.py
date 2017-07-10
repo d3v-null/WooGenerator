@@ -6,8 +6,7 @@ import configargparse
 from pprint import pformat
 
 from context import tests_datadir
-from woogenerator.config import ArgumentParserUser, ArgumentParserProd
-# import woogenerator.config as config
+from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProd
 # from woogenerator import config
 
 class TestConfigProd(unittest.TestCase):
@@ -18,7 +17,7 @@ class TestConfigProd(unittest.TestCase):
             parser._config_file_parser, configargparse.YAMLConfigFileParser)
 
     def test_read_config(self):
-        parser = ArgumentParserProd(skip_local_config=True)
+        parser = ArgumentParserProd()
         args = parser.parse_args()
         print "args: %s" % pformat(vars(args))
         known_args = parser.parse_known_args()
@@ -34,15 +33,19 @@ class TestConfigProd(unittest.TestCase):
     def test_config_stages(self):
         # TODO: complete this
         parser = configargparse.ArgParser(
-            default_config_files=['sample_data/baseconfig.yaml'],
+            default_config_files=[
+                os.path.join(tests_datadir, 'baseconfig.yaml')
+            ],
             config_file_parser_class=configargparse.YAMLConfigFileParser
         )
         parser.add('-c', '--my-config', required=True, is_config_file=True, help='config file path')
         parser.add('-o', '--my-other-config', is_config_file=True, help='other config file path')
         parser.add('--an-argument')
 
-        arg_string = ("--my-config sample_data/overconfig.yaml "
-                      "--my-other-config sample_data/otherconfig.yaml")
+        arg_string = ("--my-config %s --my-other-config %s") % (
+            os.path.join(tests_datadir, 'overconfig.yaml'),
+            os.path.join(tests_datadir, 'otherconfig.yaml'),
+        )
         options = parser.parse_args(args=arg_string.split())
         print "parsed options: %s" % pformat(vars(options))
 

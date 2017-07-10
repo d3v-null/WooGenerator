@@ -35,8 +35,8 @@ import __init__
 # from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import (ArgumentParserUser, ArgumentParserProtoUser,
-                                 SettingsNamespaceUser)
+from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
+from woogenerator.conf.namespace import SettingsNamespaceUser, ParsersNamespace
 from woogenerator.merger import populate_master_parsers, init_settings, init_registrar
 
 ROLES = Counter()
@@ -125,10 +125,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     settings.filter_items = None
 
-    parsers = argparse.Namespace()
+    parsers = ParsersNamespace()
     parsers = populate_master_parsers(parsers, settings)
 
-    ma_parser_objectlist = parsers.ma.get_obj_list()
+    ma_parser_objectlist = getattr(parsers, 'ma').get_obj_list()
     direct_brands = Counter()
     delta_table = [['name', 'card_id', 'direct_brand', 'role', 'expected_role']]
     for master_object in ma_parser_objectlist:
@@ -145,9 +145,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
             expected_role
         )
         direct_brands.update({direct_brand: 1})
+        delta_table.append(row)
         if expected_role != role:
             print("for %50s (%10s), direct brand is: %50s, role is %5s, expected_role is %5s" % row)
-            delta_table.append(row)
 
     print(tabulate(delta_table, headers='firstrow'))
 

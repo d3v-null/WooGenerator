@@ -44,8 +44,8 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
-from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
-                                 SettingsNamespaceProd, init_settings, ParsersNamespace)
+from woogenerator.conf.parser import ArgumentParserProd
+from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParsersNamespace
 
 
 def timediff(settings):

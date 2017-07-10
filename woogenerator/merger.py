@@ -33,8 +33,8 @@ from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import (ArgumentParserUser, ArgumentParserProtoUser,
-                                 SettingsNamespaceUser, init_settings, ParsersNamespace)
+from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
+from woogenerator.conf.namespace import SettingsNamespaceUser, init_settings, ParsersNamespace
 
 
 def timediff(settings):

@@ -7,11 +7,9 @@ import argparse
 from context import woogenerator
 from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
-from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
-from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import (ArgumentParserUser, SettingsNamespaceUser, 
-                                 init_settings, ParsersNamespace)
+from woogenerator.utils import Registrar, SanitationUtils
+from woogenerator.conf.parser import ArgumentParserUser
+from woogenerator.conf.namespace import init_settings, ParsersNamespace, SettingsNamespaceUser
 from woogenerator.merger import populate_master_parsers, populate_slave_parsers
 
 from context import tests_datadir
@@ -53,11 +51,6 @@ class TestGenerator(TestCase):
 
     def test_populate_master_parsers(self):
         self.test_init_settings()
-        # self.settings.product_parser_args = {
-        #     'import_name': self.settings.import_name,
-        #     'item_depth': self.settings.item_depth,
-        #     'taxo_depth': self.settings.taxo_depth,
-        # }
 
         self.parsers = populate_master_parsers(
             self.parsers, self.settings

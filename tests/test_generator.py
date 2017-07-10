@@ -10,8 +10,8 @@ from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, 
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
-                                 SettingsNamespaceProd, init_settings, ParsersNamespace)
+from woogenerator.conf.parser import ArgumentParserProd, ArgumentParserProtoProd
+from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParsersNamespace
 from woogenerator.generator import populate_master_parsers
 
 from context import tests_datadir

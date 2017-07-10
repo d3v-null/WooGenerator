@@ -29,7 +29,6 @@ from woogenerator.metagator import MetaGator
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.dyn import CsvParseDyn
 from woogenerator.parsing.myo import CsvParseMyo, MYOProdList
-from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
 from woogenerator.parsing.special import CsvParseSpecial
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
                                       WooCatList, WooProdList, WooVarList)
@@ -37,10 +36,9 @@ from woogenerator.sync_client import SyncClientGDrive, SyncClientLocalStream
 from woogenerator.sync_client_prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
-from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, SeqUtils, TimeUtils)
-from woogenerator.config import (ArgumentParserProd, ArgumentParserProtoProd,
-                                 SettingsNamespaceProd)
+from woogenerator.utils import Registrar
+from woogenerator.conf.parser import ArgumentParserProd, ArgumentParserProtoProd
+from woogenerator.conf.namespace import SettingsNamespaceProd
 
 # Example: BioTan Plus special SP2017-05-22-STBTP
 def populate_examples(settings):
