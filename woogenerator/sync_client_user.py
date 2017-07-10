@@ -250,8 +250,8 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         self.get_delete_file(remote_path, data_path)
         print "analysing file..."
         parser.analyse_file(
-            data_path, 
-            dialect_suggestion=dialect_suggestion, 
+            data_path,
+            dialect_suggestion=dialect_suggestion,
             limit=limit,
             encoding=encoding
         )
@@ -353,16 +353,19 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
         wp_db_meta_cols = ColDataUser.get_wpdb_cols(meta=True)
         wp_db_core_cols = ColDataUser.get_wpdb_cols(meta=False)
 
-        userdata_cols = ",\n\t\t".join(filter(None,
-                                              [
-                                                  "u.%s as `%s`" % (key, name)
-                                                  for key, name in wp_db_core_cols.items()
-                                              ] + [
-                                                  "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (
-                                                      key, name)
-                                                  for key, name in wp_db_meta_cols.items()
-                                              ]
-                                              ))
+        userdata_cols = ",\n\t\t".join(filter(
+            None,
+            [
+                "u.%s as `%s`" % (key, name)
+                for key, name in wp_db_core_cols.items()
+            ] + [
+                "MAX(CASE WHEN um.meta_key = '%s' THEN um.meta_value ELSE \"\" END) as `%s`" % (
+                    key, name
+                )
+                for key, name in wp_db_meta_cols.items()
+            ]
+            )
+        )
 
         # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColDataUser.get_wp_cols().items()))
 
@@ -435,7 +438,8 @@ FROM
 ) as lu
 ON {um_on_clause}
 {um_where_clause}
-{limit_clause};""".format(
+{limit_clause};"""
+        sql_select_user_modtime = sql_select_user_modtime.format(
             sql_ud=sql_select_user,
             sql_mt=sql_select_modtime,
             join_type="INNER" if sm_where_clause else "LEFT",

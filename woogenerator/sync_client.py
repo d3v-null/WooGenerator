@@ -141,9 +141,9 @@ class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
 
     def __init__(self, **kwargs):
+        self.dialect_suggestion = kwargs.pop('dialect_suggestion')
+        self.encoding = kwargs.pop('encoding')
         super(SyncClientLocal, self).__init__(None, **kwargs)
-        self.dialect_suggestion = kwargs.get('dialect_suggestion')
-        self.encoding = kwargs.get('encoding')
 
     def attempt_connect(self):
         pass
@@ -160,7 +160,7 @@ class SyncClientLocal(SyncClientAbstract):
         }
         if self.DEBUG_PARSER:
             self.register_message(
-                "kwargs: %s" % kwargs
+                "analysis_kwargs: %s" % analysis_kwargs
             )
         return parser.analyse_file(
             data_path,
