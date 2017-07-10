@@ -331,14 +331,13 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
 
     Registrar.register_progress("Exporting info to spreadsheets")
 
+    product_cols = settings.col_data_class.get_product_cols()
+
     if settings.schema_is_myo:
-        product_cols = ColDataMyo.get_product_cols()
         product_list = MYOProdList(parsers.master.products.values())
         product_list.export_items(settings.myo_path,
                                   ColDataBase.get_col_names(product_cols))
     elif settings.schema_is_woo:
-        product_cols = ColDataWoo.get_product_cols()
-
         for col in settings['exclude_cols']:
             if col in product_cols:
                 del product_cols[col]
