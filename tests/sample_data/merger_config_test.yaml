@@ -1,0 +1,8 @@
+#Merger file info
+
+master-name: ACT
+slave-name: WORDPRESS
+last-sync: !!str 2015-05-29 04:33:40
+
+show-report: true
+skip-download-master: true
