@@ -39,11 +39,11 @@ def get_sign(params, url, http_method, consumer_secret='',
     hmac_key = "&".join([consumer_secret, oauth_token_secret])
     sig = hmac.new(hmac_key, hmac_msg, hashlib.sha1)
     sig_b64 = binascii.b2a_base64(sig.digest())[:-1]
-    print "params", params
-    print "normalized_params", normalized_params
-    print "hmac_msg: ", hmac_msg
-    print "hmac_key: ", hmac_key
-    print "sig_b64: ", sig_b64
+    # print "params", params
+    # print "normalized_params", normalized_params
+    # print "hmac_msg: ", hmac_msg
+    # print "hmac_key: ", hmac_key
+    # print "sig_b64: ", sig_b64
     return sig_b64
 
 params_request_token = [
@@ -92,5 +92,5 @@ r = requests.post(url=target_url, params=params, data=target_data)
 # r = requests.post(url=target_url, params=params, data='{"product":
 # {"title": "Woo Single #2a"}}')
 
-print r.status_code
-print r.text
+# print r.status_code
+# print r.text

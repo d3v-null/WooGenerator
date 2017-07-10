@@ -30,8 +30,8 @@ class TestGenerator(TestCase):
         self.override_args = ""
         self.parsers = ParsersNamespace()
 
-        Registrar.DEBUG_MESSAGE = True
-        Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_ERROR = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True
 
@@ -62,7 +62,7 @@ class TestGenerator(TestCase):
         #number of objects:
         self.assertEqual(len(obj_list), 99)
 
-        print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
+        # print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
 
     def test_populate_slave_parsers(self):
         self.test_init_settings()
@@ -75,7 +75,7 @@ class TestGenerator(TestCase):
 
         self.assertEqual(len(obj_list), 98)
 
-        print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
+        # print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
 
         self.assertTrue(len(obj_list))
 

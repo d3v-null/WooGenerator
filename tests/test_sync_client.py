@@ -32,7 +32,7 @@ class abstractSyncClientTestCase(TestCase):
         # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_MESSAGE = True
         # Registrar.DEBUG_ERROR = True
-        # Registrar.DEBUG_WARN = True
+        Registrar.DEBUG_WARN = False
 
 
 @unittest.skip('have not created config file yet')
@@ -92,7 +92,7 @@ class testSyncClient(abstractSyncClientTestCase):
             'xs_gid': xs_gid,
         }
 
-        print "gDriveParams", self.gDriveParams
+        # print "gDriveParams", self.gDriveParams
 
         self.wcApiParams = {
             'api_key': wc_api_key,
@@ -102,7 +102,7 @@ class testSyncClient(abstractSyncClientTestCase):
             # 'version':'wc/v1'
         }
 
-        print "wcApiParams", self.wcApiParams
+        # print "wcApiParams", self.wcApiParams
 
         self.wpApiParams = {
             'api_key': wp_api_key,
@@ -113,7 +113,7 @@ class testSyncClient(abstractSyncClientTestCase):
             'callback': wp_callback
         }
 
-        print "wpApiParams", self.wpApiParams
+        # print "wpApiParams", self.wpApiParams
 
         self.productParserArgs = {
             'self.import_name': self.import_name,
@@ -123,36 +123,36 @@ class testSyncClient(abstractSyncClientTestCase):
             'defaults': ColDataWoo.get_defaults(),
         }
 
-        print "productParserArgs", self.productParserArgs
+        # print "productParserArgs", self.productParserArgs
 
     def test_GDrive_Read(self):
         with SyncClientGDrive(self.gDriveParams) as client:
-            print "drive file:", client.drive_file
-            print "GID", client.get_gm_modtime(self.gDriveParams['gen_gid'])
+            # print "drive file:", client.drive_file
+            # print "GID", client.get_gm_modtime(self.gDriveParams['gen_gid'])
 
     def test_ProdSyncClient_WC_Read(self):
         self.wcApiParams.update(timeout=1)
         with ProdSyncClientWC(self.wcApiParams) as client:
             # print client.service.get('products').text
             for pagecount, page in enumerate(client.get_iterator('products')):
-                print "PAGE %d: " % pagecount
+                # print "PAGE %d: " % pagecount
                 if 'products' in page:
                     for page_product in page.get('products'):
                         if 'id' in page_product:
                             prod_str = page_product['id']
                         else:
                             prod_str = str(page_product)[:100]
-                        print "-> PRODUCT: ", prod_str
+                        # print "-> PRODUCT: ", prod_str
 
     @unittest.skip('out of scope')
     def test_UsrSyncClient_WP_Read(self):
         with UsrSyncClientWP(self.wpApiParams) as client:
-            print client.service.get('users').text
+            # print client.service.get('users').text
             for pagecount, page in enumerate(client.get_iterator('users')):
-                print "PAGE %d: " % pagecount
+                # print "PAGE %d: " % pagecount
                 if 'users' in page:
                     for page_user in page.get('users'):
-                        print "-> USER: ", str(page_user)[:50]
+                        # print "-> USER: ", str(page_user)[:50]
 
 
 if __name__ == '__main__':

@@ -66,9 +66,10 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         super(testUsrSyncUpdate, self).setUp()
 
         for var in ['wpApiParams']:
-            print var, getattr(self, var)
+            pass
+            # print var, getattr(self, var)
 
-        Registrar.DEBUG_API = True
+        # Registrar.DEBUG_API = True
 
     def testUploadSlaveChanges(self):
 
@@ -90,7 +91,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         maParser.analyse_rows(master_data)
 
-        print "MASTER RECORDS: \n", maParser.tabulate()
+        # print "MASTER RECORDS: \n", maParser.tabulate()
 
         saParser = CsvParseUserApi(
             cols=ColDataUser.get_wp_import_cols(),
@@ -100,7 +101,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         with UsrSyncClientWP(self.wpApiParams) as slaveClient:
             slaveClient.analyse_remote(saParser, search=master_uname)
 
-        print "SLAVE RECORDS: \n", saParser.tabulate()
+        # print "SLAVE RECORDS: \n", saParser.tabulate()
 
         updates = []
         globalMatches = MatchList()
@@ -111,7 +112,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             saParser.usernames, maParser.usernames)
         globalMatches.add_matches(usernameMatcher.pure_matches)
 
-        print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
+        # print "username matches (%d pure)" % len(usernameMatcher.pure_matches)
 
         sync_cols = ColDataUser.get_sync_cols()
 
@@ -122,7 +123,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             syncUpdate = SyncUpdateUsrApi(m_object, s_object)
             syncUpdate.update(sync_cols)
 
-            print "SyncUpdate: ", syncUpdate.tabulate()
+            # print "SyncUpdate: ", syncUpdate.tabulate()
 
             if not syncUpdate:
                 continue
@@ -140,11 +141,11 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
             for count, update in enumerate(updates):
                 try:
                     response = update.update_slave(slaveClient)
-                    print "response (code) is %s" % response
+                    # print "response (code) is %s" % response
                     assert response, "response should exist because update should not be empty. update: %s" % update.tabulate(
                         tablefmt="html")
                     if response:
-                        print "response text: %s" % response.text
+                        # print "response text: %s" % response.text
                         response_json = response.json()
 
                 except Exception as exc:

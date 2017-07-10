@@ -31,8 +31,8 @@ class TestGenerator(TestCase):
         self.parsers = ParsersNamespace()
 
 
-        Registrar.DEBUG_MESSAGE = True
-        Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_ERROR = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True
 

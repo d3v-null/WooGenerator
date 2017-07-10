@@ -32,9 +32,10 @@ class TestCSVParseSpecialV2(TestCase):
 
         specialParser.analyse_file(self.specPath)
 
-        print "number of special groups: %s" % len(specialParser.rule_groups)
-        print "number of special rules: %s" % len(specialParser.rules)
-        print specialParser.tabulate(tablefmt="simple")
+        if Registrar.DEBUG_PARSER:
+            Registrar.register_message("number of special groups: %s" % len(specialParser.rule_groups))
+            Registrar.register_message("number of special rules: %s" % len(specialParser.rules))
+            Registrar.register_message(specialParser.tabulate(tablefmt="simple"))
 
         # check that loner has correct ending
         isSingularChild = False

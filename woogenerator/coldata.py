@@ -2368,8 +2368,6 @@ class ColDataUser(ColDataBase):
         if export_cols is None:
             export_cols = OrderedDict()
 
-        # print "getting sync data: ", col, data
-
         new_data = {}
         if data.get('sync'):
             sync_data = data.get('sync')

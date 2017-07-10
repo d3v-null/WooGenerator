@@ -22,7 +22,7 @@ class testMetaGator(TestCase):
 
         fname = os.path.join(self.work_dir, 'CT-TE.jpg')
         metagator = MetaGator(fname)
-        print metagator.read_meta()
+        # print metagator.read_meta()
 
     def test_JPG_Write(self):
         fname = os.path.join(self.work_dir, 'EAP-PECPRE.jpg')
@@ -31,14 +31,14 @@ class testMetaGator(TestCase):
         metagator.write_meta(
             self.newmeta['title'], self.newmeta['description'])
         metagator.update_meta(self.newmeta)
-        print metagator.read_meta()
+        # print metagator.read_meta()
 
     def test_PNG_Write(self):
         fname = os.path.join(self.work_dir, 'STFTO-CAL.png')
 
         metagator = MetaGator(fname)
         metagator.write_meta(u'TITLE \xa9 \u2014', time())
-        print metagator.read_meta()
+        # print metagator.read_meta()
 
 
 if __name__ == '__main__':

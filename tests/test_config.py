@@ -19,9 +19,9 @@ class TestConfigProd(unittest.TestCase):
     def test_read_config(self):
         parser = ArgumentParserProd()
         args = parser.parse_args()
-        print "args: %s" % pformat(vars(args))
+        # print "args: %s" % pformat(vars(args))
         known_args = parser.parse_known_args()
-        print "known args: \n%s\n%s" % (pformat(vars(known_args[0])), pformat(known_args[1]))
+        # print "known args: \n%s\n%s" % (pformat(vars(known_args[0])), pformat(known_args[1]))
         self.assertEqual(args.master_name, "MASTER")
         self.assertEqual(args.schema, "WC")
 
@@ -47,7 +47,7 @@ class TestConfigProd(unittest.TestCase):
             os.path.join(tests_datadir, 'otherconfig.yaml'),
         )
         options = parser.parse_args(args=arg_string.split())
-        print "parsed options: %s" % pformat(vars(options))
+        # print "parsed options: %s" % pformat(vars(options))
 
     def test_testmode(self):
         """ test the logic of testmode, make sure configargparse detects test config """

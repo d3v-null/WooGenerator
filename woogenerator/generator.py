@@ -788,20 +788,20 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     Registrar.register_warning(exc)
 
         # print parsers.master.to_str_tree()
-        if Registrar.DEBUG_CATS:
-            print "product parser"
-            for key, category in parsers.master.categories.items():
-                print "%5s | %50s | %s" % (key, category.title[:50],
-                                           category.wpid)
-        if Registrar.DEBUG_CATS:
-            print "api product parser info"
-            print "there are %s slave categories registered" % len(
-                api_product_parser.categories)
-            print "there are %s children of API root" % len(
-                api_product_parser.root_data.children)
-            print api_product_parser.to_str_tree()
-            for key, category in api_product_parser.categories.items():
-                print "%5s | %50s" % (key, category.title[:50])
+        # if Registrar.DEBUG_CATS:
+        #     print "product parser"
+        #     for key, category in parsers.master.categories.items():
+        #         print "%5s | %50s | %s" % (key, category.title[:50],
+        #                                    category.wpid)
+        # if Registrar.DEBUG_CATS:
+        #     print "api product parser info"
+        #     print "there are %s slave categories registered" % len(
+        #         api_product_parser.categories)
+        #     print "there are %s children of API root" % len(
+        #         api_product_parser.root_data.children)
+        #     print api_product_parser.to_str_tree()
+        #     for key, category in api_product_parser.categories.items():
+        #         print "%5s | %50s" % (key, category.title[:50])
 
         product_matcher = ProductMatcher()
         product_matcher.process_registers(api_product_parser.products,
@@ -1038,13 +1038,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             for new_prod_count, new_prod_match in enumerate(
                     product_matcher.slaveless_matches):
                 m_object = new_prod_match.m_object
-                print "will create product %d: %s" % (new_prod_count,
-                                                      m_object.identifier)
+                # print "will create product %d: %s" % (new_prod_count,
+                #                                       m_object.identifier)
                 api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
                 for key in ['id', 'slug']:
                     if key in api_data:
                         del api_data[key]
-                print "has api data: %s" % pformat(api_data)
+                # print "has api data: %s" % pformat(api_data)
                 slave_product_creations.append(api_data)
 
     check_warnings()

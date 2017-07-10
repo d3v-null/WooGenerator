@@ -23,7 +23,8 @@ class TestCSVParseWoo(TestCase):
         }
 
         for var in ['self.productParserArgs']:
-            print var, eval(var)
+            pass
+            # print var, eval(var)
 
         # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_MESSAGE = True
@@ -50,11 +51,11 @@ class TestCSVParseWoo(TestCase):
 
         Registrar.DEBUG_MRO = True
 
-        print "number of objects: %s" % len(productParser.objects.values())
-        print "number of items: %s" % len(productParser.items.values())
-        print "number of products: %s" % len(productParser.products.values())
+        # print "number of objects: %s" % len(productParser.objects.values())
+        # print "number of items: %s" % len(productParser.items.values())
+        # print "number of products: %s" % len(productParser.products.values())
         prodList = WooProdList(productParser.products.values())
-        print SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
+        # print SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
 
         # sort_keys = lambda (ka, va), (kb, vb): cmp(ka, kb)
 

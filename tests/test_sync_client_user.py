@@ -154,7 +154,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         for var in ['SSHTunnelForwarderParams', 'PyMySqlconnect_params',
                     'wcApiParams', 'actconnect_params', 'actDbParams']:
-            print var, getattr(self, var)
+            pass
+            # print var, getattr(self, var)
 
         # Registrar.DEBUG_SHOP = True
         # Registrar.DEBUG_MRO = True
@@ -191,7 +192,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
 
         with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fs_params) as client:
             response = client.upload_changes('C000001', fields)
-        print response
+        # print response
 
     # @skip
     # def test_JSON_read(self):
@@ -293,8 +294,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         response = []
         with UsrSyncClientWC(self.wcApiParams) as client:
             response = client.get_iterator()
-        print tabulate(list(response)[:10], headers='keys')
-        print list(response)
+        # print tabulate(list(response)[:10], headers='keys')
+        # print list(response)
         self.assertTrue(response)
 
     # def test_WC_Upload_bad(self):
@@ -385,8 +386,8 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         response = []
         with UsrSyncClientWP(self.wpApiParams) as client:
             response = client.get_iterator()
-        print tabulate(list(response)[:10], headers='keys')
-        print list(response)
+        # print tabulate(list(response)[:10], headers='keys')
+        # print list(response)
         self.assertTrue(response)
 
     def test_WP_iterator(self):
@@ -396,7 +397,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
                 pprint(page)
 
     def test_WP_analyse(self):
-        print "API Import cols: "
+        # print "API Import cols: "
         pprint(ColDataUser.get_wpapi_import_cols())
 
         saParser = CsvParseUserApi(
@@ -407,7 +408,7 @@ class testUsrSyncClient(abstractSyncClientTestCase):
         with UsrSyncClientWP(self.wpApiParams) as slaveClient:
             slaveClient.analyse_remote(saParser)
 
-        print saParser.tabulate()
+        # print saParser.tabulate()
 
     # def test_SSH_download(self):
     #     with UsrSyncClientSshAct(self.actconnect_params, self.actDbParams, self.fs_params) as client:
