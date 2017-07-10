@@ -504,7 +504,7 @@ class SanitationUtils(object):
             cls.remove_leading_percent_wspace,
             cls.remove_lone_dashes,
             # cls.strip_extra_whitespace,
-            cls.strip_all_whitespace,
+            # cls.strip_all_whitespace,
             cls.remove_thousands_separator,
             cls.remove_lone_white_space,
             cls.strip_leading_whitespace,
