@@ -24,12 +24,11 @@ class UsrObjList(ObjList):
     report_cols = ColDataUser.get_report_cols()
 
     def get_sanitizer(self, tablefmt=None):
-        if tablefmt is 'html':
+        if tablefmt == 'html':
             return SanitationUtils.sanitize_for_xml
-        elif tablefmt is 'simple':
+        if tablefmt == 'simple':
             return SanitationUtils.sanitize_for_table
-        else:
-            return super(UsrObjList, self).get_sanitizer(tablefmt)
+        return super(UsrObjList, self).get_sanitizer(tablefmt)
 
     @classmethod
     def get_basic_cols(cls, self):
