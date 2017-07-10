@@ -375,7 +375,7 @@ class CsvParseBase(Registrar):
             sanitized_col = self.sanitize_cell(col)
             if sanitized_col in sanitized_row:
                 self.indices[col] = sanitized_row.index(sanitized_col)
-            if self.indices.get(col):
+            if self.indices.get(col) is not None:
                 if self.DEBUG_ABSTRACT:
                     self.register_message("indices [%s] = %s" %
                                           (col, self.indices.get(col)))
