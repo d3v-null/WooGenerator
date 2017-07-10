@@ -6,8 +6,8 @@ from pprint import pprint
 
 from context import woogenerator
 
-from testSyncClient import abstractSyncClientTestCase
-from woogenerator.sync_client_user import UsrSyncClientSqlWP, UsrSyncClientSshAct, UsrSyncClientWC, UsrSyncClientWP
+from test_sync_client import abstractSyncClientTestCase
+from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct, UsrSyncClientWC, UsrSyncClientWP
 from woogenerator.coldata import ColDataUser
 from woogenerator.parsing.user import ImportUser, CsvParseUser, CsvParseUserApi
 from woogenerator.utils import TimeUtils, Registrar

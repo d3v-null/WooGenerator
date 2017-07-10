@@ -29,15 +29,15 @@ import __init__
 #                                    EmailMatcher, Match, MatchList,
 #                                    NocardEmailMatcher, UsernameMatcher)
 # from woogenerator.parsing.user import CsvParseUser, UsrObjList
-# from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
+# from woogenerator.client.user import (UsrSyncClientSqlWP,
 #                                            UsrSyncClientSshAct,
 #                                            UsrSyncClientWP)
 # from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import SettingsNamespaceUser, ParsersNamespace
-from woogenerator.merger import populate_master_parsers, init_settings, init_registrar
+from woogenerator.conf.namespace import ParsersNamespace, init_settings, init_registrar
+from woogenerator.merger import populate_master_parsers
 
 ROLES = Counter()
 BRANDS = Counter()

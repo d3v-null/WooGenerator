@@ -27,7 +27,7 @@ from woogenerator.matching import (CardMatcher, ConflictingMatchList,
                                    EmailMatcher, Match, MatchList,
                                    NocardEmailMatcher, UsernameMatcher)
 from woogenerator.parsing.user import CsvParseUser, UsrObjList
-from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
+from woogenerator.client.user import (UsrSyncClientSqlWP,
                                            UsrSyncClientSshAct,
                                            UsrSyncClientWP)
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi

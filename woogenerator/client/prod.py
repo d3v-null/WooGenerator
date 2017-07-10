@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
-from woogenerator.sync_client import SyncClientWC
 
+import __init__
+from woogenerator.client.core import SyncClientWC
 
 class ProdSyncClientWC(SyncClientWC):
     endpoint_singular = 'product'

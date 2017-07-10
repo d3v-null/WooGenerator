@@ -8,10 +8,11 @@ import paramiko
 from sshtunnel import SSHTunnelForwarder
 import pymysql
 
+import __init__
 from woogenerator.coldata import ColDataUser
-from woogenerator.sync_client import SyncClientAbstract  # , AbstractServiceInterface
-from woogenerator.sync_client import SyncClientWP
-from woogenerator.sync_client import SyncClientWC
+from woogenerator.client.core import SyncClientAbstract  # , AbstractServiceInterface
+from woogenerator.client.core import SyncClientWP
+from woogenerator.client.core import SyncClientWC
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
 from woogenerator.utils import ProgressCounter, UnicodeCsvDialectUtils
 

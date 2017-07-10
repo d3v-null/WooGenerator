@@ -36,8 +36,8 @@ from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
 from woogenerator.parsing.special import CsvParseSpecial
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
                                       WooCatList, WooProdList, WooVarList)
-from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
-from woogenerator.sync_client_prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
+from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,

@@ -5,9 +5,9 @@ import random
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 from tabulate import tabulate
 
-from testSyncClient import abstractSyncClientTestCase
+from test_sync_client import abstractSyncClientTestCase
 from context import woogenerator
-from woogenerator.sync_client_prod import ProdSyncClientWC, CatSyncClientWC
+from woogenerator.client.prod import ProdSyncClientWC, CatSyncClientWC
 from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.abstract import ObjList
 # from woogenerator.parsing.gen import ProdList

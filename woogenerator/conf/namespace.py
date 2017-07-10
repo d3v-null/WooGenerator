@@ -21,8 +21,8 @@ from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataUse
 from woogenerator.parsing.myo import CsvParseMyo
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
 from woogenerator.parsing.user import CsvParseUser
-from woogenerator.sync_client import SyncClientGDrive, SyncClientLocal
-from woogenerator.sync_client_user import (UsrSyncClientSqlWP,
+from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
+from woogenerator.client.user import (UsrSyncClientSqlWP,
                                            UsrSyncClientSshAct,
                                            UsrSyncClientWP)
 

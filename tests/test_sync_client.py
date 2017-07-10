@@ -6,9 +6,9 @@ from unittest import TestCase  # , main, skip
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
-from woogenerator.sync_client import SyncClientGDrive
-from woogenerator.sync_client_prod import ProdSyncClientWC
-from woogenerator.sync_client_user import UsrSyncClientWP
+from woogenerator.client.core import SyncClientGDrive
+from woogenerator.client.prod import ProdSyncClientWC
+from woogenerator.client.user import UsrSyncClientWP
 from woogenerator.coldata import ColDataUser, ColDataWoo
 from woogenerator.parsing.user import ImportUser
 from woogenerator.utils import Registrar, TimeUtils

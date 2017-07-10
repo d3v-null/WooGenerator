@@ -19,6 +19,7 @@ from oauth2client import tools
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
+import __init__
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils import ProgressCounter
 
