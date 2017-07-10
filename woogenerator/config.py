@@ -257,6 +257,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_parser_args(self):
+        """ Arguments used to create the master parser. """
+        
         response = {
             'import_name': self.import_name,
             'cols': self.col_data_class.get_import_cols(),
@@ -358,6 +360,25 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def master_parser_class(self):
+        """ Class used to parse master data """
+        return CsvParseUser
+
+    @property
+    def master_parser_args(self):
+        """ Arguments used to create the master parser. """
+        response = {
+            'cols':self.col_data_class.get_act_import_cols(),
+            'defaults':self.col_data_class.get_defaults(),
+            'contact_schema':'act',
+            'filter':self['filter_items'],
+            'limit':self['download_limit'],
+            'source':self.master_name,
+            'schema':self.schema
+        }
+        return response
+
+    @property
+    def slave_parser_class(self):
         """ Class used to parse master data """
         return CsvParseUser
 

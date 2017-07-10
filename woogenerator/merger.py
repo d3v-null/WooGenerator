@@ -21,7 +21,6 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from httplib2 import ServerNotFoundError
 
 import __init__
-from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.duplicates import Duplicates
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
@@ -51,9 +50,9 @@ def populate_slave_parsers(parsers, settings):
     print DebugUtils.hashify(
         "Download / Generate Slave Parser Object"), timediff(settings)
 
-    parsers.slave = CsvParseUser(
-        cols=ColDataUser.get_wp_import_cols(),
-        defaults=ColDataUser.get_defaults(),
+    parsers.slave = settings.slave_parser_class(
+        cols=settings.col_data_class.get_wp_import_cols(),
+        defaults=settings.col_data_class.get_defaults(),
         filter_items=settings.filter_items,
         limit=settings['download_limit'],
         source=settings.slave_name)
@@ -101,7 +100,7 @@ def populate_slave_parsers(parsers, settings):
             if parsers.slave.objects:
                 parsers.slave.get_obj_list().export_items(
                     os.path.join(settings.in_folder_full, settings.s_x_name),
-                    ColDataUser.get_wp_import_col_names())
+                    settings.col_data_class.get_wp_import_col_names())
 
     else:
         parsers.slave.analyse_file(settings.sa_path, settings.sa_encoding)
@@ -113,7 +112,7 @@ def populate_slave_parsers(parsers, settings):
         )
         parsers.slave.get_obj_list().export_items(
             os.path.join(settings.in_folder_full, settings.s_x_name),
-            ColDataUser.get_wp_import_col_names())
+            settings.col_data_class.get_wp_import_col_names())
     return parsers
 
 def populate_master_parsers(parsers, settings):
@@ -121,14 +120,8 @@ def populate_master_parsers(parsers, settings):
     Populate the parsers for data from the slave database.
     """
 
-    parsers.master = CsvParseUser(
-        cols=settings.col_data_class.get_act_import_cols(),
-        defaults=settings.col_data_class.get_defaults(),
-        contact_schema='act',
-        filter_items=settings.filter_items,
-        limit=settings['download_limit'],
-        source=settings.master_name,
-        schema=settings.schema
+    parsers.master = settings.master_parser_class(
+        **settings.matser_parser_args
     )
 
     print DebugUtils.hashify("Generate and Analyse ACT data"), timediff(
@@ -228,7 +221,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     assert settings.store_url, "store url must not be blank"
 
-    settings.act_fields = ";".join(ColDataUser.get_act_import_cols())
+    settings.act_fields = ";".join(settings.col_data_class.get_act_import_cols())
 
     settings.wp_api_params = {
         'api_key': settings.wp_api_key,
@@ -462,7 +455,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
         print timediff(settings)
 
-        sync_cols = ColDataUser.get_sync_cols()
+        sync_cols = settings.col_data_class.get_sync_cols()
 
         if Registrar.DEBUG_PROGRESS:
             sync_progress_counter = ProgressCounter(len(global_matches))
@@ -559,7 +552,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         css = ""
         reporter = HtmlReporter(css=css)
 
-        basic_cols = ColDataUser.get_basic_cols()
+        basic_cols = settings.col_data_class.get_basic_cols()
         address_cols = OrderedDict(basic_cols.items() + [
             ('address_reason', {}),
             ('Edited Address', {}),
@@ -569,8 +562,8 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             ('name_reason', {}),
             ('Edited Name', {}),
         ])
-        csv_colnames = ColDataUser.get_col_names(
-            OrderedDict(basic_cols.items() + ColDataUser.name_cols([
+        csv_colnames = settings.col_data_class.get_col_names(
+            OrderedDict(basic_cols.items() + settings.col_data_class.name_cols([
                 'address_reason',
                 'name_reason',
                 'Edited Name',
@@ -712,10 +705,10 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 filter(None, [update.new_s_object
                               for update in s_delta_updates]))
 
-            delta_cols = ColDataUser.get_delta_cols()
+            delta_cols = settings.col_data_class.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColDataUser.get_basic_cols().items() + ColDataUser.name_cols(
+                settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if m_delta_list:
@@ -744,11 +737,11 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             if m_delta_list:
                 m_delta_list.export_items(
                     settings['master_delta_csv_path'],
-                    ColDataUser.get_col_names(all_delta_cols))
+                    settings.col_data_class.get_col_names(all_delta_cols))
             if s_delta_list:
                 s_delta_list.export_items(
                     settings['slave_delta_csv_path'],
-                    ColDataUser.get_col_names(all_delta_cols))
+                    settings.col_data_class.get_col_names(all_delta_cols))
 
         report_matching = settings['do_sync']
         if report_matching:
@@ -881,7 +874,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             dup_reporter = HtmlReporter(css=dup_css)
             duplicate_group = HtmlReporter.Group('dup', 'Duplicate Results')
 
-            basic_cols = ColDataUser.get_basic_cols()
+            basic_cols = settings.col_data_class.get_basic_cols()
             dup_cols = OrderedDict(basic_cols.items() + [
                 # ('Create Date', {}),
                 # ('Last Sale', {})
