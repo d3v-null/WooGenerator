@@ -296,136 +296,7 @@ def do_sync(matches, updates, parsers, settings):
 
     # TODO: process duplicates here
 
-def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
-    """
-    Use settings object to load config file and detect changes in wordpress.
-    """
-    # TODO: fix too-many-branches,too-many-locals
-    # DONE: implement override_args
-
-    settings = init_settings(override_args, settings, ArgumentParserUser)
-
-    ### PROCESS CLASS PARAMS ###
-
-    FieldGroup.do_post = settings.do_post
-    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.last_sync)
-    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
-
-    ### SET UP DIRECTORIES ###
-
-    for path in (settings.in_folder_full, settings.out_folder_full):
-        if not os.path.exists(path):
-            os.mkdir(path)
-
-    settings.repd_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
-    settings.w_pres_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
-    settings.master_res_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-    settings.master_delta_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-    settings.slave_delta_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
-
-    ### PROCESS OTHER CONFIG ###
-
-    assert settings.store_url, "store url must not be blank"
-
-    settings.wp_api_params = {
-        'api_key': settings.wp_api_key,
-        'api_secret': settings.wp_api_secret,
-        'url': settings.store_url,
-        'wp_user': settings.wp_user,
-        'wp_pass': settings.wp_pass,
-        'callback': settings.wp_callback
-    }
-
-    #########################################
-    # Prepare Filter Data
-    #########################################
-
-    print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
-
-    if settings['do_filter']:
-        # TODO: I don't think emails filter is actually working
-        filter_files = {
-            'users': settings.get('user_file'),
-            'emails': settings.get('email_file'),
-            'cards': settings.get('card_file'),
-        }
-        settings.filter_items = {}
-        for key, filter_file in filter_files.items():
-            if filter_file:
-                try:
-                    with open(os.path.join(settings.in_folder_full,
-                                           filter_file)) as filter_file_obj:
-                        settings.filter_items[key] = [
-                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
-                            for line in filter_file_obj
-                        ]
-                except IOError as exc:
-                    SanitationUtils.safe_print(
-                        "could not open %s file [%s] from %s" % (
-                            key, filter_file, unicode(os.getcwd())))
-                    raise exc
-        if 'emails' in settings and settings.emails:
-            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
-                settings.filter_items['emails'] = []
-            settings.filter_items['emails'].extend(settings.emails.split(','))
-        if 'since_m' in settings:
-            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
-        if 'since_s' in settings:
-            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
-    else:
-        settings.filter_items = None
-
-    if Registrar.DEBUG_UPDATE and settings.do_filter:
-        Registrar.register_message("filter_items: %s" % settings.filter_items)
-
-    #########################################
-    # Download / Generate Slave Parser Object
-    #########################################
-
-    parsers = ParserNamespace()
-    parsers = populate_slave_parsers(parsers, settings)
-
-    # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
-
-    #########################################
-    # Generate and Analyse ACT CSV files using shell
-    #########################################
-
-    parsers = populate_master_parsers(parsers, settings)
-
-
-    # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
-
-    #########################################
-    # Process matches /  Updates
-    #########################################
-
-    matches = MatchNamespace()
-    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
-    updates = UpdateNamespace()
-
-    if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
-        do_sync(matches, updates, parsers, settings)
-
-    #########################################
-    # Write Report
-    #########################################
-
+def do_report(matches, updates, parsers, settings):
     print DebugUtils.hashify("Write Report")
     print timediff(settings)
 
@@ -956,10 +827,24 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
         res_file.write(reporter.get_document_unicode())
 
-    #########################################
-    # Update databases
-    #########################################
+def output_failures(failures, file_path):
+    """
+    Output a list of lists of failures as a csv file to the path specified.
+    """
+    with open(file_path, 'w+') as out_file:
+        for failure in failures:
+            Registrar.register_error(failure)
+        dictwriter = unicodecsv.DictWriter(
+            out_file,
+            fieldnames=[
+                'update', 'master', 'slave', 'mchanges', 'schanges',
+                'exception'
+            ],
+            extrasaction='ignore', )
+        dictwriter.writerows(failures)
+        print "WROTE FILE: ", file_path
 
+def do_updates(matches, updates, parsers, settings):
     all_updates = updates.static
     if settings.do_problematic:
         all_updates += updates.problematic
@@ -1056,25 +941,141 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                             (update.slave_id, repr(exc),
                              traceback.format_exc()))
 
-    def output_failures(failures, file_path):
-        """
-        Output a list of lists of failures as a csv file to the path specified.
-        """
-        with open(file_path, 'w+') as out_file:
-            for failure in failures:
-                Registrar.register_error(failure)
-            dictwriter = unicodecsv.DictWriter(
-                out_file,
-                fieldnames=[
-                    'update', 'master', 'slave', 'mchanges', 'schanges',
-                    'exception'
-                ],
-                extrasaction='ignore', )
-            dictwriter.writerows(failures)
-            print "WROTE FILE: ", file_path
-
     output_failures(master_failures, settings.m_fail_path_full)
     output_failures(slave_failures, settings.s_fail_path_full)
+
+def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
+    """
+    Use settings object to load config file and detect changes in wordpress.
+    """
+    # TODO: fix too-many-branches,too-many-locals
+    # DONE: implement override_args
+
+    settings = init_settings(override_args, settings, ArgumentParserUser)
+
+    ### PROCESS CLASS PARAMS ###
+
+    FieldGroup.do_post = settings.do_post
+    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
+                           settings.merge_mode, settings.last_sync)
+    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
+
+    ### SET UP DIRECTORIES ###
+
+    for path in (settings.in_folder_full, settings.out_folder_full):
+        if not os.path.exists(path):
+            os.mkdir(path)
+
+    settings.repd_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
+    settings.w_pres_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
+    settings.master_res_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.master_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.slave_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
+
+    ### PROCESS OTHER CONFIG ###
+
+    assert settings.store_url, "store url must not be blank"
+
+    settings.wp_api_params = {
+        'api_key': settings.wp_api_key,
+        'api_secret': settings.wp_api_secret,
+        'url': settings.store_url,
+        'wp_user': settings.wp_user,
+        'wp_pass': settings.wp_pass,
+        'callback': settings.wp_callback
+    }
+
+    #########################################
+    # Prepare Filter Data
+    #########################################
+
+    print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
+
+    if settings['do_filter']:
+        # TODO: I don't think emails filter is actually working
+        filter_files = {
+            'users': settings.get('user_file'),
+            'emails': settings.get('email_file'),
+            'cards': settings.get('card_file'),
+        }
+        settings.filter_items = {}
+        for key, filter_file in filter_files.items():
+            if filter_file:
+                try:
+                    with open(os.path.join(settings.in_folder_full,
+                                           filter_file)) as filter_file_obj:
+                        settings.filter_items[key] = [
+                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
+                            for line in filter_file_obj
+                        ]
+                except IOError as exc:
+                    SanitationUtils.safe_print(
+                        "could not open %s file [%s] from %s" % (
+                            key, filter_file, unicode(os.getcwd())))
+                    raise exc
+        if 'emails' in settings and settings.emails:
+            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
+                settings.filter_items['emails'] = []
+            settings.filter_items['emails'].extend(settings.emails.split(','))
+        if 'since_m' in settings:
+            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+        if 'since_s' in settings:
+            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+    else:
+        settings.filter_items = None
+
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message("filter_items: %s" % settings.filter_items)
+
+    #########################################
+    # Download / Generate Slave Parser Object
+    #########################################
+
+    parsers = ParserNamespace()
+    parsers = populate_slave_parsers(parsers, settings)
+
+    #########################################
+    # Generate and Analyse ACT CSV files using shell
+    #########################################
+
+    parsers = populate_master_parsers(parsers, settings)
+
+    #########################################
+    # Process matches /  Updates
+    #########################################
+
+    matches = MatchNamespace()
+    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
+    updates = UpdateNamespace()
+
+    if settings['do_sync']:
+        do_sync(matches, updates, parsers, settings)
+
+    #########################################
+    # Write Report
+    #########################################
+
+    do_report(matches, updates, parsers, settings)
+
+    #########################################
+    # Update databases
+    #########################################
+
+    do_updates(matches, updates, parsers, settings)
 
     # Registrar.register_error('testing errors')
 
