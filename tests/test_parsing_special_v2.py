@@ -14,110 +14,108 @@ class TestCSVParseSpecialV2(TestCase):
     def setUp(self):
         # import_name = TimeUtils.get_ms_timestamp()
 
-        self.specPath = os.path.join(tests_datadir, "specials_v2.csv")
+        self.spec_path = os.path.join(tests_datadir, "specials_v2.csv")
 
-        self.specialParserArgs = {
+        self.special_parser_args = {
             # 'import_name':import_name
         }
 
-        # Registrar.DEBUG_MESSAGE = True
+        Registrar.DEBUG_MESSAGE = True
+        Registrar.DEBUG_SPECIAL = True
+        Registrar.DEBUG_PARSER = True
 
     def test_basic(self):
-        specialParser = CsvParseSpecial(
-            **self.specialParserArgs
+        special_parser = CsvParseSpecial(
+            **self.special_parser_args
         )
 
-        # Registrar.DEBUG_PARSER = True
-        # Registrar.DEBUG_SPECIAL = True
 
-        specialParser.analyse_file(self.specPath)
+        special_parser.analyse_file(self.spec_path)
 
         if Registrar.DEBUG_PARSER:
-            Registrar.register_message("number of special groups: %s" % len(specialParser.rule_groups))
-            Registrar.register_message("number of special rules: %s" % len(specialParser.rules))
-            Registrar.register_message(specialParser.tabulate(tablefmt="simple"))
+            Registrar.register_message("number of special groups: %s" \
+                                       % len(special_parser.rule_groups))
+            Registrar.register_message("number of special rules: %s" % len(special_parser.rules))
+            Registrar.register_message(special_parser.tabulate(tablefmt="simple"))
 
         # check that loner has correct ending
-        isSingularChild = False
-        for index, special in specialParser.rule_groups.items():
+        is_singular_child = False
+        for index, special in special_parser.rule_groups.items():
             if len(special.children) == 1:
-                isSingularChild = True
+                is_singular_child = True
                 child = special.children[0]
                 self.assertEqual(index, child.index)
-        self.assertTrue(isSingularChild)
+        self.assertTrue(is_singular_child)
 
     def test_has_happened_yet(self):
-        specialParser = CsvParseSpecial(
-            **self.specialParserArgs
+        special_parser = CsvParseSpecial(
+            **self.special_parser_args
         )
 
-        specialParser.analyse_file(self.specPath)
-
-        Registrar.DEBUG_SPECIAL = True
-        Registrar.DEBUG_MESSAGE = True
+        special_parser.analyse_file(self.spec_path)
 
         TimeUtils.set_override_time(time.strptime(
             "2018-01-01", TimeUtils.dateFormat))
 
-        eofySpecial = specialParser.rule_groups.get('EOFY2016')
-        # print "start time", eofySpecial.start_time
+        eofy_special = special_parser.rule_groups.get('EOFY2016')
+        # print "start time", eofy_special.start_time
         # print "override", TimeUtils.current_tsecs()
-        self.assertLess(eofySpecial.start_time, TimeUtils.current_tsecs())
-        self.assertTrue(eofySpecial.has_started)
-        self.assertTrue(eofySpecial.has_finished)
-        self.assertFalse(eofySpecial.is_active)
+        self.assertLess(eofy_special.start_time, TimeUtils.current_tsecs())
+        self.assertTrue(eofy_special.has_started)
+        self.assertTrue(eofy_special.has_finished)
+        self.assertFalse(eofy_special.is_active)
 
     def test_determine_groups(self):
-        specialParser = CsvParseSpecial(
-            **self.specialParserArgs
+        special_parser = CsvParseSpecial(
+            **self.special_parser_args
         )
 
-        specialParser.analyse_file(self.specPath)
+        special_parser.analyse_file(self.spec_path)
 
         # Registrar.DEBUG_SPECIAL = True
         # Registrar.DEBUG_MESSAGE = True
 
-        overrideGroups = specialParser.determine_current_spec_grps(
+        override_groups = special_parser.determine_current_spec_grps(
             'override',
             'EOFY2016'
         )
         self.assertEquals(
-            overrideGroups, [specialParser.rule_groups.get('EOFY2016')])
+            override_groups, [special_parser.rule_groups.get('EOFY2016')])
 
         TimeUtils.set_override_time(time.strptime(
             "2018-01-01", TimeUtils.dateFormat))
 
-        autoNextGroups = specialParser.determine_current_spec_grps(
+        auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
         )
-        self.assertEquals(autoNextGroups, [])
+        self.assertEquals(auto_next_groups, [])
 
         TimeUtils.set_override_time(time.strptime(
             "2016-08-11", TimeUtils.dateFormat))
 
-        autoNextGroups = specialParser.determine_current_spec_grps(
+        auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
         )
         self.assertEquals(
-            autoNextGroups, [specialParser.rule_groups.get('SP2016-08-12')])
+            auto_next_groups, [special_parser.rule_groups.get('SP2016-08-12')])
 
         TimeUtils.set_override_time(time.strptime(
             "2016-06-11", TimeUtils.dateFormat))
 
-        autoNextGroups = specialParser.determine_current_spec_grps(
+        auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
         )
         self.assertEquals(
-            autoNextGroups, [specialParser.rule_groups.get('EOFY2016')])
+            auto_next_groups, [special_parser.rule_groups.get('EOFY2016')])
 
         TimeUtils.set_override_time(time.strptime(
             "2016-06-13", TimeUtils.dateFormat))
 
-        autoNextGroups = specialParser.determine_current_spec_grps(
+        auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
         )
         self.assertEquals(
-            autoNextGroups, [specialParser.rule_groups.get('EOFY2016')])
+            auto_next_groups, [special_parser.rule_groups.get('EOFY2016')])
 
 
 if __name__ == '__main__':
