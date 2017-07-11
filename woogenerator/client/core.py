@@ -142,8 +142,8 @@ class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
 
     def __init__(self, **kwargs):
-        self.dialect_suggestion = kwargs.pop('dialect_suggestion')
-        self.encoding = kwargs.pop('encoding')
+        self.dialect_suggestion = kwargs.pop('dialect_suggestion', None)
+        self.encoding = kwargs.pop('encoding', None)
         super(SyncClientLocal, self).__init__(None, **kwargs)
 
     def attempt_connect(self):
@@ -539,10 +539,13 @@ class SyncClientRest(SyncClientAbstract):
     #
 
     def analyse_remote(self, parser, **kwargs):# since=None, limit=None, search=None):
-        # TODO: implement kwargs['since']
         limit = kwargs.get('limit', self.limit)
         since = kwargs.get('since', self.since)
-        search = kwargs['search']
+        search = kwargs.get('search')
+        if since:
+            pass
+            # TODO: implement kwargs['since']
+
 
         result_count = 0
 

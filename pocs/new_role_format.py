@@ -36,7 +36,7 @@ import __init__
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import ParsersNamespace, init_settings, init_registrar
+from woogenerator.conf.namespace import ParserNamespace, init_settings, init_registrar
 from woogenerator.merger import populate_master_parsers
 
 ROLES = Counter()
@@ -125,7 +125,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     settings.filter_items = None
 
-    parsers = ParsersNamespace()
+    parsers = ParserNamespace()
     parsers = populate_master_parsers(parsers, settings)
 
     ma_parser_objectlist = getattr(parsers, 'ma').get_obj_list()

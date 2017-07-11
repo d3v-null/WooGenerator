@@ -43,7 +43,7 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
 from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParsersNamespace
+from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParserNamespace
 
 
 def timediff(settings):
@@ -137,14 +137,17 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
 
         parsers.master = settings.master_parser_class(**settings.master_parser_args)
 
-        Registrar.register_progress("analysing product data")
+        Registrar.register_progress("analysing master product data")
 
-        client.analyse_remote(
-            parsers.master,
-            data_path=settings.master_path,
-            gid=settings.gen_gid,
-            limit=settings['master_parse_limit']
-        )
+        analysis_kwargs = {
+            'data_path':settings.master_path,
+            'gid':settings.gen_gid,
+            'limit':settings['master_parse_limit']
+        }
+        if Registrar.DEBUG_PARSER:
+            Registrar.register_message("analysis_kwargs: %s" % analysis_kwargs)
+
+        client.analyse_remote(parsers.master, **analysis_kwargs)
 
         if Registrar.DEBUG_PARSER and hasattr(parsers.master, 'categories_name'):
             for category_name, category_list in getattr(parsers.master, 'categories_name').items():
@@ -537,7 +540,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         'defaults': ColDataWoo.get_defaults(),
     }
 
-    parsers = ParsersNamespace()
+    parsers = ParserNamespace()
     parsers = populate_master_parsers(parsers, settings)
 
     check_warnings()
@@ -561,22 +564,22 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     if settings['download_slave']:
 
-        api_product_parser = CsvParseWooApi(
+        parsers.slave = CsvParseWooApi(
             **settings['api_product_parser_args'])
 
         with ProdSyncClientWC(settings['wc_api_params']) as client:
             # try:
             if settings['do_categories']:
-                client.analyse_remote_categories(api_product_parser)
+                client.analyse_remote_categories(parsers.slave)
 
             Registrar.register_progress("analysing WC API data")
 
             client.analyse_remote(
-                api_product_parser, limit=settings['download_limit'])
+                parsers.slave, limit=settings['slave_parse_limit'])
 
-        # print api_product_parser.categories
+        # print parsers.slave.categories
     else:
-        api_product_parser = None
+        parsers.slave = None
 
     #########################################
     # Attempt Matching
@@ -626,11 +629,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 Registrar.register_message(
                     "matching %d master categories with %d slave categories" %
                     (len(parsers.master.categories),
-                     len(api_product_parser.categories)))
+                     len(parsers.slave.categories)))
 
             category_matcher = CategoryMatcher()
             category_matcher.clear()
-            category_matcher.process_registers(api_product_parser.categories,
+            category_matcher.process_registers(parsers.slave.categories,
                                                parsers.master.categories)
 
             if Registrar.DEBUG_CATS:
@@ -766,7 +769,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             response_api_data = response.json()
                             response_api_data = response_api_data.get(
                                 'product_category', response_api_data)
-                            api_product_parser.process_api_category(
+                            parsers.slave.process_api_category(
                                 response_api_data)
                             api_cat_translation = OrderedDict()
                             for key, data in ColDataWoo.get_wpapi_category_cols(
@@ -777,7 +780,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                     wp_api_key = key
                                 api_cat_translation[wp_api_key] = key
                             # print "TRANSLATION: ", api_cat_translation
-                            category_parser_data = api_product_parser.translate_keys(
+                            category_parser_data = parsers.slave.translate_keys(
                                 response_api_data, api_cat_translation)
                             if Registrar.DEBUG_CATS:
                                 Registrar.register_message(
@@ -801,15 +804,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         # if Registrar.DEBUG_CATS:
         #     print "api product parser info"
         #     print "there are %s slave categories registered" % len(
-        #         api_product_parser.categories)
+        #         parsers.slave.categories)
         #     print "there are %s children of API root" % len(
-        #         api_product_parser.root_data.children)
-        #     print api_product_parser.to_str_tree()
-        #     for key, category in api_product_parser.categories.items():
+        #         parsers.slave.root_data.children)
+        #     print parsers.slave.to_str_tree()
+        #     for key, category in parsers.slave.categories.items():
         #         print "%5s | %50s" % (key, category.title[:50])
 
         product_matcher = ProductMatcher()
-        product_matcher.process_registers(api_product_parser.products,
+        product_matcher.process_registers(parsers.slave.products,
                                           parsers.master.products)
         # print product_matcher.__repr__()
 
@@ -957,7 +960,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         if settings['do_variations']:
 
             variation_matcher = VariationMatcher()
-            variation_matcher.process_registers(api_product_parser.variations,
+            variation_matcher.process_registers(parsers.slave.variations,
                                                 parsers.master.variations)
 
             if Registrar.DEBUG_VARS:
@@ -1347,8 +1350,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         [
                             [
                                 index,
-                                # api_product_parser.products[index],
-                                # api_product_parser.products[index].categories,
+                                # parsers.slave.products[index],
+                                # parsers.slave.products[index].categories,
                                 # ", ".join(category.woo_cat_name \
                                 # for category in matches.merge().m_objects),
                                 ", ".join(category.woo_cat_name
@@ -1399,8 +1402,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         [
                             [
                                 index,
-                                # api_product_parser.products[index],
-                                # api_product_parser.products[index].categories,
+                                # parsers.slave.products[index],
+                                # parsers.slave.products[index].categories,
                                 ", ".join(category.woo_cat_name
                                           for category in matches.merge()
                                           .m_objects),
@@ -1451,7 +1454,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             all_product_updates += problematic_variation_updates
 
     # don't perform updates if limit was set
-    if settings['download_limit']:
+    if settings['slave_parse_limit']:
         all_product_updates = []
 
     slave_failures = []
@@ -1516,16 +1519,17 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
 def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-many-branches
     """Run the main function within a try statement and attempt to analyse failure."""
-    if override_args is None:
-        override_args = []
     # TODO: fix too-many-statements,too-many-branches
 
     file_path = __file__
     cur_dir = os.getcwd() + '/'
     if file_path.startswith(cur_dir):
         file_path = file_path[len(cur_dir):]
+    override_args_repr = ''
+    if override_args is not None:
+        override_args_repr = ' '.join(override_args)
 
-    full_run_str = "%s %s %s" % (str(sys.executable), str(file_path), ' '.join(override_args))
+    full_run_str = "%s %s %s" % (str(sys.executable), str(file_path), override_args_repr)
 
     settings = SettingsNamespaceProd()
 

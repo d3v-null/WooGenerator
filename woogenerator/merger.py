@@ -26,15 +26,14 @@ from woogenerator.duplicates import Duplicates
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
                                    EmailMatcher, Match, MatchList,
                                    NocardEmailMatcher, UsernameMatcher)
-from woogenerator.parsing.user import CsvParseUser, UsrObjList
-from woogenerator.client.user import (UsrSyncClientSqlWP,
-                                           UsrSyncClientSshAct,
-                                           UsrSyncClientWP)
+from woogenerator.parsing.user import UsrObjList
+from woogenerator.client.user import (UsrSyncClientSshAct, UsrSyncClientWP)
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import SettingsNamespaceUser, init_settings, ParsersNamespace
+from woogenerator.conf.namespace import (SettingsNamespaceUser, init_settings,
+                                         ParserNamespace, MatchNamespace, UpdateNamespace)
 
 
 def timediff(settings):
@@ -76,6 +75,8 @@ def populate_slave_parsers(parsers, settings):
             "client_args: %s" % settings.slave_client_args
         )
 
+    Registrar.register_progress("analysing slave user data")
+
     with settings.slave_client_class(**settings.slave_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
@@ -105,9 +106,13 @@ def populate_master_parsers(parsers, settings):
         )
         assert getattr(settings, thing), "settings must specify %s" % thing
 
+    Registrar.register_message("master_parser_args:\n%s" % pformat(settings.master_parser_args))
+
     parsers.master = settings.master_parser_class(
         **settings.master_parser_args
     )
+
+    Registrar.register_progress("analysing master user data")
 
     with settings.master_client_class(**settings.master_client_args) as client:
         client.analyse_remote(parsers.master, data_path=settings.master_path)
@@ -223,7 +228,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     # Download / Generate Slave Parser Object
     #########################################
 
-    parsers = ParsersNamespace()
+    parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)
 
     # CsvParseUser.print_basic_columns( list(chain( *saParser.emails.values() )) )
@@ -236,55 +241,13 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
 
     # CsvParseUser.print_basic_columns(  saParser.roles['WP'] )
-    #
-    # exit()
-    # quit()
 
-    # print "first maParser source:"
-    # print maParser.objects.values()[0]['source']
-    # print "first saParse source:"
-    # print saParser.objects.values()[0]['source']
+    #########################################
+    # Process matches /  Updates
+    #########################################
 
-    # quit()
-
-    # get matches
-
-    global_matches = MatchList()
-    anomalous_match_lists = {}
-    new_masters = MatchList()
-    new_slaves = MatchList()
-    duplicate_matchlists = OrderedDict()
-    anomalous_parselists = {}
-    # nonstatic_updates = []
-    nonstatic_s_updates = []
-    nonstatic_m_updates = []
-    static_updates = []
-    # staticSUpdates = []
-    # staticMUpdates = []
-    problematic_updates = []
-    master_updates = []
-    slave_updates = []
-    m_delta_updates = []
-    s_delta_updates = []
-    email_conflict_matches = ConflictingMatchList(
-        index_fn=EmailMatcher.email_index_fn)
-
-    def deny_anomalous_match_list(match_list_type, anomalous_match_list):
-        """Add the matchlist to the list of anomalous match lists if it is not empty."""
-        try:
-            assert not anomalous_match_list
-        except AssertionError:
-            # print "could not deny anomalous match list", match_list_type,
-            # exc
-            anomalous_match_lists[match_list_type] = anomalous_match_list
-
-    def deny_anomalous_parselist(parselist_type, anomalous_parselist):
-        """Add the parselist to the list of anomalous parse lists if it is not empty."""
-        try:
-            assert not anomalous_parselist
-        except AssertionError:
-            # print "could not deny anomalous parse list", parselist_type, exc
-            anomalous_parselists[parselist_type] = anomalous_parselist
+    matches = MatchNamespace()
+    updates = UpdateNamespace()
 
     if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
         # for every username in slave, check that it exists in master
@@ -293,20 +256,20 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing usernames")
         print timediff(settings)
 
-        deny_anomalous_parselist('saParser.nousernames', parsers.slave.nousernames)
+        parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
 
         username_matcher = UsernameMatcher()
         username_matcher.process_registers(parsers.slave.usernames,
                                            parsers.master.usernames)
 
-        deny_anomalous_match_list('usernameMatcher.slaveless_matches',
-                                  username_matcher.slaveless_matches)
-        deny_anomalous_match_list('usernameMatcher.duplicate_matches',
-                                  username_matcher.duplicate_matches)
+        matches.deny_anomalous('usernameMatcher.slaveless_matches',
+                               username_matcher.slaveless_matches)
+        matches.deny_anomalous('usernameMatcher.duplicate_matches',
+                               username_matcher.duplicate_matches)
 
-        duplicate_matchlists['username'] = username_matcher.duplicate_matches
+        matches.duplicate['username'] = username_matcher.duplicate_matches
 
-        global_matches.add_matches(username_matcher.pure_matches)
+        matches.globals.add_matches(username_matcher.pure_matches)
 
         if Registrar.DEBUG_MESSAGE:
             print "username matches (%d pure)" % len(
@@ -323,20 +286,20 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         # for every card in slave not already matched, check that it exists in
         # master
 
-        deny_anomalous_parselist('maParser.nocards', parsers.master.nocards)
+        parsers.deny_anomalous('maParser.nocards', parsers.master.nocards)
 
-        card_matcher = CardMatcher(global_matches.s_indices,
-                                   global_matches.m_indices)
+        card_matcher = CardMatcher(matches.globals.s_indices,
+                                   matches.globals.m_indices)
         card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
 
-        deny_anomalous_match_list('cardMatcher.duplicate_matches',
-                                  card_matcher.duplicate_matches)
-        deny_anomalous_match_list('cardMatcher.masterless_matches',
-                                  card_matcher.masterless_matches)
+        matches.deny_anomalous('cardMatcher.duplicate_matches',
+                               card_matcher.duplicate_matches)
+        matches.deny_anomalous('cardMatcher.masterless_matches',
+                               card_matcher.masterless_matches)
 
-        duplicate_matchlists['card'] = card_matcher.duplicate_matches
+        matches.duplicate['card'] = card_matcher.duplicate_matches
 
-        global_matches.add_matches(card_matcher.pure_matches)
+        matches.globals.add_matches(card_matcher.pure_matches)
 
         if Registrar.DEBUG_MESSAGE:
             print "card matches (%d pure)" % len(card_matcher.pure_matches)
@@ -350,17 +313,17 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
         print DebugUtils.hashify("processing emails")
         print timediff(settings)
 
-        deny_anomalous_parselist("saParser.noemails", parsers.slave.noemails)
+        parsers.deny_anomalous("saParser.noemails", parsers.slave.noemails)
 
-        email_matcher = NocardEmailMatcher(global_matches.s_indices,
-                                           global_matches.m_indices)
+        email_matcher = NocardEmailMatcher(matches.globals.s_indices,
+                                           matches.globals.m_indices)
 
         email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
 
-        new_masters.add_matches(email_matcher.masterless_matches)
-        new_slaves.add_matches(email_matcher.slaveless_matches)
-        global_matches.add_matches(email_matcher.pure_matches)
-        duplicate_matchlists['email'] = email_matcher.duplicate_matches
+        matches.new_masters.add_matches(email_matcher.masterless_matches)
+        matches.new_slaves.add_matches(email_matcher.slaveless_matches)
+        matches.globals.add_matches(email_matcher.pure_matches)
+        matches.duplicate['email'] = email_matcher.duplicate_matches
 
         if Registrar.DEBUG_MESSAGE:
             print "email matches (%d pure)" % (len(email_matcher.pure_matches))
@@ -371,15 +334,15 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
         # TODO: further sort emailMatcher
 
-        print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(global_matches))
+        print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(matches.globals))
         print timediff(settings)
 
         sync_cols = settings.col_data_class.get_sync_cols()
 
         if Registrar.DEBUG_PROGRESS:
-            sync_progress_counter = ProgressCounter(len(global_matches))
+            sync_progress_counter = ProgressCounter(len(matches.globals))
 
-        for count, match in enumerate(global_matches):
+        for count, match in enumerate(matches.globals):
             if Registrar.DEBUG_PROGRESS:
                 sync_progress_counter.maybe_print_update(count)
                 # print "examining globalMatch %d" % count
@@ -397,10 +360,10 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             #     SanitationUtils.safe_print( syncUpdate.tabulate(tablefmt = 'simple'))
 
             if sync_update.m_updated and sync_update.m_deltas:
-                insort(m_delta_updates, sync_update)
+                insort(updates.delta_master, sync_update)
 
             if sync_update.s_updated and sync_update.s_deltas:
-                insort(s_delta_updates, sync_update)
+                insort(updates.delta_slave, sync_update)
 
             if not sync_update:
                 continue
@@ -415,7 +378,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         SanitationUtils.safe_print("duplicate emails",
                                                    m_objects, s_objects)
                         try:
-                            email_conflict_matches.add_match(
+                            matches.conflict_email.add_match(
                                 Match(m_objects, s_objects))
                         except Exception as exc:
                             SanitationUtils.safe_print(
@@ -427,28 +390,28 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             if not sync_update.important_static:
                 if sync_update.m_updated and sync_update.s_updated:
                     if sync_update.s_mod:
-                        insort(problematic_updates, sync_update)
+                        insort(updates.problematic, sync_update)
                         continue
                 elif sync_update.m_updated and not sync_update.s_updated:
-                    insort(nonstatic_m_updates, sync_update)
+                    insort(updates.nonstatic_master, sync_update)
                     if sync_update.s_mod:
-                        insort(problematic_updates, sync_update)
+                        insort(updates.problematic, sync_update)
                         continue
                 elif sync_update.s_updated and not sync_update.m_updated:
-                    insort(nonstatic_s_updates, sync_update)
+                    insort(updates.nonstatic_slave, sync_update)
                     if sync_update.s_mod:
-                        insort(problematic_updates, sync_update)
+                        insort(updates.problematic, sync_update)
                         continue
 
             if sync_update.s_updated or sync_update.m_updated:
-                insort(static_updates, sync_update)
+                insort(updates.static, sync_update)
                 if sync_update.m_updated and sync_update.s_updated:
-                    insort(master_updates, sync_update)
-                    insort(slave_updates, sync_update)
+                    insort(updates.master, sync_update)
+                    insort(updates.slave, sync_update)
                 if sync_update.m_updated and not sync_update.s_updated:
-                    insort(master_updates, sync_update)
+                    insort(updates.master, sync_update)
                 if sync_update.s_updated and not sync_update.m_updated:
-                    insort(slave_updates, sync_update)
+                    insort(updates.slave, sync_update)
 
         print DebugUtils.hashify("COMPLETED MERGE")
         print timediff(settings)
@@ -612,17 +575,17 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
         reporter.add_group(sanitizing_group)
 
-        if settings['do_sync'] and (m_delta_updates + s_delta_updates):
+        if settings['do_sync'] and (updates.delta_master + updates.delta_slave):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
             m_delta_list = UsrObjList(
                 filter(None, [update.new_m_object
-                              for update in m_delta_updates]))
+                              for update in updates.delta_master]))
 
             s_delta_list = UsrObjList(
                 filter(None, [update.new_s_object
-                              for update in s_delta_updates]))
+                              for update in updates.delta_slave]))
 
             delta_cols = settings.col_data_class.get_delta_cols()
 
@@ -676,9 +639,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         "%s records match well with %s" % (
                             settings.slave_name, settings.master_name),
                         'data':
-                        global_matches.tabulate(tablefmt="html"),
+                        matches.globals.tabulate(tablefmt="html"),
                         'length':
-                        len(global_matches)
+                        len(matches.globals)
                     }))
 
             match_list_instructions = {
@@ -690,7 +653,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 (settings.master_name, settings.slave_name),
             }
 
-            for matchlist_type, match_list in anomalous_match_lists.items():
+            for matchlist_type, match_list in matches.anomalous.items():
                 if not match_list:
                     continue
                 description = match_list_instructions.get(matchlist_type,
@@ -723,7 +686,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 "%s records have no username" % settings.slave_name
             }
 
-            for parselist_type, parse_list in anomalous_parselists.items():
+            for parselist_type, parse_list in parsers.anomalous.items():
                 description = parse_list_instructions.get(parselist_type,
                                                           parselist_type)
                 usr_list = UsrObjList()
@@ -755,9 +718,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                     " items will be updated",
                     data='<hr>'.join([
                         update.tabulate(tablefmt="html")
-                        for update in master_updates
+                        for update in updates.master
                     ]),
-                    length=len(master_updates)))
+                    length=len(updates.master)))
 
             syncing_group.add_section(
                 HtmlReporter.Section(
@@ -765,19 +728,19 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                     description=settings.slave_name + " items will be updated",
                     data='<hr>'.join([
                         update.tabulate(tablefmt="html")
-                        for update in slave_updates
+                        for update in updates.slave
                     ]),
-                    length=len(slave_updates)))
+                    length=len(updates.slave)))
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    "problematic_updates",
+                    "updates.problematic",
                     description="items can't be merged because they are too dissimilar",
                     data='<hr>'.join([
                         update.tabulate(tablefmt="html")
-                        for update in problematic_updates
+                        for update in updates.problematic
                     ]),
-                    length=len(problematic_updates)))
+                    length=len(updates.problematic)))
 
             reporter.add_group(syncing_group)
 
@@ -838,7 +801,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
             duplicates = Duplicates()
 
-            for duplicate_type, duplicate_matchlist in duplicate_matchlists.items(
+            for duplicate_type, duplicate_matchlist in matches.duplicate.items(
             ):
                 print "checking duplicates of type %s" % duplicate_type
                 print "len(duplicate_matchlist) %s" % len(duplicate_matchlist)
@@ -905,7 +868,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         len(duplicates)
                     }))
 
-            email_conflict_data = email_conflict_matches.tabulate(
+            email_conflict_data = matches.conflict_email.tabulate(
                 cols=dup_cols,
                 tablefmt="html",
                 highlight_rules=highlight_rules_all)
@@ -916,7 +879,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         # 'title': matchlist_type.title(),
                         'description': "email conflicts",
                         'data': email_conflict_data,
-                        'length': len(email_conflict_matches)
+                        'length': len(matches.conflict_email)
                     }))
 
             email_duplicate_data = email_matcher.duplicate_matches.tabulate(
@@ -944,7 +907,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                 (settings.slave_name, settings.master_name)
             }
 
-            for matchlist_type, match_list in anomalous_match_lists.items():
+            for matchlist_type, match_list in matches.anomalous.items():
                 if not match_list:
                     continue
                 description = match_list_instructions.get(matchlist_type,
@@ -993,9 +956,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     # Update databases
     #########################################
 
-    all_updates = static_updates
+    all_updates = updates.static
     if settings.do_problematic:
-        all_updates += problematic_updates
+        all_updates += updates.problematic
 
     print DebugUtils.hashify("Update databases (%d)" % len(all_updates))
     print timediff(settings)

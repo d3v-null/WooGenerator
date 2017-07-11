@@ -10,7 +10,7 @@ from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.conf.namespace import init_settings, ParsersNamespace, SettingsNamespaceUser
+from woogenerator.conf.namespace import init_settings, ParserNamespace, SettingsNamespaceUser
 from woogenerator.merger import populate_master_parsers, populate_slave_parsers
 
 from context import tests_datadir
@@ -29,7 +29,7 @@ class TestMerger(TestCase):
         # self.settings.master_parse_limit = 10
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
-        self.parsers = ParsersNamespace()
+        self.parsers = ParserNamespace()
 
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True

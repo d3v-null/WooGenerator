@@ -9,6 +9,7 @@ import time
 import argparse
 import configargparse
 from pprint import pformat
+from collections import OrderedDict
 
 import __init__
 from woogenerator.conf import (
@@ -23,7 +24,9 @@ from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
 from woogenerator.parsing.user import CsvParseUser
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct
-
+from woogenerator.matching import (CardMatcher, ConflictingMatchList,
+                                   EmailMatcher, Match, MatchList,
+                                   NocardEmailMatcher, UsernameMatcher)
 
 class SettingsNamespaceProto(argparse.Namespace):
     """ Provide namespace for settings in first stage, supports getitem """
@@ -222,18 +225,18 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def master_path(self):
         """ The path which the master data is downloaded to and read from. """
-        if hasattr(self, 'master_file'):
+        if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
         response = '%s%s' % (self.file_prefix, 'master')
         if self.variant:
             response = "-".join([response, self.variant])
-        response += self.import_name + '.csv'
+        response += "-" + self.import_name + '.csv'
         return response
 
     @property
     def specials_path(self):
         """ The path which the specials data is downloaded to and read from. """
-        if hasattr(self, 'specials_file'):
+        if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
         return '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
 
@@ -365,14 +368,14 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def master_path(self):
         """ The path which the master data is downloaded to and read from. """
-        if hasattr(self, 'master_file'):
+        if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
         return '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
 
     @property
     def slave_path(self):
         """ The path which the slave data is downloaded to and read from. """
-        if hasattr(self, 'slave_file'):
+        if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
         return '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
 
@@ -392,7 +395,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             'schema':self.schema
         }
         for key, settings_key in [
-                ('filter', 'filter_items'),
+                ('filter_items', 'filter_items'),
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -541,13 +544,61 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
                 response[key] = getattr(self, settings_key)
         return response
 
-class ParsersNamespace(argparse.Namespace):
+class ParserNamespace(argparse.Namespace):
+    """ Collect parser variables into a single namespace. """
+
     def __init__(self, *args, **kwargs):
-        super(ParsersNamespace, self).__init__(*args, **kwargs)
+        super(ParserNamespace, self).__init__(*args, **kwargs)
         self.master = getattr(self, 'master', None)
         self.slave = getattr(self, 'slave', None)
+        self.anomalous = {}
+
+    def deny_anomalous(self, parselist_type, anomalous_parselist):
+        """Add the parselist to the list of anomalous parse lists if it is not empty."""
+        try:
+            assert not anomalous_parselist
+        except AssertionError:
+            # print "could not deny anomalous parse list", parselist_type, exc
+            self.anomalous[parselist_type] = anomalous_parselist
+
+class MatchNamespace(argparse.Namespace):
+    """ Collect variables used in matching into a single namespace. """
+
+    def __init__(self, *args, **kwargs):
+        super(MatchNamespace, self).__init__(*args, **kwargs)
+        self.globals = MatchList()
+        self.new_masters = MatchList()
+        self.new_slaves = MatchList()
+        self.anomalous = {}
+        self.duplicate = OrderedDict()
+        self.conflict_email = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
+
+    def deny_anomalous(self, match_list_type, anomalous_match_list):
+        """Add the matchlist to the list of anomalous match lists if it is not empty."""
+        try:
+            assert not anomalous_match_list
+        except AssertionError:
+            # print "could not deny anomalous match list", match_list_type,
+            # exc
+            self.anomalous[match_list_type] = anomalous_match_list
+
+class UpdateNamespace(argparse.Namespace):
+    """ Collect variables used in updates into a single namespace. """
+
+    def __init__(self, *args, **kwargs):
+        super(UpdateNamespace, self).__init__(*args, **kwargs)
+        self.master = []
+        self.slave = []
+        self.static = []
+        self.problematic = []
+        self.nonstatic_master = []
+        self.nonstatic_slave = []
+        self.delta_master = []
+        self.delta_slave = []
 
 def init_registrar(settings):
+    print "settings.verbosity = %s" % settings.verbosity
+    print "settings.quiet = %s" % settings.quiet
     if settings.verbosity > 0:
         Registrar.DEBUG_PROGRESS = True
         Registrar.DEBUG_ERROR = True
@@ -580,6 +631,7 @@ def init_registrar(settings):
     Registrar.DEBUG_VARS = settings.debug_vars
     Registrar.DEBUG_WOO = settings.debug_woo
 
+
 def init_settings(override_args=None, settings=None, argparser_class=None):
     """
     Load config file and initialise settings object from given argparser class.
@@ -600,6 +652,7 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
         parser_override['args'] = override_args
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
+
 
     Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
 

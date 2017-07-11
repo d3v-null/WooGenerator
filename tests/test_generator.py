@@ -12,7 +12,7 @@ from woogenerator.parsing.woo import WooProdList
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParsersNamespace
+from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParserNamespace
 from woogenerator.generator import populate_master_parsers
 
 from context import tests_datadir
@@ -29,9 +29,9 @@ class TestGenerator(TestCase):
         self.settings.master_file = os.path.join(tests_datadir, "generator_master_dummy.csv")
         self.settings.specials_file = os.path.join(tests_datadir, "generator_specials_dummy.csv")
         self.settings.do_specials = True
-        # self.settings.download_limit = 10
+        # self.settings.master_limit = 10
         self.override_args = ""
-        self.parsers = ParsersNamespace()
+        self.parsers = ParserNamespace()
 
 
         Registrar.DEBUG_MESSAGE = True
