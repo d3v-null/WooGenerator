@@ -127,6 +127,175 @@ def populate_master_parsers(parsers, settings):
             settings.col_data_class.get_act_import_col_names())
     return parsers
 
+def do_sync(matches, updates, parsers, settings):
+    # for every username in slave, check that it exists in master
+    # TODO: fix too-many-nested-blocks
+
+    print DebugUtils.hashify("processing usernames")
+    print timediff(settings)
+
+    parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
+
+    username_matcher = UsernameMatcher()
+    username_matcher.process_registers(parsers.slave.usernames,
+                                       parsers.master.usernames)
+
+    matches.deny_anomalous('usernameMatcher.slaveless_matches',
+                           username_matcher.slaveless_matches)
+    matches.deny_anomalous('usernameMatcher.duplicate_matches',
+                           username_matcher.duplicate_matches)
+
+    matches.duplicate['username'] = username_matcher.duplicate_matches
+
+    matches.globals.add_matches(username_matcher.pure_matches)
+
+    if Registrar.DEBUG_MESSAGE:
+        print "username matches (%d pure)" % len(
+            username_matcher.pure_matches)
+        # print repr(usernameMatcher)
+
+    if Registrar.DEBUG_DUPLICATES and username_matcher.duplicate_matches:
+        print("username duplicates: %s" %
+              len(username_matcher.duplicate_matches))
+
+    print DebugUtils.hashify("processing cards")
+    print timediff(settings)
+
+    # for every card in slave not already matched, check that it exists in
+    # master
+
+    parsers.deny_anomalous('maParser.nocards', parsers.master.nocards)
+
+    card_matcher = CardMatcher(matches.globals.s_indices,
+                               matches.globals.m_indices)
+    card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
+
+    matches.deny_anomalous('cardMatcher.duplicate_matches',
+                           card_matcher.duplicate_matches)
+    matches.deny_anomalous('cardMatcher.masterless_matches',
+                           card_matcher.masterless_matches)
+
+    matches.duplicate['card'] = card_matcher.duplicate_matches
+
+    matches.globals.add_matches(card_matcher.pure_matches)
+
+    if Registrar.DEBUG_MESSAGE:
+        print "card matches (%d pure)" % len(card_matcher.pure_matches)
+        # print repr(cardMatcher)
+
+    if Registrar.DEBUG_DUPLICATES and card_matcher.duplicate_matches:
+        print "card duplicates: %s" % len(card_matcher.duplicate_matches)
+
+    # #for every email in slave, check that it exists in master
+
+    print DebugUtils.hashify("processing emails")
+    print timediff(settings)
+
+    parsers.deny_anomalous("saParser.noemails", parsers.slave.noemails)
+
+    email_matcher = NocardEmailMatcher(matches.globals.s_indices,
+                                       matches.globals.m_indices)
+
+    email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
+
+    matches.new_master.add_matches(email_matcher.masterless_matches)
+    matches.new_slave.add_matches(email_matcher.slaveless_matches)
+    matches.globals.add_matches(email_matcher.pure_matches)
+    matches.duplicate['email'] = email_matcher.duplicate_matches
+
+    if Registrar.DEBUG_MESSAGE:
+        print "email matches (%d pure)" % (len(email_matcher.pure_matches))
+        # print repr(emailMatcher)
+
+    if Registrar.DEBUG_DUPLICATES and matches.duplicate['email']:
+        print "email duplicates: %s" % len(matches.duplicate['email'])
+
+    # TODO: further sort emailMatcher
+
+    print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(matches.globals))
+    print timediff(settings)
+
+    sync_cols = settings.col_data_class.get_sync_cols()
+
+    if Registrar.DEBUG_PROGRESS:
+        sync_progress_counter = ProgressCounter(len(matches.globals))
+
+    for count, match in enumerate(matches.globals):
+        if Registrar.DEBUG_PROGRESS:
+            sync_progress_counter.maybe_print_update(count)
+            # print "examining globalMatch %d" % count
+            # # print SanitationUtils.safe_print( match.tabulate(tablefmt = 'simple'))
+            # print repr(match)
+
+        m_object = match.m_objects[0]
+        s_object = match.s_objects[0]
+
+        sync_update = SyncUpdateUsrApi(m_object, s_object)
+        sync_update.update(sync_cols)
+
+        # if(Registrar.DEBUG_MESSAGE):
+        #     print "examining SyncUpdate"
+        #     SanitationUtils.safe_print( syncUpdate.tabulate(tablefmt = 'simple'))
+
+        if sync_update.m_updated and sync_update.m_deltas:
+            insort(updates.delta_master, sync_update)
+
+        if sync_update.s_updated and sync_update.s_deltas:
+            insort(updates.delta_slave, sync_update)
+
+        if not sync_update:
+            continue
+
+        if sync_update.s_updated:
+            sync_slave_updates = sync_update.get_slave_updates()
+            if 'E-mail' in sync_slave_updates:
+                new_email = sync_slave_updates['E-mail']
+                if new_email in parsers.slave.emails:
+                    m_objects = [m_object]
+                    s_objects = [s_object] + parsers.slave.emails[new_email]
+                    SanitationUtils.safe_print("duplicate emails",
+                                               m_objects, s_objects)
+                    try:
+                        matches.conflict['email'].add_match(
+                            Match(m_objects, s_objects))
+                    except Exception as exc:
+                        SanitationUtils.safe_print(
+                            ("something happened adding an email "
+                             "conflict, new_email: %s ; exception: %s") %
+                            (new_email, exc))
+                    continue
+
+        if not sync_update.important_static:
+            if sync_update.m_updated and sync_update.s_updated:
+                if sync_update.s_mod:
+                    insort(updates.problematic, sync_update)
+                    continue
+            elif sync_update.m_updated and not sync_update.s_updated:
+                insort(updates.nonstatic_master, sync_update)
+                if sync_update.s_mod:
+                    insort(updates.problematic, sync_update)
+                    continue
+            elif sync_update.s_updated and not sync_update.m_updated:
+                insort(updates.nonstatic_slave, sync_update)
+                if sync_update.s_mod:
+                    insort(updates.problematic, sync_update)
+                    continue
+
+        if sync_update.s_updated or sync_update.m_updated:
+            insort(updates.static, sync_update)
+            if sync_update.m_updated and sync_update.s_updated:
+                insort(updates.master, sync_update)
+                insort(updates.slave, sync_update)
+            if sync_update.m_updated and not sync_update.s_updated:
+                insort(updates.master, sync_update)
+            if sync_update.s_updated and not sync_update.m_updated:
+                insort(updates.slave, sync_update)
+
+    print DebugUtils.hashify("COMPLETED MERGE")
+    print timediff(settings)
+
+    # TODO: process duplicates here
+
 def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
     """
     Use settings object to load config file and detect changes in wordpress.
@@ -251,173 +420,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     updates = UpdateNamespace()
 
     if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
-        # for every username in slave, check that it exists in master
-        # TODO: fix too-many-nested-blocks
-
-        print DebugUtils.hashify("processing usernames")
-        print timediff(settings)
-
-        parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
-
-        username_matcher = UsernameMatcher()
-        username_matcher.process_registers(parsers.slave.usernames,
-                                           parsers.master.usernames)
-
-        matches.deny_anomalous('usernameMatcher.slaveless_matches',
-                               username_matcher.slaveless_matches)
-        matches.deny_anomalous('usernameMatcher.duplicate_matches',
-                               username_matcher.duplicate_matches)
-
-        matches.duplicate['username'] = username_matcher.duplicate_matches
-
-        matches.globals.add_matches(username_matcher.pure_matches)
-
-        if Registrar.DEBUG_MESSAGE:
-            print "username matches (%d pure)" % len(
-                username_matcher.pure_matches)
-            # print repr(usernameMatcher)
-
-        if Registrar.DEBUG_DUPLICATES and username_matcher.duplicate_matches:
-            print("username duplicates: %s" %
-                  len(username_matcher.duplicate_matches))
-
-        print DebugUtils.hashify("processing cards")
-        print timediff(settings)
-
-        # for every card in slave not already matched, check that it exists in
-        # master
-
-        parsers.deny_anomalous('maParser.nocards', parsers.master.nocards)
-
-        card_matcher = CardMatcher(matches.globals.s_indices,
-                                   matches.globals.m_indices)
-        card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
-
-        matches.deny_anomalous('cardMatcher.duplicate_matches',
-                               card_matcher.duplicate_matches)
-        matches.deny_anomalous('cardMatcher.masterless_matches',
-                               card_matcher.masterless_matches)
-
-        matches.duplicate['card'] = card_matcher.duplicate_matches
-
-        matches.globals.add_matches(card_matcher.pure_matches)
-
-        if Registrar.DEBUG_MESSAGE:
-            print "card matches (%d pure)" % len(card_matcher.pure_matches)
-            # print repr(cardMatcher)
-
-        if Registrar.DEBUG_DUPLICATES and card_matcher.duplicate_matches:
-            print "card duplicates: %s" % len(card_matcher.duplicate_matches)
-
-        # #for every email in slave, check that it exists in master
-
-        print DebugUtils.hashify("processing emails")
-        print timediff(settings)
-
-        parsers.deny_anomalous("saParser.noemails", parsers.slave.noemails)
-
-        email_matcher = NocardEmailMatcher(matches.globals.s_indices,
-                                           matches.globals.m_indices)
-
-        email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
-
-        matches.new_master.add_matches(email_matcher.masterless_matches)
-        matches.new_slave.add_matches(email_matcher.slaveless_matches)
-        matches.globals.add_matches(email_matcher.pure_matches)
-        matches.duplicate['email'] = email_matcher.duplicate_matches
-
-        if Registrar.DEBUG_MESSAGE:
-            print "email matches (%d pure)" % (len(email_matcher.pure_matches))
-            # print repr(emailMatcher)
-
-        if Registrar.DEBUG_DUPLICATES and email_matcher.duplicate_matches:
-            print "email duplicates: %s" % len(email_matcher.duplicate_matches)
-
-        # TODO: further sort emailMatcher
-
-        print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(matches.globals))
-        print timediff(settings)
-
-        sync_cols = settings.col_data_class.get_sync_cols()
-
-        if Registrar.DEBUG_PROGRESS:
-            sync_progress_counter = ProgressCounter(len(matches.globals))
-
-        for count, match in enumerate(matches.globals):
-            if Registrar.DEBUG_PROGRESS:
-                sync_progress_counter.maybe_print_update(count)
-                # print "examining globalMatch %d" % count
-                # # print SanitationUtils.safe_print( match.tabulate(tablefmt = 'simple'))
-                # print repr(match)
-
-            m_object = match.m_objects[0]
-            s_object = match.s_objects[0]
-
-            sync_update = SyncUpdateUsrApi(m_object, s_object)
-            sync_update.update(sync_cols)
-
-            # if(Registrar.DEBUG_MESSAGE):
-            #     print "examining SyncUpdate"
-            #     SanitationUtils.safe_print( syncUpdate.tabulate(tablefmt = 'simple'))
-
-            if sync_update.m_updated and sync_update.m_deltas:
-                insort(updates.delta_master, sync_update)
-
-            if sync_update.s_updated and sync_update.s_deltas:
-                insort(updates.delta_slave, sync_update)
-
-            if not sync_update:
-                continue
-
-            if sync_update.s_updated:
-                sync_slave_updates = sync_update.get_slave_updates()
-                if 'E-mail' in sync_slave_updates:
-                    new_email = sync_slave_updates['E-mail']
-                    if new_email in parsers.slave.emails:
-                        m_objects = [m_object]
-                        s_objects = [s_object] + parsers.slave.emails[new_email]
-                        SanitationUtils.safe_print("duplicate emails",
-                                                   m_objects, s_objects)
-                        try:
-                            matches.conflict['email'].add_match(
-                                Match(m_objects, s_objects))
-                        except Exception as exc:
-                            SanitationUtils.safe_print(
-                                ("something happened adding an email "
-                                 "conflict, new_email: %s ; exception: %s") %
-                                (new_email, exc))
-                        continue
-
-            if not sync_update.important_static:
-                if sync_update.m_updated and sync_update.s_updated:
-                    if sync_update.s_mod:
-                        insort(updates.problematic, sync_update)
-                        continue
-                elif sync_update.m_updated and not sync_update.s_updated:
-                    insort(updates.nonstatic_master, sync_update)
-                    if sync_update.s_mod:
-                        insort(updates.problematic, sync_update)
-                        continue
-                elif sync_update.s_updated and not sync_update.m_updated:
-                    insort(updates.nonstatic_slave, sync_update)
-                    if sync_update.s_mod:
-                        insort(updates.problematic, sync_update)
-                        continue
-
-            if sync_update.s_updated or sync_update.m_updated:
-                insort(updates.static, sync_update)
-                if sync_update.m_updated and sync_update.s_updated:
-                    insort(updates.master, sync_update)
-                    insort(updates.slave, sync_update)
-                if sync_update.m_updated and not sync_update.s_updated:
-                    insort(updates.master, sync_update)
-                if sync_update.s_updated and not sync_update.m_updated:
-                    insort(updates.slave, sync_update)
-
-        print DebugUtils.hashify("COMPLETED MERGE")
-        print timediff(settings)
-
-        # TODO: process duplicates here
+        do_sync(matches, updates, parsers, settings)
 
     #########################################
     # Write Report
@@ -883,9 +886,9 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         'length': len(matches.conflict['email'])
                     }))
 
-            email_duplicate_data = email_matcher.duplicate_matches.tabulate(
+            email_duplicate_data = matches.duplicate['email'].tabulate(
                 tablefmt="html", highlight_rules=highlight_rules_all)
-            if email_matcher.duplicate_matches:
+            if matches.duplicate['email']:
                 duplicate_group.add_section(
                     HtmlReporter.Section('email_duplicates', **{
                         'title':
@@ -896,7 +899,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         'data':
                         email_duplicate_data,
                         'length':
-                        len(email_matcher.duplicate_matches)
+                        len(matches.duplicate['email'])
                     }))
 
             match_list_instructions = {
