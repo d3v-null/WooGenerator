@@ -247,6 +247,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     #########################################
 
     matches = MatchNamespace()
+    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
     updates = UpdateNamespace()
 
     if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
@@ -320,8 +321,8 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
         email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
 
-        matches.new_masters.add_matches(email_matcher.masterless_matches)
-        matches.new_slaves.add_matches(email_matcher.slaveless_matches)
+        matches.new_master.add_matches(email_matcher.masterless_matches)
+        matches.new_slave.add_matches(email_matcher.slaveless_matches)
         matches.globals.add_matches(email_matcher.pure_matches)
         matches.duplicate['email'] = email_matcher.duplicate_matches
 
@@ -378,7 +379,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         SanitationUtils.safe_print("duplicate emails",
                                                    m_objects, s_objects)
                         try:
-                            matches.conflict_email.add_match(
+                            matches.conflict['email'].add_match(
                                 Match(m_objects, s_objects))
                         except Exception as exc:
                             SanitationUtils.safe_print(
@@ -868,7 +869,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         len(duplicates)
                     }))
 
-            email_conflict_data = matches.conflict_email.tabulate(
+            email_conflict_data = matches.conflict['email'].tabulate(
                 cols=dup_cols,
                 tablefmt="html",
                 highlight_rules=highlight_rules_all)
@@ -879,7 +880,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
                         # 'title': matchlist_type.title(),
                         'description': "email conflicts",
                         'data': email_conflict_data,
-                        'length': len(matches.conflict_email)
+                        'length': len(matches.conflict['email'])
                     }))
 
             email_duplicate_data = email_matcher.duplicate_matches.tabulate(

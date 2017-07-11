@@ -43,7 +43,8 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
 from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParserNamespace
+from woogenerator.conf.namespace import (SettingsNamespaceProd, init_settings,
+                                         ParserNamespace, MatchNamespace, UpdateNamespace)
 
 
 def timediff(settings):
@@ -587,40 +588,22 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     Registrar.register_progress("Attempting matching")
 
-    s_delta_updates = []
-    # mDeltaUpdates = []
-    slave_product_updates = []
-    problematic_product_updates = []
-    slave_variation_updates = []
-    problematic_variation_updates = []
-    master_category_updates = []
-    slave_category_updates = []
-    problematic_category_updates = []
+    updates = UpdateNamespace()
+    variation_updates = UpdateNamespace()
+    category_updates = UpdateNamespace()
 
-    slave_product_creations = []
-
-    # product_index_fn = (lambda x: x.codesum)
     def product_index_fn(product):
         """Return the codesum of the product."""
         return product.codesum
 
-    global_product_matches = MatchList(index_fn=product_index_fn)
-    masterless_product_matches = MatchList(index_fn=product_index_fn)
-    slaveless_product_matches = MatchList(index_fn=product_index_fn)
-    global_variation_matches = MatchList(index_fn=product_index_fn)
-    masterless_variation_matches = MatchList(index_fn=product_index_fn)
-    slaveless_variation_matches = MatchList(index_fn=product_index_fn)
+    matches = MatchNamespace(index_fn=product_index_fn)
+    variation_matches = MatchNamespace(index_fn=product_index_fn)
 
     def category_index_fn(category):
         """Return the title of the category."""
         return category.title
 
-    # category_index_fn = (lambda x: x.title)
-    global_category_matches = MatchList(index_fn=category_index_fn)
-    masterless_category_matches = MatchList(index_fn=category_index_fn)
-    slaveless_category_matches = MatchList(index_fn=category_index_fn)
-    delete_categories = OrderedDict()
-    join_categories = OrderedDict()
+    category_matches = MatchNamespace(index_fn=category_index_fn)
 
     if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
         # TODO: fix too-many-nested-blocks
@@ -671,10 +654,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 Registrar.register_error(exc)
                 # raise exc
 
-            global_category_matches.add_matches(category_matcher.pure_matches)
-            masterless_category_matches.add_matches(
+            category_matches.globals.add_matches(category_matcher.pure_matches)
+            category_matches.masterless.add_matches(
                 category_matcher.masterless_matches)
-            slaveless_category_matches.add_matches(
+            category_matches.slaveless.add_matches(
                 category_matcher.slaveless_matches)
 
             sync_cols = ColDataWoo.get_wpapi_category_cols()
@@ -693,16 +676,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     # print sync_update.tabulate()
 
                     if not sync_update.important_static:
-                        insort(problematic_category_updates, sync_update)
+                        insort(category_updates.problematic, sync_update)
                         continue
 
                     if sync_update.m_updated:
-                        master_category_updates.append(sync_update)
+                        category_updates.master.append(sync_update)
 
                     if sync_update.s_updated:
-                        slave_category_updates.append(sync_update)
+                        category_updates.slave.append(sync_update)
 
-            for update in master_category_updates:
+            for update in category_updates.master:
                 if Registrar.DEBUG_UPDATE:
                     Registrar.register_message(
                         "performing update < %5s | %5s > = \n%100s, %100s " %
@@ -728,7 +711,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             if Registrar.DEBUG_CATS:
                 Registrar.register_message("NEW CATEGORIES: %d" %
-                                           (len(slaveless_category_matches)))
+                                           (len(category_matches.slaveless)))
 
             if settings['auto_create_new']:
                 # create categories that do not yet exist on slave
@@ -740,7 +723,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     if Registrar.DEBUG_CATS:
                         Registrar.register_message("created cat client")
                     new_categories = [
-                        match.m_object for match in slaveless_category_matches
+                        match.m_object for match in category_matches.slaveless
                     ]
                     if Registrar.DEBUG_CATS:
                         Registrar.register_message("new categories %s" %
@@ -789,8 +772,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             category.update(category_parser_data)
 
                             # print "CATEGORY: ", category
-            elif slaveless_category_matches:
-                for slaveless_category_match in slaveless_category_matches:
+            elif category_matches.slaveless:
+                for slaveless_category_match in category_matches.slaveless:
                     exc = UserWarning("category needs to be created: %s" %
                                       slaveless_category_match.m_objects[0])
                     Registrar.register_warning(exc)
@@ -816,10 +799,10 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                           parsers.master.products)
         # print product_matcher.__repr__()
 
-        global_product_matches.add_matches(product_matcher.pure_matches)
-        masterless_product_matches.add_matches(
+        matches.globals.add_matches(product_matcher.pure_matches)
+        matches.masterless.add_matches(
             product_matcher.masterless_matches)
-        slaveless_product_matches.add_matches(
+        matches.slaveless.add_matches(
             product_matcher.slaveless_matches)
 
         sync_cols = ColDataWoo.get_wpapi_cols()
@@ -929,14 +912,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
                 for cat_match in category_matcher.masterless_matches:
                     s_index = s_object.index
-                    if delete_categories.get(s_index) is None:
-                        delete_categories[s_index] = MatchList()
-                    delete_categories[s_index].append(cat_match)
+                    if category_matches.delete_slave.get(s_index) is None:
+                        category_matches.delete_slave[s_index] = MatchList()
+                    category_matches.delete_slave[s_index].append(cat_match)
                 for cat_match in category_matcher.slaveless_matches:
                     s_index = s_object.index
-                    if join_categories.get(s_index) is None:
-                        join_categories[s_index] = MatchList()
-                    join_categories[s_index].append(cat_match)
+                    if category_matches.new_slave.get(s_index) is None:
+                        category_matches.new_slave[s_index] = MatchList()
+                    category_matches.new_slave[s_index].append(cat_match)
 
             # Assumes that GDrive is read only, doesn't care about master
             # updates
@@ -948,14 +931,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                            sync_update.tabulate())
 
             if sync_update.s_updated and sync_update.s_deltas:
-                insort(s_delta_updates, sync_update)
+                insort(updates.delta_slave, sync_update)
 
             if not sync_update.important_static:
-                insort(problematic_product_updates, sync_update)
+                insort(updates.problematic, sync_update)
                 continue
 
             if sync_update.s_updated:
-                insort(slave_product_updates, sync_update)
+                insort(updates.slave, sync_update)
 
         if settings['do_variations']:
 
@@ -967,11 +950,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 Registrar.register_message("variation matcher:\n%s" %
                                            variation_matcher.__repr__())
 
-            global_variation_matches.add_matches(
+            variation_matches.globals.add_matches(
                 variation_matcher.pure_matches)
-            masterless_variation_matches.add_matches(
+            variation_matches.masterless.add_matches(
                 variation_matcher.masterless_matches)
-            slaveless_variation_matches.add_matches(
+            variation_matches.slaveless.add_matches(
                 variation_matcher.slaveless_matches)
 
             var_sync_cols = ColDataWoo.get_wpapi_variable_cols()
@@ -1006,11 +989,11 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         var_match_count, sync_update.tabulate()))
 
                 if not sync_update.important_static:
-                    insort(problematic_variation_updates, sync_update)
+                    insort(variation_updates.problematic, sync_update)
                     continue
 
                 if sync_update.s_updated:
-                    insort(slave_variation_updates, sync_update)
+                    insort(variation_updates.slave, sync_update)
 
             for var_match_count, var_match in enumerate(
                     variation_matcher.slaveless_matches):
@@ -1053,7 +1036,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     if key in api_data:
                         del api_data[key]
                 # print "has api data: %s" % pformat(api_data)
-                slave_product_creations.append(api_data)
+                updates.new_slave.append(api_data)
 
     check_warnings()
 
@@ -1084,14 +1067,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         # unicode_colnames = map(SanitationUtils.coerce_unicode, csv_colnames.values())
         # print repr(unicode_colnames)
 
-        if settings['do_sync'] and (s_delta_updates):
+        if settings['do_sync'] and (updates.delta_slave):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
             s_delta_list = ShopObjList(
                 [
                     delta_sync_update.new_s_object
-                    for delta_sync_update in s_delta_updates
+                    for delta_sync_update in updates.delta_slave
                     if delta_sync_update.new_s_object
                 ]
             )
@@ -1126,7 +1109,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             matching_group = HtmlReporter.Group('product_matching',
                                                 'Product Matching Results')
-            if global_product_matches:
+            if matches.globals:
                 matching_group.add_section(
                     HtmlReporter.Section(
                         'perfect_product_matches',
@@ -1137,39 +1120,39 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                             "%s records match well with %s" % (
                                 settings.slave_name, settings.master_name),
                             'data':
-                            global_product_matches.tabulate(tablefmt="html"),
+                            matches.globals.tabulate(tablefmt="html"),
                             'length':
-                            len(global_product_matches)
+                            len(matches.globals)
                         }))
-            if masterless_product_matches:
+            if matches.masterless:
                 matching_group.add_section(
                     HtmlReporter.Section(
-                        'masterless_product_matches',
+                        'matches.masterless',
                         **{
                             'title':
                             'Masterless matches',
                             'description':
                             "matches are masterless",
                             'data':
-                            masterless_product_matches.tabulate(
+                            matches.masterless.tabulate(
                                 tablefmt="html"),
                             'length':
-                            len(masterless_product_matches)
+                            len(matches.masterless)
                         }))
-            if slaveless_product_matches:
+            if matches.slaveless:
                 matching_group.add_section(
                     HtmlReporter.Section(
-                        'slaveless_product_matches',
+                        'matches.slaveless',
                         **{
                             'title':
                             'Slaveless matches',
                             'description':
                             "matches are slaveless",
                             'data':
-                            slaveless_product_matches.tabulate(
+                            matches.slaveless.tabulate(
                                 tablefmt="html"),
                             'length':
-                            len(slaveless_product_matches)
+                            len(matches.slaveless)
                         }))
             if matching_group.sections:
                 reporter.add_group(matching_group)
@@ -1177,7 +1160,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if settings['do_categories']:
                 matching_group = HtmlReporter.Group(
                     'category_matching', 'Category Matching Results')
-                if global_category_matches:
+                if category_matches.globals:
                     matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_category_matches',
@@ -1188,40 +1171,40 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 "%s records match well with %s" % (
                                     settings.slave_name, settings.master_name),
                                 'data':
-                                global_category_matches.tabulate(
+                                category_matches.globals.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(global_category_matches)
+                                len(category_matches.globals)
                             }))
-                if masterless_category_matches:
+                if category_matches.masterless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'masterless_category_matches',
+                            'category_matches.masterless',
                             **{
                                 'title':
                                 'Masterless matches',
                                 'description':
                                 "matches are masterless",
                                 'data':
-                                masterless_category_matches.tabulate(
+                                category_matches.masterless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(masterless_category_matches)
+                                len(category_matches.masterless)
                             }))
-                if slaveless_category_matches:
+                if category_matches.slaveless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'slaveless_category_matches',
+                            'category_matches.slaveless',
                             **{
                                 'title':
                                 'Slaveless matches',
                                 'description':
                                 "matches are slaveless",
                                 'data':
-                                slaveless_category_matches.tabulate(
+                                category_matches.slaveless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(slaveless_category_matches)
+                                len(category_matches.slaveless)
                             }))
                 if matching_group.sections:
                     reporter.add_group(matching_group)
@@ -1229,7 +1212,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
             if settings['do_variations']:
                 matching_group = HtmlReporter.Group(
                     'variation_matching', 'Variation Matching Results')
-                if global_variation_matches:
+                if variation_matches.globals:
                     matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_variation_matches',
@@ -1240,40 +1223,40 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 "%s records match well with %s" % (
                                     settings.slave_name, settings.master_name),
                                 'data':
-                                global_variation_matches.tabulate(
+                                variation_matches.globals.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(global_variation_matches)
+                                len(variation_matches.globals)
                             }))
-                if masterless_variation_matches:
+                if variation_matches.masterless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'masterless_variation_matches',
+                            'variation_matches.masterless',
                             **{
                                 'title':
                                 'Masterless matches',
                                 'description':
                                 "matches are masterless",
                                 'data':
-                                masterless_variation_matches.tabulate(
+                                variation_matches.masterless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(masterless_variation_matches)
+                                len(variation_matches.masterless)
                             }))
-                if slaveless_variation_matches:
+                if variation_matches.slaveless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'slaveless_variation_matches',
+                            'variation_matches.slaveless',
                             **{
                                 'title':
                                 'Slaveless matches',
                                 'description':
                                 "matches are slaveless",
                                 'data':
-                                slaveless_variation_matches.tabulate(
+                                variation_matches.slaveless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(slaveless_variation_matches)
+                                len(variation_matches.slaveless)
                             }))
                 if matching_group.sections:
                     reporter.add_group(matching_group)
@@ -1290,19 +1273,19 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     description=settings.slave_name + " items will be updated",
                     data='<hr>'.join([
                         update.tabulate(tablefmt="html")
-                        for update in slave_product_updates
+                        for update in updates.slave
                     ]),
-                    length=len(slave_product_updates)))
+                    length=len(updates.slave)))
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    "problematic_product_updates",
+                    "updates.problematic",
                     description="items can't be merged because they are too dissimilar",
                     data='<hr>'.join([
                         update.tabulate(tablefmt="html")
-                        for update in problematic_product_updates
+                        for update in updates.problematic
                     ]),
-                    length=len(problematic_product_updates)))
+                    length=len(updates.problematic)))
 
             reporter.add_group(syncing_group)
 
@@ -1318,19 +1301,19 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         " items will be updated",
                         data='<hr>'.join([
                             update.tabulate(tablefmt="html")
-                            for update in slave_variation_updates
+                            for update in variation_updates.slave
                         ]),
-                        length=len(slave_variation_updates)))
+                        length=len(variation_updates.slave)))
 
                 syncing_group.add_section(
                     HtmlReporter.Section(
-                        "problematic_variation_updates",
+                        "variation_updates.problematic",
                         description="items can't be merged because they are too dissimilar",
                         data='<hr>'.join([
                             update.tabulate(tablefmt="html")
-                            for update in problematic_variation_updates
+                            for update in variation_updates.problematic
                         ]),
-                        length=len(problematic_variation_updates)))
+                        length=len(variation_updates.problematic)))
 
                 reporter.add_group(syncing_group)
 
@@ -1343,7 +1326,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    ('delete_categories'),
+                    ('category_matches.delete_slave'),
                     description="%s items will leave categories" %
                     settings.slave_name,
                     data=tabulate(
@@ -1357,45 +1340,45 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 ", ".join(category.woo_cat_name
                                           for category in matches.merge()
                                           .s_objects)
-                            ] for index, matches in delete_categories.items()
+                            ] for index, matches in category_matches.delete_slave.items()
                         ],
                         tablefmt="html"),
-                    length=len(delete_categories)
+                    length=len(category_matches.delete_slave)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in delete_categories.items()
+                    #         for index, match in category_matches.delete_slave.items()
                     #     ]
                     # )
                 ))
 
-            delete_categories_ns_data = tabulate(
+            category_matches.delete_slave_ns_data = tabulate(
                 [
                     [
                         index,
                         ", ".join(category.woo_cat_name for category in matches.merge().s_objects\
                                   if not re.search('Specials', category.woo_cat_name))
-                    ] for index, matches in delete_categories.items()
+                    ] for index, matches in category_matches.delete_slave.items()
                 ],
                 tablefmt="html"
             )
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    ('delete_categories_not_specials'),
+                    ('category_matches.delete_slave_not_specials'),
                     description="%s items will leave categories" %
                     settings.slave_name,
-                    data=delete_categories_ns_data,
-                    length=len(delete_categories)
+                    data=category_matches.delete_slave_ns_data,
+                    length=len(category_matches.delete_slave)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in delete_categories.items()
+                    #         for index, match in category_matches.delete_slave.items()
                     #     ]
                     # )
                 ))
 
             syncing_group.add_section(
                 HtmlReporter.Section(
-                    ('join_categories'),
+                    ('category_matches.new_slave'),
                     description="%s items will join categories" %
                     settings.slave_name,
                     data=tabulate(
@@ -1409,13 +1392,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                           .m_objects),
                                 # ", ".join(category.woo_cat_name \
                                 # for category in matches.merge().s_objects)
-                            ] for index, matches in join_categories.items()
+                            ] for index, matches in category_matches.new_slave.items()
                         ],
                         tablefmt="html"),
-                    length=len(join_categories)
+                    length=len(category_matches.new_slave)
                     # data = '<hr>'.join([
                     #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in delete_categories.items()
+                    #         for index, match in category_matches.delete_slave.items()
                     #     ]
                     # )
                 ))
@@ -1445,13 +1428,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
     # Perform updates
     #########################################
 
-    all_product_updates = slave_product_updates
+    all_product_updates = updates.slave
     if settings['do_variations']:
-        all_product_updates += slave_variation_updates
+        all_product_updates += variation_updates.slave
     if settings.do_problematic:
-        all_product_updates += problematic_product_updates
+        all_product_updates += updates.problematic
         if settings['do_variations']:
-            all_product_updates += problematic_variation_updates
+            all_product_updates += variation_updates.problematic
 
     # don't perform updates if limit was set
     if settings['slave_parse_limit']:

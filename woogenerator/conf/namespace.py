@@ -564,14 +564,18 @@ class ParserNamespace(argparse.Namespace):
 class MatchNamespace(argparse.Namespace):
     """ Collect variables used in matching into a single namespace. """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, index_fn=None, *args, **kwargs):
         super(MatchNamespace, self).__init__(*args, **kwargs)
-        self.globals = MatchList()
-        self.new_masters = MatchList()
-        self.new_slaves = MatchList()
-        self.anomalous = {}
+        self.globals = MatchList(index_fn=index_fn)
+        self.new_master = MatchList(index_fn=index_fn)
+        self.new_slave = MatchList(index_fn=index_fn)
+        self.masterless = MatchList(index_fn=index_fn)
+        self.slaveless = MatchList(index_fn=index_fn)
+        self.anomalous = OrderedDict()
         self.duplicate = OrderedDict()
-        self.conflict_email = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
+        self.conflict = OrderedDict()
+        self.delete_slave = OrderedDict()
+        self.delete_master = OrderedDict()
 
     def deny_anomalous(self, match_list_type, anomalous_match_list):
         """Add the matchlist to the list of anomalous match lists if it is not empty."""
@@ -595,6 +599,8 @@ class UpdateNamespace(argparse.Namespace):
         self.nonstatic_slave = []
         self.delta_master = []
         self.delta_slave = []
+        self.new_master = []
+        self.new_slave = []
 
 def init_registrar(settings):
     print "settings.verbosity = %s" % settings.verbosity
