@@ -49,6 +49,8 @@ class ImportUser(ImportObject):
     billing_address = DescriptorUtils.safe_key_property('Address')
     shipping_address = DescriptorUtils.safe_key_property('Home Address')
     name = DescriptorUtils.safe_key_property('Name')
+    socials = DescriptorUtils.safe_key_property('Social Media')
+    phones = DescriptorUtils.safe_key_property('Phone Numbers')
 
     aliasMapping = {
         'Address':
@@ -190,6 +192,9 @@ class ImportUser(ImportObject):
                 'company': 'Company',
             }.items()
         ]))
+
+        if self.DEBUG_ADDRESS:
+            self.register_message("address_kwargs: %s" % address_kwargs)
 
         self['Address'] = ContactAddress(**address_kwargs)
 

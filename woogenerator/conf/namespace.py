@@ -22,9 +22,7 @@ from woogenerator.parsing.myo import CsvParseMyo
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
 from woogenerator.parsing.user import CsvParseUser
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
-from woogenerator.client.user import (UsrSyncClientSqlWP,
-                                           UsrSyncClientSshAct,
-                                           UsrSyncClientWP)
+from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct
 
 
 class SettingsNamespaceProto(argparse.Namespace):
@@ -229,8 +227,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = '%s%s' % (self.file_prefix, 'master')
         if self.variant:
             response = "-".join([response, self.variant])
-        response += self.import_name
-        return response + '.csv'
+        response += self.import_name + '.csv'
+        return response
+
+    @property
+    def specials_path(self):
+        """ The path which the specials data is downloaded to and read from. """
+        if hasattr(self, 'specials_file'):
+            return getattr(self, 'specials_file')
+        return '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
 
     @property
     def master_parser_class(self):
@@ -362,18 +367,14 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if hasattr(self, 'master_file'):
             return getattr(self, 'master_file')
-        response = '%s%s' % (self.file_prefix, 'master')
-        response += self.import_name
-        return response + '.csv'
+        return '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
 
     @property
     def slave_path(self):
         """ The path which the slave data is downloaded to and read from. """
         if hasattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
-        response = '%s%s' % (self.file_prefix, 'slave')
-        response += self.import_name
-        return response + '.csv'
+        return '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
 
     @property
     def master_parser_class(self):
@@ -595,7 +596,7 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
 
     parser_override = {'namespace':settings}
-    if override_args:
+    if override_args is not None:
         parser_override['args'] = override_args
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)

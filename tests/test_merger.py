@@ -73,13 +73,13 @@ class TestMerger(TestCase):
         first_usr = usr_list[0]
         print("pformat@dict:\n%s" % pformat(dict(first_usr)))
         print("pformat@dir:\n%s" % pformat(dir(first_usr)))
-        print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
-        print("str@.act_created:\n%s" % str(first_usr.act_created))
-        print("str@.wp_created:\n%s" % str(first_usr.wp_created))
-        print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
-        print("str@.last_sale:\n%s" % str(first_usr.last_sale))
-        print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
-        print("str@.act_last_transaction:\n%s" % str(first_usr.act_last_transaction))
+        # print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
+        # print("str@.act_created:\n%s" % str(first_usr.act_created))
+        # print("str@.wp_created:\n%s" % str(first_usr.wp_created))
+        # print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
+        # print("str@.last_sale:\n%s" % str(first_usr.last_sale))
+        # print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
+        # print("str@.act_last_transaction:\n%s" % str(first_usr.act_last_transaction))
         # print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
         # print("pformat@.shipping_address.valid:\n%s" % pformat(first_usr.shipping_address.valid))
         # print("pformat@.shipping_address.kwargs:\n%s" % \
@@ -132,6 +132,8 @@ class TestMerger(TestCase):
         self.assertEqual(first_usr.last_sale, 1445691600.0)
         self.assertEqual(first_usr.last_modtime, 1445691600.0)
         self.assertEqual(first_usr.act_last_transaction, 1445691600.0)
+
+        self.
 
 
 

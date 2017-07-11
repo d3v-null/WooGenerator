@@ -97,21 +97,27 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
                 client.analyse_remote(
-                    parsers.dyn, settings.dprc_path, gid=settings.dprc_gid
+                    parsers.dyn,
+                    data_path=settings.dprc_path,
+                    gid=settings.dprc_gid
                 )
                 settings.master_parser_args['dprc_rules'] = parsers.dyn.taxos
 
                 Registrar.register_message("analysing dprp rules")
                 parsers.dyn.clear_transients()
                 client.analyse_remote(
-                    parsers.dyn, settings.dprp_path, gid=settings.dprp_gid
+                    parsers.dyn,
+                    data_path=settings.dprp_path,
+                    gid=settings.dprp_gid
                 )
                 settings.master_parser_args['dprp_rules'] = parsers.dyn.taxos
 
             if settings.do_specials:
                 Registrar.register_message("analysing specials")
                 client.analyse_remote(
-                    parsers.special, settings.spec_path, gid=settings.spec_gid
+                    parsers.special,
+                    data_path=settings.specials_path,
+                    gid=settings.spec_gid
                 )
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.register_message(
@@ -428,7 +434,6 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
     settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
-    settings.spec_path = os.path.join(settings.in_folder_full, 'specials.csv')
 
     settings.add_special_categories = settings.do_specials and settings['do_categories']
 

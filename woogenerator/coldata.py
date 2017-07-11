@@ -1346,6 +1346,7 @@ class ColDataUser(ColDataBase):
             # 'sync':True,
             # "static": True,
             # 'report':True,
+            'default':'',
         }),
         ('First Name', {
             'wp': {
@@ -1401,6 +1402,7 @@ class ColDataUser(ColDataBase):
             'mutable': True,
             'visible': True,
             # 'user': True,
+            'default':'',
         }),
         ('Name Suffix', {
             'wp': {
@@ -1416,6 +1418,7 @@ class ColDataUser(ColDataBase):
             'visible': True,
             # 'user': True,
             'mutable': True,
+            'default':'',
         }),
         ('Name Prefix', {
             'wp': {
@@ -1431,6 +1434,7 @@ class ColDataUser(ColDataBase):
             'visible': True,
             # 'user': True,
             'mutable': True,
+            'default':'',
         }),
         ('Memo', {
             'wp': {
@@ -1457,6 +1461,7 @@ class ColDataUser(ColDataBase):
             'act': True,
             'import': True,
             'tracked': 'future',
+            'default':'',
         }),
         ('Salutation', {
             'wp': {
@@ -1469,6 +1474,7 @@ class ColDataUser(ColDataBase):
             },
             'act': True,
             'import': True,
+            'default':'',
         }),
 
         ('Company', {
@@ -1656,6 +1662,7 @@ class ColDataUser(ColDataBase):
             # 'static':True,
             # 'capitalized':True,
             # 'visible':True,
+            'default':'',
         }),
         ('City', {
             'wp': {
@@ -1744,6 +1751,7 @@ class ColDataUser(ColDataBase):
             # 'static':True,
             # 'capitalized':True,
             # 'visible':True,
+            'default':'',
         }),
         ('Home Address 1', {
             'wp': {
@@ -1780,6 +1788,7 @@ class ColDataUser(ColDataBase):
             # 'static':True,
             # 'capitalized':True,
             # 'visible':True,
+            'default':'',
         }),
         ('Home City', {
             'wp': {
@@ -1871,6 +1880,7 @@ class ColDataUser(ColDataBase):
             'user': True,
             'sync': 'master_override',
             'warn': True,
+            'default':'',
         }),
         ('Client Grade', {
             'import': True,
@@ -1923,6 +1933,7 @@ class ColDataUser(ColDataBase):
             'sync': 'master_override',
             'warn': True,
             'visible': True,
+            'default':'',
         }),
 
         ('ABN', {
@@ -1975,6 +1986,7 @@ class ColDataUser(ColDataBase):
             'user': True,
             'sync': True,
             # 'visible':True,
+            'default':'',
         }),
         ('Referred By', {
             'wp': {
@@ -2067,7 +2079,8 @@ class ColDataUser(ColDataBase):
             'act': True,
             'import': True,
             'report': True,
-            'basic': True
+            'basic': True,
+            'default':'',
         }),
         ('Last Sale', {
             'wp': {
@@ -2108,6 +2121,7 @@ class ColDataUser(ColDataBase):
             'contact': True,
             'import': True,
             'act': True,
+            'default':'',
         }),
         ("Twitter Username", {
             'wp': {
@@ -2123,6 +2137,7 @@ class ColDataUser(ColDataBase):
             'visible': True,
             'import': True,
             'act': True,
+            'default':'',
         }),
         ("GooglePlus Username", {
             'wp': {
@@ -2138,6 +2153,7 @@ class ColDataUser(ColDataBase):
             'visible': True,
             'import': True,
             'act': True,
+            'default':'',
         }),
         ("Instagram Username", {
             'wp': {
@@ -2153,6 +2169,7 @@ class ColDataUser(ColDataBase):
             'visible': True,
             'import': True,
             'act': True,
+            'default':'',
         }),
         ('Web Site', {
             'wp': {

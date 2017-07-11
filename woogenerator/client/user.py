@@ -55,7 +55,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         possible_errors = stdout.readlines() + stderr.readlines()
         for error in possible_errors:
             if re.match("^Countries.*", error):
-                print error
+                # print error
                 continue
             assert not error, "command <%s> returned errors: %s" % (
                 SanitationUtils.coerce_unicode(command),
@@ -245,11 +245,11 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         #     '"%s"' % file_name
         # ]))
 
-        print "executing export command..."
+        # print "executing export command..."
         self.exec_silent_command_assert(command)
-        print "donloading file..."
+        # print "donloading file..."
         self.get_delete_file(remote_path, data_path)
-        print "analysing file..."
+        # print "analysing file..."
         parser.analyse_file(
             data_path,
             dialect_suggestion=dialect_suggestion,
@@ -465,5 +465,5 @@ ON {um_on_clause}
         # print rows
 
         if results:
-            print "there are %d results" % len(results)
+            # print "there are %d results" % len(results)
             parser.analyse_rows(rows)

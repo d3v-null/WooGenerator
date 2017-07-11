@@ -29,6 +29,8 @@ class FieldGroup(Registrar):
 
     def __init__(self, **kwargs):
         super(FieldGroup, self).__init__()
+        if self.DEBUG_CONTACT:
+            self.register_message("kwargs: %s" % kwargs)
         self.strict = None
         self.kwargs = kwargs
         empty_mandatory_vals = [
@@ -119,7 +121,7 @@ class FieldGroup(Registrar):
             self.register_message("PROBLEMATIC: %s" %
                                   SanitationUtils.coerce_unicode(reason))
 
-    def tabulate(self, tablefmt=None):
+    def to_dict(self, tablefmt=None):
         if not tablefmt:
             tablefmt = 'simple'
         if tablefmt == 'html':
@@ -148,9 +150,12 @@ class FieldGroup(Registrar):
         if printable_kwargs:
             for key, arg in printable_kwargs.items():
                 table['KEY:' + key] = arg
+        return table
 
+
+    def tabulate(self, tablefmt=None):
         return tabulate(
-            table,
+            self.to_dict(tablefmt),
             tablefmt=tablefmt,
             headers='keys'
         )
@@ -188,6 +193,8 @@ class ContactObject(FieldGroup):
 
     def __init__(self, schema=None, **kwargs):
         super(ContactObject, self).__init__(**kwargs)
+        if self.DEBUG_CONTACT:
+            self.register_message("kwargs: %s" % kwargs)
         self.schema = schema
         if self.performPost:
             self.properties['ignores'] = []
@@ -320,6 +327,8 @@ class ContactAddress(ContactObject):
 
     def __init__(self, schema=None, **kwargs):
         super(ContactAddress, self).__init__(schema, **kwargs)
+        if self.DEBUG_ADDRESS:
+            self.register_message("kwargs: %s" % kwargs)
         self.strict = STRICT_ADDRESS
         self.debug = Registrar.DEBUG_ADDRESS
         if self.performPost:
@@ -333,6 +342,7 @@ class ContactAddress(ContactObject):
             self.properties['buildings'] = []
             self.properties['weak_thoroughfares'] = []
             self.properties['numbers'] = []
+            self.properties['unknowns'] = []
             self.number_combo = ContactObject.Combo()
             self.process_kwargs()
 
@@ -801,25 +811,29 @@ class ContactAddress(ContactObject):
                 self.properties.get('end_names')
             )
 
-    @property
-    def state(self):
-        return self.properties.get(
-            'state') if self.valid else self.kwargs.get('state')
+    state = DescriptorUtils.kwarg_alias_property(
+        'state',
+        lambda self: \
+        self.properties.get('state')
+    )
 
-    @property
-    def country(self):
-        return self.properties.get(
-            'country') if self.valid else self.kwargs.get('country')
+    country = DescriptorUtils.kwarg_alias_property(
+        'country',
+        lambda self: \
+        self.properties.get('country')
+    )
 
-    @property
-    def postcode(self):
-        return self.properties.get(
-            'postcode') if self.valid else self.kwargs.get('postcode')
+    postcode = DescriptorUtils.kwarg_alias_property(
+        'postcode',
+        lambda self: \
+        self.properties.get('postcode')
+    )
 
-    @property
-    def city(self):
-        return self.properties.get(
-            'city') if self.valid else self.kwargs.get('city')
+    city = DescriptorUtils.kwarg_alias_property(
+        'city',
+        lambda self: \
+        self.properties.get('city')
+    )
 
     @property
     def line1(self):
@@ -878,7 +892,7 @@ class ContactAddress(ContactObject):
             self.line2,
             self.line3,
             (("|UNKN:" + " ".join(self.properties['unknowns']))
-             if self.debug and self.properties['unknowns'] else "")
+             if self.debug and 'unknowns' in self.properties else "")
         ])))
 
     def __str__(self, tablefmt=None):
