@@ -917,6 +917,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     category_matches.delete_slave[s_index].append(cat_match)
                 for cat_match in category_matcher.slaveless_matches:
                     s_index = s_object.index
+                    # TODO: fix namespace conflict here 
                     if category_matches.new_slave.get(s_index) is None:
                         category_matches.new_slave[s_index] = MatchList()
                     category_matches.new_slave[s_index].append(cat_match)

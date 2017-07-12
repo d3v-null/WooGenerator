@@ -127,7 +127,7 @@ def populate_master_parsers(parsers, settings):
             settings.col_data_class.get_act_import_col_names())
     return parsers
 
-def do_sync(matches, updates, parsers, settings):
+def do_match(matches, parsers, settings):
     # for every username in slave, check that it exists in master
     # TODO: fix too-many-nested-blocks
 
@@ -211,6 +211,10 @@ def do_sync(matches, updates, parsers, settings):
         print "email duplicates: %s" % len(matches.duplicate['email'])
 
     # TODO: further sort emailMatcher
+
+    return matches
+
+def do_merge(matches, updates, parsers, settings):
 
     print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(matches.globals))
     print timediff(settings)
@@ -1041,44 +1045,22 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message("filter_items: %s" % settings.filter_items)
 
-    #########################################
-    # Download / Generate Slave Parser Object
-    #########################################
-
     parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)
 
-    #########################################
-    # Generate and Analyse ACT CSV files using shell
-    #########################################
-
     parsers = populate_master_parsers(parsers, settings)
-
-    #########################################
-    # Process matches /  Updates
-    #########################################
 
     matches = MatchNamespace()
     matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
     updates = UpdateNamespace()
 
     if settings['do_sync']:
-        do_sync(matches, updates, parsers, settings)
-
-    #########################################
-    # Write Report
-    #########################################
+        matches = do_match(matches, parsers, settings)
+        do_merge(matches, updates, parsers, settings)
 
     do_report(matches, updates, parsers, settings)
 
-    #########################################
-    # Update databases
-    #########################################
-
     do_updates(matches, updates, parsers, settings)
-
-    # Registrar.register_error('testing errors')
-
 
 def catch_main(override_args=None):
     """
