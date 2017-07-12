@@ -2,12 +2,10 @@
 Provide configuration namespaces.
 """
 import os
-import ast
 import time
 # import sys
 
 import argparse
-import configargparse
 from pprint import pformat
 from collections import OrderedDict
 
@@ -231,6 +229,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.csv'
+        response = os.path.join(self.in_folder_full, response)
         return response
 
     @property
@@ -238,7 +237,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ The path which the specials data is downloaded to and read from. """
         if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
-        return '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
+        response = '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
+        response = os.path.join(self.in_folder_full, response)
+        return response
 
     @property
     def master_parser_class(self):
@@ -370,14 +371,18 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
-        return '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
+        response = '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
+        response = os.path.join(self.in_folder_full, response)
+        return response
 
     @property
     def slave_path(self):
         """ The path which the slave data is downloaded to and read from. """
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
-        return '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
+        response = '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
+        response = os.path.join(self.in_folder_full, response)
+        return response
 
     @property
     def master_parser_class(self):
@@ -535,7 +540,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             response.update({
                 'connect_params':self['slave_connect_params'],
                 'db_params':self['slave_db_params'],
-                'filter_items':self['filter_items']
+                'filter_items':self.get('filter_items')
             })
         for key, settings_key in [
                 ('limit', 'slave_parse_limit')
