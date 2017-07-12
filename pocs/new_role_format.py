@@ -183,7 +183,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         if (master_role and expected_role != master_role) \
         or (slave_role and expected_role != slave_role):
             delta_table.append(row)
-            print("for %50s (%10s), direct brand is: %50s, %srole is %5s, %srole is %5s, expected_role is %5s" % (
+            print("for %50s (%10s), direct brand is: %50s, %s role is %5s, %s role is %5s, expected_role is %5s" % (
                 name,
                 card_id,
                 direct_brand,
