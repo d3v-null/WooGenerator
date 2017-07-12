@@ -36,11 +36,26 @@ import __init__
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import ParserNamespace, init_settings, init_registrar
-from woogenerator.merger import populate_master_parsers
+from woogenerator.conf.namespace import ParserNamespace, init_settings, MatchNamespace
+from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
 
 ROLES = Counter()
 BRANDS = Counter()
+
+SCHEMA_TRANSLATIONS = OrderedDict([
+    ('tt', 'technotan'),
+    ('vt', 'vutan'),
+    ('mm', 'mosaic minerals'),
+    ('pw', 'printworx'),
+    ('hr', 'house of rhinestones'),
+    ('ma', 'meridian marketing'),
+])
+
+ROLE_TRANSLATIONS = {
+    'rn':'retail',
+    'wn':'wholesale',
+    'dn':'distributor'
+}
 
 def determine_role(direct_brands, schema=None, role=None):
     """
@@ -53,27 +68,14 @@ def determine_role(direct_brands, schema=None, role=None):
     schema = schema.lower()
     if direct_brands is None:
         return role
-    schema_translations = OrderedDict([
-        ('tt', 'technotan'),
-        ('vt', 'vutan'),
-        ('mm', 'mosaic minerals'),
-        ('pw', 'printworx'),
-        ('hr', 'house of rhinestones'),
-        ('ma', 'meridian marketing'),
-    ])
-    assert schema in schema_translations, "schema %s not recognized" % schema
-    role_translations = {
-        'rn':'retail',
-        'wn':'wholesale',
-        'dn':'distributor'
-    }
+    assert schema in SCHEMA_TRANSLATIONS, "schema %s not recognized" % schema
     for direct_brand in map(str.lower, str(direct_brands).split(';')):
         # print("looking at direct_brand: %s" % direct_brand)
         if direct_brand == 'pending':
             continue
         parsed_brand = None
         parsed_role = None
-        for brand in schema_translations.values():
+        for brand in SCHEMA_TRANSLATIONS.values():
             if direct_brand.startswith(brand):
                 print("direct_brand startswith %s" % brand)
                 parsed_brand = brand
@@ -93,13 +95,13 @@ def determine_role(direct_brands, schema=None, role=None):
         print("parsed_brand is: %s, parsed_role is %s, schema role is %s" % (
             repr(parsed_brand),
             repr(parsed_role),
-            repr(schema_translations[schema])
+            repr(SCHEMA_TRANSLATIONS[schema])
         ))
-        if parsed_brand and parsed_role and schema_translations[schema] == parsed_brand:
-            assert parsed_role in role_translations.values(), "role %s not recognized" % parsed_role
+        if parsed_brand and parsed_role and SCHEMA_TRANSLATIONS[schema] == parsed_brand:
+            assert parsed_role in ROLE_TRANSLATIONS.values(), "role %s not recognized" % parsed_role
             ROLES.update({parsed_role:1})
             BRANDS.update({parsed_brand:1})
-            for role_key, role_value in role_translations.items():
+            for role_key, role_value in ROLE_TRANSLATIONS.items():
                 if role_value == parsed_role:
                     print("returning role from direct brans %s" % parsed_role)
                     return role_key.upper()
@@ -112,42 +114,85 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
     # TODO: fix too-many-branches,too-many-locals
     # DONE: implement override_args
 
-    settings = init_settings(override_args, settings)
+    Registrar.DEBUG_MESSAGE = True
 
-    init_registrar(settings)
+    override_args = [
+        '--livemode',
+        '--download-master',
+        '--download-slave',
+        # '--master-parse-limit=5000',
+        # '--slave-parse-limit=5000',
+        '--schema=TT',
+        '-vvv'
+    ]
 
-    # PROCESS CONFIG
+    settings = init_settings(override_args, settings, ArgumentParserUser)
 
-    assert settings['master_file'], "master file must be provided if not download_master"
-    settings.ma_path = os.path.join(
-        settings.in_folder_full, settings['master_file'])
-    settings.ma_encoding = "utf8"
-
-    settings.filter_items = None
+    assert settings.schema.lower() in SCHEMA_TRANSLATIONS, \
+        "schema %s should be in %s" % (settings.schema, SCHEMA_TRANSLATIONS)
 
     parsers = ParserNamespace()
+    parsers = populate_slave_parsers(parsers, settings)
     parsers = populate_master_parsers(parsers, settings)
 
-    ma_parser_objectlist = getattr(parsers, 'ma').get_obj_list()
+    matches = MatchNamespace()
+    matches = do_match(matches, parsers, settings)
+
+    if Registrar.DEBUG_PROGRESS:
+        sync_progress_counter = ProgressCounter(len(matches.globals))
+
     direct_brands = Counter()
-    delta_table = [['name', 'card_id', 'direct_brand', 'role', 'expected_role']]
-    for master_object in ma_parser_objectlist:
+    delta_table = [[
+        'card_id',
+        'name',
+        'direct_brand',
+        '%s role' % settings.master_name,
+        '%s role' % settings.slave_name,
+        'expected_role',
+        'errors'
+    ]]
+
+    for count, match in enumerate(matches.globals):
+        if Registrar.DEBUG_PROGRESS:
+            sync_progress_counter.maybe_print_update(count)
+
+        master_object = match.m_objects[0]
+        slave_object = match.s_objects[0]
+
+        errors = ''
         card_id = master_object.MYOBID
         name = str(master_object.name)
         direct_brand = str(master_object.get('Direct Brand'))
-        role = str(master_object.get('Role'))
-        expected_role = determine_role(direct_brand, settings.schema)
+        master_role = str(master_object.get('Role'))
+        slave_role = str(slave_object.get('Role'))
+        try:
+            expected_role = determine_role(direct_brand, settings.schema)
+        except AssertionError, exc:
+            expected_role = "UNKN"
+            errors = str(exc)
         row = (
-            name,
             card_id,
+            name,
             direct_brand,
-            role,
-            expected_role
+            master_role,
+            slave_role,
+            expected_role,
+            errors
         )
         direct_brands.update({direct_brand: 1})
-        delta_table.append(row)
-        if expected_role != role:
-            print("for %50s (%10s), direct brand is: %50s, role is %5s, expected_role is %5s" % row)
+        if (master_role and expected_role != master_role) \
+        or (slave_role and expected_role != slave_role):
+            delta_table.append(row)
+            print("for %50s (%10s), direct brand is: %50s, %srole is %5s, %srole is %5s, expected_role is %5s" % (
+                name,
+                card_id,
+                direct_brand,
+                settings.master_name,
+                master_role,
+                settings.slave_name,
+                slave_role,
+                expected_role
+            ))
 
     print(tabulate(delta_table, headers='firstrow'))
 
