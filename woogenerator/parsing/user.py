@@ -69,8 +69,8 @@ class ImportUser(ImportObject):
             'Twitter Username',
             'GooglePlus Username',
             'Instagram Username',
+            'Web Site',
         ],
-        #  'Web Site'],
         # 'E-mails': ['E-mail', 'Personal E-mail']
     }
 

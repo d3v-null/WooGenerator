@@ -119,12 +119,12 @@ class TestMerger(TestCase):
         self.assertEqual(first_usr.phones.fax_number, '07 5971 6312')
         self.assertEqual(
             str(first_usr.phones),
-            "02 2791 7625 PREF; 0409 518 063 PREF; 00 8832 4463"
+            "02 2791 7625 PREF; +614 40 564 957 PREF; 07 5971 6312"
         )
         self.assertEqual(first_usr.socials.twitter, "kmainstone5")
         self.assertEqual(
             first_usr.socials.website,
-            "https://wikispaces.com/vivamus/metus/arcu/adipisci"
+            "https://wikispaces.com/vivamus/metus/arcu/adipiscing.jpg?duis=justo&consequat=sollicitudin&dui=ut&nec=suscipit&nisi=a&volutpat=feugiat&eleifend=et&donec=eros&ut=vestibulum&dolor=ac&morbi=est&vel=lacinia&lectus=nisi&in=venenatis"
         )
 
         self.assertEqual(first_usr.act_modtime, 1284447467.0)
@@ -134,7 +134,7 @@ class TestMerger(TestCase):
         self.assertEqual(first_usr.last_sale, 1445691600.0)
         self.assertEqual(first_usr.last_modtime, 1445691600.0)
         self.assertEqual(first_usr.act_last_transaction, 1445691600.0)
-        self.assertEqual(first_usr.role, "WN")
+        # self.assertEqual(first_usr.role, "WN")
 
         # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 

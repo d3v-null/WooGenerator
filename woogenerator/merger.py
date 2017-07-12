@@ -131,8 +131,7 @@ def do_match(matches, parsers, settings):
     # for every username in slave, check that it exists in master
     # TODO: fix too-many-nested-blocks
 
-    print DebugUtils.hashify("processing usernames")
-    print timediff(settings)
+    Registrar.register_progress("Processing matches")
 
     parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
 
@@ -849,12 +848,13 @@ def output_failures(failures, file_path):
         print "WROTE FILE: ", file_path
 
 def do_updates(matches, updates, parsers, settings):
+
+
     all_updates = updates.static
     if settings.do_problematic:
         all_updates += updates.problematic
 
-    print DebugUtils.hashify("Update databases (%d)" % len(all_updates))
-    print timediff(settings)
+    Registrar.register_progress("Updating databases (%d)" % len(all_updates))
 
     master_failures = []
     slave_failures = []
@@ -1007,7 +1007,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     # Prepare Filter Data
     #########################################
 
-    print DebugUtils.hashify("PREPARE FILTER DATA"), timediff(settings)
+    Registrar.register_progress("Prepare Filter Data")
 
     if settings['do_filter']:
         # TODO: I don't think emails filter is actually working

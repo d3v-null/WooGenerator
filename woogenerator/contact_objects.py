@@ -1498,14 +1498,14 @@ class ContactPhones(FieldGroup):
 class SocialMediaFields(FieldGroup):
     fieldGroupType = "SOCIALMEDIA"
     equality_keys = ['facebook', 'twitter',
-                     'instagram', 'gplus']  # , 'website']
+                     'instagram', 'gplus', 'website']
     similarity_keys = equality_keys[:]
     key_mappings = {
         'facebook': ['Facebook Username'],
         'twitter': ['Twitter Username'],
         'gplus': ['GooglePlus Username'],
         'instagram': ['Instagram Username'],
-        # 'website': ['Web Site']
+        'website': ['Web Site']
     }
 
     def __init__(self, schema=None, **kwargs):
@@ -1540,10 +1540,10 @@ class SocialMediaFields(FieldGroup):
         lambda self: self.properties.get('instagram')
     )
 
-    # website = DescriptorUtils.kwarg_alias_property(
-    #     'website',
-    #     lambda self: self.properties.get('website')
-    # )
+    website = DescriptorUtils.kwarg_alias_property(
+        'website',
+        lambda self: self.properties.get('website')
+    )
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
@@ -1553,7 +1553,7 @@ class SocialMediaFields(FieldGroup):
             self.twitter,
             self.gplus,
             self.instagram,
-            # self.website,
+            self.website,
         ])))
 
     def __str__(self, tablefmt=None):
