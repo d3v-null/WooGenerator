@@ -2,24 +2,24 @@
 """Module for testing the latest role format."""
 
 from __future__ import print_function
-import io
-import os
-import sys
+# import io
+# import os
+# import sys
 # import re
 # import time
-import traceback
+# import traceback
 # import zipfile
 # from bisect import insort
 from collections import OrderedDict, Counter
 from pprint import pprint, pformat
-import argparse
+# import argparse
 import unicodecsv
 
 from tabulate import tabulate
 # import unicodecsv
 # from sshtunnel import check_address
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
-from httplib2 import ServerNotFoundError
+# from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+# from httplib2 import ServerNotFoundError
 
 import __init__
 # from woogenerator.coldata import ColDataUser
@@ -34,7 +34,7 @@ import __init__
 #                                            UsrSyncClientWP)
 # from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, TimeUtils, DebugUtils)
+                                SanitationUtils, TimeUtils, DebugUtils, SeqUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
 from woogenerator.conf.namespace import ParserNamespace, init_settings, MatchNamespace
 from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
@@ -52,7 +52,9 @@ SCHEMA_TRANSLATIONS = [
     ('tt', 'TechnoTan'),
     ('vt', 'VuTan'),
     ('mm', 'Mosaic Minerals'),
+    ('mm', 'Mosaic'),
     ('pw', 'PrintWorx'),
+    ('at', 'AbsoluteTan'),
     ('hr', 'House of Rhinestones'),
     ('ma', 'Meridian Marketing'),
     ('tc', 'Tanbience'),
@@ -89,15 +91,26 @@ ROLE_TRANSLATIONS = [
     ('rn',  'Retail'),
     ('rn',  'Retail Normal'),
     ('rp',  'Retail Preferred'),
+    ('xrn', 'Retail Export'),
+    ('xrn', 'Export Retail Normal'),
+    ('xrp', 'Retail Preferred Export'),
+    ('xrp', 'Export Retail Preferred'),
     ('wn',  'Wholesale'),
     ('wn',  'Wholesale Normal'),
     ('wp',  'Wholesale Preferred'),
+    ('xwn', 'Wholesale Export'),
     ('xwn', 'Export Wholesale'),
     ('xwn', 'Export Wholesale Normal'),
+    ('xwp', 'Wholesale Preferred Export'),
+    ('xwp', 'Export Wholesale Preferred'),
     ('dn',  'Distributor'),
     ('dn',  'Distributor Normal'),
+    ('dp',  'Distributor Preferred'),
+    ('xdn', 'Distributor Export'),
     ('xdn', 'Export Distributor'),
     ('xdn', 'Export Distributor Normal'),
+    ('xdp', 'Distributor Preferred Export'),
+    ('xdp', 'Export Distributor Preferred'),
     ('admin', 'Administrator'),
     # ambiguous
     ('xwn', 'Export'),
@@ -137,16 +150,19 @@ def tokenwise_startswith(haystack_tokens, needle_tokens):
     return True
 
 ALLOWED_COMBINATIONS = OrderedDict([
-    ('tt', ['rn', 'wn', 'wp', 'xwn']),
-    ('vt', ['rn', 'wn', 'wp', 'xwn', 'dn']),
+    ('tt', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp']),
+    ('vt', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp', 'xdn', 'xdp']),
+    ('mm', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp', 'xdn', 'xdp']),
+    ('tc', ['rn', 'rp', 'wn', 'wp', 'dn', 'dp']),
     ('st', ['admin'])
-    # TODO: what roles are 'tc' allowed
 ])
 
 
 def parse_direct_brand(direct_brand):
     parsed_schema = None
     parsed_role = None
+    if direct_brand == "none":
+        direct_brand = None
     if direct_brand:
         direct_brand_tokens = direct_brand.lower().split(' ')
         # do tokenwise comparison on all possible schemes:
@@ -210,6 +226,8 @@ def determine_role(direct_brands, schema=None, role=None):
 ROLELESS_SCHEMAS = ['-', 'st']
 
 def jess_fix(direct_brands, act_role):
+    if act_role.lower() == 'admin':
+        return "Staff", "ADMIN"
     direct_brands_out = []
     if act_role:
         act_role = act_role.lower()
@@ -220,17 +238,21 @@ def jess_fix(direct_brands, act_role):
 
     # TODO: Remove pending if other roles
 
-
-
     if len(parsed) >= 2:
         schema_no_roles = [
             parsed_schema for parsed_schema, parsed_role in parsed \
             if parsed_schema and (not parsed_role) and (parsed_schema not in ROLELESS_SCHEMAS)
         ]
-        assert not any(schema_no_roles), \
-            "there are too many direct brands that have no act_role. %s" % direct_brands
+        # assert not any(schema_no_roles), \
+        #     "there are too many direct brands that have no act_role. %s" % direct_brands
+
+    # print("parsed: %s" % parsed)
 
     for parsed_schema, parsed_role in parsed:
+        if parsed_role == 'admin' or parsed_schema == 'st':
+            role_out = "admin"
+            direct_brands = ['-', None]
+            break
         if parsed_schema:
             if parsed_schema not in ROLELESS_SCHEMAS:
                 # if there is competition:
@@ -258,7 +280,7 @@ def jess_fix(direct_brands, act_role):
                     continue
             direct_brands_out.append((parsed_schema, None))
 
-    print(direct_brands_out, role_out)
+    # print(direct_brands_out, role_out)
 
     if not direct_brands_out:
         direct_brands_out = [('-', None)]
@@ -292,8 +314,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         '--skip-download-master',
         # '--skip-download-slave',
         '--master-file=/Users/derwent/Documents/woogenerator/input/user_master-2017-07-12_00-41-26.csv',
-        '--master-parse-limit=5000',
-        '--slave-parse-limit=5000',
+        # '--master-parse-limit=5000',
+        # '--slave-parse-limit=5000',
         '--schema=TT',
         '-vvv'
     ]
@@ -345,9 +367,9 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         except AssertionError, exc:
             expected_role = "UNKN"
             errors = str(exc)
-        jess_direct_brand, jess_role = None, None
+        jess_direct_brands, jess_role = None, None
         try:
-            jess_direct_brand, jess_role = jess_fix(act_direct_brands, master_role)
+            jess_direct_brands, jess_role = jess_fix(act_direct_brands, master_role)
         except AssertionError, exc:
             errors = "; ".join([errors, str(exc)])
         row = (
@@ -357,27 +379,18 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
             master_role,
             slave_role,
             expected_role,
-            jess_direct_brand,
+            jess_direct_brands,
             jess_role,
             errors
         )
         for parsed_schema, parsed_role in parsed_direct_brands:
             direct_brand_counter.update({format_direct_brand(parsed_schema, parsed_role): 1})
 
-        if (master_role and expected_role != master_role) \
-        or (slave_role and expected_role != slave_role) \
-        or (jess_role and expected_role != jess_role):
+        unique_roles = SeqUtils.filter_unique_true([master_role, slave_role, jess_role])
+        unique_direct_brands = SeqUtils.filter_unique_true([act_direct_brands, jess_direct_brands])
+
+        if errors or len(unique_roles) > 1 or len(unique_direct_brands) > 1:
             delta_table.append(row)
-            print("for %50s (%10s), direct brand is: %50s, %s role is %5s, %s role is %5s, expected_role is %5s" % (
-                name,
-                card_id,
-                act_direct_brands,
-                settings.master_name,
-                master_role,
-                settings.slave_name,
-                slave_role,
-                expected_role
-            ))
 
     print(tabulate(delta_table, headers='firstrow'))
 
@@ -385,7 +398,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         csvwriter = unicodecsv.writer(csvfile)
         csvwriter.writerows(delta_table)
 
-    print("all direct_brands: \n%s" % pformat(direct_brands))
+    print("all direct_brands: \n%s" % pformat(direct_brand_counter))
     print("all parsed roles: \n%s" % pformat(ROLES))
     print("all parsed brands: \n%s" % pformat(BRANDS))
 

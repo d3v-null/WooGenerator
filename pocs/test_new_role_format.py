@@ -34,7 +34,8 @@ class TestJessFix(TestCase):
             # If Direct Brand is VuTan Wholesale and Role is WP - Change Direct Brand to VuTan Wholesale Preferred and keep Role as WP
                 # Duplicate
             # If Direct Brand is Tanbience and Role is WN - Change Direct Brand to Tanbience Retail and Role to RN
-            ("Tanbience", "WN", "Tanbience", "RN"),
+            # Depracated:
+            # ("Tanbience", "WN", "Tanbience Retail", "RN"),
             # If Direct Brand is TechnoTan Wholesale and Role is RN - Change Role to WN
             ("TechnoTan Wholesale", "RN", "TechnoTan Wholesale", "WN"),
             # If Direct Brand is VuTan Wholesale and Role is RN - Change Role to WN
@@ -45,9 +46,9 @@ class TestJessFix(TestCase):
                 # "???",
             # If customer has more than one direct brand that includes VuTan/VuTan Wholesale and role is set to WN - Keep role as WN
             # If Direct Brand is TechnoTan and Role is XWN - Change Direct Brand to TechnoTan Export and keep Role as XWN
-            ("TechnoTan", "XWN", "TechnoTan Export Wholesale", "XWN"),
+            ("TechnoTan", "XWN", "TechnoTan Wholesale Export", "XWN"),
             # If Direct Brand is VuTan and Role is XWN - Change Direct Brand to VuTan Export and keep Role as XWN
-            ("VuTan", "XWN", "VuTan Export Wholesale", "XWN"),
+            ("VuTan", "XWN", "VuTan Wholesale Export", "XWN"),
             # If Direct Brand is VuTan Distributor and Role is RN, WP or WN - Leave Direct Brand as is and change Role to DN
             ("VuTan Distributor", "RN", "VuTan Distributor", "DN"),
             ("VuTan Distributor", "WN", "VuTan Distributor", "DN"),
@@ -69,24 +70,21 @@ class TestJessFix(TestCase):
             # If Direct Brand is Pending  and Role is WN - Change Role to RN
             ("Pending", "WN", "Pending", "RN"),
             # If Direct Brand is Mosiac Minerals and Role is WN - Change Direct Brand to Mosaic Minerals Retail and Role to RN
-            ("Mosaic Minerals", "WN", "Mosaic Minerals Retail", "RN"),
+            # Deprecated:
+            # ("Mosaic Minerals", "WN", "Mosaic Minerals Retail", "RN"),
+            # If Direct Brand is Mosaic Minerals and Role is WN - Change Direct Brand to Mosaic Minerals Wholesale and leave role as WN
+            ("Mosaic Minerals", "WN", "Mosaic Minerals Wholesale", "WN"),
+            # If a person has more than one Direct Brand and their role is set to WN - Leave Role as is and change all Direct Brands to Wholesale. i.e. customers:
+            # - C010428 - set Direct Brands as TechnoTan Wholesale and Mosaic Minerals Wholesale and leave Role as WN
+            ("Mosaic Minerals;TechnoTan Wholesale", "WN", "Mosaic Minerals Wholesale;TechnoTan Wholesale", "WN"),
+            # - C024668 - set Direct Brands as TechnoTan Wholesale and Tanbience Wholesale and leave Role as WN
+            ("Tanbience;TechnoTan Wholesale", "WN", "Tanbience Wholesale;TechnoTan Wholesale", "WN"),
+            # If Direct Brand is TechnoTan Wholesale and Role is ADMIN - Change Direct Brand to Staff and leave role as ADMIN
+            ("TechnoTan Wholesale", "ADMIN", "Staff", "ADMIN"),
+            # Janelle Valles C027805 - I have added a Direct Brand now called TechnoTan Retail Export
+            # If Direct Brand is Mosaic Minerals and Role is RN - Change Direct Brand to Mosaic Minerals Retail and leave role as RN
+            ("Mosaic Minerals", "RN", "Mosaic Minerals Retail", "RN"),
 
-            # What about these?
-                # 'Mosaic Minerals;TechnoTan': 38,
-                # 'Mosaic Minerals;VuTan': 8,
-                # 'TechnoTan;VuTan': 4,
-                # 'Pending;VuTan Wholesale': 3,
-                # 'TechnoTan;VuTan;': 2,
-                # 'Pending;TechnoTan': 2,
-                # 'TechnoTan Wholesale;VuTan Wholesale': 1,
-                # 'Tanbience;TechnoTan Wholesale': 1,
-                # 'Technotan Retail;VuTan Wholesale': 1,
-                # 'TechnoTan Wholesale;Mosaic Minerals': 1,
-                # 'TechnoTan Wholesale;': 1,
-                # 'TechnoTan Distributor;': 1
-
-            # How does it handle these:
-                # TechnoTanRetail
         ]:
             result_brand, result_role = jess_fix(direct_brands, role)
             try:
