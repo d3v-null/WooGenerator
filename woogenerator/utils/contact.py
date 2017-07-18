@@ -158,17 +158,17 @@ class NameUtils(object):
     noteRegex = (
         r"(?:" +
         r"|".join([
-            r"(?P<name_before_note_paren>{name})?(?P<note_open_paren>\() ?(?:" +
-            r"|".join([
+            r"(?P<name_before_note_paren>{name})?(?P<note_open_paren>\() ?(?:"
+            + r"|".join([
                 r"(?P<note_before>{note})\.? ?(?P<names_after_note>{names})?",
                 (r"(?P<names_before_note_middle>{names})? "
                  r"?(?P<note_middle>{note})\.? "
                  r"?(?P<names_after_note_middle>{names})?"),
                 r"(?P<note_names_only>{names})"
-            ]),
-            r") ?(?P<note_close_paren>\))",
-            r"(?P<note_only>{note})",
-            r"(?P<note_delimeter>{noted}) (?P<names_after_note_delimeter>{names})?"
+            ])
+            + r") ?(?P<note_close_paren>\))",
+            r"(?P<node_delimeter>{noted})? ?(?P<note_only>{note})",
+            r"(?P<note_delimeter>{noted}) ?(?P<names_after_note_delimeter>{names})?"
         ]) +
         r")"
     ).format(

@@ -92,7 +92,7 @@ class SanitationUtils(object):
     @classmethod
     def identify_abbreviation(cls, abbrv_dict, string):
         for abbrv_key, abbrvs in abbrv_dict.items():
-            if string in [abbrv_key] + abbrvs:
+            if string in abbrvs + [abbrv_key]:
                 return abbrv_key
         return string
 
@@ -110,10 +110,9 @@ class SanitationUtils(object):
 
     @classmethod
     def compile_partial_abbrv_regex(cls, abbrv_key, abbrvs):
-        return "|".join(filter(None, [
-            "|".join(filter(None, abbrvs)),
-            abbrv_key
-        ]))
+        return "|".join([
+            abbrv for abbrv in abbrvs + [abbrv_key] if abbrv
+        ])
 
     @classmethod
     def compile_abbrv_regex(cls, abbrv):

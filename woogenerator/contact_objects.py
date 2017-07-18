@@ -28,6 +28,7 @@ class FieldGroup(Registrar):
     fieldGroupType = 'GRP'
     _supports_tablefmt = True
     perform_post = False
+    enforce_mandatory_keys = True
 
     def __init__(self, **kwargs):
         super(FieldGroup, self).__init__()
@@ -36,15 +37,20 @@ class FieldGroup(Registrar):
             self.register_message("kwargs: %s" % kwargs)
         self.strict = None
         self.kwargs = kwargs
-        if self.mandatory_keys:
+        if self.enforce_mandatory_keys and self.mandatory_keys:
             empty_mandatory_keys = [
                 key for key in self.mandatory_keys \
                 if not self.kwargs.get(key)
             ]
-            self.empty = not any(empty_mandatory_keys)
+            if self.debug:
+                self.register_message("empty_mandatory_keys: %s, any: %s" % (
+                    repr(empty_mandatory_keys),
+                    repr(any(empty_mandatory_keys))
+                ))
+            self.empty = any(empty_mandatory_keys)
             if self.empty and self.debug:
                 self.register_message(
-                    "empty because missing mandory keys: %s" % empty_mandatory_keys
+                    "empty because missing mandory keys: %s" % repr(empty_mandatory_keys)
                 )
         else:
             self.empty = not any(self.kwargs)
@@ -1228,16 +1234,6 @@ class ContactName(ContactObject):
         return " ".join(
             filter(None, [names_before_note, note, names_after_note]))
 
-    # @property
-    # def first_name(self):
-    #     if self.valid:
-    #         if len(self.properties.get('names', [])) > 0 :
-    #             return self.properties.get('names')[0]
-    #         else:
-    #             return ""
-    #     else :
-    #         return self.kwargs.get('first_name')
-
     first_name = DescriptorUtils.kwarg_alias_property(
         'first_name',
         lambda self: \
@@ -1288,8 +1284,7 @@ class ContactName(ContactObject):
         if self.valid:
             return ', '.join(map(self.get_note_no_paranthesis,
                                  self.properties.get('notes', [])))
-        else:
-            return self.kwargs.get('name_notes')
+        return self.kwargs.get('name_notes')
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
@@ -1446,6 +1441,15 @@ class ContactPhones(FieldGroup):
             if '_number' in key:
                 kwargs[key] = SanitationUtils.strip_non_phone_characters(value)
         super(ContactPhones, self).__init__(**kwargs)
+        if self.perform_post:
+            self.process_kwargs()
+        if self.debug:
+            self.register_message('properties: %s' % self.properties)
+
+    def process_kwargs(self):
+        if not self.empty:
+            for key, value in self.kwargs.items():
+                self.properties[key] = value
 
     mob_number = DescriptorUtils.kwarg_alias_property(
         'mob_number',
