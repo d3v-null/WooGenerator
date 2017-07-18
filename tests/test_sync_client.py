@@ -131,6 +131,8 @@ class testSyncClient(abstractSyncClientTestCase):
 
     def test_GDrive_Read(self):
         with SyncClientGDrive(self.gDriveParams) as client:
+            self.assertTrue(client.drive_file)
+            self.assertTrue(client.get_gm_modtime(self.gDriveParams['gen_gid']))
             # print "drive file:", client.drive_file
             # print "GID", client.get_gm_modtime(self.gDriveParams['gen_gid'])
 
@@ -156,6 +158,7 @@ class testSyncClient(abstractSyncClientTestCase):
                 # print "PAGE %d: " % pagecount
                 if 'users' in page:
                     for page_user in page.get('users'):
+                        self.assertTrue(page_user)
                         # print "-> USER: ", str(page_user)[:50]
 
 

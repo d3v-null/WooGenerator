@@ -211,6 +211,7 @@ class testProdSyncClient(abstractSyncClientTestCase):
     def testCatSyncClient(self):
         with CatSyncClientWC(self.wcApiParams) as client:
             for page in client.get_iterator():
+                self.assertTrue(page)
                 # print page
 
 if __name__ == '__main__':
