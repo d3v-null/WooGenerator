@@ -1559,6 +1559,282 @@ class SocialMediaFields(FieldGroup):
     def __str__(self, tablefmt=None):
         return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
 
+class RoleGroup(FieldGroup):
+    """ docstring for RoleGroup. """
+
+    fieldGroupType = "ROLE"
+    equality_keys = ['direct_brand', 'role']
+    key_mappings = {
+        'direct_brand': ['Direct Brand'],
+        'role': ['Role'],
+    }
+
+    role_translations = [
+        # unambiguous
+        ('rn',  'Retail'),
+        ('rn',  'Retail Normal'),
+        ('rp',  'Retail Preferred'),
+        ('xrn', 'Retail Export'),
+        ('xrn', 'Export Retail Normal'),
+        ('xrp', 'Retail Preferred Export'),
+        ('xrp', 'Export Retail Preferred'),
+        ('wn',  'Wholesale'),
+        ('wn',  'Wholesale Normal'),
+        ('wp',  'Wholesale Preferred'),
+        ('xwn', 'Wholesale Export'),
+        ('xwn', 'Export Wholesale'),
+        ('xwn', 'Export Wholesale Normal'),
+        ('xwp', 'Wholesale Preferred Export'),
+        ('xwp', 'Export Wholesale Preferred'),
+        ('dn',  'Distributor'),
+        ('dn',  'Distributor Normal'),
+        ('dp',  'Distributor Preferred'),
+        ('xdn', 'Distributor Export'),
+        ('xdn', 'Export Distributor'),
+        ('xdn', 'Export Distributor Normal'),
+        ('xdp', 'Distributor Preferred Export'),
+        ('xdp', 'Export Distributor Preferred'),
+        ('admin', 'Administrator'),
+        # ambiguous
+        ('xwn', 'Export'),
+    ]
+
+    schema_translations = [
+        ('tt', 'TechnoTan'),
+        ('vt', 'VuTan'),
+        ('mm', 'Mosaic Minerals'),
+        ('mm', 'Mosaic'),
+        ('pw', 'PrintWorx'),
+        ('at', 'AbsoluteTan'),
+        ('hr', 'House of Rhinestones'),
+        ('ma', 'Meridian Marketing'),
+        ('tc', 'Tanbience'),
+        ('st', 'Staff'),
+        ('-', 'Pending')
+    ]
+
+    allowed_combinations = OrderedDict([
+        ('tt', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp']),
+        ('vt', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp', 'xdn', 'xdp']),
+        ('mm', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp', 'xdn', 'xdp']),
+        ('tc', ['rn', 'rp', 'wn', 'wp', 'dn', 'dp']),
+        ('st', ['admin'])
+    ])
+
+    roleless_schemas = ['-', 'st']
+
+    def __init__(self, schema=None, **kwargs):
+        super(RoleGroup, self).__init__(**kwargs)
+        if self.debug:
+            self.register_message("kwargs: %s" % kwargs)
+        self.schema = schema
+        if self.perform_post:
+            # initialise stuff like:
+            self.properties['direct_brands'] = []
+            self.properties['role'] = ''
+            self.process_kwargs()
+
+    @classmethod
+    def translate_schema(cls, schema):
+        if not schema:
+            return
+        schema = schema.lower()
+        for key, translation in cls.schema_translations:
+            if key.lower() == schema:
+                return translation
+
+    @classmethod
+    def get_schema(cls, brand):
+        if not brand:
+            return
+        brand = brand.lower()
+        for schema, translation in cls.schema_translations:
+            if translation.lower() == brand:
+                return schema.lower()
+
+    @classmethod
+    def schema_exists(cls, schema):
+        if not schema:
+            return
+        schema = schema.lower()
+        for key, _ in cls.schema_translations:
+            if key.lower() == schema:
+                return True
+
+    @classmethod
+    def role_exists(cls, role):
+        if not role:
+            return
+        role = role.lower()
+        for key, _ in cls.role_translations:
+            if key.lower() == role:
+                return True
+
+    @classmethod
+    def translate_role(cls, role):
+        if not role:
+            return
+        role = role.lower()
+        for key, translation in cls.role_translations:
+            if key.lower() == role:
+                return translation
+
+    @classmethod
+    def get_role(cls, role_string):
+        if not role_string:
+            return
+        role_string = role_string.lower()
+        for key, translation in cls.role_translations:
+            if translation.lower() == role_string:
+                return key.lower()
+
+    @classmethod
+    def tokenwise_startswith(cls, haystack_tokens, needle_tokens):
+        if len(needle_tokens) > len(haystack_tokens):
+            return
+        for index, needle_token in enumerate(needle_tokens):
+            if needle_token != haystack_tokens[index]:
+                return
+        return True
+
+    @classmethod
+    def parse_direct_brand(cls, direct_brand):
+        parsed_schema = None
+        parsed_role = None
+        if direct_brand == "none":
+            direct_brand = None
+        if direct_brand:
+            direct_brand_tokens = direct_brand.lower().split(' ')
+            # do tokenwise comparison on all possible schemes:
+            for schema, brand in cls.schema_translations:
+                brand_tokens = brand.lower().split(' ')
+
+                if cls.tokenwise_startswith(direct_brand_tokens, brand_tokens):
+                    parsed_schema = schema
+                    direct_brand_tokens = direct_brand_tokens[len(brand_tokens):]
+                    if direct_brand_tokens:
+                        parsed_role = cls.get_role(" ".join(direct_brand_tokens))
+                        assert parsed_role, \
+                            "could not parse role: %s" % " ".join(direct_brand_tokens)
+
+            assert parsed_schema, \
+                "unkown brand: %s" %  direct_brand
+        return parsed_schema, parsed_role
+
+    @classmethod
+    def parse_direct_brands(cls, direct_brands):
+        parsed = []
+        if direct_brands:
+            for direct_brand in map(str.lower, str(direct_brands).split(';')):
+                # print("looking at direct_brand: %s" % direct_brand)
+                parsed_schema, parsed_role = cls.parse_direct_brand(direct_brand)
+                if parsed_schema:
+                    parsed.append((parsed_schema, parsed_role))
+        return parsed
+
+    @classmethod
+    def format_direct_brand(cls, parsed_schema, parsed_role=None):
+        formatted_brand = cls.translate_schema(parsed_schema)
+        assert formatted_brand, \
+            "cannot format as direct brand: (%s, %s)" % (
+                parsed_schema, parsed_role
+            )
+        if parsed_role:
+            formatted_role = cls.translate_role(parsed_role)
+            return " ".join([formatted_brand, formatted_role])
+        return formatted_brand
+
+    @classmethod
+    def determine_role(cls, direct_brands, schema=None, role=None):
+        """
+        Determe what role should be based on direct brand, schema and (optionally) default role.
+        """
+        schema = schema.lower()
+        if direct_brands is None:
+            return role
+        assert cls.schema_exists(schema), "schema %s not recognized" % schema
+        for parsed_schema, parsed_role in cls.parse_direct_brands(direct_brands):
+            if parsed_schema and parsed_role and schema == parsed_schema:
+                assert cls.role_exists(parsed_role), "role %s not recognized" % parsed_role
+                return parsed_role.upper()
+        return role
+
+    def process_kwargs(self):
+        if self.empty:
+            return
+
+        if self.kwargs.get('role'):
+            self.properties['role'] = self.kwargs.get('role').lower()
+            assert self.role_exists(self.properties['role']), \
+                "act_role should exist: %s" % self.properties['role']
+            if self.properties['role'] == 'admin':
+                self.properties['direct_brands'] = [('st', None)]
+                return
+
+        parsed = self.parse_direct_brands(self.kwargs.get('direct_brands'))
+        for count, (parsed_schema, parsed_role) in enumerate(parsed):
+            if parsed_role == 'admin' or parsed_schema == 'st':
+                self.properties['role'] = "admin"
+                self.properties['direct_brands'] = [('st', None)]
+                break
+            if parsed_schema == '-' and (len(parsed) - count > 1):
+                continue
+            if parsed_schema:
+                if parsed_schema not in self.roleless_schemas:
+                    # if there is competition:
+                    role_competitors = [(0, 'rn', 'default')]
+                    allowed_roles = ['rn']
+                    if parsed_schema in self.allowed_combinations:
+                        allowed_roles = self.allowed_combinations[parsed_schema]
+                    for priority, allowed_role in enumerate(allowed_roles):
+                        if allowed_role == self.kwargs.get('role'):
+                            role_competitors.append((priority, self.kwargs.get('role'), 'act_role'))
+                        if allowed_role == parsed_role:
+                            role_competitors.append((priority, parsed_role, 'parsed_role'))
+                    assert role_competitors, \
+                        "cannot find a suitable role for schema %s out of %s. allowed:%s" % (
+                            parsed_schema,
+                            role_competitors,
+                            allowed_roles
+                        )
+                    _, winning_role, source = max(role_competitors)
+                    if source != 'act_role':
+                        self.properties['role'] = winning_role
+
+                    if len(allowed_roles) > 1:
+                        self.properties['direct_brands'].append((parsed_schema, winning_role))
+                        continue
+                self.properties['direct_brands'].append((parsed_schema, None))
+
+        # print(self.properties['direct_brands'], self.properties['role'])
+
+        if not self.properties['direct_brands']:
+            self.properties['direct_brands'] = [('-', None)]
+        if self.properties['direct_brands'] == [('-', None)]:
+            if self.properties['role'] == 'admin':
+                self.properties['direct_brands'] = [('st', None)]
+            else:
+                self.properties['role'] = ''
+        if not self.properties['role']:
+            self.properties['role'] = 'rn'
+
+    @property
+    def direct_brands(self):
+        if self.properties_override:
+            return ";".join([
+                self.format_direct_brand(*direct_brand_out) \
+                for direct_brand_out in self.properties['direct_brands']
+            ])
+        return self.kwargs.get('direct_brands')
+
+    @property
+    def role(self):
+        if self.properties_override:
+            if self.properties['role']:
+                return self.properties['role'].upper()
+            return ''
+        return self.kwargs.get('role')
+
 
 #
 # def testSocialMediaGroup():
