@@ -75,7 +75,7 @@ def get_schema(brand):
         return
     brand = brand.lower()
     for schema, translation in SCHEMA_TRANSLATIONS:
-        if schema.lower() == brand:
+        if translation.lower() == brand:
             return schema.lower()
 
 def schema_exists(schema):
@@ -236,23 +236,23 @@ def jess_fix(direct_brands, act_role):
     role_out = act_role
     parsed = parse_direct_brands(direct_brands)
 
-    # TODO: Remove pending if other roles
-
-    if len(parsed) >= 2:
-        schema_no_roles = [
-            parsed_schema for parsed_schema, parsed_role in parsed \
-            if parsed_schema and (not parsed_role) and (parsed_schema not in ROLELESS_SCHEMAS)
-        ]
+    # if len(parsed) >= 2:
+    #     schema_no_roles = [
+    #         parsed_schema for parsed_schema, parsed_role in parsed \
+    #         if parsed_schema and (not parsed_role) and (parsed_schema not in ROLELESS_SCHEMAS)
+    #     ]
         # assert not any(schema_no_roles), \
         #     "there are too many direct brands that have no act_role. %s" % direct_brands
 
     # print("parsed: %s" % parsed)
 
-    for parsed_schema, parsed_role in parsed:
+    for count, (parsed_schema, parsed_role) in enumerate(parsed):
         if parsed_role == 'admin' or parsed_schema == 'st':
             role_out = "admin"
-            direct_brands = ['-', None]
+            direct_brands_out = [('-', None)]
             break
+        if parsed_schema == '-' and (len(parsed) - count > 1):
+            continue
         if parsed_schema:
             if parsed_schema not in ROLELESS_SCHEMAS:
                 # if there is competition:

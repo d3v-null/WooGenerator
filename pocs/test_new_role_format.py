@@ -1,6 +1,8 @@
-from new_role_format import jess_fix
 import unittest
 from unittest import TestCase
+
+import __init__
+from pocs.new_role_format import jess_fix
 
 #pylint: disable=C0330,C0301
 
@@ -84,6 +86,10 @@ class TestJessFix(TestCase):
             # Janelle Valles C027805 - I have added a Direct Brand now called TechnoTan Retail Export
             # If Direct Brand is Mosaic Minerals and Role is RN - Change Direct Brand to Mosaic Minerals Retail and leave role as RN
             ("Mosaic Minerals", "RN", "Mosaic Minerals Retail", "RN"),
+
+            # --- Derwent Tests ---
+            # Remove pending if other roles
+            ("Pending;TechnoTan", "RN", "TechnoTan Retail", "RN"),
 
         ]:
             result_brand, result_role = jess_fix(direct_brands, role)
