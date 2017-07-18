@@ -4,6 +4,7 @@ Container objects for storing contact data
 
 from collections import OrderedDict
 from copy import deepcopy
+from pprint import pformat
 
 from tabulate import tabulate
 from woogenerator.utils import (AddressUtils, NameUtils, Registrar,
@@ -1653,6 +1654,8 @@ class RoleGroup(FieldGroup):
             self.properties['direct_brands'] = []
             self.properties['role'] = ''
             self.process_kwargs()
+        if self.debug:
+            self.register_message("properties: %s" % self.properties)
 
     @classmethod
     def translate_schema(cls, schema):
@@ -1792,6 +1795,8 @@ class RoleGroup(FieldGroup):
                 return
 
         parsed = self.parse_direct_brands(self.kwargs.get('direct_brands'))
+        if self.debug:
+            self.register_message("parsed: %s" % pformat(parsed))
         for count, (parsed_schema, parsed_role) in enumerate(parsed):
             if parsed_role == 'admin' or parsed_schema == 'st':
                 self.properties['role'] = "admin"
@@ -1807,10 +1812,12 @@ class RoleGroup(FieldGroup):
                     if parsed_schema in self.allowed_combinations:
                         allowed_roles = self.allowed_combinations[parsed_schema]
                     for priority, allowed_role in enumerate(allowed_roles):
-                        if allowed_role == self.kwargs.get('role'):
+                        if allowed_role == self.properties['role']:
                             role_competitors.append((priority, self.kwargs.get('role'), 'act_role'))
                         if allowed_role == parsed_role:
                             role_competitors.append((priority, parsed_role, 'parsed_role'))
+                    if self.debug:
+                        self.register_message("role competitors: %s" % pformat(role_competitors))
                     assert role_competitors, \
                         "cannot find a suitable role for schema %s out of %s. allowed:%s" % (
                             parsed_schema,
@@ -1826,7 +1833,10 @@ class RoleGroup(FieldGroup):
                         continue
                 self.properties['direct_brands'].append((parsed_schema, None))
 
-        # print(self.properties['direct_brands'], self.properties['role'])
+        if self.debug:
+            self.register_message("direct_brands: %s, role: %s" % (
+                self.properties['direct_brands'], self.properties['role'])
+            )
 
         if not self.properties['direct_brands']:
             self.properties['direct_brands'] = [('-', None)]
