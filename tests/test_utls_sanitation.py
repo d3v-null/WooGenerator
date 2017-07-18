@@ -11,10 +11,15 @@ from woogenerator import coldata
 from woogenerator.coldata import ColDataUser
 from woogenerator.parsing.user import ImportUser, CsvParseUser
 from woogenerator.contact_objects import FieldGroup
+from woogenerator.utils import Registrar
 
 
 class test_sanitation_utils(TestCase):
-    # def setUp(self):
+    def setUp(self):
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
     #     yaml_path = "source/merger_config.yaml"
     #
     #     with open(yaml_path) as stream:

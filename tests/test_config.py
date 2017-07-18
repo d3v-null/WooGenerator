@@ -7,9 +7,15 @@ from pprint import pformat
 
 from context import tests_datadir
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProd
+from woogenerator.utils import Registrar
 # from woogenerator import config
 
 class TestConfigProd(unittest.TestCase):
+    def setUp(self):
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+
     def test_basic(self):
         parser = ArgumentParserProd()
         # pylint: disable=protected-access

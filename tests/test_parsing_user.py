@@ -4,7 +4,7 @@ from unittest import TestCase, main, skip
 
 from context import woogenerator
 from woogenerator.parsing.user import ImportUser
-
+from woogenerator.utils import Registrar
 
 class testUsrObj(TestCase):
 
@@ -18,6 +18,10 @@ class testUsrObj(TestCase):
                 'Mobile Phone': '(+61) 433124710 derp'
             }
         )
+
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
 
     def test_sanitizeURL(self):
         self.assertEqual(self.usr['Web Site'], 'http://www.laserphile.com/')

@@ -2,12 +2,17 @@ import time
 import unittest
 
 from context import woogenerator
-from woogenerator.utils import TimeUtils
+from woogenerator.utils import TimeUtils, Registrar
 
 
 class testUtilsTime(unittest.TestCase):
 
     def setUp(self):
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
+
         self.inTimeStr = "2016-05-06 16:07:00"
         self.inTimeStruct = time.strptime(
             self.inTimeStr, TimeUtils.wpTimeFormat)

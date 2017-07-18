@@ -20,9 +20,13 @@ class TestCSVParseSpecialV2(TestCase):
             # 'import_name':import_name
         }
 
-        Registrar.DEBUG_MESSAGE = True
-        Registrar.DEBUG_SPECIAL = True
-        Registrar.DEBUG_PARSER = True
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_SPECIAL = True
+        # Registrar.DEBUG_PARSER = True
 
     def test_basic(self):
         special_parser = CsvParseSpecial(

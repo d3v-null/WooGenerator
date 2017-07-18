@@ -26,6 +26,10 @@ class TestCSVParseWoo(TestCase):
             pass
             # print var, eval(var)
 
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+
         # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_MESSAGE = True
         # Registrar.DEBUG_ERROR = True

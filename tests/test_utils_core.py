@@ -3,13 +3,19 @@ from time import sleep
 from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 
 from context import woogenerator
-from woogenerator.utils import ProgressCounter, SanitationUtils, UnicodeCsvDialectUtils
+from woogenerator.utils import (ProgressCounter, SanitationUtils,
+                                UnicodeCsvDialectUtils, Registrar)
 
 
 class testProgressCounter(TestCase):
 
     def setUp(self):
         self.progress_counter = ProgressCounter(100, 1)
+
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
 
     @skip("takes too long")
     def test_carriageReturn(self):

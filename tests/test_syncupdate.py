@@ -30,6 +30,11 @@ class testSyncUpdate_Usr(TestCase):
         SyncUpdateUsr.set_globals(
             master_name, slave_name, merge_mode, default_last_sync)
 
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
+
         # FieldGroup.perform_post = True
         # FieldGroup.DEBUG_WARN = True
         # FieldGroup.DEBUG_MESSAGE = True
@@ -37,7 +42,6 @@ class testSyncUpdate_Usr(TestCase):
         # SyncUpdateUsr.DEBUG_WARN = True
         # SyncUpdateUsr.DEBUG_MESSAGE = True
         # SyncUpdateUsr.DEBUG_ERROR = True
-        Registrar.DEBUG_WARN = False
 
         self.user_mn1 = ImportUser(
             {

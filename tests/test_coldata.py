@@ -3,6 +3,7 @@ from unittest import TestCase, main, skip
 
 from context import woogenerator
 from woogenerator.coldata import ColDataUser, ColDataWoo
+from woogenerator.utils import Registrar
 from pprint import pformat
 
 
@@ -10,6 +11,9 @@ class testColDataUser(TestCase):
 
     def setUp(self):
         self.maxDiff = None
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
 
     def test_getImportCols(self):
         importCols = ColDataUser.get_import_cols()

@@ -4,7 +4,7 @@ from collections import OrderedDict
 from unittest import TestCase, main
 
 from context import tests_datadir
-from woogenerator.utils import SanitationUtils
+from woogenerator.utils import SanitationUtils, Registrar
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.dyn import CsvParseDyn
 
@@ -13,6 +13,10 @@ class TestParseDyn(TestCase):
     """
     Test the Dynamic pricing parsing functions of parsing.dyn
     """
+    def setUp(self):
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
 
     def test_parse_dyn(self):
 

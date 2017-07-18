@@ -29,10 +29,14 @@ class abstractSyncClientTestCase(TestCase):
             config = yaml.load(stream)
             self.processConfig(config)
 
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
+
         # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_MESSAGE = True
         # Registrar.DEBUG_ERROR = True
-        Registrar.DEBUG_WARN = False
 
 
 @unittest.skip('have not created config file yet')

@@ -31,6 +31,11 @@ class TestMerger(TestCase):
         self.override_args = ""
         self.parsers = ParserNamespace()
 
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
+
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True
 
@@ -68,7 +73,7 @@ class TestMerger(TestCase):
 
         #number of objects:
         self.assertTrue(len(usr_list))
-        print("len: %s" % len(usr_list))
+        # print("len: %s" % len(usr_list))
         # self.assertEqual(len(usr_list), 86)
 
         #first user:

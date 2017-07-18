@@ -608,8 +608,8 @@ class UpdateNamespace(argparse.Namespace):
         self.new_slave = []
 
 def init_registrar(settings):
-    print "settings.verbosity = %s" % settings.verbosity
-    print "settings.quiet = %s" % settings.quiet
+    # print "settings.verbosity = %s" % settings.verbosity
+    # print "settings.quiet = %s" % settings.quiet
     if settings.verbosity > 0:
         Registrar.DEBUG_PROGRESS = True
         Registrar.DEBUG_ERROR = True

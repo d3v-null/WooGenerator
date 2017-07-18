@@ -6,6 +6,7 @@ from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 from context import woogenerator
 from context import get_testdata, tests_datadir
 from woogenerator.metagator import MetaGator
+from woogenerator.utils import Registrar
 
 
 class testMetaGator(TestCase):
@@ -17,6 +18,11 @@ class testMetaGator(TestCase):
             'title': u'TITLE \xa9 \u2014',
             'description': time()
         }
+
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
 
     def test_JPG_Read(self):
 
