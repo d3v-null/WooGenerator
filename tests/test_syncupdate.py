@@ -30,7 +30,7 @@ class testSyncUpdate_Usr(TestCase):
         SyncUpdateUsr.set_globals(
             master_name, slave_name, merge_mode, default_last_sync)
 
-        # FieldGroup.performPost = True
+        # FieldGroup.perform_post = True
         # FieldGroup.DEBUG_WARN = True
         # FieldGroup.DEBUG_MESSAGE = True
         # FieldGroup.DEBUG_ERROR = True

@@ -17,36 +17,47 @@ STRICT_NAME = True
 
 
 class FieldGroup(Registrar):
-    """Groups a series of fields together so that they are synced at the same
-    time"""
+    """
+    Group a series of interdependent fields together so that they are synced at the same time.
+    """
+
     equality_keys = []
     similarity_keys = []
     mandatory_keys = []
     key_mappings = {}
     fieldGroupType = 'GRP'
     _supports_tablefmt = True
-    performPost = False
+    perform_post = False
 
     def __init__(self, **kwargs):
         super(FieldGroup, self).__init__()
-        if self.DEBUG_CONTACT:
+        self.debug = self.DEBUG_CONTACT
+        if self.debug:
             self.register_message("kwargs: %s" % kwargs)
         self.strict = None
         self.kwargs = kwargs
-        empty_mandatory_vals = [
-            self.kwargs.get(key) for key in self.mandatory_keys \
-            if not self.kwargs.get(key)
-        ]
-        self.empty = not any(empty_mandatory_vals)
+        if self.mandatory_keys:
+            empty_mandatory_keys = [
+                key for key in self.mandatory_keys \
+                if not self.kwargs.get(key)
+            ]
+            self.empty = not any(empty_mandatory_keys)
+            if self.empty and self.debug:
+                self.register_message(
+                    "empty because missing mandory keys: %s" % empty_mandatory_keys
+                )
+        else:
+            self.empty = not any(self.kwargs)
+            if self.empty and self.debug:
+                self.register_message("empty because no kwargs: %s" % self.kwargs)
         self.valid = True
         self.properties = OrderedDict()
         self.problematic = False
         self.reason = ""
-        self.debug = Registrar.DEBUG_CONTACT
 
     @property
     def properties_override(self):
-        if self.performPost and self.valid:
+        if self.perform_post and self.valid:
             return True
 
     def __eq__(self, other):
@@ -58,16 +69,14 @@ class FieldGroup(Registrar):
                 if getattr(self, key) != getattr(other, key):
                     return False
             return True
-        else:
-            return False
+        return False
 
     def __getitem__(self, key):
         for attr, keys in self.key_mappings.items():
             if key in keys:
                 if self.properties_override:
                     return getattr(self, attr)
-                else:
-                    return self.kwargs.get(attr)
+                return self.kwargs.get(attr)
 
     def __setitem__(self, key, val):
         # print "setting cont %s to %s " % (key, val)
@@ -75,9 +84,8 @@ class FieldGroup(Registrar):
             if key in keys:
                 if self.properties_override:
                     return setattr(self, attr, val)
-                else:
-                    self.kwargs[attr] = val
-                    return
+                self.kwargs[attr] = val
+                return
 
     def __copy__(self):
         # print "calling copy on ", self
@@ -196,7 +204,7 @@ class ContactObject(FieldGroup):
         if self.DEBUG_CONTACT:
             self.register_message("kwargs: %s" % kwargs)
         self.schema = schema
-        if self.performPost:
+        if self.perform_post:
             self.properties['ignores'] = []
             self.properties['unknowns'] = []
             self.properties['names'] = []
@@ -330,8 +338,8 @@ class ContactAddress(ContactObject):
         if self.DEBUG_ADDRESS:
             self.register_message("kwargs: %s" % kwargs)
         self.strict = STRICT_ADDRESS
-        self.debug = Registrar.DEBUG_ADDRESS
-        if self.performPost:
+        self.debug = self.DEBUG_ADDRESS
+        if self.perform_post:
             self.properties['subunits'] = []
             self.properties['coerced_subunits'] = []
             self.properties['incomplete_subunits'] = []
@@ -347,136 +355,144 @@ class ContactAddress(ContactObject):
             self.process_kwargs()
 
     def process_kwargs(self):
-        if not self.empty:
-            # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
+        if self.empty:
+            if self.debug:
+                self.register_message("not processing kwargs because empty")
+            return
+        # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
 
-            lines = SeqUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
-                self.kwargs.get(key, '')), ['line1', 'line2']))
+        lines = SeqUtils.filter_unique_true([
+            SanitationUtils.normalize_val(self.kwargs.get(key, '')) \
+            for key in ['line1', 'line2']
+        ])
 
-            if self.kwargs.get('country', ''):
-                country_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['country'])
-                country_identified = AddressUtils.identify_country(
-                    country_sanitized)
-                # if self.debug: print "country_sanitized", country_sanitized,
-                # "country_identified", country_identified
-                if country_sanitized != country_identified:
-                    self.properties['country'] = country_identified
-                else:
-                    self.properties['country'] = country_sanitized
-                # self.words_to_remove.append(country_sanitized)
+        # lines = SeqUtils.filter_unique_true(map(lambda key: SanitationUtils.normalize_val(
+        #     self.kwargs.get(key, '')), ['line1', 'line2']))
 
-            if self.kwargs.get('state', ''):
-                state_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['state'])
-                self.words_to_remove.append(state_sanitized)
-                state_identified = AddressUtils.identify_state(state_sanitized)
-                if state_identified != state_sanitized:
-                    self.words_to_remove.append(state_identified)
-                    self.properties['state'] = state_identified
-                else:
-                    self.properties['state'] = state_sanitized
+        if self.kwargs.get('country', ''):
+            country_sanitized = AddressUtils.sanitize_state(
+                self.kwargs['country'])
+            country_identified = AddressUtils.identify_country(
+                country_sanitized)
+            # if self.debug: print "country_sanitized", country_sanitized,
+            # "country_identified", country_identified
+            if country_sanitized != country_identified:
+                self.properties['country'] = country_identified
+            else:
+                self.properties['country'] = country_sanitized
+            # self.words_to_remove.append(country_sanitized)
 
-            if self.kwargs.get('city', ''):
-                city_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['city'])
-                self.properties['city'] = city_sanitized
-                # self.words_to_remove.append(city_sanitized)
+        if self.kwargs.get('state', ''):
+            state_sanitized = AddressUtils.sanitize_state(
+                self.kwargs['state'])
+            self.words_to_remove.append(state_sanitized)
+            state_identified = AddressUtils.identify_state(state_sanitized)
+            if state_identified != state_sanitized:
+                self.words_to_remove.append(state_identified)
+                self.properties['state'] = state_identified
+            else:
+                self.properties['state'] = state_sanitized
 
-            if self.kwargs.get('postcode'):
-                self.properties['postcode'] = self.kwargs.get('postcode')
-                if SanitationUtils.string_contains_no_numbers(
-                        self.kwargs.get('postcode')):
-                    self.invalidate("Postcode has no numbers: %s" %
-                                    repr(self.kwargs.get('postcode')))
+        if self.kwargs.get('city', ''):
+            city_sanitized = AddressUtils.sanitize_state(
+                self.kwargs['city'])
+            self.properties['city'] = city_sanitized
+            # self.words_to_remove.append(city_sanitized)
 
-            if self.kwargs.get('company'):
-                company_sanitized = SanitationUtils.normalize_val(
-                    self.kwargs['company'])
-                company_tokens = NameUtils.tokenize_name(company_sanitized)
-                company_has_notes = False
-                for token in company_tokens:
-                    note = NameUtils.get_note(token)
-                    if note:
-                        company_has_notes = True
-                if not company_has_notes:
-                    self.words_to_remove.append(company_sanitized)
-                    self.coerce_organization(self.kwargs.get('company'))
+        if self.kwargs.get('postcode'):
+            self.properties['postcode'] = self.kwargs.get('postcode')
+            if SanitationUtils.string_contains_no_numbers(
+                    self.kwargs.get('postcode')):
+                self.invalidate("Postcode has no numbers: %s" %
+                                repr(self.kwargs.get('postcode')))
 
-            for i, line in enumerate(lines):
-                self.register_message(
-                    "ANALYSING LINE %d: %s" %
-                    (i, repr(line)))
-                tokens = AddressUtils.tokenize_address(line)
-                self.register_message(u"TOKENS: %s" % repr(tokens))
-                self.name_combo.reset()
-                self.number_combo.reset()
-                for j, token in enumerate(tokens):
-                    if self.number_combo.broken(j):
-                        self.add_number(self.number_combo.flattened)
-                    if self.name_combo.broken(j):
-                        self.add_name(self.name_combo.flattened)
-                    self.register_message(u"-> token[%d]: %s" % (j, token))
-                    if len(token) == 1 and SanitationUtils.string_contains_bad_punc(
-                            token):
-                        continue
-                    self.parse_token(j, token)
+        if self.kwargs.get('company'):
+            company_sanitized = SanitationUtils.normalize_val(
+                self.kwargs['company'])
+            company_tokens = NameUtils.tokenize_name(company_sanitized)
+            company_has_notes = False
+            for token in company_tokens:
+                note = NameUtils.get_note(token)
+                if note:
+                    company_has_notes = True
+            if not company_has_notes:
+                self.words_to_remove.append(company_sanitized)
+                self.coerce_organization(self.kwargs.get('company'))
 
-                    # break
-                if self.number_combo:
-                    self.register_message("CONGRUENT NUMBERS AT END OF CYCLE: %s" %
-                                          SanitationUtils.coerce_unicode(self.number_combo))
+        for i, line in enumerate(lines):
+            self.register_message(
+                "ANALYSING LINE %d: %s" %
+                (i, repr(line)))
+            tokens = AddressUtils.tokenize_address(line)
+            self.register_message(u"TOKENS: %s" % repr(tokens))
+            self.name_combo.reset()
+            self.number_combo.reset()
+            for j, token in enumerate(tokens):
+                if self.number_combo.broken(j):
                     self.add_number(self.number_combo.flattened)
-                if self.name_combo:
-                    self.register_message("CONGRUENT NAMES AT END OF CYCLE:  %s" %
-                                          SanitationUtils.coerce_unicode(self.name_combo))
+                if self.name_combo.broken(j):
                     self.add_name(self.name_combo.flattened)
-                # self.register_message( "FINISHED CYCLE, NAMES: ", self.properties['names'])
-                continue
+                self.register_message(u"-> token[%d]: %s" % (j, token))
+                if len(token) == 1 and SanitationUtils.string_contains_bad_punc(
+                        token):
+                    continue
+                self.parse_token(j, token)
 
-            while self.properties['numbers']:
-                number = self.properties['numbers'].pop()
-                if self.properties['weak_thoroughfares'] and not self.properties[
-                        'thoroughfares']:
-                    weak_thoroughfare = self.properties[
-                        'weak_thoroughfares'].pop()
-                    self.coerce_thoroughfare(number, weak_thoroughfare)
-                else:
-                    self.properties['unknowns'] += [number]
-                    self.invalidate(
-                        "Too many numbers to match to thoroughfare or subunit: %s" % repr(number))
-                    break
+                # break
+            if self.number_combo:
+                self.register_message("CONGRUENT NUMBERS AT END OF CYCLE: %s" %
+                                      SanitationUtils.coerce_unicode(self.number_combo))
+                self.add_number(self.number_combo.flattened)
+            if self.name_combo:
+                self.register_message("CONGRUENT NAMES AT END OF CYCLE:  %s" %
+                                      SanitationUtils.coerce_unicode(self.name_combo))
+                self.add_name(self.name_combo.flattened)
+            # self.register_message( "FINISHED CYCLE, NAMES: ", self.properties['names'])
+            continue
 
-            while self.properties['incomplete_subunits']:
-                incomplete_subunit = self.properties[
-                    'incomplete_subunits'].pop()
-                self.complete_subunit(incomplete_subunit)
+        while self.properties['numbers']:
+            number = self.properties['numbers'].pop()
+            if self.properties['weak_thoroughfares'] and not self.properties[
+                    'thoroughfares']:
+                weak_thoroughfare = self.properties[
+                    'weak_thoroughfares'].pop()
+                self.coerce_thoroughfare(number, weak_thoroughfare)
+            else:
+                self.properties['unknowns'] += [number]
+                self.invalidate(
+                    "Too many numbers to match to thoroughfare or subunit: %s" % repr(number))
+                break
 
-            while self.properties['ambiguous_tokens']:
-                if not self.properties['thoroughfares'] \
-                        and not self.properties['weak_thoroughfares']:
-                    ambiguous_token = self.properties['ambiguous_tokens'].pop()
-                    self.add_weak_thoroughfare((ambiguous_token, None, None))
-                else:
-                    ambiguous_token = self.properties['ambiguous_tokens']
-                    self.enforce_strict(
-                        'There are some ambiguous tokens: %s' %
-                        SanitationUtils.coerce_unicode(
-                            self.properties['ambiguous_tokens'])
-                        )
-                    break
+        while self.properties['incomplete_subunits']:
+            incomplete_subunit = self.properties[
+                'incomplete_subunits'].pop()
+            self.complete_subunit(incomplete_subunit)
 
-            all_thoroughfares = self.properties[
-                'thoroughfares'] + self.properties['weak_thoroughfares']
-            if len(all_thoroughfares) > 1:
+        while self.properties['ambiguous_tokens']:
+            if not self.properties['thoroughfares'] \
+                    and not self.properties['weak_thoroughfares']:
+                ambiguous_token = self.properties['ambiguous_tokens'].pop()
+                self.add_weak_thoroughfare((ambiguous_token, None, None))
+            else:
+                ambiguous_token = self.properties['ambiguous_tokens']
                 self.enforce_strict(
-                    'multiple thoroughfares: %s' %
-                    SanitationUtils.coerce_unicode(all_thoroughfares)
-                )
+                    'There are some ambiguous tokens: %s' %
+                    SanitationUtils.coerce_unicode(
+                        self.properties['ambiguous_tokens'])
+                    )
+                break
 
-            if self.properties['unknowns']:
-                self.invalidate("There are some unknown tokens: %s" %
-                                repr(" | ".join(self.properties['unknowns'])))
+        all_thoroughfares = self.properties[
+            'thoroughfares'] + self.properties['weak_thoroughfares']
+        if len(all_thoroughfares) > 1:
+            self.enforce_strict(
+                'multiple thoroughfares: %s' %
+                SanitationUtils.coerce_unicode(all_thoroughfares)
+            )
+
+        if self.properties['unknowns']:
+            self.invalidate("There are some unknown tokens: %s" %
+                            repr(" | ".join(self.properties['unknowns'])))
 
 
     def parse_token(self, token_index, token):
@@ -918,8 +934,8 @@ class ContactName(ContactObject):
 
     def __init__(self, schema=None, **kwargs):
         super(ContactName, self).__init__(schema, **kwargs)
-        self.debug = Registrar.DEBUG_NAME
-        if self.performPost:
+        self.debug = self.DEBUG_NAME
+        if self.perform_post:
             # self.valid = False
             self.problematic = False
             self.properties['titles'] = []
@@ -1510,7 +1526,7 @@ class SocialMediaFields(FieldGroup):
 
     def __init__(self, schema=None, **kwargs):
         super(SocialMediaFields, self).__init__(**kwargs)
-        if self.performPost:
+        if self.perform_post:
             self.process_kwargs()
 
     def process_kwargs(self):
@@ -1836,24 +1852,3 @@ class RoleGroup(FieldGroup):
         return self.kwargs.get('role')
 
 
-#
-# def testSocialMediaGroup():
-#     sm = SocialMediaFields(
-#         facebook = 'facebook',
-#         twitter = '@twitter',
-#         gplus = '+gplus',
-#         instagram = '@insta'
-#     )
-#
-#     print sm
-#
-# if __name__ == '__main__':
-#     FieldGroup.performPost = True
-#     FieldGroup.DEBUG_WARN = True
-#     FieldGroup.DEBUG_MESSAGE = True
-    # testContactAddress()
-    # testcontactNameEquality()
-    # testContactNumber()
-    # testSocialMediaGroup()
-    # testContactName()
-    # testRefresh()
