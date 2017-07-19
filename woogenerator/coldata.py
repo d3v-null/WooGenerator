@@ -1285,6 +1285,18 @@ class ColDataUser(ColDataBase):
             'default': '',
             # 'tracked':True,
         }),
+        ('Role Info', {
+            'aliases': [
+                'Role',
+                'Direct Brand'
+            ],
+            'sync': True,
+            'static': True,
+            'basic': True,
+            'report': True,
+            # 'tracked': True,
+            'user':True,
+        }),
         ('Role', {
             'wp': {
                 'meta': True,
@@ -1295,19 +1307,35 @@ class ColDataUser(ColDataBase):
                 'key': 'act_role'
             },
             # 'label': 'act_role',
+            'import': True,
             'act': True,
             'delta': True,
-            'import': True,
-            'user': True,
-            'report': True,
+            # 'user': True,
+            # 'report': True,
             'sync': True,
             'warn': True,
             'static': True,
             # 'tracked':'future',
         }),
+        ('Direct Brand', {
+            'import': True,
+            'wp': {
+                'meta': True,
+                'key': 'direct_brand'
+            },
+            'wp-api': {
+                'meta': True,
+                'key': 'direct_brand'
+            },
+            'act': True,
+            # 'label':'direct_brand',
+            # 'user': True,
+            # 'report': True,
+            'sync': 'master_override',
+            'warn': True,
+        }),
 
         ('Name', {
-            'user': True,
             'aliases': [
                 'Name Prefix',
                 'First Name',
@@ -1321,6 +1349,7 @@ class ColDataUser(ColDataBase):
                 'HO Contact',
                 'Contact'
             ],
+            'user': True,
             'sync': True,
             'static': True,
             'basic': True,
@@ -1899,23 +1928,6 @@ class ColDataUser(ColDataBase):
             'sync': 'master_override',
             'warn': True,
             'visible': True,
-        }),
-        ('Direct Brand', {
-            'import': True,
-            'wp': {
-                'meta': True,
-                'key': 'direct_brand'
-            },
-            'wp-api': {
-                'meta': True,
-                'key': 'direct_brand'
-            },
-            'act': True,
-            # 'label':'direct_brand',
-            'user': True,
-            # 'report': True,
-            'sync': 'master_override',
-            'warn': True,
         }),
         ('Agent', {
             'wp': {

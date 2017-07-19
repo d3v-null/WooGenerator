@@ -110,6 +110,9 @@ class FieldGroup(Registrar):
     def __unicode__(self, tablefmt=None):
         raise NotImplementedError()
 
+    def __str__(self, tablefmt=None):
+        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
+
     def get_prefix(self):
         if self.empty:
             prefix = "EMPTY"
@@ -918,9 +921,6 @@ class ContactAddress(ContactObject):
              if self.debug and 'unknowns' in self.properties else "")
         ])))
 
-    def __str__(self, tablefmt=None):
-        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
-
 
 class ContactName(ContactObject):
     fieldGroupType = "NAME"
@@ -1584,9 +1584,9 @@ class RoleGroup(FieldGroup):
     """ docstring for RoleGroup. """
 
     fieldGroupType = "ROLE"
-    equality_keys = ['direct_brand', 'role']
+    equality_keys = ['direct_brands', 'role']
     key_mappings = {
-        'direct_brand': ['Direct Brand'],
+        'direct_brands': ['Direct Brand'],
         'role': ['Role'],
     }
 
@@ -1864,5 +1864,13 @@ class RoleGroup(FieldGroup):
                 return self.properties['role'].upper()
             return ''
         return self.kwargs.get('role')
+
+    def __unicode__(self, tablefmt=None):
+        prefix = self.get_prefix() if self.debug else ""
+        delimeter = "; "
+        return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
+            self.role,
+            # self.direct_brands,
+        ])))
 
 

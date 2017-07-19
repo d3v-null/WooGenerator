@@ -100,3 +100,5 @@ bad_imports.txt
 .github-todos
 .tags*
 *.csv
+tests/sample_data/EAP-PECPRE.jpg
+tests/sample_data/STFTO-CAL.png

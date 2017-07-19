@@ -36,6 +36,10 @@ class TestMerger(TestCase):
         Registrar.DEBUG_MESSAGE = False
         Registrar.DEBUG_PROGRESS = False
 
+        # Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_WARN = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True
 
@@ -139,7 +143,8 @@ class TestMerger(TestCase):
         self.assertEqual(first_usr.last_sale, 1445691600.0)
         self.assertEqual(first_usr.last_modtime, 1445691600.0)
         self.assertEqual(first_usr.act_last_transaction, 1445691600.0)
-        # self.assertEqual(first_usr.role, "WN")
+        self.assertEqual(str(first_usr.role), "RN")
+        self.assertEqual(str(first_usr.role.direct_brands), "TechnoTan Wholesale")
 
         # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 
@@ -214,7 +219,8 @@ class TestMerger(TestCase):
         self.assertEqual(first_usr.wp_modtime, None)
         self.assertEqual(first_usr.last_sale, None)
         self.assertEqual(first_usr.last_modtime, 1479060113.0)
-        self.assertEqual(first_usr.role, "WN")
+        self.assertEqual(str(first_usr.role.direct_brands), "Pending")
+        self.assertEqual(str(first_usr.role), "WN")
 
 if __name__ == '__main__':
     main()

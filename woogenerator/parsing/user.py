@@ -8,7 +8,7 @@ from pprint import pformat  # pprint
 
 from woogenerator.coldata import ColDataUser  # , ColDataWoo
 from woogenerator.contact_objects import ContactAddress, ContactName
-from woogenerator.contact_objects import ContactPhones, SocialMediaFields
+from woogenerator.contact_objects import ContactPhones, SocialMediaFields, RoleGroup
 from woogenerator.utils import DescriptorUtils, SeqUtils, SanitationUtils, TimeUtils, Registrar
 from woogenerator.parsing.abstract import ObjList, CsvParseBase, ImportObject
 
@@ -44,7 +44,8 @@ class ImportUser(ImportObject):
     # email = DescriptorUtils.safe_key_property('E-mail')
     MYOBID = DescriptorUtils.safe_key_property('MYOB Card ID')
     username = DescriptorUtils.safe_key_property('Wordpress Username')
-    role = DescriptorUtils.safe_key_property('Role')
+    role = DescriptorUtils.safe_key_property('Role Info')
+    direct_brands = DescriptorUtils.safe_key_property('Direct Brand')
     # contact_schema = DescriptorUtils.safe_key_property('contact_schema')
     billing_address = DescriptorUtils.safe_key_property('Address')
     shipping_address = DescriptorUtils.safe_key_property('Home Address')
@@ -53,8 +54,9 @@ class ImportUser(ImportObject):
     phones = DescriptorUtils.safe_key_property('Phone Numbers')
 
     aliasMapping = {
-        'Address':
-        ['Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'],
+        'Address':[
+            'Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'
+        ],
         'Home Address': [
             'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
             'Home State', 'Home Country'
@@ -70,6 +72,10 @@ class ImportUser(ImportObject):
             'GooglePlus Username',
             'Instagram Username',
             'Web Site',
+        ],
+        'Role Info': [
+            'Role',
+            'Direct Brand'
         ],
         # 'E-mails': ['E-mail', 'Personal E-mail']
     }
@@ -130,7 +136,7 @@ class ImportUser(ImportObject):
     def __init__(self, data, **kwargs):
         super(ImportUser, self).__init__(data, **kwargs)
         for key in [
-                'E-mail', 'MYOB Card ID', 'Wordpress Username', 'Role',
+                'E-mail', 'MYOB Card ID', 'Wordpress Username', #'Role',
                 'contact_schema', 'Wordpress ID'
         ]:
             val = kwargs.get(key, "")
@@ -242,6 +248,21 @@ class ImportUser(ImportObject):
         ]))
 
         self['Social Media'] = SocialMediaFields(**social_media_kwargs)
+
+        role_info_kwargs = OrderedDict(filter(None, [
+            ((key, data.get(value)) if data.get(value) else None) for key, value in
+            {
+                'role': 'Role',
+                'direct_brands': 'Direct Brand'
+            }.items()
+        ]))
+
+        self['Role Info'] = RoleGroup(**role_info_kwargs)
+
+        self.register_message("Role Info: %s, type: %s" % (
+            str(self['Role Info']),
+            type(self['Role Info'])
+        ))
 
         emails = []
         if data.get('E-mail'):
