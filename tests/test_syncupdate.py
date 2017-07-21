@@ -1,9 +1,15 @@
 import os
+import sys
 # from os import sys, path
 from unittest import TestCase, main
 import unittest
+from pprint import pformat
 # import StringIO
 import yaml
+import pdb
+import functools
+import traceback
+
 from context import woogenerator
 from context import get_testdata, tests_datadir
 from woogenerator import coldata
@@ -11,11 +17,9 @@ from woogenerator.syncupdate import SyncUpdateUsr
 from woogenerator.utils import Registrar
 from woogenerator.coldata import ColDataUser
 from woogenerator.parsing.user import ImportUser, CsvParseUser
-from woogenerator.contact_objects import FieldGroup
+from woogenerator.contact_objects import FieldGroup, SocialMediaFields, FieldGroup
 
-
-class testSyncUpdate_Usr(TestCase):
-
+class TestSyncUpdateUser(TestCase):
     def setUp(self):
         # yaml_path = "source/merger_config.yaml"
         yaml_path = os.path.join(tests_datadir, "generator_config_test.yaml")
@@ -42,6 +46,16 @@ class testSyncUpdate_Usr(TestCase):
         # SyncUpdateUsr.DEBUG_WARN = True
         # SyncUpdateUsr.DEBUG_MESSAGE = True
         # SyncUpdateUsr.DEBUG_ERROR = True
+        # Registrar.DEBUG_ERROR = True
+        # Registrar.DEBUG_WARN = True
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_PROGRESS = True
+        # Registrar.DEBUG_UPDATE = True
+        # Registrar.DEBUG_USR = True
+        # Registrar.DEBUG_CONTACT = True
+        # Registrar.DEBUG_NAME = True
+        # FieldGroup.DEBUG_CONTACT = True
+        # FieldGroup.enforce_mandatory_keys = False
 
         self.user_mn1 = ImportUser(
             {
@@ -208,6 +222,9 @@ class testSyncUpdate_Usr(TestCase):
             row=[],
         )
 
+        if ImportUser.DEBUG_CONTACT:
+            Registrar.register_message("creating user_md4")
+
         self.usr_md4 = ImportUser(
             {
                 'MYOB Card ID': 'C00001',
@@ -226,6 +243,14 @@ class testSyncUpdate_Usr(TestCase):
             rowcount=2,
             row=[],
         )
+        if ImportUser.DEBUG_CONTACT:
+            Registrar.register_message("created usr_md4. socials: %s, socials.kwargs: %s" % (
+                repr(self.usr_md4.socials),
+                pformat(self.usr_md4.socials.kwargs.items())
+            ))
+
+        if ImportUser.DEBUG_CONTACT:
+            Registrar.register_message("creating user_sd4")
 
         self.usr_sd4 = ImportUser(
             {
@@ -246,9 +271,29 @@ class testSyncUpdate_Usr(TestCase):
             row=[],
         )
 
+        if ImportUser.DEBUG_CONTACT:
+            Registrar.register_message("created usr_sd4. socials: %s" % repr(self.usr_sd4.socials))
+
     def test_m_name_col_update(self):
+        self.assertEqual(
+            str(self.user_mn1.name),
+            "Derwent Smith"
+        )
+        self.assertEqual(
+            str(self.usr_sn1.name),
+            "Abe Jackson"
+        )
         sync_update = SyncUpdateUsr(self.user_mn1, self.usr_sn1)
         sync_update.update(ColDataUser.get_sync_cols())
+        self.assertTrue(self.user_mn1.name)
+        self.assertTrue(self.usr_sn1.name)
+        self.assertFalse(
+            sync_update.values_similar(
+                'Name',
+                self.user_mn1.name,
+                self.usr_sn1.name
+            )
+        )
         self.assertGreater(sync_update.s_time, sync_update.m_time)
         self.assertGreater(
             sync_update.get_m_col_mod_time('Name'),
@@ -268,6 +313,7 @@ class testSyncUpdate_Usr(TestCase):
         )
 
     def test_s_name_col_update(self):
+
         sync_update = SyncUpdateUsr(self.user_mn2, self.usr_sn2)
         sync_update.update(ColDataUser.get_sync_cols())
         self.assertGreater(sync_update.m_time, sync_update.s_time)
@@ -335,6 +381,12 @@ class testSyncUpdate_Usr(TestCase):
             ColDataUser.delta_col('Role')), 'RN')
 
     def test_m_deltas_b(self):
+        self.assertEqual(str(self.usr_md3.role), '')
+        self.assertEqual(str(self.usr_sd2.role), 'WN')
+        self.assertEqual(
+            type(self.usr_md3['Social Media']),
+            SocialMediaFields
+        )
         sync_update = SyncUpdateUsr(self.usr_md3, self.usr_sd2)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.s_deltas(ColDataUser.get_delta_cols())
@@ -347,17 +399,27 @@ class testSyncUpdate_Usr(TestCase):
                 sync_update.sync_warnings.items(),
                 sync_update.tabulate(tablefmt='simple')
             ))
+        role_sync_params = sync_update.sync_warnings.get('Role')[0]
+
         self.assertEqual(
-            sync_update.sync_warnings.get('Role')[0].get('subject'),
-            sync_update.slave_name
+            role_sync_params.get('subject'),
+            sync_update.master_name
         )
-        self.assertFalse(sync_update.s_deltas)
+        self.assertEqual(
+            role_sync_params.get('reason'),
+            'deleting'
+        )
+        self.assertTrue(sync_update.s_deltas)
         self.assertFalse(sync_update.m_deltas)
-        self.assertEqual(sync_update.new_m_object.get('Role'), 'WN')
-        self.assertEqual(sync_update.new_m_object.get(
-            ColDataUser.delta_col('Role')), '')
+        self.assertFalse(sync_update.new_m_object)
+        self.assertEqual(
+            str(sync_update.new_s_object.role),
+            ''
+        )
 
     def test_s_deltas_b(self):
+        self.assertEqual(str(self.usr_md1.role), 'WN')
+        self.assertEqual(str(self.usr_sd3.role), '')
         sync_update = SyncUpdateUsr(self.usr_md1, self.usr_sd3)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.s_deltas(ColDataUser.get_delta_cols())
@@ -370,17 +432,35 @@ class testSyncUpdate_Usr(TestCase):
                 sync_update.sync_passes.items(),
                 sync_update.tabulate(tablefmt='simple')
             ))
+        role_sync_params = sync_update.sync_warnings.get('Role')[0]
         self.assertEqual(
-            sync_update.sync_warnings.get('Role')[0].get('subject'),
-            sync_update.master_name
+            role_sync_params.get('subject'),
+            sync_update.slave_name
         )
-        self.assertFalse(sync_update.m_deltas)
+        self.assertEqual(
+            role_sync_params.get('reason'),
+            'deleting'
+        )
+        self.assertTrue(sync_update.m_deltas)
         self.assertFalse(sync_update.s_deltas)
-        self.assertEqual(sync_update.new_s_object.get('Role'), 'WN')
-        self.assertEqual(sync_update.new_s_object.get(
-            ColDataUser.delta_col('Role')), '')
+        self.assertEqual(
+            sync_update.new_m_object.get(ColDataUser.delta_col('Role')),
+            'WN'
+        )
+        self.assertEqual(
+            str(sync_update.new_m_object.role),
+            ''
+        )
 
     def test_similar_url(self):
+        self.assertFalse(SocialMediaFields.mandatory_keys)
+        self.assertFalse(self.usr_md4.socials.empty)
+        self.assertEquals(self.usr_md4.socials.kwargs['website'], 'www.technotan.com.au')
+        self.assertEqual(self.usr_md4.socials.website, 'www.technotan.com.au')
+        self.assertEqual(self.usr_sd4.socials.website, 'http://www.technotan.com.au')
+        self.assertEqual(self.usr_md4['Web Site'], 'www.technotan.com.au')
+        self.assertEqual(self.usr_sd4['Web Site'], 'http://www.technotan.com.au')
+
         sync_update = SyncUpdateUsr(self.usr_md4, self.usr_sd4)
         sync_update.update(ColDataUser.get_sync_cols())
 
@@ -389,7 +469,7 @@ class testSyncUpdate_Usr(TestCase):
         except AssertionError as exc:
             raise AssertionError("failed assertion: %s\n%s\n%s" % (
                 exc,
-                sync_update.sync_passes.items(),
+                pformat(sync_update.sync_passes.items()),
                 sync_update.tabulate(tablefmt='simple')
             ))
 
@@ -397,7 +477,7 @@ class testSyncUpdate_Usr(TestCase):
 if __name__ == '__main__':
     main()
     # doubleNameTestSuite = unittest.TestSuite()
-    # doubleNameTestSuite.addTest(testSyncUpdate_Usr('test_m_name_col_update'))
+    # doubleNameTestSuite.addTest(TestSyncUpdateUser('test_m_name_col_update'))
     # unittest.TextTestRunner().run(doubleNameTestSuite)
     # result = unittest.TestResult()
     # result = doubleNameTestSuite.run(result)

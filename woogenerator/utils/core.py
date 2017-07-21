@@ -28,6 +28,9 @@ class SanitationUtils(object):
         r"https?:\/\/(?:www\.)?"
         r"[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*)"
     )
+    regex_domain_simple = (
+        r"[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}"
+    )
     regex_url = \
         ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)' +\
         ur'(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+' +\
@@ -680,6 +683,15 @@ class SanitationUtils(object):
         instring = cls.html_unescape(instring)
         return re.findall(
             '(' + cls.regex_url_simple + ')',
+            instring
+        )
+
+    @classmethod
+    def find_all_domains(cls, instring):
+        instring = cls.coerce_unicode(instring)
+        instring = cls.html_unescape(instring)
+        return re.findall(
+            '(' + cls.regex_domain_simple + ')',
             instring
         )
 

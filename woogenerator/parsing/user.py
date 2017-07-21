@@ -140,14 +140,14 @@ class ImportUser(ImportObject):
                 'contact_schema', 'Wordpress ID'
         ]:
             val = kwargs.get(key, "")
-            if (val):
+            if val:
                 self[key] = val
-            elif (not self.get(key)):
+            elif not self.get(key):
                 self[key] = ""
-            if (self.DEBUG_USR):
+            if self.DEBUG_USR:
                 self.register_message(
                     "key: {key}, value: {val}".format(key=key, val=self[key]))
-        if (self.DEBUG_USR):
+        if self.DEBUG_USR:
             self.register_message("data:" + repr(data))
         self.init_contact_objects(data)
 
@@ -243,11 +243,29 @@ class ImportUser(ImportObject):
                 'twitter': 'Twitter Username',
                 'gplus': 'GooglePlus Username',
                 'instagram': 'Instagram Username',
-                'website': 'Web Site',
+                # 'website': 'Web Site',
             }.items()
         ]))
 
+        urls = []
+        if data.get('Web Site'):
+            urls = SanitationUtils.find_all_urls(data['Web Site'])
+            if not urls:
+                urls = SanitationUtils.find_all_domains(data['Web Site'])
+        social_media_kwargs['website'] = urls.pop(0) if urls else None
+
+        if self.DEBUG_USR and self.DEBUG_CONTACT:
+            self.register_message("social_media_kwargs: %s" % pformat(social_media_kwargs))
+
         self['Social Media'] = SocialMediaFields(**social_media_kwargs)
+
+        if self.DEBUG_USR and self.DEBUG_CONTACT:
+            self.register_message("Social Media: %s, type: %s, properties\n%s, kwargs\n%s" % (
+                str(self['Social Media']),
+                type(self['Social Media']),
+                pformat(self['Social Media'].properties.items()),
+                pformat(self['Social Media'].kwargs.items()),
+            ))
 
         role_info_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
@@ -259,10 +277,12 @@ class ImportUser(ImportObject):
 
         self['Role Info'] = RoleGroup(**role_info_kwargs)
 
-        self.register_message("Role Info: %s, type: %s" % (
-            str(self['Role Info']),
-            type(self['Role Info'])
-        ))
+        if self.DEBUG_USR and self.DEBUG_CONTACT:
+            self.register_message("Role Info: %s, type: %s, properties\n%s" % (
+                str(self['Role Info']),
+                type(self['Role Info']),
+                pformat(self['Role Info'].properties.items())
+            ))
 
         emails = []
         if data.get('E-mail'):
@@ -274,12 +294,6 @@ class ImportUser(ImportObject):
                 SanitationUtils.find_all_emails(data.get('Personal E-mail')))
         self['E-mail'] = emails.pop(0) if emails else None
         self['Personal E-mail'] = ', '.join(emails)
-
-        urls = []
-        if data.get('Web Site'):
-            urls = SeqUtils.combine_lists(
-                urls, SanitationUtils.find_all_urls(data['Web Site']))
-        self['Web Site'] = urls.pop(0) if urls else None
 
         # if not self['Emails'].valid:
         #     self['emails_reason'] = '\n'.join(filter(None, [
@@ -324,11 +338,17 @@ class ImportUser(ImportObject):
 
     def __setitem__(self, key, val):
         # print "setting obj %s to %s " % (key, repr(val))
+        if self.DEBUG_MESSAGE and key == 'Role Info':
+            self.register_message("setting Role Info in %s to %s" % (
+                id(self),
+                repr(val)
+            ))
+        if key == 'Role Info' and val == '':
+            raise Exception()
         for alias, keys in self.aliasMapping.items():
             if key in keys and alias in self:
                 self[alias][key] = val
                 return
-        # if key is 'Name': print "setting Name to ", val
         super(ImportUser, self).__setitem__(key, val)
         # if key is 'Name':
 

@@ -677,9 +677,16 @@ class TestContactName(TestFieldGroups):
         name = ContactName(
             contact="Derwent McElhinney"
         )
+        self.assertTrue(name)
         self.assertTrue(name.valid)
         self.assertEqual(name.first_name, "DERWENT")
         self.assertEqual(name.family_name, "MCELHINNEY")
+        name = ContactName(
+            family_name='Jackson',
+            first_name='Abe'
+        )
+        self.assertTrue(name)
+        self.assertTrue(name.valid)
 
     def test_note_detection(self):
         name = ContactName(
@@ -913,6 +920,7 @@ class TestRoleGroup(TestFieldGroups):
             # --- Derwent Tests ---
             # Remove pending if other roles
             ("Pending;TechnoTan", "RN", "TechnoTan Retail", "RN"),
+            (None, "ADMIN", "Staff", "ADMIN"),
 
         ]:
             rgrp = RoleGroup(role=role, direct_brands=direct_brands)

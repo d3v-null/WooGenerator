@@ -21,12 +21,12 @@ from woogenerator.matching import UsernameMatcher, MatchList
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 
 @unittest.skip("no config file yet")
-class testUsrSyncUpdate(abstractSyncClientTestCase):
+class TestSyncUpdateUsr(abstractSyncClientTestCase):
     # yaml_path = "merger_config.yaml"
     optionNamePrefix = 'test_'
 
     def __init__(self, *args, **kwargs):
-        super(testUsrSyncUpdate, self).__init__(*args, **kwargs)
+        super(TestSyncUpdateUsr, self).__init__(*args, **kwargs)
         self.SSHTunnelForwarderParams = {}
         self.PyMySqlconnect_params = {}
         self.jsonconnect_params = {}
@@ -63,7 +63,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
         # Registrar.DEBUG_UPDATE = True
 
     def setUp(self):
-        super(testUsrSyncUpdate, self).setUp()
+        super(TestSyncUpdateUsr, self).setUp()
 
         for var in ['wpApiParams']:
             pass
@@ -71,7 +71,7 @@ class testUsrSyncUpdate(abstractSyncClientTestCase):
 
         # Registrar.DEBUG_API = True
 
-    def testUploadSlaveChanges(self):
+    def test_upload_slave_changes(self):
 
         maParser = CsvParseUser(
             cols=ColDataUser.get_act_import_cols(),

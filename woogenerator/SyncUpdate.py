@@ -163,22 +163,32 @@ class SyncUpdate(
         return value
 
     def get_m_value(self, col):
-        return self.sanitize_value(col, self.old_m_object.get(col) or "")
+        value = self.old_m_object.get(col)
+        if value is not None:
+            return self.sanitize_value(col, value)
+        return ""
 
     def get_s_value(self, col):
-        return self.sanitize_value(col, self.old_s_object.get(col) or "")
+        value = self.old_s_object.get(col)
+        if value is not None:
+            return self.sanitize_value(col, value)
+        return ""
 
     def get_new_m_value(self, col):
         if self.new_m_object:
-            return self.sanitize_value(col, self.new_m_object.get(col) or "")
-        else:
-            return self.get_m_value(col)
+            value = self.new_m_object.get(col)
+            if value is not None:
+                return self.sanitize_value(col, value)
+            return ""
+        return self.get_m_value(col)
 
     def get_new_s_value(self, col):
         if self.new_s_object:
-            return self.sanitize_value(col, self.new_s_object.get(col) or "")
-        else:
-            return self.get_s_value(col)
+            value = self.new_s_object.get(col)
+            if value is not None:
+                return self.sanitize_value(col, value)
+            return ""
+        return self.get_s_value(col)
 
     def values_similar(self, col, m_value, s_value):
         response = False

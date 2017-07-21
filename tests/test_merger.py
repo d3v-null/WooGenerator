@@ -131,10 +131,13 @@ class TestMerger(TestCase):
             "02 2791 7625 PREF; +614 40 564 957 PREF; 07 5971 6312"
         )
         self.assertEqual(first_usr.socials.twitter, "kmainstone5")
-        self.assertEqual(
-            first_usr.socials.website,
-            "https://wikispaces.com/vivamus/metus/arcu/adipiscing.jpg?duis=justo&consequat=sollicitudin&dui=ut&nec=suscipit&nisi=a&volutpat=feugiat&eleifend=et&donec=eros&ut=vestibulum&dolor=ac&morbi=est&vel=lacinia&lectus=nisi&in=venenatis"
-        )
+        website = ("https://wikispaces.com/vivamus/metus/arcu/adipiscing.jpg?"
+                   "duis=justo" "&consequat=sollicitudin" "&dui=ut"
+                   "&nec=suscipit" "&nisi=a" "&volutpat=feugiat" "&eleifend=et"
+                   "&donec=eros" "&ut=vestibulum" "&dolor=ac" "&morbi=est"
+                   "&vel=lacinia" "&lectus=nisi" "&in=venenatis")
+        self.assertEqual(first_usr.socials.website, website)
+        self.assertEqual(first_usr['Web Site'], website)
 
         self.assertEqual(first_usr.act_modtime, 1284447467.0)
         self.assertEqual(first_usr.act_created, 1303530357.0)

@@ -2114,8 +2114,8 @@ class ColDataUser(ColDataBase):
             'aliases': [
                 'Facebook Username', 'Twitter Username',
                 'GooglePlus Username', 'Instagram Username',
+                'Web Site'
             ],
-            #    'Web Site'],
             'tracked': True,
         }),
 

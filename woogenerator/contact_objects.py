@@ -57,6 +57,8 @@ class FieldGroup(Registrar):
             self.empty = not any(self.kwargs)
             if self.empty and self.debug:
                 self.register_message("empty because no kwargs: %s" % self.kwargs)
+        if self.debug and not self.empty:
+            self.register_message("totally not empty")
         self.valid = True
         self.properties = OrderedDict()
         self.problematic = False
@@ -927,7 +929,7 @@ class ContactName(ContactObject):
     equality_keys = ['first_name', 'middle_name', 'family_name']
     similarity_keys = ['first_name', 'middle_name',
                        'family_name', 'contact', 'company']
-    mandatory_keys = ['first_name', 'family_name', 'contact', 'company']
+    mandatory_keys = ['first_name', 'family_name']
     key_mappings = {
         'first_name': ['First Name'],
         'family_name': ['Surname'],
@@ -1533,38 +1535,53 @@ class SocialMediaFields(FieldGroup):
         super(SocialMediaFields, self).__init__(**kwargs)
         if self.perform_post:
             self.process_kwargs()
+        if self.debug:
+            self.register_message('self: %s self.kwargs: %s' % (
+                repr(self),
+                pformat(self.kwargs.items())
+            ))
 
     def process_kwargs(self):
         if not self.empty:
             for key, value in self.kwargs.items():
+                if self.debug:
+                    self.register_message("kwargs[%s] = %s" % (key, value))
                 self.properties[key] = value
 
-    # todo: test if pref number then number exist
+    @property
+    def facebook(self):
+        if self.properties_override:
+            return self.properties.get('facebook')
+        return self.kwargs.get('facebook')
 
-    facebook = DescriptorUtils.kwarg_alias_property(
-        'facebook',
-        lambda self: self.properties.get('facebook')
-    )
+    @property
+    def twitter(self):
+        if self.properties_override:
+            return self.properties.get('twitter')
+        return self.kwargs.get('twitter')
 
-    twitter = DescriptorUtils.kwarg_alias_property(
-        'twitter',
-        lambda self: self.properties.get('twitter')
-    )
+    @property
+    def gplus(self):
+        if self.properties_override:
+            return self.properties.get('gplus')
+        return self.kwargs.get('gplus')
 
-    gplus = DescriptorUtils.kwarg_alias_property(
-        'gplus',
-        lambda self: self.properties.get('gplus')
-    )
+    @property
+    def instagram(self):
+        if self.properties_override:
+            return self.properties.get('instagram')
+        return self.kwargs.get('instagram')
 
-    instagram = DescriptorUtils.kwarg_alias_property(
-        'instagram',
-        lambda self: self.properties.get('instagram')
-    )
-
-    website = DescriptorUtils.kwarg_alias_property(
-        'website',
-        lambda self: self.properties.get('website')
-    )
+    @property
+    def website(self):
+        if self.debug:
+            self.register_message("kwargs: %s, properties: %s" % (
+                pformat(self.properties.items()),
+                pformat(self.kwargs.items())
+            ))
+        if self.properties_override:
+            return self.properties.get('website')
+        return self.kwargs.get('website')
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
