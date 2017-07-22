@@ -10,16 +10,46 @@ from context import tests_datadir
 
 
 class TestCSVParseWoo(TestCase):
-
     def setUp(self):
         import_name = TimeUtils.get_ms_timestamp()
 
-        self.genPath = os.path.join(tests_datadir, "generator_sample.csv")
+        self.genPath = os.path.join(tests_datadir,
+                                    "generator_master_dummy.csv")
 
         self.productParserArgs = {
             'import_name': import_name,
             'cols': ColDataWoo.get_import_cols(),
             'defaults': ColDataWoo.get_defaults(),
+            'taxo_depth': 3,
+            'item_depth': 2,
+            'schema': 'CA'
+        }
+
+        # print("PPA: %s" % self.productParserArgs)
+
+        self.productParserArgs = {
+            'taxo_depth':
+            3,
+            'cols': [
+                'WNR', 'RNR', 'DNR', 'weight', 'length', 'width', 'height',
+                'HTML Description', 'PA', 'VA', 'D', 'E', 'DYNCAT', 'DYNPROD',
+                'VISIBILITY', 'SCHEDULE', 'RPR', 'WPR', 'DPR', 'CVC', 'stock',
+                'stock_status', 'Images', 'Updated', 'post_status'
+            ],
+            'defaults': {
+                'SCHEDULE': '',
+                'post_status': 'publish',
+                'manage_stock': 'no',
+                'catalog_visibility': 'visible',
+                'Images': '',
+                'CVC': 0
+            },
+            'import_name':
+            '2017-07-21_09-17-50',
+            'item_depth':
+            2,
+            'schema':
+            'CA'
         }
 
         for var in ['self.productParserArgs']:
@@ -29,6 +59,7 @@ class TestCSVParseWoo(TestCase):
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
         Registrar.DEBUG_MESSAGE = False
+        Registrar.DEBUG_PROGRESS = False
 
         # Registrar.DEBUG_PROGRESS = True
         # Registrar.DEBUG_MESSAGE = True
@@ -47,18 +78,18 @@ class TestCSVParseWoo(TestCase):
         CsvParseTT.do_dyns = False
 
     def testCSVParseTT(self):
-        productParser = CsvParseTT(
-            **self.productParserArgs
-        )
+        productParser = CsvParseTT(**self.productParserArgs)
 
-        productParser.analyse_file(self.genPath)
+        productParser.analyse_file(
+            self.genPath, dialect_suggestion="SublimeCsvTable")
 
         Registrar.DEBUG_MRO = True
 
-        # print "number of objects: %s" % len(productParser.objects.values())
-        # print "number of items: %s" % len(productParser.items.values())
-        # print "number of products: %s" % len(productParser.products.values())
+        print "number of objects: %s" % len(productParser.objects.values())
+        print "number of items: %s" % len(productParser.items.values())
+        print "number of products: %s" % len(productParser.products.values())
         prodList = WooProdList(productParser.products.values())
+        self.assertTrue(prodList)
         # print SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
 
         # sort_keys = lambda (ka, va), (kb, vb): cmp(ka, kb)
