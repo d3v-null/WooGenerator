@@ -48,11 +48,13 @@ class TestGenerator(TestCase):
         # Registrar.DEBUG_WARN = False
         # Registrar.DEBUG_PROGRESS = False
 
-    def test_init_settings(self):
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,
             argparser_class=ArgumentParserProd)
+
+    def test_init_settings(self):
+
         self.assertEqual(self.settings.master_name, "GDrive")
         self.assertEqual(self.settings.slave_name, "WooCommerce")
         self.assertEqual(self.settings.merge_mode, "sync")
@@ -64,8 +66,7 @@ class TestGenerator(TestCase):
         self.assertEqual(self.settings.spec_gid, None)
         # print("MPA: %s" % self.settings.master_parser_args)
         # self.settings.master_parser_args = {
-        #     'taxo_depth':
-        #     3,
+        #     'taxo_depth': 3,
         #     'cols': [
         #         'WNR', 'RNR', 'DNR', 'weight', 'length', 'width', 'height',
         #         'HTML Description', 'PA', 'VA', 'D', 'E', 'DYNCAT', 'DYNPROD',
@@ -80,16 +81,14 @@ class TestGenerator(TestCase):
         #         'Images': '',
         #         'CVC': 0
         #     },
-        #     'import_name':
-        #     '2017-07-21_09-14-23',
-        #     'item_depth':
-        #     2,
-        #     'schema':
-        #     'CA'
+        #     'import_name':'2017-07-21_09-14-23',
+        #     'item_depth':2,
+        #     'schema':'CA'
         # }
 
+
     def test_populate_master_parsers(self):
-        self.test_init_settings()
+        # self.test_init_settings()
         # self.settings.product_parser_args = {
         #     'import_name': self.settings.import_name,
         #     'item_depth': self.settings.item_depth,
