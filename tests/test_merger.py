@@ -44,12 +44,16 @@ class TestMerger(unittest.TestCase):
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_PARSER = True
 
-    def test_init_settings(self):
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,
             argparser_class=ArgumentParserUser
         )
+
+        self.matches = MatchNamespace()
+
+    def test_init_settings(self):
+
         self.assertEqual(self.settings.master_name, "ACT")
         self.assertEqual(self.settings.slave_name, "WORDPRESS")
         self.assertEqual(self.settings.download_master, False)
@@ -60,7 +64,6 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "ActOut")
 
     def test_populate_master_parsers(self):
-        self.test_init_settings()
         self.settings.master_parse_limit = 4
 
         # Registrar.DEBUG_ERROR = True
@@ -153,8 +156,6 @@ class TestMerger(unittest.TestCase):
         # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 
     def test_populate_slave_parsers(self):
-        self.test_init_settings()
-
         self.parsers = populate_slave_parsers(
             self.parsers, self.settings
         )
@@ -164,6 +165,8 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(len(usr_list), 100)
 
         # print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
+
+        self.assertTrue(len(usr_list))
 
         first_usr = usr_list[0]
         # print("pformat@dict:\n%s" % pformat(dict(first_usr)))
@@ -185,8 +188,6 @@ class TestMerger(unittest.TestCase):
         #       pformat(dict(first_usr.billing_address.to_dict())))
         # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
         # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
-
-        self.assertTrue(len(usr_list))
 
         self.assertEqual(first_usr.name.first_name, 'Gustav')
         self.assertEqual(first_usr.name.family_name, 'Sample')
@@ -226,8 +227,22 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(str(first_usr.role.direct_brands), "Pending")
         self.assertEqual(str(first_usr.role), "WN")
 
+    def test_do_match(self):
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
+
+
+
+
 if __name__ == '__main__':
-    main()
+    unittest.main()
 
 # just in case the files get lost
 MASTER_LINK = """https://www.mockaroo.com/8b4d8950"""
