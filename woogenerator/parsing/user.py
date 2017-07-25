@@ -382,11 +382,11 @@ class ImportUser(ImportObject):
     def __repr__(self):
         return "<%s> %s" % (
             self.index,
-            " | ".join([
+            " | ".join(map(str, [
                 self.email,
                 self.role,
                 self.username,
-            ])
+            ]))
         )
 
 
