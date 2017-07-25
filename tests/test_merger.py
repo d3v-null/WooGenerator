@@ -1,21 +1,22 @@
 from __future__ import print_function
 import os
-import sys
-from unittest import TestCase, main, skip, TestSuite, TextTestRunner
+# import sys
+import unittest
+# from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import argparse
 from pprint import pformat
 
 from context import woogenerator
-from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
-from woogenerator.utils import Registrar, SanitationUtils
+# from woogenerator.coldata import ColDataWoo
+# from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
+from woogenerator.utils import Registrar #, SanitationUtils
 from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.conf.namespace import init_settings, ParserNamespace, SettingsNamespaceUser
-from woogenerator.merger import populate_master_parsers, populate_slave_parsers
-
+from woogenerator.conf.namespace import (init_settings, ParserNamespace,
+                                         SettingsNamespaceUser, MatchNamespace)
+from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
 from context import tests_datadir
 
-class TestMerger(TestCase):
+class TestMerger(unittest.TestCase):
     def setUp(self):
 
         self.settings = SettingsNamespaceUser()
