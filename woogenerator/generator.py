@@ -25,18 +25,16 @@ from tabulate import tabulate
 from exitstatus import ExitStatus
 
 import __init__
-from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo
+from woogenerator.coldata import ColDataBase, ColDataWoo #, ColDataMyo
 from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
 from woogenerator.metagator import MetaGator
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.dyn import CsvParseDyn
-from woogenerator.parsing.myo import CsvParseMyo, MYOProdList
+from woogenerator.parsing.myo import MYOProdList
 from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
 from woogenerator.parsing.special import CsvParseSpecial
-from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
-                                      WooCatList, WooProdList, WooVarList)
-from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
+from woogenerator.parsing.woo import (CsvParseWoo, WooCatList, WooProdList, WooVarList)
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
@@ -917,7 +915,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     category_matches.delete_slave[s_index].append(cat_match)
                 for cat_match in category_matcher.slaveless_matches:
                     s_index = s_object.index
-                    # TODO: fix namespace conflict here 
+                    # TODO: fix namespace conflict here
                     if category_matches.new_slave.get(s_index) is None:
                         category_matches.new_slave[s_index] = MatchList()
                     category_matches.new_slave[s_index].append(cat_match)
