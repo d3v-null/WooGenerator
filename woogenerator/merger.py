@@ -149,51 +149,58 @@ def do_match(matches, parsers, settings):
     matches.globals.add_matches(username_matcher.pure_matches)
 
     if Registrar.DEBUG_MESSAGE:
-        print "username matches (%d pure)" % len(
-            username_matcher.pure_matches)
-        # print repr(usernameMatcher)
+        Registrar.register_message(
+            "username matches (%d pure)" % len(username_matcher.pure_matches)
+        )
 
     if Registrar.DEBUG_DUPLICATES and username_matcher.duplicate_matches:
-        print("username duplicates: %s" %
-              len(username_matcher.duplicate_matches))
+        Registrar.register_message(
+            "username duplicates: %s" % len(username_matcher.duplicate_matches)
+        )
 
-    print DebugUtils.hashify("processing cards")
-    print timediff(settings)
+    Registrar.register_progress("processing cards")
 
     # for every card in slave not already matched, check that it exists in
     # master
 
     parsers.deny_anomalous('maParser.nocards', parsers.master.nocards)
 
-    card_matcher = CardMatcher(matches.globals.s_indices,
-                               matches.globals.m_indices)
+    card_matcher = CardMatcher(
+        matches.globals.s_indices, matches.globals.m_indices
+    )
     card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
 
-    matches.deny_anomalous('cardMatcher.duplicate_matches',
-                           card_matcher.duplicate_matches)
-    matches.deny_anomalous('cardMatcher.masterless_matches',
-                           card_matcher.masterless_matches)
+    matches.deny_anomalous(
+        'cardMatcher.duplicate_matches', card_matcher.duplicate_matches
+    )
+    matches.deny_anomalous(
+        'cardMatcher.masterless_matches', card_matcher.masterless_matches
+    )
 
     matches.duplicate['card'] = card_matcher.duplicate_matches
 
     matches.globals.add_matches(card_matcher.pure_matches)
 
     if Registrar.DEBUG_MESSAGE:
-        print "card matches (%d pure)" % len(card_matcher.pure_matches)
+        Registrar.register_message(
+            "card matches (%d pure)" % len(card_matcher.pure_matches)
+        )
         # print repr(cardMatcher)
 
     if Registrar.DEBUG_DUPLICATES and card_matcher.duplicate_matches:
-        print "card duplicates: %s" % len(card_matcher.duplicate_matches)
+        Registrar.register_message(
+            "card duplicates: %s" % len(card_matcher.duplicate_matches)
+        )
 
     # #for every email in slave, check that it exists in master
 
-    print DebugUtils.hashify("processing emails")
-    print timediff(settings)
+    Registrar.register_progress("processing emails")
 
     parsers.deny_anomalous("saParser.noemails", parsers.slave.noemails)
 
-    email_matcher = NocardEmailMatcher(matches.globals.s_indices,
-                                       matches.globals.m_indices)
+    email_matcher = NocardEmailMatcher(
+        matches.globals.s_indices, matches.globals.m_indices
+    )
 
     email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
 
@@ -203,11 +210,15 @@ def do_match(matches, parsers, settings):
     matches.duplicate['email'] = email_matcher.duplicate_matches
 
     if Registrar.DEBUG_MESSAGE:
-        print "email matches (%d pure)" % (len(email_matcher.pure_matches))
+        Registrar.register_message(
+            "email matches (%d pure)" % (len(email_matcher.pure_matches))
+        )
         # print repr(emailMatcher)
 
     if Registrar.DEBUG_DUPLICATES and matches.duplicate['email']:
-        print "email duplicates: %s" % len(matches.duplicate['email'])
+        Registrar.register_message(
+            "email duplicates: %s" % len(matches.duplicate['email'])
+        )
 
     # TODO: further sort emailMatcher
 
@@ -215,8 +226,7 @@ def do_match(matches, parsers, settings):
 
 def do_merge(matches, updates, parsers, settings):
 
-    print DebugUtils.hashify("BEGINNING MERGE (%d)" % len(matches.globals))
-    print timediff(settings)
+    Registrar.register_progress("BEGINNING MERGE (%d)" % len(matches.globals))
 
     sync_cols = settings.col_data_class.get_sync_cols()
 
@@ -294,14 +304,12 @@ def do_merge(matches, updates, parsers, settings):
             if sync_update.s_updated and not sync_update.m_updated:
                 insort(updates.slave, sync_update)
 
-    print DebugUtils.hashify("COMPLETED MERGE")
-    print timediff(settings)
+    Registrar.register_progress("COMPLETED MERGE")
 
     # TODO: process duplicates here
 
 def do_report(matches, updates, parsers, settings):
-    print DebugUtils.hashify("Write Report")
-    print timediff(settings)
+    Registrar.register_progress("Write Report")
 
     with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
 
@@ -551,7 +559,7 @@ def do_report(matches, updates, parsers, settings):
                             'length': len(match_list)
                         }))
 
-            # print DebugUtils.hashify("anomalous ParseLists: ")
+            # Registrar.register_progress("anomalous ParseLists: ")
 
             parse_list_instructions = {
                 "saParser.noemails":
