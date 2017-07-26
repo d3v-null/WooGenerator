@@ -313,6 +313,27 @@ def do_merge(matches, updates, parsers, settings):
 def do_report(matches, updates, parsers, settings):
     Registrar.register_progress("Write Report")
 
+    settings.repd_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
+    settings.w_pres_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
+    settings.master_res_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%ssync_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.master_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.master_name, settings.file_suffix))
+    settings.slave_delta_csv_path = os.path.join(
+        settings.out_folder_full,
+        "%sdelta_report_%s%s.csv" % \
+            (settings.file_prefix, settings.slave_name, settings.file_suffix))
+
+
     with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
 
         repd_file = None
@@ -972,26 +993,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
     for path in (settings.in_folder_full, settings.out_folder_full):
         if not os.path.exists(path):
             os.mkdir(path)
-
-    settings.repd_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
-    settings.w_pres_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
-    settings.master_res_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-    settings.master_delta_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-    settings.slave_delta_csv_path = os.path.join(
-        settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
     ### PROCESS OTHER CONFIG ###
 
