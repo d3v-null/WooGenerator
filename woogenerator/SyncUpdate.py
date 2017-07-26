@@ -471,76 +471,84 @@ class SyncUpdate(
             update_params['value'] = self.old_s_object.get(col)
         self.add_sync_pass(**update_params)
 
-    def get_m_col_mod_time(self, col):
+    def get_m_col_mod_time(self, _):
         return None
 
-    def get_s_col_mod_time(self, col):
+    def get_s_col_mod_time(self, _):
         return None
+
+    def reflect_col(self, **update_params):
+        for key in ['col', 'data']:
+            assert \
+                update_params[key], 'missing mandatory update param %s' % key
+        col = update_params['col']
+        data = update_params['data']
+        # TODO: finish this
 
     def update_col(self, **update_params):
         for key in ['col', 'data']:
-            assert update_params[
-                key], 'missing mandatory update param %s' % key
+            assert \
+                update_params[key], 'missing mandatory update param %s' % key
         col = update_params['col']
-        try:
-            data = update_params['data']
+        data = update_params['data']
+
+        if data.get('reflective'):
+            self.reflect_col(**update_params)
+
+        if data.get('sync'):
             sync_mode = data['sync']
-        except KeyError:
-            return
 
-        # if update_params['data']
-
-        if self.col_identical(col):
-            update_params['reason'] = 'identical'
-            self.tie_update(**update_params)
-            return
-        else:
-            pass
-
-        m_value = self.get_m_value(col)
-        s_value = self.get_s_value(col)
-
-        update_params['mColTime'] = self.get_m_col_mod_time(col)
-        update_params['sColTime'] = self.get_s_col_mod_time(col)
-
-        winner = self.get_winner_name(update_params['mColTime'],
-                                      update_params['sColTime'])
-
-        if 'override' in str(sync_mode).lower():
-            # update_params['reason'] = 'overriding'
-            if 'master' in str(sync_mode).lower():
-                winner = self.master_name
-            elif 'slave' in str(sync_mode).lower():
-                winner = self.slave_name
-        else:
-            if self.col_similar(col):
-                update_params['reason'] = 'similar'
+            if self.col_identical(col):
+                update_params['reason'] = 'identical'
                 self.tie_update(**update_params)
                 return
+            else:
+                pass
 
-            if self.merge_mode == 'merge' and not (m_value and s_value):
-                if winner == self.slave_name and not s_value:
+            m_value = self.get_m_value(col)
+            s_value = self.get_s_value(col)
+
+            update_params['mColTime'] = self.get_m_col_mod_time(col)
+            update_params['sColTime'] = self.get_s_col_mod_time(col)
+
+            winner = self.get_winner_name(update_params['mColTime'],
+                                          update_params['sColTime'])
+
+            if 'override' in str(sync_mode).lower():
+                # update_params['reason'] = 'overriding'
+                if 'master' in str(sync_mode).lower():
                     winner = self.master_name
-                    update_params['reason'] = 'merging'
-                elif winner == self.master_name and not m_value:
+                elif 'slave' in str(sync_mode).lower():
                     winner = self.slave_name
-                    update_params['reason'] = 'merging'
-
-        if 'reason' not in update_params:
-            if winner == self.slave_name:
-                w_value, l_value = s_value, m_value
             else:
-                w_value, l_value = m_value, s_value
+                if self.col_similar(col):
+                    update_params['reason'] = 'similar'
+                    self.tie_update(**update_params)
+                    return
 
-            if not w_value:
-                update_params['reason'] = 'deleting'
-            elif not l_value:
-                update_params['reason'] = 'inserting'
-            else:
-                update_params['reason'] = 'updating'
+                if self.merge_mode == 'merge' and not (m_value and s_value):
+                    if winner == self.slave_name and not s_value:
+                        winner = self.master_name
+                        update_params['reason'] = 'merging'
+                    elif winner == self.master_name and not m_value:
+                        winner = self.slave_name
+                        update_params['reason'] = 'merging'
 
-        update_params['subject'] = winner
-        self.loser_update(**update_params)
+            if 'reason' not in update_params:
+                if winner == self.slave_name:
+                    w_value, l_value = s_value, m_value
+                else:
+                    w_value, l_value = m_value, s_value
+
+                if not w_value:
+                    update_params['reason'] = 'deleting'
+                elif not l_value:
+                    update_params['reason'] = 'inserting'
+                else:
+                    update_params['reason'] = 'updating'
+
+            update_params['subject'] = winner
+            self.loser_update(**update_params)
 
     def update(self, sync_cols):
         for col, data in sync_cols.items():
