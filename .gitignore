@@ -104,3 +104,4 @@ tests/sample_data/EAP-PECPRE.jpg
 tests/sample_data/STFTO-CAL.png
 tests/sample_data/EAP-PECPRE.jpg
 tests/sample_data/STFTO-CAL.png
+*.jpg

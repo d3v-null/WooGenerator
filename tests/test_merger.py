@@ -261,7 +261,8 @@ class TestMerger(unittest.TestCase):
         )
 
     def test_do_merge(self):
-        # print("#pylint: disable=*")
+        if Registrar.DEBUG_MESSAGE:
+            print("#pylint: disable=*")
 
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
@@ -275,40 +276,40 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.updates, self.parsers, self.settings
         )
-        # print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
+        if Registrar.DEBUG_MESSAGE:
+            print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
+            print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
+            print("master updates:\n%s" % map(str, (self.updates.master)))
+            print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
+            print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
+            print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
+            print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
+            print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
+            print("slave updates:\n%s" % map(str, (self.updates.slave)))
+            print("static updates:\n%s" % map(str, (self.updates.static)))
         self.assertEqual(len(self.updates.delta_master), 3)
-        # print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
         self.assertEqual(len(self.updates.delta_slave), 4)
-        # print("master updates:\n%s" % map(str, (self.updates.master)))
         self.assertEqual(len(self.updates.master), 6)
-        # print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
         self.assertEqual(len(self.updates.new_master), 0)
-        # print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
         self.assertEqual(len(self.updates.new_slave), 0)
-        # print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
         self.assertEqual(len(self.updates.nonstatic_master), 0)
-        # print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
-        # print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
         self.assertEqual(len(self.updates.problematic), 0)
-        # print("slave updates:\n%s" % map(str, (self.updates.slave)))
         self.assertEqual(len(self.updates.slave), 6)
-        # print("static updates:\n%s" % map(str, (self.updates.static)))
         self.assertEqual(len(self.updates.static), 6)
 
         # first_update = self.updates.static[0]
-
-        for update in self.updates.static:
-            # print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s" % (
-            #     update,
-            #     update.old_m_object,
-            #     pformat(dict(update.old_m_object)),
-            #     update.old_s_object,
-            #     pformat(dict(update.old_s_object)),
-            #     update.display_sync_warnings(),
-            #     update.display_sync_passes(),
-            # ))
-            pass
+        if Registrar.DEBUG_MESSAGE:
+            for update in self.updates.static:
+                print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s" % (
+                    update,
+                    update.old_m_object,
+                    pformat(dict(update.old_m_object)),
+                    update.old_s_object,
+                    pformat(dict(update.old_s_object)),
+                    update.display_sync_warnings(),
+                    update.display_sync_passes(),
+                ))
 
 
 
