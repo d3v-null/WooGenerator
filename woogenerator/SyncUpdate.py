@@ -138,19 +138,23 @@ class SyncUpdate(
         else:
             return self.slave_name if(s_time >= m_time) else self.master_name
 
-    def parse_m_time(self, raw_m_time):
+    @classmethod
+    def parse_m_time(cls, raw_m_time):
         """
         Parse a raw act-like time string
         """
         return TimeUtils.act_server_to_local_time(
-            TimeUtils.act_strp_mktime(raw_m_time))
+            TimeUtils.act_strp_mktime(raw_m_time)
+        )
 
-    def parse_s_time(self, raw_s_time):
+    @classmethod
+    def parse_s_time(cls, raw_s_time):
         """
         Parse a raw wp-like time string
         """
         return TimeUtils.wp_server_to_local_time(
-            TimeUtils.wp_strp_mktime(raw_s_time))
+            TimeUtils.wp_strp_mktime(raw_s_time)
+        )
 
     def sanitize_value(self, col, value):
         """
@@ -335,25 +339,28 @@ class SyncUpdate(
         if self.DEBUG_UPDATE:
             self.register_message(self.update_to_str('PASS', update_params))
 
-    def display_update_list(self, update_list, tablefmt=None):
+    def display_update_list(self, update_list, tablefmt=None, display_pass=False):
         if not update_list:
             return ""
 
         delimeter = "<br/>" if tablefmt == "html" else "\n"
         subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
         # header = ["Column", "Reason", "Old", "New"]
-        header = OrderedDict([
+        header_items = [
             ('col', 'Column'),
             ('reason', 'Reason'),
             ('oldLoserValue', 'Old'),
             ('oldWinnerValue', 'New'),
             ('mColTime', 'M TIME'),
             ('sColTime', 'S TIME'),
-        ])
+        ]
+        if display_pass:
+            header_items[2:4] = [('value', 'Value')]
+        header = OrderedDict(header_items)
         subjects = {}
         for warnings in update_list.values():
             for warning in warnings:
-                subject = warning['subject']
+                subject = warning.get('subject', '-')
                 if subject not in subjects.keys():
                     subjects[subject] = []
                 warning_fmtd = dict([
@@ -382,6 +389,9 @@ class SyncUpdate(
 
     def display_sync_warnings(self, tablefmt=None):
         return self.display_update_list(self.sync_warnings, tablefmt)
+
+    def display_sync_passes(self, tablefmt=None):
+        return self.display_update_list(self.sync_passes, tablefmt, True)
 
     def display_problematic_updates(self, tablefmt=None):
         return self.display_update_list(self.sync_problematics, tablefmt)
@@ -829,7 +839,7 @@ class SyncUpdateUsr(SyncUpdate):
                     plen = min(len(m_phone), len(s_phone))
                     if plen > 7 and m_phone[-plen] == s_phone[-plen]:
                         response = True
-            elif "role" in col.lower():
+            elif "role" == col.lower():
                 m_role = SanitationUtils.similar_comparison(m_value)
                 s_role = SanitationUtils.similar_comparison(s_value)
                 if m_role == 'rn':
