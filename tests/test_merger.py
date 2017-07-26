@@ -237,6 +237,28 @@ class TestMerger(unittest.TestCase):
         self.matches = do_match(
             self.matches, self.parsers, self.settings
         )
+        self.assertEqual(len(self.matches.globals), 6)
+        print("global matches:\n%s" % pformat(self.matches.globals))
+        print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
+        # print("card duplicates m:\n%s" % pformat(self.matches.duplicate['card'].m_indices))
+        card_duplicate_m_indices = self.matches.duplicate['card'].m_indices
+        self.assertEqual(len(card_duplicate_m_indices), 4)
+        # print("card duplicates s:\n%s" % pformat(self.matches.duplicate['card'].s_indices))
+        card_duplicate_s_indices = self.matches.duplicate['card'].s_indices
+        self.assertEqual(len(card_duplicate_s_indices), 6)
+        self.assertFalse(
+            set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
+        )
+    def test_do_merge(self):
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
 
 
 
