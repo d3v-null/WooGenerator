@@ -33,11 +33,11 @@ class FieldGroup(Registrar):
 
     def __init__(self, **kwargs):
         super(FieldGroup, self).__init__()
-        self.debug = self.DEBUG_CONTACT
-        if self.debug:
-            self.register_message("kwargs: %s" % kwargs)
-        self.strict = None
+        self.debug = getattr(self, 'debug', self.DEBUG_CONTACT)
+        self.strict = getattr(self, 'strict', None)
         self.kwargs = kwargs
+        if self.debug:
+            self.register_message("kwargs: %s" % pformat(self.kwargs))
         if self.enforce_mandatory_keys and self.mandatory_keys:
             empty_mandatory_keys = [
                 key for key in self.mandatory_keys \
@@ -60,9 +60,20 @@ class FieldGroup(Registrar):
         if self.debug and not self.empty:
             self.register_message("totally not empty")
         self.valid = True
-        self.properties = OrderedDict()
         self.problematic = False
         self.reason = ""
+        self.properties = OrderedDict()
+        if self.perform_post:
+            self.init_properties()
+            self.process_kwargs()
+        if self.debug:
+            self.register_message("properties: %s" % pformat(self.properties))
+
+    def process_kwargs(self):
+        pass
+
+    def init_properties(self):
+        pass
 
     @property
     def properties_override(self):
@@ -212,20 +223,20 @@ class ContactObject(FieldGroup):
             return flat
 
     def __init__(self, schema=None, **kwargs):
-        super(ContactObject, self).__init__(**kwargs)
-        if self.DEBUG_CONTACT:
-            self.register_message("kwargs: %s" % kwargs)
         self.schema = schema
-        if self.perform_post:
-            self.properties['ignores'] = []
-            self.properties['unknowns'] = []
-            self.properties['names'] = []
-            self.properties['end_names'] = []
-            self.properties['careof_names'] = []
-            self.properties['organization_names'] = []
-            self.properties['ambiguous_tokens'] = []
-            self.words_to_remove = []
-            self.name_combo = ContactObject.Combo()
+        super(ContactObject, self).__init__(**kwargs)
+
+    def init_properties(self):
+        super(ContactObject, self).init_properties()
+        self.properties['ignores'] = []
+        self.properties['unknowns'] = []
+        self.properties['names'] = []
+        self.properties['end_names'] = []
+        self.properties['careof_names'] = []
+        self.properties['organization_names'] = []
+        self.properties['ambiguous_tokens'] = []
+        self.properties['name_combo'] = ContactObject.Combo()
+        self.properties['remove_words'] = []
 
     def __copy__(self):
         # print "calling copy on ", self
@@ -346,25 +357,26 @@ class ContactAddress(ContactObject):
     }
 
     def __init__(self, schema=None, **kwargs):
-        super(ContactAddress, self).__init__(schema, **kwargs)
         if self.DEBUG_ADDRESS:
             self.register_message("kwargs: %s" % kwargs)
         self.strict = STRICT_ADDRESS
         self.debug = self.DEBUG_ADDRESS
-        if self.perform_post:
-            self.properties['subunits'] = []
-            self.properties['coerced_subunits'] = []
-            self.properties['incomplete_subunits'] = []
-            self.properties['isShop'] = False
-            self.properties['deliveries'] = []
-            self.properties['floors'] = []
-            self.properties['thoroughfares'] = []
-            self.properties['buildings'] = []
-            self.properties['weak_thoroughfares'] = []
-            self.properties['numbers'] = []
-            self.properties['unknowns'] = []
-            self.number_combo = ContactObject.Combo()
-            self.process_kwargs()
+        super(ContactAddress, self).__init__(schema, **kwargs)
+
+    def init_properties(self):
+        super(ContactAddress, self).init_properties()
+        self.properties['subunits'] = []
+        self.properties['coerced_subunits'] = []
+        self.properties['incomplete_subunits'] = []
+        self.properties['isShop'] = False
+        self.properties['deliveries'] = []
+        self.properties['floors'] = []
+        self.properties['thoroughfares'] = []
+        self.properties['buildings'] = []
+        self.properties['weak_thoroughfares'] = []
+        self.properties['numbers'] = []
+        self.properties['unknowns'] = []
+        self.properties['number_combo'] = ContactObject.Combo()
 
     def process_kwargs(self):
         if self.empty:
@@ -392,15 +404,15 @@ class ContactAddress(ContactObject):
                 self.properties['country'] = country_identified
             else:
                 self.properties['country'] = country_sanitized
-            # self.words_to_remove.append(country_sanitized)
+            # self.properties['remove_words'].append(country_sanitized)
 
         if self.kwargs.get('state', ''):
             state_sanitized = AddressUtils.sanitize_state(
                 self.kwargs['state'])
-            self.words_to_remove.append(state_sanitized)
+            self.properties['remove_words'].append(state_sanitized)
             state_identified = AddressUtils.identify_state(state_sanitized)
             if state_identified != state_sanitized:
-                self.words_to_remove.append(state_identified)
+                self.properties['remove_words'].append(state_identified)
                 self.properties['state'] = state_identified
             else:
                 self.properties['state'] = state_sanitized
@@ -409,7 +421,7 @@ class ContactAddress(ContactObject):
             city_sanitized = AddressUtils.sanitize_state(
                 self.kwargs['city'])
             self.properties['city'] = city_sanitized
-            # self.words_to_remove.append(city_sanitized)
+            # self.properties['remove_words'].append(city_sanitized)
 
         if self.kwargs.get('postcode'):
             self.properties['postcode'] = self.kwargs.get('postcode')
@@ -428,7 +440,7 @@ class ContactAddress(ContactObject):
                 if note:
                     company_has_notes = True
             if not company_has_notes:
-                self.words_to_remove.append(company_sanitized)
+                self.properties['remove_words'].append(company_sanitized)
                 self.coerce_organization(self.kwargs.get('company'))
 
         for i, line in enumerate(lines):
@@ -437,13 +449,13 @@ class ContactAddress(ContactObject):
                 (i, repr(line)))
             tokens = AddressUtils.tokenize_address(line)
             self.register_message(u"TOKENS: %s" % repr(tokens))
-            self.name_combo.reset()
-            self.number_combo.reset()
+            self.properties['name_combo'].reset()
+            self.properties['number_combo'].reset()
             for j, token in enumerate(tokens):
-                if self.number_combo.broken(j):
-                    self.add_number(self.number_combo.flattened)
-                if self.name_combo.broken(j):
-                    self.add_name(self.name_combo.flattened)
+                if self.properties['number_combo'].broken(j):
+                    self.add_number(self.properties['number_combo'].flattened)
+                if self.properties['name_combo'].broken(j):
+                    self.add_name(self.properties['name_combo'].flattened)
                 self.register_message(u"-> token[%d]: %s" % (j, token))
                 if len(token) == 1 and SanitationUtils.string_contains_bad_punc(
                         token):
@@ -451,14 +463,14 @@ class ContactAddress(ContactObject):
                 self.parse_token(j, token)
 
                 # break
-            if self.number_combo:
+            if self.properties['number_combo']:
                 self.register_message("CONGRUENT NUMBERS AT END OF CYCLE: %s" %
-                                      SanitationUtils.coerce_unicode(self.number_combo))
-                self.add_number(self.number_combo.flattened)
-            if self.name_combo:
+                                      SanitationUtils.coerce_unicode(self.properties['number_combo']))
+                self.add_number(self.properties['number_combo'].flattened)
+            if self.properties['name_combo']:
                 self.register_message("CONGRUENT NAMES AT END OF CYCLE:  %s" %
-                                      SanitationUtils.coerce_unicode(self.name_combo))
-                self.add_name(self.name_combo.flattened)
+                                      SanitationUtils.coerce_unicode(self.properties['name_combo']))
+                self.add_name(self.properties['name_combo'].flattened)
             # self.register_message( "FINISHED CYCLE, NAMES: ", self.properties['names'])
             continue
 
@@ -528,11 +540,11 @@ class ContactAddress(ContactObject):
         building = AddressUtils.get_building(token)
 
         if (not name) or weak_thoroughfare or building:
-            if self.name_combo:
-                self.add_name(self.name_combo.flattened)
+            if self.properties['name_combo']:
+                self.add_name(self.properties['name_combo'].flattened)
         if not number:
-            if self.number_combo:
-                self.add_number(self.number_combo.flattened)
+            if self.properties['number_combo']:
+                self.add_number(self.properties['number_combo'].flattened)
 
         if building and weak_thoroughfare:
             self.register_message("BUILDING AND WEAK THOROUGHFARE")
@@ -548,13 +560,13 @@ class ContactAddress(ContactObject):
         if name:
             self.register_message("FOUND NAME: %s" %
                                   SanitationUtils.coerce_unicode(name))
-            self.name_combo.add(token_index, name)
+            self.properties['name_combo'].add(token_index, name)
             return
 
         if number:
             self.register_message("FOUND NUMBER: %s" %
                                   SanitationUtils.coerce_unicode(number))
-            self.number_combo.add(token_index, number)
+            self.properties['number_combo'].add(token_index, number)
             return
 
         self.register_message("UNKNOWN TOKEN %s" %
@@ -566,11 +578,11 @@ class ContactAddress(ContactObject):
     # NO SUBUNUTS -> SUBUNIT W/ NO UNIT TYPE
 
     def add_number(self, number):
-        # if self.name_combo: self.add_name(self.name_combo.flattened)
+        # if self.properties['name_combo']: self.add_name(self.properties['name_combo'].flattened)
         number = AddressUtils.get_number(number)
         if not number:
             return
-        if self.properties['incomplete_subunits'] and not self.name_combo:
+        if self.properties['incomplete_subunits'] and not self.properties['name_combo']:
             subunit_type, subunit_number = self.properties[
                 'incomplete_subunits'].pop()
             try:
@@ -597,7 +609,7 @@ class ContactAddress(ContactObject):
     # SUBUNIT or FLOORS or DELIVERIES -> BUILDING
 
     def add_name(self, name):
-        # if self.number_combo: self.add_number(self.number_combo.flattened)
+        # if self.properties['number_combo']: self.add_number(self.properties['number_combo'].flattened)
         # name = NameUtils.get_multi_name(name)
         if not name:
             return
@@ -655,7 +667,7 @@ class ContactAddress(ContactObject):
             self.add_building(building)
         # elif weak_thoroughfare and not building:
         #     self.add_weak_thoroughfare(weak_thoroughfare)
-        elif name in self.words_to_remove:
+        elif name in self.properties['remove_words']:
             self.properties['ignores'] += [name]
         elif not self.properties['thoroughfares'] + self.properties['weak_thoroughfares']:
             self.properties['names'] += [name]
@@ -749,8 +761,8 @@ class ContactAddress(ContactObject):
                 not (self.properties['thoroughfares'] or self.properties['weak_thoroughfares']):
             if self.properties['numbers'] or self.properties[
                     'coerced_subunits']:
-                # if self.number_combo:
-                #     number = AddressUtils.get_number(self.number_combo.flattened)
+                # if self.properties['number_combo']:
+                #     number = AddressUtils.get_number(self.properties['number_combo'].flattened)
                 if self.properties['numbers']:
                     number = self.properties['numbers'].pop()
                 elif self.properties['coerced_subunits']:
@@ -942,24 +954,23 @@ class ContactName(ContactObject):
     }
 
     def __init__(self, schema=None, **kwargs):
-        super(ContactName, self).__init__(schema, **kwargs)
         self.debug = self.DEBUG_NAME
-        if self.perform_post:
-            # self.valid = False
-            self.problematic = False
-            self.properties['titles'] = []
-            self.properties['names'] = []
-            self.properties['suffixes'] = []
-            self.properties['positions'] = []
-            self.properties['notes'] = []
-            self.properties['emails'] = []
-            self.properties['family_names'] = []
-            self.properties['middle_names'] = []
-            self.properties['first_names'] = []
-            self.properties['single_names'] = []
-            self.strict = STRICT_NAME
-            # self.kwargs = kwargs
-            self.process_kwargs()
+        self.strict = STRICT_NAME
+        super(ContactName, self).__init__(schema, **kwargs)
+
+    def init_properties(self):
+        super(ContactName, self).init_properties()
+        self.problematic = False
+        self.properties['titles'] = []
+        self.properties['names'] = []
+        self.properties['suffixes'] = []
+        self.properties['positions'] = []
+        self.properties['notes'] = []
+        self.properties['emails'] = []
+        self.properties['family_names'] = []
+        self.properties['middle_names'] = []
+        self.properties['first_names'] = []
+        self.properties['single_names'] = []
 
     def process_kwargs(self):
         if not self.empty:
@@ -974,15 +985,15 @@ class ContactName(ContactObject):
                     self.properties['country'] = country_identified
                 else:
                     self.properties['country'] = country_sanitized
-                # self.words_to_remove.append(country_sanitized)
+                # self.properties['remove_words'].append(country_sanitized)
 
             if self.kwargs.get('state'):
                 state_sanitized = AddressUtils.sanitize_state(
                     self.kwargs['state'])
-                self.words_to_remove.append(state_sanitized)
+                self.properties['remove_words'].append(state_sanitized)
                 state_identified = AddressUtils.identify_state(state_sanitized)
                 if state_identified != state_sanitized:
-                    self.words_to_remove.append(state_identified)
+                    self.properties['remove_words'].append(state_identified)
                     self.properties['state'] = state_identified
                 else:
                     self.properties['state'] = state_sanitized
@@ -1002,7 +1013,7 @@ class ContactName(ContactObject):
                     if note:
                         company_has_notes = True
                 if not company_has_notes:
-                    self.words_to_remove.append(company_sanitized)
+                    self.properties['remove_words'].append(company_sanitized)
                     self.coerce_organization(self.kwargs.get('company'))
 
             full_name_contact = SanitationUtils.normalize_val(
@@ -1047,14 +1058,14 @@ class ContactName(ContactObject):
                     "ANALYSING FULL NAME %d: %s" % (i, repr(full_name)))
                 tokens = NameUtils.tokenize_name(full_name)
                 self.register_message("TOKENS: %s" % repr(tokens))
-                self.name_combo.reset()
+                self.properties['name_combo'].reset()
                 for j, token in enumerate(tokens):
                     self.parse_token(j, token)
 
-                if self.name_combo:
+                if self.properties['name_combo']:
                     self.register_message(
-                        "CONGRUENT NAMES AT END OF CYCLE: %s" % self.name_combo)
-                    self.add_name(self.name_combo.flattened)
+                        "CONGRUENT NAMES AT END OF CYCLE: %s" % self.properties['name_combo'])
+                    self.add_name(self.properties['name_combo'].flattened)
 
             while self.properties['names']:
                 name = self.properties['names'].pop(0)
@@ -1134,8 +1145,8 @@ class ContactName(ContactObject):
                 )
 
     def parse_token(self, token_index, token):
-        if self.name_combo.broken(token_index):
-            self.add_name(self.name_combo.flattened)
+        if self.properties['name_combo'].broken(token_index):
+            self.add_name(self.properties['name_combo'].flattened)
 
         title = NameUtils.get_title(token)
         if title:
@@ -1211,7 +1222,7 @@ class ContactName(ContactObject):
         if multi_name:
             self.register_message("FOUND NAME: %s" %
                                   SanitationUtils.coerce_unicode(multi_name))
-            self.name_combo.add(token_index, multi_name)
+            self.properties['name_combo'].add(token_index, multi_name)
             return
 
         if SanitationUtils.string_contains_bad_punc(
@@ -1222,7 +1233,7 @@ class ContactName(ContactObject):
         self.invalidate("UNKNOWN TOKEN: " + repr(token))
 
     def add_name(self, name):
-        if name in self.words_to_remove:
+        if name in self.properties['remove_words']:
             self.properties['ignores'] += [name]
             self.register_message("IGNORING WORD: %s" %
                                   SanitationUtils.coerce_unicode(name))
@@ -1439,19 +1450,14 @@ class ContactPhones(FieldGroup):
         'tel_pref': ['Phone Preferred'],
     }
 
-    def __init__(self, schema=None, **kwargs):
-        for key, value in kwargs.items():
-            if '_number' in key:
-                kwargs[key] = SanitationUtils.strip_non_phone_characters(value)
-        super(ContactPhones, self).__init__(**kwargs)
-        if self.perform_post:
-            self.process_kwargs()
-        if self.debug:
-            self.register_message('properties: %s' % self.properties)
+    # def __init__(self, schema=None, **kwargs):
+    #     super(ContactPhones, self).__init__(**kwargs)
 
     def process_kwargs(self):
         if not self.empty:
             for key, value in self.kwargs.items():
+                if '_number' in key:
+                    value = SanitationUtils.strip_non_phone_characters(value)
                 self.properties[key] = value
 
     mob_number = DescriptorUtils.kwarg_alias_property(
@@ -1531,15 +1537,8 @@ class SocialMediaFields(FieldGroup):
         'website': ['Web Site']
     }
 
-    def __init__(self, schema=None, **kwargs):
-        super(SocialMediaFields, self).__init__(**kwargs)
-        if self.perform_post:
-            self.process_kwargs()
-        if self.debug:
-            self.register_message('self: %s self.kwargs: %s' % (
-                repr(self),
-                pformat(self.kwargs.items())
-            ))
+    # def __init__(self, schema=None, **kwargs):
+    #     super(SocialMediaFields, self).__init__(**kwargs)
 
     def process_kwargs(self):
         if not self.empty:
@@ -1661,18 +1660,12 @@ class RoleGroup(FieldGroup):
 
     roleless_schemas = ['-', 'st']
 
-    def __init__(self, schema=None, **kwargs):
-        super(RoleGroup, self).__init__(**kwargs)
-        if self.debug:
-            self.register_message("kwargs: %s" % kwargs)
-        self.schema = schema
-        if self.perform_post:
-            # initialise stuff like:
-            self.properties['direct_brands'] = []
-            self.properties['role'] = ''
-            self.process_kwargs()
-        if self.debug:
-            self.register_message("properties: %s" % self.properties)
+    # def __init__(self, schema=None, **kwargs):
+        # super(RoleGroup, self).__init__(**kwargs)
+
+    def init_properties(self):
+        self.properties['direct_brands'] = []
+        self.properties['role'] = ''
 
     @classmethod
     def translate_schema(cls, schema):
@@ -1889,5 +1882,3 @@ class RoleGroup(FieldGroup):
             self.role,
             # self.direct_brands,
         ])))
-
-
