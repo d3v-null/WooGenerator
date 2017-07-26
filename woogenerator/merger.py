@@ -306,6 +306,8 @@ def do_merge(matches, updates, parsers, settings):
 
     Registrar.register_progress("COMPLETED MERGE")
 
+    return updates
+
     # TODO: process duplicates here
 
 def do_report(matches, updates, parsers, settings):
@@ -965,13 +967,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
-    ### PROCESS CLASS PARAMS ###
-
-    FieldGroup.do_post = settings.do_post
-    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.last_sync)
-    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
-
     ### SET UP DIRECTORIES ###
 
     for path in (settings.in_folder_full, settings.out_folder_full):
@@ -1064,7 +1059,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     if settings['do_sync']:
         matches = do_match(matches, parsers, settings)
-        do_merge(matches, updates, parsers, settings)
+        updates = do_merge(matches, updates, parsers, settings)
 
     do_report(matches, updates, parsers, settings)
 

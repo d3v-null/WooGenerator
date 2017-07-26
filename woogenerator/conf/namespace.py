@@ -25,6 +25,8 @@ from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
                                    EmailMatcher, Match, MatchList,
                                    NocardEmailMatcher, UsernameMatcher)
+from woogenerator.syncupdate import SyncUpdate
+from woogenerator.contact_objects import FieldGroup
 
 class SettingsNamespaceProto(argparse.Namespace):
     """ Provide namespace for settings in first stage, supports getitem """
@@ -708,4 +710,12 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     #         settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
 
     # Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
+
+    # Init class variables
+
+    FieldGroup.do_post = settings.do_post
+    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
+                           settings.merge_mode, settings.last_sync)
+    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
+
     return settings
