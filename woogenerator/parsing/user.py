@@ -82,7 +82,11 @@ class ImportUser(ImportObject):
 
     @property
     def index(self):
-        return "%s | %s" % (self.wpid, self.MYOBID)
+        return " | ".join(SeqUtils.filter_unique_true([
+            str(self.rowcount),
+            str(self.wpid),
+            str(self.MYOBID)
+        ]))
 
     @property
     def act_modtime(self):
