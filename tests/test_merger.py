@@ -327,11 +327,10 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(update_0.old_s_object.rowcount, 37)
         self.assertEqual(update_0.old_s_object.role.direct_brands, None)
         self.assertEqual(update_0.old_s_object.role.role, 'RN')
-
-        # self.assertEqual(update_0.new_m_object.role.direct_brands, 'TechnoTan Retail')
-        # self.assertEqual(update_0.new_m_object.role.role, 'RN')
-        # self.assertEqual(update_0.new_s_object.role.direct_brands, 'TechnoTan Retail')
-        # self.assertEqual(update_0.new_s_object.role.role, 'RN')
+        self.assertEqual(update_0.new_m_object.role.direct_brands, 'TechnoTan Retail')
+        self.assertEqual(update_0.new_m_object.role.role, 'RN')
+        self.assertEqual(update_0.new_s_object.role.direct_brands, 'TechnoTan Retail')
+        self.assertEqual(update_0.new_s_object.role.role, 'RN')
         update_1 = self.updates.static[1]
         self.assertEqual(update_1.old_m_object.MYOBID, 'C001446')
         self.assertEqual(update_1.old_m_object.rowcount, 92)
@@ -341,29 +340,23 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(update_1.old_s_object.rowcount, 13)
         self.assertEqual(update_1.old_s_object.role.direct_brands, 'TechnoTan')
         self.assertEqual(update_1.old_s_object.role.role, 'ADMIN')
-
-        # self.assertEqual(update_1.new_m_object.role.direct_brands, 'Staff')
-        # self.assertEqual(update_1.new_m_object.role.role, 'ADMIN')
-        # self.assertEqual(update_1.new_s_object.role.direct_brands, 'Staff')
-        # self.assertEqual(update_1.new_s_object.role.role, 'ADMIN')
+        self.assertEqual(update_1.new_m_object.role.direct_brands, 'Staff')
+        self.assertEqual(update_1.new_m_object.role.role, 'ADMIN')
+        self.assertEqual(update_1.new_s_object.role.direct_brands, 'Staff')
+        self.assertEqual(update_1.new_s_object.role.role, 'ADMIN')
         update_2 = self.updates.static[2]
         self.assertEqual(update_2.old_m_object.MYOBID, 'C001280')
         self.assertEqual(update_2.old_m_object.rowcount, 10)
         self.assertEqual(update_2.old_m_object.role.direct_brands, 'VuTan Wholesale')
-        self.assertEqual(update_2.old_m_object.role.role, 'ADMIN')
+        self.assertEqual(update_2.old_m_object.role.role, 'WN')
         self.assertEqual(update_2.old_s_object.wpid, '1983')
         self.assertEqual(update_2.old_s_object.rowcount, 91)
         self.assertEqual(update_2.old_s_object.role.direct_brands, None)
         self.assertEqual(update_2.old_s_object.role.role, 'WN')
-
-        # self.assertEqual(update_2.new_m_object.role.direct_brands, 'Staff')
-        # self.assertEqual(update_2.new_m_object.role.role, 'ADMIN')
-        # self.assertEqual(update_2.new_s_object.role.direct_brands, 'Staff')
-        # self.assertEqual(update_2.new_s_object.role.role, 'ADMIN')
-
-
-
-
+        self.assertEqual(update_2.new_m_object.role.direct_brands, 'VuTan Wholesale')
+        self.assertEqual(update_2.new_m_object.role.role, 'WN')
+        self.assertEqual(update_2.new_s_object.role.direct_brands, 'VuTan Wholesale')
+        self.assertEqual(update_2.new_s_object.role.role, 'RN') #no, really
 
 
 if __name__ == '__main__':
