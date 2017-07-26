@@ -12,8 +12,12 @@ from context import woogenerator
 from woogenerator.utils import Registrar #, SanitationUtils
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.conf.namespace import (init_settings, ParserNamespace,
-                                         SettingsNamespaceUser, MatchNamespace)
-from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
+                                         SettingsNamespaceUser, MatchNamespace,
+                                         UpdateNamespace)
+from woogenerator.merger import (populate_master_parsers, populate_slave_parsers,
+                                 do_match, do_merge)
+from woogenerator.syncupdate import SyncUpdate
+from woogenerator.contact_objects import FieldGroup
 from context import tests_datadir
 
 class TestMerger(unittest.TestCase):
@@ -51,6 +55,7 @@ class TestMerger(unittest.TestCase):
         )
 
         self.matches = MatchNamespace()
+        self.updates = UpdateNamespace()
 
     def test_init_settings(self):
 
@@ -62,6 +67,9 @@ class TestMerger(unittest.TestCase):
             self.settings.master_parse_limit
         )
         self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "ActOut")
+        self.assertFalse(FieldGroup.do_post)
+        self.assertEqual(SyncUpdate.master_name, "ACT")
+        self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
 
     def test_populate_master_parsers(self):
         self.settings.master_parse_limit = 4
@@ -238,8 +246,8 @@ class TestMerger(unittest.TestCase):
             self.matches, self.parsers, self.settings
         )
         self.assertEqual(len(self.matches.globals), 6)
-        print("global matches:\n%s" % pformat(self.matches.globals))
-        print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
+        # print("global matches:\n%s" % pformat(self.matches.globals))
+        # print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
         # print("card duplicates m:\n%s" % pformat(self.matches.duplicate['card'].m_indices))
         card_duplicate_m_indices = self.matches.duplicate['card'].m_indices
         self.assertEqual(len(card_duplicate_m_indices), 4)
@@ -249,6 +257,7 @@ class TestMerger(unittest.TestCase):
         self.assertFalse(
             set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
         )
+
     def test_do_merge(self):
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
@@ -259,8 +268,9 @@ class TestMerger(unittest.TestCase):
         self.matches = do_match(
             self.matches, self.parsers, self.settings
         )
-
-
+        self.updates = do_merge(
+            self.matches, self.updates, self.parsers, self.settings
+        )
 
 
 if __name__ == '__main__':
