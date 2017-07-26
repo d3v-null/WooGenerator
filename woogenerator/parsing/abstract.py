@@ -393,8 +393,10 @@ class CsvParseBase(Registrar):
         except KeyError as exc:
             if col in self.defaults:
                 return self.defaults[col]
-            self.register_message('No default for column ' + str(col) + ' | ' +
-                                str(exc) + ' ' + unicode(self.defaults))
+            self.register_message(
+                'No default for column ' + str(col) + ' | '
+                + str(exc) + ' ' + unicode(self.defaults)
+            )
             return None
         try:
             if self.DEBUG_ABSTRACT:
