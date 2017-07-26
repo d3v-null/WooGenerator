@@ -473,6 +473,15 @@ class TestSyncUpdateUser(TestCase):
                 sync_update.tabulate(tablefmt='simple')
             ))
 
+    def test_parse_time(self):
+        parsed_m_time = SyncUpdateUsr.parse_m_time("8/11/2016 1:38:51 PM")
+        # print("parsed_m_time: %s" % pformat(parsed_m_time))
+        self.assertEqual(parsed_m_time, 1478572731)
+        parsed_s_time = SyncUpdateUsr.parse_s_time("2017-04-14 02:13:09")
+        # print("parsed_s_time: %s" % pformat(parsed_s_time))
+        self.assertEqual(parsed_m_time, 1492099989)
+
+
 
 if __name__ == '__main__':
     main()
