@@ -2,6 +2,7 @@ import unittest
 from unittest import TestCase
 
 from context import woogenerator
+from woogenerator.utils import Registrar
 from woogenerator.contact_objects import (FieldGroup, SocialMediaFields,
                                           ContactAddress, ContactName,
                                           ContactPhones, RoleGroup)
@@ -10,9 +11,9 @@ class TestFieldGroups(TestCase):
 
     def setUp(self):
         # defaults
-        FieldGroup.DEBUG_ERROR = False
-        FieldGroup.DEBUG_WARN = False
-        FieldGroup.DEBUG_MESSAGE = False
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
         FieldGroup.perform_post = True
         FieldGroup.enforce_mandatory_keys = False
 
@@ -669,6 +670,57 @@ class TestContactAddress(TestFieldGroups):
         self.assertNotEqual(ca_m, ca_p)
 
     # TODO: "1st floor"
+
+class TestContactAddressNoPost(TestFieldGroups):
+    def setUp(self):
+        FieldGroup.perform_post = False
+        super(TestContactAddressNoPost, self).setUp()
+        FieldGroup.perform_post = False
+        self.ca_a = ContactAddress(
+            line1=u'369 Katie Lane',
+            line2='',
+            city=u'Washington',
+            country=u'US',
+            postcode=u'20551',
+            state=u'District of Columbia',
+        )
+        self.ca_b = ContactAddress(
+            line1=u'5817 Rockefeller Circle',
+            line2='',
+            city=u'Clearwater',
+            country=u'US',
+            postcode=u'33758',
+            state=u'Florida',
+        )
+        self.ca_c = ContactAddress(
+            line1=u'5817 Rockefeller Circle',
+            line2='',
+            city=u'Clearwater',
+            postcode=u'33758',
+            state=u'Florida',
+        )
+        self.ca_e = ContactAddress()
+        # print("CA_A: %s\nCA_B: %s" % (str(self.ca_a), str(self.ca_b)))
+
+    def test_empty(self):
+        self.assertFalse(self.ca_a.empty)
+        self.assertFalse(self.ca_b.empty)
+        self.assertFalse(self.ca_c.empty)
+        self.assertTrue(self.ca_e.empty)
+
+    def test_truth(self):
+        self.assertTrue(self.ca_a)
+        self.assertTrue(self.ca_b)
+        self.assertFalse(self.ca_e)
+        # print("CA_A TRUE: %s\nCA_B TRUE: %s" % (bool(self.ca_a), bool(self.ca_b)))
+
+    def test_equality(self):
+        self.assertNotEqual(self.ca_a, self.ca_b)
+        self.assertNotEqual(self.ca_b, self.ca_c)
+
+    def test_similarity(self):
+        self.assertFalse(self.ca_a.similar(self.ca_b))
+        self.assertTrue(self.ca_c.similar(self.ca_b))
 
 
 class TestContactName(TestFieldGroups):
