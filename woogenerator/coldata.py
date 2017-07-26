@@ -1295,6 +1295,7 @@ class ColDataUser(ColDataBase):
             'basic': True,
             'report': True,
             # 'tracked': True,
+            'reflective': True,
             'user':True,
         }),
         ('Role', {

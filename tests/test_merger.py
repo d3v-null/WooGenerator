@@ -41,12 +41,15 @@ class TestMerger(unittest.TestCase):
         Registrar.DEBUG_MESSAGE = False
         Registrar.DEBUG_PROGRESS = False
 
-        # Registrar.DEBUG_ERROR = True
-        # Registrar.DEBUG_WARN = True
-        # Registrar.DEBUG_MESSAGE = True
-        # Registrar.DEBUG_PROGRESS = True
-        # Registrar.DEBUG_ABSTRACT = True
-        # Registrar.DEBUG_PARSER = True
+        debug = False
+        # debug = True
+        if debug:
+            Registrar.DEBUG_ERROR = True
+            Registrar.DEBUG_WARN = True
+            Registrar.DEBUG_MESSAGE = True
+            Registrar.DEBUG_PROGRESS = True
+            # Registrar.DEBUG_ABSTRACT = True
+            # Registrar.DEBUG_PARSER = True
 
         self.settings = init_settings(
             settings=self.settings,
@@ -177,25 +180,28 @@ class TestMerger(unittest.TestCase):
         self.assertTrue(len(usr_list))
 
         first_usr = usr_list[0]
-        # print("pformat@dict:\n%s" % pformat(dict(first_usr)))
-        # print("pformat@dir:\n%s" % pformat(dir(first_usr)))
-        # print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
-        # print("str@.act_created:\n%s" % str(first_usr.act_created))
-        # print("str@.wp_created:\n%s" % str(first_usr.wp_created))
-        # print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
-        # print("str@.last_sale:\n%s" % str(first_usr.last_sale))
-        # print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
-        # print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
-        # print("pformat@.shipping_address.valid:\n%s" % pformat(first_usr.shipping_address.valid))
-        # print("pformat@.shipping_address.kwargs:\n%s" % \
-        #       pformat(first_usr.shipping_address.kwargs))
-        # print("pformat@.shipping_address.to_dict:\n%s" % \
-        #       pformat(dict(first_usr.shipping_address.to_dict())))
-        # print(".billing_address:\n%s" % first_usr.billing_address)
-        # print("pformat@.billing_address.to_dict:\n%s" % \
-        #       pformat(dict(first_usr.billing_address.to_dict())))
-        # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
-        # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
+        if Registrar.DEBUG_MESSAGE:
+            print("pformat@dict:\n%s" % pformat(dict(first_usr)))
+            print("pformat@dir:\n%s" % pformat(dir(first_usr)))
+            print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
+            print("str@.act_created:\n%s" % str(first_usr.act_created))
+            print("str@.wp_created:\n%s" % str(first_usr.wp_created))
+            print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
+            print("str@.last_sale:\n%s" % str(first_usr.last_sale))
+            print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
+            print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
+            print("pformat@.shipping_address.valid:\n%s" % pformat(first_usr.shipping_address.valid))
+            print("pformat@.shipping_address.kwargs:\n%s" % \
+                  pformat(first_usr.shipping_address.kwargs))
+            print("pformat@.shipping_address.to_dict:\n%s" % \
+                  pformat(dict(first_usr.shipping_address.to_dict())))
+            print(".billing_address:\n%s" % first_usr.billing_address)
+            print("pformat@.billing_address.to_dict:\n%s" % \
+                  pformat(dict(first_usr.billing_address.to_dict())))
+            print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
+            print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
+            print("pformat@.wpid:\n%s" % pformat(first_usr.wpid))
+            print("pformat@.email:\n%s" % pformat(first_usr.email))
 
         self.assertEqual(first_usr.name.first_name, 'Gustav')
         self.assertEqual(first_usr.name.family_name, 'Sample')
@@ -234,6 +240,8 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.last_modtime, 1479060113.0)
         self.assertEqual(str(first_usr.role.direct_brands), "Pending")
         self.assertEqual(str(first_usr.role), "WN")
+        self.assertEqual(first_usr.wpid, '1080')
+        self.assertEqual(first_usr.email, 'GSAMPLE6@FREE.FR')
         # print("pformat@.edited_email:%s" % pformat(first_usr['Edited E-mail']))
         # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
@@ -298,7 +306,6 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(len(self.updates.slave), 6)
         self.assertEqual(len(self.updates.static), 6)
 
-        # first_update = self.updates.static[0]
         if Registrar.DEBUG_MESSAGE:
             for update in self.updates.static:
                 print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s" % (
@@ -310,6 +317,50 @@ class TestMerger(unittest.TestCase):
                     update.display_sync_warnings(),
                     update.display_sync_passes(),
                 ))
+
+        update_0 = self.updates.static[0]
+        self.assertEqual(update_0.old_m_object.MYOBID, 'C001694')
+        self.assertEqual(update_0.old_m_object.rowcount, 45)
+        self.assertEqual(update_0.old_m_object.role.direct_brands, 'TechnoTan')
+        self.assertEqual(update_0.old_m_object.role.role, 'RN')
+        self.assertEqual(update_0.old_s_object.wpid, '1143')
+        self.assertEqual(update_0.old_s_object.rowcount, 37)
+        self.assertEqual(update_0.old_s_object.role.direct_brands, None)
+        self.assertEqual(update_0.old_s_object.role.role, 'RN')
+
+        # self.assertEqual(update_0.new_m_object.role.direct_brands, 'TechnoTan Retail')
+        # self.assertEqual(update_0.new_m_object.role.role, 'RN')
+        # self.assertEqual(update_0.new_s_object.role.direct_brands, 'TechnoTan Retail')
+        # self.assertEqual(update_0.new_s_object.role.role, 'RN')
+        update_1 = self.updates.static[1]
+        self.assertEqual(update_1.old_m_object.MYOBID, 'C001446')
+        self.assertEqual(update_1.old_m_object.rowcount, 92)
+        self.assertEqual(update_1.old_m_object.role.direct_brands, 'TechnoTan')
+        self.assertEqual(update_1.old_m_object.role.role, 'ADMIN')
+        self.assertEqual(update_1.old_s_object.wpid, '1439')
+        self.assertEqual(update_1.old_s_object.rowcount, 13)
+        self.assertEqual(update_1.old_s_object.role.direct_brands, 'TechnoTan')
+        self.assertEqual(update_1.old_s_object.role.role, 'ADMIN')
+
+        # self.assertEqual(update_1.new_m_object.role.direct_brands, 'Staff')
+        # self.assertEqual(update_1.new_m_object.role.role, 'ADMIN')
+        # self.assertEqual(update_1.new_s_object.role.direct_brands, 'Staff')
+        # self.assertEqual(update_1.new_s_object.role.role, 'ADMIN')
+        update_2 = self.updates.static[2]
+        self.assertEqual(update_2.old_m_object.MYOBID, 'C001280')
+        self.assertEqual(update_2.old_m_object.rowcount, 10)
+        self.assertEqual(update_2.old_m_object.role.direct_brands, 'VuTan Wholesale')
+        self.assertEqual(update_2.old_m_object.role.role, 'ADMIN')
+        self.assertEqual(update_2.old_s_object.wpid, '1983')
+        self.assertEqual(update_2.old_s_object.rowcount, 91)
+        self.assertEqual(update_2.old_s_object.role.direct_brands, None)
+        self.assertEqual(update_2.old_s_object.role.role, 'WN')
+
+        # self.assertEqual(update_2.new_m_object.role.direct_brands, 'Staff')
+        # self.assertEqual(update_2.new_m_object.role.role, 'ADMIN')
+        # self.assertEqual(update_2.new_s_object.role.direct_brands, 'Staff')
+        # self.assertEqual(update_2.new_s_object.role.role, 'ADMIN')
+
 
 
 

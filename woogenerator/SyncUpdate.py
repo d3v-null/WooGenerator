@@ -488,6 +488,8 @@ class SyncUpdate(
         except KeyError:
             return
 
+        # if update_params['data']
+
         if self.col_identical(col):
             update_params['reason'] = 'identical'
             self.tie_update(**update_params)
