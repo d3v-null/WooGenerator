@@ -42,6 +42,40 @@ def timediff(settings):
     """
     return time.time() - settings.start_time
 
+def populate_filter_settings(settings):
+    if settings['do_filter']:
+        # TODO: I don't think emails filter is actually working
+        filter_files = {
+            'users': settings.get('user_file'),
+            'emails': settings.get('email_file'),
+            'cards': settings.get('card_file'),
+        }
+        settings.filter_items = {}
+        for key, filter_file in filter_files.items():
+            if filter_file:
+                try:
+                    with open(os.path.join(settings.in_folder_full,
+                                           filter_file)) as filter_file_obj:
+                        settings.filter_items[key] = [
+                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
+                            for line in filter_file_obj
+                        ]
+                except IOError as exc:
+                    SanitationUtils.safe_print(
+                        "could not open %s file [%s] from %s" % (
+                            key, filter_file, unicode(os.getcwd())))
+                    raise exc
+        if 'emails' in settings and settings.emails:
+            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
+                settings.filter_items['emails'] = []
+            settings.filter_items['emails'].extend(settings.emails.split(','))
+        if 'since_m' in settings:
+            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+        if 'since_s' in settings:
+            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+    else:
+        settings.filter_items = None
+
 def populate_slave_parsers(parsers, settings):
     """
     Populate the parsers for data from the slave database.
@@ -979,11 +1013,11 @@ def do_updates(matches, updates, parsers, settings):
     output_failures(master_failures, settings.m_fail_path_full)
     output_failures(slave_failures, settings.s_fail_path_full)
 
-def main(override_args=None, settings=None): # pylint: disable=too-many-branches,too-many-locals
+def main(override_args=None, settings=None):
     """
     Use settings object to load config file and detect changes in wordpress.
     """
-    # TODO: fix too-many-branches,too-many-locals
+    # DONE: fix too-many-branches,too-many-locals
     # DONE: implement override_args
 
     settings = init_settings(override_args, settings, ArgumentParserUser)
@@ -995,8 +1029,6 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
             os.mkdir(path)
 
     ### PROCESS OTHER CONFIG ###
-
-    assert settings.store_url, "store url must not be blank"
 
     settings.wp_api_params = {
         'api_key': settings.wp_api_key,
@@ -1013,38 +1045,7 @@ def main(override_args=None, settings=None): # pylint: disable=too-many-branches
 
     Registrar.register_progress("Prepare Filter Data")
 
-    if settings['do_filter']:
-        # TODO: I don't think emails filter is actually working
-        filter_files = {
-            'users': settings.get('user_file'),
-            'emails': settings.get('email_file'),
-            'cards': settings.get('card_file'),
-        }
-        settings.filter_items = {}
-        for key, filter_file in filter_files.items():
-            if filter_file:
-                try:
-                    with open(os.path.join(settings.in_folder_full,
-                                           filter_file)) as filter_file_obj:
-                        settings.filter_items[key] = [
-                            re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
-                            for line in filter_file_obj
-                        ]
-                except IOError as exc:
-                    SanitationUtils.safe_print(
-                        "could not open %s file [%s] from %s" % (
-                            key, filter_file, unicode(os.getcwd())))
-                    raise exc
-        if 'emails' in settings and settings.emails:
-            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
-                settings.filter_items['emails'] = []
-            settings.filter_items['emails'].extend(settings.emails.split(','))
-        if 'since_m' in settings:
-            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
-        if 'since_s' in settings:
-            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
-    else:
-        settings.filter_items = None
+    populate_filter_settings(settings)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message("filter_items: %s" % settings.filter_items)
