@@ -479,7 +479,7 @@ class TestSyncUpdateUser(TestCase):
         self.assertEqual(parsed_m_time, 1478572731)
         parsed_s_time = SyncUpdateUsr.parse_s_time("2017-04-14 02:13:09")
         # print("parsed_s_time: %s" % pformat(parsed_s_time))
-        self.assertEqual(parsed_m_time, 1492099989)
+        self.assertEqual(parsed_s_time, 1492099989)
 
 
 
