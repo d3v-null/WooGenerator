@@ -46,6 +46,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.start_time = getattr(self, 'start_time', time.time())
         self.schema = getattr(self, 'schema', None)
         self.download_master = getattr(self, 'download_master', False)
+        self.do_post = getattr(self, 'do_post', None)
 
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
 
@@ -335,7 +336,6 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         self.local_test_config = \
             getattr(self, 'local_test_config', DEFAULT_LOCAL_USER_TEST_PATH)
         self.do_filter = getattr(self, 'do_filter', None)
-        self.do_post = getattr(self, 'do_post', None)
         super(SettingsNamespaceUser, self).__init__(*args, **kwargs)
 
     @property
