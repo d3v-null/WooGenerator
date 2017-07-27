@@ -302,12 +302,12 @@ class SyncUpdate(
         if 'reason' in update_params:
             out += " | reas: %s " % update_params['reason']
         if update_type in ['WARN', 'PROB']:
-            if 'oldWinnerValue' in update_params:
+            if 'old_winner_value' in update_params:
                 out += " | OLD: %s " % SanitationUtils.coerce_ascii(
-                    update_params['oldWinnerValue'])
-            if 'oldLoserValue' in update_params:
+                    update_params['old_winner_value'])
+            if 'old_loser_value' in update_params:
                 out += " | NEW: %s " % SanitationUtils.coerce_ascii(
-                    update_params['oldLoserValue'])
+                    update_params['old_loser_value'])
         return out
 
     def add_problematic_update(self, **update_params):
@@ -350,8 +350,8 @@ class SyncUpdate(
         header_items = [
             ('col', 'Column'),
             ('reason', 'Reason'),
-            ('oldLoserValue', 'Old'),
-            ('oldWinnerValue', 'New'),
+            ('old_loser_value', 'Old'),
+            ('old_winner_value', 'New'),
             ('mColTime', 'M TIME'),
             ('sColTime', 'S TIME'),
         ]
@@ -449,9 +449,9 @@ class SyncUpdate(
         self.add_sync_warning(**update_params)
         if data.get('delta'):
             new_loser_object[self.col_data.delta_col(col)] = update_params[
-                'oldLoserValue']
+                'old_loser_value']
 
-        new_loser_object[col] = update_params['oldWinnerValue']
+        new_loser_object[col] = update_params['old_winner_value']
         self.updates += 1
         if data.get('static'):
             self.static = False
@@ -561,16 +561,16 @@ class SyncUpdate(
                         update_params['reason'] = 'merging'
 
             if winner == self.slave_name:
-                update_params['oldWinnerValue'] = s_value
-                update_params['oldLoserValue'] = m_value
+                update_params['old_winner_value'] = s_value
+                update_params['old_loser_value'] = m_value
             else:
-                update_params['oldWinnerValue'] = m_value
-                update_params['oldLoserValue'] = s_value
+                update_params['old_winner_value'] = m_value
+                update_params['old_loser_value'] = s_value
 
             if 'reason' not in update_params:
-                if not update_params['oldWinnerValue']:
+                if not update_params['old_winner_value']:
                     update_params['reason'] = 'deleting'
-                elif not update_params['oldLoserValue']:
+                elif not update_params['old_loser_value']:
                     update_params['reason'] = 'inserting'
                 else:
                     update_params['reason'] = 'updating'
