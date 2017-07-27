@@ -431,10 +431,6 @@ class SyncUpdate(
         data = update_params.get('data', {})
 
         if winner == self.master_name:
-            # oldLoserObject = self.old_s_object
-            update_params['oldLoserValue'] = self.get_s_value(col)
-            # oldWinnerObject = self.old_m_object
-            update_params['oldWinnerValue'] = self.get_m_value(col)
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
@@ -442,10 +438,6 @@ class SyncUpdate(
                 # print "setting s_deltas"
                 self.s_deltas = True
         elif winner == self.slave_name:
-            # oldLoserObject = self.old_m_object
-            update_params['oldLoserValue'] = self.get_m_value(col)
-            # oldWinnerObject = self.old_s_object
-            update_params['oldWinnerValue'] = self.get_s_value(col)
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
@@ -537,14 +529,15 @@ class SyncUpdate(
             else:
                 pass
 
-            update_params['m_value'] = self.get_m_value(col)
-            update_params['s_value'] = self.get_s_value(col)
+            m_value = self.get_m_value(col)
+            s_value = self.get_s_value(col)
 
             update_params['mColTime'] = self.get_m_col_mod_time(col)
             update_params['sColTime'] = self.get_s_col_mod_time(col)
 
-            winner = self.get_winner_name(update_params['mColTime'],
-                                          update_params['sColTime'])
+            winner = self.get_winner_name(
+                update_params['mColTime'], update_params['sColTime']
+            )
 
             if 'override' in sync_mode:
                 # update_params['reason'] = 'overriding'
@@ -559,23 +552,25 @@ class SyncUpdate(
                     return
 
                 if self.merge_mode == 'merge' \
-                and not (update_params['m_value'] and update_params['s_value']):
-                    if winner == self.slave_name and not update_params['s_value']:
+                and not (m_value and s_value):
+                    if winner == self.slave_name and not s_value:
                         winner = self.master_name
                         update_params['reason'] = 'merging'
-                    elif winner == self.master_name and not update_params['m_value']:
+                    elif winner == self.master_name and not m_value:
                         winner = self.slave_name
                         update_params['reason'] = 'merging'
 
-            if 'reason' not in update_params:
-                if winner == self.slave_name:
-                    w_value, l_value = update_params['s_value'], update_params['m_value']
-                else:
-                    w_value, l_value = update_params['m_value'], update_params['s_value']
+            if winner == self.slave_name:
+                update_params['oldWinnerValue'] = s_value
+                update_params['oldLoserValue'] = m_value
+            else:
+                update_params['oldWinnerValue'] = m_value
+                update_params['oldLoserValue'] = s_value
 
-                if not w_value:
+            if 'reason' not in update_params:
+                if not update_params['oldWinnerValue']:
                     update_params['reason'] = 'deleting'
-                elif not l_value:
+                elif not update_params['oldLoserValue']:
                     update_params['reason'] = 'inserting'
                 else:
                     update_params['reason'] = 'updating'
