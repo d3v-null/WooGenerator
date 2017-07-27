@@ -349,27 +349,30 @@ class SyncUpdate(
         # header = ["Column", "Reason", "Old", "New"]
         header_items = [
             ('col', 'Column'),
-            ('subject', 'Winner'),
             ('reason', 'Reason'),
-            ('old_loser_value', 'Old'),
-            ('old_winner_value', 'New'),
-            ('m_col_time', 'M TIME'),
-            ('s_col_time', 'S TIME'),
         ]
-        if update_type == 'pass':
-            header_items[1:2] = []
-            header_items[2:4] = [
+        if update_type is None:
+            header_items += [
+                ('subject', 'Subject'),
+                ('old_loser_value', 'Old'),
+                ('old_winner_value', 'New'),
+            ]
+        elif update_type == 'pass':
+            header_items += [
                 ('old_m_value', 'Old Master'),
                 ('old_s_value', 'Old Slave'),
             ]
         elif update_type == 'reflect':
-            header_items[1:2] = []
-            header_items[2:4] = [
+            header_items += [
                 ('old_m_value', 'Old Master'),
                 ('old_s_value', 'Old Slave'),
                 ('reflected_master', 'Reflected Master'),
                 ('reflected_slave', 'Reflected Slave'),
             ]
+        header_items += [
+            ('m_col_time', 'M TIME'),
+            ('s_col_time', 'S TIME'),
+        ]
         header = OrderedDict(header_items)
         subjects = {}
         for warnings in update_list.values():
@@ -394,13 +397,13 @@ class SyncUpdate(
                 subjects[subject].append(warning_fmtd)
         tables = []
         for subject, warnings in subjects.items():
-            anti_subject_fmtd = ''
+            subject_formatted = ''
             if subject != '-':
-                anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
+                subject_formatted = subject_fmt % self.opposite_src(subject)
             table = [header] + warnings
             table_fmtd = tabulate(table, headers='firstrow',
                                   tablefmt=tablefmt)
-            tables.append(delimeter.join([anti_subject_fmtd, table_fmtd]))
+            tables.append(delimeter.join([subject_formatted, table_fmtd]))
         return delimeter.join(tables)
 
     def display_sync_warnings(self, tablefmt=None):
@@ -423,8 +426,12 @@ class SyncUpdate(
     def opposite_src(self, subject):
         if subject == self.master_name:
             return self.slave_name
-        else:
+        elif subject == self.slave_name:
             return self.master_name
+        elif subject == '-':
+            return '-'
+        else:
+            raise Exception("unknown subject: %s" % subject)
 
     # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
     # m_time=None):
@@ -434,18 +441,20 @@ class SyncUpdate(
                 key, update_params)
 
         col = update_params['col']
-        winner = update_params['subject']
+        loser = update_params['subject']
         reason = update_params.get('reason', '')
         data = update_params['data']
 
-        if winner == self.master_name:
+        if loser == self.slave_name:
+            # If we are changing slave
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
             if data.get('delta') and reason in ['updating', 'deleting']:
                 # print "setting s_deltas"
                 self.s_deltas = True
-        elif winner == self.slave_name:
+        elif loser == self.master_name:
+            # If we are changing master
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
@@ -582,7 +591,7 @@ class SyncUpdate(
             else:
                 update_params['reason'] = 'updating'
 
-        update_params['subject'] = winner
+        update_params['subject'] = self.opposite_src(winner)
         self.loser_update(**update_params)
 
     def update_col(self, **update_params):
@@ -695,8 +704,8 @@ class SyncUpdate(
                 if self.DEBUG_UPDATE:
                     self.register_message(
                         u"-> checking warning %s" % unicode(warning))
-                subject = warning['subject']
-                if subject == self.opposite_src(self.slave_name):
+                loser = warning['subject']
+                if loser == self.slave_name:
                     updates = self.get_slave_updates_native_rec(
                         col, updates)
         if self.DEBUG_UPDATE:
@@ -707,8 +716,8 @@ class SyncUpdate(
         updates = OrderedDict()
         for col, warnings in self.sync_warnings.items():
             for warning in warnings:
-                subject = warning['subject']
-                if subject == self.opposite_src(self.slave_name):
+                loser = warning['subject']
+                if loser == self.slave_name:
                     updates = self.get_slave_updates_recursive(col, updates)
         if self.DEBUG_UPDATE:
             self.register_message(u"returned %s" % unicode(updates))
@@ -718,8 +727,8 @@ class SyncUpdate(
         updates = OrderedDict()
         for col, warnings in self.sync_warnings.items():
             for warning in warnings:
-                subject = warning['subject']
-                if subject == self.opposite_src(self.master_name):
+                loser = warning['subject']
+                if loser == self.master_name:
                     updates = self.get_master_updates_recursive(col, updates)
         if self.DEBUG_UPDATE:
             self.register_message(u"returned %s" % unicode(updates))

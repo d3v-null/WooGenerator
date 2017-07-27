@@ -699,8 +699,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     if not col == 'ID':
                         continue
                     for warning in warnings:
-                        if not warning['subject'] == update.opposite_src(
-                                update.master_name):
+                        if not warning['subject'] == update.master_name:
                             continue
 
                         new_val = warning['old_winner_value']
@@ -845,7 +844,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     'data': {
                         # 'sync'
                     },
-                    'subject': sync_update.master_name
+                    'subject': sync_update.slave_name
                 }
 
                 change_match_list = category_matcher.masterless_matches
@@ -880,7 +879,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                          "should not equal slave_categories.\nchange_match_list: \n%s") % \
                         "\n".join(map(pformat, change_match_list))
                     update_params['reason'] = 'updating'
-                    # update_params['subject'] = SyncUpdate.master_name
+                    # update_params['subject'] = SyncUpdate.slave_name
 
                     # master_categories = [category.woo_cat_name for category \
                     #                      in change_match_list.merge().m_objects]
