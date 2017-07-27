@@ -64,13 +64,12 @@ class FieldGroup(Registrar):
         self.reason = ""
         self.properties = OrderedDict()
         if self.perform_post:
-            self.init_properties()
             self.process_kwargs()
         if self.debug:
             self.register_message("properties: %s" % pformat(self.properties))
 
     def process_kwargs(self):
-        pass
+        self.init_properties()
 
     def init_properties(self):
         pass
@@ -379,6 +378,7 @@ class ContactAddress(ContactObject):
         self.properties['number_combo'] = ContactObject.Combo()
 
     def process_kwargs(self):
+        super(ContactAddress, self).process_kwargs()
         if self.empty:
             if self.debug:
                 self.register_message("not processing kwargs because empty")
@@ -973,6 +973,7 @@ class ContactName(ContactObject):
         self.properties['single_names'] = []
 
     def process_kwargs(self):
+        super(ContactName, self).process_kwargs()
         if not self.empty:
             if self.kwargs.get('country'):
                 country_sanitized = AddressUtils.sanitize_state(
@@ -1454,6 +1455,7 @@ class ContactPhones(FieldGroup):
     #     super(ContactPhones, self).__init__(**kwargs)
 
     def process_kwargs(self):
+        super(ContactPhones, self).process_kwargs()
         if not self.empty:
             for key, value in self.kwargs.items():
                 if '_number' in key:
@@ -1541,6 +1543,7 @@ class SocialMediaFields(FieldGroup):
     #     super(SocialMediaFields, self).__init__(**kwargs)
 
     def process_kwargs(self):
+        super(SocialMediaFields, self).process_kwargs()
         if not self.empty:
             for key, value in self.kwargs.items():
                 if self.debug:
@@ -1793,6 +1796,7 @@ class RoleGroup(FieldGroup):
         return role
 
     def process_kwargs(self):
+        super(RoleGroup, self).process_kwargs()
         if self.empty:
             return
 
