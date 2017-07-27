@@ -3,7 +3,7 @@ Container objects for storing contact data
 """
 
 from collections import OrderedDict
-from copy import deepcopy
+from copy import deepcopy, copy
 from pprint import pformat
 
 from tabulate import tabulate
@@ -74,6 +74,11 @@ class FieldGroup(Registrar):
     def init_properties(self):
         pass
 
+    def reflect(self):
+        reflected = copy(self)
+        reflected.process_kwargs()
+        return reflected
+
     @property
     def properties_override(self):
         if self.perform_post and self.valid:
@@ -108,16 +113,16 @@ class FieldGroup(Registrar):
 
     def __copy__(self):
         # print "calling copy on ", self
-        retval = self.__class__(**self.kwargs[:])
-        # print " -> retval", retval
-        return retval
+        response = self.__class__(**copy(self.kwargs))
+        # print " -> response", response
+        return response
 
     def __deepcopy__(self, memodict=None):
         # print ("calling deepcopy on ", self)
         # print ("-> kwargs ", deepcopy(self.kwargs, memodict))
-        retval = self.__class__(**deepcopy(self.kwargs, memodict))
-        # print (" -> retval", retval, retval.kwargs)
-        return retval
+        response = self.__class__(**deepcopy(self.kwargs, memodict))
+        # print (" -> response", response, response.kwargs)
+        return response
 
     def __unicode__(self, tablefmt=None):
         raise NotImplementedError()
@@ -239,17 +244,17 @@ class ContactObject(FieldGroup):
 
     def __copy__(self):
         # print "calling copy on ", self
-        retval = self.__class__(self.schema, **self.kwargs[:])
-        # print " -> retval", retval
-        return retval
+        response = self.__class__(self.schema, **copy(self.kwargs))
+        # print " -> response", response
+        return response
 
     def __deepcopy__(self, memodict=None):
         # print ("calling deepcopy on ", self)
         # print ("-> kwargs ", deepcopy(self.kwargs, memodict))
-        retval = self.__class__(
+        response = self.__class__(
             deepcopy(self.schema, memodict), **deepcopy(self.kwargs, memodict))
-        # print (" -> retval", retval, retval.kwargs)
-        return retval
+        # print (" -> response", response, response.kwargs)
+        return response
 
     # def get(self, key, default = None):
     #     for attr, keys in self.key_mappings.items():

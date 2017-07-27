@@ -5,12 +5,12 @@ Utilites for storing and performing operations on pending updates
 # TODO: fix too-many-lines
 
 from collections import OrderedDict
-from copy import deepcopy
+from copy import deepcopy, copy
 from tabulate import tabulate
 
 # , UnicodeCsvDialectUtils
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
-from woogenerator.contact_objects import ContactAddress
+from woogenerator.contact_objects import FieldGroup, ContactAddress
 from woogenerator.coldata import ColDataBase, ColDataUser, ColDataProd, ColDataWoo
 from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
@@ -62,6 +62,7 @@ class SyncUpdate(
         self.sync_warnings = OrderedDict()
         self.sync_passes = OrderedDict()
         self.sync_problematics = OrderedDict()
+        self.sync_reflections = OrderedDict()
         self.updates = 0
         self.important_updates = 0
         self.important_cols = []
@@ -339,7 +340,7 @@ class SyncUpdate(
         if self.DEBUG_UPDATE:
             self.register_message(self.update_to_str('PASS', update_params))
 
-    def display_update_list(self, update_list, tablefmt=None, display_pass=False):
+    def display_update_list(self, update_list, tablefmt=None, update_type=None):
         if not update_list:
             return ""
 
@@ -354,8 +355,15 @@ class SyncUpdate(
             ('mColTime', 'M TIME'),
             ('sColTime', 'S TIME'),
         ]
-        if display_pass:
+        if update_type == 'pass':
             header_items[2:4] = [('value', 'Value')]
+        elif update_type == 'reflect':
+            header_items[2:4] = [
+                ('old_m_value', 'Old Master'),
+                ('old_s_value', 'Old Slave'),
+                ('reflected_master', 'Reflected Master'),
+                ('reflected_slave', 'Reflected Slave'),
+            ]
         header = OrderedDict(header_items)
         subjects = {}
         for warnings in update_list.values():
@@ -391,10 +399,13 @@ class SyncUpdate(
         return self.display_update_list(self.sync_warnings, tablefmt)
 
     def display_sync_passes(self, tablefmt=None):
-        return self.display_update_list(self.sync_passes, tablefmt, True)
+        return self.display_update_list(self.sync_passes, tablefmt, update_type='pass')
 
     def display_problematic_updates(self, tablefmt=None):
         return self.display_update_list(self.sync_problematics, tablefmt)
+
+    def display_sync_reflections(self, tablefmt=None):
+        return self.display_update_list(self.sync_reflections, tablefmt, update_type='reflect')
 
     # def getOldLoserObject(self, winner=None):
     #     if not winner: winner = self.winner
@@ -471,6 +482,9 @@ class SyncUpdate(
             update_params['value'] = self.old_s_object.get(col)
         self.add_sync_pass(**update_params)
 
+    def reflect_update(self, **update_params):
+        pass
+
     def get_m_col_mod_time(self, _):
         return None
 
@@ -483,7 +497,25 @@ class SyncUpdate(
                 update_params[key], 'missing mandatory update param %s' % key
         col = update_params['col']
         data = update_params['data']
-        # TODO: finish this
+        reflect_mode = str(data['reflective'])
+        if reflect_mode == 'both' or reflect_mode == 'master':
+            old_m_value = self.get_m_value(col)
+            assert isinstance(old_m_value, FieldGroup), \
+                "why are we reflecting something that isn't a fieldgroup?"
+            reflected_m_value = old_m_value.reflect()
+            if reflected_m_value != old_m_value:
+                update_params['reflected_master'] = reflected_m_value
+
+        if reflect_mode == 'both' or reflect_mode == 'slave':
+            old_s_value = copy(self.get_m_value(col))
+            assert isinstance(old_s_value, FieldGroup), \
+                "why are we reflecting something that isn't a fieldgroup?"
+            reflected_s_value = old_s_value.reflect()
+            if reflected_s_value != old_s_value:
+                update_params['reflected_slave'] = reflected_s_value
+
+        if 'reflected_slave' in update_params or 'reflected_master' in update_params:
+            self.reflect_update(**update_params)
 
     def update_col(self, **update_params):
         for key in ['col', 'data']:
@@ -496,7 +528,7 @@ class SyncUpdate(
             self.reflect_col(**update_params)
 
         if data.get('sync'):
-            sync_mode = data['sync']
+            sync_mode = str(data['sync']).lower()
 
             if self.col_identical(col):
                 update_params['reason'] = 'identical'
@@ -505,8 +537,8 @@ class SyncUpdate(
             else:
                 pass
 
-            m_value = self.get_m_value(col)
-            s_value = self.get_s_value(col)
+            update_params['m_value'] = self.get_m_value(col)
+            update_params['s_value'] = self.get_s_value(col)
 
             update_params['mColTime'] = self.get_m_col_mod_time(col)
             update_params['sColTime'] = self.get_s_col_mod_time(col)
@@ -514,11 +546,11 @@ class SyncUpdate(
             winner = self.get_winner_name(update_params['mColTime'],
                                           update_params['sColTime'])
 
-            if 'override' in str(sync_mode).lower():
+            if 'override' in sync_mode:
                 # update_params['reason'] = 'overriding'
-                if 'master' in str(sync_mode).lower():
+                if 'master' in sync_mode:
                     winner = self.master_name
-                elif 'slave' in str(sync_mode).lower():
+                elif 'slave' in sync_mode:
                     winner = self.slave_name
             else:
                 if self.col_similar(col):
@@ -526,19 +558,20 @@ class SyncUpdate(
                     self.tie_update(**update_params)
                     return
 
-                if self.merge_mode == 'merge' and not (m_value and s_value):
-                    if winner == self.slave_name and not s_value:
+                if self.merge_mode == 'merge' \
+                and not (update_params['m_value'] and update_params['s_value']):
+                    if winner == self.slave_name and not update_params['s_value']:
                         winner = self.master_name
                         update_params['reason'] = 'merging'
-                    elif winner == self.master_name and not m_value:
+                    elif winner == self.master_name and not update_params['m_value']:
                         winner = self.slave_name
                         update_params['reason'] = 'merging'
 
             if 'reason' not in update_params:
                 if winner == self.slave_name:
-                    w_value, l_value = s_value, m_value
+                    w_value, l_value = update_params['s_value'], update_params['m_value']
                 else:
-                    w_value, l_value = m_value, s_value
+                    w_value, l_value = update_params['m_value'], update_params['s_value']
 
                 if not w_value:
                     update_params['reason'] = 'deleting'
