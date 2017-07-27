@@ -308,7 +308,7 @@ class TestMerger(unittest.TestCase):
 
         if Registrar.DEBUG_MESSAGE:
             for update in self.updates.static:
-                print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s" % (
+                print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s\nreflections:\n%s" % (
                     update,
                     update.old_m_object,
                     pformat(dict(update.old_m_object)),
@@ -316,6 +316,7 @@ class TestMerger(unittest.TestCase):
                     pformat(dict(update.old_s_object)),
                     update.display_sync_warnings(),
                     update.display_sync_passes(),
+                    update.display_sync_reflections(),
                 ))
 
         update_0 = self.updates.static[0]
