@@ -18,11 +18,14 @@ class TestFieldGroups(TestCase):
         FieldGroup.enforce_mandatory_keys = False
 
         # Temporarily enable debugging
-        # FieldGroup.DEBUG_MESSAGE = True
-        # FieldGroup.DEBUG_WARN = True
-        # FieldGroup.DEBUG_ERROR = True
-        # FieldGroup.DEBUG_CONTACT = True
-        # FieldGroup.DEBUG_ADDRESS = True
+        debug = False
+        # debug = True
+        if debug:
+            FieldGroup.DEBUG_MESSAGE = True
+            FieldGroup.DEBUG_WARN = True
+            FieldGroup.DEBUG_ERROR = True
+            # FieldGroup.DEBUG_CONTACT = True
+            FieldGroup.DEBUG_ADDRESS = True
 
 class TestContactAddress(TestFieldGroups):
     # thoroughfare tests
