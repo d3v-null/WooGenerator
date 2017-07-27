@@ -352,8 +352,8 @@ class SyncUpdate(
             ('reason', 'Reason'),
             ('old_loser_value', 'Old'),
             ('old_winner_value', 'New'),
-            ('mColTime', 'M TIME'),
-            ('sColTime', 'S TIME'),
+            ('m_col_time', 'M TIME'),
+            ('s_col_time', 'S TIME'),
         ]
         if update_type == 'pass':
             header_items[2:4] = [('value', 'Value')]
@@ -376,7 +376,7 @@ class SyncUpdate(
                     for key, val in warning.items()
                     if key in header
                 ])
-                for key in ['mColTime', 'sColTime']:
+                for key in ['m_col_time', 's_col_time']:
                     try:
                         raw_time = int(warning[key])
                         if raw_time:
@@ -532,11 +532,11 @@ class SyncUpdate(
             m_value = self.get_m_value(col)
             s_value = self.get_s_value(col)
 
-            update_params['mColTime'] = self.get_m_col_mod_time(col)
-            update_params['sColTime'] = self.get_s_col_mod_time(col)
+            update_params['m_col_time'] = self.get_m_col_mod_time(col)
+            update_params['s_col_time'] = self.get_s_col_mod_time(col)
 
             winner = self.get_winner_name(
-                update_params['mColTime'], update_params['sColTime']
+                update_params['m_col_time'], update_params['s_col_time']
             )
 
             if 'override' in sync_mode:
