@@ -359,8 +359,8 @@ class SyncUpdate(
         if update_type == 'pass':
             header_items[1:2] = []
             header_items[2:4] = [
-                ('m_value', 'M Value'),
-                ('s_value', 'S Value'),
+                ('old_m_value', 'Old Master'),
+                ('old_s_value', 'Old Slave'),
             ]
         elif update_type == 'reflect':
             header_items[1:2] = []
@@ -429,14 +429,14 @@ class SyncUpdate(
     # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
     # m_time=None):
     def loser_update(self, **update_params):
-        for key in ['col', 'subject']:
-            assert update_params[key], 'missing mandatory update param, %s from %s' % (
+        for key in ['col', 'data', 'subject', 'old_loser_value', 'old_winner_value']:
+            assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
         col = update_params['col']
         winner = update_params['subject']
         reason = update_params.get('reason', '')
-        data = update_params.get('data', {})
+        data = update_params['data']
 
         if winner == self.master_name:
             if not self.new_s_object:
@@ -456,8 +456,8 @@ class SyncUpdate(
 
         self.add_sync_warning(**update_params)
         if data.get('delta'):
-            new_loser_object[self.col_data.delta_col(col)] = update_params[
-                'old_loser_value']
+            new_loser_object[self.col_data.delta_col(col)] = \
+                update_params['old_loser_value']
 
         new_loser_object[col] = update_params['old_winner_value']
         self.updates += 1
@@ -483,7 +483,17 @@ class SyncUpdate(
         self.add_sync_pass(**update_params)
 
     def reflect_update(self, **update_params):
-        pass
+        for key in ['col', 'data', 'old_m_value', 'old_s_value']:
+            assert key in update_params, 'missing mandatory update param, %s from %s' % (
+                key, update_params)
+
+        col = update_params['col']
+        data = update_params['data']
+
+        if 'reflected_master' in update_params:
+            pass
+        if 'reflected_slave' in update_params:
+            pass
 
     def get_m_col_mod_time(self, _):
         return None
@@ -492,30 +502,88 @@ class SyncUpdate(
         return None
 
     def reflect_col(self, **update_params):
-        for key in ['col', 'data']:
+        for key in ['col', 'data', 'old_m_value', 'old_s_value']:
             assert \
-                update_params[key], 'missing mandatory update param %s' % key
-        col = update_params['col']
+                key in update_params, 'missing mandatory update param %s' % key
         data = update_params['data']
         reflect_mode = str(data['reflective'])
         if reflect_mode == 'both' or reflect_mode == 'master':
-            old_m_value = self.get_m_value(col)
-            assert isinstance(old_m_value, FieldGroup), \
-                "why are we reflecting something that isn't a fieldgroup?"
-            reflected_m_value = old_m_value.reflect()
-            if reflected_m_value != old_m_value:
+            assert isinstance(update_params['old_m_value'], FieldGroup), \
+                "why are we reflecting something that isn't a fieldgroup?: %s" % \
+                update_params['old_m_value']
+            reflected_m_value = update_params['old_m_value'].reflect()
+            if reflected_m_value != update_params['old_m_value']:
                 update_params['reflected_master'] = reflected_m_value
 
         if reflect_mode == 'both' or reflect_mode == 'slave':
-            old_s_value = copy(self.get_m_value(col))
-            assert isinstance(old_s_value, FieldGroup), \
-                "why are we reflecting something that isn't a fieldgroup?"
-            reflected_s_value = old_s_value.reflect()
-            if reflected_s_value != old_s_value:
+            assert isinstance(update_params['old_s_value'], FieldGroup), \
+                "why are we reflecting something that isn't a fieldgroup?: %s" % \
+                update_params['old_s_value']
+            reflected_s_value = update_params['old_s_value'].reflect()
+            if reflected_s_value != update_params['old_s_value']:
                 update_params['reflected_slave'] = reflected_s_value
 
         if 'reflected_slave' in update_params or 'reflected_master' in update_params:
             self.reflect_update(**update_params)
+
+    def sync_col(self, **update_params):
+        for key in ['col', 'data', 'old_m_value', 'old_s_value', 'm_col_time', 's_col_time']:
+            assert \
+                key in update_params, 'missing mandatory update param %s' % key
+        col = update_params['col']
+        data = update_params['data']
+
+        sync_mode = str(data['sync']).lower()
+
+        if self.col_identical(col):
+            update_params['reason'] = 'identical'
+            self.tie_update(**update_params)
+            return
+        else:
+            pass
+
+        winner = self.get_winner_name(
+            update_params['m_col_time'], update_params['s_col_time']
+        )
+
+        if 'override' in sync_mode:
+            # update_params['reason'] = 'overriding'
+            if 'master' in sync_mode:
+                winner = self.master_name
+            elif 'slave' in sync_mode:
+                winner = self.slave_name
+        else:
+            if self.col_similar(col):
+                update_params['reason'] = 'similar'
+                self.tie_update(**update_params)
+                return
+
+            if self.merge_mode == 'merge' \
+            and not (update_params['old_m_value'] and update_params['old_s_value']):
+                if winner == self.slave_name and not update_params['old_s_value']:
+                    winner = self.master_name
+                    update_params['reason'] = 'merging'
+                elif winner == self.master_name and not update_params['old_m_value']:
+                    winner = self.slave_name
+                    update_params['reason'] = 'merging'
+
+        if winner == self.slave_name:
+            update_params['old_winner_value'] = update_params['old_s_value']
+            update_params['old_loser_value'] = update_params['old_m_value']
+        else:
+            update_params['old_winner_value'] = update_params['old_m_value']
+            update_params['old_loser_value'] = update_params['old_s_value']
+
+        if 'reason' not in update_params:
+            if not update_params['old_winner_value']:
+                update_params['reason'] = 'deleting'
+            elif not update_params['old_loser_value']:
+                update_params['reason'] = 'inserting'
+            else:
+                update_params['reason'] = 'updating'
+
+        update_params['subject'] = winner
+        self.loser_update(**update_params)
 
     def update_col(self, **update_params):
         for key in ['col', 'data']:
@@ -524,69 +592,17 @@ class SyncUpdate(
         col = update_params['col']
         data = update_params['data']
 
-        if data.get('reflective'):
-            self.reflect_col(**update_params)
-
-        if data.get('sync'):
-            sync_mode = str(data['sync']).lower()
-
-            update_params['m_value'] = self.get_m_value(col)
-            update_params['s_value'] = self.get_s_value(col)
-
-            if self.col_identical(col):
-                update_params['reason'] = 'identical'
-                self.tie_update(**update_params)
-                return
-            else:
-                pass
-
-
-
+        if data.get('reflective') or data.get('sync'):
+            update_params['old_m_value'] = self.get_m_value(col)
+            update_params['old_s_value'] = self.get_s_value(col)
             update_params['m_col_time'] = self.get_m_col_mod_time(col)
             update_params['s_col_time'] = self.get_s_col_mod_time(col)
 
-            winner = self.get_winner_name(
-                update_params['m_col_time'], update_params['s_col_time']
-            )
+            if data.get('reflective'):
+                self.reflect_col(**update_params)
 
-            if 'override' in sync_mode:
-                # update_params['reason'] = 'overriding'
-                if 'master' in sync_mode:
-                    winner = self.master_name
-                elif 'slave' in sync_mode:
-                    winner = self.slave_name
-            else:
-                if self.col_similar(col):
-                    update_params['reason'] = 'similar'
-                    self.tie_update(**update_params)
-                    return
-
-                if self.merge_mode == 'merge' \
-                and not (update_params['m_value'] and update_params['s_value']):
-                    if winner == self.slave_name and not update_params['s_value']:
-                        winner = self.master_name
-                        update_params['reason'] = 'merging'
-                    elif winner == self.master_name and not update_params['m_value']:
-                        winner = self.slave_name
-                        update_params['reason'] = 'merging'
-
-            if winner == self.slave_name:
-                update_params['old_winner_value'] = update_params['s_value']
-                update_params['old_loser_value'] = update_params['m_value']
-            else:
-                update_params['old_winner_value'] = update_params['m_value']
-                update_params['old_loser_value'] = update_params['s_value']
-
-            if 'reason' not in update_params:
-                if not update_params['old_winner_value']:
-                    update_params['reason'] = 'deleting'
-                elif not update_params['old_loser_value']:
-                    update_params['reason'] = 'inserting'
-                else:
-                    update_params['reason'] = 'updating'
-
-            update_params['subject'] = winner
-            self.loser_update(**update_params)
+            if data.get('sync'):
+                self.sync_col(**update_params)
 
     def update(self, sync_cols):
         for col, data in sync_cols.items():
