@@ -471,13 +471,13 @@ class TestContactAddress(TestFieldGroups):
         address = ContactAddress(
             line1="SHOP G33Q, BAYSIDE SHOPPING CENTRE"
         )
-        self.assertEqual(
-            address.properties['buildings'],
-            [('BAYSIDE', 'SHOP. CENTRE')]
-        )
         self.assertItemsEqual(
             address.properties['subunits'],
             [('SHOP', 'G33Q')]
+        )
+        self.assertEqual(
+            address.properties['buildings'],
+            [('BAYSIDE', 'SHOP. CENTRE')]
         )
         self.assertTrue(address.valid)
 
@@ -623,6 +623,8 @@ class TestContactAddress(TestFieldGroups):
             line2="CR ALLARA ST & CONSTITUTION WAY"
         )
         self.assertTrue(address)
+        self.assertItemsEqual(address.properties['buildings'], [('CANBERRA OLYMPIC POOL COMPLEX')])
+        self.assertItemsEqual(address.properties['thoroughfares'], [('CR ALLARA ST & CONSTITUTION WAY')])
 
     def test_alpha_level(self):
         address = ContactAddress(
