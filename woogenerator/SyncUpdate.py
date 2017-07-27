@@ -349,6 +349,7 @@ class SyncUpdate(
         # header = ["Column", "Reason", "Old", "New"]
         header_items = [
             ('col', 'Column'),
+            ('subject', 'Winner'),
             ('reason', 'Reason'),
             ('old_loser_value', 'Old'),
             ('old_winner_value', 'New'),
@@ -356,8 +357,13 @@ class SyncUpdate(
             ('s_col_time', 'S TIME'),
         ]
         if update_type == 'pass':
-            header_items[2:4] = [('value', 'Value')]
+            header_items[1:2] = []
+            header_items[2:4] = [
+                ('m_value', 'M Value'),
+                ('s_value', 'S Value'),
+            ]
         elif update_type == 'reflect':
+            header_items[1:2] = []
             header_items[2:4] = [
                 ('old_m_value', 'Old Master'),
                 ('old_s_value', 'Old Slave'),
@@ -388,7 +394,9 @@ class SyncUpdate(
                 subjects[subject].append(warning_fmtd)
         tables = []
         for subject, warnings in subjects.items():
-            anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
+            anti_subject_fmtd = ''
+            if subject != '-':
+                anti_subject_fmtd = subject_fmt % self.opposite_src(subject)
             table = [header] + warnings
             table_fmtd = tabulate(table, headers='firstrow',
                                   tablefmt=tablefmt)
@@ -522,6 +530,9 @@ class SyncUpdate(
         if data.get('sync'):
             sync_mode = str(data['sync']).lower()
 
+            update_params['m_value'] = self.get_m_value(col)
+            update_params['s_value'] = self.get_s_value(col)
+
             if self.col_identical(col):
                 update_params['reason'] = 'identical'
                 self.tie_update(**update_params)
@@ -529,8 +540,7 @@ class SyncUpdate(
             else:
                 pass
 
-            m_value = self.get_m_value(col)
-            s_value = self.get_s_value(col)
+
 
             update_params['m_col_time'] = self.get_m_col_mod_time(col)
             update_params['s_col_time'] = self.get_s_col_mod_time(col)
@@ -552,20 +562,20 @@ class SyncUpdate(
                     return
 
                 if self.merge_mode == 'merge' \
-                and not (m_value and s_value):
-                    if winner == self.slave_name and not s_value:
+                and not (update_params['m_value'] and update_params['s_value']):
+                    if winner == self.slave_name and not update_params['s_value']:
                         winner = self.master_name
                         update_params['reason'] = 'merging'
-                    elif winner == self.master_name and not m_value:
+                    elif winner == self.master_name and not update_params['m_value']:
                         winner = self.slave_name
                         update_params['reason'] = 'merging'
 
             if winner == self.slave_name:
-                update_params['old_winner_value'] = s_value
-                update_params['old_loser_value'] = m_value
+                update_params['old_winner_value'] = update_params['s_value']
+                update_params['old_loser_value'] = update_params['m_value']
             else:
-                update_params['old_winner_value'] = m_value
-                update_params['old_loser_value'] = s_value
+                update_params['old_winner_value'] = update_params['m_value']
+                update_params['old_loser_value'] = update_params['s_value']
 
             if 'reason' not in update_params:
                 if not update_params['old_winner_value']:
