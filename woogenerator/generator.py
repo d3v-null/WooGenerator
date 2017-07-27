@@ -702,7 +702,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                         if not warning['subject'] == update.master_name:
                             continue
 
-                        new_val = warning['old_winner_value']
+                        new_val = warning['new_value']
                         parsers.master.categories[update.master_id][
                             col] = new_val
 
@@ -890,8 +890,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                     # sync_update.new_m_object['catlist'] = master_categories
                     # sync_update.new_s_object['catlist'] = master_categories
 
-                    # update_params['old_loser_value'] = slave_categories
-                    # update_params['old_winner_value'] = master_categories
+                    # update_params['old_value'] = slave_categories
+                    # update_params['new_value'] = master_categories
                 else:
                     assert\
                         master_categories == slave_categories, \

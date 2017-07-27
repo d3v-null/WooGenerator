@@ -303,10 +303,10 @@ class TestSyncUpdateUser(TestCase):
 
         try:
             self.assertEqual(
-                str(name_sync_params.get('old_winner_value')), 'Derwent Smith'
+                str(name_sync_params.get('new_value')), 'Derwent Smith'
             )
             self.assertEqual(
-                str(name_sync_params.get('old_loser_value')), 'Abe Jackson'
+                str(name_sync_params.get('old_value')), 'Abe Jackson'
             )
             self.assertEqual(
                 name_sync_params.get('subject'),
@@ -340,10 +340,10 @@ class TestSyncUpdateUser(TestCase):
 
         try:
             self.assertEqual(
-                str(name_sync_params.get('old_winner_value')), 'Abe Jackson'
+                str(name_sync_params.get('new_value')), 'Abe Jackson'
             )
             self.assertEqual(
-                str(name_sync_params.get('old_loser_value')), 'Derwent Smith'
+                str(name_sync_params.get('old_value')), 'Derwent Smith'
             )
             self.assertEqual(
                 name_sync_params.get('subject'), sync_update.master_name
@@ -374,10 +374,10 @@ class TestSyncUpdateUser(TestCase):
         role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
             self.assertEqual(
-                role_sync_params.get('old_winner_value'), 'RN'
+                role_sync_params.get('new_value'), 'RN'
             )
             self.assertEqual(
-                role_sync_params.get('old_loser_value'), 'WN'
+                role_sync_params.get('old_value'), 'WN'
             )
             self.assertEqual(
                 role_sync_params.get('subject'), sync_update.master_name
@@ -408,10 +408,10 @@ class TestSyncUpdateUser(TestCase):
         role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
             self.assertEqual(
-                role_sync_params.get('old_winner_value'), 'RN'
+                role_sync_params.get('new_value'), 'RN'
             )
             self.assertEqual(
-                role_sync_params.get('old_loser_value'), 'WN'
+                role_sync_params.get('old_value'), 'WN'
             )
             self.assertEqual(
                 role_sync_params.get('subject'), sync_update.slave_name
@@ -445,10 +445,10 @@ class TestSyncUpdateUser(TestCase):
 
         try:
             self.assertEqual(
-                role_sync_params.get('old_winner_value'), 'WN'
+                role_sync_params.get('new_value'), 'WN'
             )
             self.assertEqual(
-                role_sync_params.get('old_loser_value'), 'RN'
+                role_sync_params.get('old_value'), 'RN'
             )
             self.assertEqual(
                 role_sync_params.get('subject'), sync_update.slave_name
@@ -486,10 +486,10 @@ class TestSyncUpdateUser(TestCase):
         role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
             self.assertEqual(
-                role_sync_params.get('old_winner_value'), ''
+                role_sync_params.get('new_value'), ''
             )
             self.assertEqual(
-                role_sync_params.get('old_loser_value'), 'WN'
+                role_sync_params.get('old_value'), 'WN'
             )
             self.assertEqual(
                 role_sync_params.get('subject'), sync_update.slave_name
@@ -507,7 +507,7 @@ class TestSyncUpdateUser(TestCase):
         )
         self.assertTrue(sync_update.s_deltas)
         self.assertFalse(sync_update.m_deltas)
-        self.assertFalse(sync_update.new_m_object)
+        # self.assertFalse(sync_update.new_m_object) # no longer true with reflection
         self.assertEqual(
             str(sync_update.new_s_object.role),
             ''

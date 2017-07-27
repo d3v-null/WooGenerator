@@ -302,12 +302,12 @@ class SyncUpdate(
         if 'reason' in update_params:
             out += " | reas: %s " % update_params['reason']
         if update_type in ['WARN', 'PROB']:
-            if 'old_winner_value' in update_params:
+            if 'new_value' in update_params:
                 out += " | OLD: %s " % SanitationUtils.coerce_ascii(
-                    update_params['old_winner_value'])
-            if 'old_loser_value' in update_params:
+                    update_params['new_value'])
+            if 'old_value' in update_params:
                 out += " | NEW: %s " % SanitationUtils.coerce_ascii(
-                    update_params['old_loser_value'])
+                    update_params['old_value'])
         return out
 
     def add_problematic_update(self, **update_params):
@@ -354,8 +354,8 @@ class SyncUpdate(
         if update_type is None:
             header_items += [
                 ('subject', 'Subject'),
-                ('old_loser_value', 'Old'),
-                ('old_winner_value', 'New'),
+                ('old_value', 'Old'),
+                ('new_value', 'New'),
             ]
         elif update_type == 'pass':
             header_items += [
@@ -436,7 +436,7 @@ class SyncUpdate(
     # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
     # m_time=None):
     def loser_update(self, **update_params):
-        for key in ['col', 'data', 'subject', 'old_loser_value', 'old_winner_value']:
+        for key in ['col', 'data', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
@@ -450,7 +450,7 @@ class SyncUpdate(
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
-            if data.get('delta') and reason in ['updating', 'deleting']:
+            if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
                 # print "setting s_deltas"
                 self.s_deltas = True
         elif loser == self.master_name:
@@ -458,7 +458,7 @@ class SyncUpdate(
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
-            if data.get('delta') and reason in ['updating', 'deleting']:
+            if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
                 # print "setting m_deltas"
                 self.m_deltas = True
         # if data.get('warn'):
@@ -466,13 +466,13 @@ class SyncUpdate(
         self.add_sync_warning(**update_params)
         if data.get('delta'):
             new_loser_object[self.col_data.delta_col(col)] = \
-                update_params['old_loser_value']
+                update_params['old_value']
 
-        new_loser_object[col] = update_params['old_winner_value']
+        new_loser_object[col] = update_params['new_value']
         self.updates += 1
         if data.get('static'):
             self.static = False
-        if(reason in ['updating', 'deleting']):
+        if(reason in ['updating', 'deleting', 'reflect']):
             self.important_updates += 1
             self.important_cols.append(col)
             if data.get('static'):
@@ -496,13 +496,21 @@ class SyncUpdate(
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
-        col = update_params['col']
-        data = update_params['data']
-
         if 'reflected_master' in update_params:
-            pass
+            master_update_params = copy(update_params)
+            master_update_params['subject'] = self.master_name
+            master_update_params['reason'] = 'reflect'
+            master_update_params['old_value'] = update_params['old_m_value']
+            master_update_params['new_value'] = update_params['reflected_master']
+            self.loser_update(**master_update_params)
+
         if 'reflected_slave' in update_params:
-            pass
+            slave_update_params = copy(update_params)
+            slave_update_params['subject'] = self.slave_name
+            slave_update_params['reason'] = 'reflect'
+            slave_update_params['old_value'] = update_params['old_s_value']
+            slave_update_params['new_value'] = update_params['reflected_slave']
+            self.loser_update(**slave_update_params)
 
     def get_m_col_mod_time(self, _):
         return None
@@ -577,16 +585,16 @@ class SyncUpdate(
                     update_params['reason'] = 'merging'
 
         if winner == self.slave_name:
-            update_params['old_winner_value'] = update_params['old_s_value']
-            update_params['old_loser_value'] = update_params['old_m_value']
+            update_params['new_value'] = update_params['old_s_value']
+            update_params['old_value'] = update_params['old_m_value']
         else:
-            update_params['old_winner_value'] = update_params['old_m_value']
-            update_params['old_loser_value'] = update_params['old_s_value']
+            update_params['new_value'] = update_params['old_m_value']
+            update_params['old_value'] = update_params['old_s_value']
 
         if 'reason' not in update_params:
-            if not update_params['old_winner_value']:
+            if not update_params['new_value']:
                 update_params['reason'] = 'deleting'
-            elif not update_params['old_loser_value']:
+            elif not update_params['old_value']:
                 update_params['reason'] = 'inserting'
             else:
                 update_params['reason'] = 'updating'
