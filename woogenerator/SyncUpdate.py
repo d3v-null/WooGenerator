@@ -7,6 +7,7 @@ Utilites for storing and performing operations on pending updates
 from collections import OrderedDict
 from copy import deepcopy, copy
 from tabulate import tabulate
+from pprint import pformat
 
 # , UnicodeCsvDialectUtils
 from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
@@ -167,13 +168,13 @@ class SyncUpdate(
                     return ""
         return value
 
-    def get_m_value(self, col):
+    def get_old_m_value(self, col):
         value = self.old_m_object.get(col)
         if value is not None:
             return self.sanitize_value(col, value)
         return ""
 
-    def get_s_value(self, col):
+    def get_old_s_value(self, col):
         value = self.old_s_object.get(col)
         if value is not None:
             return self.sanitize_value(col, value)
@@ -185,7 +186,7 @@ class SyncUpdate(
             if value is not None:
                 return self.sanitize_value(col, value)
             return ""
-        return self.get_m_value(col)
+        return self.get_old_m_value(col)
 
     def get_new_s_value(self, col):
         if self.new_s_object:
@@ -193,7 +194,7 @@ class SyncUpdate(
             if value is not None:
                 return self.sanitize_value(col, value)
             return ""
-        return self.get_s_value(col)
+        return self.get_old_s_value(col)
 
     def values_similar(self, col, m_value, s_value):
         response = False
@@ -213,8 +214,8 @@ class SyncUpdate(
         return response
 
     def col_identical(self, col):
-        m_value = self.get_m_value(col)
-        s_value = self.get_s_value(col)
+        m_value = self.get_new_m_value(col)
+        s_value = self.get_new_s_value(col)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -223,8 +224,8 @@ class SyncUpdate(
         return response
 
     def col_similar(self, col):
-        m_value = self.get_m_value(col)
-        s_value = self.get_s_value(col)
+        m_value = self.get_new_m_value(col)
+        s_value = self.get_new_s_value(col)
         response = self.values_similar(col, m_value, s_value)
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -243,7 +244,7 @@ class SyncUpdate(
         return response
 
     def m_col_static(self, col):
-        o_value = self.get_m_value(col)
+        o_value = self.get_old_m_value(col)
         n_value = self.get_new_m_value(col)
         response = o_value == n_value
         if self.DEBUG_UPDATE:
@@ -253,7 +254,7 @@ class SyncUpdate(
         return response
 
     def s_col_static(self, col):
-        o_value = self.get_s_value(col)
+        o_value = self.get_old_s_value(col)
         n_value = self.get_new_s_value(col)
         response = o_value == n_value
         if self.DEBUG_UPDATE:
@@ -263,7 +264,7 @@ class SyncUpdate(
         return response
 
     def m_col_semi_static(self, col):
-        o_value = self.get_m_value(col)
+        o_value = self.get_old_m_value(col)
         n_value = self.get_new_m_value(col)
         response = self.values_similar(col, o_value, n_value)
         if self.DEBUG_UPDATE:
@@ -273,7 +274,7 @@ class SyncUpdate(
         return response
 
     def s_col_semi_static(self, col):
-        o_value = self.get_s_value(col)
+        o_value = self.get_old_s_value(col)
         n_value = self.get_new_s_value(col)
         response = self.values_similar(col, o_value, n_value)
         if self.DEBUG_UPDATE:
@@ -340,6 +341,16 @@ class SyncUpdate(
         if self.DEBUG_UPDATE:
             self.register_message(self.update_to_str('PASS', update_params))
 
+    def add_sync_reflection(self, **update_params):
+        for key in ['col']:
+            assert update_params[key], 'missing mandatory reflection param %s' % key
+        col = update_params['col']
+        if col not in self.sync_reflections.keys():
+            self.sync_reflections[col] = []
+        self.sync_reflections[col].append(update_params)
+        if self.DEBUG_UPDATE:
+            self.register_message(self.update_to_str('REFL', update_params))
+
     def display_update_list(self, update_list, tablefmt=None, update_type=None):
         if not update_list:
             return ""
@@ -359,19 +370,20 @@ class SyncUpdate(
             ]
         elif update_type == 'pass':
             header_items += [
-                ('old_m_value', 'Old Master'),
-                ('old_s_value', 'Old Slave'),
+                ('m_value', 'Master'),
+                ('s_value', 'Slave'),
             ]
         elif update_type == 'reflect':
             header_items += [
-                ('old_m_value', 'Old Master'),
-                ('old_s_value', 'Old Slave'),
+                ('m_value', 'Master'),
+                ('s_value', 'Slave'),
                 ('reflected_master', 'Reflected Master'),
                 ('reflected_slave', 'Reflected Slave'),
             ]
         header_items += [
             ('m_col_time', 'M TIME'),
             ('s_col_time', 'S TIME'),
+            ('data', 'EXTRA'),
         ]
         header = OrderedDict(header_items)
         subjects = {}
@@ -389,17 +401,21 @@ class SyncUpdate(
                     try:
                         raw_time = int(warning[key])
                         if raw_time:
-                            warning_fmtd[
-                                key] = TimeUtils.wp_time_to_string(raw_time)
+                            warning_fmtd[key] = \
+                            TimeUtils.wp_time_to_string(raw_time)
                     except Exception as exc:
                         if exc:
                             pass
+                if 'data' in warning:
+                    true_data_keys = []
+                    for key, value in warning['data'].items():
+                        if value and key in ['static', 'delta']:
+                            true_data_keys.append(key)
+                    warning_fmtd['data'] = "; ".join(map(str.upper, true_data_keys))
                 subjects[subject].append(warning_fmtd)
         tables = []
-        for subject, warnings in subjects.items():
-            subject_formatted = ''
-            if subject != '-':
-                subject_formatted = subject_fmt % self.opposite_src(subject)
+        for warnings in subjects.values():
+            subject_formatted = subject_fmt % "-"
             table = [header] + warnings
             table_fmtd = tabulate(table, headers='firstrow',
                                   tablefmt=tablefmt)
@@ -465,8 +481,9 @@ class SyncUpdate(
 
         self.add_sync_warning(**update_params)
         if data.get('delta'):
-            new_loser_object[self.col_data.delta_col(col)] = \
-                update_params['old_value']
+            delta_col = self.col_data.delta_col(col)
+            if not new_loser_object.get(delta_col):
+                new_loser_object[delta_col] = update_params['old_value']
 
         new_loser_object[col] = update_params['new_value']
         self.updates += 1
@@ -492,25 +509,28 @@ class SyncUpdate(
         self.add_sync_pass(**update_params)
 
     def reflect_update(self, **update_params):
-        for key in ['col', 'data', 'old_m_value', 'old_s_value']:
+        for key in ['col', 'data', 'm_value', 's_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
-        if 'reflected_master' in update_params:
-            master_update_params = copy(update_params)
-            master_update_params['subject'] = self.master_name
-            master_update_params['reason'] = 'reflect'
-            master_update_params['old_value'] = update_params['old_m_value']
-            master_update_params['new_value'] = update_params['reflected_master']
-            self.loser_update(**master_update_params)
+        if 'reflected_master' in update_params or 'reflected_slave' in update_params:
+            self.add_sync_reflection(**update_params)
 
-        if 'reflected_slave' in update_params:
-            slave_update_params = copy(update_params)
-            slave_update_params['subject'] = self.slave_name
-            slave_update_params['reason'] = 'reflect'
-            slave_update_params['old_value'] = update_params['old_s_value']
-            slave_update_params['new_value'] = update_params['reflected_slave']
-            self.loser_update(**slave_update_params)
+            if 'reflected_master' in update_params:
+                master_update_params = copy(update_params)
+                master_update_params['subject'] = self.master_name
+                master_update_params['reason'] = 'reflect'
+                master_update_params['old_value'] = update_params['m_value']
+                master_update_params['new_value'] = update_params['reflected_master']
+                self.loser_update(**master_update_params)
+
+            if 'reflected_slave' in update_params:
+                slave_update_params = copy(update_params)
+                slave_update_params['subject'] = self.slave_name
+                slave_update_params['reason'] = 'reflect'
+                slave_update_params['old_value'] = update_params['s_value']
+                slave_update_params['new_value'] = update_params['reflected_slave']
+                self.loser_update(**slave_update_params)
 
     def get_m_col_mod_time(self, _):
         return None
@@ -519,32 +539,41 @@ class SyncUpdate(
         return None
 
     def reflect_col(self, **update_params):
-        for key in ['col', 'data', 'old_m_value', 'old_s_value']:
+        for key in ['col', 'data', 'm_value', 's_value']:
             assert \
                 key in update_params, 'missing mandatory update param %s' % key
         data = update_params['data']
         reflect_mode = str(data['reflective'])
         if reflect_mode == 'both' or reflect_mode == 'master':
-            assert isinstance(update_params['old_m_value'], FieldGroup), \
+            assert isinstance(update_params['m_value'], FieldGroup), \
                 "why are we reflecting something that isn't a fieldgroup?: %s" % \
-                update_params['old_m_value']
-            reflected_m_value = update_params['old_m_value'].reflect()
-            if reflected_m_value != update_params['old_m_value']:
+                update_params['m_value']
+            reflected_m_value = update_params['m_value'].reflect()
+            if reflected_m_value != update_params['m_value']:
                 update_params['reflected_master'] = reflected_m_value
+                if Registrar.DEBUG_UPDATE:
+                    Registrar.register_message("reflecting. m_value: %s / %s / %s, reflected: %s / %s / %s" % (
+                        pformat(update_params['m_value'].properties),
+                        pformat(update_params['m_value'].kwargs),
+                        pformat([update_params['m_value'][key] for key in update_params['m_value'].equality_keys]),
+                        pformat(reflected_m_value.properties),
+                        pformat(reflected_m_value.kwargs),
+                        pformat([reflected_m_value[key] for key in reflected_m_value.equality_keys]),
+                    ))
 
         if reflect_mode == 'both' or reflect_mode == 'slave':
-            assert isinstance(update_params['old_s_value'], FieldGroup), \
+            assert isinstance(update_params['s_value'], FieldGroup), \
                 "why are we reflecting something that isn't a fieldgroup?: %s" % \
-                update_params['old_s_value']
-            reflected_s_value = update_params['old_s_value'].reflect()
-            if reflected_s_value != update_params['old_s_value']:
+                update_params['s_value']
+            reflected_s_value = update_params['s_value'].reflect()
+            if reflected_s_value != update_params['s_value']:
                 update_params['reflected_slave'] = reflected_s_value
 
         if 'reflected_slave' in update_params or 'reflected_master' in update_params:
             self.reflect_update(**update_params)
 
     def sync_col(self, **update_params):
-        for key in ['col', 'data', 'old_m_value', 'old_s_value', 'm_col_time', 's_col_time']:
+        for key in ['col', 'data', 'm_value', 's_value', 'm_col_time', 's_col_time']:
             assert \
                 key in update_params, 'missing mandatory update param %s' % key
         col = update_params['col']
@@ -576,20 +605,20 @@ class SyncUpdate(
                 return
 
             if self.merge_mode == 'merge' \
-            and not (update_params['old_m_value'] and update_params['old_s_value']):
-                if winner == self.slave_name and not update_params['old_s_value']:
+            and not (update_params['m_value'] and update_params['s_value']):
+                if winner == self.slave_name and not update_params['s_value']:
                     winner = self.master_name
                     update_params['reason'] = 'merging'
-                elif winner == self.master_name and not update_params['old_m_value']:
+                elif winner == self.master_name and not update_params['m_value']:
                     winner = self.slave_name
                     update_params['reason'] = 'merging'
 
         if winner == self.slave_name:
-            update_params['new_value'] = update_params['old_s_value']
-            update_params['old_value'] = update_params['old_m_value']
+            update_params['new_value'] = update_params['s_value']
+            update_params['old_value'] = update_params['m_value']
         else:
-            update_params['new_value'] = update_params['old_m_value']
-            update_params['old_value'] = update_params['old_s_value']
+            update_params['new_value'] = update_params['m_value']
+            update_params['old_value'] = update_params['s_value']
 
         if 'reason' not in update_params:
             if not update_params['new_value']:
@@ -610,13 +639,16 @@ class SyncUpdate(
         data = update_params['data']
 
         if data.get('reflective') or data.get('sync'):
-            update_params['old_m_value'] = self.get_m_value(col)
-            update_params['old_s_value'] = self.get_s_value(col)
+            update_params['m_value'] = self.get_new_m_value(col)
+            update_params['s_value'] = self.get_new_s_value(col)
             update_params['m_col_time'] = self.get_m_col_mod_time(col)
             update_params['s_col_time'] = self.get_s_col_mod_time(col)
 
             if data.get('reflective'):
                 self.reflect_col(**update_params)
+
+            update_params['m_value'] = self.get_new_m_value(col)
+            update_params['s_value'] = self.get_new_s_value(col)
 
             if data.get('sync'):
                 self.sync_col(**update_params)
@@ -684,6 +716,23 @@ class SyncUpdate(
                 self.display_slave_changes(tablefmt),
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
+        out_str += info_delimeter
+        passes_components = []
+        if self.sync_passes:
+            passes_components += [
+                subtitle_fmt % "PASSES (%d)" % len(self.sync_passes),
+                self.display_sync_passes(tablefmt)
+            ]
+        out_str += info_delimeter.join(filter(None, passes_components))
+        out_str += info_delimeter
+        reflection_components = []
+        if self.sync_reflections:
+            reflection_components += [
+                subtitle_fmt % "REFLECTIONS (%d)" % len(self.sync_reflections),
+                self.display_sync_reflections(tablefmt)
+            ]
+        out_str += info_delimeter.join(filter(None, reflection_components))
+        out_str += info_delimeter
         new_match = Match([self.new_m_object], [self.new_s_object])
         out_str += info_delimeter
         out_str += info_delimeter.join([
@@ -798,7 +847,7 @@ class SyncUpdate(
             print_elements = []
 
             try:
-                pkey = self.slave_id
+                pkey = self.master_id
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
@@ -894,11 +943,11 @@ class SyncUpdateUsr(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_m_value('MYOB Card ID')
+        return self.get_new_m_value('MYOB Card ID')
 
     @property
     def slave_id(self):
-        return self.get_s_value("Wordpress ID")
+        return self.get_new_s_value("Wordpress ID")
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateUsr, self).values_similar(
@@ -1164,11 +1213,11 @@ class SyncUpdateProd(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_m_value('rowcount')
+        return self.get_new_m_value('rowcount')
 
     @property
     def slave_id(self):
-        return self.get_s_value('ID')
+        return self.get_new_s_value('ID')
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateProd, self).values_similar(
@@ -1295,11 +1344,11 @@ class SyncUpdateCatWoo(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_m_value('rowcount')
+        return self.get_new_m_value('rowcount')
 
     @property
     def slave_id(self):
-        return self.get_s_value('ID')
+        return self.get_new_s_value('ID')
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateCatWoo, self).values_similar(

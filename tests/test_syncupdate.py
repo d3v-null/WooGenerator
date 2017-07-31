@@ -22,7 +22,7 @@ from woogenerator.contact_objects import FieldGroup, SocialMediaFields, FieldGro
 class TestSyncUpdateUser(TestCase):
     def setUp(self):
         # yaml_path = "source/merger_config.yaml"
-        yaml_path = os.path.join(tests_datadir, "generator_config_test.yaml")
+        yaml_path = os.path.join(tests_datadir, "merger_config_test.yaml")
 
         with open(yaml_path) as stream:
             config = yaml.load(stream)
@@ -123,6 +123,7 @@ class TestSyncUpdateUser(TestCase):
             {
                 'MYOB Card ID': 'C00002',
                 'Role': 'WN',
+                'Direct Brand': 'TechnoTan Wholesale',
                 'Wordpress ID': 7,
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
@@ -151,6 +152,7 @@ class TestSyncUpdateUser(TestCase):
             {
                 'MYOB Card ID': 'C00002',
                 'Role': 'RN',
+                'Direct Brand': 'TechnoTan Retail',
                 'Wordpress ID': 7,
                 'Wordpress Username': 'derewnt',
                 'First Name': 'Abe',
@@ -179,6 +181,7 @@ class TestSyncUpdateUser(TestCase):
             {
                 'MYOB Card ID': 'C000128',
                 'Role': 'WN',
+                'Direct Brand': 'TechnoTan Wholesale',
                 'Edited in Act': '31/03/2016 12:41:43 PM',
                 '_row': []
             },
@@ -277,6 +280,14 @@ class TestSyncUpdateUser(TestCase):
         if ImportUser.DEBUG_CONTACT:
             Registrar.register_message("created usr_sd4. socials: %s" % repr(self.usr_sd4.socials))
 
+    def fail_syncupdate_assertion(self, exc, sync_update):
+            msg = "failed assertion: %s\n%s\n%s" % (
+                traceback.format_exc(exc),
+                pformat(sync_update.sync_warnings.items()),
+                sync_update.tabulate(tablefmt='simple')
+            )
+            raise AssertionError(msg)
+
     def test_m_name_col_update(self):
         master_object = self.user_mn1
         self.assertEqual(
@@ -313,11 +324,7 @@ class TestSyncUpdateUser(TestCase):
                 sync_update.slave_name
             )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_s_name_col_update(self):
         master_object = self.user_mn2
@@ -349,11 +356,7 @@ class TestSyncUpdateUser(TestCase):
                 name_sync_params.get('subject'), sync_update.master_name
             )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_m_deltas(self):
         master_object = self.usr_md1
@@ -367,66 +370,49 @@ class TestSyncUpdateUser(TestCase):
         sync_update = SyncUpdateUsr(master_object, slave_object)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.m_deltas(ColDataUser.get_delta_cols())
-        self.assertGreater(sync_update.s_time, sync_update.m_time)
-        self.assertFalse(sync_update.s_deltas)
-        self.assertTrue(sync_update.m_deltas)
-        self.assertIn('Role', sync_update.sync_warnings)
-        role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
+            self.assertGreater(sync_update.s_time, sync_update.m_time)
+            self.assertFalse(sync_update.s_deltas)
+            self.assertTrue(sync_update.m_deltas)
+            master_updates = sync_update.get_master_updates()
+            slave_updates = sync_update.get_slave_updates()
+            self.assertIn('Role', master_updates)
+            self.assertEqual(master_updates['Role'], 'RN')
             self.assertEqual(
-                role_sync_params.get('new_value'), 'RN'
-            )
-            self.assertEqual(
-                role_sync_params.get('old_value'), 'WN'
-            )
-            self.assertEqual(
-                role_sync_params.get('subject'), sync_update.master_name
+                sync_update.new_m_object.get(ColDataUser.delta_col('Role Info')).role,
+                'WN'
             )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
-        self.assertEqual(sync_update.new_m_object.get(
-            ColDataUser.delta_col('Role')), 'WN')
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_s_deltas(self):
         master_object = self.usr_md2
-        self.assertEqual(
-            master_object.role.role, 'RN'
-        )
         slave_object = self.usr_sd2
-        self.assertEqual(
-            slave_object.role.role, 'WN'
-        )
+        self.assertEqual(master_object.role.role, 'RN')
+        self.assertEqual(slave_object.role.role, 'WN')
+
+        # Registrar.DEBUG_MESSAGE = True
+        # Registrar.DEBUG_UPDATE = True
+
         sync_update = SyncUpdateUsr(master_object, slave_object)
         sync_update.update(ColDataUser.get_sync_cols())
+
         # sync_update.s_deltas(ColDataUser.get_delta_cols())
-        self.assertGreater(sync_update.m_time, sync_update.s_time)
-        self.assertIn('Role', sync_update.sync_warnings)
-        role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
+            self.assertGreater(sync_update.m_time, sync_update.s_time)
+            master_updates = sync_update.get_master_updates()
+            slave_updates = sync_update.get_slave_updates()
+            self.assertIn('Role', slave_updates)
+            self.assertEqual(slave_updates['Role'], 'RN')
+            self.assertFalse(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+            self.assertEqual(sync_update.new_s_object.get('Role'), 'RN')
             self.assertEqual(
-                role_sync_params.get('new_value'), 'RN'
-            )
-            self.assertEqual(
-                role_sync_params.get('old_value'), 'WN'
-            )
-            self.assertEqual(
-                role_sync_params.get('subject'), sync_update.slave_name
+                sync_update.new_s_object.get(ColDataUser.delta_col('Role Info')).role,
+                'WN'
             )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
-        self.assertFalse(sync_update.m_deltas)
-        self.assertTrue(sync_update.s_deltas)
-        self.assertEqual(sync_update.new_s_object.get('Role'), 'RN')
-        self.assertEqual(sync_update.new_s_object.get(
-            ColDataUser.delta_col('Role')), 'WN')
+            self.fail_syncupdate_assertion(exc, sync_update)
 
         master_object = self.usr_md2a
         self.assertEqual(
@@ -438,42 +424,30 @@ class TestSyncUpdateUser(TestCase):
         )
         sync_update = SyncUpdateUsr(master_object, slave_object)
         sync_update.update(ColDataUser.get_sync_cols())
-        # sync_update.s_deltas(ColDataUser.get_delta_cols())
-        self.assertGreater(sync_update.m_time, sync_update.s_time)
-        self.assertIn('Role', sync_update.sync_warnings)
-        role_sync_params = sync_update.sync_warnings.get('Role')[0]
-
         try:
+            # sync_update.s_deltas(ColDataUser.get_delta_cols())
+            self.assertGreater(sync_update.m_time, sync_update.s_time)
+            master_updates = sync_update.get_master_updates()
+            slave_updates = sync_update.get_slave_updates()
+            self.assertIn('Role', slave_updates)
+            self.assertEqual(slave_updates['Role'], 'WN')
+
+            self.assertFalse(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+            self.assertEqual(sync_update.new_s_object.get('Role'), 'WN')
             self.assertEqual(
-                role_sync_params.get('new_value'), 'WN'
-            )
-            self.assertEqual(
-                role_sync_params.get('old_value'), 'RN'
-            )
-            self.assertEqual(
-                role_sync_params.get('subject'), sync_update.slave_name
+                sync_update.new_s_object.get(ColDataUser.delta_col('Role Info')).role,
+                'RN'
             )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
-        self.assertFalse(sync_update.m_deltas)
-        self.assertTrue(sync_update.s_deltas)
-        self.assertEqual(sync_update.new_s_object.get('Role'), 'WN')
-        self.assertEqual(sync_update.new_s_object.get(
-            ColDataUser.delta_col('Role')), 'RN')
+            self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skip("no longer deletes slave roles since master will always reflect")
     def test_m_deltas_b(self):
         master_object = self.usr_md3
-        self.assertEqual(
-            master_object.role.role, None
-        )
         slave_object = self.usr_sd2
-        self.assertEqual(
-            slave_object.role.role, 'WN'
-        )
+        self.assertEqual(master_object.role.role, None)
+        self.assertEqual(slave_object.role.role, 'WN')
         self.assertEqual(
             type(master_object['Social Media']),
             SocialMediaFields
@@ -481,72 +455,45 @@ class TestSyncUpdateUser(TestCase):
         sync_update = SyncUpdateUsr(master_object, slave_object)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.s_deltas(ColDataUser.get_delta_cols())
-        self.assertGreater(sync_update.m_time, sync_update.s_time)
-        self.assertIn('Role', sync_update.sync_warnings)
-        role_sync_params = sync_update.sync_warnings.get('Role')[0]
         try:
-            self.assertEqual(
-                role_sync_params.get('new_value'), ''
-            )
-            self.assertEqual(
-                role_sync_params.get('old_value'), 'WN'
-            )
-            self.assertEqual(
-                role_sync_params.get('subject'), sync_update.slave_name
-            )
+            self.assertGreater(sync_update.m_time, sync_update.s_time)
+            master_updates = sync_update.get_master_updates()
+            slave_updates = sync_update.get_slave_updates()
+            self.assertIn('Role', slave_updates)
+            self.assertEqual(slave_updates['Role'], None)
+            self.assertFalse(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+            # self.assertFalse(sync_update.new_m_object) # no longer true with reflection
+            self.assertEqual(sync_update.new_s_object.role.role, '')
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_warnings.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
-
-        self.assertEqual(
-            role_sync_params.get('reason'),
-            'deleting'
-        )
-        self.assertTrue(sync_update.s_deltas)
-        self.assertFalse(sync_update.m_deltas)
-        # self.assertFalse(sync_update.new_m_object) # no longer true with reflection
-        self.assertEqual(
-            str(sync_update.new_s_object.role),
-            ''
-        )
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_s_deltas_b(self):
-        self.assertEqual(str(self.usr_md1.role), 'WN')
-        self.assertEqual(str(self.usr_sd3.role), '')
+        self.assertEqual(self.usr_md1.role.role, 'WN')
+        self.assertEqual(self.usr_md1.role.direct_brands, 'TechnoTan Wholesale')
+        self.assertEqual(self.usr_sd3.role.role, None)
+        self.assertEqual(self.usr_sd3.role.direct_brands, None)
         sync_update = SyncUpdateUsr(self.usr_md1, self.usr_sd3)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.s_deltas(ColDataUser.get_delta_cols())
-        self.assertGreater(sync_update.s_time, sync_update.m_time)
         try:
-            self.assertIn('Role', sync_update.sync_warnings)
+            self.assertGreater(sync_update.s_time, sync_update.m_time)
+            master_updates = sync_update.get_master_updates()
+            slave_updates = sync_update.get_slave_updates()
+            self.assertIn('Role', master_updates)
+            self.assertEqual(master_updates['Role'], None)
+            self.assertTrue(sync_update.m_deltas)
+            self.assertFalse(sync_update.s_deltas)
+            self.assertEqual(
+                sync_update.new_m_object.get(ColDataUser.delta_col('Role Info')).role,
+                'WN'
+            )
+            self.assertEqual(
+                str(sync_update.new_m_object.role),
+                ''
+            )
         except AssertionError as exc:
-            raise AssertionError("failed assertion: %s\n%s\n%s" % (
-                exc,
-                sync_update.sync_passes.items(),
-                sync_update.tabulate(tablefmt='simple')
-            ))
-        role_sync_params = sync_update.sync_warnings.get('Role')[0]
-        self.assertEqual(
-            role_sync_params.get('subject'),
-            sync_update.master_name
-        )
-        self.assertEqual(
-            role_sync_params.get('reason'),
-            'deleting'
-        )
-        self.assertTrue(sync_update.m_deltas)
-        self.assertFalse(sync_update.s_deltas)
-        self.assertEqual(
-            sync_update.new_m_object.get(ColDataUser.delta_col('Role')),
-            'WN'
-        )
-        self.assertEqual(
-            str(sync_update.new_m_object.role),
-            ''
-        )
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_similar_url(self):
         self.assertFalse(SocialMediaFields.mandatory_keys)

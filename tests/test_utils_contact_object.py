@@ -1,5 +1,7 @@
 import unittest
 from unittest import TestCase
+import traceback
+from pprint import pformat
 
 from context import woogenerator
 from woogenerator.utils import Registrar
@@ -867,6 +869,17 @@ class TestSocialMediaGroup(TestFieldGroups):
         self.assertEqual(smf['Instagram Username'], '@insta')
 
 class TestRoleGroup(TestFieldGroups):
+
+    def fail_rolegroup_assertion(self, exc, role_info_a, role_info_b):
+        msg = "Failed assertion: \n%s\nleft:  %s / %s\nright: %s / %s" % (
+            traceback.format_exc(exc),
+            pformat(role_info_a.kwargs),
+            pformat(role_info_a.properties),
+            pformat(role_info_b.kwargs),
+            pformat(role_info_b.properties)
+        )
+        raise Exception(msg)
+
     def test_role_group_basic(self):
         rgrp = RoleGroup(
             role='WN',
@@ -891,6 +904,77 @@ class TestRoleGroup(TestFieldGroups):
         self.assertTrue(rgrp.valid)
         self.assertEqual(rgrp.role, 'WN')
         self.assertEqual(rgrp.direct_brands, 'TechnoTan Wholesale')
+
+    def test_role_group_reflect_equality(self):
+        RoleGroup.perform_post = True
+        FieldGroup.enforce_mandatory_keys = False
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brands='TechnoTan Wholesale'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+        )
+        reflected = rgrp.reflect()
+        try:
+            self.assertEqual(rgrp, reflected)
+        except AssertionError as exc:
+            self.fail_rolegroup_assertion(exc, rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+            direct_brands='TechnoTan Retail'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brands='Pending'
+        )
+        reflected = rgrp.reflect()
+        try:
+            self.assertEqual(rgrp, reflected)
+        except AssertionError as exc:
+            self.fail_rolegroup_assertion(exc, rgrp, reflected)
+
+    def test_role_group_reflect_equality_no_post(self):
+        RoleGroup.perform_post = False
+        FieldGroup.enforce_mandatory_keys = True
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brands='TechnoTan Wholesale'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+        )
+        reflected = rgrp.reflect()
+        try:
+            self.assertNotEqual(rgrp, reflected)
+        except AssertionError as exc:
+            self.fail_rolegroup_assertion(exc, rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+            direct_brands='TechnoTan Retail'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brands='Pending'
+        )
+        reflected = rgrp.reflect()
+        self.assertNotEqual(rgrp, reflected)
 
     def test_roles_jess(self):
         RoleGroup.perform_post = True

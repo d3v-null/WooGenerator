@@ -87,18 +87,18 @@ class FieldGroup(Registrar):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            # for key in ['country', 'state', 'postcode', 'city',
-            # 'thoroughfares', 'deliveries', 'names', 'buildings', 'floors',
-            # 'subunits']:
             for key in self.equality_keys:
                 if getattr(self, key) != getattr(other, key):
                     return False
             return True
         return False
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __getitem__(self, key):
         for attr, keys in self.key_mappings.items():
-            if key in keys:
+            if key in keys or key == attr:
                 if self.properties_override:
                     return getattr(self, attr)
                 return self.kwargs.get(attr)
@@ -106,7 +106,7 @@ class FieldGroup(Registrar):
     def __setitem__(self, key, val):
         # print "setting cont %s to %s " % (key, val)
         for attr, keys in self.key_mappings.items():
-            if key in keys:
+            if key in keys or key == attr:
                 if self.properties_override:
                     return setattr(self, attr, val)
                 self.kwargs[attr] = val
@@ -1890,5 +1890,5 @@ class RoleGroup(FieldGroup):
         delimeter = "; "
         return SanitationUtils.coerce_unicode(prefix + delimeter.join(filter(None, [
             self.role,
-            # self.direct_brands,
+            self.direct_brands,
         ])))
