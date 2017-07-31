@@ -70,6 +70,7 @@ class FieldGroup(Registrar):
 
     def process_kwargs(self):
         self.init_properties()
+        self.perform_post = True
 
     def init_properties(self):
         pass

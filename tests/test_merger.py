@@ -4,6 +4,7 @@ import os
 import unittest
 # from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import argparse
+import traceback
 from pprint import pformat
 
 from context import woogenerator
@@ -268,6 +269,14 @@ class TestMerger(unittest.TestCase):
             set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
         )
 
+    def fail_syncupdate_assertion(self, exc, sync_update):
+            msg = "failed assertion: %s\n%s\n%s" % (
+                traceback.format_exc(exc),
+                pformat(sync_update.sync_warnings.items()),
+                sync_update.tabulate(tablefmt='simple')
+            )
+            raise AssertionError(msg)
+
     def test_do_merge(self):
         if Registrar.DEBUG_MESSAGE:
             print("#pylint: disable=*")
@@ -319,45 +328,55 @@ class TestMerger(unittest.TestCase):
                     update.display_sync_reflections(),
                 ))
 
-        update_0 = self.updates.static[0]
-        self.assertEqual(update_0.old_m_object.MYOBID, 'C001694')
-        self.assertEqual(update_0.old_m_object.rowcount, 45)
-        self.assertEqual(update_0.old_m_object.role.direct_brands, 'TechnoTan')
-        self.assertEqual(update_0.old_m_object.role.role, 'RN')
-        self.assertEqual(update_0.old_s_object.wpid, '1143')
-        self.assertEqual(update_0.old_s_object.rowcount, 37)
-        self.assertEqual(update_0.old_s_object.role.direct_brands, None)
-        self.assertEqual(update_0.old_s_object.role.role, 'RN')
-        self.assertEqual(update_0.new_m_object.role.direct_brands, 'TechnoTan Retail')
-        self.assertEqual(update_0.new_m_object.role.role, 'RN')
-        self.assertEqual(update_0.new_s_object.role.direct_brands, 'TechnoTan Retail')
-        self.assertEqual(update_0.new_s_object.role.role, 'RN')
-        update_1 = self.updates.static[1]
-        self.assertEqual(update_1.old_m_object.MYOBID, 'C001446')
-        self.assertEqual(update_1.old_m_object.rowcount, 92)
-        self.assertEqual(update_1.old_m_object.role.direct_brands, 'TechnoTan')
-        self.assertEqual(update_1.old_m_object.role.role, 'ADMIN')
-        self.assertEqual(update_1.old_s_object.wpid, '1439')
-        self.assertEqual(update_1.old_s_object.rowcount, 13)
-        self.assertEqual(update_1.old_s_object.role.direct_brands, 'TechnoTan')
-        self.assertEqual(update_1.old_s_object.role.role, 'ADMIN')
-        self.assertEqual(update_1.new_m_object.role.direct_brands, 'Staff')
-        self.assertEqual(update_1.new_m_object.role.role, 'ADMIN')
-        self.assertEqual(update_1.new_s_object.role.direct_brands, 'Staff')
-        self.assertEqual(update_1.new_s_object.role.role, 'ADMIN')
-        update_2 = self.updates.static[2]
-        self.assertEqual(update_2.old_m_object.MYOBID, 'C001280')
-        self.assertEqual(update_2.old_m_object.rowcount, 10)
-        self.assertEqual(update_2.old_m_object.role.direct_brands, 'VuTan Wholesale')
-        self.assertEqual(update_2.old_m_object.role.role, 'WN')
-        self.assertEqual(update_2.old_s_object.wpid, '1983')
-        self.assertEqual(update_2.old_s_object.rowcount, 91)
-        self.assertEqual(update_2.old_s_object.role.direct_brands, None)
-        self.assertEqual(update_2.old_s_object.role.role, 'WN')
-        self.assertEqual(update_2.new_m_object.role.direct_brands, 'VuTan Wholesale')
-        self.assertEqual(update_2.new_m_object.role.role, 'WN')
-        self.assertEqual(update_2.new_s_object.role.direct_brands, 'VuTan Wholesale')
-        self.assertEqual(update_2.new_s_object.role.role, 'RN') #no, really
+        sync_update = self.updates.static[0]
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001694')
+            self.assertEqual(sync_update.old_m_object.rowcount, 45)
+            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_m_object.role.role, 'RN')
+            self.assertEqual(sync_update.old_s_object.wpid, '1143')
+            self.assertEqual(sync_update.old_s_object.rowcount, 37)
+            self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
+            self.assertEqual(sync_update.old_s_object.role.role, 'RN')
+
+            self.assertEqual(sync_update.new_m_object.role.role, 'RN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'TechnoTan Retail')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'TechnoTan Retail')
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        sync_update = self.updates.static[1]
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001446')
+            self.assertEqual(sync_update.old_m_object.rowcount, 92)
+            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_m_object.role.role, 'ADMIN')
+            self.assertEqual(sync_update.old_s_object.wpid, '1439')
+            self.assertEqual(sync_update.old_s_object.rowcount, 13)
+            self.assertEqual(sync_update.old_s_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_s_object.role.role, 'ADMIN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_s_object.role.role, 'ADMIN')
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        sync_update = self.updates.static[2]
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
+            self.assertEqual(sync_update.old_m_object.rowcount, 10)
+            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_s_object.wpid, '1983')
+            self.assertEqual(sync_update.old_s_object.rowcount, 91)
+            self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
+            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
 
 if __name__ == '__main__':
