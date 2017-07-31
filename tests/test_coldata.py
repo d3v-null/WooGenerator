@@ -95,7 +95,7 @@ class testColDataUser(TestCase):
     def test_getDeltaCols(self):
         DeltaCols = ColDataUser.get_delta_cols()
         self.assertItemsEqual(DeltaCols, OrderedDict(
-            [('E-mail', 'Delta E-mail'), ('Role', 'Delta Role')]))
+            [('E-mail', 'Delta E-mail'), ('Role Info', 'Delta Role Info')]))
 
     def test_getAllWpDbCols(self):
         dbCols = ColDataUser.get_all_wpdb_cols()
