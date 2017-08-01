@@ -1507,23 +1507,35 @@ class RoleGroup(FieldGroup):
     ]
 
     schema_translations = [
-        ('tt', 'TechnoTan'), ('vt', 'VuTan'), ('mm', 'Mosaic Minerals'),
-        ('mm', 'Mosaic'), ('pw', 'PrintWorx'), ('at', 'AbsoluteTan'),
-        ('hr', 'House of Rhinestones'), ('ma', 'Meridian Marketing'),
-        ('tc', 'Tanbience'), ('st', 'Staff'), ('-', 'Pending')
+        ('tt', 'TechnoTan'),
+        ('vt', 'VuTan'),
+        ('mm', 'Mosaic Minerals'),
+        ('mm', 'Mosaic'),
+        ('pw', 'PrintWorx'),
+        ('at', 'AbsoluteTan'),
+        ('hr', 'House of Rhinestones'),
+        ('ma', 'Meridian Marketing'),
+        ('tc', 'Tanbience'),
+        ('st', 'Staff'),
+        ('-', 'Pending')
     ]
 
-    allowed_combinations = OrderedDict(
-        [('tt',
-          ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp']), ('vt', [
-              'rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp',
-              'xdn', 'xdp'
-          ]), ('mm', [
-              'rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp',
-              'xdn', 'xdp'
-          ]), ('tc', ['rn', 'rp', 'wn', 'wp', 'dn', 'dp']), ('st', ['admin'])])
+    allowed_combinations = OrderedDict([
+        ('tt', ['rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp']),
+        ('vt', [
+            'rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp',
+            'xdn', 'xdp'
+        ]),
+        ('mm', [
+            'rn', 'rp', 'xrn', 'xrp', 'wn', 'wp', 'xwn', 'xwp', 'dn', 'dp',
+            'xdn', 'xdp'
+        ]),
+        ('tc', ['rn', 'rp', 'wn', 'wp', 'dn', 'dp']),
+        ('st', ['admin'])
+    ])
 
     roleless_schemas = ['-', 'st']
+    default_role = 'rn'
 
     # def __init__(self, schema=None, **kwargs):
     # super(RoleGroup, self).__init__(**kwargs)
@@ -1602,23 +1614,37 @@ class RoleGroup(FieldGroup):
         if direct_brand == "none":
             direct_brand = None
         if direct_brand:
+            direct_brand = SanitationUtils.strip_tailing_whitespace(direct_brand)
+            direct_brand = SanitationUtils.strip_leading_whitespace(direct_brand)
+            if direct_brand == "pending":
+                return ('-', None)
             direct_brand_tokens = direct_brand.lower().split(' ')
             # do tokenwise comparison on all possible schemes:
+            if Registrar.DEBUG_CONTACT:
+                Registrar.register_message("direct brand tokens: %s" % direct_brand_tokens)
             for schema, brand in cls.schema_translations:
                 brand_tokens = brand.lower().split(' ')
-
+                if Registrar.DEBUG_CONTACT:
+                    Registrar.register_message("brand tokens: %s" % brand_tokens)
                 if cls.tokenwise_startswith(direct_brand_tokens, brand_tokens):
                     parsed_schema = schema
-                    direct_brand_tokens = direct_brand_tokens[len(
-                        brand_tokens):]
-                    if direct_brand_tokens:
+                    remaining_tokens = \
+                        direct_brand_tokens[len(brand_tokens):]
+                    if Registrar.DEBUG_CONTACT:
+                        Registrar.register_message("remaining tokens: %s" % remaining_tokens)
+                    if remaining_tokens:
                         parsed_role = cls.get_role(
-                            " ".join(direct_brand_tokens))
+                            " ".join(remaining_tokens))
                         assert parsed_role, \
-                            "could not parse role: %s" % " ".join(direct_brand_tokens)
+                            "could not parse role: %s" % " ".join(remaining_tokens)
+                    break
 
             assert parsed_schema, \
                 "unkown brand: %s" %  direct_brand
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message("returning schema: %s; role: %s" % (
+                parsed_schema, parsed_role
+            ))
         return parsed_schema, parsed_role
 
     @classmethod
@@ -1650,15 +1676,20 @@ class RoleGroup(FieldGroup):
         """
         Determe what role should be based on direct brand, schema and (optionally) default role.
         """
+        if role is None:
+            role = cls.default_role
+        if not schema:
+            return role
         schema = schema.lower()
+        assert cls.schema_exists(schema), "schema %s not recognized" % schema
         if direct_brands is None:
             return role
-        assert cls.schema_exists(schema), "schema %s not recognized" % schema
         for parsed_schema, parsed_role in cls.parse_direct_brands(
                 direct_brands):
             if parsed_schema and parsed_role and schema == parsed_schema:
-                assert cls.role_exists(
-                    parsed_role), "role %s not recognized" % parsed_role
+                assert \
+                    cls.role_exists(parsed_role), \
+                    "role %s not recognized" % parsed_role
                 return parsed_role.upper()
         return role
 
@@ -1688,22 +1719,34 @@ class RoleGroup(FieldGroup):
                 break
             if parsed_schema == '-' and (len(parsed) - count > 1):
                 continue
+            if self.debug:
+                self.register_message("analysing: %s / %s" % (
+                    parsed_schema, parsed_role
+                ))
             if parsed_schema:
+                in_schema = True
+                if self.schema:
+                    in_schema = (self.schema.lower() == parsed_schema)
                 if parsed_schema not in self.roleless_schemas:
                     # if there is competition:
-                    role_competitors = [(0, 'rn', 'default')]
-                    allowed_roles = ['rn']
+                    role_competitors = [(0, self.default_role, 'default')]
+                    allowed_roles = [self.default_role]
                     if parsed_schema in self.allowed_combinations:
                         allowed_roles = self.allowed_combinations[
                             parsed_schema]
                     for priority, allowed_role in enumerate(allowed_roles):
-                        if allowed_role == self.properties['role']:
+                        if allowed_role == self.properties['role'] and in_schema:
                             role_competitors.append(
-                                (priority, self.kwargs.get('role'),
-                                 'act_role'))
+                                (priority, self.properties['role'], 'act_role')
+                            )
+                            if self.schema:
+                                break
                         if allowed_role == parsed_role:
-                            role_competitors.append((priority, parsed_role,
-                                                     'parsed_role'))
+                            role_competitors.append(
+                                (priority, parsed_role, 'parsed_role')
+                            )
+                            if self.schema:
+                                break
                     if self.debug:
                         self.register_message(
                             "role competitors: %s" % pformat(role_competitors))
@@ -1714,7 +1757,13 @@ class RoleGroup(FieldGroup):
                             allowed_roles
                         )
                     _, winning_role, source = max(role_competitors)
-                    if source != 'act_role':
+                    if self.debug:
+                        self.register_message(
+                            "winner: %s, %s" % (winning_role, source)
+                        )
+                    if source != 'act_role' and in_schema:
+                        if self.debug:
+                            self.register_message("source not act and in schema")
                         self.properties['role'] = winning_role
 
                     if len(allowed_roles) > 1:
@@ -1724,9 +1773,12 @@ class RoleGroup(FieldGroup):
                 self.properties['direct_brands'].append((parsed_schema, None))
 
         if self.debug:
-            self.register_message("direct_brands: %s, role: %s" %
-                                  (self.properties['direct_brands'],
-                                   self.properties['role']))
+            self.register_message(
+                "direct_brands: %s, role: %s" % (
+                    self.properties['direct_brands'],
+                    self.properties['role']
+                )
+            )
 
         if not self.properties['direct_brands']:
             self.properties['direct_brands'] = [('-', None)]
@@ -1736,7 +1788,7 @@ class RoleGroup(FieldGroup):
             else:
                 self.properties['role'] = ''
         if not self.properties['role']:
-            self.properties['role'] = 'rn'
+            self.properties['role'] = self.default_role
 
     @property
     def direct_brands(self):
@@ -1750,8 +1802,15 @@ class RoleGroup(FieldGroup):
     @property
     def role(self):
         if self.properties_override:
-            if self.properties['role']:
-                return self.properties['role'].upper()
+            if self.schema:
+                role = self.determine_role(
+                    self.direct_brands,
+                    self.schema
+                )
+            else:
+                role = self.properties.get('role')
+            if role:
+                return role.upper()
             return ''
         return self.kwargs.get('role')
 
