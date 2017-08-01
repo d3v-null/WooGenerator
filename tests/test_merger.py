@@ -281,7 +281,6 @@ class TestMerger(unittest.TestCase):
         )
 
     def test_do_merge(self):
-        # don't care about this
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
@@ -302,16 +301,16 @@ class TestMerger(unittest.TestCase):
             Registrar.DEBUG_WARN = True
 
         if Registrar.DEBUG_MESSAGE:
-            print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
-            print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
-            print("master updates:\n%s" % map(str, (self.updates.master)))
-            print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
-            print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
-            print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
-            print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
-            print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
-            print("slave updates:\n%s" % map(str, (self.updates.slave)))
-            print("static updates:\n%s" % map(str, (self.updates.static)))
+            # print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
+            # print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
+            # print("master updates:\n%s" % map(str, (self.updates.master)))
+            # print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
+            # print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
+            # print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
+            # print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
+            # print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
+            # print("slave updates:\n%s" % map(str, (self.updates.slave)))
+            # print("static updates:\n%s" % map(str, (self.updates.static)))
 
             for update in self.updates.static:
                 print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s\nreflections:\n%s" % (
@@ -458,6 +457,44 @@ class TestMerger(unittest.TestCase):
             # Both should be delta
             self.assertTrue(sync_update.m_deltas)
             self.assertFalse(sync_update.s_deltas)
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+    def test_do_merge_hard(self):
+        if self.debug:
+            Registrar.DEBUG_MESSAGE = False
+            Registrar.DEBUG_WARN = False
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        sync_update = self.updates.static[2]
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
+            self.assertEqual(sync_update.old_m_object.rowcount, 10)
+            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
+            self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
+            self.assertEqual(sync_update.old_s_object.wpid, '1983')
+            self.assertEqual(sync_update.old_s_object.rowcount, 91)
+            self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
+            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
+            # TODO: Must respect role of slave schema
+            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
+            self.assertFalse(sync_update.m_deltas)
+            # self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
