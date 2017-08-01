@@ -1,25 +1,23 @@
 """
 Provide configuration parsers.
 """
-import os
-import ast
-# import time
-# import sys
-
 import argparse
+import ast
+import os
+
 import configargparse
 
 import __init__
-from woogenerator.conf import (
-    DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_LOG_DIR,
-    DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH, DEFAULT_LOCAL_USER_PATH,
-    DEFAULT_LOCAL_USER_TEST_PATH, DEFAULTS_COMMON_PATH, DEFAULT_LOCAL_IMG_RAW_DIR,
-    DEFAULTS_PROD_PATH)
-from woogenerator.conf.namespace import (
-    SettingsNamespaceProto, SettingsNamespaceProd, SettingsNamespaceUser)
-
-# TODO: split file into namespace and argumentparsers
-
+from woogenerator.conf import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
+                               DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
+                               DEFAULT_LOCAL_PROD_PATH,
+                               DEFAULT_LOCAL_PROD_TEST_PATH,
+                               DEFAULT_LOCAL_USER_PATH,
+                               DEFAULT_LOCAL_USER_TEST_PATH,
+                               DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH)
+from woogenerator.conf.namespace import (SettingsNamespaceProd,
+                                         SettingsNamespaceProto,
+                                         SettingsNamespaceUser)
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
@@ -722,7 +720,3 @@ class ArgumentParserUser(ArgumentParserCommon):
         self.add_suppressed_argument('--smtp-port', type=int)
         self.add_suppressed_argument('--smtp-user', type=str)
         self.add_suppressed_argument('--smtp-pass', type=str)
-
-
-    # def add_other_options(self):
-    #     super(ArgumentParserUser, self).add_other_options()
