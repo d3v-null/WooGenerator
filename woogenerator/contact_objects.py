@@ -1667,6 +1667,9 @@ class RoleGroup(FieldGroup):
         if self.empty:
             return
 
+        if self.schema:
+            assert self.schema_exists(self.schema), "schema should be valid"
+
         if self.kwargs.get('role'):
             self.properties['role'] = self.kwargs.get('role').lower()
             assert self.role_exists(self.properties['role']), \

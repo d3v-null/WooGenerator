@@ -168,9 +168,9 @@ class ImportUser(ImportObject):
         #     **emails_kwargs
         # )
 
-        schema = None
-        if self.get('source') == 'WORDPRESS' and self.get('contact_schema'):
-            schema = self.schema
+        schema = data.get('schema')
+        if self.DEBUG_MESSAGE:
+            self.register_message("setting schema to %s" % schema)
 
         name_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
@@ -377,10 +377,10 @@ class ImportUser(ImportObject):
 
     def addresses_act_like(self):
         act_like = True
-        for address in filter(None,
-                              map(lambda key: self.get(key),
-                                  ['Address', 'Home Address'])):
-            if address.schema and address.schema != 'act':
+        for address in [
+                self.get(key) for key in ['Address', 'Home Address']
+        ]:
+            if address and address.schema and address.schema != 'act':
                 act_like = False
         return act_like
 
@@ -412,6 +412,7 @@ class CsvParseUser(CsvParseBase):
                  schema=None):
         if self.DEBUG_MRO:
             self.register_message(' ')
+        self.schema = schema
         extra_cols = [
             # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date',
             # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
@@ -525,7 +526,7 @@ class CsvParseUser(CsvParseBase):
             singular=True,
             register_name='filtered')
 
-    def register_bad_address(self, object_data, address):
+    def register_bad_address(self, object_data, _):
         self.register_anything(
             object_data,
             self.bad_address,
@@ -533,7 +534,7 @@ class CsvParseUser(CsvParseBase):
             singular=True,
             register_name='badaddress')
 
-    def register_bad_name(self, object_data, name):
+    def register_bad_name(self, object_data, _):
         self.register_anything(
             object_data,
             self.bad_name,
@@ -591,8 +592,10 @@ class CsvParseUser(CsvParseBase):
                 return True
             if self.DEBUG_USR:
                 self.register_message(
-                    "could not register object %s because did not meet users, cards or emails conditions"
-                    % object_data.__repr__())
+                    (
+                        "could not register object %s because did not "
+                        "meet users, cards or emails conditions"
+                    ) % object_data.__repr__())
             return False
         else:
             return True
@@ -606,7 +609,7 @@ class CsvParseUser(CsvParseBase):
         if email and SanitationUtils.string_is_email(email):
             self.register_email(object_data, email)
         else:
-            if (self.DEBUG_USR):
+            if self.DEBUG_USR:
                 self.register_warning("invalid email address: %s" % email)
             self.register_no_email(object_data)
 
@@ -627,7 +630,7 @@ class CsvParseUser(CsvParseBase):
         if username:
             self.register_username(object_data, username)
         else:
-            if (self.DEBUG_USR):
+            if self.DEBUG_USR:
                 self.register_warning("invalid username: %s" % username)
             self.register_no_username(object_data)
 
@@ -662,12 +665,19 @@ class CsvParseUser(CsvParseBase):
 
         super(CsvParseUser, self).register_object(object_data)
 
-    def get_kwargs(self, all_data, container, **kwargs):
-        kwargs = super(CsvParseUser, self).get_kwargs(all_data, container, **
-                                                      kwargs)
-        if not 'contact_schema' in kwargs.keys():
-            kwargs['contact_schema'] = self.contact_schema
-        return kwargs
+    def get_parser_data(self, **kwargs):
+        data = super(CsvParseUser, self).get_parser_data(**kwargs)
+        if 'contact_schema' not in data:
+            data['contact_schema'] = self.contact_schema
+        if 'schema' not in data:
+            data['schema'] = self.schema
+        return data
+
+    # def get_kwargs(self, all_data, container, **kwargs):
+    #     kwargs = super(CsvParseUser, self).get_kwargs(
+    #         all_data, container, **kwargs
+    #     )
+    #     return kwargs
 
     # def processRoles(self, object_data):
     #     role = object_data.role
@@ -719,7 +729,12 @@ class CsvParseUserApi(CsvParseUser):
         if 'meta' in api_data:
             meta_translation = OrderedDict()
             meta_data = api_data['meta']
-            # if Registrar.DEBUG_API: Registrar.register_message("meta data: %s" % pformat(ColDataUser.get_wpapi_meta_cols().items()))
+            # if Registrar.DEBUG_API:
+            #     Registrar.register_message(
+            #         "meta data: %s" % pformat(
+            #             ColDataUser.get_wpapi_meta_cols().items()
+            #         )
+            #     )
             for col, col_data in ColDataUser.get_wpapi_meta_cols().items():
                 try:
                     if 'wp-api' in col_data:
@@ -735,7 +750,10 @@ class CsvParseUserApi(CsvParseUser):
                                            pformat(meta_translation))
             meta_translation_result = cls.translate_keys(meta_data,
                                                          meta_translation)
-            # if Registrar.DEBUG_API: Registrar.register_message("meta_translation_result: %s" % pformat(meta_translation_result))
+            # if Registrar.DEBUG_API:
+            #     Registrar.register_message(
+            #         "meta_translation_result: %s" % pformat(meta_translation_result)
+            #     )
             parser_data.update(**meta_translation_result)
 
         if Registrar.DEBUG_API:

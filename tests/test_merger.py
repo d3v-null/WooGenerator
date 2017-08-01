@@ -85,7 +85,7 @@ class TestMerger(unittest.TestCase):
         self.assertFalse(FieldGroup.do_post)
         self.assertEqual(SyncUpdate.master_name, "ACT")
         self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
-        self.assertEqual(self.settings.master_parser_args['schema'], "TT")
+        self.assertEqual(self.settings.master_parser_args.get('schema'), None)
         self.assertEqual(self.settings.slave_parser_args['schema'], "TT")
 
     def test_populate_master_parsers(self):
@@ -103,6 +103,8 @@ class TestMerger(unittest.TestCase):
         )
 
         usr_list = self.parsers.master.get_obj_list()
+
+        self.assertEqual(self.parsers.master.schema, None)
 
         #number of objects:
         self.assertTrue(len(usr_list))
@@ -132,6 +134,7 @@ class TestMerger(unittest.TestCase):
         # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
         # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
 
+        self.assertEqual(first_usr.name.schema, None)
         self.assertEqual(first_usr.name.first_name, 'Giacobo')
         self.assertEqual(first_usr.name.family_name, 'Piolli')
         self.assertEqual(first_usr.name.company, 'Linkbridge')
@@ -185,6 +188,8 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
 
+        self.assertEqual(self.parsers.slave.schema, 'TT')
+
         usr_list = self.parsers.slave.get_obj_list()
 
         self.assertEqual(len(usr_list), 100)
@@ -204,22 +209,23 @@ class TestMerger(unittest.TestCase):
             print("str@.last_sale:\n%s" % str(first_usr.last_sale))
             print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
             print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
-            print(
-                "pformat@.shipping_address.valid:\n%s" %
-                pformat(first_usr.shipping_address.valid)
-            )
-            print("pformat@.shipping_address.kwargs:\n%s" % \
-                  pformat(first_usr.shipping_address.kwargs))
-            print("pformat@.shipping_address.to_dict:\n%s" % \
-                  pformat(dict(first_usr.shipping_address.to_dict())))
-            print(".billing_address:\n%s" % first_usr.billing_address)
-            print("pformat@.billing_address.to_dict:\n%s" % \
-                  pformat(dict(first_usr.billing_address.to_dict())))
-            print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
-            print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
-            print("pformat@.wpid:\n%s" % pformat(first_usr.wpid))
-            print("pformat@.email:\n%s" % pformat(first_usr.email))
+            # print(
+            #     "pformat@.shipping_address.valid:\n%s" %
+            #     pformat(first_usr.shipping_address.valid)
+            # )
+            # print("pformat@.shipping_address.kwargs:\n%s" % \
+            #       pformat(first_usr.shipping_address.kwargs))
+            # print("pformat@.shipping_address.to_dict:\n%s" % \
+            #       pformat(dict(first_usr.shipping_address.to_dict())))
+            # print(".billing_address:\n%s" % first_usr.billing_address)
+            # print("pformat@.billing_address.to_dict:\n%s" % \
+            #       pformat(dict(first_usr.billing_address.to_dict())))
+            # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
+            # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
+            # print("pformat@.wpid:\n%s" % pformat(first_usr.wpid))
+            # print("pformat@.email:\n%s" % pformat(first_usr.email))
 
+        self.assertEqual(first_usr.name.schema, 'TT')
         self.assertEqual(first_usr.name.first_name, 'Gustav')
         self.assertEqual(first_usr.name.family_name, 'Sample')
         self.assertEqual(first_usr.name.company, 'Thoughtstorm')
