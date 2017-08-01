@@ -168,6 +168,10 @@ class ImportUser(ImportObject):
         #     **emails_kwargs
         # )
 
+        schema = None
+        if self.get('source') == 'WORDPRESS' and self.get('contact_schema'):
+            schema = self.schema
+
         name_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
@@ -184,7 +188,7 @@ class ImportUser(ImportObject):
             }.items()
         ]))
 
-        self['Name'] = ContactName(**name_kwargs)
+        self['Name'] = ContactName(schema, **name_kwargs)
 
         assert self['Name'] is not None, \
             'contact is missing mandatory fields: something went wrong'
@@ -206,7 +210,7 @@ class ImportUser(ImportObject):
         if self.DEBUG_ADDRESS:
             self.register_message("address_kwargs: %s" % address_kwargs)
 
-        self['Address'] = ContactAddress(**address_kwargs)
+        self['Address'] = ContactAddress(schema, **address_kwargs)
 
         # print "ADDRESS: ", self['Address']
 
@@ -223,7 +227,7 @@ class ImportUser(ImportObject):
             }.items()
         ]))
 
-        self['Home Address'] = ContactAddress(**alt_address_kwargs)
+        self['Home Address'] = ContactAddress(schema, **alt_address_kwargs)
 
         # print "HOME ADDRESS: ", self['Home Address']
 
@@ -238,7 +242,7 @@ class ImportUser(ImportObject):
             }.items()
         ]))
 
-        self['Phone Numbers'] = ContactPhones(**phone_kwargs)
+        self['Phone Numbers'] = ContactPhones(schema, **phone_kwargs)
 
         social_media_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
@@ -261,7 +265,7 @@ class ImportUser(ImportObject):
         if self.DEBUG_USR and self.DEBUG_CONTACT:
             self.register_message("social_media_kwargs: %s" % pformat(social_media_kwargs))
 
-        self['Social Media'] = SocialMediaFields(**social_media_kwargs)
+        self['Social Media'] = SocialMediaFields(schema, **social_media_kwargs)
 
         if self.DEBUG_USR and self.DEBUG_CONTACT:
             self.register_message("Social Media: %s, type: %s, properties\n%s, kwargs\n%s" % (
@@ -279,7 +283,7 @@ class ImportUser(ImportObject):
             }.items()
         ]))
 
-        self['Role Info'] = RoleGroup(**role_info_kwargs)
+        self['Role Info'] = RoleGroup(schema, **role_info_kwargs)
 
         if self.DEBUG_USR and self.DEBUG_CONTACT:
             self.register_message("Role Info: %s, type: %s, properties\n%s" % (
@@ -606,7 +610,7 @@ class CsvParseUser(CsvParseBase):
                 self.register_warning("invalid email address: %s" % email)
             self.register_no_email(object_data)
 
-        role = object_data.role
+        role = object_data.role.role
         if role:
             self.register_role(object_data, role)
         else:

@@ -31,8 +31,9 @@ class FieldGroup(Registrar):
     perform_post = False
     enforce_mandatory_keys = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, schema=None, **kwargs):
         super(FieldGroup, self).__init__()
+        self.schema = schema
         self.debug = getattr(self, 'debug', self.DEBUG_CONTACT)
         self.strict = getattr(self, 'strict', None)
         self.kwargs = kwargs
@@ -227,10 +228,6 @@ class ContactObject(FieldGroup):
             self.reset()
             return flat
 
-    def __init__(self, schema=None, **kwargs):
-        self.schema = schema
-        super(ContactObject, self).__init__(**kwargs)
-
     def init_properties(self):
         super(ContactObject, self).init_properties()
         self.properties['ignores'] = []
@@ -389,7 +386,7 @@ class ContactAddress(ContactObject):
             if self.debug:
                 self.register_message("not processing kwargs because empty")
             return
-        # if not schema: self.schema = self.__class__.determine_schema(**self.kwargs)
+        # if not schema: self.schema = self.__class__.determine_source(**self.kwargs)
 
         lines = SeqUtils.filter_unique_true([
             SanitationUtils.normalize_val(self.kwargs.get(key, '')) \
@@ -914,7 +911,7 @@ class ContactAddress(ContactObject):
             filter(None, [self.city, self.state, self.postcode, self.country]))
 
     @staticmethod
-    def determine_schema(**kwargs):
+    def determine_source(**kwargs):
         fields = filter(None, map(lambda key: kwargs.get(
             key, ''), ['line1', 'line2', 'city']))
         if fields:
