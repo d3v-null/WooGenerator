@@ -1,33 +1,32 @@
 import os
-from os import sys, path
 import unittest
-import yaml
-from unittest import TestCase  # , main, skip
+from os import path, sys
 
-from context import woogenerator
-from context import get_testdata, tests_datadir
+import yaml
+
+from context import get_testdata, tests_datadir, woogenerator
 from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
-from woogenerator.coldata import ColDataUser, ColDataWoo
-from woogenerator.parsing.user import ImportUser
+from woogenerator.coldata import ColDataWoo
 from woogenerator.utils import Registrar, TimeUtils
 
 
-class abstractSyncClientTestCase(TestCase):
+class AbstractSyncClientTestCase(unittest.TestCase):
     # yaml_path = "generator_config.yaml"
     yaml_path = os.path.join(tests_datadir, 'generator_config_test.yaml')
     optionNamePrefix = 'test_'
     # optionNamePrefix = ''
 
-    def processConfig(self, config): raise NotImplementedError()
+    def process_config(self, config):
+        raise NotImplementedError()
 
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
 
         with open(self.yaml_path) as stream:
             config = yaml.load(stream)
-            self.processConfig(config)
+            self.process_config(config)
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
@@ -40,19 +39,19 @@ class abstractSyncClientTestCase(TestCase):
 
 
 @unittest.skip('have not created config file yet')
-class testSyncClient(abstractSyncClientTestCase):
+class TestSyncClient(AbstractSyncClientTestCase):
     # optionNamePrefix = 'dummy_'
     optionNamePrefix = ''
 
     def __init__(self, *args, **kwargs):
-        super(testSyncClient, self).__init__(*args, **kwargs)
-        self.gDriveParams = {}
-        self.wcApiParams = {}
-        self.productParserArgs = {}
+        super(TestSyncClient, self).__init__(*args, **kwargs)
+        self.g_drive_params = {}
+        self.wc_api_params = {}
+        self.product_parser_args = {}
 
         Registrar.DEBUG_API = True
 
-    def processConfig(self, config):
+    def process_config(self, config):
         gdrive_scopes = config.get('gdrive_scopes')
         gdrive_client_secret_file = config.get('gdrive_client_secret_file')
         gdrive_app_name = config.get('gdrive_app_name')
@@ -79,7 +78,7 @@ class testSyncClient(abstractSyncClientTestCase):
         # wp_srv_offset = config.get(self.optionNamePrefix+'wp_srv_offset', 0)
         store_url = config.get(self.optionNamePrefix + 'store_url', '')
 
-        self.gDriveParams = {
+        self.g_drive_params = {
             'scopes': gdrive_scopes,
             'client_secret_file': gdrive_client_secret_file,
             'app_name': gdrive_app_name,
@@ -96,9 +95,9 @@ class testSyncClient(abstractSyncClientTestCase):
             'xs_gid': xs_gid,
         }
 
-        # print "gDriveParams", self.gDriveParams
+        # print "g_drive_params", self.g_drive_params
 
-        self.wcApiParams = {
+        self.wc_api_params = {
             'api_key': wc_api_key,
             'api_secret': wc_api_secret,
             'url': store_url,
@@ -106,9 +105,9 @@ class testSyncClient(abstractSyncClientTestCase):
             # 'version':'wc/v1'
         }
 
-        # print "wcApiParams", self.wcApiParams
+        # print "wc_api_params", self.wc_api_params
 
-        self.wpApiParams = {
+        self.wp_api_params = {
             'api_key': wp_api_key,
             'api_secret': wp_api_secret,
             'wp_user': wp_user,
@@ -117,9 +116,9 @@ class testSyncClient(abstractSyncClientTestCase):
             'callback': wp_callback
         }
 
-        # print "wpApiParams", self.wpApiParams
+        # print "wp_api_params", self.wp_api_params
 
-        self.productParserArgs = {
+        self.product_parser_args = {
             'self.import_name': self.import_name,
             # 'item_depth': item_depth,
             # 'taxo_depth': taxo_depth,
@@ -127,20 +126,21 @@ class testSyncClient(abstractSyncClientTestCase):
             'defaults': ColDataWoo.get_defaults(),
         }
 
-        # print "productParserArgs", self.productParserArgs
+        # print "product_parser_args", self.product_parser_args
 
-    def test_GDrive_Read(self):
-        with SyncClientGDrive(self.gDriveParams) as client:
+    def test_g_drive_read(self):
+        with SyncClientGDrive(self.g_drive_params) as client:
             self.assertTrue(client.drive_file)
-            self.assertTrue(client.get_gm_modtime(self.gDriveParams['gen_gid']))
+            self.assertTrue(client.get_gm_modtime(self.g_drive_params['gen_gid']))
             # print "drive file:", client.drive_file
-            # print "GID", client.get_gm_modtime(self.gDriveParams['gen_gid'])
+            # print "GID", client.get_gm_modtime(self.g_drive_params['gen_gid'])
 
-    def test_ProdSyncClient_WC_Read(self):
-        self.wcApiParams.update(timeout=1)
-        with ProdSyncClientWC(self.wcApiParams) as client:
+    def test_prod_sync_client_wc_read(self):
+        self.wc_api_params.update(timeout=1)
+        with ProdSyncClientWC(self.wc_api_params) as client:
             # print client.service.get('products').text
             for pagecount, page in enumerate(client.get_iterator('products')):
+                self.assertTrue(pagecount)
                 # print "PAGE %d: " % pagecount
                 if 'products' in page:
                     for page_product in page.get('products'):
@@ -148,13 +148,15 @@ class testSyncClient(abstractSyncClientTestCase):
                             prod_str = page_product['id']
                         else:
                             prod_str = str(page_product)[:100]
+                        self.assertTrue(prod_str)
                         # print "-> PRODUCT: ", prod_str
 
     @unittest.skip('out of scope')
-    def test_UsrSyncClient_WP_Read(self):
-        with UsrSyncClientWP(self.wpApiParams) as client:
+    def test_usr_sync_client_wp_read(self):
+        with UsrSyncClientWP(self.wp_api_params) as client:
             # print client.service.get('users').text
             for pagecount, page in enumerate(client.get_iterator('users')):
+                self.assertTrue(pagecount)
                 # print "PAGE %d: " % pagecount
                 if 'users' in page:
                     for page_user in page.get('users'):
@@ -165,6 +167,6 @@ class testSyncClient(abstractSyncClientTestCase):
 if __name__ == '__main__':
     unittest.main()
     # testSuite = unittest.TestSuite()
-    # testSuite.addTest(testSyncClient('test_UsrSyncClient_WP_Read'))
-    # testSuite.addTest(testSyncClient('test_ProdSyncClient_WC_Read'))
+    # testSuite.addTest(TestSyncClient('test_usr_sync_client_wp_read'))
+    # testSuite.addTest(TestSyncClient('test_prod_sync_client_wc_read'))
     # unittest.TextTestRunner().run(testSuite)

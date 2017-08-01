@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from unittest import TestCase, main, skip
+import unittest
+from unittest import TestCase
 
 from context import woogenerator
 from woogenerator.coldata import ColDataUser, ColDataWoo
@@ -164,7 +165,7 @@ class testColDataUser(TestCase):
         # print "test_getWPAPIVariableCols", api_cols.keys()
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
 
 # TODO: Implement these test cases
 #

@@ -45,7 +45,6 @@ class TestContactAddress(TestFieldGroups):
         )
         self.assertItemsEqual(address.properties['subunits'], [('SHOP', '10')])
 
-    # @unittest.skip("can't handle yet")
     def test_irregular_thoroughfare_num(self):
         address = ContactAddress(
             line1='LEVEL 2, SHOP 202 / 8B "WAX IT"',
@@ -127,7 +126,6 @@ class TestContactAddress(TestFieldGroups):
             [('39', 'MURRAY', 'ST', None)]
         )
 
-    # @unittest.skip("can't handle yet")
     def test_ordinal_thoroughfare(self):
         address = ContactAddress(
             city='ROSSMORE',

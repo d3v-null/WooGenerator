@@ -1,15 +1,13 @@
 import os
 import time
-from unittest import TestCase, main, skip, TestSuite, TextTestRunner
+import unittest
 
-from context import woogenerator
-from context import get_testdata, tests_datadir
-from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.special import CsvParseSpecial, SpecialGruopList, SpecialRuleList
-from woogenerator.utils import SanitationUtils, Registrar, TimeUtils
+from context import get_testdata, tests_datadir, woogenerator
+from woogenerator.parsing.special import CsvParseSpecial
+from woogenerator.utils import Registrar, TimeUtils
 
 
-class TestCSVParseSpecialV2(TestCase):
+class TestCSVParseSpecialV2(unittest.TestCase):
 
     def setUp(self):
         # import_name = TimeUtils.get_ms_timestamp()
@@ -123,4 +121,4 @@ class TestCSVParseSpecialV2(TestCase):
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

@@ -460,6 +460,7 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skip('contextual role inference not implemented yet')
     def test_do_merge_hard(self):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False

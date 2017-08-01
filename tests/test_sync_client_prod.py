@@ -1,31 +1,25 @@
-from os import sys, path
-from collections import OrderedDict
-from time import sleep
 import random
-from unittest import TestCase, main, skip, TestSuite, TextTestRunner
-from tabulate import tabulate
+import unittest
+from collections import OrderedDict
 
-from test_sync_client import abstractSyncClientTestCase
 from context import woogenerator
-from woogenerator.client.prod import ProdSyncClientWC, CatSyncClientWC
-from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.abstract import ObjList
-# from woogenerator.parsing.gen import ProdList
-from woogenerator.parsing.shop import ShopProdList, ShopCatList
-from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo
+from tests.test_sync_client import AbstractSyncClientTestCase
+from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.parsing.api import CsvParseWooApi
-from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
+from woogenerator.parsing.shop import ShopCatList, ShopProdList
+from woogenerator.utils import TimeUtils
+from woogenerator.coldata import ColDataWoo
 
 
-@skip("have not created config file yet")
-class testProdSyncClient(abstractSyncClientTestCase):
+@unittest.skip("have not created config file yet")
+class TestProdSyncClient(AbstractSyncClientTestCase):
 
     def __init__(self, *args, **kwargs):
-        super(testProdSyncClient, self).__init__(*args, **kwargs)
-        self.wcApiParams = {}
-        self.productParserArgs = {}
+        super(TestProdSyncClient, self).__init__(*args, **kwargs)
+        self.wc_api_params = {}
+        self.product_parser_args = {}
 
-    def processConfig(self, config):
+    def process_config(self, config):
         # if 'in_folder' in config.keys():
         #     in_folder = config['in_folder']
         # if 'out_folder' in config.keys():
@@ -45,13 +39,13 @@ class testProdSyncClient(abstractSyncClientTestCase):
 
         # json_uri = store_url + 'wp-json/wp/v2'z
 
-        self.wcApiParams = {
+        self.wc_api_params = {
             'api_key': wc_api_key,
             'api_secret': wc_api_secret,
             'url': store_url
         }
 
-        self.productParserArgs = {
+        self.product_parser_args = {
             'import_name': self.import_name,
             # 'item_depth': item_depth,
             # 'taxo_depth': taxo_depth,
@@ -60,9 +54,9 @@ class testProdSyncClient(abstractSyncClientTestCase):
         }
 
     def setUp(self):
-        super(testProdSyncClient, self).setUp()
+        super(TestProdSyncClient, self).setUp()
 
-        # for var in ['wcApiParams', 'productParserArgs']:
+        # for var in ['wc_api_params', 'product_parser_args']:
         #     print var, getattr(self, var)
 
         # Registrar.DEBUG_SHOP = True
@@ -79,93 +73,98 @@ class testProdSyncClient(abstractSyncClientTestCase):
         CsvParseWooApi.do_specials = False
         CsvParseWooApi.do_dyns = False
 
-    def testRead(self):
+    def test_read(self):
         response = []
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.get_iterator()
         # print tabulate(list(response)[:10], headers='keys')
 
         self.assertTrue(response)
 
-    def testAnalyseRemote(self):
-        productParser = CsvParseWooApi(
-            **self.productParserArgs
+    def test_analyse_remote(self):
+        product_parser = CsvParseWooApi(
+            **self.product_parser_args
         )
 
-        with ProdSyncClientWC(self.wcApiParams) as client:
-            client.analyse_remote(productParser, limit=20)
+        with ProdSyncClientWC(self.wc_api_params) as client:
+            client.analyse_remote(product_parser, limit=20)
 
-        prodList = ShopProdList(productParser.products.values())
+        prod_list = ShopProdList(product_parser.products.values())
+        self.assertTrue(prod_list)
         # print
-        # SanitationUtils.coerce_bytes(prodList.tabulate(tablefmt='simple'))
-        varList = ShopProdList(productParser.variations.values())
+        # SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple'))
+        var_list = ShopProdList(product_parser.variations.values())
+        self.assertTrue(var_list)
         # print
-        # SanitationUtils.coerce_bytes(varList.tabulate(tablefmt='simple'))
-        catList = ShopCatList(productParser.categories.values())
+        # SanitationUtils.coerce_bytes(var_list.tabulate(tablefmt='simple'))
+        cat_list = ShopCatList(product_parser.categories.values())
+        self.assertTrue(cat_list)
         # print
-        # SanitationUtils.coerce_bytes(catList.tabulate(tablefmt='simple'))
-        attrList = productParser.attributes.items()
-        # print SanitationUtils.coerce_bytes(tabulate(attrList, headers='keys',
+        # SanitationUtils.coerce_bytes(cat_list.tabulate(tablefmt='simple'))
+        attr_list = product_parser.attributes.items()
+        self.assertTrue(attr_list)
+        # print SanitationUtils.coerce_bytes(tabulate(attr_list, headers='keys',
         # tablefmt="simple"))
 
-    def testUploadChanges(self):
+    def test_upload_changes(self):
         pkey = 99
         updates = {
             'regular_price': u'37.00'
         }
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
+            self.assertTrue(response)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadChanges", response.json()
+            #     print "test_upload_changes", response.json()
 
-    def testUploadChangesMeta(self):
+    def test_upload_changes_meta(self):
         pkey = 99
         updates = OrderedDict([
             ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'37.00')
             ]))
         ])
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             wn_regular_price = response.json()['product']['meta'][
                 'lc_wn_regular_price']
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadChangesMeta", response.json()
+            #     print "test_upload_changes_meta", response.json()
             self.assertEqual(wn_regular_price, '37.00')
 
-    def testUploadDeleteMeta(self):
+    def test_upload_delete_meta(self):
         pkey = 99
         updates = OrderedDict([
             ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadDeleteMeta", response.json()
+            #     print "test_upload_delete_meta", response.json()
             wn_regular_price = response.json()['product'][
                 'meta'].get('lc_wn_regular_price')
             self.assertEqual(wn_regular_price, '')
             # self.assertNotIn('lc_wn_regular_price', response.json()['product']['meta'])
 
-    def testUploadChangesVariation(self):
+    def test_upload_changes_variation(self):
         pkey = 41
         updates = OrderedDict([
             ('weight', u'11.0')
         ])
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadChangesVariation", response.json()
+            #     print "test_upload_changes_variation", response.json()
             description = response.json()['product']['weight']
             self.assertEqual(description, '11.0')
 
-    def testUploadChangesVariationMeta(self):
+    def test_upload_changes_var_meta(self):
         pkey = 23
         expected_result = str(random.randint(1, 100))
         updates = dict([
@@ -173,11 +172,11 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 ('lc_dn_regular_price', expected_result)
             ]))
         ])
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadChangesVariationMeta", response.json()
+            #     print "test_upload_changes_var_meta", response.json()
             # self.assertIn('meta_test_key', str(response.json()))
             self.assertIn('lc_dn_regular_price',
                           (response.json()['product']['meta']))
@@ -185,46 +184,47 @@ class testProdSyncClient(abstractSyncClientTestCase):
                 'lc_dn_regular_price']
             self.assertEqual(wn_regular_price, expected_result)
 
-    def testUploadDeleteVariationMeta(self):
+    def test_upload_delete_var_meta(self):
         pkey = 41
         updates = OrderedDict([
             ('custom_meta', OrderedDict([
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClientWC(self.wcApiParams) as client:
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadDeleteVariationMeta", response.json()
+            #     print "test_upload_delete_var_meta", response.json()
             wn_regular_price = response.json()['product'][
                 'meta'].get('lc_wn_regular_price')
             self.assertFalse(wn_regular_price)
 
-    def testGetSinglePage(self):
-        with ProdSyncClientWC(self.wcApiParams) as client:
+    def test_get_single_page(self):
+        with ProdSyncClientWC(self.wc_api_params) as client:
             response = client.service.get('products?page=9')
+            self.assertTrue(response)
             # print response
             # if hasattr(response, 'json'):
-            #     print "testUploadChangesEmpty", response.json()
+            #     print "test_upload_changes_empty", response.json()
 
-    def testCatSyncClient(self):
-        with CatSyncClientWC(self.wcApiParams) as client:
+    def test_cat_sync_client(self):
+        with CatSyncClientWC(self.wc_api_params) as client:
             for page in client.get_iterator():
                 self.assertTrue(page)
                 # print page
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
 
     # testSuite = TestSuite()
-    # testSuite.addTest(testProdSyncClient('testUploadChanges'))
-    # testSuite.addTest(testProdSyncClient('testUploadChangesMeta'))
-    # testSuite.addTest(testProdSyncClient('testUploadDeleteMeta'))
-    # testSuite.addTest(testProdSyncClient('testUploadChangesVariation'))
-    # testSuite.addTest(testProdSyncClient('testUploadChangesVariationMeta'))
-    # testSuite.addTest(testProdSyncClient('testUploadDeleteVariationMeta'))
-    # testSuite.addTest(testProdSyncClient('testGetSinglePage'))
-    # testSuite.addTest(testProdSyncClient('testRead'))
-    # testSuite.addTest(testProdSyncClient('testUploadChangesVariationMeta'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_changes'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_changes_meta'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_delete_meta'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_changes_variation'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_changes_var_meta'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_delete_var_meta'))
+    # testSuite.addTest(TestProdSyncClient('test_get_single_page'))
+    # testSuite.addTest(TestProdSyncClient('test_read'))
+    # testSuite.addTest(TestProdSyncClient('test_upload_changes_var_meta'))
     # TextTestRunner().run(testSuite)
