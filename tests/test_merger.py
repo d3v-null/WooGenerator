@@ -85,6 +85,8 @@ class TestMerger(unittest.TestCase):
         self.assertFalse(FieldGroup.do_post)
         self.assertEqual(SyncUpdate.master_name, "ACT")
         self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
+        self.assertEqual(self.settings.master_parser_args['schema'], "TT")
+        self.assertEqual(self.settings.slave_parser_args['schema'], "TT")
 
     def test_populate_master_parsers(self):
         self.settings.master_parse_limit = 4

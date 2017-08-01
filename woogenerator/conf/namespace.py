@@ -494,7 +494,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         response = {
             'cols':self.col_data_class.get_wp_import_cols(),
             'defaults':self.col_data_class.get_defaults(),
-            'source':self.slave_name
+            'source':self.slave_name,
+            'schema':self.schema
         }
         for key, settings_key in [
                 ('filter_items', 'filter_items'),
