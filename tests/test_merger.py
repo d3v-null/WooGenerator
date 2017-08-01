@@ -317,8 +317,10 @@ class TestMerger(unittest.TestCase):
 
             for update in self.updates.static:
                 print(
-                    ("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
-                     ":\n%s\npasses:\n%s\nreflections:\n%s") % (
+                    (
+                        "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
+                        ":\n%s\npasses:\n%s\nreflections:\n%s"
+                    ) % (
                         update,
                         update.old_m_object,
                         pformat(dict(update.old_m_object)),
