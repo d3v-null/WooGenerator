@@ -3,37 +3,37 @@
 
 # TODO: Fix too-many-lines
 
+# import argparse
 import io
 import os
 import re
+import sys
 import time
 import traceback
 import zipfile
-import sys
 from bisect import insort
 from collections import OrderedDict
-from pprint import pprint, pformat
-import argparse
+from pprint import pformat, pprint
 
-import unicodecsv
 import sshtunnel
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+import unicodecsv
 from httplib2 import ServerNotFoundError
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 import __init__
-from woogenerator.contact_objects import FieldGroup
+from woogenerator.client.user import UsrSyncClientSshAct, UsrSyncClientWP
+from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+                                         SettingsNamespaceUser,
+                                         UpdateNamespace, init_settings)
+from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.duplicates import Duplicates
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
-                                   EmailMatcher, Match, MatchList,
-                                   NocardEmailMatcher, UsernameMatcher)
+                                   EmailMatcher, Match, NocardEmailMatcher,
+                                   UsernameMatcher)
 from woogenerator.parsing.user import UsrObjList
-from woogenerator.client.user import (UsrSyncClientSshAct, UsrSyncClientWP)
-from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
+from woogenerator.syncupdate import SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, TimeUtils, DebugUtils)
-from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import (SettingsNamespaceUser, init_settings,
-                                         ParserNamespace, MatchNamespace, UpdateNamespace)
+                                SanitationUtils, TimeUtils)
 
 
 def timediff(settings):
@@ -162,8 +162,7 @@ def populate_master_parsers(parsers, settings):
     return parsers
 
 def do_match(matches, parsers, settings):
-    # for every username in slave, check that it exists in master
-    # TODO: fix too-many-nested-blocks
+    """ for every username in slave, find its counterpart in master. """
 
     Registrar.register_progress("Processing matches")
 
@@ -339,10 +338,7 @@ def do_merge(matches, updates, parsers, settings):
                 insort(updates.slave, sync_update)
 
     Registrar.register_progress("COMPLETED MERGE")
-
     return updates
-
-    # TODO: process duplicates here
 
 def do_report(matches, updates, parsers, settings):
     Registrar.register_progress("Write Report")
@@ -533,8 +529,10 @@ def do_report(matches, updates, parsers, settings):
             delta_cols = settings.col_data_class.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
-                    delta_cols.keys() + delta_cols.values()).items())
+                settings.col_data_class.get_basic_cols().items()
+                + settings.col_data_class.name_cols(
+                    delta_cols.keys() + delta_cols.values()
+                ).items())
 
             if m_delta_list:
                 delta_group.add_section(
@@ -938,10 +936,11 @@ def do_updates(matches, updates, parsers, settings):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_updates))
 
-        with \
-                UsrSyncClientSshAct(settings.master_connect_params, settings.master_db_params, settings.fs_params) \
-                    as master_client, \
-                UsrSyncClientWP(settings.wp_api_params) as slave_client:
+        with UsrSyncClientSshAct(
+            settings.master_connect_params,
+            settings.master_db_params,
+            settings.fs_params
+        ) as master_client, UsrSyncClientWP(settings.wp_api_params) as slave_client:
             # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
 
             for count, update in enumerate(all_updates):
@@ -1090,7 +1089,7 @@ def catch_main(override_args=None):
     except UserWarning:
         status = 65
         Registrar.register_error(traceback.format_exc())
-    except:
+    else:
         status = 1
         Registrar.register_error(traceback.format_exc())
 
