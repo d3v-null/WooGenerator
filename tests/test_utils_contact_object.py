@@ -806,6 +806,120 @@ class TestContactName(TestFieldGroups):
         self.assertEqual(name.first_name, name_copy.first_name)
         self.assertEqual(name.family_name, name_copy.family_name)
 
+#
+# def testcontactNameEquality():
+#     M = ContactName(
+#         first_name= 'JESSICA',
+#         family_name= 'TOLHURST'
+#     )
+#
+#     N = ContactName(
+#         first_name= 'JESSICA',
+#         family_name= 'ASDASD'
+#     )
+#
+#     assert M is not N
+#     assert M != N
+#     assert not (M == N)
+#     assert not M.similar(N)
+#
+# def testContactName():
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "C ARCHIVE STEPHANIDIS"
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             city = 'Jandakot',
+#             state = 'WA',
+#             country = 'Australia',
+#             first_name = 'Dr. Neil',
+#             family_name = 'Cunliffe-Williams (ACCOUNTANT)',
+#             contact = "NEIL CUNLIFFE-WILLIAMS",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "SPOKE WITH MICHELLE (RECEPTION)",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "SMITH, DERWENT",
+#             first_name = "DERWENT",
+#             family_name = "SMITH"
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "KYLIESSWEET@GMAIL.COM",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     #gets
+#
+#     # return
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "CILLA (SILL-A) OWNER OR HAYLEE",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "NICOLA FAIRHEAD(MORTON)",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             first_name = 'SHANNON',
+#             family_name = 'AMBLER (ACCT)',
+#             contact = "SHANNON AMBLER (ACCT)",
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "KAITLYN - FINALIST",
+#             first_name = "KAITLYN",
+#             family_name = "FINALIST"
+#         ).tabulate(tablefmt="simple")
+#     )
+#
+#     SanitationUtils.safe_print(
+#         ContactName(
+#             contact = "JESSICA (THITIRAT) PHUSOMSAI",
+#             first_name = "JESSICA",
+#             family_name = "(THITIRAT) PHUSOMSAI"
+#
+#         ).tabulate(tablefmt="simple")
+#     )
+#     name = ContactName(
+#         contact = 'EMILY O\'CALLAGHAN'
+#     )
+#
+# def testRefresh():
+#     contact = ContactName(
+#         contact = "JESSICA (THITIRAT) PHUSOMSAI",
+#         first_name = "JESSICA",
+#         family_name = "(THITIRAT) PHUSOMSAI"
+#     )
+#
+#     print contact.contact
+#     print contact['First Name']
+#     contact['First Name'] = 'DERWENT'
+#     contact['Contact'] = 'DERWENT (THITIRAT) PHUSOMSAI'
+#     print contact.contact
+#
+
 
 class TestContactPhones(TestFieldGroups):
     @unittest.skip("does not cover yet")
@@ -847,7 +961,16 @@ class TestContactPhones(TestFieldGroups):
             numbers.mob_pref,
             True
         )
-
+#
+# def testContactNumber():
+#     numbers = ContactPhones(
+#         mob_number = '0416160912',
+#         tel_number = '93848512',
+#         fax_number = '0892428032',
+#         mob_pref = True
+#     )
+#
+#     print numbers
 
 class TestSocialMediaGroup(TestFieldGroups):
 
