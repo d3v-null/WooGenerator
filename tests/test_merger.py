@@ -1,25 +1,25 @@
 from __future__ import print_function
+
+# from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import os
+import traceback
 # import sys
 import unittest
-# from unittest import TestCase, main, skip, TestSuite, TextTestRunner
-import argparse
-import traceback
 from pprint import pformat
 
-from context import woogenerator
+from context import tests_datadir, woogenerator
+from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+                                         SettingsNamespaceUser,
+                                         UpdateNamespace, init_settings)
+from woogenerator.conf.parser import ArgumentParserUser
+from woogenerator.contact_objects import FieldGroup
+from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
+                                 populate_slave_parsers)
+from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
-from woogenerator.utils import Registrar #, SanitationUtils
-from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.conf.namespace import (init_settings, ParserNamespace,
-                                         SettingsNamespaceUser, MatchNamespace,
-                                         UpdateNamespace)
-from woogenerator.merger import (populate_master_parsers, populate_slave_parsers,
-                                 do_match, do_merge)
-from woogenerator.syncupdate import SyncUpdate
-from woogenerator.contact_objects import FieldGroup
-from context import tests_datadir
+from woogenerator.utils import Registrar  # , SanitationUtils
+
 
 class TestMerger(unittest.TestCase):
     def setUp(self):
@@ -30,8 +30,10 @@ class TestMerger(unittest.TestCase):
         self.settings.local_test_config = "merger_config_test.yaml"
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
-        self.settings.master_file = os.path.join(tests_datadir, "merger_master_dummy.csv")
-        self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_dummy.csv")
+        self.settings.master_file = os.path.join(tests_datadir,
+                                                 "merger_master_dummy.csv")
+        self.settings.slave_file = os.path.join(tests_datadir,
+                                                "merger_slave_dummy.csv")
         # self.settings.master_parse_limit = 10
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
@@ -58,30 +60,27 @@ class TestMerger(unittest.TestCase):
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,
-            argparser_class=ArgumentParserUser
-        )
+            argparser_class=ArgumentParserUser)
 
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
 
     def fail_syncupdate_assertion(self, exc, sync_update):
-            msg = "failed assertion: %s\n%s\n%s" % (
-                pformat(sync_update.sync_warnings.items()),
-                sync_update.tabulate(tablefmt='simple'),
-                traceback.format_exc(exc),
-            )
-            raise AssertionError(msg)
+        msg = "failed assertion: %s\n%s\n%s" % (
+            pformat(sync_update.sync_warnings.items()),
+            sync_update.tabulate(tablefmt='simple'),
+            traceback.format_exc(exc), )
+        raise AssertionError(msg)
 
     def test_init_settings(self):
 
         self.assertEqual(self.settings.master_name, "ACT")
         self.assertEqual(self.settings.slave_name, "WORDPRESS")
         self.assertEqual(self.settings.download_master, False)
+        self.assertEqual(self.settings.master_client_args["limit"],
+                         self.settings.master_parse_limit)
         self.assertEqual(
-            self.settings.master_client_args["limit"],
-            self.settings.master_parse_limit
-        )
-        self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "ActOut")
+            self.settings.master_client_args["dialect_suggestion"], "ActOut")
         self.assertFalse(FieldGroup.do_post)
         self.assertEqual(SyncUpdate.master_name, "ACT")
         self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
@@ -96,9 +95,7 @@ class TestMerger(unittest.TestCase):
         # Registrar.DEBUG_ADDRESS = True
         # Registrar.DEBUG_NAME = True
 
-        self.parsers = populate_master_parsers(
-            self.parsers, self.settings
-        )
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
 
         usr_list = self.parsers.master.get_obj_list()
 
@@ -140,29 +137,36 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.shipping_address.state, 'VIC')
         self.assertEqual(
             str(first_usr.shipping_address),
-            '4552 Sunfield Circle; Congkar, VIC, 6054, AU'
-        )
+            '4552 Sunfield Circle; Congkar, VIC, 6054, AU')
         self.assertEqual(first_usr.billing_address.city, 'Duwaktenggi')
         self.assertEqual(first_usr.billing_address.country, 'AU')
         self.assertEqual(first_usr.billing_address.postcode, '6011')
         self.assertEqual(first_usr.billing_address.state, 'WA')
         self.assertEqual(
             str(first_usr.billing_address),
-            '91 Alpine Trail; Duwaktenggi, WA, 6011, AU'
-        )
+            '91 Alpine Trail; Duwaktenggi, WA, 6011, AU')
         self.assertEqual(first_usr.phones.mob_number, '+614 40 564 957')
         self.assertEqual(first_usr.phones.tel_number, '02 2791 7625')
         self.assertEqual(first_usr.phones.fax_number, '07 5971 6312')
         self.assertEqual(
             str(first_usr.phones),
-            "02 2791 7625 PREF; +614 40 564 957 PREF; 07 5971 6312"
-        )
+            "02 2791 7625 PREF; +614 40 564 957 PREF; 07 5971 6312")
         self.assertEqual(first_usr.socials.twitter, "kmainstone5")
         website = ("https://wikispaces.com/vivamus/metus/arcu/adipiscing.jpg?"
-                   "duis=justo" "&consequat=sollicitudin" "&dui=ut"
-                   "&nec=suscipit" "&nisi=a" "&volutpat=feugiat" "&eleifend=et"
-                   "&donec=eros" "&ut=vestibulum" "&dolor=ac" "&morbi=est"
-                   "&vel=lacinia" "&lectus=nisi" "&in=venenatis")
+                   "duis=justo"
+                   "&consequat=sollicitudin"
+                   "&dui=ut"
+                   "&nec=suscipit"
+                   "&nisi=a"
+                   "&volutpat=feugiat"
+                   "&eleifend=et"
+                   "&donec=eros"
+                   "&ut=vestibulum"
+                   "&dolor=ac"
+                   "&morbi=est"
+                   "&vel=lacinia"
+                   "&lectus=nisi"
+                   "&in=venenatis")
         self.assertEqual(first_usr.socials.website, website)
         self.assertEqual(first_usr['Web Site'], website)
 
@@ -179,9 +183,7 @@ class TestMerger(unittest.TestCase):
         # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 
     def test_populate_slave_parsers(self):
-        self.parsers = populate_slave_parsers(
-            self.parsers, self.settings
-        )
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
 
         usr_list = self.parsers.slave.get_obj_list()
 
@@ -201,8 +203,10 @@ class TestMerger(unittest.TestCase):
             print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
             print("str@.last_sale:\n%s" % str(first_usr.last_sale))
             print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
-            print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
-            print("pformat@.shipping_address.valid:\n%s" % pformat(first_usr.shipping_address.valid))
+            print("pformat@.name.to_dict:\n%s" %
+                  pformat(dict(first_usr.name.to_dict())))
+            print("pformat@.shipping_address.valid:\n%s" %
+                  pformat(first_usr.shipping_address.valid))
             print("pformat@.shipping_address.kwargs:\n%s" % \
                   pformat(first_usr.shipping_address.kwargs))
             print("pformat@.shipping_address.to_dict:\n%s" % \
@@ -210,8 +214,10 @@ class TestMerger(unittest.TestCase):
             print(".billing_address:\n%s" % first_usr.billing_address)
             print("pformat@.billing_address.to_dict:\n%s" % \
                   pformat(dict(first_usr.billing_address.to_dict())))
-            print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
-            print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
+            print("pformat@.phones.to_dict:\n%s" %
+                  pformat(dict(first_usr.phones.to_dict())))
+            print("pformat@.socials.to_dict:\n%s" %
+                  pformat(dict(first_usr.socials.to_dict())))
             print("pformat@.wpid:\n%s" % pformat(first_usr.wpid))
             print("pformat@.email:\n%s" % pformat(first_usr.email))
 
@@ -222,26 +228,24 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.shipping_address.city, 'Washington')
         self.assertEqual(first_usr.shipping_address.country, 'US')
         self.assertEqual(first_usr.shipping_address.postcode, '20260')
-        self.assertEqual(first_usr.shipping_address.state, 'District of Columbia')
+        self.assertEqual(first_usr.shipping_address.state,
+                         'District of Columbia')
         self.assertEqual(
             str(first_usr.shipping_address),
-            '99 Oneill Point; Washington, District of Columbia, 20260, US'
-        )
+            '99 Oneill Point; Washington, District of Columbia, 20260, US')
         self.assertEqual(first_usr.billing_address.city, 'Boulder')
         self.assertEqual(first_usr.billing_address.country, 'US')
         self.assertEqual(first_usr.billing_address.postcode, '80305')
         self.assertEqual(first_usr.billing_address.state, 'Colorado')
         self.assertEqual(
             str(first_usr.billing_address),
-            '13787 Oakridge Parkway; Boulder, Colorado, 80305, US'
-        )
+            '13787 Oakridge Parkway; Boulder, Colorado, 80305, US')
         self.assertEqual(first_usr.phones.mob_number, '+614 37 941 958')
         self.assertEqual(first_usr.phones.tel_number, '07 2258 3571')
         self.assertEqual(first_usr.phones.fax_number, '07 4029 1259')
         self.assertEqual(
             str(first_usr.phones),
-            "07 2258 3571 PREF; +614 37 941 958 PREF; 07 4029 1259"
-        )
+            "07 2258 3571 PREF; +614 37 941 958 PREF; 07 4029 1259")
         self.assertEqual(first_usr.socials.twitter, "bblakeway7")
 
         self.assertEqual(first_usr.act_modtime, None)
@@ -258,15 +262,9 @@ class TestMerger(unittest.TestCase):
         # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
     def test_do_match(self):
-        self.parsers = populate_master_parsers(
-            self.parsers, self.settings
-        )
-        self.parsers = populate_slave_parsers(
-            self.parsers, self.settings
-        )
-        self.matches = do_match(
-            self.matches, self.parsers, self.settings
-        )
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = do_match(self.matches, self.parsers, self.settings)
         self.assertEqual(len(self.matches.globals), 6)
         # print("global matches:\n%s" % pformat(self.matches.globals))
         # print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
@@ -277,25 +275,18 @@ class TestMerger(unittest.TestCase):
         card_duplicate_s_indices = self.matches.duplicate['card'].s_indices
         self.assertEqual(len(card_duplicate_s_indices), 6)
         self.assertFalse(
-            set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
-        )
+            set(card_duplicate_s_indices).intersection(
+                set(card_duplicate_m_indices)))
 
     def test_do_merge(self):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
-        self.parsers = populate_master_parsers(
-            self.parsers, self.settings
-        )
-        self.parsers = populate_slave_parsers(
-            self.parsers, self.settings
-        )
-        self.matches = do_match(
-            self.matches, self.parsers, self.settings
-        )
-        self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
-        )
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = do_match(self.matches, self.parsers, self.settings)
+        self.updates = do_merge(self.matches, self.updates, self.parsers,
+                                self.settings)
         if self.debug:
             Registrar.DEBUG_MESSAGE = True
             Registrar.DEBUG_WARN = True
@@ -313,16 +304,14 @@ class TestMerger(unittest.TestCase):
             # print("static updates:\n%s" % map(str, (self.updates.static)))
 
             for update in self.updates.static:
-                print("%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s\nreflections:\n%s" % (
-                    update,
-                    update.old_m_object,
-                    pformat(dict(update.old_m_object)),
-                    update.old_s_object,
-                    pformat(dict(update.old_s_object)),
-                    update.display_sync_warnings(),
-                    update.display_sync_passes(),
-                    update.display_sync_reflections(),
-                ))
+                print(
+                    "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings:\n%s\npasses:\n%s\nreflections:\n%s"
+                    % (update, update.old_m_object,
+                       pformat(dict(update.old_m_object)), update.old_s_object,
+                       pformat(dict(update.old_s_object)),
+                       update.display_sync_warnings(),
+                       update.display_sync_passes(),
+                       update.display_sync_reflections(), ))
         #TODO: Re-enable when test below working
         # self.assertEqual(len(self.updates.delta_master), 6)
         # self.assertEqual(len(self.updates.delta_slave), 6)
@@ -339,7 +328,8 @@ class TestMerger(unittest.TestCase):
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001694')
             self.assertEqual(sync_update.old_m_object.rowcount, 45)
-            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_m_object.role.direct_brands,
+                             'TechnoTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'RN')
             self.assertEqual(sync_update.old_m_object.name.company, 'Livetube')
             self.assertEqual(sync_update.old_s_object.wpid, '1143')
@@ -348,9 +338,11 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_s_object.role.role, 'RN')
 
             self.assertEqual(sync_update.new_m_object.role.role, 'RN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'TechnoTan Retail')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'TechnoTan Retail')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'TechnoTan Retail')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'TechnoTan Retail')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
@@ -359,15 +351,19 @@ class TestMerger(unittest.TestCase):
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001446')
             self.assertEqual(sync_update.old_m_object.rowcount, 92)
-            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_m_object.role.direct_brands,
+                             'TechnoTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.old_s_object.wpid, '1439')
             self.assertEqual(sync_update.old_s_object.rowcount, 13)
-            self.assertEqual(sync_update.old_s_object.role.direct_brands, 'TechnoTan')
+            self.assertEqual(sync_update.old_s_object.role.direct_brands,
+                             'TechnoTan')
             self.assertEqual(sync_update.old_s_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'Staff')
             self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'Staff')
             self.assertEqual(sync_update.new_s_object.role.role, 'ADMIN')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
@@ -377,7 +373,8 @@ class TestMerger(unittest.TestCase):
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
             self.assertEqual(sync_update.old_m_object.rowcount, 10)
-            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_m_object.role.direct_brands,
+                             'VuTan Wholesale')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
             self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
@@ -385,9 +382,9 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_s_object.rowcount, 91)
             self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'VuTan Wholesale')
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
-            # TODO: Must respect role of slave schema
             # self.assertEqual(sync_update.new_s_object.role.direct_brands, 'VuTan Wholesale')
             # self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
             self.assertFalse(sync_update.m_deltas)
@@ -401,15 +398,18 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.old_m_object.role.direct_brands, None)
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Hatti')
-            self.assertEqual(sync_update.old_m_object.name.family_name, 'Clarson')
+            self.assertEqual(sync_update.old_m_object.name.family_name,
+                             'Clarson')
             self.assertEqual(sync_update.old_s_object.wpid, '1379')
             self.assertEqual(sync_update.old_s_object.rowcount, 44)
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
             self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
             self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'Staff')
             self.assertEqual(sync_update.new_s_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'Staff')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
@@ -422,15 +422,19 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.old_m_object.role.direct_brands, None)
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Bevvy')
-            self.assertEqual(sync_update.old_m_object.name.family_name, 'Brazear')
+            self.assertEqual(sync_update.old_m_object.name.family_name,
+                             'Brazear')
             self.assertEqual(sync_update.old_s_object.wpid, '1172')
             self.assertEqual(sync_update.old_s_object.rowcount, 68)
             self.assertEqual(sync_update.old_s_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.old_s_object.role.direct_brands, 'Pending')
+            self.assertEqual(sync_update.old_s_object.role.direct_brands,
+                             'Pending')
             self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'Staff')
             self.assertEqual(sync_update.new_s_object.role.role, 'ADMIN')
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'Staff')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'Staff')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
@@ -442,17 +446,22 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.rowcount, 84)
             self.assertEqual(sync_update.old_m_object.role.direct_brands, None)
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_m_object.name.first_name, 'Darwin')
-            self.assertEqual(sync_update.old_m_object.name.family_name, 'Athelstan')
+            self.assertEqual(sync_update.old_m_object.name.first_name,
+                             'Darwin')
+            self.assertEqual(sync_update.old_m_object.name.family_name,
+                             'Athelstan')
             self.assertEqual(sync_update.old_s_object.wpid, '1133')
             self.assertEqual(sync_update.old_s_object.rowcount, 56)
-            self.assertEqual(sync_update.old_s_object.role.direct_brands, 'Pending')
+            self.assertEqual(sync_update.old_s_object.role.direct_brands,
+                             'Pending')
             self.assertEqual(sync_update.old_s_object.role.role, 'RN')
             # Should reflect back to ACT as RN:
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'Pending')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'Pending')
             self.assertEqual(sync_update.new_m_object.role.role, 'RN')
             # That reflection should also go to WP:
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'Pending')
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'Pending')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
             # Both should be delta
             self.assertTrue(sync_update.m_deltas)
@@ -465,23 +474,17 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
-        self.parsers = populate_master_parsers(
-            self.parsers, self.settings
-        )
-        self.parsers = populate_slave_parsers(
-            self.parsers, self.settings
-        )
-        self.matches = do_match(
-            self.matches, self.parsers, self.settings
-        )
-        self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
-        )
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = do_match(self.matches, self.parsers, self.settings)
+        self.updates = do_merge(self.matches, self.updates, self.parsers,
+                                self.settings)
         sync_update = self.updates.static[2]
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
             self.assertEqual(sync_update.old_m_object.rowcount, 10)
-            self.assertEqual(sync_update.old_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_m_object.role.direct_brands,
+                             'VuTan Wholesale')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
             self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
@@ -489,11 +492,14 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_s_object.rowcount, 91)
             self.assertEqual(sync_update.old_s_object.role.direct_brands, None)
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brands, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.role.direct_brands,
+                             'VuTan Wholesale')
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
             # TODO: Must respect role of slave schema
-            self.assertEqual(sync_update.new_s_object.role.direct_brands, 'VuTan Wholesale')
-            self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
+            self.assertEqual(sync_update.new_s_object.role.direct_brands,
+                             'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.role,
+                             'RN')  #no, really
             self.assertFalse(sync_update.m_deltas)
             # self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
