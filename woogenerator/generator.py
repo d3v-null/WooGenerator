@@ -1,7 +1,6 @@
 """
 Module for generating woocommerce csv import files from Google Drive Data.
 """
-# pylint: disable=too-many-lines
 # TODO: fix too-many-lines
 
 import io
@@ -67,11 +66,10 @@ def check_warnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
-def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-branches,too-many-statements
+def populate_master_parsers(parsers, settings):
     """
     Create and populates the various parsers.
     """
-    # TODO: fix too-many-branches,too-many-statements
 
     things_to_check = [
         'master_parser_args'
@@ -162,9 +160,8 @@ def populate_master_parsers(parsers, settings):  # pylint: disable=too-many-bran
         return parsers
 
 
-def process_images(settings, parsers):  # pylint: disable=too-many-statements,too-many-branches,too-many-locals
+def process_images(settings, parsers):
     """Process the images information in from the parsers."""
-    # TODO: fix too-many-statements,too-many-branches,too-many-statements
 
     Registrar.register_progress("processing images")
 
@@ -317,7 +314,10 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
                     imgmeta = MetaGator(img_dst_path)
                     imgmeta.write_meta(title, description)
                     if Registrar.DEBUG_IMG:
-                        Registrar.register_message("new dest img meta: %s" % imgmeta.read_meta(), img)
+                        Registrar.register_message(
+                            "new dest img meta: %s" % imgmeta.read_meta(),
+                            img
+                        )
 
             except IOError as exc:
                 invalid_image(img, "could not resize: " + str(exc))
@@ -332,10 +332,8 @@ def process_images(settings, parsers):  # pylint: disable=too-many-statements,to
     #
     # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
 
-
-def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+def export_parsers(settings, parsers):
     """Export key information from the parsers to spreadsheets."""
-    # TODO: fix too-many-branches,too-many-statements,too-many-locals
 
     Registrar.register_progress("Exporting info to spreadsheets")
 
@@ -426,9 +424,8 @@ def export_parsers(settings, parsers):  # pylint: disable=too-many-branches,too-
             updated_variations_list.export_items(
                 flvu_path, variation_col_names)
 
-def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def main(override_args=None, settings=None):
     """Main function for generator."""
-    # TODO: too-many-locals,too-many-branches,too-many-statements
 
     settings = init_settings(override_args, settings, ArgumentParserProd)
 
@@ -603,8 +600,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
     category_matches = MatchNamespace(index_fn=category_index_fn)
 
-    if settings['do_sync']:  # pylint: disable=too-many-nested-blocks
-        # TODO: fix too-many-nested-blocks
+    if settings['do_sync']:
         if settings['do_categories']:
             if Registrar.DEBUG_CATS:
                 Registrar.register_message(
@@ -1025,10 +1021,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
 
         if settings['auto_create_new']:
             for new_prod_count, new_prod_match in enumerate(
-                    product_matcher.slaveless_matches):
+                    product_matcher.slaveless_matches
+            ):
                 m_object = new_prod_match.m_object
-                # print "will create product %d: %s" % (new_prod_count,
-                #                                       m_object.identifier)
+                Registrar.register_message(
+                    "will create product %d: %s" % (
+                        new_prod_count, m_object.identifier
+                    )
+                )
                 api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
                 for key in ['id', 'slug']:
                     if key in api_data:
@@ -1334,11 +1334,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 # parsers.slave.products[index],
                                 # parsers.slave.products[index].categories,
                                 # ", ".join(category.woo_cat_name \
-                                # for category in matches.merge().m_objects),
-                                ", ".join(category.woo_cat_name
-                                          for category in matches.merge()
-                                          .s_objects)
-                            ] for index, matches in category_matches.delete_slave.items()
+                                # for category in matches_.merge().m_objects),
+                                ", ".join([
+                                    category_.woo_cat_name
+                                    for category_ in matches_.merge().s_objects
+                                ])
+                            ] for index, matches_ in category_matches.delete_slave.items()
                         ],
                         tablefmt="html"),
                     length=len(category_matches.delete_slave)
@@ -1353,9 +1354,12 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                 [
                     [
                         index,
-                        ", ".join(category.woo_cat_name for category in matches.merge().s_objects\
-                                  if not re.search('Specials', category.woo_cat_name))
-                    ] for index, matches in category_matches.delete_slave.items()
+                        ", ".join([
+                            category_.woo_cat_name
+                            for category_ in matches_.merge().s_objects
+                            if not re.search('Specials', category_.woo_cat_name)
+                        ])
+                    ] for index, matches_ in category_matches.delete_slave.items()
                 ],
                 tablefmt="html"
             )
@@ -1385,12 +1389,14 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
                                 index,
                                 # parsers.slave.products[index],
                                 # parsers.slave.products[index].categories,
-                                ", ".join(category.woo_cat_name
-                                          for category in matches.merge()
-                                          .m_objects),
-                                # ", ".join(category.woo_cat_name \
-                                # for category in matches.merge().s_objects)
-                            ] for index, matches in category_matches.new_slave.items()
+                                ", ".join([
+                                    category_.woo_cat_name
+                                    for category_ in matches_.merge()
+                                    .m_objects
+                                ]),
+                                # ", ".join(category_.woo_cat_name \
+                                # for category_ in matches_.merge().s_objects)
+                            ] for index, matches_ in category_matches.new_slave.items()
                         ],
                         tablefmt="html"),
                     length=len(category_matches.new_slave)
@@ -1498,9 +1504,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-locals,
         print "open this link to view report %s" % settings['rep_web_link']
 
 
-def catch_main(override_args=None):  # pylint: disable=too-many-statements,too-many-branches
+def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
-    # TODO: fix too-many-statements,too-many-branches
 
     file_path = __file__
     cur_dir = os.getcwd() + '/'
