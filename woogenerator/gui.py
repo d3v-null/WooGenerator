@@ -384,8 +384,8 @@ class CustomersForm(SyncForm):
         "CUSTOMERS"
     ]
 
-    def create(self):
-        super(CustomersForm, self).create()
+    # def create(self):
+        # super(CustomersForm, self).create()
 
 
 class ConfirmForm(SyncForm):

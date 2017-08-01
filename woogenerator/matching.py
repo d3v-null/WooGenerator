@@ -100,14 +100,11 @@ class Match(object):
             if self.has_no_master:
                 if not self.has_no_slave:
                     return 'masterless'
-                else:
-                    return 'empty'
+                return 'empty'
             elif self.has_no_slave:
                 return 'slaveless'
-            else:
-                return 'pure'
-        else:
-            return 'duplicate'
+            return 'pure'
+        return 'duplicate'
 
     @property
     def gcs(self):
@@ -118,8 +115,7 @@ class Match(object):
         if self.m_len or self.s_len:
             # Registrar.register_message("getting GCS of %s" % (self.m_objects + self.s_objects))
             return InheritenceUtils.gcs(*(self.m_objects + self.s_objects))
-        else:
-            return None
+        return None
 
     def add_s_object(self, s_object):
         """
@@ -582,15 +578,13 @@ class AbstractMatcher(Registrar):
         """ perform the master filter on the objects """
         if self.m_filter_fn:
             return filter(self.m_filter_fn, objects)
-        else:
-            return objects
+        return objects
 
     def s_filter(self, objects):
         """ perform the slave filter on the objects """
         if self.f_filter_fn:
             return filter(self.f_filter_fn, objects)
-        else:
-            return objects
+        return objects
 
     def process_match(self, ma_objects, sa_objects):
         """
