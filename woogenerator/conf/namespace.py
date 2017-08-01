@@ -22,9 +22,7 @@ from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo)
 from woogenerator.parsing.user import CsvParseUser
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct
-from woogenerator.matching import (CardMatcher, ConflictingMatchList,
-                                   EmailMatcher, Match, MatchList,
-                                   NocardEmailMatcher, UsernameMatcher)
+from woogenerator.matching import MatchList
 from woogenerator.syncupdate import SyncUpdate
 from woogenerator.contact_objects import FieldGroup
 
@@ -477,7 +475,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
                 'fs_params':self.fs_params,
             })
         for key, settings_key in [
-            ('limit', 'master_parse_limit')
+                ('limit', 'master_parse_limit')
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
