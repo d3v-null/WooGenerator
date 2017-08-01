@@ -8,7 +8,6 @@ import ast
 
 import argparse
 import configargparse
-from pprint import pformat
 
 import __init__
 from woogenerator.conf import (
@@ -18,7 +17,6 @@ from woogenerator.conf import (
     DEFAULTS_PROD_PATH)
 from woogenerator.conf.namespace import (
     SettingsNamespaceProto, SettingsNamespaceProd, SettingsNamespaceUser)
-from woogenerator.utils import Registrar
 
 # TODO: split file into namespace and argumentparsers
 
@@ -189,16 +187,6 @@ class ArgumentParserCommon(ArgumentParserProto):
     @property
     def default_config_files(self):
         return self._default_config_files
-
-    # def _open_config_files(self, command_line_args):
-    #     Registrar.register_message(
-    #         "default_config_files: %s" % pformat(self._default_config_files)
-    #     )
-    #     response = super(ArgumentParserCommon, self)._open_config_files(command_line_args)
-    #     Registrar.register_message(
-    #         "response: %s" % pformat(response)
-    #     )
-    #     return response
 
     def add_suppressed_argument(self, name, **kwargs):
         kwargs['help'] = argparse.SUPPRESS
@@ -736,5 +724,5 @@ class ArgumentParserUser(ArgumentParserCommon):
         self.add_suppressed_argument('--smtp-pass', type=str)
 
 
-    def add_other_options(self):
-        super(ArgumentParserUser, self).add_other_options()
+    # def add_other_options(self):
+    #     super(ArgumentParserUser, self).add_other_options()
