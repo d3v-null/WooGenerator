@@ -1,7 +1,4 @@
-# pylint: disable=too-many-lines
 """Module for updating woocommerce and ACT databases from ACT import file."""
-
-# TODO: Fix too-many-lines
 
 # import argparse
 import io
@@ -345,22 +342,22 @@ def do_report(matches, updates, parsers, settings):
 
     settings.repd_path = os.path.join(
         settings.out_folder_full,
-        "%ssync_report_duplicate%s.html" % (settings.file_prefix, settings.file_suffix))
+        "%ssync_report_duplicate_%s.html" % (settings.file_prefix, settings.file_suffix))
     settings.w_pres_csv_path = os.path.join(
         settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
+        "%ssync_report_%s_%s.csv" % \
             (settings.file_prefix, settings.slave_name, settings.file_suffix))
     settings.master_res_csv_path = os.path.join(
         settings.out_folder_full,
-        "%ssync_report_%s%s.csv" % \
+        "%ssync_report_%s_%s.csv" % \
             (settings.file_prefix, settings.master_name, settings.file_suffix))
     settings.master_delta_csv_path = os.path.join(
         settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
+        "%sdelta_report_%s_%s.csv" % \
             (settings.file_prefix, settings.master_name, settings.file_suffix))
     settings.slave_delta_csv_path = os.path.join(
         settings.out_folder_full,
-        "%sdelta_report_%s%s.csv" % \
+        "%sdelta_report_%s_%s.csv" % \
             (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
 
@@ -514,7 +511,7 @@ def do_report(matches, updates, parsers, settings):
 
         reporter.add_group(sanitizing_group)
 
-        if settings['do_sync'] and (updates.delta_master + updates.delta_slave):
+        if settings.do_sync and (updates.delta_master + updates.delta_slave):
 
             delta_group = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -566,8 +563,7 @@ def do_report(matches, updates, parsers, settings):
                     settings['slave_delta_csv_path'],
                     settings.col_data_class.get_col_names(all_delta_cols))
 
-        report_matching = settings['do_sync']
-        if report_matching:
+        if settings.do_sync:
 
             matching_group = HtmlReporter.Group('matching', 'Matching Results')
             matching_group.add_section(
@@ -648,8 +644,7 @@ def do_report(matches, updates, parsers, settings):
 
             reporter.add_group(matching_group)
 
-        report_sync = settings['do_sync']
-        if report_sync:
+        if settings.do_sync:
             syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
 
             syncing_group.add_section(
@@ -685,8 +680,7 @@ def do_report(matches, updates, parsers, settings):
 
             reporter.add_group(syncing_group)
 
-        report_duplicates = settings['process_duplicates']
-        if report_duplicates:
+        if settings['process_duplicates']:
 
             dup_css = """
 .highlight_old {color: red !important; }

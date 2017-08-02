@@ -19,7 +19,7 @@ from woogenerator.conf import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                                DEFAULT_LOCAL_USER_TEST_PATH,
                                DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
                                DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
-from woogenerator.contact_objects import FieldGroup
+from woogenerator.contact_objects import FieldGroup, RoleGroup
 from woogenerator.matching import MatchList
 from woogenerator.parsing.myo import CsvParseMyo
 from woogenerator.parsing.user import CsvParseUser
@@ -338,6 +338,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             getattr(self, 'local_test_config', DEFAULT_LOCAL_USER_TEST_PATH)
         self.do_filter = getattr(self, 'do_filter', None)
         super(SettingsNamespaceUser, self).__init__(*args, **kwargs)
+        # assert \
+        # RoleGroup.schema_exists(self.schema), \
+        # "Invalid schema: %s" % self.schema
 
     @property
     def file_prefix(self):

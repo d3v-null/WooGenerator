@@ -2,6 +2,7 @@ import unittest
 from unittest import TestCase
 import traceback
 from pprint import pformat
+from copy import copy
 
 from context import woogenerator
 from woogenerator.utils import Registrar
@@ -1313,10 +1314,25 @@ class TestRoleGroup(TestFieldGroups):
             schema='TT',
             role='WN'
         )
-        slave.update_from(master, ['Role', 'Direct Brand'])
         self.assertEqual(slave.schema, 'TT')
-        self.assertEqual(slave.direct_brand, 'VuTan Wholesale')
-        self.assertEqual(slave.role, 'RN')
+        self.assertEqual(slave.direct_brand, None)
+        self.assertEqual(slave.role, 'WN')
+
+        slave_copy = copy(slave)
+        self.assertFalse(master.perform_post)
+        self.assertFalse(slave.perform_post)
+        self.assertFalse(slave_copy.perform_post)
+
+        slave_copy.update_from(master, ['Role', 'Direct Brand'])
+        self.assertEqual(slave.schema, 'TT')
+        self.assertEqual(slave.direct_brand, None)
+        self.assertEqual(slave.role, 'WN')
+        self.assertEqual(slave_copy.schema, 'TT')
+        self.assertEqual(slave_copy.direct_brand, 'VuTan Wholesale')
+        self.assertEqual(slave_copy.role, 'RN')
+        self.assertFalse(master.perform_post)
+        self.assertFalse(slave.perform_post)
+        self.assertTrue(slave_copy.perform_post)
 
 
 

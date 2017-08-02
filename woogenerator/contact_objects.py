@@ -164,14 +164,14 @@ class FieldGroup(Registrar):
 
     def __copy__(self):
         # print "calling copy on ", self
-        response = self.__class__(**copy(self.kwargs))
+        response = self.__class__(self.schema, **copy(self.kwargs))
         # print " -> response", response
         return response
 
     def __deepcopy__(self, memodict=None):
         # print ("calling deepcopy on ", self)
         # print ("-> kwargs ", deepcopy(self.kwargs, memodict))
-        response = self.__class__(**deepcopy(self.kwargs, memodict))
+        response = self.__class__(self.schema, **deepcopy(self.kwargs, memodict))
         # print (" -> response", response, response.kwargs)
         return response
 
@@ -1759,7 +1759,9 @@ class RoleGroup(FieldGroup):
             return
 
         if self.schema:
-            assert self.schema_exists(self.schema), "schema should be valid"
+            assert \
+            self.schema_exists(self.schema), \
+            "schema should be valid: %s" % self.schema
 
         if self.kwargs.get('role'):
             self.properties['role'] = self.kwargs.get('role').lower()
