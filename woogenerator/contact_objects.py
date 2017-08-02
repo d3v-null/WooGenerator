@@ -1865,8 +1865,6 @@ class RoleGroup(FieldGroup):
     @property
     def role(self):
         role = self['role']
-        if Registrar.DEBUG_MESSAGE:
-            import pdb; pdb.set_trace()
         if role:
             return role.upper()
         # if self.properties_override:
@@ -1889,7 +1887,6 @@ class RoleGroup(FieldGroup):
         #     Registrar.register_message(
         #         "setting key %s to val %s " % (key, val)
         #     )
-        #     import pdb; pdb.set_trace()
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
@@ -1905,7 +1902,6 @@ class RoleGroup(FieldGroup):
         #     Registrar.register_message(
         #         "getting key %s" % (key)
         #     )
-        #     import pdb; pdb.set_trace()
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':

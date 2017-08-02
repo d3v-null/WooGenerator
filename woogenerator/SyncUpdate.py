@@ -502,7 +502,6 @@ class SyncUpdate(
                     update_params['new_value'],
                     self.tabulate()
                 ))
-            # import pdb; pdb.set_trace()
             new_loser_object[col].update_from(update_params['new_value'], data.get('aliases'))
         else:
             new_loser_object[col] = update_params['new_value']
@@ -694,7 +693,6 @@ class SyncUpdate(
     def update(self, sync_cols):
         for col, data in sync_cols.items():
             self.update_col(col=col, data=data)
-        # import pdb; pdb.set_trace()
         # if self.m_updated:
         #     self.new_m_object.refresh_contact_objects()
         # if self.s_updated:

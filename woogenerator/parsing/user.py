@@ -169,8 +169,8 @@ class ImportUser(ImportObject):
         # )
 
         schema = data.get('schema')
-        if self.DEBUG_MESSAGE:
-            self.register_message("setting schema to %s" % schema)
+        # if self.DEBUG_MESSAGE:
+        #     self.register_message("setting schema to %s" % schema)
 
         name_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
@@ -339,11 +339,11 @@ class ImportUser(ImportObject):
         # self.init_contact_objects(self.__getstate__())
 
     def __getitem__(self, key):
-        if self.DEBUG_MESSAGE:
-            self.register_message("getting %s in %s" % (
-                key,
-                id(self),
-            ))
+        # if self.DEBUG_MESSAGE:
+        #     self.register_message("getting %s in %s" % (
+        #         key,
+        #         id(self),
+        #     ))
         for alias, keys in self.aliasMapping.items():
             if key in keys and alias in self:
                 return self[alias][key]
@@ -351,12 +351,12 @@ class ImportUser(ImportObject):
 
     def __setitem__(self, key, val):
         # print "setting obj %s to %s " % (key, repr(val))
-        if self.DEBUG_MESSAGE:
-            self.register_message("setting %s in %s to %s" % (
-                key,
-                id(self),
-                repr(val)
-            ))
+        # if self.DEBUG_MESSAGE:
+        #     self.register_message("setting %s in %s to %s" % (
+        #         key,
+        #         id(self),
+        #         repr(val)
+        #     ))
         if key == 'Role Info' and val == '':
             raise Exception()
         for alias, keys in self.aliasMapping.items():
