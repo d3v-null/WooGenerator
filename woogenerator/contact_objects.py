@@ -30,6 +30,7 @@ class FieldGroup(Registrar):
     _supports_tablefmt = True
     perform_post = False
     enforce_mandatory_keys = True
+    reprocess_kwargs = False
 
     def __init__(self, schema=None, **kwargs):
         super(FieldGroup, self).__init__()
@@ -80,6 +81,21 @@ class FieldGroup(Registrar):
         reflected.process_kwargs()
         return reflected
 
+    def get_mapped_attr(self, key):
+        for attr, keys in self.key_mappings.items():
+            if key in keys + [attr]:
+                return attr
+
+    def update_from(self, other, cols=None):
+        assert isinstance(other, type(self))
+        if cols is None:
+            cols = other.key_mappings.keys()
+        for col in cols:
+            attr = self.get_mapped_attr(col)
+            self.kwargs[attr] = copy(other[attr])
+        if self.reprocess_kwargs:
+            self.process_kwargs()
+
     @property
     def properties_override(self):
         if self.perform_post and self.valid:
@@ -97,20 +113,54 @@ class FieldGroup(Registrar):
         return not self.__eq__(other)
 
     def __getitem__(self, key):
-        for attr, keys in self.key_mappings.items():
-            if key in keys or key == attr:
-                if self.properties_override:
-                    return getattr(self, attr)
-                return self.kwargs.get(attr)
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message(
+                "getting key %s" % (key)
+            )
+        attr = self.get_mapped_attr(key)
+        if attr:
+            if self.properties_override:
+                return self.properties.get(attr)
+            return self.kwargs.get(attr)
+        # for attr, keys in self.key_mappings.items():
+        #     if key in keys or key == attr:
+        #         if self.properties_override:
+        #             return self.properties[attr]
+        #             # return getattr(self, attr)
+        #         return self.kwargs.get(attr)
 
     def __setitem__(self, key, val):
-        # print "setting cont %s to %s " % (key, val)
-        for attr, keys in self.key_mappings.items():
-            if key in keys or key == attr:
-                if self.properties_override:
-                    return setattr(self, attr, val)
-                self.kwargs[attr] = val
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message(
+                "setting key %s to val %s " % (key, val)
+            )
+        attr = self.get_mapped_attr(key)
+        if attr:
+            if self.properties_override:
+                self.properties[attr] = val
                 return
+            self.kwargs[attr] = val
+            return
+        # for attr, keys in self.key_mappings.items():
+        #     if key in keys or key == attr:
+        #         if self.properties_override:
+        #             self.properties[attr] = val
+        #             # return setattr(self, attr, val)
+        #         self.kwargs[attr] = val
+        #         return
+
+    def __contains__(self, key):
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message(
+                "checking key %s contained" % (key)
+            )
+        attr = self.get_mapped_attr(key)
+        return bool(attr)
+        # return member in [
+        #     item for key, value in self.key_mappings.items()
+        #     for item in [key] + value
+        # ]
+
 
     def __copy__(self):
         # print "calling copy on ", self
@@ -1470,11 +1520,12 @@ class RoleGroup(FieldGroup):
     """ docstring for RoleGroup. """
 
     fieldGroupType = "ROLE"
-    equality_keys = ['direct_brands', 'role']
+    equality_keys = ['direct_brand', 'role']
     key_mappings = {
-        'direct_brands': ['Direct Brand'],
+        'direct_brand': ['Direct Brand'],
         'role': ['Role'],
     }
+    # perform_post = True
 
     role_translations = [
         # unambiguous
@@ -1536,9 +1587,10 @@ class RoleGroup(FieldGroup):
 
     roleless_schemas = ['-', 'st']
     default_role = 'rn'
+    reprocess_kwargs = True
 
     # def __init__(self, schema=None, **kwargs):
-    # super(RoleGroup, self).__init__(**kwargs)
+    #     super(RoleGroup, self).__init__(**kwargs)
 
     def init_properties(self):
         self.properties['direct_brands'] = []
@@ -1648,10 +1700,10 @@ class RoleGroup(FieldGroup):
         return parsed_schema, parsed_role
 
     @classmethod
-    def parse_direct_brands(cls, direct_brands):
+    def parse_direct_brand_str(cls, direct_brand_str):
         parsed = []
-        if direct_brands:
-            for direct_brand in map(str.lower, str(direct_brands).split(';')):
+        if direct_brand_str:
+            for direct_brand in map(str.lower, str(direct_brand_str).split(';')):
                 # print("looking at direct_brand: %s" % direct_brand)
                 parsed_schema, parsed_role = cls.parse_direct_brand(
                     direct_brand)
@@ -1672,7 +1724,7 @@ class RoleGroup(FieldGroup):
         return formatted_brand
 
     @classmethod
-    def determine_role(cls, direct_brands, schema=None, role=None):
+    def determine_role(cls, direct_brand_str, schema=None, role=None):
         """
         Determe what role should be based on direct brand, schema and (optionally) default role.
         """
@@ -1682,15 +1734,18 @@ class RoleGroup(FieldGroup):
             return role
         schema = schema.lower()
         assert cls.schema_exists(schema), "schema %s not recognized" % schema
-        if direct_brands is None:
+        if direct_brand_str is None:
             return role
-        for parsed_schema, parsed_role in cls.parse_direct_brands(
-                direct_brands):
-            if parsed_schema and parsed_role and schema == parsed_schema:
-                assert \
-                    cls.role_exists(parsed_role), \
-                    "role %s not recognized" % parsed_role
-                return parsed_role.upper()
+        for parsed_schema, parsed_role in cls.parse_direct_brand_str(
+                direct_brand_str):
+            if parsed_schema:
+                if (parsed_schema, parsed_role) == ('st', None):
+                    return 'ADMIN'
+                if parsed_role and schema == parsed_schema:
+                    assert \
+                        cls.role_exists(parsed_role), \
+                        "role %s not recognized" % parsed_role
+                    return parsed_role.upper()
         return role
 
     def process_kwargs(self):
@@ -1709,7 +1764,7 @@ class RoleGroup(FieldGroup):
                 self.properties['direct_brands'] = [('st', None)]
                 return
 
-        parsed = self.parse_direct_brands(self.kwargs.get('direct_brands'))
+        parsed = self.parse_direct_brand_str(self.kwargs.get('direct_brand'))
         if self.debug:
             self.register_message("parsed: %s" % pformat(parsed))
         for count, (parsed_schema, parsed_role) in enumerate(parsed):
@@ -1791,28 +1846,79 @@ class RoleGroup(FieldGroup):
             self.properties['role'] = self.default_role
 
     @property
-    def direct_brands(self):
-        if self.properties_override:
-            return ";".join([
-                self.format_direct_brand(*direct_brand_out) \
-                for direct_brand_out in self.properties['direct_brands']
-            ])
-        return self.kwargs.get('direct_brands')
+    def direct_brand(self):
+        return self['direct_brand']
+        # if self.properties_override:
+        #     if self.properties['direct_brands']:
+        #         return ";".join([
+        #             self.format_direct_brand(*direct_brand_out) \
+        #             for direct_brand_out in self.properties['direct_brands']
+        #         ])
+        #     return
+        # return self.kwargs.get('direct_brand')
 
     @property
     def role(self):
+        role = self['role']
+        if Registrar.DEBUG_MESSAGE:
+            import pdb; pdb.set_trace()
+        if role:
+            return role.upper()
+        # if self.properties_override:
+        #     if self.schema:
+        #         role = self.determine_role(
+        #             self.direct_brand,
+        #             self.schema
+        #         )
+        #     else:
+        #         role = self.properties.get('role')
+        #     if role:
+        #         return role.upper()
+        #     return
+        # role = self.kwargs.get('role')
+        # if role:
+        #     return role.upper()
+
+    def __setitem__(self, key, val):
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message(
+                "setting key %s to val %s " % (key, val)
+            )
+            import pdb; pdb.set_trace()
         if self.properties_override:
-            if self.schema:
-                role = self.determine_role(
-                    self.direct_brands,
-                    self.schema
-                )
-            else:
-                role = self.properties.get('role')
-            if role:
-                return role.upper()
-            return ''
-        return self.kwargs.get('role')
+            attr = self.get_mapped_attr(key)
+            if attr == 'direct_brand':
+                try:
+                    val = self.parse_direct_brand_str(val)
+                    key = 'direct_brands'
+                except Exception as exc:
+                    raise ValueError("could not set direct brand because: %s" % exc)
+        super(RoleGroup, self).__setitem__(key, val)
+
+    def __getitem__(self, key):
+        if Registrar.DEBUG_CONTACT:
+            Registrar.register_message(
+                "getting key %s" % (key)
+            )
+            import pdb; pdb.set_trace()
+        if self.properties_override:
+            attr = self.get_mapped_attr(key)
+            if attr == 'direct_brand':
+                return ";".join([
+                    self.format_direct_brand(*direct_brand_out) \
+                    for direct_brand_out in self.properties.get('direct_brands', [])
+                ])
+            elif attr == 'role':
+                if self.schema:
+                    role = self.determine_role(
+                        self.direct_brand,
+                        self.schema
+                    )
+                else:
+                    role = super(RoleGroup, self).__getitem__('role')
+                if role:
+                    return role.upper()
+        return super(RoleGroup, self).__getitem__(key)
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
@@ -1820,5 +1926,5 @@ class RoleGroup(FieldGroup):
         return SanitationUtils.coerce_unicode(prefix + delimeter.join(
             filter(None, [
                 self.role,
-                self.direct_brands,
+                self.direct_brand,
             ])))

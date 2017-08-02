@@ -181,10 +181,10 @@ def parse_direct_brand(direct_brand):
             "unkown brand: %s" %  direct_brand
     return parsed_schema, parsed_role
 
-def parse_direct_brands(direct_brands):
+def parse_direct_brand_str(direct_brand_str):
     parsed = []
-    if direct_brands:
-        for direct_brand in map(str.lower, str(direct_brands).split(';')):
+    if direct_brand_str:
+        for direct_brand in map(str.lower, str(direct_brand_str).split(';')):
             # print("looking at direct_brand: %s" % direct_brand)
             parsed_schema, parsed_role = parse_direct_brand(direct_brand)
             if parsed_schema:
@@ -210,7 +210,7 @@ def determine_role(direct_brands, schema=None, role=None):
     if direct_brands is None:
         return role
     assert schema_exists(schema), "schema %s not recognized" % schema
-    for parsed_schema, parsed_role in parse_direct_brands(direct_brands):
+    for parsed_schema, parsed_role in parse_direct_brand_str(direct_brands):
         # print("parsed_schema is: %s, parsed_role is %s, schema role is %s" % (
         #     repr(translate_schema(parsed_schema)),
         #     repr(translate_role(parsed_role)),
@@ -234,7 +234,7 @@ def jess_fix(direct_brands, act_role):
         assert role_exists(act_role), \
             "act_role should exist: %s" % act_role
     role_out = act_role
-    parsed = parse_direct_brands(direct_brands)
+    parsed = parse_direct_brand_str(direct_brands)
 
     # if len(parsed) >= 2:
     #     schema_no_roles = [
@@ -292,10 +292,10 @@ def jess_fix(direct_brands, act_role):
     if not role_out:
         role_out = 'rn'
 
-    direct_brands_formatted = ";".join([
+    direct_brand_str = ";".join([
         format_direct_brand(*direct_brand_out) for direct_brand_out in direct_brands_out
     ])
-    return direct_brands_formatted, role_out.upper()
+    return direct_brand_str, role_out.upper()
 
 
 def main(override_args=None, settings=None):  # pylint: disable=too-many-branches,too-many-locals
@@ -358,36 +358,36 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         errors = ''
         card_id = master_object.MYOBID
         name = str(master_object.name)
-        act_direct_brands = str(master_object.get('Direct Brand'))
-        parsed_direct_brands = parse_direct_brands(act_direct_brands)
+        act_direct_brand_str = str(master_object.get('Direct Brand'))
+        parsed_direct_brand_str = parse_direct_brand_str(act_direct_brand_str)
         master_role = str(master_object.get('Role'))
         slave_role = str(slave_object.get('Role'))
         try:
-            expected_role = determine_role(act_direct_brands, settings.schema)
+            expected_role = determine_role(act_direct_brand_str, settings.schema)
         except AssertionError, exc:
             expected_role = "UNKN"
             errors = str(exc)
-        jess_direct_brands, jess_role = None, None
+        jess_direct_brand_str, jess_role = None, None
         try:
-            jess_direct_brands, jess_role = jess_fix(act_direct_brands, master_role)
+            jess_direct_brand_str, jess_role = jess_fix(act_direct_brand_str, master_role)
         except AssertionError, exc:
             errors = "; ".join([errors, str(exc)])
         row = (
             card_id,
             name,
-            act_direct_brands,
+            act_direct_brand_str,
             master_role,
             slave_role,
             expected_role,
-            jess_direct_brands,
+            jess_direct_brand_str,
             jess_role,
             errors
         )
-        for parsed_schema, parsed_role in parsed_direct_brands:
+        for parsed_schema, parsed_role in parsed_direct_brand_str:
             direct_brand_counter.update({format_direct_brand(parsed_schema, parsed_role): 1})
 
         unique_roles = SeqUtils.filter_unique_true([master_role, slave_role, jess_role])
-        unique_direct_brands = SeqUtils.filter_unique_true([act_direct_brands, jess_direct_brands])
+        unique_direct_brands = SeqUtils.filter_unique_true([act_direct_brand_str, jess_direct_brand_str])
 
         if errors or len(unique_roles) > 1 or len(unique_direct_brands) > 1:
             delta_table.append(row)

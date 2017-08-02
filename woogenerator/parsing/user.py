@@ -45,7 +45,7 @@ class ImportUser(ImportObject):
     MYOBID = DescriptorUtils.safe_key_property('MYOB Card ID')
     username = DescriptorUtils.safe_key_property('Wordpress Username')
     role = DescriptorUtils.safe_key_property('Role Info')
-    direct_brands = DescriptorUtils.safe_key_property('Direct Brand')
+    direct_brand = DescriptorUtils.safe_key_property('Direct Brand')
     # contact_schema = DescriptorUtils.safe_key_property('contact_schema')
     billing_address = DescriptorUtils.safe_key_property('Address')
     shipping_address = DescriptorUtils.safe_key_property('Home Address')
@@ -279,7 +279,7 @@ class ImportUser(ImportObject):
             ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
                 'role': 'Role',
-                'direct_brands': 'Direct Brand'
+                'direct_brand': 'Direct Brand'
             }.items()
         ]))
 
@@ -339,6 +339,11 @@ class ImportUser(ImportObject):
         # self.init_contact_objects(self.__getstate__())
 
     def __getitem__(self, key):
+        if self.DEBUG_MESSAGE:
+            self.register_message("getting %s in %s" % (
+                key,
+                id(self),
+            ))
         for alias, keys in self.aliasMapping.items():
             if key in keys and alias in self:
                 return self[alias][key]
@@ -346,8 +351,9 @@ class ImportUser(ImportObject):
 
     def __setitem__(self, key, val):
         # print "setting obj %s to %s " % (key, repr(val))
-        if self.DEBUG_MESSAGE and key == 'Role Info':
-            self.register_message("setting Role Info in %s to %s" % (
+        if self.DEBUG_MESSAGE:
+            self.register_message("setting %s in %s to %s" % (
+                key,
                 id(self),
                 repr(val)
             ))

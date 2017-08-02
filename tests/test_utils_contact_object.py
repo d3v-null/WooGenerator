@@ -1004,27 +1004,27 @@ class TestRoleGroup(TestFieldGroups):
     def test_role_group_basic(self):
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='TechnoTan Wholesale'
+            direct_brand='TechnoTan Wholesale'
         )
 
         self.assertTrue(rgrp)
         self.assertFalse(rgrp.empty)
         self.assertTrue(rgrp.valid)
         self.assertEqual(rgrp.role, 'WN')
-        self.assertEqual(rgrp.direct_brands, 'TechnoTan Wholesale')
+        self.assertEqual(rgrp.direct_brand, 'TechnoTan Wholesale')
 
     def test_role_group_no_post(self):
         RoleGroup.perform_post = False
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='TechnoTan Wholesale'
+            direct_brand='TechnoTan Wholesale'
         )
 
         self.assertTrue(rgrp)
         self.assertFalse(rgrp.empty)
         self.assertTrue(rgrp.valid)
         self.assertEqual(rgrp.role, 'WN')
-        self.assertEqual(rgrp.direct_brands, 'TechnoTan Wholesale')
+        self.assertEqual(rgrp.direct_brand, 'TechnoTan Wholesale')
 
     def test_role_group_reflect_equality(self):
         RoleGroup.perform_post = True
@@ -1032,7 +1032,7 @@ class TestRoleGroup(TestFieldGroups):
 
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='TechnoTan Wholesale'
+            direct_brand='TechnoTan Wholesale'
         )
         reflected = rgrp.reflect()
         self.assertEqual(rgrp, reflected)
@@ -1048,14 +1048,14 @@ class TestRoleGroup(TestFieldGroups):
 
         rgrp = RoleGroup(
             role='RN',
-            direct_brands='TechnoTan Retail'
+            direct_brand='TechnoTan Retail'
         )
         reflected = rgrp.reflect()
         self.assertEqual(rgrp, reflected)
 
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='Pending'
+            direct_brand='Pending'
         )
         reflected = rgrp.reflect()
         try:
@@ -1069,7 +1069,7 @@ class TestRoleGroup(TestFieldGroups):
 
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='TechnoTan Wholesale'
+            direct_brand='TechnoTan Wholesale'
         )
         reflected = rgrp.reflect()
         self.assertEqual(rgrp, reflected)
@@ -1085,14 +1085,14 @@ class TestRoleGroup(TestFieldGroups):
 
         rgrp = RoleGroup(
             role='RN',
-            direct_brands='TechnoTan Retail'
+            direct_brand='TechnoTan Retail'
         )
         reflected = rgrp.reflect()
         self.assertEqual(rgrp, reflected)
 
         rgrp = RoleGroup(
             role='WN',
-            direct_brands='Pending'
+            direct_brand='Pending'
         )
         reflected = rgrp.reflect()
         self.assertNotEqual(rgrp, reflected)
@@ -1100,7 +1100,7 @@ class TestRoleGroup(TestFieldGroups):
     def test_roles_jess(self):
         RoleGroup.perform_post = True
 
-        for direct_brands, role, expected_brand, expected_role in [
+        for direct_brand, role, expected_brand, expected_role in [
                 # If Direct Brand is TechnoTan and Role is WN
                 # Change Direct Brand to TechnoTan Wholesale and keep Role as WN
                 ("TechnoTan", "WN", "TechnoTan Wholesale", "WN"),
@@ -1224,29 +1224,31 @@ class TestRoleGroup(TestFieldGroups):
                 # --- Derwent Tests ---
                 # Remove pending if other roles
                 ("Pending;TechnoTan", "RN", "TechnoTan Retail", "RN"),
+                # Role = Admin should override direct brand
                 (None, "ADMIN", "Staff", "ADMIN"),
+                ("TechnoTan", "ADMIN", "Staff", "ADMIN"),
 
         ]:
             if self.debug:
                 print(
                     "\ntesting: %s" % (
-                        str([direct_brands, role, expected_brand, expected_role])
+                        str([direct_brand, role, expected_brand, expected_role])
                     )
                 )
-            rgrp = RoleGroup(role=role, direct_brands=direct_brands)
-            result_brand, result_role = rgrp.direct_brands, rgrp.role
+            rgrp = RoleGroup(role=role, direct_brand=direct_brand)
+            result_brand, result_role = rgrp.direct_brand, rgrp.role
             try:
                 self.assertEqual(result_brand, expected_brand)
                 self.assertEqual(result_role, expected_role)
             except AssertionError, exc:
                 raise AssertionError("failed %s because of exception %s" % (
-                    (direct_brands, role, expected_brand, expected_role),
+                    (direct_brand, role, expected_brand, expected_role),
                     str(exc)
                 ))
 
     def test_roles_schema(self):
         RoleGroup.perform_post = True
-        for schema, direct_brands, role, expected_brands, expected_role in [
+        for schema, direct_brand, role, expected_brands, expected_role in [
                 ('TT', 'VuTan Wholesale', 'WN', 'VuTan Wholesale', 'RN'),
                 ('VT', 'VuTan Wholesale', 'WN', 'VuTan Wholesale', 'WN'),
                 (
@@ -1257,21 +1259,28 @@ class TestRoleGroup(TestFieldGroups):
                     'VT', 'TechnoTan Wholesale; VuTan Retail', 'WN',
                     'TechnoTan Wholesale;VuTan Retail', 'RN'
                 ),
+                (
+                    'TT', 'VuTan Wholesale', 'WN',
+                    'VuTan Wholesale', 'RN'
+                ),
+                # Role = Admin should override direct brand
+                ("TT", None, "ADMIN", "Staff", "ADMIN"),
+                ("TT", "TechnoTan", "ADMIN", "Staff", "ADMIN"),
+                ("VT", "TechnoTan", "ADMIN", "Staff", "ADMIN"),
         ]:
             try:
-                rgrp = RoleGroup(schema, role=role, direct_brands=direct_brands)
+                rgrp = RoleGroup(schema, role=role, direct_brand=direct_brand)
                 self.assertEquals(
-                    (rgrp.direct_brands, rgrp.role),
+                    (rgrp.direct_brand, rgrp.role),
                     (expected_brands, expected_role)
                 )
             except AssertionError, exc:
-                raise AssertionError(
-                    ("failed %s because of exception %s\nrgrp.props: %s") % (
-                        (schema, direct_brands, role, expected_brands, expected_role),
-                        str(exc),
-                        str(rgrp.properties)
-                    )
+                msg = ("failed %s because of exception %s\nrgrp.props: %s") % (
+                    (schema, direct_brand, role, expected_brands, expected_role),
+                    str(exc),
+                    str(rgrp.properties)
                 )
+                raise AssertionError(msg)
 
     def test_parse_direct_brand(self):
         for direct_brand, expected_brand, expected_role in [
@@ -1292,6 +1301,24 @@ class TestRoleGroup(TestFieldGroups):
         self.assertTrue(
             RoleGroup.tokenwise_startswith(['mosaic', 'minerals'], ['mosaic', 'minerals'])
         )
+
+    def test_update_from(self):
+        RoleGroup.perform_post = False
+        master = RoleGroup(
+            schema=None,
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        slave = RoleGroup(
+            schema='TT',
+            role='WN'
+        )
+        slave.update_from(master, ['Role', 'Direct Brand'])
+        self.assertEqual(slave.schema, 'TT')
+        self.assertEqual(slave.direct_brand, 'VuTan Wholesale')
+        self.assertEqual(slave.role, 'RN')
+
+
 
 if __name__ == '__main__':
     unittest.main()

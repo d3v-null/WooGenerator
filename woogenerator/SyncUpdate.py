@@ -449,17 +449,23 @@ class SyncUpdate(
         else:
             raise Exception("unknown subject: %s" % subject)
 
-    # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
-    # m_time=None):
-    def loser_update(self, **update_params):
+    def snapshot_hash(self, thing):
+        return "%s - %s" % (
+            id(thing),
+            hash(thing)
+        )
+
+    def set_loser_value(self, **update_params):
         for key in ['col', 'data', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
-        col = update_params['col']
         loser = update_params['subject']
-        reason = update_params.get('reason', '')
+        col = update_params['col']
         data = update_params['data']
+        reason = update_params.get('reason', '')
+
+        prev_old_val_hash = self.snapshot_hash(update_params['old_value'])
 
         if loser == self.slave_name:
             # If we are changing slave
@@ -477,15 +483,32 @@ class SyncUpdate(
             if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
                 # print "setting m_deltas"
                 self.m_deltas = True
-        # if data.get('warn'):
 
-        self.add_sync_warning(**update_params)
         if data.get('delta'):
             delta_col = self.col_data.delta_col(col)
             if not new_loser_object.get(delta_col):
                 new_loser_object[delta_col] = update_params['old_value']
 
-        new_loser_object[col] = update_params['new_value']
+        if data.get('aliases') and new_loser_object[col].reprocess_kwargs:
+            if Registrar.DEBUG_UPDATE:
+                Registrar.register_message((
+                    "setting col %s in loser object %s because %s.\n"
+                    "from %50s to %50s\n%s"
+                ) % (
+                    col,
+                    str(new_loser_object),
+                    reason,
+                    new_loser_object[col],
+                    update_params['new_value'],
+                    self.tabulate()
+                ))
+            # import pdb; pdb.set_trace()
+            new_loser_object[col].update_from(update_params['new_value'], data.get('aliases'))
+        else:
+            new_loser_object[col] = update_params['new_value']
+
+        # new_loser_object[col] = update_params['new_value']
+
         self.updates += 1
         if data.get('static'):
             self.static = False
@@ -495,6 +518,21 @@ class SyncUpdate(
             if data.get('static'):
                 self.add_problematic_update(**update_params)
                 self.important_static = False
+
+        assert \
+        prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
+        "should never update old_value"
+
+
+    # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
+    # m_time=None):
+    def loser_update(self, **update_params):
+        for key in ['col', 'data', 'subject', 'old_value', 'new_value']:
+            assert key in update_params, 'missing mandatory update param, %s from %s' % (
+                key, update_params)
+
+        self.add_sync_warning(**update_params)
+        self.set_loser_value(**update_params)
 
     def tie_update(self, **update_params):
         # print "tie_update ", col, reason
@@ -551,15 +589,15 @@ class SyncUpdate(
             reflected_m_value = update_params['m_value'].reflect()
             if reflected_m_value != update_params['m_value']:
                 update_params['reflected_master'] = reflected_m_value
-                if Registrar.DEBUG_UPDATE:
-                    Registrar.register_message("reflecting. m_value: %s / %s / %s, reflected: %s / %s / %s" % (
-                        pformat(update_params['m_value'].properties),
-                        pformat(update_params['m_value'].kwargs),
-                        pformat([update_params['m_value'][key] for key in update_params['m_value'].equality_keys]),
-                        pformat(reflected_m_value.properties),
-                        pformat(reflected_m_value.kwargs),
-                        pformat([reflected_m_value[key] for key in reflected_m_value.equality_keys]),
-                    ))
+                # if Registrar.DEBUG_UPDATE:
+                #     Registrar.register_message("reflecting. m_value: %s / %s / %s, reflected: %s / %s / %s" % (
+                #         pformat(update_params['m_value'].properties),
+                #         pformat(update_params['m_value'].kwargs),
+                #         pformat([update_params['m_value'][key] for key in update_params['m_value'].equality_keys]),
+                #         pformat(reflected_m_value.properties),
+                #         pformat(reflected_m_value.kwargs),
+                #         pformat([reflected_m_value[key] for key in reflected_m_value.equality_keys]),
+                #     ))
 
         if reflect_mode == 'both' or reflect_mode == 'slave':
             assert isinstance(update_params['s_value'], FieldGroup), \
@@ -656,6 +694,7 @@ class SyncUpdate(
     def update(self, sync_cols):
         for col, data in sync_cols.items():
             self.update_col(col=col, data=data)
+        # import pdb; pdb.set_trace()
         # if self.m_updated:
         #     self.new_m_object.refresh_contact_objects()
         # if self.s_updated:
@@ -705,12 +744,12 @@ class SyncUpdate(
                 self.updates, self.important_updates),
             self.display_sync_warnings(tablefmt),
         ]
-        if self.new_m_object:
+        if self.m_updated:
             changes_components += [
                 subtitle_fmt % '%s CHANGES' % self.master_name,
                 self.display_master_changes(tablefmt),
             ]
-        if self.new_s_object:
+        if self.s_updated:
             changes_components += [
                 subtitle_fmt % '%s CHANGES' % self.slave_name,
                 self.display_slave_changes(tablefmt),
