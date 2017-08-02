@@ -487,7 +487,9 @@ class SyncUpdate(
         if data.get('delta'):
             delta_col = self.col_data.delta_col(col)
             if not new_loser_object.get(delta_col):
-                new_loser_object[delta_col] = update_params['old_value']
+                new_loser_object[delta_col] = copy(update_params['old_value'])
+                if data.get('aliases'):
+                    new_loser_object[delta_col].perform_post = False
 
         if data.get('aliases') and new_loser_object[col].reprocess_kwargs:
             if Registrar.DEBUG_UPDATE:
