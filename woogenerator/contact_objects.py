@@ -45,29 +45,29 @@ class FieldGroup(Registrar):
                 key for key in self.mandatory_keys \
                 if not self.kwargs.get(key)
             ]
-            if self.debug:
-                self.register_message("empty_mandatory_keys: %s, any: %s" %
-                                      (repr(empty_mandatory_keys),
-                                       repr(any(empty_mandatory_keys))))
+            # if self.debug:
+            #     self.register_message("empty_mandatory_keys: %s, any: %s" %
+            #                           (repr(empty_mandatory_keys),
+            #                            repr(any(empty_mandatory_keys))))
             self.empty = any(empty_mandatory_keys)
-            if self.empty and self.debug:
-                self.register_message("empty because missing mandory keys: %s"
-                                      % repr(empty_mandatory_keys))
+            # if self.empty and self.debug:
+            #     self.register_message("empty because missing mandory keys: %s"
+            #                           % repr(empty_mandatory_keys))
         else:
             self.empty = not any(self.kwargs)
-            if self.empty and self.debug:
-                self.register_message(
-                    "empty because no kwargs: %s" % self.kwargs)
-        if self.debug and not self.empty:
-            self.register_message("totally not empty")
+            # if self.empty and self.debug:
+            #     self.register_message(
+            #         "empty because no kwargs: %s" % self.kwargs)
+        # if self.debug and not self.empty:
+        #     self.register_message("totally not empty")
         self.valid = True
         self.problematic = False
         self.reason = ""
         self.properties = OrderedDict()
         if self.perform_post:
             self.process_kwargs()
-        if self.debug:
-            self.register_message("properties: %s" % pformat(self.properties))
+        # if self.debug:
+        #     self.register_message("properties: %s" % pformat(self.properties))
 
     def process_kwargs(self):
         self.init_properties()
@@ -426,8 +426,8 @@ class ContactAddress(ContactObject):
     def process_kwargs(self):
         super(ContactAddress, self).process_kwargs()
         if self.empty:
-            if self.debug:
-                self.register_message("not processing kwargs because empty")
+            # if self.debug:
+            #     self.register_message("not processing kwargs because empty")
             return
         # if not schema: self.schema = self.__class__.determine_source(**self.kwargs)
 
@@ -557,17 +557,15 @@ class ContactAddress(ContactObject):
                             repr(" | ".join(self.properties['unknowns'])))
 
     def parse_token(self, token_index, token):
-        for getter, adder in [(AddressUtils.get_delivery,
-                               self.add_delivery), (AddressUtils.get_subunit,
-                                                    self.add_subunit),
-                              (AddressUtils.get_floor,
-                               self.add_floor), (AddressUtils.get_thoroughfare,
-                                                 self.add_thoroughfare),
-                              (NameUtils.get_care_of,
-                               self.add_careof), (NameUtils.get_organization,
-                                                  self.add_organization),
-                              (AddressUtils.get_weak_subunit,
-                               self.add_weak_subunit)]:
+        for getter, adder in [
+            (AddressUtils.get_delivery, self.add_delivery),
+            (AddressUtils.get_subunit, self.add_subunit),
+            (AddressUtils.get_floor, self.add_floor),
+            (AddressUtils.get_thoroughfare, self.add_thoroughfare),
+            (NameUtils.get_care_of, self.add_careof),
+            (NameUtils.get_organization, self.add_organization),
+            (AddressUtils.get_weak_subunit, self.add_weak_subunit)
+        ]:
             result = getter(token)
             if result:
                 adder(result)
@@ -654,19 +652,19 @@ class ContactAddress(ContactObject):
         if not name:
             return
         # if we haven't flushed number_combo, do it now
-        self.register_message(
-            "PROCESSING NAME %s" % SanitationUtils.coerce_unicode(name))
+        # self.register_message(
+        #     "PROCESSING NAME %s" % SanitationUtils.coerce_unicode(name))
         names = filter(None, NameUtils.get_single_names(name))
-        self.register_message(
-            "SINGLE NAMES %s" % SanitationUtils.coerce_unicode(names))
+        # self.register_message(
+        #     "SINGLE NAMES %s" % SanitationUtils.coerce_unicode(names))
         weak_thoroughfare = AddressUtils.get_weak_thoroughfare(name)
         building = AddressUtils.get_building(name)
         if building and weak_thoroughfare:
-            self.register_message(
-                "BUILDING %s" % SanitationUtils.coerce_unicode(building))
-            self.register_message(
-                "WEAK THOROUGHFARE:  %s" %
-                SanitationUtils.coerce_unicode(weak_thoroughfare))
+            # self.register_message(
+            #     "BUILDING %s" % SanitationUtils.coerce_unicode(building))
+            # self.register_message(
+            #     "WEAK THOROUGHFARE:  %s" %
+            #     SanitationUtils.coerce_unicode(weak_thoroughfare))
             if building[1] and weak_thoroughfare[1]:
                 thoroughfare_type_len, building_type_len = [
                     len(x[1]) for x in [weak_thoroughfare, building]
@@ -679,9 +677,9 @@ class ContactAddress(ContactObject):
                 elif building_type_len > thoroughfare_type_len:
                     self.add_building(building)
                     return
-                else:
-                    self.register_warning(
-                        'EQUALLY VALID THOROUGHFARE AND BUILDING')
+                # else:
+                #     self.register_warning(
+                #         'EQUALLY VALID THOROUGHFARE AND BUILDING')
 
         if not (self.properties['thoroughfares'] + self.properties['weak_thoroughfares']) and \
                 (self.properties['numbers'] or self.properties['coerced_subunits']):
@@ -724,12 +722,12 @@ class ContactAddress(ContactObject):
             while self.properties['incomplete_subunits']:
                 self.complete_subunit(
                     self.properties['incomplete_subunits'].pop())
-            self.register_message("ADDING INCOMPLETE SUBUNIT:  %s" %
-                                  SanitationUtils.coerce_unicode(subunit))
+            # self.register_message("ADDING INCOMPLETE SUBUNIT:  %s" %
+            #                       SanitationUtils.coerce_unicode(subunit))
             self.properties['incomplete_subunits'] += [subunit]
         else:
-            self.register_message("ADDING SUBUNIT:  %s" %
-                                  SanitationUtils.coerce_unicode(subunit))
+            # self.register_message("ADDING SUBUNIT:  %s" %
+            #                       SanitationUtils.coerce_unicode(subunit))
             self.properties['subunits'] += [subunit]
 
     def add_weak_subunit(self, weak_subunit):
@@ -739,8 +737,8 @@ class ContactAddress(ContactObject):
 
     def coerce_subunit(self, number):
         subunit = (None, number)
-        self.register_message(
-            "COERCED SUBUNIT: %s" % SanitationUtils.coerce_unicode(subunit))
+        # self.register_message(
+        #     "COERCED SUBUNIT: %s" % SanitationUtils.coerce_unicode(subunit))
         self.properties['coerced_subunits'] += [subunit]
 
     def complete_subunit(self, incomplete_subunit):
@@ -757,21 +755,21 @@ class ContactAddress(ContactObject):
                 "Building (%s) should not come after thoroughfare (%s)" %
                 (SanitationUtils.coerce_unicode(building),
                  SanitationUtils.coerce_unicode(all_thoroughfares[0])))
-        self.register_message(
-            "ADDING BUILDING:  %s" % SanitationUtils.coerce_unicode(building))
+        # self.register_message(
+        #     "ADDING BUILDING:  %s" % SanitationUtils.coerce_unicode(building))
         self.properties['buildings'] += [building]
 
     def coerce_building(self, token):
         building = AddressUtils.get_building(token)
         if not building:
             building = (token, None)
-        self.register_message(
-            "COERCED BUILDING %s" % SanitationUtils.coerce_unicode(building))
+        # self.register_message(
+        #     "COERCED BUILDING %s" % SanitationUtils.coerce_unicode(building))
         self.add_building(building)
 
     def add_thoroughfare(self, thoroughfare):
-        self.register_message("ADDING THOROUGHFARE %s" %
-                              SanitationUtils.coerce_unicode(thoroughfare))
+        # self.register_message("ADDING THOROUGHFARE %s" %
+        #                       SanitationUtils.coerce_unicode(thoroughfare))
         _, thoroughfare_name, thoroughfare_type, _ = thoroughfare
         self.assert_valid_thoroughfare_type(thoroughfare_name,
                                             thoroughfare_type)
@@ -783,21 +781,26 @@ class ContactAddress(ContactObject):
         self.properties['thoroughfares'] += [thoroughfare]
 
     def coerce_thoroughfare(self, number, weak_thoroughfare):
-        self.register_message(
-            "COERCING THOROUGHFARE %s %s" %
-            (SanitationUtils.coerce_unicode(number),
-             SanitationUtils.coerce_unicode(weak_thoroughfare), ))
+        # self.register_message(
+        #     "COERCING THOROUGHFARE %s %s" % (
+        #         SanitationUtils.coerce_unicode(number),
+        #         SanitationUtils.coerce_unicode(weak_thoroughfare)
+        #     )
+        # )
         thoroughfare_name, thoroughfare_type, thoroughfare_suffix = weak_thoroughfare
         thoroughfare = (number, thoroughfare_name, thoroughfare_type,
                         thoroughfare_suffix)
-        self.register_message("COERCED THOROUGHFARE: %s" %
-                              SanitationUtils.coerce_unicode(thoroughfare))
+        # self.register_message(
+        #     "COERCED THOROUGHFARE: %s" %
+        #     SanitationUtils.coerce_unicode(thoroughfare)
+        # )
         self.add_thoroughfare(thoroughfare)
 
     def add_weak_thoroughfare(self, weak_thoroughfare):
-        self.register_message(
-            "ADDING WEAK THOROUGHFARE %s" %
-            SanitationUtils.coerce_unicode(weak_thoroughfare))
+        # self.register_message(
+        #     "ADDING WEAK THOROUGHFARE %s" %
+        #     SanitationUtils.coerce_unicode(weak_thoroughfare)
+        # )
         if \
                 True or\
                 not (self.properties['thoroughfares'] or self.properties['weak_thoroughfares']):
@@ -812,9 +815,9 @@ class ContactAddress(ContactObject):
                 # token = " ".join(names)
                 self.coerce_thoroughfare(number, weak_thoroughfare)
                 return
-            self.register_message(
-                "ADDING WEAK THOROUGHFARE:  %s" %
-                SanitationUtils.coerce_unicode(weak_thoroughfare))
+            # self.register_message(
+            #     "ADDING WEAK THOROUGHFARE:  %s" %
+            #     SanitationUtils.coerce_unicode(weak_thoroughfare))
             thoroughfare_name, thoroughfare_type, _ = weak_thoroughfare
             self.assert_valid_thoroughfare_type(thoroughfare_name,
                                                 thoroughfare_type)
@@ -824,13 +827,13 @@ class ContactAddress(ContactObject):
             self.coerce_building(token)
 
     def add_floor(self, floor):
-        self.register_message(
-            "ADDING FLOOR:  %s" % SanitationUtils.coerce_unicode(floor))
+        # self.register_message(
+        #     "ADDING FLOOR:  %s" % SanitationUtils.coerce_unicode(floor))
         self.properties['floors'] += [floor]
 
     def add_delivery(self, delivery):
-        self.register_message(
-            "ADDING DELIVERY:  %s" % SanitationUtils.coerce_unicode(delivery))
+        # self.register_message(
+        #     "ADDING DELIVERY:  %s" % SanitationUtils.coerce_unicode(delivery))
         self.properties['deliveries'] += [delivery]
 
     def assert_valid_thoroughfare_type(self, thoroughfare_name,
@@ -1090,9 +1093,9 @@ class ContactName(ContactObject):
                             ])))
                     # print reverse_name_components, no_punctuation_contact
                     if reverse_name_components == no_punctuation_contact:
-                        self.register_message(
-                            "DETECTED REVERSE NAME:  %s" % \
-                            SanitationUtils.coerce_unicode(full_name_contact))
+                        # self.register_message(
+                        #     "DETECTED REVERSE NAME:  %s" % \
+                        #     SanitationUtils.coerce_unicode(full_name_contact))
                         full_name_contact = None
 
             full_names = SeqUtils.filter_unique_true(
@@ -1104,17 +1107,17 @@ class ContactName(ContactObject):
                                 % SanitationUtils.coerce_unicode(full_names))
 
             for i, full_name in enumerate(full_names):
-                self.register_message("ANALYSING FULL NAME %d: %s" %
-                                      (i, repr(full_name)))
+                # self.register_message("ANALYSING FULL NAME %d: %s" %
+                #                       (i, repr(full_name)))
                 tokens = NameUtils.tokenize_name(full_name)
-                self.register_message("TOKENS: %s" % repr(tokens))
+                # self.register_message("TOKENS: %s" % repr(tokens))
                 self.properties['name_combo'].reset()
                 for j, token in enumerate(tokens):
                     self.parse_token(j, token)
 
                 if self.properties['name_combo']:
-                    self.register_message("CONGRUENT NAMES AT END OF CYCLE: %s"
-                                          % self.properties['name_combo'])
+                    # self.register_message("CONGRUENT NAMES AT END OF CYCLE: %s"
+                    #                       % self.properties['name_combo'])
                     self.add_name(self.properties['name_combo'].flattened)
 
             while self.properties['names']:
@@ -1122,8 +1125,8 @@ class ContactName(ContactObject):
                 single_names = NameUtils.get_single_names(name)
                 for single_name in single_names:
                     self.properties['single_names'] += [single_name]
-                    self.register_message(
-                        "adding single name: %s" % single_name)
+                    # self.register_message(
+                    #     "adding single name: %s" % single_name)
 
             while self.properties['single_names']:
                 if len(self.properties['single_names']) > 1 \
@@ -1192,80 +1195,80 @@ class ContactName(ContactObject):
 
         title = NameUtils.get_title(token)
         if title:
-            self.register_message(
-                "FOUND TITLE: %s" % SanitationUtils.coerce_unicode(title))
+            # self.register_message(
+            #     "FOUND TITLE: %s" % SanitationUtils.coerce_unicode(title))
             if title not in self.properties['titles']:
                 self.properties['titles'] += [title]
             return
 
         position = NameUtils.get_position(token)
         if position:
-            self.register_message("FOUND POSITION: %s" %
-                                  SanitationUtils.coerce_unicode(position))
+            # self.register_message("FOUND POSITION: %s" %
+            #                       SanitationUtils.coerce_unicode(position))
             if position not in self.properties['positions']:
                 self.properties['positions'] += [position]
             return
 
         suffix = NameUtils.get_name_suffix(token)
         if suffix:
-            self.register_message("FOUND NAME SUFFIX: %s" %
-                                  SanitationUtils.coerce_unicode(suffix))
+            # self.register_message("FOUND NAME SUFFIX: %s" %
+            #                       SanitationUtils.coerce_unicode(suffix))
             if suffix not in self.properties['suffixes']:
                 self.properties['suffixes'] += [suffix]
             return
 
         email = NameUtils.get_email(token)
         if email:
-            self.register_message(
-                "FOUND EMAIL: %s" % SanitationUtils.coerce_unicode(email))
+            # self.register_message(
+            #     "FOUND EMAIL: %s" % SanitationUtils.coerce_unicode(email))
             if email not in self.properties['emails']:
                 self.properties['emails'] += [email]
             return
 
         note = NameUtils.get_note(token)
         if note:
-            self.register_message(
-                "FOUND NOTE: %s" % self.get_note_no_paranthesis(note))
+            # self.register_message(
+            #     "FOUND NOTE: %s" % self.get_note_no_paranthesis(note))
             if note not in self.properties['notes']:
                 self.properties['notes'] += [note]
             return
 
         careof = NameUtils.get_care_of(token)
         if careof:
-            self.register_message(
-                "FOUND CAREOF: %s" % SanitationUtils.coerce_unicode(careof))
+            # self.register_message(
+            #     "FOUND CAREOF: %s" % SanitationUtils.coerce_unicode(careof))
             if careof not in self.properties['careof_names']:
                 self.properties['careof_names'] += [careof]
             return
 
         organization = NameUtils.get_organization(token)
         if organization:
-            self.register_message("FOUND ORGANIZATION: %s" %
-                                  SanitationUtils.coerce_unicode(organization))
+            # self.register_message("FOUND ORGANIZATION: %s" %
+            #                       SanitationUtils.coerce_unicode(organization))
             if organization not in self.properties['organization_names']:
                 self.properties['organization_names'] += [organization]
             return
 
         family_name = NameUtils.get_family_name(token)
         single_name = NameUtils.get_single_name(token)
-        if family_name and single_name:
-            self.register_message(
-                "FOUND FAMILY AND NAME: '%s' | '%s'" %
-                (SanitationUtils.coerce_unicode(family_name),
-                 SanitationUtils.coerce_unicode(single_name)))
+        # if family_name and single_name:
+        #     self.register_message(
+        #         "FOUND FAMILY AND NAME: '%s' | '%s'" %
+        #         (SanitationUtils.coerce_unicode(family_name),
+        #          SanitationUtils.coerce_unicode(single_name)))
         if family_name:
             if not single_name or (len(family_name) > len(single_name)):
-                self.register_message(
-                    "FOUND FAMILY NAME: %s" %
-                    SanitationUtils.coerce_unicode(family_name))
+                # self.register_message(
+                #     "FOUND FAMILY NAME: %s" %
+                #     SanitationUtils.coerce_unicode(family_name))
                 self.properties['family_names'] += [family_name]
                 return
 
         multi_name = NameUtils.get_multi_name(token)
 
         if multi_name:
-            self.register_message(
-                "FOUND NAME: %s" % SanitationUtils.coerce_unicode(multi_name))
+            # self.register_message(
+            #     "FOUND NAME: %s" % SanitationUtils.coerce_unicode(multi_name))
             self.properties['name_combo'].add(token_index, multi_name)
             return
 
@@ -1278,12 +1281,12 @@ class ContactName(ContactObject):
     def add_name(self, name):
         if name in self.properties['remove_words']:
             self.properties['ignores'] += [name]
-            self.register_message(
-                "IGNORING WORD: %s" % SanitationUtils.coerce_unicode(name))
+            # self.register_message(
+            #     "IGNORING WORD: %s" % SanitationUtils.coerce_unicode(name))
             return
         if name and name not in self.properties['names']:
-            self.register_message(
-                "ADDING NAME: %s" % SanitationUtils.coerce_unicode(name))
+            # self.register_message(
+            #     "ADDING NAME: %s" % SanitationUtils.coerce_unicode(name))
             self.properties['names'] += [name]
 
     def get_note_no_paranthesis(self, note_tuple):
@@ -1462,8 +1465,8 @@ class SocialMediaFields(FieldGroup):
         super(SocialMediaFields, self).process_kwargs()
         if not self.empty:
             for key, value in self.kwargs.items():
-                if self.debug:
-                    self.register_message("kwargs[%s] = %s" % (key, value))
+                # if self.debug:
+                #     self.register_message("kwargs[%s] = %s" % (key, value))
                 self.properties[key] = value
 
     @property
@@ -1492,10 +1495,10 @@ class SocialMediaFields(FieldGroup):
 
     @property
     def website(self):
-        if self.debug:
-            self.register_message("kwargs: %s, properties: %s" %
-                                  (pformat(self.properties.items()),
-                                   pformat(self.kwargs.items())))
+        # if self.debug:
+        #     self.register_message("kwargs: %s, properties: %s" %
+        #                           (pformat(self.properties.items()),
+        #                            pformat(self.kwargs.items())))
         if self.properties_override:
             return self.properties.get('website')
         return self.kwargs.get('website')
@@ -1588,6 +1591,8 @@ class RoleGroup(FieldGroup):
     roleless_schemas = ['-', 'st']
     default_role = 'rn'
     reprocess_kwargs = True
+    admin_schema = ('st', None)
+    admin_role = 'admin'
 
     # def __init__(self, schema=None, **kwargs):
     #     super(RoleGroup, self).__init__(**kwargs)
@@ -1672,18 +1677,18 @@ class RoleGroup(FieldGroup):
                 return ('-', None)
             direct_brand_tokens = direct_brand.lower().split(' ')
             # do tokenwise comparison on all possible schemes:
-            if Registrar.DEBUG_CONTACT:
-                Registrar.register_message("direct brand tokens: %s" % direct_brand_tokens)
+            # if Registrar.DEBUG_CONTACT:
+            #     Registrar.register_message("direct brand tokens: %s" % direct_brand_tokens)
             for schema, brand in cls.schema_translations:
                 brand_tokens = brand.lower().split(' ')
-                if Registrar.DEBUG_CONTACT:
-                    Registrar.register_message("brand tokens: %s" % brand_tokens)
+                # if Registrar.DEBUG_CONTACT:
+                #     Registrar.register_message("brand tokens: %s" % brand_tokens)
                 if cls.tokenwise_startswith(direct_brand_tokens, brand_tokens):
                     parsed_schema = schema
                     remaining_tokens = \
                         direct_brand_tokens[len(brand_tokens):]
-                    if Registrar.DEBUG_CONTACT:
-                        Registrar.register_message("remaining tokens: %s" % remaining_tokens)
+                    # if Registrar.DEBUG_CONTACT:
+                    #     Registrar.register_message("remaining tokens: %s" % remaining_tokens)
                     if remaining_tokens:
                         parsed_role = cls.get_role(
                             " ".join(remaining_tokens))
@@ -1693,10 +1698,10 @@ class RoleGroup(FieldGroup):
 
             assert parsed_schema, \
                 "unkown brand: %s" %  direct_brand
-        if Registrar.DEBUG_CONTACT:
-            Registrar.register_message("returning schema: %s; role: %s" % (
-                parsed_schema, parsed_role
-            ))
+        # if Registrar.DEBUG_CONTACT:
+        #     Registrar.register_message("returning schema: %s; role: %s" % (
+        #         parsed_schema, parsed_role
+        #     ))
         return parsed_schema, parsed_role
 
     @classmethod
@@ -1739,8 +1744,8 @@ class RoleGroup(FieldGroup):
         for parsed_schema, parsed_role in cls.parse_direct_brand_str(
                 direct_brand_str):
             if parsed_schema:
-                if (parsed_schema, parsed_role) == ('st', None):
-                    return 'ADMIN'
+                if (parsed_schema, parsed_role) == cls.admin_schema:
+                    return cls.admin_role
                 if parsed_role and schema == parsed_schema:
                     assert \
                         cls.role_exists(parsed_role), \
@@ -1760,24 +1765,24 @@ class RoleGroup(FieldGroup):
             self.properties['role'] = self.kwargs.get('role').lower()
             assert self.role_exists(self.properties['role']), \
                 "act_role should exist: %s" % self.properties['role']
-            if self.properties['role'] == 'admin':
-                self.properties['direct_brands'] = [('st', None)]
+            if self.properties['role'] == self.admin_role:
+                self.properties['direct_brands'] = [self.admin_schema]
                 return
 
         parsed = self.parse_direct_brand_str(self.kwargs.get('direct_brand'))
-        if self.debug:
-            self.register_message("parsed: %s" % pformat(parsed))
+        # if self.debug:
+        #     self.register_message("parsed: %s" % pformat(parsed))
         for count, (parsed_schema, parsed_role) in enumerate(parsed):
             if parsed_role == 'admin' or parsed_schema == 'st':
                 self.properties['role'] = "admin"
-                self.properties['direct_brands'] = [('st', None)]
+                self.properties['direct_brands'] = [self.admin_schema]
                 break
             if parsed_schema == '-' and (len(parsed) - count > 1):
                 continue
-            if self.debug:
-                self.register_message("analysing: %s / %s" % (
-                    parsed_schema, parsed_role
-                ))
+            # if self.debug:
+            #     self.register_message("analysing: %s / %s" % (
+            #         parsed_schema, parsed_role
+            #     ))
             if parsed_schema:
                 in_schema = True
                 if self.schema:
@@ -1802,9 +1807,9 @@ class RoleGroup(FieldGroup):
                             )
                             if self.schema:
                                 break
-                    if self.debug:
-                        self.register_message(
-                            "role competitors: %s" % pformat(role_competitors))
+                    # if self.debug:
+                    #     self.register_message(
+                    #         "role competitors: %s" % pformat(role_competitors))
                     assert role_competitors, \
                         "cannot find a suitable role for schema %s out of %s. allowed:%s" % (
                             parsed_schema,
@@ -1812,13 +1817,13 @@ class RoleGroup(FieldGroup):
                             allowed_roles
                         )
                     _, winning_role, source = max(role_competitors)
-                    if self.debug:
-                        self.register_message(
-                            "winner: %s, %s" % (winning_role, source)
-                        )
+                    # if self.debug:
+                    #     self.register_message(
+                    #         "winner: %s, %s" % (winning_role, source)
+                    #     )
                     if source != 'act_role' and in_schema:
-                        if self.debug:
-                            self.register_message("source not act and in schema")
+                        # if self.debug:
+                        #     self.register_message("source not act and in schema")
                         self.properties['role'] = winning_role
 
                     if len(allowed_roles) > 1:
@@ -1827,19 +1832,19 @@ class RoleGroup(FieldGroup):
                         continue
                 self.properties['direct_brands'].append((parsed_schema, None))
 
-        if self.debug:
-            self.register_message(
-                "direct_brands: %s, role: %s" % (
-                    self.properties['direct_brands'],
-                    self.properties['role']
-                )
-            )
+        # if self.debug:
+        #     self.register_message(
+        #         "direct_brands: %s, role: %s" % (
+        #             self.properties['direct_brands'],
+        #             self.properties['role']
+        #         )
+        #     )
 
         if not self.properties['direct_brands']:
             self.properties['direct_brands'] = [('-', None)]
         if self.properties['direct_brands'] == [('-', None)]:
-            if self.properties['role'] == 'admin':
-                self.properties['direct_brands'] = [('st', None)]
+            if self.properties['role'] == self.admin_role:
+                self.properties['direct_brands'] = [self.admin_schema]
             else:
                 self.properties['role'] = ''
         if not self.properties['role']:
@@ -1880,11 +1885,11 @@ class RoleGroup(FieldGroup):
         #     return role.upper()
 
     def __setitem__(self, key, val):
-        if Registrar.DEBUG_CONTACT:
-            Registrar.register_message(
-                "setting key %s to val %s " % (key, val)
-            )
-            import pdb; pdb.set_trace()
+        # if Registrar.DEBUG_CONTACT:
+        #     Registrar.register_message(
+        #         "setting key %s to val %s " % (key, val)
+        #     )
+        #     import pdb; pdb.set_trace()
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
@@ -1896,11 +1901,11 @@ class RoleGroup(FieldGroup):
         super(RoleGroup, self).__setitem__(key, val)
 
     def __getitem__(self, key):
-        if Registrar.DEBUG_CONTACT:
-            Registrar.register_message(
-                "getting key %s" % (key)
-            )
-            import pdb; pdb.set_trace()
+        # if Registrar.DEBUG_CONTACT:
+        #     Registrar.register_message(
+        #         "getting key %s" % (key)
+        #     )
+        #     import pdb; pdb.set_trace()
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
