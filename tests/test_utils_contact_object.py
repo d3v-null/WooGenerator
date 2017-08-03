@@ -1228,7 +1228,8 @@ class TestRoleGroup(TestFieldGroups):
                 # Role = Admin should override direct brand
                 (None, "ADMIN", "Staff", "ADMIN"),
                 ("TechnoTan", "ADMIN", "Staff", "ADMIN"),
-
+                # This is a tricky one
+                # ("TechnoTan Distributor;", "RN", "TechnoTan Distributor", "DN"),
         ]:
             if self.debug:
                 print(
@@ -1242,6 +1243,7 @@ class TestRoleGroup(TestFieldGroups):
                 self.assertEqual(result_brand, expected_brand)
                 self.assertEqual(result_role, expected_role)
             except AssertionError, exc:
+                # import pdb; pdb.set_trace()
                 raise AssertionError("failed %s because of exception %s" % (
                     (direct_brand, role, expected_brand, expected_role),
                     str(exc)

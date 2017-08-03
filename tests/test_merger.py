@@ -341,8 +341,8 @@ class TestMerger(unittest.TestCase):
                     )
                 )
         #TODO: Re-enable when test below working
-        # self.assertEqual(len(self.updates.delta_master), 6)
-        # self.assertEqual(len(self.updates.delta_slave), 6)
+        self.assertEqual(len(self.updates.delta_master), 5)
+        self.assertEqual(len(self.updates.delta_slave), 5)
         self.assertEqual(len(self.updates.master), 6)
         self.assertEqual(len(self.updates.new_master), 0)
         self.assertEqual(len(self.updates.new_slave), 0)
@@ -408,7 +408,7 @@ class TestMerger(unittest.TestCase):
             # self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
             # self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
             self.assertFalse(sync_update.m_deltas)
-            # self.assertTrue(sync_update.s_deltas)
+            self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
         sync_update = self.updates.static[3]

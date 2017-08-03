@@ -1591,8 +1591,10 @@ class RoleGroup(FieldGroup):
     roleless_schemas = ['-', 'st']
     default_role = 'rn'
     reprocess_kwargs = True
-    admin_schema = ('st', None)
+    admin_brand = 'st'
+    admin_schema = (admin_brand, None)
     admin_role = 'admin'
+    # default_schema = 'tt'
 
     # def __init__(self, schema=None, **kwargs):
     #     super(RoleGroup, self).__init__(**kwargs)
@@ -1775,8 +1777,8 @@ class RoleGroup(FieldGroup):
         # if self.debug:
         #     self.register_message("parsed: %s" % pformat(parsed))
         for count, (parsed_schema, parsed_role) in enumerate(parsed):
-            if parsed_role == 'admin' or parsed_schema == 'st':
-                self.properties['role'] = "admin"
+            if parsed_role == self.admin_role or parsed_schema == self.admin_brand:
+                self.properties['role'] = self.admin_role
                 self.properties['direct_brands'] = [self.admin_schema]
                 break
             if parsed_schema == '-' and (len(parsed) - count > 1):
@@ -1788,7 +1790,9 @@ class RoleGroup(FieldGroup):
             if parsed_schema:
                 in_schema = True
                 if self.schema:
-                    in_schema = (self.schema.lower() == parsed_schema)
+                    in_schema = (parsed_schema == self.schema.lower())
+                # else:
+                #     in_schema = (parsed_schema == self.default_schema.lower())
                 if parsed_schema not in self.roleless_schemas:
                     # if there is competition:
                     role_competitors = [(0, self.default_role, 'default')]

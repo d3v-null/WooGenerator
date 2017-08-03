@@ -666,6 +666,12 @@ class ArgumentParserUser(ArgumentParserCommon):
             help="do extra processing to figure out duplicates",
             default=False,
             action="store_true")
+        processing_group.add_argument(
+            '--reflect-only',
+            help="report only changes do to reflection, not syncing",
+            default=False,
+            action="store_true"
+        )
 
     def add_update_options(self, update_group):
         super(ArgumentParserUser, self).add_update_options(update_group)

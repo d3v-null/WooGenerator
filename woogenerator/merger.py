@@ -260,6 +260,18 @@ def do_merge(matches, updates, parsers, settings):
 
     sync_cols = settings.col_data_class.get_sync_cols()
 
+    if settings['reflect_only']:
+        for data in sync_cols.values():
+            if isinstance(data.get('sync'), bool):
+                data.update(sync=False)
+        # sync_cols = dict([
+        #     (col, data['sync']) if isinstance(data.get('sync'), str) \
+        #     else data.update(**{'sync':False})
+        #     for col, data in sync_cols.items()
+        # ])
+
+    # print "sync_cols: %s" % pformat(sync_cols.items())
+
     if Registrar.DEBUG_PROGRESS:
         sync_progress_counter = ProgressCounter(len(matches.globals))
 
