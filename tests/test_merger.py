@@ -4,6 +4,7 @@ from __future__ import print_function
 import os
 import traceback
 # import sys
+import tempfile
 import unittest
 from pprint import pformat
 
@@ -279,7 +280,7 @@ class TestMerger(unittest.TestCase):
         self.matches = do_match(
             self.matches, self.parsers, self.settings
         )
-        self.assertEqual(len(self.matches.globals), 6)
+        self.assertEqual(len(self.matches.globals), 7)
         # print("global matches:\n%s" % pformat(self.matches.globals))
         # print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
         # print("card duplicates m:\n%s" % pformat(self.matches.duplicate['card'].m_indices))
@@ -313,16 +314,16 @@ class TestMerger(unittest.TestCase):
             Registrar.DEBUG_WARN = True
 
         if Registrar.DEBUG_MESSAGE:
-            # print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
-            # print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
-            # print("master updates:\n%s" % map(str, (self.updates.master)))
-            # print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
-            # print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
-            # print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
-            # print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
-            # print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
-            # print("slave updates:\n%s" % map(str, (self.updates.slave)))
-            # print("static updates:\n%s" % map(str, (self.updates.static)))
+            print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
+            print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
+            print("master updates:\n%s" % map(str, (self.updates.master)))
+            print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
+            print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
+            print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
+            print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
+            print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
+            print("slave updates:\n%s" % map(str, (self.updates.slave)))
+            print("static updates:\n%s" % map(str, (self.updates.static)))
 
             for update in self.updates.static:
                 print(
@@ -341,18 +342,46 @@ class TestMerger(unittest.TestCase):
                     )
                 )
         #TODO: Re-enable when test below working
-        self.assertEqual(len(self.updates.delta_master), 5)
-        self.assertEqual(len(self.updates.delta_slave), 5)
-        self.assertEqual(len(self.updates.master), 6)
+        self.assertEqual(len(self.updates.delta_master), 6)
+        self.assertEqual(len(self.updates.delta_slave), 6)
+        self.assertEqual(len(self.updates.master), 7)
         self.assertEqual(len(self.updates.new_master), 0)
         self.assertEqual(len(self.updates.new_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.problematic), 0)
-        self.assertEqual(len(self.updates.slave), 6)
-        self.assertEqual(len(self.updates.static), 6)
+        self.assertEqual(len(self.updates.slave), 7)
+        self.assertEqual(len(self.updates.static), 7)
 
-        sync_update = self.updates.static[0]
+        updates_static = self.updates.static[:]
+
+        sync_update = updates_static.pop(0)
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C016546')
+            self.assertEqual(sync_update.old_m_object.rowcount, 98)
+            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan')
+            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_m_object.name.company, None)
+            self.assertEqual(sync_update.old_s_object.wpid, '12260')
+            self.assertEqual(sync_update.old_s_object.rowcount, 102)
+            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan')
+            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+
+            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
+            self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+
+            self.assertTrue(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+
+            self.assertEqual(sync_update.get_old_s_value('Role'), 'WN')
+            self.assertEqual(sync_update.get_new_s_value('Role'), 'RN')
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001694')
             self.assertEqual(sync_update.old_m_object.rowcount, 45)
@@ -372,7 +401,7 @@ class TestMerger(unittest.TestCase):
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        sync_update = self.updates.static[1]
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001446')
             self.assertEqual(sync_update.old_m_object.rowcount, 92)
@@ -390,7 +419,7 @@ class TestMerger(unittest.TestCase):
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        sync_update = self.updates.static[2]
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
             self.assertEqual(sync_update.old_m_object.rowcount, 10)
@@ -411,7 +440,7 @@ class TestMerger(unittest.TestCase):
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        sync_update = self.updates.static[3]
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001794')
             self.assertEqual(sync_update.old_m_object.rowcount, 43)
@@ -432,7 +461,7 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.updates.static[4]
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001939')
             self.assertEqual(sync_update.old_m_object.rowcount, 62)
@@ -453,7 +482,7 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.updates.static[5]
+        sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001129')
             self.assertEqual(sync_update.old_m_object.rowcount, 84)
@@ -494,7 +523,7 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.updates, self.parsers, self.settings
         )
-        sync_update = self.updates.static[2]
+        sync_update = self.updates.static[3]
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
             self.assertEqual(sync_update.old_m_object.rowcount, 10)
@@ -520,6 +549,60 @@ class TestMerger(unittest.TestCase):
             # self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
+
+    def test_do_merge_hard_2(self):
+        suffix = 'hard_2'
+        for source in ['master', 'slave']:
+            with open(getattr(self.settings, '%s_file' % source)) as import_file:
+                import_contents = import_file.readlines()
+                new_contents = [import_contents[0], import_contents[-1]]
+                _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
+                print("seting %s to %s with contents:\n%s" % (
+                    source, new_filename, pformat(new_contents)
+                ))
+                with open(new_filename, 'w+') as new_file:
+                    new_file.writelines(new_contents)
+                setattr(self.settings, '%s_file' % source, new_filename)
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        sync_update = self.updates.static.pop()
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C016546')
+            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan')
+            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_m_object.name.company, None)
+            self.assertEqual(sync_update.old_s_object.wpid, '12260')
+            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan')
+            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+
+            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
+            self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+
+            self.assertTrue(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+
+            self.assertEqual(sync_update.get_old_s_value('Role'), 'WN')
+            self.assertEqual(sync_update.get_new_s_value('Role'), 'RN')
+            # print(sync_update.display_update_list(sync_update.sync_warnings))
+            # self.assertEqual(sync_update.sync_warnings['Role'][0]['old_value'], 'WN')
+            # self.assertEqual(sync_update.sync_warnings['Role'][0]['new_value'], 'RN')
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
 
 
 if __name__ == '__main__':

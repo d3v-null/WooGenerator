@@ -1,7 +1,7 @@
 import os
 from time import time
 from os import sys, path
-from unittest import TestCase, main, skip, TestSuite, TextTestRunner
+import unittest
 
 from context import woogenerator
 from context import get_testdata, tests_datadir
@@ -9,7 +9,7 @@ from woogenerator.metagator import MetaGator
 from woogenerator.utils import Registrar
 
 
-class testMetaGator(TestCase):
+class testMetaGator(unittest.TestCase):
 
     def setUp(self):
         self.work_dir = tests_datadir
@@ -48,4 +48,4 @@ class testMetaGator(TestCase):
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

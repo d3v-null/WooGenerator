@@ -1,13 +1,13 @@
 from os import sys, path
 from time import sleep
-from unittest import TestCase, main, skip, TestSuite, TextTestRunner
+import unittest
 
 from context import woogenerator
 from woogenerator.utils import (ProgressCounter, SanitationUtils,
                                 UnicodeCsvDialectUtils, Registrar)
 
 
-class testProgressCounter(TestCase):
+class testProgressCounter(unittest.TestCase):
 
     def setUp(self):
         self.progress_counter = ProgressCounter(100, 1)
@@ -24,7 +24,7 @@ class testProgressCounter(TestCase):
             test_url), expected_result)
 
 
-class testUnicodeCsvDialectUtils(TestCase):
+class testUnicodeCsvDialectUtils(unittest.TestCase):
 
     def test_get_act_dialect(self):
         csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
@@ -32,14 +32,14 @@ class testUnicodeCsvDialectUtils(TestCase):
         # print UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
 
 
-class test_sanitation_utils(TestCase):
+class test_sanitation_utils(unittest.TestCase):
 
     def test_slugify(self):
         result = SanitationUtils.slugify("Tanbience Specials")
         self.assertEqual(result, 'tanbience_specials')
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
 
     # testSuite = TestSuite()
     # testSuite.addTest(test_sanitation_utils('test_slugify'))
