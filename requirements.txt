@@ -17,4 +17,5 @@ Pillow==4.0.0
 google_api_python_client==1.6.2
 PyYAML==3.12
 wordpress-api
+pyxero
 bs4
