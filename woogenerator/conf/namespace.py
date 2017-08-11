@@ -14,6 +14,7 @@ from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
                                   ColDataWoo)
 from woogenerator.conf import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                                DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PROD_PATH,
+                               DEFAULT_LOCAL_PICKLE_DIR,
                                DEFAULT_LOCAL_PROD_TEST_PATH,
                                DEFAULT_LOCAL_USER_PATH,
                                DEFAULT_LOCAL_USER_TEST_PATH,
@@ -41,6 +42,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.in_folder = getattr(self, 'in_folder', DEFAULT_LOCAL_IN_DIR)
         self.out_folder = getattr(self, 'out_folder', DEFAULT_LOCAL_OUT_DIR)
         self.log_folder = getattr(self, 'log_folder', DEFAULT_LOCAL_LOG_DIR)
+        self.pickle_folder = getattr(self, 'pickle_folder', DEFAULT_LOCAL_PICKLE_DIR)
         self.import_name = getattr(self, 'import_name', TimeUtils.get_ms_timestamp())
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
@@ -112,6 +114,11 @@ class SettingsNamespaceProto(argparse.Namespace):
             return self.join_work_path(self.log_folder)
 
     @property
+    def pickle_folder_full(self):
+        if self.pickle_folder:
+            return self.join_work_path(self.pickle_folder)
+
+    @property
     def log_path_full(self):
         response = '%s.log' % self.import_name
         if self.log_folder_full:
@@ -123,6 +130,15 @@ class SettingsNamespaceProto(argparse.Namespace):
         response = '%s.zip' % self.import_name
         if self.log_folder_full:
             response = os.path.join(self.log_folder_full, response)
+        return response
+
+    @property
+    def pickle_path_full(self):
+        if hasattr(self, 'pickle_file') and getattr(self, 'pickle_file'):
+            return getattr(self, 'pickle_file')
+        response = '%s.pickle' % self.import_name
+        if self.pickle_folder_full:
+            response = os.path.join(self.pickle_folder_full, response)
         return response
 
     @property

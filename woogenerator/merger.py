@@ -8,6 +8,7 @@ import sys
 import time
 import traceback
 import zipfile
+import dill
 from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
@@ -899,6 +900,25 @@ def do_report(matches, updates, parsers, settings):
 
         res_file.write(reporter.get_document_unicode())
 
+def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
+    Registrar.register_progress("pickling updates")
+
+    pickle_obj = (matches, updates, parsers, settings, progress)
+
+    with open(settings.pickle_path_full, 'w') as pickle_file:
+        dill.dump(pickle_obj, pickle_file)
+
+    print "state saved to %s" % settings.pickle_path_full
+
+def unpickle_state(settings):
+    with open(settings.pickle_path_full) as pickle_file:
+        pickle_obj = dill.load(pickle_file)
+        matches, updates, parsers, settings, progress = pickle_obj
+
+    if progress == 'report':
+        do_report(matches, updates, parsers, settings)
+        do_updates(matches, updates, parsers, settings)
+
 def output_failures(failures, file_path):
     """
     Output a list of lists of failures as a csv file to the path specified.
@@ -1027,9 +1047,15 @@ def main(override_args=None, settings=None):
 
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
+    if hasattr(settings, 'pickle_file') and getattr(settings, 'pickle_file'):
+        unpickle_state(settings)
+
     ### SET UP DIRECTORIES ###
 
-    for path in (settings.in_folder_full, settings.out_folder_full):
+    for path in (
+            settings.in_folder_full, settings.out_folder_full,
+            settings.log_folder_full, settings.pickle_folder_full
+    ):
         if not os.path.exists(path):
             os.mkdir(path)
 
@@ -1068,6 +1094,8 @@ def main(override_args=None, settings=None):
     if settings['do_sync']:
         matches = do_match(matches, parsers, settings)
         updates = do_merge(matches, updates, parsers, settings)
+
+    pickle_state(matches, updates, parsers, settings, 'report')
 
     do_report(matches, updates, parsers, settings)
 

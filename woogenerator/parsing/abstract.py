@@ -195,9 +195,20 @@ class ImportObject(OrderedDict, Registrar):
     rowKey = '_row'
 
     def __init__(self, *args, **kwargs):
+        # print "args = %s\nkwargs = %s\n" % (pformat(args), pformat(kwargs.items()))
         if self.DEBUG_MRO:
             self.register_message('ImportObject')
         data = args[0]
+        try:
+            assert \
+                isinstance(data, dict), \
+                "expected data to be a dict, instead found: %s" % type(data)
+        except AssertionError as exc:
+            try:
+                data = OrderedDict(data)
+            except Exception:
+                raise exc
+
         # Registrar.__init__(self)
         if self.DEBUG_PARSER:
             self.register_message(
@@ -292,6 +303,10 @@ class ImportObject(OrderedDict, Registrar):
 
     def __setstate__(self, copy_dict):
         self.__dict__.update(copy_dict)
+
+    def __recuce__(self):
+        items = copy(OrderedDict(self.items()))
+        return (self.__class__, (items, ))
 
     def __copy__(self):
         items = copy(OrderedDict(self.items()))

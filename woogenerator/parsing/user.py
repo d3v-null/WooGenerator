@@ -139,6 +139,15 @@ class ImportUser(ImportObject):
 
     def __init__(self, data, **kwargs):
         super(ImportUser, self).__init__(data, **kwargs)
+        try:
+            assert \
+                isinstance(data, dict), \
+                "expected data to be a dict, instead found: %s" % type(data)
+        except AssertionError as exc:
+            try:
+                data = OrderedDict(data)
+            except Exception:
+                raise exc
         for key in [
                 'E-mail', 'MYOB Card ID', 'Wordpress Username', #'Role',
                 'contact_schema', 'Wordpress ID'

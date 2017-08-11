@@ -368,6 +368,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--slave-name')
         self.add_argument('--master-file', help='location of local master data file')
         self.add_argument('--slave-file', help='location of local slave data file')
+        self.add_argument('--pickle-file', help='location of saved state file')
 
         self.add_suppressed_argument('--web-folder')
         self.add_suppressed_argument('--web-address')

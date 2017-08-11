@@ -1,16 +1,16 @@
-import unittest
-from unittest import TestCase
 import traceback
-from pprint import pformat
+import unittest
 from copy import copy
+from pprint import pformat
 
 from context import woogenerator
+from woogenerator.contact_objects import (ContactAddress, ContactName,
+                                          ContactPhones, FieldGroup, RoleGroup,
+                                          SocialMediaFields)
 from woogenerator.utils import Registrar
-from woogenerator.contact_objects import (FieldGroup, SocialMediaFields,
-                                          ContactAddress, ContactName,
-                                          ContactPhones, RoleGroup)
 
-class TestFieldGroups(TestCase):
+
+class TestFieldGroups(unittest.TestCase):
 
     def setUp(self):
         # defaults

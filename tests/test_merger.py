@@ -506,14 +506,28 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    # @unittest.skip('contextual role inference not implemented yet')
-    def test_do_merge_hard(self):
+    def test_do_merge_hard_1(self):
+        suffix = 'hard_1'
+        for source, line in [('master', 8), ('slave', 89)]:
+            with open(getattr(self.settings, '%s_file' % source)) as import_file:
+                import_contents = import_file.readlines()
+                new_contents = [import_contents[0], import_contents[line]]
+                _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
+                # print("seting %s to %s with contents:\n%s" % (
+                #     source, new_filename, pformat(new_contents)
+                # ))
+                with open(new_filename, 'w+') as new_file:
+                    new_file.writelines(new_contents)
+                setattr(self.settings, '%s_file' % source, new_filename)
+
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
+        print("masters")
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
+        print("slaves")
         self.parsers = populate_slave_parsers(
             self.parsers, self.settings
         )
@@ -523,43 +537,39 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.updates, self.parsers, self.settings
         )
-        sync_update = self.updates.static[3]
+        sync_update = self.updates.static.pop()
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
-            self.assertEqual(sync_update.old_m_object.rowcount, 10)
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
             self.assertEqual(sync_update.old_m_object.role.schema, None)
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
             self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
             self.assertEqual(sync_update.old_s_object.wpid, '1983')
-            self.assertEqual(sync_update.old_s_object.rowcount, 91)
             self.assertEqual(sync_update.old_s_object.role.direct_brand, None)
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
             self.assertEqual(sync_update.old_s_object.role.schema, 'TT')
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
             self.assertEqual(sync_update.new_m_object.role.schema, None)
-            # TODO: Must respect role of slave schema
-            # Registrar.DEBUG_MESSAGE = True
             self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+            self.assertEqual(str(sync_update.new_s_object.role), 'RN; VuTan Wholesale')
             self.assertFalse(sync_update.m_deltas)
-            # self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_do_merge_hard_2(self):
         suffix = 'hard_2'
-        for source in ['master', 'slave']:
+        for source, line in [('master', -1), ('slave', -1)]:
             with open(getattr(self.settings, '%s_file' % source)) as import_file:
                 import_contents = import_file.readlines()
-                new_contents = [import_contents[0], import_contents[-1]]
+                new_contents = [import_contents[0], import_contents[line]]
                 _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
-                print("seting %s to %s with contents:\n%s" % (
-                    source, new_filename, pformat(new_contents)
-                ))
+                # print("seting %s to %s with contents:\n%s" % (
+                #     source, new_filename, pformat(new_contents)
+                # ))
                 with open(new_filename, 'w+') as new_file:
                     new_file.writelines(new_contents)
                 setattr(self.settings, '%s_file' % source, new_filename)
@@ -590,6 +600,7 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+            self.assertEqual(str(sync_update.new_s_object.role), 'RN; VuTan Wholesale')
 
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)

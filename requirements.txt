@@ -19,3 +19,4 @@ PyYAML==3.12
 wordpress-api
 pyxero
 bs4
+dill
