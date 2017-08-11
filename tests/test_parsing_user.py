@@ -3,6 +3,7 @@ import unittest
 from unittest import TestCase
 import tempfile
 import dill
+from copy import copy
 from collections import OrderedDict
 
 from context import woogenerator
@@ -23,27 +24,6 @@ class TestUsrObj(TestCase):
                 'Mobile Phone': '(+61) 433124710 derp'
             }
         )
-
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-
-    def test_sanitizeURL(self):
-        self.assertEqual(self.usr['Web Site'], 'http://www.laserphile.com/')
-
-    @unittest.skip("fix this later")
-    def test_sanitizeEmail(self):
-        self.assertEqual(self.usr.email.lower(), 'derwentx@gmail.com')
-        self.assertEqual(self.usr['Personal E-mail'], 'derwent@laserphile.com')
-
-
-    @unittest.skip("fix this later")
-    def test_sanitizePhone(self):
-        self.assertEqual(self.usr['Phone'], '0416160912')
-        self.assertEqual(self.usr['Mobile Phone'], '(+61)433124710')
-
-    def test_pickle(self):
-        # FieldGroup.perform_post = False
         args = (OrderedDict([
             ('Tans Per Wk', ''),
             ('MYOB Customer Card ID', ''),
@@ -123,15 +103,41 @@ class TestUsrObj(TestCase):
                 u'\uff9f\uff65\u273f\u30fe\u2572(\uff61\u25d5\u203f\u25d5\uff61)\u2571\u273f\uff65\uff9f'
             ])
         ])
-        obj = ImportUser(*args, **kwargs)
-        self.assertEqual(obj.index, '3 | C001280')
+        self.obj = ImportUser(*args, **kwargs)
+
+        Registrar.DEBUG_ERROR = False
+        Registrar.DEBUG_WARN = False
+        Registrar.DEBUG_MESSAGE = False
+
+    def test_sanitizeURL(self):
+        self.assertEqual(self.usr['Web Site'], 'http://www.laserphile.com/')
+
+    @unittest.skip("fix this later")
+    def test_sanitizeEmail(self):
+        self.assertEqual(self.usr.email.lower(), 'derwentx@gmail.com')
+        self.assertEqual(self.usr['Personal E-mail'], 'derwent@laserphile.com')
+
+
+    @unittest.skip("fix this later")
+    def test_sanitizePhone(self):
+        self.assertEqual(self.usr['Phone'], '0416160912')
+        self.assertEqual(self.usr['Mobile Phone'], '(+61)433124710')
+
+    def test_pickle(self):
+        # FieldGroup.perform_post = False
+        self.assertEqual(self.obj.index, '3 | C001280')
         _, pickle_path = tempfile.mkstemp("usr_pickle")
         with open(pickle_path, 'w') as pickle_file:
-            dill.dump(obj, pickle_file)
+            dill.dump(self.obj, pickle_file)
         with open(pickle_path) as pickle_file:
             unpickled_obj = dill.load(pickle_file)
         self.assertEqual(unpickled_obj.index, '3 | C001280')
-        self.assertEqual(repr(obj), repr(unpickled_obj))
+        self.assertEqual(repr(self.obj), repr(unpickled_obj))
+
+    def test_copy(self):
+        copied_obj = copy(self.obj)
+        self.assertEqual(self.obj.index, copied_obj.index)
+        self.assertEqual(repr(self.obj), repr(copied_obj))
 
 if __name__ == '__main__':
     # unittest.main()

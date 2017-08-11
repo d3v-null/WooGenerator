@@ -138,7 +138,6 @@ class ImportUser(ImportObject):
         return response
 
     def __init__(self, data, **kwargs):
-        super(ImportUser, self).__init__(data, **kwargs)
         try:
             assert \
                 isinstance(data, dict), \
@@ -148,6 +147,7 @@ class ImportUser(ImportObject):
                 data = OrderedDict(data)
             except Exception:
                 raise exc
+        super(ImportUser, self).__init__(data, **kwargs)
         for key in [
                 'E-mail', 'MYOB Card ID', 'Wordpress Username', #'Role',
                 'contact_schema', 'Wordpress ID'
