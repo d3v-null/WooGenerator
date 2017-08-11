@@ -1313,7 +1313,7 @@ class ColDataUser(ColDataBase):
             'act': True,
             # 'user': True,
             # 'report': True,
-            'sync': True,
+            # 'sync': True,
             'warn': True,
             'static': True,
             # 'tracked':'future',
@@ -1332,7 +1332,7 @@ class ColDataUser(ColDataBase):
             # 'label':'direct_brand',
             # 'user': True,
             # 'report': True,
-            'sync': 'master_override',
+            # 'sync': 'master_override',
             'warn': True,
         }),
 

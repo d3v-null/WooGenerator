@@ -111,15 +111,12 @@ def populate_slave_parsers(parsers, settings):
     with settings.slave_client_class(**settings.slave_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
-    if Registrar.DEBUG_UPDATE and settings.do_filter:
-        Registrar.register_message(
-            "slave parser: \n%s",
-            SanitationUtils.coerce_unicode(parsers.slave.tabulate())
-        )
-        parsers.slave.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.s_x_name),
-            settings.col_data_class.get_wp_import_col_names())
     return parsers
+
+def export_slave_parser(parsers, settings):
+    parsers.slave.get_obj_list().export_items(
+        os.path.join(settings.in_folder_full, settings.s_x_name),
+        settings.col_data_class.get_wp_import_col_names())
 
 def populate_master_parsers(parsers, settings):
     """
@@ -153,10 +150,13 @@ def populate_master_parsers(parsers, settings):
             "master parser: \n%s",
             SanitationUtils.coerce_unicode(parsers.master.tabulate())
         )
-        parsers.master.get_obj_list().export_items(
-            os.path.join(settings.in_folder_full, settings.m_x_name),
-            settings.col_data_class.get_act_import_col_names())
+
     return parsers
+
+def export_master_parser(parsers, settings):
+    parsers.master.get_obj_list().export_items(
+        os.path.join(settings.in_folder_full, settings.m_x_name),
+        settings.col_data_class.get_act_import_col_names())
 
 def do_match(matches, parsers, settings):
     """ for every username in slave, find its counterpart in master. """
@@ -1057,8 +1057,9 @@ def main(override_args=None, settings=None):
 
     parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)
-
+    export_slave_parser(parsers, settings)
     parsers = populate_master_parsers(parsers, settings)
+    # export_master_parser(parsers, settings)
 
     matches = MatchNamespace()
     matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
