@@ -724,10 +724,10 @@ class CsvParseUserApi(CsvParseUser):
         """
         parser_data = OrderedDict()
         api_data = kwargs.get('api_data', {})
-        print "api_data before: %s" % str(api_data)
+        # print "api_data before: %s" % str(api_data)
         api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                          for key, value in api_data.items()])
-        print "api_data after:  %s" % str(api_data)
+        # print "api_data after:  %s" % str(api_data)
         parser_data = OrderedDict()
         core_translation = OrderedDict()
         for col, col_data in ColDataUser.get_wpapi_core_cols().items():
