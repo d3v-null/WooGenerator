@@ -361,7 +361,16 @@ class ArgumentParserCommon(ArgumentParserProto):
         )
 
     def add_client_options(self, client_group):
-        pass
+        self.add_suppressed_argument('--wp-user', type=str)
+        self.add_suppressed_argument('--wp-pass', type=str)
+        self.add_suppressed_argument('--wp-callback', type=str)
+        self.add_suppressed_argument('--wp-api-key', type=str)
+        self.add_suppressed_argument('--wp-api-secret', type=str)
+        self.add_suppressed_argument('--wp-api-version', type=str)
+        self.add_suppressed_argument('--wc-api-key', type=str)
+        self.add_suppressed_argument('--wc-api-secret', type=str)
+        self.add_suppressed_argument('--wc-api-version', type=str)
+        self.add_suppressed_argument('--store-url', type=str)
 
     def add_other_options(self):
         self.add_suppressed_argument('--master-name')
@@ -593,9 +602,6 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--spec-gid')
         self.add_suppressed_argument('--us-gid')
         self.add_suppressed_argument('--xs-gid')
-        self.add_suppressed_argument('--wc-api-key')
-        self.add_suppressed_argument('--wc-api-secret')
-        self.add_suppressed_argument('--store-url')
         self.add_suppressed_argument('--ssh-user')
         self.add_suppressed_argument('--ssh-pass')
         self.add_suppressed_argument('--ssh-host')
@@ -689,14 +695,6 @@ class ArgumentParserUser(ArgumentParserCommon):
 
     def add_client_options(self, client_group):
         super(ArgumentParserUser, self).add_client_options(client_group)
-        self.add_suppressed_argument('--wp-user', type=str)
-        self.add_suppressed_argument('--wp-pass', type=str)
-        self.add_suppressed_argument('--wp-callback', type=str)
-        self.add_suppressed_argument('--wp-api-key', type=str)
-        self.add_suppressed_argument('--wp-api-secret', type=str)
-        self.add_suppressed_argument('--wc-api-key', type=str)
-        self.add_suppressed_argument('--wc-api-secret', type=str)
-        self.add_suppressed_argument('--store-url', type=str)
 
         self.add_suppressed_argument('--ssh-user', type=str)
         self.add_suppressed_argument('--ssh-pass', type=str)

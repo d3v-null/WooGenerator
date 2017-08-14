@@ -9,7 +9,7 @@ from pprint import pformat
 
 import __init__
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
-from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct
+from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct, UsrSyncClientWP
 from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
                                   ColDataWoo)
 from woogenerator.conf import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
@@ -177,6 +177,33 @@ class SettingsNamespaceProto(argparse.Namespace):
             response = os.path.join(self.out_folder_full, response)
         return response
 
+    @property
+    def slave_wp_api_params(self):
+        response = {
+            'api_key': self.get('wp_api_key'),
+            'api_secret': self.get('wp_api_secret'),
+            'url': self.get('store_url'),
+            'wp_user': self.get('wp_user'),
+            'wp_pass': self.get('wp_pass'),
+            'callback': self.get('wp_callback')
+        }
+        if self.get('wp_api_version'):
+            response['api_version'] = self.get('wp_api_version')
+        return response
+
+    @property
+    def slave_wc_api_params(self):
+        response = {
+            'api_key': self.get('wc_api_key'),
+            'api_secret': self.get('wc_api_secret'),
+            'url': self.get('store_url'),
+            'callback': self.get('wp_callback')
+            # TODO: rename wp_callback to api_callback
+        }
+        if self.get('wc_api_version'):
+            response['api_version'] = self.get('wc_api_version')
+        return response
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 
@@ -341,6 +368,17 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def api_product_parser_args(self):
+        response = {
+            'import_name': self.import_name,
+            'item_depth': self.item_depth,
+            'taxo_depth': self.taxo_depth,
+            'cols': ColDataWoo.get_import_cols(),
+            'defaults': ColDataWoo.get_defaults(),
+        }
         return response
 
 
@@ -525,7 +563,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_client_class(self):
+    def slave_download_client_class(self):
         if self.get('download_slave'):
             return UsrSyncClientSqlWP
         return SyncClientLocal
@@ -554,7 +592,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_client_args(self):
+    def slave_download_client_args(self):
         response = {
             'encoding': self.get('slave_encoding', 'utf8'),
             'dialect_suggestion': self.get('slave_dialect_suggestion', 'ActOut')
@@ -571,6 +609,24 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
+
+    @property
+    def slave_upload_client_class(self):
+        if self.get('update_slave'):
+            return UsrSyncClientWP
+        return SyncClientLocal
+
+    @property
+    def slave_upload_client_args(self):
+        response = {
+        }
+        if self.get('update_slave'):
+            response = {
+                'connect_params':self.slave_wp_api_params
+            }
+        return response
+
+
 
 class ParserNamespace(argparse.Namespace):
     """ Collect parser variables into a single namespace. """

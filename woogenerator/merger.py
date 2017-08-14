@@ -104,12 +104,12 @@ def populate_slave_parsers(parsers, settings):
 
     if Registrar.DEBUG_PARSER:
         Registrar.register_message(
-            "client_args: %s" % settings.slave_client_args
+            "client_args: %s" % settings.slave_download_client_args
         )
 
     Registrar.register_progress("analysing slave user data")
 
-    with settings.slave_client_class(**settings.slave_client_args) as client:
+    with settings.slave_download_client_class(**settings.slave_download_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
     return parsers
@@ -917,7 +917,7 @@ def unpickle_state(settings):
 
     if progress == 'report':
         do_report(matches, updates, parsers, settings)
-        do_updates(matches, updates, parsers, settings)
+        do_updates(updates, settings)
 
 def output_failures(failures, file_path):
     """
@@ -936,9 +936,7 @@ def output_failures(failures, file_path):
         dictwriter.writerows(failures)
         print "WROTE FILE: ", file_path
 
-def do_updates(matches, updates, parsers, settings):
-
-
+def do_updates(updates, settings):
     all_updates = updates.static
     if settings.do_problematic:
         all_updates += updates.problematic
@@ -962,12 +960,14 @@ def do_updates(matches, updates, parsers, settings):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_updates))
 
-        with UsrSyncClientSshAct(
-            settings.master_connect_params,
-            settings.master_db_params,
-            settings.fs_params
-        ) as master_client, UsrSyncClientWP(settings.wp_api_params) as slave_client:
-            # UsrSyncClient_JSON(jsonconnect_params) as slave_client:
+        # with UsrSyncClientSshAct(
+        #     settings.master_connect_params,
+        #     settings.master_db_params,
+        #     settings.fs_params
+        # ) as master_client, UsrSyncClientWP(settings.slave_wp_api_params) as slave_client:
+        with \
+        settings.master_client_class(settings.master_client_args) as master_client, \
+        settings.slave_upload_client_class(settings.slave_upload_client_args) as slave_client:
 
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
@@ -977,9 +977,6 @@ def do_updates(matches, updates, parsers, settings):
                         "performing update: \n%s",
                         SanitationUtils.coerce_unicode(update.tabulate())
                     )
-                # if update.wpid == '1':
-                #     print repr(update.wpid)
-                #     continue
                 if settings['update_master'] and update.m_updated:
                     try:
                         update.update_master(master_client)
@@ -1002,6 +999,8 @@ def do_updates(matches, updates, parsers, settings):
                             'exception':
                             repr(exc)
                         })
+                        # if Registrar.DEBUG_UPDATE:
+                        #     import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING MASTER (%s): %s\n%s" %
                             (update.master_id, repr(exc),
@@ -1030,6 +1029,8 @@ def do_updates(matches, updates, parsers, settings):
                             'exception':
                             repr(exc)
                         })
+                        # if Registrar.DEBUG_UPDATE:
+                        #     import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING SLAVE (%s): %s\n%s" %
                             (update.slave_id, repr(exc),
@@ -1061,15 +1062,6 @@ def main(override_args=None, settings=None):
 
     ### PROCESS OTHER CONFIG ###
 
-    settings.wp_api_params = {
-        'api_key': settings.wp_api_key,
-        'api_secret': settings.wp_api_secret,
-        'url': settings.store_url,
-        'wp_user': settings.wp_user,
-        'wp_pass': settings.wp_pass,
-        'callback': settings.wp_callback
-    }
-
     #########################################
     # Prepare Filter Data
     #########################################
@@ -1099,7 +1091,7 @@ def main(override_args=None, settings=None):
 
     do_report(matches, updates, parsers, settings)
 
-    do_updates(matches, updates, parsers, settings)
+    do_updates(updates, settings)
 
 def catch_main(override_args=None):
     """

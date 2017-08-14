@@ -519,23 +519,6 @@ def main(override_args=None, settings=None):
     # Create Product Parser object
     ########################################
 
-    settings['wc_api_params'] = {
-        'api_key': settings.wc_api_key,
-        'api_secret': settings.wc_api_secret,
-        'url': settings.store_url,
-        'timeout': settings.slave_timeout,
-        'offset': settings.slave_offset,
-        'limit': settings.slave_limit
-    }
-
-    settings['api_product_parser_args'] = {
-        'import_name': settings.import_name,
-        'item_depth': settings.item_depth,
-        'taxo_depth': settings.taxo_depth,
-        'cols': ColDataWoo.get_import_cols(),
-        'defaults': ColDataWoo.get_defaults(),
-    }
-
     parsers = ParserNamespace()
     parsers = populate_master_parsers(parsers, settings)
 
@@ -563,7 +546,7 @@ def main(override_args=None, settings=None):
         parsers.slave = CsvParseWooApi(
             **settings['api_product_parser_args'])
 
-        with ProdSyncClientWC(settings['wc_api_params']) as client:
+        with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
             # try:
             if settings['do_categories']:
                 client.analyse_remote_categories(parsers.slave)
@@ -712,7 +695,7 @@ def main(override_args=None, settings=None):
                 if Registrar.DEBUG_CATS:
                     Registrar.DEBUG_API = True
 
-                with CatSyncClientWC(settings['wc_api_params']) as client:
+                with CatSyncClientWC(settings['slave_wp_api_params']) as client:
                     if Registrar.DEBUG_CATS:
                         Registrar.register_message("created cat client")
                     new_categories = [
@@ -1457,7 +1440,7 @@ def main(override_args=None, settings=None):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_product_updates))
 
-        with ProdSyncClientWC(settings['wc_api_params']) as slave_client:
+        with ProdSyncClientWC(settings['slave_wp_api_params']) as slave_client:
             for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)
