@@ -34,9 +34,6 @@ class AbstractServiceInterface(object):
         """ Abstract method for connecting to the service """
         raise NotImplementedError()
 
-    # def files(self):
-    #     raise NotImplementedError()
-
     def put(self, *args, **kwargs):
         """ Abstract method for putting data on the service"""
         raise NotImplementedError()
@@ -48,14 +45,6 @@ class AbstractServiceInterface(object):
     def post(self, *args, **kwargs):
         """ Abstract method for posting data to the service """
         raise NotImplementedError()
-
-    @property
-    def version(self):
-        """ Abstract method for getting the version of the service """
-        raise NotImplementedError()
-
-    # @property
-    # def wp_api(self): raise NotImplementedError()
 
 
 class WPAPIService(API, AbstractServiceInterface):
@@ -657,7 +646,7 @@ class SyncClientRest(SyncClientAbstract):
         service_endpoint = self.endpoint_plural
         endpoint_singular = self.endpoint_singular
         endpoint_singular = re.sub('/', '_', endpoint_singular)
-        if self.service.version is not 'wc/v1':
+        if not self.service.version.starts_with('wc/v'):
             data = {endpoint_singular: data}
         if Registrar.DEBUG_API:
             Registrar.register_message("creating %s: %s" %
