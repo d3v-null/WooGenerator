@@ -84,6 +84,18 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
         # print list(response)
         self.assertTrue(response)
 
+    def test_make_usr_master_upload_client(self):
+        self.settings.update_master = True
+
+        with self.settings.master_client_class(**self.settings.master_client_args) as master_client:
+            self.assertTrue(master_client)
+
+    def test_make_usr_slave_upload_client(self):
+        self.settings.update_slave = True
+
+        with self.settings.slave_upload_client_class(**self.settings.slave_upload_client_args) as slave_client:
+            self.assertTrue(slave_client)
+
     # def test_WC_Upload_bad(self):
     #     fields = {"user_email": "neil@technotan.com.au"}
     #
