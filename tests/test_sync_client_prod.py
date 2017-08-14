@@ -2,62 +2,26 @@ import random
 import unittest
 from collections import OrderedDict
 
-from context import woogenerator
+from context import woogenerator, tests_datadir
 from tests.test_sync_client import AbstractSyncClientTestCase
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import TimeUtils
 from woogenerator.coldata import ColDataWoo
+from woogenerator.conf.namespace import SettingsNamespaceProd
+from woogenerator.conf.parser import ArgumentParserProd
 
 
-@unittest.skip("have not created config file yet")
+@unittest.skip("Tests not mocked yet")
+# TODO: mock these tests
 class TestProdSyncClient(AbstractSyncClientTestCase):
-
-    def __init__(self, *args, **kwargs):
-        super(TestProdSyncClient, self).__init__(*args, **kwargs)
-        self.wc_api_params = {}
-        self.product_parser_args = {}
-
-    def process_config(self, config):
-        # if 'in_folder' in config.keys():
-        #     in_folder = config['in_folder']
-        # if 'out_folder' in config.keys():
-        #     out_folder = config['out_folder']
-        # if 'logFolder' in config.keys():
-        #     logFolder = config['logFolder']
-
-        wc_api_key = config.get(self.optionNamePrefix + 'wc_api_key')
-        wc_api_secret = config.get(self.optionNamePrefix + 'wc_api_secret')
-        wp_srv_offset = config.get(self.optionNamePrefix + 'wp_srv_offset', 0)
-        store_url = config.get(self.optionNamePrefix + 'store_url', '')
-
-        # taxo_depth = config.get('taxo_depth')
-        # item_depth = config.get('item_depth')
-
-        TimeUtils.set_wp_srv_offset(wp_srv_offset)
-
-        # json_uri = store_url + 'wp-json/wp/v2'z
-
-        self.wc_api_params = {
-            'api_key': wc_api_key,
-            'api_secret': wc_api_secret,
-            'url': store_url
-        }
-
-        self.product_parser_args = {
-            'import_name': self.import_name,
-            # 'item_depth': item_depth,
-            # 'taxo_depth': taxo_depth,
-            'cols': ColDataWoo.get_import_cols(),
-            'defaults': ColDataWoo.get_defaults(),
-        }
+    config_file = "generator_config_test.yaml"
+    settings_namespace_class = SettingsNamespaceProd
+    argument_parser_class = ArgumentParserProd
 
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
-
-        # for var in ['wc_api_params', 'product_parser_args']:
-        #     print var, getattr(self, var)
 
         # Registrar.DEBUG_SHOP = True
         # Registrar.DEBUG_MRO = True
@@ -75,7 +39,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
 
     def test_read(self):
         response = []
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.get_iterator()
         # print tabulate(list(response)[:10], headers='keys')
 
@@ -83,10 +47,10 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
 
     def test_analyse_remote(self):
         product_parser = CsvParseWooApi(
-            **self.product_parser_args
+            **self.settings.master_parser_args
         )
 
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             client.analyse_remote(product_parser, limit=20)
 
         prod_list = ShopProdList(product_parser.products.values())
@@ -111,7 +75,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
         updates = {
             'regular_price': u'37.00'
         }
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             self.assertTrue(response)
             # print response
@@ -125,7 +89,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'37.00')
             ]))
         ])
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             wn_regular_price = response.json()['product']['meta'][
                 'lc_wn_regular_price']
@@ -141,7 +105,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -156,7 +120,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
         updates = OrderedDict([
             ('weight', u'11.0')
         ])
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -172,7 +136,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
                 ('lc_dn_regular_price', expected_result)
             ]))
         ])
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -191,7 +155,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
                 ('lc_wn_regular_price', u'')
             ]))
         ])
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.upload_changes(pkey, updates)
             # print response
             # if hasattr(response, 'json'):
@@ -201,7 +165,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
             self.assertFalse(wn_regular_price)
 
     def test_get_single_page(self):
-        with ProdSyncClientWC(self.wc_api_params) as client:
+        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.service.get('products?page=9')
             self.assertTrue(response)
             # print response
@@ -209,7 +173,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
             #     print "test_upload_changes_empty", response.json()
 
     def test_cat_sync_client(self):
-        with CatSyncClientWC(self.wc_api_params) as client:
+        with CatSyncClientWC(self.settings.slave_wc_api_params) as client:
             for page in client.get_iterator():
                 self.assertTrue(page)
                 # print page

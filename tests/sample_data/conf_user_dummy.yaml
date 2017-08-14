@@ -1,10 +1,9 @@
-wp-api-key: LCLwTOfxoXGh
-wp-api-secret: k7zLzO3mF75Xj65uThpAnNvQHpghp4X1h5N20O8hCbz2kfJq
+wp-api-key: v4dw5kZxoSzD
+wp-api-secret: ojVHZREfWqeOm3z9TpabJdxFCLaTizyCZpXhl3Ec2loSC3gp
 wp-user: wordpress
 wp-pass: wordpress
-wp-callback: http://127.0.0.1:8888/wordpress
+wp-callback: http://127.0.0.1:18080/wptest
 
-wc-api-key: ck_681c2be361e415519dce4b65ee981682cda78bc6
-wc-api-secret: cs_b11f652c39a0afd3752fc7bb0c56d60d58da5877
-# api_version: v3
-store-url: http://ich.local:8888/wordpress/
+wc-api-key: ck_b13285e31ed659227f2fdc1db856d1d3d0b06c21
+wc-api-secret: cs_3038b86805335faa887c6605364bcd1df9e57254
+store-url: http://127.0.0.1:18080/wptest/

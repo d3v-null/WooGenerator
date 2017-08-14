@@ -21,3 +21,14 @@ do-images: false
 do-delete-images: false
 do-resize-images: false
 skip-download-master: true
+
+wp-api-key: v4dw5kZxoSzD
+wp-api-secret: ojVHZREfWqeOm3z9TpabJdxFCLaTizyCZpXhl3Ec2loSC3gp
+wp-user: wptest
+wp-pass: gZ*gZk#v0t5$j#NQ@9
+wp-callback: http://127.0.0.1:18080/wptest
+wp-api-version: wp/v2
+
+wc-api-key: ck_b13285e31ed659227f2fdc1db856d1d3d0b06c21
+wc-api-secret: cs_3038b86805335faa887c6605364bcd1df9e57254
+store-url: http://localhost:18080/wptest/

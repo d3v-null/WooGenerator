@@ -47,7 +47,7 @@ class TestSyncUpdateUsr(AbstractSyncClientTestCase):
         SyncUpdate.set_globals(master_name, slave_name, merge_mode,
                                default_last_sync)
 
-        self.wp_api_params = {
+        self.slave_wp_api_params = {
             'api_key': wp_api_key,
             'api_secret': wp_api_secret,
             'url': store_url,
@@ -61,7 +61,7 @@ class TestSyncUpdateUsr(AbstractSyncClientTestCase):
     def setUp(self):
         super(TestSyncUpdateUsr, self).setUp()
 
-        for var in ['wp_api_params']:
+        for var in ['slave_wp_api_params']:
             self.assertTrue(getattr(self, var))
             # print var, getattr(self, var)
 
@@ -109,7 +109,7 @@ class TestSyncUpdateUsr(AbstractSyncClientTestCase):
             cols=ColDataUser.get_wp_import_cols(),
             defaults=ColDataUser.get_defaults())
 
-        with UsrSyncClientWP(self.wp_api_params) as slave_client:
+        with UsrSyncClientWP(self.slave_wp_api_params) as slave_client:
             slave_client.analyse_remote(sa_parser, search=master_uname)
 
         # print "SLAVE RECORDS: \n", sa_parser.tabulate()
@@ -147,7 +147,7 @@ class TestSyncUpdateUsr(AbstractSyncClientTestCase):
         #
         response_json = {}
 
-        with UsrSyncClientWP(self.wp_api_params) as slave_client:
+        with UsrSyncClientWP(self.slave_wp_api_params) as slave_client:
 
             for count, update in enumerate(updates):
                 try:
