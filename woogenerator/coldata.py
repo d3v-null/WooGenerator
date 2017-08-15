@@ -1212,6 +1212,10 @@ class ColDataUser(ColDataBase):
                 'meta': True,
                 'key': 'myob_card_id'
             },
+            'wp-api': {
+                'meta': True,
+                'key': 'myob_card_id'
+            },
             'act': True,
             # 'label':'myob_card_id',
             'import': True,
