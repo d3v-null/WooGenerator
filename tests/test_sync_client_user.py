@@ -27,6 +27,14 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
     settings_namespace_class = SettingsNamespaceUser
     argument_parser_class = ArgumentParserUser
 
+    # Uncomment to test on live settings
+    # config_file = "conf_user.yaml"
+    # local_work_dir = "~/Documents/woogenerator/"
+
+    # Uncomment to test on staging settings
+    # config_file = "conf_user_test.yaml"
+    # local_work_dir = "~/Documents/woogenerator"
+
     # def setUp(self):
     #     super(TestUsrSyncClient, self).setUp()
 
@@ -41,7 +49,8 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
 
-    @unittest.skip("not mocked yet")
+@unittest.skip("Desctructive tests not mocked yet")
+class TestUsrSyncClientDestructive(TestUsrSyncClient):
     def test_sqlwp_analyse(self):
         # TODO: Mock out SSH component
         self.settings.download_slave = True
@@ -59,7 +68,6 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
         # CsvParseUser.print_basic_columns( list(chain( *sa_parser.emails.values() )) )
         self.assertIn('neil@technotan.com.au', sa_parser.emails)
 
-    @unittest.skip("Need to mock out SSH ACT stuff")
     def test_ssh_act_upload(self):
         self.settings.download_master = True
 
@@ -68,10 +76,10 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
             "MYOB Card ID": "C000001",
         }
 
-        master_client_args = self.settings.master_client_args
-        # print "master_client_args: %s" % repr(master_client_args)
+        master_download_client_args = self.settings.master_download_client_args
+        # print "master_download_client_args: %s" % repr(master_download_client_args)
 
-        with UsrSyncClientSshAct(**master_client_args) as client:
+        with UsrSyncClientSshAct(**master_download_client_args) as client:
             response = client.upload_changes('C000001', fields)
             self.assertTrue(response)
         # print response
@@ -83,18 +91,6 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
         # print tabulate(list(response)[:10], headers='keys')
         # print list(response)
         self.assertTrue(response)
-
-    def test_make_usr_master_upload_client(self):
-        self.settings.update_master = True
-
-        with self.settings.master_client_class(**self.settings.master_client_args) as master_client:
-            self.assertTrue(master_client)
-
-    def test_make_usr_slave_upload_client(self):
-        self.settings.update_slave = True
-
-        with self.settings.slave_upload_client_class(**self.settings.slave_upload_client_args) as slave_client:
-            self.assertTrue(slave_client)
 
     # def test_WC_Upload_bad(self):
     #     fields = {"user_email": "neil@technotan.com.au"}
@@ -191,11 +187,62 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
     def test_wp_iterator(self):
         with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
             iterator = slave_client.get_iterator('users?context=edit')
-            self.assertTrue(list(iterator))
-            # for page in iterator:
-                # pprint(page)
+            self.assertTrue(next(iterator))
 
+    def test_wp_read_write(self):
+        with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
+            page_iterator = slave_client.get_iterator('users?context=edit')
+            first_page = next(page_iterator)
+            first_usr = first_page[0]
+            first_usr_id = first_usr['id']
+            first_usr_description = first_usr['description']
+            new_description = TimeUtils.get_ms_timestamp()
+            slave_client.upload_changes(
+                first_usr_id, {'description':new_description}
+            )
+
+            response = slave_client.service.get('users/%s' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+
+            self.assertEqual(
+                new_description,
+                response.json().get('description')
+            )
+
+            slave_client.upload_changes(
+                first_usr_id, {'description':first_usr_description}
+            )
+
+    def test_wp_read_write_meta(self):
+        with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
+            page_iterator = slave_client.get_iterator('users?context=edit')
+            first_page = next(page_iterator)
+            first_usr = first_page[0]
+            first_usr_id = first_usr['id']
+            first_usr_description = first_usr['description']
+            new_description = TimeUtils.get_ms_timestamp()
+            slave_client.upload_changes(
+                first_usr_id, {'description':new_description}
+            )
+
+            response = slave_client.service.get('users/%s' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+
+            self.assertEqual(
+                new_description,
+                response.json().get('description')
+            )
+
+            slave_client.upload_changes(
+                first_usr_id, {'description':first_usr_description}
+            )
+
+    @unittest.skip("takes too long")
     def test_wp_analyse(self):
+        #TODO: mock this out
+
         # print "API Import cols: "
         api_import_cols = ColDataUser.get_wpapi_import_cols()
         self.assertTrue(api_import_cols)
@@ -226,6 +273,39 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
     #         response = client.upload_changes('C004897', fields)
     #
     #     print response
+
+class TestUsrSyncClientConstructors(TestUsrSyncClient):
+    @unittest.skip("dummy config won't work")
+    def test_make_usr_m_up_client(self):
+        self.settings.update_master = True
+        master_client_args = self.settings.master_upload_client_args
+        master_client_class = self.settings.master_upload_client_class
+        with master_client_class(**master_client_args) as master_client:
+            self.assertTrue(master_client)
+
+    def test_make_usr_s_up_client(self):
+        self.settings.update_slave = True
+        slave_client_args = self.settings.slave_upload_client_args
+        self.assertTrue(slave_client_args['connect_params']['api_key'])
+        slave_client_class = self.settings.slave_upload_client_class
+        with slave_client_class(**slave_client_args) as slave_client:
+            self.assertTrue(slave_client)
+
+    @unittest.skip("dummy config won't work")
+    def test_make_usr_m_down_client(self):
+        self.settings.download_master = True
+        master_client_args = self.settings.master_download_client_args
+        master_client_class = self.settings.master_download_client_class
+        with master_client_class(**master_client_args) as master_client:
+            self.assertTrue(master_client)
+
+    @unittest.skip("dummy config won't work")
+    def test_make_usr_s_down_client(self):
+        self.settings.download_slave = True
+        slave_client_args = self.settings.slave_download_client_args
+        slave_client_class = self.settings.slave_download_client_class
+        with slave_client_class(**slave_client_args) as slave_client:
+            self.assertTrue(slave_client)
 
 
 if __name__ == '__main__':

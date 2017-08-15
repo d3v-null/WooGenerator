@@ -19,20 +19,22 @@ class AbstractSyncClientTestCase(unittest.TestCase):
     config_file = None
     settings_namespace_class = SettingsNamespaceProto
     argument_parser_class = ArgumentParserCommon
+    local_work_dir = tests_datadir
+    override_args = ''
 
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
 
         self.settings = self.settings_namespace_class()
-        self.settings.local_work_dir = tests_datadir
+        self.settings.local_work_dir = self.local_work_dir
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
-        self.override_args = ""
 
         self.settings = init_settings(
             settings=self.settings,
             override_args=self.override_args,
-            argparser_class=self.argument_parser_class)
+            argparser_class=self.argument_parser_class
+        )
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False

@@ -87,9 +87,9 @@ def populate_master_parsers(parsers, settings):
     parsers.special = CsvParseSpecial()
 
     if Registrar.DEBUG_GEN:
-        Registrar.register_message("master_client_args: %s" % settings.master_client_args)
+        Registrar.register_message("master_download_client_args: %s" % settings.master_download_client_args)
 
-    with settings.master_client_class(**settings.master_client_args) as client:
+    with settings.master_download_client_class(**settings.master_download_client_args) as client:
         if settings.schema_is_woo:
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
@@ -546,7 +546,11 @@ def main(override_args=None, settings=None):
         parsers.slave = CsvParseWooApi(
             **settings['api_product_parser_args'])
 
-        with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
+        slave_client_class = settings.slave_download_client_class
+        slave_client_args = settings.slave_download_client_args
+
+        # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
+        with slave_client_class(**slave_client_args) as client:
             # try:
             if settings['do_categories']:
                 client.analyse_remote_categories(parsers.slave)
@@ -1440,7 +1444,10 @@ def main(override_args=None, settings=None):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_product_updates))
 
-        with ProdSyncClientWC(settings['slave_wp_api_params']) as slave_client:
+        slave_client_class = settings.slave_upload_client_class
+        slave_client_args = settings.slave_upload_client_args
+
+        with slave_client_class(**slave_client_args) as slave_client:
             for count, update in enumerate(all_product_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)

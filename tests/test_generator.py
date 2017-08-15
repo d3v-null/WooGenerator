@@ -61,7 +61,7 @@ class TestGenerator(TestCase):
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
         self.assertEqual(
-            self.settings.master_client_args["dialect_suggestion"],
+            self.settings.master_download_client_args["dialect_suggestion"],
             "SublimeCsvTable")
         self.assertEqual(self.settings.spec_gid, None)
         # print("MPA: %s" % self.settings.master_parser_args)

@@ -12,14 +12,22 @@ from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.namespace import SettingsNamespaceProd
 from woogenerator.conf.parser import ArgumentParserProd
 
-
-@unittest.skip("Tests not mocked yet")
-# TODO: mock these tests
 class TestProdSyncClient(AbstractSyncClientTestCase):
     config_file = "generator_config_test.yaml"
     settings_namespace_class = SettingsNamespaceProd
     argument_parser_class = ArgumentParserProd
 
+    # uncomment to work on local test settings
+    # config_file = "conf_prod_test.yaml"
+    # local_work_dir = "~/Documents/woogenerator"
+
+    # uncomment to work on local live settings
+    # config_file = "conf_prod.yaml"
+    # local_work_dir = "~/Documents/woogenerator"
+
+@unittest.skip("Destructive tests not mocked yet")
+# TODO: mock these tests
+class TestProdSyncClientDestructive(TestProdSyncClient):
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
 
@@ -177,6 +185,38 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
             for page in client.get_iterator():
                 self.assertTrue(page)
                 # print page
+
+class TestProdSyncClientConstructors(TestProdSyncClient):
+    # def test_make_usr_m_up_client(self):
+    #     self.settings.update_master = True
+    #     master_client_args = self.settings.master_upload_client_args
+    #     master_client_class = self.settings.master_upload_client_class
+    #     with master_client_class(**master_client_args) as master_client:
+    #         self.assertTrue(master_client)
+
+    def test_make_usr_s_up_client(self):
+        self.settings.update_slave = True
+        slave_client_args = self.settings.slave_upload_client_args
+        # self.assertTrue(slave_client_args['connect_params']['api_key'])
+        slave_client_class = self.settings.slave_upload_client_class
+        with slave_client_class(**slave_client_args) as slave_client:
+            self.assertTrue(slave_client)
+
+    @unittest.skip("won't work with dummy conf")
+    def test_make_usr_m_down_client(self):
+        self.settings.download_master = True
+        master_client_args = self.settings.master_download_client_args
+        master_client_class = self.settings.master_download_client_class
+        with master_client_class(**master_client_args) as master_client:
+            self.assertTrue(master_client)
+
+    def test_make_usr_s_down_client(self):
+        self.settings.download_slave = True
+        slave_client_args = self.settings.slave_download_client_args
+        self.assertTrue(slave_client_args['connect_params']['api_key'])
+        slave_client_class = self.settings.slave_download_client_class
+        with slave_client_class(**slave_client_args) as slave_client:
+            self.assertTrue(slave_client)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1560,6 +1560,10 @@ class RoleGroup(FieldGroup):
         ('xwn', 'Export'),
     ]
 
+    equivalent_roles = [
+        ('admin', ['admi'])
+    ]
+
     schema_translations = [
         ('tt', 'TechnoTan'),
         ('vt', 'VuTan'),
@@ -1755,6 +1759,16 @@ class RoleGroup(FieldGroup):
                     return parsed_role.upper()
         return role
 
+    def normalize_role(self, role):
+        """
+        Take a raw role from input and return its normalized form.
+        """
+        role = role.lower()
+        for role_normalized, role_equivalents in self.equivalent_roles:
+            if role in role_equivalents:
+                role = role_normalized
+        return role
+
     def process_kwargs(self):
         super(RoleGroup, self).process_kwargs()
         if self.empty:
@@ -1766,7 +1780,7 @@ class RoleGroup(FieldGroup):
             "schema should be valid: %s" % self.schema
 
         if self.kwargs.get('role'):
-            self.properties['role'] = self.kwargs.get('role').lower()
+            self.properties['role'] = self.normalize_role(self.kwargs.get('role'))
             assert self.role_exists(self.properties['role']), \
                 "act_role should exist: %s" % self.properties['role']
             if self.properties['role'] == self.admin_role:

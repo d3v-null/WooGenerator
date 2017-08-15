@@ -10,6 +10,7 @@ from pprint import pformat
 import __init__
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.user import UsrSyncClientSqlWP, UsrSyncClientSshAct, UsrSyncClientWP
+from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
                                   ColDataWoo)
 from woogenerator.conf import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
@@ -204,6 +205,10 @@ class SettingsNamespaceProto(argparse.Namespace):
             response['api_version'] = self.get('wc_api_version')
         return response
 
+    @property
+    def null_client_class(self):
+        return SyncClientLocal
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 
@@ -323,10 +328,18 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def master_client_class(self):
+    def master_download_client_class(self):
         """ The class which is used to download and parse master data. """
-        response = SyncClientLocal
+        response = self.null_client_class
         if self.download_master:
+            response = SyncClientGDrive
+        return response
+
+    @property
+    def master_upload_client_class(self):
+        """ The class which is used to download and parse master data. """
+        response = self.null_client_class
+        if self['update_master']:
             response = SyncClientGDrive
         return response
 
@@ -350,11 +363,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def master_client_args(self):
+    def master_download_client_args(self):
         """ Return the arguments which are used by the client to analyse master data. """
 
         response = {}
-        if self.master_client_class == SyncClientGDrive:
+        if self.master_download_client_class == SyncClientGDrive:
             response.update({
                 'gdrive_params': self.g_drive_params
             })
@@ -371,6 +384,20 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def slave_download_client_class(self):
+        response = self.null_client_class
+        if self['download_slave']:
+            response = ProdSyncClientWC
+        return response
+
+    @property
+    def slave_download_client_args(self):
+        response = {
+            'connect_params':self.slave_wc_api_params
+        }
+        return response
+
+    @property
     def api_product_parser_args(self):
         response = {
             'import_name': self.import_name,
@@ -378,6 +405,20 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'taxo_depth': self.taxo_depth,
             'cols': ColDataWoo.get_import_cols(),
             'defaults': ColDataWoo.get_defaults(),
+        }
+        return response
+
+    @property
+    def slave_upload_client_class(self):
+        response = self.null_client_class
+        if self['update_slave']:
+            response = ProdSyncClientWC
+        return response
+
+    @property
+    def slave_upload_client_args(self):
+        response = {
+            'connect_params':self.slave_wc_api_params
         }
         return response
 
@@ -467,11 +508,20 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def master_client_class(self):
+    def master_download_client_class(self):
         """ The class which is used to download and parse master data. """
 
-        response = SyncClientLocal
+        response = self.null_client_class
         if self.download_master:
+            response = UsrSyncClientSshAct
+        return response
+
+    @property
+    def master_upload_client_class(self):
+        """ The class which is used to download and parse master data. """
+
+        response = self.null_client_class
+        if self['update_master']:
             response = UsrSyncClientSshAct
         return response
 
@@ -521,14 +571,35 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def master_client_args(self):
+    def master_download_client_args(self):
         """ Return the arguments which are used by the client to analyse master data. """
 
         response = {
             'encoding': self.get('master_encoding', 'utf8'),
             'dialect_suggestion': self.get('master_dialect_suggestion', 'ActOut')
         }
-        if self.master_client_class == UsrSyncClientSshAct:
+        if self.master_download_client_class == UsrSyncClientSshAct:
+            response.update({
+                'connect_params':self.master_connect_params,
+                'db_params':self.master_db_params,
+                'fs_params':self.fs_params,
+            })
+        for key, settings_key in [
+                ('limit', 'master_parse_limit')
+        ]:
+            if hasattr(self, settings_key):
+                response[key] = getattr(self, settings_key)
+        return response
+
+    @property
+    def master_upload_client_args(self):
+        """ Return the arguments which are used by the client to analyse master data. """
+
+        response = {
+            'encoding': self.get('master_encoding', 'utf8'),
+            'dialect_suggestion': self.get('master_dialect_suggestion', 'ActOut')
+        }
+        if self.master_upload_client_class == UsrSyncClientSshAct:
             response.update({
                 'connect_params':self.master_connect_params,
                 'db_params':self.master_db_params,
@@ -564,9 +635,10 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def slave_download_client_class(self):
+        response = self.null_client_class
         if self.get('download_slave'):
-            return UsrSyncClientSqlWP
-        return SyncClientLocal
+            response = UsrSyncClientSqlWP
+        return response
 
     @property
     def slave_connect_params(self):
@@ -612,9 +684,10 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def slave_upload_client_class(self):
+        response = self.null_client_class
         if self.get('update_slave'):
-            return UsrSyncClientWP
-        return SyncClientLocal
+            response = UsrSyncClientWP
+        return response
 
     @property
     def slave_upload_client_args(self):

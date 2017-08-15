@@ -80,10 +80,10 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(self.settings.slave_name, "WORDPRESS")
         self.assertEqual(self.settings.download_master, False)
         self.assertEqual(
-            self.settings.master_client_args["limit"],
+            self.settings.master_download_client_args["limit"],
             self.settings.master_parse_limit
         )
-        self.assertEqual(self.settings.master_client_args["dialect_suggestion"], "ActOut")
+        self.assertEqual(self.settings.master_download_client_args["dialect_suggestion"], "ActOut")
         self.assertFalse(FieldGroup.do_post)
         self.assertEqual(SyncUpdate.master_name, "ACT")
         self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
@@ -523,11 +523,11 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
-        print("masters")
+        # print("masters")
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
-        print("slaves")
+        # print("slaves")
         self.parsers = populate_slave_parsers(
             self.parsers, self.settings
         )

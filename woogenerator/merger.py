@@ -143,7 +143,7 @@ def populate_master_parsers(parsers, settings):
 
     Registrar.register_progress("analysing master user data")
 
-    with settings.master_client_class(**settings.master_client_args) as client:
+    with settings.master_download_client_class(**settings.master_download_client_args) as client:
         client.analyse_remote(parsers.master, data_path=settings.master_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
@@ -960,15 +960,14 @@ def do_updates(updates, settings):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter = ProgressCounter(len(all_updates))
 
-        # with UsrSyncClientSshAct(
-        #     settings.master_connect_params,
-        #     settings.master_db_params,
-        #     settings.fs_params
-        # ) as master_client, UsrSyncClientWP(settings.slave_wp_api_params) as slave_client:
-        with \
-        settings.master_client_class(settings.master_client_args) as master_client, \
-        settings.slave_upload_client_class(settings.slave_upload_client_args) as slave_client:
+        slave_client_args = settings.slave_upload_client_args
+        slave_client_class = settings.slave_upload_client_class
+        master_client_args = settings.master_upload_client_args
+        master_client_class = settings.master_upload_client_class
 
+        with \
+        master_client_class(**master_client_args) as master_client, \
+        slave_client_class(**slave_client_args) as slave_client:
             for count, update in enumerate(all_updates):
                 if Registrar.DEBUG_PROGRESS:
                     update_progress_counter.maybe_print_update(count)
@@ -999,8 +998,7 @@ def do_updates(updates, settings):
                             'exception':
                             repr(exc)
                         })
-                        # if Registrar.DEBUG_UPDATE:
-                        #     import pudb; pudb.set_trace()
+                        import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING MASTER (%s): %s\n%s" %
                             (update.master_id, repr(exc),
@@ -1029,8 +1027,7 @@ def do_updates(updates, settings):
                             'exception':
                             repr(exc)
                         })
-                        # if Registrar.DEBUG_UPDATE:
-                        #     import pudb; pudb.set_trace()
+                        import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING SLAVE (%s): %s\n%s" %
                             (update.slave_id, repr(exc),
@@ -1075,7 +1072,8 @@ def main(override_args=None, settings=None):
 
     parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)
-    export_slave_parser(parsers, settings)
+    if settings['download_slave']:
+        export_slave_parser(parsers, settings)
     parsers = populate_master_parsers(parsers, settings)
     # export_master_parser(parsers, settings)
 
