@@ -20,3 +20,4 @@ wordpress-api
 pyxero
 bs4
 dill
+lxml

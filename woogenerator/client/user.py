@@ -28,10 +28,10 @@ class UsrSyncClientWP(SyncClientWP):
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
 
-    def upload_changes(self, user_pkey, updates=None):
-        # if Registrar.DEBUG_UPDATE:
-        #     import pudb; pudb.set_trace()
-        super(UsrSyncClientWP, self).upload_changes(user_pkey, updates)
+    # def upload_changes(self, user_pkey, updates=None):
+    #     # if Registrar.DEBUG_UPDATE:
+    #     #     import pudb; pudb.set_trace()
+    #     super(UsrSyncClientWP, self).upload_changes(user_pkey, updates)
 
 class UsrSyncClientSshAct(SyncClientAbstract):
 
@@ -40,7 +40,19 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         self.fs_params = fs_params
         self.dialect_suggestion = kwargs.get('dialect_suggestion', 'ActOut')
         self.encoding = kwargs.get('encoding', 'utf8')
-        super(UsrSyncClientSshAct, self).__init__(connect_params, **kwargs)
+        try:
+            super(UsrSyncClientSshAct, self).__init__(connect_params, **kwargs)
+        except paramiko.ssh_exception.AuthenticationException:
+            raise UserWarning(
+                (
+                    "Authentication Error: \n"
+                    " -> connect_params: %s\n"
+                    " -> fs_params: %s\n"
+                    " -> db_params: %s\n"
+                ) % (
+                    connect_params, db_params, fs_params,
+                )
+            )
 
     def attempt_connect(self):
         self.service = paramiko.SSHClient()
