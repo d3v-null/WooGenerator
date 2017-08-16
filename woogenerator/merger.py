@@ -960,10 +960,11 @@ def handle_failed_update(update, fail_list, exc, settings, source=None):
     else:
         pkey = ''
     Registrar.register_error(
-        "ERROR UPDATING %s (%s): %s\n%s" % (
+        "ERROR UPDATING %s (%s): %s\n%s\n%s" % (
             source or '',
             pkey,
             repr(exc),
+            update.tabulate(),
             traceback.format_exc()
         )
     )
@@ -1029,14 +1030,14 @@ def do_updates(updates, settings):
                     update.update_master(master_client)
                 except Exception as exc:
                     master_failures = handle_failed_update(
-                        update, master_failures, exc, settings, source=None
+                        update, master_failures, exc, settings, source=settings.master_name
                     )
             if settings['update_slave'] and update.s_updated:
                 try:
                     update.update_slave(slave_client)
                 except Exception as exc:
                     slave_failures = handle_failed_update(
-                        update, slave_failures, exc, settings, source=None
+                        update, slave_failures, exc, settings, source=settings.slave_name
                     )
 
     output_failures(master_failures, settings.m_fail_path_full)
