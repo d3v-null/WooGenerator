@@ -90,6 +90,43 @@ class TestUsrSyncClientHardDestructive(TestUsrSyncClient):
             self.assertTrue(response.json())
             print("finally, usr is \n%s" % pformat(response.json()))
 
+    def test_s_up_delete_meta(self):
+        self.settings.update_slave = True
+        slave_client_args = self.settings.slave_upload_client_args
+        slave_client_class = self.settings.slave_upload_client_class
+
+        with slave_client_class(**slave_client_args) as slave_client:
+            page_iterator = slave_client.get_iterator('users?context=edit')
+            first_page = next(page_iterator)
+            first_usr = first_page[0]
+            print("first_usr is \n%s" % pformat(first_usr))
+            first_usr_id = first_usr['id']
+            first_usr_grade = first_usr.get('meta',{}).get('client_grade')
+            new_grade = None
+            print("new_grade is %s" % pformat(new_grade))
+            slave_client.upload_changes(
+                first_usr_id, {'meta':{'client_grade':new_grade}}
+            )
+
+            response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+            print("updated usr is \n%s" % pformat(response.json()))
+
+            self.assertEqual(
+                new_grade,
+                response.json().get('meta',{}).get('client_grade')
+            )
+
+            slave_client.upload_changes(
+                first_usr_id, {'meta':{'client_grade':first_usr_grade}}
+            )
+
+            response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+            print("finally, usr is \n%s" % pformat(response.json()))
+
     def test_s_up_ead_write(self):
         self.settings.update_slave = True
         slave_client_args = self.settings.slave_upload_client_args
@@ -118,6 +155,8 @@ class TestUsrSyncClientHardDestructive(TestUsrSyncClient):
             slave_client.upload_changes(
                 first_usr_id, {'description':first_usr_description}
             )
+
+
 
 
 @unittest.skip("Desctructive tests not mocked yet")
