@@ -12,8 +12,8 @@ PACKAGE_LOCATION = os.path.dirname(MODULE_LOCATION)
 sys.path.insert(0, PACKAGE_LOCATION)
 
 from .core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
-                        Registrar, ValidationUtils, PHPUtils, ProgressCounter,
-                        UnicodeCsvDialectUtils, FileUtils)
+                   Registrar, ValidationUtils, PHPUtils, ProgressCounter,
+                   UnicodeCsvDialectUtils, FileUtils)
 from .contact import NameUtils, AddressUtils
 from .reporter import HtmlReporter
 from .clock import TimeUtils
