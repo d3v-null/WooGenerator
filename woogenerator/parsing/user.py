@@ -57,32 +57,34 @@ class ImportUser(ImportObject):
     socials = DescriptorUtils.safe_key_property('Social Media')
     phones = DescriptorUtils.safe_key_property('Phone Numbers')
 
-    aliasMapping = {
-        'Address':[
-            'Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'
-        ],
-        'Home Address': [
-            'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
-            'Home State', 'Home Country'
-        ],
-        'Name': [
-            'Name Prefix', 'First Name', 'Middle Name', 'Surname',
-            'Name Suffix', 'Company', 'Memo', 'Contact'
-        ],
-        'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
-        'Social Media': [
-            'Facebook Username',
-            'Twitter Username',
-            'GooglePlus Username',
-            'Instagram Username',
-            'Web Site',
-        ],
-        'Role Info': [
-            'Role',
-            'Direct Brand'
-        ],
-        # 'E-mails': ['E-mail', 'Personal E-mail']
-    }
+    alias_mapping = ColDataUser.get_alias_mapping()
+
+    # alias_mapping = {
+    #     'Address':[
+    #         'Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'
+    #     ],
+    #     'Home Address': [
+    #         'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
+    #         'Home State', 'Home Country'
+    #     ],
+    #     'Name': [
+    #         'Name Prefix', 'First Name', 'Middle Name', 'Surname',
+    #         'Name Suffix', 'Company', 'Memo', 'Contact'
+    #     ],
+    #     'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
+    #     'Social Media': [
+    #         'Facebook Username',
+    #         'Twitter Username',
+    #         'GooglePlus Username',
+    #         'Instagram Username',
+    #         'Web Site',
+    #     ],
+    #     'Role Info': [
+    #         'Role',
+    #         'Direct Brand'
+    #     ],
+    #     # 'E-mails': ['E-mail', 'Personal E-mail']
+    # }
 
     @property
     def index(self):
@@ -357,7 +359,7 @@ class ImportUser(ImportObject):
         #         key,
         #         id(self),
         #     ))
-        for alias, keys in self.aliasMapping.items():
+        for alias, keys in self.alias_mapping.items():
             if key in keys and alias in self:
                 return self[alias][key]
         return super(ImportUser, self).__getitem__(key)
@@ -372,7 +374,7 @@ class ImportUser(ImportObject):
         #     ))
         if key == 'Role Info' and val == '':
             raise Exception()
-        for alias, keys in self.aliasMapping.items():
+        for alias, keys in self.alias_mapping.items():
             if key in keys and alias in self:
                 self[alias][key] = val
                 return
@@ -382,7 +384,7 @@ class ImportUser(ImportObject):
     # print self.__getitem__(key)
 
     def get(self, key, default=None):
-        for alias, keys in self.aliasMapping.items():
+        for alias, keys in self.alias_mapping.items():
             if key in keys and self[alias]:
                 return self[alias][key]
         try:
