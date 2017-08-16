@@ -67,8 +67,6 @@ test/client_secret.json
 
 *.pkl
 
-*.pkl
-
 source/sql_test.py
 woogenerator/conf/generator_config.yaml
 source/parser_pickle.pkl
@@ -99,17 +97,15 @@ bad_variable_names.txt
 bad_imports.txt
 .github-todos
 .tags*
-*.csv
 tests/sample_data/EAP-PECPRE.jpg
 tests/sample_data/STFTO-CAL.png
-tests/sample_data/EAP-PECPRE.jpg
-tests/sample_data/STFTO-CAL.png
-*.jpg
-tests/sample_data/STFTO-CAL.png
-tests/sample_data/EAP-PECPRE.jpg
 .atomrc.cson
 update.txt
 exc.txt
 exception.json
-tests/sample_data/EAP-PECPRE.jpg
-tests/sample_data/STFTO-CAL.png
+tests/sample_data/merger_slave_sample.csv
+tests/sample_data/merger_master_sample.csv
+results - just conflicts.csv
+results.csv
+pocs/dyncat.csv
+pocs/dynprod.csv
