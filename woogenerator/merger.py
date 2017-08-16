@@ -936,6 +936,52 @@ def output_failures(failures, file_path):
         dictwriter.writerows(failures)
         print "WROTE FILE: ", file_path
 
+def handle_failed_update(update, fail_list, exc, settings, source=None):
+    """Handle a failed update."""
+    fail_list.append({
+        'update':
+        update,
+        'master':
+        SanitationUtils.coerce_unicode(
+            update.new_m_object),
+        'slave':
+        SanitationUtils.coerce_unicode(
+            update.new_s_object),
+        'mchanges':
+        SanitationUtils.coerce_unicode(
+            update.get_master_updates()),
+        'schanges':
+        SanitationUtils.coerce_unicode(
+            update.get_slave_updates()),
+        'exception':
+        repr(exc)
+    })
+    if source == settings.master_name:
+        pkey = update.master_id
+    elif source == settings.slave_name:
+        pkey = update.slave_id
+    else:
+        pkey = ''
+    Registrar.register_error(
+        "ERROR UPDATING %s (%s): %s\n%s" % (
+            source or '',
+            pkey,
+            repr(exc),
+            traceback.format_exc()
+        )
+    )
+
+    if Registrar.DEBUG_TRACE:
+        boring = False
+        for exc_class in BORING_EXCEPTIONS:
+            if isinstance(exc, exc_class):
+                boring = True
+                break
+        if not boring:
+            import pudb; pudb.set_trace()
+
+    return fail_list
+
 def do_updates(updates, settings):
     all_updates = updates.static
     if settings.do_problematic:
@@ -943,111 +989,54 @@ def do_updates(updates, settings):
 
     Registrar.register_progress("Updating databases (%d)" % len(all_updates))
 
+    if not all_updates:
+        return
+
+    Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
+
+    if settings['ask_before_update']:
+        raw_in = input(
+            "Please read reports and press Enter to continue or c to cancel..."
+        )
+        if raw_in == 'c':
+            raise SystemExit
+
     master_failures = []
     slave_failures = []
 
-    if all_updates:
-        Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(len(all_updates))
 
-        if settings['ask_before_update']:
-            try:
-                input(
-                    "Please read reports and press Enter to continue or ctrl-c to stop..."
+    slave_client_args = settings.slave_upload_client_args
+    slave_client_class = settings.slave_upload_client_class
+    master_client_args = settings.master_upload_client_args
+    master_client_class = settings.master_upload_client_class
+
+    with \
+    master_client_class(**master_client_args) as master_client, \
+    slave_client_class(**slave_client_args) as slave_client:
+        for count, update in enumerate(all_updates):
+            if Registrar.DEBUG_PROGRESS:
+                update_progress_counter.maybe_print_update(count)
+            if Registrar.DEBUG_UPDATE:
+                Registrar.register_message(
+                    "performing update: \n%s",
+                    SanitationUtils.coerce_unicode(update.tabulate())
                 )
-            except SyntaxError:
-                pass
-
-        if Registrar.DEBUG_PROGRESS:
-            update_progress_counter = ProgressCounter(len(all_updates))
-
-        slave_client_args = settings.slave_upload_client_args
-        slave_client_class = settings.slave_upload_client_class
-        master_client_args = settings.master_upload_client_args
-        master_client_class = settings.master_upload_client_class
-
-        with \
-        master_client_class(**master_client_args) as master_client, \
-        slave_client_class(**slave_client_args) as slave_client:
-            for count, update in enumerate(all_updates):
-                if Registrar.DEBUG_PROGRESS:
-                    update_progress_counter.maybe_print_update(count)
-                if Registrar.DEBUG_UPDATE:
-                    Registrar.register_message(
-                        "performing update: \n%s",
-                        SanitationUtils.coerce_unicode(update.tabulate())
+            if settings['update_master'] and update.m_updated:
+                try:
+                    update.update_master(master_client)
+                except Exception as exc:
+                    master_failures = handle_failed_update(
+                        update, master_failures, exc, settings, source=None
                     )
-                if settings['update_master'] and update.m_updated:
-                    try:
-                        update.update_master(master_client)
-                    except Exception as exc:
-                        master_failures.append({
-                            'update':
-                            update,
-                            'master':
-                            SanitationUtils.coerce_unicode(
-                                update.new_m_object),
-                            'slave':
-                            SanitationUtils.coerce_unicode(
-                                update.new_s_object),
-                            'mchanges':
-                            SanitationUtils.coerce_unicode(
-                                update.get_master_updates()),
-                            'schanges':
-                            SanitationUtils.coerce_unicode(
-                                update.get_slave_updates()),
-                            'exception':
-                            repr(exc)
-                        })
-                        Registrar.register_error(
-                            "ERROR UPDATING MASTER (%s): %s\n%s" %
-                            (update.master_id, repr(exc),
-                             traceback.format_exc()))
-
-                        if Registrar.DEBUG_TRACE:
-                            boring = False
-                            for exc_class in BORING_EXCEPTIONS:
-                                if isinstance(exc, exc_class):
-                                    boring = True
-                                    break
-                            if not boring:
-                                import pudb; pudb.set_trace()
-
-                        # continue
-                if settings['update_slave'] and update.s_updated:
-                    try:
-                        update.update_slave(slave_client)
-                    except Exception as exc:
-                        slave_failures.append({
-                            'update':
-                            update,
-                            'master':
-                            SanitationUtils.coerce_unicode(
-                                update.new_m_object),
-                            'slave':
-                            SanitationUtils.coerce_unicode(
-                                update.new_s_object),
-                            'mchanges':
-                            SanitationUtils.coerce_unicode(
-                                update.get_master_updates()),
-                            'schanges':
-                            SanitationUtils.coerce_unicode(
-                                update.get_slave_updates()),
-                            'exception':
-                            repr(exc)
-                        })
-                        Registrar.register_error(
-                            "ERROR UPDATING SLAVE (%s): %s\n%s" %
-                            (update.slave_id, repr(exc),
-                             traceback.format_exc()))
-
-                        if Registrar.DEBUG_TRACE:
-                            boring = False
-                            for exc_class in BORING_EXCEPTIONS:
-                                if isinstance(exc, exc_class):
-                                    boring = True
-                                    break
-                            if not boring:
-                                import pudb; pudb.set_trace()
+            if settings['update_slave'] and update.s_updated:
+                try:
+                    update.update_slave(slave_client)
+                except Exception as exc:
+                    slave_failures = handle_failed_update(
+                        update, slave_failures, exc, settings, source=None
+                    )
 
     output_failures(master_failures, settings.m_fail_path_full)
     output_failures(slave_failures, settings.s_fail_path_full)
