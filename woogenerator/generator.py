@@ -1,6 +1,4 @@
-"""
-Module for generating woocommerce csv import files from Google Drive Data.
-"""
+"""Module for generating woocommerce csv import files from Google Drive Data."""
 # TODO: fix too-many-lines
 
 import io
@@ -17,14 +15,19 @@ from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
 
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from exitstatus import ExitStatus
 from httplib2 import ServerNotFoundError
 from PIL import Image
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from tabulate import tabulate
-from exitstatus import ExitStatus
 
 import __init__
-from woogenerator.coldata import ColDataBase, ColDataWoo #, ColDataMyo
+from woogenerator.client.prod import CatSyncClientWC
+from woogenerator.coldata import ColDataBase, ColDataWoo  # , ColDataMyo
+from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+                                         SettingsNamespaceProd,
+                                         UpdateNamespace, init_settings)
+from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
 from woogenerator.metagator import MetaGator
@@ -33,15 +36,12 @@ from woogenerator.parsing.dyn import CsvParseDyn
 from woogenerator.parsing.myo import MYOProdList
 from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
 from woogenerator.parsing.special import CsvParseSpecial
-from woogenerator.parsing.woo import (CsvParseWoo, WooCatList, WooProdList, WooVarList)
-from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.parsing.woo import (CsvParseWoo, WooCatList, WooProdList,
+                                      WooVarList)
 from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
-from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import (SettingsNamespaceProd, init_settings,
-                                         ParserNamespace, MatchNamespace, UpdateNamespace)
 
 
 def timediff(settings):
@@ -67,10 +67,7 @@ def check_warnings():
         Registrar.print_message_dict(1)
 
 def populate_master_parsers(parsers, settings):
-    """
-    Create and populates the various parsers.
-    """
-
+    """Create and populates the various parsers."""
     things_to_check = [
         'master_parser_args'
     ]
@@ -162,7 +159,6 @@ def populate_master_parsers(parsers, settings):
 
 def process_images(settings, parsers):
     """Process the images information in from the parsers."""
-
     Registrar.register_progress("processing images")
 
     if Registrar.DEBUG_IMG:
@@ -334,7 +330,6 @@ def process_images(settings, parsers):
 
 def export_parsers(settings, parsers):
     """Export key information from the parsers to spreadsheets."""
-
     Registrar.register_progress("Exporting info to spreadsheets")
 
     product_cols = settings.col_data_class.get_product_cols()
@@ -426,7 +421,6 @@ def export_parsers(settings, parsers):
 
 def main(override_args=None, settings=None):
     """Main function for generator."""
-
     settings = init_settings(override_args, settings, ArgumentParserProd)
 
     # PROCESS CONFIG
@@ -1496,7 +1490,6 @@ def main(override_args=None, settings=None):
 
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
-
     file_path = __file__
     cur_dir = os.getcwd() + '/'
     if file_path.startswith(cur_dir):
@@ -1526,6 +1519,8 @@ def catch_main(override_args=None):
     finally:
         if status:
             Registrar.register_error(traceback.format_exc())
+        if Registrar.DEBUG_TRACE:
+            import pudb; pudb.trace()
 
 
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:

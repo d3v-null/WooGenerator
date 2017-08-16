@@ -8,7 +8,6 @@ import sys
 import time
 import traceback
 import zipfile
-import dill
 from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
@@ -17,9 +16,9 @@ import sshtunnel
 import unicodecsv
 from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+import dill
 
 import __init__
-from woogenerator.client.user import UsrSyncClientSshAct, UsrSyncClientWP
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
@@ -33,6 +32,7 @@ from woogenerator.syncupdate import SyncUpdateUsrApi
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils)
 
+BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
 def timediff(settings):
     """
@@ -998,11 +998,19 @@ def do_updates(updates, settings):
                             'exception':
                             repr(exc)
                         })
-                        import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING MASTER (%s): %s\n%s" %
                             (update.master_id, repr(exc),
                              traceback.format_exc()))
+
+                        if Registrar.DEBUG_TRACE:
+                            boring = False
+                            for exc_class in BORING_EXCEPTIONS:
+                                if isinstance(exc, exc_class):
+                                    boring = True
+                                    break
+                            if not boring:
+                                import pudb; pudb.set_trace()
 
                         # continue
                 if settings['update_slave'] and update.s_updated:
@@ -1027,11 +1035,19 @@ def do_updates(updates, settings):
                             'exception':
                             repr(exc)
                         })
-                        import pudb; pudb.set_trace()
                         Registrar.register_error(
                             "ERROR UPDATING SLAVE (%s): %s\n%s" %
                             (update.slave_id, repr(exc),
                              traceback.format_exc()))
+
+                        if Registrar.DEBUG_TRACE:
+                            boring = False
+                            for exc_class in BORING_EXCEPTIONS:
+                                if isinstance(exc, exc_class):
+                                    boring = True
+                                    break
+                            if not boring:
+                                import pudb; pudb.set_trace()
 
     output_failures(master_failures, settings.m_fail_path_full)
     output_failures(slave_failures, settings.s_fail_path_full)
@@ -1114,9 +1130,14 @@ def catch_main(override_args=None):
     except UserWarning:
         status = 65
         Registrar.register_error(traceback.format_exc())
-    else:
+    except Exception:
         status = 1
         Registrar.register_error(traceback.format_exc())
+    finally:
+        if status:
+            Registrar.register_error(traceback.format_exc())
+        if Registrar.DEBUG_TRACE:
+            import pudb; pudb.trace()
 
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():

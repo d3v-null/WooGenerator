@@ -793,6 +793,7 @@ def init_registrar(settings):
     Registrar.DEBUG_UTILS = settings.debug_utils
     Registrar.DEBUG_VARS = settings.debug_vars
     Registrar.DEBUG_WOO = settings.debug_woo
+    Registrar.DEBUG_TRACE = settings.debug_trace
 
 
 def init_settings(override_args=None, settings=None, argparser_class=None):

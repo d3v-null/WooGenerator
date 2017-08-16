@@ -1,6 +1,4 @@
-"""
-Provide configuration parsers.
-"""
+"""Provide configuration parsers."""
 import argparse
 import ast
 import os
@@ -18,6 +16,7 @@ from woogenerator.conf import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
 from woogenerator.conf.namespace import (SettingsNamespaceProd,
                                          SettingsNamespaceProto,
                                          SettingsNamespaceUser)
+
 
 class ArgumentParserProto(configargparse.ArgumentParser):
     """
@@ -407,6 +406,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--debug-address', action='store_true')
         self.add_suppressed_argument('--debug-name', action='store_true')
         self.add_suppressed_argument('--debug-duplicates', action='store_true')
+        self.add_suppressed_argument('--debug-trace', action='store_true')
 
 
 class ArgumentParserProd(ArgumentParserCommon):
