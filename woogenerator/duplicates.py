@@ -2,8 +2,11 @@
 with which it conflicts """
 
 from collections import OrderedDict
+
 from tabulate import tabulate
+
 from woogenerator.utils import SanitationUtils
+
 
 def object_glb_index_fn(object_data):
     assert hasattr(object_data, 'index'), \

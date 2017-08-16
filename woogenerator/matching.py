@@ -4,7 +4,8 @@ Utilities for matching lists of parsing.abstract.ImportObjects
 from collections import OrderedDict
 
 from woogenerator.parsing.abstract import ImportObject, ObjList
-from woogenerator.utils import SanitationUtils, Registrar, InheritenceUtils, SeqUtils
+from woogenerator.utils import (InheritenceUtils, Registrar, SanitationUtils,
+                                SeqUtils)
 
 
 class Match(object):

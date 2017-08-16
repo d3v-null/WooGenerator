@@ -1,10 +1,10 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import SeqUtils, SanitationUtils
 from woogenerator.coldata import ColDataMyo
 from woogenerator.parsing.gen import CsvParseGenTree
 from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
+from woogenerator.utils import SanitationUtils, SeqUtils
 
 
 class CsvParseMyo(CsvParseGenTree):

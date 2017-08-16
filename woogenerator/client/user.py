@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
 import os
 import re
+from collections import OrderedDict
 
-import unicodecsv
 import paramiko
-from sshtunnel import SSHTunnelForwarder
 import pymysql
+import unicodecsv
+from sshtunnel import SSHTunnelForwarder
 
-import __init__
+from woogenerator.client.core import (SyncClientAbstract, SyncClientWC,
+                                      SyncClientWP)
 from woogenerator.coldata import ColDataUser
-from woogenerator.client.core import SyncClientAbstract  # , AbstractServiceInterface
-from woogenerator.client.core import SyncClientWP
-from woogenerator.client.core import SyncClientWC
-from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
-from woogenerator.utils import ProgressCounter, UnicodeCsvDialectUtils
+from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
+                                TimeUtils, UnicodeCsvDialectUtils)
 
 
 class UsrSyncClientWC(SyncClientWC):

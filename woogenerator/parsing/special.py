@@ -1,11 +1,12 @@
 import time
 from collections import OrderedDict
 
-from woogenerator.utils import SeqUtils, DescriptorUtils, TimeUtils, Registrar, SanitationUtils
 from woogenerator.parsing.abstract import BLANK_CELL
-from woogenerator.parsing.tree import CsvParseTree
-from woogenerator.parsing.tree import TaxoList, ItemList
-from woogenerator.parsing.tree import ImportTreeItem, ImportTreeObject, ImportTreeTaxo
+from woogenerator.parsing.tree import (CsvParseTree, ImportTreeItem,
+                                       ImportTreeObject, ImportTreeTaxo,
+                                       ItemList, TaxoList)
+from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
+                                SeqUtils, TimeUtils)
 
 
 class SpecialGruopList(TaxoList):

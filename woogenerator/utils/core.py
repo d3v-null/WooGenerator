@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
-import functools
-import itertools
-import re
-import time
-import sys
-import inspect
-import json
-from collections import OrderedDict
-import math
-import random
 import base64
 import cgi
+import functools
+import inspect
+import itertools
+import json
+import math
 import os
-from urlparse import urlparse, parse_qs
+import random
+import re
+import sys
+import time
+from collections import OrderedDict
 from HTMLParser import HTMLParser
+from urlparse import parse_qs, urlparse
 
 import unicodecsv
-from phpserialize import dumps, loads
 from kitchen.text import converters
+from phpserialize import dumps, loads
 
 DEFAULT_ENCODING = 'utf8'
 

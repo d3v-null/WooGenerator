@@ -1,8 +1,8 @@
 """
 Utilities for time-related tasks
 """
-import time
 import datetime
+import time
 from numbers import Number
 
 from core import SanitationUtils

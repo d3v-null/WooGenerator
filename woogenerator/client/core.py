@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
-from collections import Iterable
+import codecs
 import os
 import re
 import time
-import codecs
-from StringIO import StringIO
+from collections import Iterable
 from contextlib import closing
+from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
 
-from simplejson import JSONDecodeError
-from requests import ConnectionError, ReadTimeout
 import httplib2
-from apiclient import discovery
 import oauth2client
-from oauth2client import client
-from oauth2client import tools
+from apiclient import discovery
+from oauth2client import client, tools
+from requests import ConnectionError, ReadTimeout
+from simplejson import JSONDecodeError
+
+from woogenerator.utils import ProgressCounter, Registrar, SanitationUtils
 from wordpress import API
 from wordpress.helpers import UrlUtils
-
-import __init__
-from woogenerator.utils import Registrar, SanitationUtils
-from woogenerator.utils import ProgressCounter
 
 
 class AbstractServiceInterface(object):

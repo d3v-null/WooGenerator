@@ -3,11 +3,12 @@ Utilities for mitigating images metadata.
 """
 
 import os
-from PIL import Image, ImageFile, PngImagePlugin
 
 import piexif
+from PIL import Image, ImageFile, PngImagePlugin
 
-from woogenerator.utils import SanitationUtils, Registrar
+from woogenerator.utils import Registrar, SanitationUtils
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class MetaGator(Registrar):

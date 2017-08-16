@@ -6,7 +6,6 @@ from pprint import pformat
 
 from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.abstract import CsvParseBase
-from woogenerator.parsing.tree import CsvParseTreeMixin
 from woogenerator.parsing.gen import ImportGenObject
 from woogenerator.parsing.shop import (CsvParseShopMixin,
                                        ImportShopCategoryMixin,
@@ -14,6 +13,7 @@ from woogenerator.parsing.shop import (CsvParseShopMixin,
                                        ImportShopProductSimpleMixin,
                                        ImportShopProductVariableMixin,
                                        ImportShopProductVariationMixin)
+from woogenerator.parsing.tree import CsvParseTreeMixin
 from woogenerator.parsing.woo import CsvParseWooMixin, ImportWooMixin
 from woogenerator.utils import Registrar, SanitationUtils
 

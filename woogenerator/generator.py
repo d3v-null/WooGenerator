@@ -1,6 +1,4 @@
 """Module for generating woocommerce csv import files from Google Drive Data."""
-# TODO: fix too-many-lines
-
 import io
 import os
 import re
@@ -21,9 +19,8 @@ from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from tabulate import tabulate
 
-import __init__
 from woogenerator.client.prod import CatSyncClientWC
-from woogenerator.coldata import ColDataBase, ColDataWoo  # , ColDataMyo
+from woogenerator.coldata import ColDataBase, ColDataWoo
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProd,
                                          UpdateNamespace, init_settings)
@@ -34,7 +31,7 @@ from woogenerator.metagator import MetaGator
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.dyn import CsvParseDyn
 from woogenerator.parsing.myo import MYOProdList
-from woogenerator.parsing.shop import ShopObjList  # ShopProdList,
+from woogenerator.parsing.shop import ShopObjList
 from woogenerator.parsing.special import CsvParseSpecial
 from woogenerator.parsing.woo import (CsvParseWoo, WooCatList, WooProdList,
                                       WooVarList)

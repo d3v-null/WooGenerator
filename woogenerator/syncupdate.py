@@ -1,20 +1,19 @@
-# pylint: disable=too-many-lines
 """
 Utilites for storing and performing operations on pending updates
 """
-# TODO: fix too-many-lines
 
 from collections import OrderedDict
-from copy import deepcopy, copy
-from tabulate import tabulate
+from copy import copy, deepcopy
 from pprint import pformat
 
-# , UnicodeCsvDialectUtils
-from woogenerator.utils import SanitationUtils, TimeUtils, Registrar
-from woogenerator.contact_objects import FieldGroup, ContactAddress
-from woogenerator.coldata import ColDataBase, ColDataUser, ColDataProd, ColDataWoo
+from tabulate import tabulate
+
+from woogenerator.coldata import (ColDataBase, ColDataProd, ColDataUser,
+                                  ColDataWoo)
+from woogenerator.contact_objects import ContactAddress, FieldGroup
 from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
+from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
 
 class SyncUpdate(

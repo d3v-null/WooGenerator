@@ -7,10 +7,10 @@ from copy import copy
 
 import bleach
 
-from woogenerator.utils import (SeqUtils, DescriptorUtils, ValidationUtils,
-                                PHPUtils, SanitationUtils)
 from woogenerator.parsing.tree import (CsvParseTree, ImportTreeItem,
-                                       ImportTreeTaxo, ImportTreeObject)
+                                       ImportTreeObject, ImportTreeTaxo)
+from woogenerator.utils import (DescriptorUtils, PHPUtils, SanitationUtils,
+                                SeqUtils, ValidationUtils)
 
 
 class ImportDynObject(ImportTreeObject):

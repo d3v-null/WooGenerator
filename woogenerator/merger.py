@@ -12,13 +12,12 @@ from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
 
+import dill
 import sshtunnel
 import unicodecsv
 from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
-import dill
 
-import __init__
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)

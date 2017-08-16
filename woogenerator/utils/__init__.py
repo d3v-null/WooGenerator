@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """utils module used by woogenerator."""
 
-# import sys
-# import os
-# MODULE_PATH = os.path.dirname(__file__)
-#
-# sys.path.insert(0, MODULE_PATH)
+import sys
+import os
+
+MODULE_PATH = os.path.dirname(__file__)
+MODULE_LOCATION = os.path.dirname(MODULE_PATH)
+PACKAGE_LOCATION = os.path.dirname(MODULE_LOCATION)
+sys.path.insert(0, PACKAGE_LOCATION)
 
 from core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
                         Registrar, ValidationUtils, PHPUtils, ProgressCounter,

@@ -9,15 +9,16 @@ Here be dragons. Some of the design decisions are pretty bizarre, so please have
 through before changing anything. Sorry about that.
 """
 
-from collections import OrderedDict
-from copy import deepcopy, copy
-from pprint import pformat
 import re
+from collections import OrderedDict
+from copy import copy, deepcopy
+from pprint import pformat
 
-from tabulate import tabulate
 import unicodecsv
-from woogenerator.utils import (SeqUtils, SanitationUtils, Registrar,
-                                ProgressCounter, UnicodeCsvDialectUtils)
+from tabulate import tabulate
+
+from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
+                                SeqUtils, UnicodeCsvDialectUtils)
 
 BLANK_CELL = ''
 

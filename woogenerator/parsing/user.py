@@ -3,14 +3,16 @@ Containers and parsers for processing user data
 """
 
 from collections import OrderedDict
-from pprint import pformat  # pprint
-# from copy import deepcopy
+from pprint import pformat
 
-from woogenerator.coldata import ColDataUser  # , ColDataWoo
-from woogenerator.contact_objects import ContactAddress, ContactName
-from woogenerator.contact_objects import ContactPhones, SocialMediaFields, RoleGroup
-from woogenerator.utils import DescriptorUtils, SeqUtils, SanitationUtils, TimeUtils, Registrar
-from woogenerator.parsing.abstract import ObjList, CsvParseBase, ImportObject
+from woogenerator.coldata import ColDataUser
+from woogenerator.contact_objects import (ContactAddress, ContactName,
+                                          ContactPhones, RoleGroup,
+                                          SocialMediaFields)
+from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
+from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
+                                SeqUtils, TimeUtils)
+
 
 class UsrObjList(ObjList):
     """

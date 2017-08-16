@@ -1,6 +1,6 @@
+import io
 import re
 from collections import OrderedDict
-import io
 
 from core import SanitationUtils
 

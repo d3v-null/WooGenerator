@@ -6,7 +6,6 @@ import time
 from collections import OrderedDict
 from pprint import pformat
 
-import __init__
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,

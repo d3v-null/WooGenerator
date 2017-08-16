@@ -5,7 +5,6 @@ import os
 
 import configargparse
 
-import __init__
 from woogenerator.conf import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                                DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
                                DEFAULT_LOCAL_PROD_PATH,

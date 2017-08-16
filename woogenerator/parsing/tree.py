@@ -3,8 +3,10 @@ Classes that add the concept of heirarchy to the CSVParse classes and correspond
 """
 
 from collections import OrderedDict
-from woogenerator.utils import Registrar
+
 from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
+from woogenerator.utils import Registrar
+
 
 class ImportTreeRootableMixin(object):
     pass

@@ -2,15 +2,15 @@
 """ Provides GUI for syncing products and customers """
 import contextlib
 import logging
+import platform
 import sys
 import traceback
-import platform
 from collections import OrderedDict, namedtuple
 from copy import deepcopy
 from pprint import pformat
 
 import npyscreen
-import __init__
+
 from woogenerator import generator, merger
 from woogenerator.utils import overrides
 from woogenerator.utils.core import SeqUtils

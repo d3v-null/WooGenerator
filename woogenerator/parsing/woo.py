@@ -17,8 +17,8 @@ from woogenerator.parsing.shop import (CsvParseShopMixin,
                                        ShopObjList)
 from woogenerator.parsing.special import ImportSpecialGroup
 from woogenerator.parsing.tree import ImportTreeItem, ItemList, TaxoList
-from woogenerator.utils import (DescriptorUtils, SeqUtils, PHPUtils,
-                                Registrar, SanitationUtils, TimeUtils)
+from woogenerator.utils import (DescriptorUtils, PHPUtils, Registrar,
+                                SanitationUtils, SeqUtils, TimeUtils)
 
 
 class WooProdList(ItemList):
