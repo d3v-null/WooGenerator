@@ -28,8 +28,8 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
     argument_parser_class = ArgumentParserUser
 
     # Uncomment to test on live settings
-    config_file = "conf_user.yaml"
-    local_work_dir = "~/Documents/woogenerator/"
+    # config_file = "conf_user.yaml"
+    # local_work_dir = "~/Documents/woogenerator/"
 
     # Uncomment to test on staging settings
     # config_file = "conf_user_test.yaml"
