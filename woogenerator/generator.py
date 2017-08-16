@@ -1516,8 +1516,8 @@ def catch_main(override_args=None):
     finally:
         if status:
             Registrar.register_error(traceback.format_exc())
-        if Registrar.DEBUG_TRACE:
-            import pudb; pudb.trace()
+            if Registrar.DEBUG_TRACE:
+                import pudb; pudb.set_trace()
 
 
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:

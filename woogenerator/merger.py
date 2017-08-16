@@ -1118,7 +1118,7 @@ def catch_main(override_args=None):
         if status:
             Registrar.register_error(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.trace()
+                import pudb; pudb.set_trace()
 
     # TODO: move this block to Registrar.write_log()
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
