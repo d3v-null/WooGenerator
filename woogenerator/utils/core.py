@@ -1000,6 +1000,7 @@ class Registrar(object):
     DEBUG_VARS = False
     DEBUG_DUPLICATES = False
     DEBUG_USR = False
+    DEBUG_TRACE = False
 
     @classmethod
     def conflict_resolver(cls, *_):
