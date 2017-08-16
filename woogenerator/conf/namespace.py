@@ -814,6 +814,9 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     parser_override = {'namespace':settings}
     if override_args is not None:
         parser_override['args'] = override_args
+        settings.called_with_args = override_args
+    else:
+        settings.called_with_args = sys.argv
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
