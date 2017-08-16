@@ -18,6 +18,7 @@ import unicodecsv
 from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
+from six.moves import input
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
@@ -992,9 +993,12 @@ def do_updates(updates, settings):
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
     if settings['ask_before_update']:
-        raw_in = input(
-            "Please read reports and press Enter to continue or c to cancel..."
-        )
+        try:
+            raw_in = input(
+                "Please read reports and press Enter to continue or c to cancel..."
+            )
+        except SyntaxError:
+            raw_in = ""
         if raw_in == 'c':
             raise SystemExit
 
