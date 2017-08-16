@@ -107,3 +107,9 @@ tests/sample_data/STFTO-CAL.png
 *.jpg
 tests/sample_data/STFTO-CAL.png
 tests/sample_data/EAP-PECPRE.jpg
+.atomrc.cson
+update.txt
+exc.txt
+exception.json
+tests/sample_data/EAP-PECPRE.jpg
+tests/sample_data/STFTO-CAL.png
