@@ -1042,16 +1042,12 @@ def do_updates(updates, settings):
     output_failures(slave_failures, settings.s_fail_path_full)
 
 def main(override_args=None, settings=None):
-    """
-    Use settings object to load config file and detect changes in wordpress.
-    """
-    # DONE: fix too-many-branches,too-many-locals
-    # DONE: implement override_args
-
+    """Use settings object to load config file and detect changes in wordpress."""
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
     if hasattr(settings, 'pickle_file') and getattr(settings, 'pickle_file'):
         unpickle_state(settings)
+        return settings
 
     ### SET UP DIRECTORIES ###
 
@@ -1096,19 +1092,18 @@ def main(override_args=None, settings=None):
 
     do_updates(updates, settings)
 
-def catch_main(override_args=None):
-    """
-    Run the main function within a try statement and attempt to analyse failure.
-    """
+    return settings
 
+def catch_main(override_args=None):
+    """Run the main function within a try statement and attempt to analyse failure."""
     settings = SettingsNamespaceUser()
 
     status = 0
 
     try:
-        main(settings=settings, override_args=override_args)
-    except SystemExit:
-        exit()
+        settings = main(settings=settings, override_args=override_args)
+    except (SystemExit, KeyboardInterrupt):
+        pass
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
         status = 69  # service unavailable
         Registrar.register_error(traceback.format_exc())
@@ -1125,9 +1120,10 @@ def catch_main(override_args=None):
     finally:
         if status:
             Registrar.register_error(traceback.format_exc())
-        if Registrar.DEBUG_TRACE:
-            import pudb; pudb.trace()
+            if Registrar.DEBUG_TRACE:
+                import pudb; pudb.trace()
 
+    # TODO: move this block to Registrar.write_log()
     with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
@@ -1142,9 +1138,16 @@ def catch_main(override_args=None):
     # email reports
     #########################################
 
-    files_to_zip = [
-        settings.m_fail_path_full, settings.s_fail_path_full, settings.rep_path_full
-    ]
+    try:
+        files_to_zip = []
+        for attr in [
+            'm_fail_path_full', 's_fail_path_full',
+            'rep_path_full',
+            'master_path', 'slave_path'
+        ]:
+            files_to_zip.append(settings.get(attr))
+    except Exception as exc:
+        print traceback.format_exc()
 
     with zipfile.ZipFile(settings.zip_path_full, 'w') as zip_file:
         for file_to_zip in files_to_zip:
