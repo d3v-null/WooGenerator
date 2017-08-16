@@ -1,10 +1,9 @@
 from __future__ import print_function
-
 # from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import os
-import traceback
 # import sys
 import tempfile
+import traceback
 import unittest
 from pprint import pformat
 
@@ -24,7 +23,6 @@ from woogenerator.utils import Registrar  # , SanitationUtils
 
 class TestMerger(unittest.TestCase):
     def setUp(self):
-
         self.settings = SettingsNamespaceUser()
         self.settings.local_work_dir = tests_datadir
         self.settings.local_live_config = None

@@ -35,12 +35,11 @@ from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
 def timediff(settings):
-    """
-    Return the difference in time since the start time according to settings.
-    """
+    """Return the time delta since the start time according to settings."""
     return time.time() - settings.start_time
 
 def populate_filter_settings(settings):
+    """Populate the settings for filtering input data."""
     if settings['do_filter']:
         # TODO: I don't think emails filter is actually working
         filter_files = {
@@ -75,10 +74,7 @@ def populate_filter_settings(settings):
         settings.filter_items = None
 
 def populate_slave_parsers(parsers, settings):
-    """
-    Populate the parsers for data from the slave database.
-    """
-
+    """Populate the parsers for data from the slave database."""
     parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
 
     if settings['download_slave']:
@@ -115,15 +111,13 @@ def populate_slave_parsers(parsers, settings):
     return parsers
 
 def export_slave_parser(parsers, settings):
+    """Export slave parser to disk."""
     parsers.slave.get_obj_list().export_items(
         os.path.join(settings.in_folder_full, settings.s_x_name),
         settings.col_data_class.get_wp_import_col_names())
 
 def populate_master_parsers(parsers, settings):
-    """
-    Populate the parsers for data from the slave database.
-    """
-
+    """Populate the parsers for data from the slave database."""
     things_to_check = []
     if settings['download_master']:
         things_to_check.extend(['master_connect_params', 'master_db_params', 'fs_params'])
@@ -155,13 +149,13 @@ def populate_master_parsers(parsers, settings):
     return parsers
 
 def export_master_parser(parsers, settings):
+    """Export the Masater parser to disk."""
     parsers.master.get_obj_list().export_items(
         os.path.join(settings.in_folder_full, settings.m_x_name),
         settings.col_data_class.get_act_import_col_names())
 
 def do_match(matches, parsers, settings):
-    """ for every username in slave, find its counterpart in master. """
-
+    """For every item in slave, find its counterpart in master."""
     Registrar.register_progress("Processing matches")
 
     parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
@@ -256,7 +250,7 @@ def do_match(matches, parsers, settings):
     return matches
 
 def do_merge(matches, updates, parsers, settings):
-
+    """For a given list of matches, return a description of updates required to merge them."""
     Registrar.register_progress("BEGINNING MERGE (%d)" % len(matches.globals))
 
     sync_cols = settings.col_data_class.get_sync_cols()
@@ -351,6 +345,7 @@ def do_merge(matches, updates, parsers, settings):
     return updates
 
 def do_report(matches, updates, parsers, settings):
+    """Write report of changes to be made."""
     Registrar.register_progress("Write Report")
 
     settings.repd_path = os.path.join(
@@ -716,10 +711,8 @@ def do_report(matches, updates, parsers, settings):
 
             def fn_obj_source_is(target_source):
                 """Return function that checks if object source equals target source."""
-
                 def obj_source_is(object_data):
                     """Check if the object source equals target source."""
-
                     obj_source = object_data.get('source')
                     if obj_source and target_source == obj_source:
                         return True
@@ -901,6 +894,7 @@ def do_report(matches, updates, parsers, settings):
         res_file.write(reporter.get_document_unicode())
 
 def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
+    """Save execution state of a pickle file which can be restored later."""
     Registrar.register_progress("pickling updates")
 
     pickle_obj = (matches, updates, parsers, settings, progress)
@@ -911,18 +905,21 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
     print "state saved to %s" % settings.pickle_path_full
 
 def unpickle_state(settings):
+    """Restore state from a pickle file."""
+    Registrar.register_progress("restoring state from pickle")
+
     with open(settings.pickle_path_full) as pickle_file:
         pickle_obj = dill.load(pickle_file)
         matches, updates, parsers, settings, progress = pickle_obj
+
+    # TODO: some way to change settings after restore state
 
     if progress == 'report':
         do_report(matches, updates, parsers, settings)
         do_updates(updates, settings)
 
 def output_failures(failures, file_path):
-    """
-    Output a list of lists of failures as a csv file to the path specified.
-    """
+    """Output a list of lists of failures as a csv file to the path specified."""
     with open(file_path, 'w+') as out_file:
         for failure in failures:
             Registrar.register_error(failure)
@@ -983,6 +980,7 @@ def handle_failed_update(update, fail_list, exc, settings, source=None):
     return fail_list
 
 def do_updates(updates, settings):
+    """Perform a list of updates."""
     all_updates = updates.static
     if settings.do_problematic:
         all_updates += updates.problematic
