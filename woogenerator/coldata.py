@@ -2256,6 +2256,13 @@ class ColDataUser(ColDataBase):
         return cls.get_export_cols('aliases')
 
     @classmethod
+    def get_alias_mapping(cls):
+        alias_mappings = {}
+        for col, data in cls.get_alias_cols().items():
+            alias_mappings[col] = data.get('aliases')
+        return alias_mappings
+
+    @classmethod
     def get_wp_import_cols(cls):
         cols = []
         for col, data in cls.data.items():
