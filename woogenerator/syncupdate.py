@@ -202,8 +202,10 @@ class SyncUpdate(
         elif not (m_value and s_value):
             response = False
         # check if they are similar
-        if SanitationUtils.similar_comparison(
-                m_value) == SanitationUtils.similar_comparison(s_value):
+        similar_m_value = SanitationUtils.similar_comparison(m_value)
+        similar_s_value = SanitationUtils.similar_comparison(s_value)
+
+        if similar_m_value == similar_s_value:
             response = True
 
         if self.DEBUG_UPDATE:
@@ -1005,7 +1007,7 @@ class SyncUpdateUsr(SyncUpdate):
                     m_phone = SanitationUtils.similar_phone_comparison(m_value)
                     s_phone = SanitationUtils.similar_phone_comparison(s_value)
                     plen = min(len(m_phone), len(s_phone))
-                    if plen > 7 and m_phone[-plen] == s_phone[-plen]:
+                    if plen > 7 and m_phone[-plen:] == s_phone[-plen:]:
                         response = True
             elif "role" == col.lower():
                 m_role = SanitationUtils.similar_comparison(m_value)
