@@ -1,5 +1,5 @@
 import unittest
-from pprint import pprint
+from pprint import pformat
 
 from context import woogenerator, tests_datadir
 from tests.test_sync_client import AbstractSyncClientTestCase
@@ -28,8 +28,8 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
     argument_parser_class = ArgumentParserUser
 
     # Uncomment to test on live settings
-    # config_file = "conf_user.yaml"
-    # local_work_dir = "~/Documents/woogenerator/"
+    config_file = "conf_user.yaml"
+    local_work_dir = "~/Documents/woogenerator/"
 
     # Uncomment to test on staging settings
     # config_file = "conf_user_test.yaml"
@@ -48,6 +48,77 @@ class TestUsrSyncClient(AbstractSyncClientTestCase):
         # Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
+@unittest.skipIf(
+    TestUsrSyncClient.config_file == "merger_config_test.yaml",
+    "dummy config won't work"
+)
+class TestUsrSyncClientHardDestructive(TestUsrSyncClient):
+    def test_s_up_read_write_meta(self):
+        self.settings.update_slave = True
+        slave_client_args = self.settings.slave_upload_client_args
+        slave_client_class = self.settings.slave_upload_client_class
+
+        with slave_client_class(**slave_client_args) as slave_client:
+            page_iterator = slave_client.get_iterator('users?context=edit')
+            first_page = next(page_iterator)
+            first_usr = first_page[0]
+            print("first_usr is \n%s" % pformat(first_usr))
+            first_usr_id = first_usr['id']
+            first_usr_grade = first_usr.get('meta',{}).get('client_grade')
+            new_grade = TimeUtils.get_ms_timestamp()
+            print("new_grade is %s" % pformat(new_grade))
+            slave_client.upload_changes(
+                first_usr_id, {'meta':{'client_grade':new_grade}}
+            )
+
+            response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+            print("updated usr is \n%s" % pformat(response.json()))
+
+            self.assertEqual(
+                new_grade,
+                response.json().get('meta',{}).get('client_grade')
+            )
+
+            slave_client.upload_changes(
+                first_usr_id, {'meta':{'client_grade':first_usr_grade}}
+            )
+
+            response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+            print("finally, usr is \n%s" % pformat(response.json()))
+
+    def test_s_up_ead_write(self):
+        self.settings.update_slave = True
+        slave_client_args = self.settings.slave_upload_client_args
+        slave_client_class = self.settings.slave_upload_client_class
+
+        with slave_client_class(**slave_client_args) as slave_client:
+            page_iterator = slave_client.get_iterator('users?context=edit')
+            first_page = next(page_iterator)
+            first_usr = first_page[0]
+            first_usr_id = first_usr['id']
+            first_usr_description = first_usr['description']
+            new_description = TimeUtils.get_ms_timestamp()
+            slave_client.upload_changes(
+                first_usr_id, {'description':new_description}
+            )
+
+            response = slave_client.service.get('users/%s' % first_usr_id)
+            self.assertTrue(response)
+            self.assertTrue(response.json())
+
+            self.assertEqual(
+                new_description,
+                response.json().get('description')
+            )
+
+            slave_client.upload_changes(
+                first_usr_id, {'description':first_usr_description}
+            )
+
 
 @unittest.skip("Desctructive tests not mocked yet")
 class TestUsrSyncClientDestructive(TestUsrSyncClient):
@@ -189,56 +260,6 @@ class TestUsrSyncClientDestructive(TestUsrSyncClient):
             iterator = slave_client.get_iterator('users?context=edit')
             self.assertTrue(next(iterator))
 
-    def test_wp_read_write(self):
-        with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
-            page_iterator = slave_client.get_iterator('users?context=edit')
-            first_page = next(page_iterator)
-            first_usr = first_page[0]
-            first_usr_id = first_usr['id']
-            first_usr_description = first_usr['description']
-            new_description = TimeUtils.get_ms_timestamp()
-            slave_client.upload_changes(
-                first_usr_id, {'description':new_description}
-            )
-
-            response = slave_client.service.get('users/%s' % first_usr_id)
-            self.assertTrue(response)
-            self.assertTrue(response.json())
-
-            self.assertEqual(
-                new_description,
-                response.json().get('description')
-            )
-
-            slave_client.upload_changes(
-                first_usr_id, {'description':first_usr_description}
-            )
-
-    def test_wp_read_write_meta(self):
-        with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
-            page_iterator = slave_client.get_iterator('users?context=edit')
-            first_page = next(page_iterator)
-            first_usr = first_page[0]
-            first_usr_id = first_usr['id']
-            first_usr_description = first_usr['description']
-            new_description = TimeUtils.get_ms_timestamp()
-            slave_client.upload_changes(
-                first_usr_id, {'description':new_description}
-            )
-
-            response = slave_client.service.get('users/%s' % first_usr_id)
-            self.assertTrue(response)
-            self.assertTrue(response.json())
-
-            self.assertEqual(
-                new_description,
-                response.json().get('description')
-            )
-
-            slave_client.upload_changes(
-                first_usr_id, {'description':first_usr_description}
-            )
-
     @unittest.skip("takes too long")
     def test_wp_analyse(self):
         #TODO: mock this out
@@ -273,9 +294,12 @@ class TestUsrSyncClientDestructive(TestUsrSyncClient):
     #         response = client.upload_changes('C004897', fields)
     #
     #     print response
-
+@unittest.skipIf(
+    TestUsrSyncClient.config_file == "merger_config_test.yaml",
+    "dummy config won't work"
+)
 class TestUsrSyncClientConstructors(TestUsrSyncClient):
-    @unittest.skip("dummy config won't work")
+
     def test_make_usr_m_up_client(self):
         self.settings.update_master = True
         master_client_args = self.settings.master_upload_client_args
@@ -291,7 +315,6 @@ class TestUsrSyncClientConstructors(TestUsrSyncClient):
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
 
-    @unittest.skip("dummy config won't work")
     def test_make_usr_m_down_client(self):
         self.settings.download_master = True
         master_client_args = self.settings.master_download_client_args
@@ -299,10 +322,11 @@ class TestUsrSyncClientConstructors(TestUsrSyncClient):
         with master_client_class(**master_client_args) as master_client:
             self.assertTrue(master_client)
 
-    @unittest.skip("dummy config won't work")
     def test_make_usr_s_down_client(self):
         self.settings.download_slave = True
         slave_client_args = self.settings.slave_download_client_args
+        self.assertTrue(slave_client_args['connect_params']['remote_bind_address'][0])
+        self.assertTrue(slave_client_args['connect_params']['remote_bind_address'][1])
         slave_client_class = self.settings.slave_download_client_class
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
