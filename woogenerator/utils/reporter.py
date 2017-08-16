@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 import io
 import re
 from collections import OrderedDict
 
-from core import SanitationUtils
+from .core import SanitationUtils
 
 
 class HtmlReporter(object):

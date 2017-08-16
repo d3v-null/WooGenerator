@@ -1,6 +1,7 @@
 """
 Containers and parsers for processing user data
 """
+from __future__ import absolute_import
 
 from collections import OrderedDict
 from pprint import pformat
@@ -9,9 +10,10 @@ from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import (ContactAddress, ContactName,
                                           ContactPhones, RoleGroup,
                                           SocialMediaFields)
-from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
                                 SeqUtils, TimeUtils)
+
+from .abstract import CsvParseBase, ImportObject, ObjList
 
 
 class UsrObjList(ObjList):

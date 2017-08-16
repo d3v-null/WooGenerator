@@ -1,21 +1,22 @@
 """
 Introduce woo api structure to shop classes.
 """
+from __future__ import absolute_import
+
 from collections import OrderedDict
 from pprint import pformat
 
 from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.abstract import CsvParseBase
-from woogenerator.parsing.gen import ImportGenObject
-from woogenerator.parsing.shop import (CsvParseShopMixin,
-                                       ImportShopCategoryMixin,
-                                       ImportShopMixin, ImportShopProductMixin,
-                                       ImportShopProductSimpleMixin,
-                                       ImportShopProductVariableMixin,
-                                       ImportShopProductVariationMixin)
-from woogenerator.parsing.tree import CsvParseTreeMixin
-from woogenerator.parsing.woo import CsvParseWooMixin, ImportWooMixin
 from woogenerator.utils import Registrar, SanitationUtils
+
+from .abstract import CsvParseBase
+from .gen import ImportGenObject
+from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
+                   ImportShopProductMixin, ImportShopProductSimpleMixin,
+                   ImportShopProductVariableMixin,
+                   ImportShopProductVariationMixin)
+from .tree import CsvParseTreeMixin
+from .woo import CsvParseWooMixin, ImportWooMixin
 
 
 class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):

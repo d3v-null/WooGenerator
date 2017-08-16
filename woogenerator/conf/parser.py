@@ -1,20 +1,19 @@
 """Provide configuration parsers."""
+from __future__ import absolute_import
+
 import argparse
 import ast
 import os
 
 import configargparse
 
-from woogenerator.conf import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
-                               DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
-                               DEFAULT_LOCAL_PROD_PATH,
-                               DEFAULT_LOCAL_PROD_TEST_PATH,
-                               DEFAULT_LOCAL_USER_PATH,
-                               DEFAULT_LOCAL_USER_TEST_PATH,
-                               DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH)
-from woogenerator.conf.namespace import (SettingsNamespaceProd,
-                                         SettingsNamespaceProto,
-                                         SettingsNamespaceUser)
+from .__init__ import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
+                       DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
+                       DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
+                       DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
+                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH)
+from .namespace import (SettingsNamespaceProd, SettingsNamespaceProto,
+                        SettingsNamespaceUser)
 
 
 class ArgumentParserProto(configargparse.ArgumentParser):

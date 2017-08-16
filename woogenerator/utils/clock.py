@@ -1,11 +1,13 @@
 """
 Utilities for time-related tasks
 """
+from __future__ import absolute_import
+
 import datetime
 import time
 from numbers import Number
 
-from core import SanitationUtils
+from .core import SanitationUtils
 
 
 class TimeUtils(object):

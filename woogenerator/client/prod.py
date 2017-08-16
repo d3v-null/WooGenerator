@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 from collections import OrderedDict
 
-from woogenerator.client.core import SyncClientWC
+from .core import SyncClientWC
 
 
 class ProdSyncClientWC(SyncClientWC):

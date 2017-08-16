@@ -1,16 +1,18 @@
 """
 Utilities for parsing and handling dynamic pricing information.
 """
+from __future__ import absolute_import
 
 from collections import OrderedDict
 from copy import copy
 
 import bleach
 
-from woogenerator.parsing.tree import (CsvParseTree, ImportTreeItem,
-                                       ImportTreeObject, ImportTreeTaxo)
 from woogenerator.utils import (DescriptorUtils, PHPUtils, SanitationUtils,
                                 SeqUtils, ValidationUtils)
+
+from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
+                   ImportTreeTaxo)
 
 
 class ImportDynObject(ImportTreeObject):

@@ -1,24 +1,22 @@
 """
 Introduce woo structure to shop classes.
 """
+from __future__ import absolute_import
 
 import re
 from collections import OrderedDict
 
 from woogenerator.coldata import ColDataWoo
-from woogenerator.parsing.gen import (CsvParseGenTree, ImportGenItem,
-                                      ImportGenObject, ImportGenTaxo)
-from woogenerator.parsing.shop import (CsvParseShopMixin,
-                                       ImportShopCategoryMixin,
-                                       ImportShopMixin, ImportShopProductMixin,
-                                       ImportShopProductSimpleMixin,
-                                       ImportShopProductVariableMixin,
-                                       ImportShopProductVariationMixin,
-                                       ShopObjList)
-from woogenerator.parsing.special import ImportSpecialGroup
-from woogenerator.parsing.tree import ImportTreeItem, ItemList, TaxoList
 from woogenerator.utils import (DescriptorUtils, PHPUtils, Registrar,
                                 SanitationUtils, SeqUtils, TimeUtils)
+
+from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
+from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
+                   ImportShopProductMixin, ImportShopProductSimpleMixin,
+                   ImportShopProductVariableMixin,
+                   ImportShopProductVariationMixin, ShopObjList)
+from .special import ImportSpecialGroup
+from .tree import ImportTreeItem, ItemList, TaxoList
 
 
 class WooProdList(ItemList):

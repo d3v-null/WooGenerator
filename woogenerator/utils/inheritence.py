@@ -1,6 +1,5 @@
 """ Utils for dealing with inheritence in python """
 
-
 class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
     """ Groups inheritence utils together """
     @classmethod

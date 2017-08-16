@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 import re
 from collections import OrderedDict
 
-from core import Registrar, SanitationUtils
+from .core import Registrar, SanitationUtils
 
 
 class NameUtils(object):

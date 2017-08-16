@@ -1,15 +1,17 @@
 """
 Introduce the shop products and categories interfaces to CSV Parser classes.
 """
+from __future__ import absolute_import
 
 import bisect
 from collections import OrderedDict
 
 from woogenerator.coldata import ColDataProd
-from woogenerator.parsing.abstract import ObjList
-from woogenerator.parsing.gen import CsvParseGenMixin
-from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
+
+from .abstract import ObjList
+from .gen import CsvParseGenMixin
+from .tree import ItemList
 
 
 class ShopProdList(ItemList):

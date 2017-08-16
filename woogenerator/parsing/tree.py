@@ -1,11 +1,13 @@
 """
 Classes that add the concept of heirarchy to the CSVParse classes and corresponding helper classes
 """
+from __future__ import absolute_import
 
 from collections import OrderedDict
 
-from woogenerator.parsing.abstract import CsvParseBase, ImportObject, ObjList
 from woogenerator.utils import Registrar
+
+from .abstract import CsvParseBase, ImportObject, ObjList
 
 
 class ImportTreeRootableMixin(object):

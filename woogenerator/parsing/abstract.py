@@ -8,6 +8,7 @@ for easy analyis.
 Here be dragons. Some of the design decisions are pretty bizarre, so please have a full read
 through before changing anything. Sorry about that.
 """
+from __future__ import absolute_import
 
 import re
 from collections import OrderedDict

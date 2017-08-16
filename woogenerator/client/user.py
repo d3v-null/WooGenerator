@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 import os
 import re
 from collections import OrderedDict
@@ -8,7 +10,7 @@ import pymysql
 import unicodecsv
 from sshtunnel import SSHTunnelForwarder
 
-from woogenerator.client.core import (SyncClientAbstract, SyncClientWC,
+from .core import (SyncClientAbstract, SyncClientWC,
                                       SyncClientWP)
 from woogenerator.coldata import ColDataUser
 from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,

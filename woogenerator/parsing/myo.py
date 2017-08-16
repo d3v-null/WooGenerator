@@ -1,10 +1,13 @@
+from __future__ import absolute_import
+
 import time
 from collections import OrderedDict
 
 from woogenerator.coldata import ColDataMyo
-from woogenerator.parsing.gen import CsvParseGenTree
-from woogenerator.parsing.shop import ImportShopProductMixin, ShopProdList
 from woogenerator.utils import SanitationUtils, SeqUtils
+
+from .gen import CsvParseGenTree
+from .shop import ImportShopProductMixin, ShopProdList
 
 
 class CsvParseMyo(CsvParseGenTree):
