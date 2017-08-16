@@ -238,6 +238,7 @@ class TestSyncUpdateUser(TestCase):
                 'Wordpress Username': 'neil',
                 'Role': 'WN',
                 'Edited Name': '18/02/2016 12:13:00 PM',
+                'Phone': '0422 781 880',
                 'Web Site': 'www.technotan.com.au',
                 'Contact': 'NEIL',
                 'First Name': '',
@@ -265,6 +266,7 @@ class TestSyncUpdateUser(TestCase):
                 'Wordpress Username': 'neil',
                 'Role': 'ADMIN',
                 'Edited Name': '2016-05-05 19:15:27',
+                'Phone': "0468300749",
                 'Web Site': 'http://www.technotan.com.au',
                 'Contact': 'NEIL CUNLIFFE-WILLIAMS',
                 'First Name': 'NEIL',
@@ -521,6 +523,20 @@ class TestSyncUpdateUser(TestCase):
                 pformat(sync_update.sync_passes.items()),
                 sync_update.tabulate(tablefmt='simple')
             ))
+
+    def test_similar_phone(self):
+        sync_update = SyncUpdateUsr(self.usr_md4, self.usr_sd4)
+        sync_update.update(ColDataUser.get_sync_cols())
+
+        try:
+            self.assertNotIn('Phone', sync_update.sync_passes)
+        except AssertionError as exc:
+            raise AssertionError("failed assertion: %s\n%s\n%s" % (
+                exc,
+                pformat(sync_update.sync_passes.items()),
+                sync_update.tabulate(tablefmt='simple')
+            ))
+
 
     def test_parse_time(self):
         parsed_m_time = SyncUpdateUsr.parse_m_time("8/11/2016 1:38:51 PM")

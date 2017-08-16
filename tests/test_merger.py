@@ -42,7 +42,7 @@ class TestMerger(unittest.TestCase):
         Registrar.DEBUG_PROGRESS = False
 
         self.debug = False
-        # self.debug = True
+        self.debug = True
         if self.debug:
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
@@ -291,7 +291,7 @@ class TestMerger(unittest.TestCase):
             set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
         )
 
-    def test_do_merge(self):
+    def test_do_merge_basic(self):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
@@ -355,21 +355,38 @@ class TestMerger(unittest.TestCase):
 
         sync_update = updates_static.pop(0)
         try:
+            if self.debug:
+                print(sync_update.tabulate())
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C016546')
             self.assertEqual(sync_update.old_m_object.rowcount, 98)
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
             self.assertEqual(sync_update.old_m_object.name.company, None)
+            self.assertEqual(sync_update.old_m_object.email.lower(), 'aleshiaw@gmail.com')
+            self.assertEqual(sync_update.old_m_object.phones.mob_number, '0468300749')
+            self.assertEqual(sync_update.old_m_object['Client Grade'], 'Casual')
+
             self.assertEqual(sync_update.old_s_object.wpid, '12260')
+            self.assertEqual(sync_update.old_s_object.email.lower(), 'aleshiaw@hotmail.com')
             self.assertEqual(sync_update.old_s_object.rowcount, 102)
             self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan')
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_s_object['Client Grade'], 'Bronze')
+            self.assertEqual(sync_update.old_s_object.phones.mob_number, '0422 781 880')
 
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.email.lower(), 'aleshiaw@gmail.com')
+            self.assertEqual(sync_update.new_m_object['Client Grade'], 'Casual')
+            self.assertEqual(sync_update.new_m_object.phones.mob_number, '0468300749')
+
             self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+            self.assertEqual(sync_update.new_s_object.email.lower(), 'aleshiaw@gmail.com')
+            self.assertEqual(sync_update.new_s_object['Client Grade'], 'Casual')
+            self.assertEqual(sync_update.new_s_object.phones.mob_number, '0468300749')
+
 
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
