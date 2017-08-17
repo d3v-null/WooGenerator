@@ -360,7 +360,7 @@ class ImportUser(ImportObject):
         #         id(self),
         #     ))
         for alias, keys in self.alias_mapping.items():
-            if key in keys and alias in self:
+            if key in keys and alias in self and self[alias] is not None:
                 return self[alias][key]
         return super(ImportUser, self).__getitem__(key)
 
@@ -384,13 +384,19 @@ class ImportUser(ImportObject):
     # print self.__getitem__(key)
 
     def get(self, key, default=None):
-        for alias, keys in self.alias_mapping.items():
-            if key in keys and self[alias]:
-                return self[alias][key]
         try:
-            return super(ImportUser, self).get(key, default)
-        except:
-            return None
+            return self.__getitem__(key)
+        except KeyError:
+            return default
+    #     if Registrar.DEBUG_TRACE:
+    #         import pudb; pudb.set_trace()
+    #     for alias, keys in self.alias_mapping.items():
+    #         if key in keys and self[alias] is not None:
+    #             return self[alias][key]
+    #     try:
+    #         return super(ImportUser, self).get(key, default)
+    #     except:
+    #         return None
 
     @staticmethod
     def get_new_obj_container():

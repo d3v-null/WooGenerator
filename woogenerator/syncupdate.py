@@ -245,6 +245,7 @@ class SyncUpdate(
         return response
 
     def m_col_static(self, col):
+        """Check if the old master value is equal to the new master value."""
         o_value = self.get_old_m_value(col)
         n_value = self.get_new_m_value(col)
         response = o_value == n_value
@@ -255,6 +256,7 @@ class SyncUpdate(
         return response
 
     def s_col_static(self, col):
+        """Check if the old slave value is equal to the new slave value."""
         o_value = self.get_old_s_value(col)
         n_value = self.get_new_s_value(col)
         response = o_value == n_value
@@ -265,6 +267,7 @@ class SyncUpdate(
         return response
 
     def m_col_semi_static(self, col):
+        """Check if the old master value is similar to the new master value."""
         o_value = self.get_old_m_value(col)
         n_value = self.get_new_m_value(col)
         response = self.values_similar(col, o_value, n_value)
@@ -275,6 +278,7 @@ class SyncUpdate(
         return response
 
     def s_col_semi_static(self, col):
+        """Check if the old slave value is similar to the new slave value."""
         o_value = self.get_old_s_value(col)
         n_value = self.get_new_s_value(col)
         response = self.values_similar(col, o_value, n_value)
@@ -457,6 +461,7 @@ class SyncUpdate(
         )
 
     def set_loser_value(self, **update_params):
+
         for key in ['col', 'data', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
@@ -1198,6 +1203,9 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
     s_meta_target = 'wp-api'
 
     def get_slave_updates_native_rec(self, col, updates=None):
+        # if Registrar.DEBUG_TRACE and 'phone' in col.lower():
+            # import pudb; pudb.set_trace()
+
         if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:

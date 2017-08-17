@@ -7,7 +7,7 @@ from context import woogenerator
 from woogenerator.contact_objects import (ContactAddress, ContactName,
                                           ContactPhones, FieldGroup, RoleGroup,
                                           SocialMediaFields)
-from woogenerator.utils import Registrar
+from woogenerator.utils import Registrar, SanitationUtils
 
 
 class TestFieldGroups(unittest.TestCase):
@@ -923,8 +923,43 @@ class TestContactName(TestFieldGroups):
 
 
 class TestContactPhones(TestFieldGroups):
-    @unittest.skip("does not cover yet")
-    def test_phones_equality(self):
+    # @unittest.skip("does not cover yet")
+    def test_phones_equality_basic_post(self):
+        FieldGroup.perform_post = True
+
+        phones_1 = ContactPhones(
+            mob_number='0416160912'
+        )
+        phones_2 = ContactPhones(
+            mob_number='0416 160 912'
+        )
+        self.assertFalse(phones_1.empty)
+        self.assertFalse(phones_2.empty)
+        self.assertEqual(phones_1, phones_2)
+        mob_1_comp = SanitationUtils.similar_phone_comparison(phones_1.mob_number)
+        mob_2_comp = SanitationUtils.similar_phone_comparison(phones_2.mob_number)
+        self.assertEqual(mob_1_comp, mob_2_comp)
+
+    def test_phones_equality_basic_nopost(self):
+        FieldGroup.perform_post = False
+
+        phones_1 = ContactPhones(
+            mob_number='0416160912'
+        )
+        phones_2 = ContactPhones(
+            mob_number='0416 160 912'
+        )
+        self.assertFalse(phones_1.empty)
+        self.assertFalse(phones_2.empty)
+        self.assertNotEqual(phones_1, phones_2)
+        mob_1_comp = SanitationUtils.similar_phone_comparison(phones_1.mob_number)
+        mob_2_comp = SanitationUtils.similar_phone_comparison(phones_2.mob_number)
+        self.assertEqual(mob_1_comp, mob_2_comp)
+
+    @unittest.skip("not implemented yet")
+    def test_phones_equality_hard_post(self):
+        FieldGroup.perform_post = True
+
         phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -935,7 +970,23 @@ class TestContactPhones(TestFieldGroups):
         self.assertFalse(phones_2.empty)
         self.assertEqual(phones_1, phones_2)
 
-    def test_phones_basic(self):
+    @unittest.skip("not implemented yet")
+    def test_phones_equality_hard_nopost(self):
+        FieldGroup.perform_post = False
+
+        phones_1 = ContactPhones(
+            mob_number='0416160912'
+        )
+        phones_2 = ContactPhones(
+            tel_number='0416160912'
+        )
+        self.assertFalse(phones_1.empty)
+        self.assertFalse(phones_2.empty)
+        self.assertEqual(phones_1, phones_2)
+
+    def test_phones_basic_post(self):
+        FieldGroup.perform_post = True
+
         numbers = ContactPhones(
             mob_number='0416160912',
             tel_number='93848512',
@@ -943,35 +994,49 @@ class TestContactPhones(TestFieldGroups):
             mob_pref=True
         )
 
+        self.assertTrue(numbers)
+        self.assertFalse(numbers.empty)
+        self.assertEqual(numbers.mob_number, '0416160912')
+        self.assertEqual(numbers.tel_number, '93848512')
+        self.assertEqual(numbers.fax_number, '0892428032')
+        self.assertEqual(numbers.mob_pref, True)
+
+    def test_phones_basic_nopost(self):
+        FieldGroup.perform_post = False
+
+        numbers = ContactPhones(
+            mob_number='0416160912',
+            tel_number='93848512',
+            fax_number='0892428032',
+            mob_pref=True
+        )
 
         self.assertTrue(numbers)
         self.assertFalse(numbers.empty)
-        self.assertEqual(
-            numbers.mob_number,
-            '0416160912'
+        self.assertEqual(numbers.mob_number, '0416160912')
+        self.assertEqual(numbers.tel_number, '93848512')
+        self.assertEqual(numbers.fax_number, '0892428032')
+        self.assertEqual(numbers.mob_pref, True)
+
+    def test_phone_empty_post(self):
+        FieldGroup.perform_post = True
+
+        phones_1 = ContactPhones(
+            mob_number=''
         )
-        self.assertEqual(
-            numbers.tel_number,
-            '93848512'
+        self.assertTrue(phones_1.empty)
+        phones_1.mob_number = '0416160912'
+        self.assertFalse(phones_1.empty)
+
+    def test_phone_empty_nopost(self):
+        FieldGroup.perform_post = False
+
+        phones_1 = ContactPhones(
+            mob_number=''
         )
-        self.assertEqual(
-            numbers.fax_number,
-            '0892428032'
-        )
-        self.assertEqual(
-            numbers.mob_pref,
-            True
-        )
-#
-# def testContactNumber():
-#     numbers = ContactPhones(
-#         mob_number = '0416160912',
-#         tel_number = '93848512',
-#         fax_number = '0892428032',
-#         mob_pref = True
-#     )
-#
-#     print numbers
+        self.assertTrue(phones_1.empty)
+        phones_1.mob_number = '0416160912'
+        self.assertFalse(phones_1.empty)
 
 class TestSocialMediaGroup(TestFieldGroups):
 
@@ -1237,8 +1302,14 @@ class TestRoleGroup(TestFieldGroups):
                         str([direct_brand, role, expected_brand, expected_role])
                     )
                 )
+
+            if (direct_brand, role, expected_brand, expected_role) \
+            == ("", "", "Pending", "RN"):
+                Registrar.DEBUG_TRACE = True
+
             rgrp = RoleGroup(role=role, direct_brand=direct_brand)
             result_brand, result_role = rgrp.direct_brand, rgrp.role
+
             try:
                 self.assertEqual(result_brand, expected_brand)
                 self.assertEqual(result_role, expected_role)

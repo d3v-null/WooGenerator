@@ -41,34 +41,24 @@ class FieldGroup(Registrar):
         self.kwargs = kwargs
         if self.debug:
             self.register_message("kwargs: %s" % pformat(self.kwargs))
-        if self.enforce_mandatory_keys and self.mandatory_keys:
-            empty_mandatory_keys = [
-                key for key in self.mandatory_keys \
-                if not self.kwargs.get(key)
-            ]
-            # if self.debug:
-            #     self.register_message("empty_mandatory_keys: %s, any: %s" %
-            #                           (repr(empty_mandatory_keys),
-            #                            repr(any(empty_mandatory_keys))))
-            self.empty = any(empty_mandatory_keys)
-            # if self.empty and self.debug:
-            #     self.register_message("empty because missing mandory keys: %s"
-            #                           % repr(empty_mandatory_keys))
-        else:
-            self.empty = not any(self.kwargs)
-            # if self.empty and self.debug:
-            #     self.register_message(
-            #         "empty because no kwargs: %s" % self.kwargs)
-        # if self.debug and not self.empty:
-        #     self.register_message("totally not empty")
         self.valid = True
         self.problematic = False
         self.reason = ""
         self.properties = OrderedDict()
         if self.perform_post:
             self.process_kwargs()
-        # if self.debug:
-        #     self.register_message("properties: %s" % pformat(self.properties))
+
+    @property
+    def empty(self):
+        if self.enforce_mandatory_keys and self.mandatory_keys:
+            empty_mandatory_keys = [
+                key for key in self.mandatory_keys \
+                if not self.kwargs.get(key)
+            ]
+            return any(empty_mandatory_keys)
+        else:
+            return not any(self.kwargs.values())
+
 
     def process_kwargs(self):
         self.init_properties()
@@ -1772,8 +1762,9 @@ class RoleGroup(FieldGroup):
 
     def process_kwargs(self):
         super(RoleGroup, self).process_kwargs()
-        if self.empty:
-            return
+        # if self.empty:
+        #     return
+        # No reason to return of role info is empty!
 
         if self.schema:
             assert \
