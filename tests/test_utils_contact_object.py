@@ -1163,6 +1163,36 @@ class TestRoleGroup(TestFieldGroups):
         reflected = rgrp.reflect()
         self.assertNotEqual(rgrp, reflected)
 
+    def test_similarity_post(self):
+        RoleGroup.perform_post = True
+        rgrp_m = RoleGroup(
+            role='RN',
+            direct_brand='Pending'
+        )
+        rgrp_s = RoleGroup(
+            role=None,
+            direct_brand='Pending'
+        )
+        self.assertTrue(
+            rgrp_s.similar(rgrp_m)
+        )
+        self.assertEqual(rgrp_s, rgrp_m)
+
+    def test_similarity_nopost(self):
+        RoleGroup.perform_post = False
+        rgrp_m = RoleGroup(
+            role='RN',
+            direct_brand='Pending'
+        )
+        rgrp_s = RoleGroup(
+            role=None,
+            direct_brand='Pending'
+        )
+        self.assertTrue(
+            rgrp_s.similar(rgrp_m)
+        )
+        self.assertNotEqual(rgrp_s, rgrp_m)
+
     def test_roles_jess(self):
         RoleGroup.perform_post = True
 
@@ -1406,7 +1436,6 @@ class TestRoleGroup(TestFieldGroups):
         self.assertFalse(master.perform_post)
         self.assertFalse(slave.perform_post)
         self.assertTrue(slave_copy.perform_post)
-
 
 
 if __name__ == '__main__':
