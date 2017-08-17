@@ -634,6 +634,60 @@ class TestSyncUpdateUserApi(TestSyncUpdateUserAbstract):
         self.assertEqual(slave_meta_updates.get('mobile_number'), '0414298163')
         self.assertEqual(slave_meta_updates.get('billing_phone'), '0410695383')
 
+    def test_sync_email_native(self):
+        usr_m = ImportUser(
+            {
+                'Contact': u'DONNA MOORE',
+                'Edited Name': '27/08/2015 11:18:00 AM',
+                'Edited E-Mail': '27/08/2017 11:18:00 AM',
+                'Edited Phone Numbers': '29/06/2016 11:48:14 AM',
+                'Edited in Act': '15/08/2017 5:33:41 PM',
+                'Edited in Wordpress': u'False',
+                'MYOB Card ID': 'C000598',
+                'Mobile Phone': u'0414298163',
+                'First Name': u'DONNA',
+                'Phone': u'0410695383',
+                'Surname': u'MOORE',
+                'Role': 'WN',
+                'Wordpress Username': 'donnag04@hotmail.com',
+                '_row': []
+            },
+            rowcount=2,
+            row=[],
+        )
+
+        usr_s = ImportUser(
+            {
+                'Contact': u'Donna Moore',
+                'E-mail': u'donnag04@hotmail.com',
+                'Edited Name': u'2015-11-08 17:35:12',
+                'Edited E-Mail': u'2015-11-08 17:35:12',
+                'Edited Phone Numbers': u'2015-11-08 17:35:12',
+                'Edited in Wordpress': u'2015-11-08 17:35:12',
+                'MYOB Card ID': u'C000598',
+                'First Name': u'Donna',
+                'Surname': u'Moore',
+                'Role': 'WN',
+                'Wordpress ID': u'16458',
+                'Wordpress Username': 'donnag04@hotmail.com',
+                '_row': []
+            },
+            rowcount=2,
+            row=[],
+        )
+
+        sync_update = SyncUpdateUsrApi(usr_m, usr_s)
+        sync_update.update(ColDataUser.get_sync_cols())
+
+        self.assertEqual(sync_update.new_s_object.email, '')
+
+        native_updates = sync_update.get_slave_updates_native()
+
+        self.assertFalse('email' in native_updates)
+
+        # from pprint import pprint
+        # pprint(native_updates)
+
 
 if __name__ == '__main__':
     unittest.main()

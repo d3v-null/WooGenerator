@@ -1202,6 +1202,12 @@ class SyncUpdateUsr(SyncUpdate):
 class SyncUpdateUsrApi(SyncUpdateUsr):
     s_meta_target = 'wp-api'
 
+    def s_validate_col(self, col, value):
+        if col.lower() in ['e-mail']:
+            if not value:
+                raise UserWarning("email does not look right")
+        return value
+
     def get_slave_updates_native_rec(self, col, updates=None):
         # if Registrar.DEBUG_TRACE and 'phone' in col.lower():
             # import pudb; pudb.set_trace()
@@ -1221,6 +1227,10 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
                 data_s = data.get(self.s_meta_target, {})
                 if not data_s.get('final') and data_s.get('key'):
                     new_val = self.new_s_object.get(col)
+                    try:
+                        new_val = self.s_validate_col(col, new_val)
+                    except UserWarning:
+                        return updates
                     new_key = col
                     if 'key' in data_s:
                         new_key = data_s.get('key')
