@@ -892,6 +892,7 @@ def do_report(matches, updates, parsers, settings):
             repd_file.write(dup_reporter.get_document_unicode())
 
         res_file.write(reporter.get_document_unicode())
+    # print "WROTE FILE: ", settings.rep_path_full
 
 def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
     """Save execution state of a pickle file which can be restored later."""

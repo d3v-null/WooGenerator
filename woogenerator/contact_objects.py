@@ -234,6 +234,34 @@ class FieldGroup(Registrar):
         return tabulate(
             self.to_dict(tablefmt), tablefmt=tablefmt, headers='keys')
 
+    def normalize_val(self, key, val):
+        if key:
+            pass
+        return SanitationUtils.normalize_val(val)
+
+    def similar(self, other):
+        if not isinstance(other, FieldGroup):
+            return False
+        self_empty = self.empty
+        other_empty = other.empty
+        if self_empty or other_empty:
+            return True if self_empty and other_empty else False
+        for key in self.similarity_keys:
+            # print "-> LOOKING AT KEY", key
+            if getattr(self, key) and getattr(other, key):
+                # print "--> self",
+                self_normalized = self.normalize_val(key, getattr(self, key))
+                other_normalized = other.normalize_val(key, getattr(other, key))
+                if self_normalized != other_normalized:
+                    # print "->NOT THE SAME BECAUSE OF", key
+                    return False
+                else:
+                    pass
+                    # print "->KEY IS THE SAME", key
+        return True
+        # print "THEY ARE SIMILAR"
+        # todo: this
+
     def __bool__(self):
         return not self.empty
 
@@ -350,29 +378,6 @@ class ContactObject(FieldGroup):
                         'names'], [self.organization_names]]
                 ]))
             return out
-
-    def normalize_val(self, val):
-        return SanitationUtils.normalize_val(val)
-
-    def similar(self, other):
-        if not isinstance(other, FieldGroup):
-            return False
-        if self.empty or other.empty:
-            return True if self.empty and other.empty else False
-        for key in self.similarity_keys:
-            # print "-> LOOKING AT KEY", key
-            if getattr(self, key) and getattr(other, key):
-                # print "--> self",
-                if self.normalize_val(getattr(
-                        self, key)) != self.normalize_val(getattr(other, key)):
-                    # print "->NOT THE SAME BECAUSE OF", key
-                    return False
-                else:
-                    pass
-                    # print "->KEY IS THE SAME", key
-        return True
-        # print "THEY ARE SIMILAR"
-        # todo: this
 
 
 class ContactAddress(ContactObject):
@@ -954,8 +959,11 @@ class ContactAddress(ContactObject):
             return 'unknown'
         return None
 
-    def normalize_val(self, val):
-        return AddressUtils.sanitize_state(val)
+    def normalize_val(self, key, val):
+        val = super(ContactAddress, self).normalize_val(key, val)
+        # if key == 'state':
+        val = AddressUtils.sanitize_state(val)
+        return val
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
@@ -1759,6 +1767,14 @@ class RoleGroup(FieldGroup):
             if role in role_equivalents:
                 role = role_normalized
         return role
+
+    def sanitize_value(self, key, val):
+        val = super(RoleGroup, self).sanitize_value(key, val)
+        if key == 'role':
+            val = self.normalize_role(val)
+            if val == self.default_role:
+                val = ''
+        return val
 
     def process_kwargs(self):
         super(RoleGroup, self).process_kwargs()

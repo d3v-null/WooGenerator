@@ -1203,6 +1203,7 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
     s_meta_target = 'wp-api'
 
     def s_validate_col(self, col, value):
+        # TODO: Probably need more validation here
         if col.lower() in ['e-mail']:
             if not value:
                 raise UserWarning("email does not look right")
