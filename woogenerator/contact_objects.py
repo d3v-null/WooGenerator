@@ -32,6 +32,7 @@ class FieldGroup(Registrar):
     perform_post = False
     enforce_mandatory_keys = True
     reprocess_kwargs = False
+    similar_all_keys = False
 
     def __init__(self, schema=None, **kwargs):
         super(FieldGroup, self).__init__()
@@ -248,10 +249,14 @@ class FieldGroup(Registrar):
             return True if self_empty and other_empty else False
         for key in self.similarity_keys:
             # print "-> LOOKING AT KEY", key
-            if getattr(self, key) and getattr(other, key):
+            self_val = getattr(self, key)
+            other_val = getattr(other, key)
+            if not (self_val or other_val):
+                continue
+            if (self_val and other_val) or self.similar_all_keys:
                 # print "--> self",
-                self_normalized = self.normalize_val(key, getattr(self, key))
-                other_normalized = other.normalize_val(key, getattr(other, key))
+                self_normalized = self.normalize_val(key, self_val)
+                other_normalized = self.normalize_val(key, other_val)
                 if self_normalized != other_normalized:
                     # print "->NOT THE SAME BECAUSE OF", key
                     return False
@@ -1527,6 +1532,8 @@ class RoleGroup(FieldGroup):
         'direct_brand': ['Direct Brand'],
         'role': ['Role'],
     }
+    similarity_keys = ['role', 'direct_brand']
+    similar_all_keys = True
     # perform_post = True
 
     role_translations = [
@@ -1768,8 +1775,8 @@ class RoleGroup(FieldGroup):
                 role = role_normalized
         return role
 
-    def sanitize_value(self, key, val):
-        val = super(RoleGroup, self).sanitize_value(key, val)
+    def normalize_val(self, key, val):
+        val = super(RoleGroup, self).normalize_val(key, val)
         if key == 'role':
             val = self.normalize_role(val)
             if val == self.default_role:

@@ -1178,6 +1178,32 @@ class TestRoleGroup(TestFieldGroups):
         )
         self.assertEqual(rgrp_s, rgrp_m)
 
+    def test_similarity_post_hard(self):
+        RoleGroup.perform_post = True
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            direct_brand='VuTan',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+
     def test_similarity_nopost(self):
         RoleGroup.perform_post = False
         rgrp_m = RoleGroup(
@@ -1192,6 +1218,34 @@ class TestRoleGroup(TestFieldGroups):
             rgrp_s.similar(rgrp_m)
         )
         self.assertNotEqual(rgrp_s, rgrp_m)
+
+    def test_similarity_nopost_hard(self):
+        RoleGroup.perform_post = False
+
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            direct_brand='VuTan',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+
 
     def test_roles_jess(self):
         RoleGroup.perform_post = True

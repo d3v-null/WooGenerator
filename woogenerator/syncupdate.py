@@ -16,12 +16,10 @@ from woogenerator.parsing.abstract import ImportObject
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
 
-class SyncUpdate(
-        Registrar):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+class SyncUpdate(Registrar):
     """
     Stores information about and performs operations on a pending update
     """
-    # TODO: fix too-many-instance-attributes,too-many-public-methods
 
     col_data = ColDataBase
     master_name = None
@@ -202,6 +200,10 @@ class SyncUpdate(
         elif not (m_value and s_value):
             response = False
         # check if they are similar
+        # if hasattr(m_value, 'reprocess_kwargs') and m_value.reprocess_kwargs:
+        if col == 'Role Info':
+            if hasattr(m_value, 'similar') and callable(m_value.similar):
+                response = m_value.similar(s_value)
         similar_m_value = SanitationUtils.similar_comparison(m_value)
         similar_s_value = SanitationUtils.similar_comparison(s_value)
 
