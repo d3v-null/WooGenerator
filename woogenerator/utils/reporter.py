@@ -80,14 +80,25 @@ class HtmlReporter(object):
         css = ''
         if self.css:
             css = "<style>" + self.css + "</style>"
+        bootstrap_link = (
+            '<link rel="stylesheet"'
+            ' href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"'
+            ' integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"'
+            ' crossorigin="anonymous">'
+        )
+        bootstrap_theme_link = (
+            '<link rel="stylesheet"'
+            ' href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"'
+            ' integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r"'
+            ' crossorigin="anonymous">'
+        )
         return """\
 <head>
     <meta charset="UTF-8">
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
+""" + bootstrap_link + """
     <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+""" + bootstrap_theme_link + """
 """ + css + """
 </head>
 """
@@ -96,11 +107,17 @@ class HtmlReporter(object):
         content = "<br/>".join(
             group.to_html() for group in self.groups.values()
         )
+        bootstrap_script = (
+            '<script'
+            ' src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"'
+            ' integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"'
+            ' crossorigin="anonymous"></script>'
+        )
         out = """
 <body>
 """ + content + """
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+""" + bootstrap_script + """
 </body>
 """
         out = SanitationUtils.coerce_unicode(out)
