@@ -14,7 +14,7 @@ from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
-                                 populate_slave_parsers)
+                                 populate_slave_parsers, do_report)
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
@@ -51,9 +51,6 @@ class TestMerger(unittest.TestCase):
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_PARSER = True
             Registrar.DEBUG_CONTACT = True
-
-        if Registrar.DEBUG_MESSAGE:
-            print("#pylint: disable=*")
 
         self.settings = init_settings(
             settings=self.settings,
@@ -192,7 +189,7 @@ class TestMerger(unittest.TestCase):
 
         usr_list = self.parsers.slave.get_obj_list()
 
-        self.assertEqual(len(usr_list), 100)
+        self.assertEqual(len(usr_list), 101)
 
         # print(SanitationUtils.coerce_bytes(obj_list.tabulate(tablefmt='simple')))
 
@@ -278,7 +275,7 @@ class TestMerger(unittest.TestCase):
         self.matches = do_match(
             self.matches, self.parsers, self.settings
         )
-        self.assertEqual(len(self.matches.globals), 7)
+        self.assertEqual(len(self.matches.globals), 8)
         # print("global matches:\n%s" % pformat(self.matches.globals))
         # print("card duplicates:\n%s" % pformat(self.matches.duplicate['card']))
         # print("card duplicates m:\n%s" % pformat(self.matches.duplicate['card'].m_indices))
@@ -307,49 +304,49 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.updates, self.parsers, self.settings
         )
-        if self.debug:
-            Registrar.DEBUG_MESSAGE = True
-            Registrar.DEBUG_WARN = True
+        # if self.debug:
+        #     Registrar.DEBUG_MESSAGE = True
+        #     Registrar.DEBUG_WARN = True
 
-        if Registrar.DEBUG_MESSAGE:
-            print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
-            print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
-            print("master updates:\n%s" % map(str, (self.updates.master)))
-            print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
-            print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
-            print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
-            print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
-            print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
-            print("slave updates:\n%s" % map(str, (self.updates.slave)))
-            print("static updates:\n%s" % map(str, (self.updates.static)))
-
-            for update in self.updates.static:
-                print(
-                    (
-                        "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
-                        ":\n%s\npasses:\n%s\nreflections:\n%s"
-                    ) % (
-                        update,
-                        update.old_m_object,
-                        pformat(dict(update.old_m_object)),
-                        update.old_s_object,
-                        pformat(dict(update.old_s_object)),
-                        update.display_sync_warnings(),
-                        update.display_sync_passes(),
-                        update.display_sync_reflections(),
-                    )
-                )
+        # if Registrar.DEBUG_MESSAGE:
+        #     print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
+        #     print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
+        #     print("master updates:\n%s" % map(str, (self.updates.master)))
+        #     print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
+        #     print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
+        #     print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
+        #     print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
+        #     print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
+        #     print("slave updates:\n%s" % map(str, (self.updates.slave)))
+        #     print("static updates:\n%s" % map(str, (self.updates.static)))
+        #
+        #     for update in self.updates.static:
+        #         print(
+        #             (
+        #                 "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
+        #                 ":\n%s\npasses:\n%s\nreflections:\n%s"
+        #             ) % (
+        #                 update,
+        #                 update.old_m_object,
+        #                 pformat(dict(update.old_m_object)),
+        #                 update.old_s_object,
+        #                 pformat(dict(update.old_s_object)),
+        #                 update.display_sync_warnings(),
+        #                 update.display_sync_passes(),
+        #                 update.display_sync_reflections(),
+        #             )
+        #         )
         #TODO: Re-enable when test below working
         self.assertEqual(len(self.updates.delta_master), 6)
-        self.assertEqual(len(self.updates.delta_slave), 6)
+        self.assertEqual(len(self.updates.delta_slave), 7)
         self.assertEqual(len(self.updates.master), 7)
         self.assertEqual(len(self.updates.new_master), 0)
         self.assertEqual(len(self.updates.new_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
-        self.assertEqual(len(self.updates.nonstatic_slave), 0)
+        self.assertEqual(len(self.updates.nonstatic_slave), 1)
         self.assertEqual(len(self.updates.problematic), 0)
-        self.assertEqual(len(self.updates.slave), 7)
-        self.assertEqual(len(self.updates.static), 7)
+        self.assertEqual(len(self.updates.slave), 8)
+        self.assertEqual(len(self.updates.static), 8)
 
         updates_static = self.updates.static[:]
 
@@ -396,6 +393,38 @@ class TestMerger(unittest.TestCase):
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
+
+        sync_update = updates_static.pop(0)
+        try:
+            if self.debug:
+                print(sync_update.tabulate())
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C033433')
+            self.assertEqual(sync_update.old_m_object.rowcount, 99)
+            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'Pending')
+            self.assertEqual(sync_update.old_m_object.role.role, 'RN')
+            self.assertEqual(sync_update.old_m_object.name.first_name, 'CHELSEA')
+            self.assertEqual(sync_update.old_m_object.name.family_name, 'ROSS')
+            self.assertEqual(sync_update.old_s_object.wpid, '19145')
+            self.assertEqual(sync_update.old_s_object.rowcount, 103)
+            self.assertEqual(sync_update.old_s_object.role.role, None)
+            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'Pending')
+
+            self.assertFalse(sync_update.new_m_object)
+
+            self.assertEqual(sync_update.new_s_object.role.direct_brand, 'Pending')
+            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+
+            # self.assertFalse(sync_update.m_deltas)
+            # self.assertFalse(sync_update.s_deltas)
+            #
+            # slave_updates = sync_update.get_slave_updates()
+            # self.assertEqual(len(slave_updates), 0)
+            # slave_changes_native = sync_update.get_slave_updates_native()
+            # self.assertEqual(len(slave_changes_native), 0)
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
         sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001694')
@@ -577,7 +606,7 @@ class TestMerger(unittest.TestCase):
 
     def test_do_merge_hard_2(self):
         suffix = 'hard_2'
-        for source, line in [('master', -1), ('slave', -1)]:
+        for source, line in [('master', -2), ('slave', -2)]:
             with open(getattr(self.settings, '%s_file' % source)) as import_file:
                 import_contents = import_file.readlines()
                 new_contents = [import_contents[0], import_contents[line]]
@@ -629,7 +658,32 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-
+    def test_do_report(self):
+        suffix='do_report'
+        temp_out_dir = tempfile.mkdtemp(suffix + '_out')
+        if self.debug:
+            print("out dir is %s" % temp_out_dir)
+        self.settings.out_folder = temp_out_dir
+        self.settings.do_merge = True
+        self.settings.do_sync = True
+        if self.debug:
+            print("rep_path_full is %s" % self.settings.rep_path_full)
+        # self.settings.process_duplicates = True
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        do_report(
+            self.matches, self.updates, self.parsers, self.settings
+        )
 
 if __name__ == '__main__':
     unittest.main()
