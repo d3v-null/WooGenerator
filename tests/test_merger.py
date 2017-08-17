@@ -319,6 +319,7 @@ class TestMerger(unittest.TestCase):
         #     print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
         #     print("slave updates:\n%s" % map(str, (self.updates.slave)))
         #     print("static updates:\n%s" % map(str, (self.updates.static)))
+        #     quit()
         #
         #     for update in self.updates.static:
         #         print(
@@ -337,16 +338,16 @@ class TestMerger(unittest.TestCase):
         #             )
         #         )
         #TODO: Re-enable when test below working
-        # self.assertEqual(len(self.updates.delta_master), 6)
-        # self.assertEqual(len(self.updates.delta_slave), 7)
-        # self.assertEqual(len(self.updates.master), 7)
-        # self.assertEqual(len(self.updates.new_master), 0)
-        # self.assertEqual(len(self.updates.new_slave), 0)
-        # self.assertEqual(len(self.updates.nonstatic_master), 0)
-        # self.assertEqual(len(self.updates.nonstatic_slave), 1)
-        # self.assertEqual(len(self.updates.problematic), 0)
-        # self.assertEqual(len(self.updates.slave), 8)
-        # self.assertEqual(len(self.updates.static), 8)
+        self.assertEqual(len(self.updates.delta_master), 6)
+        self.assertEqual(len(self.updates.delta_slave), 6)
+        self.assertEqual(len(self.updates.master), 7)
+        self.assertEqual(len(self.updates.new_master), 0)
+        self.assertEqual(len(self.updates.new_slave), 0)
+        self.assertEqual(len(self.updates.nonstatic_master), 0)
+        self.assertEqual(len(self.updates.nonstatic_slave), 0)
+        self.assertEqual(len(self.updates.problematic), 0)
+        self.assertEqual(len(self.updates.slave), 7)
+        self.assertEqual(len(self.updates.static), 7)
 
         updates_static = self.updates.static[:]
 
@@ -393,37 +394,6 @@ class TestMerger(unittest.TestCase):
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-
-        # sync_update = updates_static.pop(0)
-        # try:
-        #     if self.debug:
-        #         print(sync_update.tabulate())
-        #     self.assertEqual(sync_update.old_m_object.MYOBID, 'C033433')
-        #     self.assertEqual(sync_update.old_m_object.rowcount, 99)
-        #     self.assertEqual(sync_update.old_m_object.role.direct_brand, 'Pending')
-        #     self.assertEqual(sync_update.old_m_object.role.role, 'RN')
-        #     self.assertEqual(sync_update.old_m_object.name.first_name, 'CHELSEA')
-        #     self.assertEqual(sync_update.old_m_object.name.family_name, 'ROSS')
-        #     self.assertEqual(sync_update.old_s_object.wpid, '19145')
-        #     self.assertEqual(sync_update.old_s_object.rowcount, 103)
-        #     self.assertEqual(sync_update.old_s_object.role.role, None)
-        #     self.assertEqual(sync_update.old_s_object.role.direct_brand, 'Pending')
-        #
-        #     self.assertFalse(sync_update.new_m_object)
-        #
-        #     self.assertEqual(sync_update.new_s_object.role.direct_brand, 'Pending')
-        #     self.assertEqual(sync_update.new_s_object.role.role, 'RN')
-        #
-        #     # self.assertFalse(sync_update.m_deltas)
-        #     # self.assertFalse(sync_update.s_deltas)
-        #     #
-        #     # slave_updates = sync_update.get_slave_updates()
-        #     # self.assertEqual(len(slave_updates), 0)
-        #     # slave_changes_native = sync_update.get_slave_updates_native()
-        #     # self.assertEqual(len(slave_changes_native), 0)
-        #
-        # except AssertionError as exc:
-        #     self.fail_syncupdate_assertion(exc, sync_update)
 
         sync_update = updates_static.pop(0)
         try:
