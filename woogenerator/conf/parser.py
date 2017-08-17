@@ -7,6 +7,8 @@ import os
 
 import configargparse
 
+from woogenerator.utils import TimeUtils
+
 from .__init__ import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                        DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
                        DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
@@ -261,12 +263,17 @@ class ArgumentParserCommon(ArgumentParserProto):
             default=0
         )
 
-
+        current_tsecs = TimeUtils.current_tsecs()
+        year_tsecs = 60*60*24*365.25
+        old_threshold_str = TimeUtils.wp_time_to_string((current_tsecs - year_tsecs * 5))
+        oldis_threshold_str = TimeUtils.wp_time_to_string((current_tsecs - year_tsecs * 3))
         self.add_suppressed_argument(
-            '--old_threshold'
+            '--old_threshold',
+            default=old_threshold_str
         )
         self.add_suppressed_argument(
-            '--oldish_threshold'
+            '--oldish_threshold',
+            default=oldis_threshold_str
         )
 
 
