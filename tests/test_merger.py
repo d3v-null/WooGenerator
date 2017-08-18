@@ -363,43 +363,7 @@ class TestMerger(unittest.TestCase):
         updates_static = self.updates.static[:]
 
         sync_update = updates_static.pop(0)
-        try:
-            if self.debug:
-                print(sync_update.tabulate())
-            self.assertEqual(sync_update.old_m_object.MYOBID, 'C016546')
-            self.assertEqual(sync_update.old_m_object.rowcount, 98)
-            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan')
-            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_m_object.name.company, None)
-            self.assertEqual(sync_update.old_m_object.email.lower(), 'anonymised@gmail.com')
-            self.assertEqual(sync_update.old_m_object['Client Grade'], 'Casual')
-
-            self.assertEqual(sync_update.old_s_object.wpid, '12260')
-            self.assertEqual(sync_update.old_s_object.email.lower(), 'anonymised@hotmail.com')
-            self.assertEqual(sync_update.old_s_object.rowcount, 102)
-            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan')
-            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_s_object['Client Grade'], 'Bronze')
-
-            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.new_m_object.email.lower(), 'anonymised@gmail.com')
-            self.assertEqual(sync_update.new_m_object['Client Grade'], 'Casual')
-
-            self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
-            self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.new_s_object.role.role, 'RN')
-            self.assertEqual(sync_update.new_s_object.email.lower(), 'anonymised@gmail.com')
-            self.assertEqual(sync_update.new_s_object['Client Grade'], 'Casual')
-
-            self.assertTrue(sync_update.m_deltas)
-            self.assertTrue(sync_update.s_deltas)
-
-            self.assertEqual(sync_update.get_old_s_value('Role'), 'WN')
-            self.assertEqual(sync_update.get_new_s_value('Role'), 'RN')
-
-        except AssertionError as exc:
-            self.fail_syncupdate_assertion(exc, sync_update)
+        # This is tested in test_do_merge_hard_2
 
         sync_update = updates_static.pop(0)
         try:
@@ -440,26 +404,8 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
         sync_update = updates_static.pop(0)
-        try:
-            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
-            self.assertEqual(sync_update.old_m_object.rowcount, 10)
-            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
-            self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
-            self.assertEqual(sync_update.old_s_object.wpid, '1983')
-            self.assertEqual(sync_update.old_s_object.rowcount, 91)
-            self.assertEqual(sync_update.old_s_object.role.direct_brand, None)
-            self.assertEqual(sync_update.old_s_object.role.role, 'WN')
-            self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.new_m_object.role.role, 'WN')
-            # TODO: Must respect role of slave schema
-            # self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
-            # self.assertEqual(sync_update.new_s_object.role.role, 'RN') #no, really
-            self.assertFalse(sync_update.m_deltas)
-            self.assertTrue(sync_update.s_deltas)
-        except AssertionError as exc:
-            self.fail_syncupdate_assertion(exc, sync_update)
+        # This is tested in test_do_merge_hard_1
+
         sync_update = updates_static.pop(0)
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001794')
@@ -562,13 +508,13 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001280')
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_m_object.role.schema, None)
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Lorry')
             self.assertEqual(sync_update.old_m_object.name.family_name, 'Haye')
             self.assertEqual(sync_update.old_s_object.wpid, '1983')
             self.assertEqual(sync_update.old_s_object.role.direct_brand, None)
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
             self.assertEqual(sync_update.old_s_object.role.schema, 'TT')
+
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
             self.assertEqual(sync_update.new_m_object.role.schema, None)
@@ -582,7 +528,7 @@ class TestMerger(unittest.TestCase):
 
     def test_do_merge_hard_2(self):
         suffix = 'hard_2'
-        for source, line in [('master', -2), ('slave', -2)]:
+        for source, line in [('master', 96), ('slave', 100)]:
             with open(getattr(self.settings, '%s_file' % source)) as import_file:
                 import_contents = import_file.readlines()
                 new_contents = [import_contents[0], import_contents[line]]
@@ -611,16 +557,25 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'WN')
             self.assertEqual(sync_update.old_m_object.name.company, None)
+            self.assertEqual(sync_update.old_m_object.email.lower(), 'anonymised@gmail.com')
+            self.assertEqual(sync_update.old_m_object['Client Grade'], 'Casual')
+
             self.assertEqual(sync_update.old_s_object.wpid, '12260')
+            self.assertEqual(sync_update.old_s_object.email.lower(), 'anonymised@hotmail.com')
             self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan')
             self.assertEqual(sync_update.old_s_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_s_object['Client Grade'], 'Bronze')
 
             self.assertEqual(sync_update.new_m_object.role.role, 'WN')
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.new_m_object.email.lower(), 'anonymised@gmail.com')
+            self.assertEqual(sync_update.new_m_object['Client Grade'], 'Casual')
+
             self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
-            self.assertEqual(str(sync_update.new_s_object.role), 'RN; VuTan Wholesale')
+            self.assertEqual(sync_update.new_s_object.email.lower(), 'anonymised@gmail.com')
+            self.assertEqual(sync_update.new_s_object['Client Grade'], 'Casual')
 
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
