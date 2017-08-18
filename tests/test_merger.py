@@ -372,15 +372,19 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'TechnoTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'RN')
             self.assertEqual(sync_update.old_m_object.name.company, 'Livetube')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), 'Worked for Business using TT')
             self.assertEqual(sync_update.old_s_object.wpid, '1143')
             self.assertEqual(sync_update.old_s_object.rowcount, 37)
             self.assertEqual(sync_update.old_s_object.role.direct_brand, None)
             self.assertEqual(sync_update.old_s_object.role.role, 'RN')
+            self.assertEqual(sync_update.old_s_object.get('Business Type'), None)
 
             self.assertEqual(sync_update.new_m_object.role.role, 'RN')
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'TechnoTan Retail')
+            self.assertEqual(sync_update.new_m_object.get('Business Type'), 'Worked for Business using TT')
             self.assertEqual(sync_update.new_s_object.role.role, 'RN')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'TechnoTan Retail')
+            self.assertEqual(sync_update.new_s_object.get('Business Type'), 'Worked for Business using TT')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
         except AssertionError as exc:
@@ -489,11 +493,9 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
-        # print("masters")
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
-        # print("slaves")
         self.parsers = populate_slave_parsers(
             self.parsers, self.settings
         )
@@ -559,6 +561,7 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.name.company, None)
             self.assertEqual(sync_update.old_m_object.email.lower(), 'anonymised@gmail.com')
             self.assertEqual(sync_update.old_m_object['Client Grade'], 'Casual')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), 'Personal Use Only')
 
             self.assertEqual(sync_update.old_s_object.wpid, '12260')
             self.assertEqual(sync_update.old_s_object.email.lower(), 'anonymised@hotmail.com')
@@ -607,36 +610,27 @@ class TestMerger(unittest.TestCase):
             self.matches, self.updates, self.parsers, self.settings
         )
         # self.print_updates_summary(self.updates)
-        sync_update = self.updates.static[0]
+        self.assertFalse(self.updates.static)
+        self.assertFalse(self.updates.problematic)
         # self.print_update(sync_update)
-        try:
-            # import pudb; pudb.set_trace()
-            self.assertEqual(sync_update.old_m_object.MYOBID, 'C031472')
-            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
-            self.assertEqual(sync_update.old_s_object.wpid, '17769')
-            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan Wholesale')
-            self.assertEqual(sync_update.old_s_object.role.role, None)
-            self.assertEqual(sync_update.new_m_object, None)
-            # self.assertEqual(sync_update.new_s_object, None)
-
-            self.assertFalse(sync_update.m_deltas)
-            self.assertFalse(sync_update.s_deltas)
-            self.assertFalse('Role Info' in sync_update.sync_warnings)
-            self.assertTrue('Role Info' in sync_update.sync_passes)
-
-            # self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
-            # self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
-            # self.assertEqual(sync_update.new_s_object.role.role, 'RN')
-            # self.assertEqual(str(sync_update.new_s_object.role), 'RN; VuTan Wholesale')
-
-            # self.assertTrue(sync_update.s_deltas)
-
-            # self.assertEqual(sync_update.get_old_s_value('Role'), '')
-            # self.assertEqual(sync_update.get_new_s_value('Role'), 'RN')
-
-        except AssertionError as exc:
-            self.fail_syncupdate_assertion(exc, sync_update)
+        # try:
+        #     # import pudb; pudb.set_trace()
+        #     self.assertEqual(sync_update.old_m_object.MYOBID, 'C031472')
+        #     self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
+        #     self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+        #     self.assertEqual(sync_update.old_s_object.wpid, '17769')
+        #     self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan Wholesale')
+        #     self.assertEqual(sync_update.old_s_object.role.role, None)
+        #     self.assertEqual(sync_update.new_m_object, None)
+        #     self.assertEqual(sync_update.new_s_object, None)
+        #
+        #     self.assertFalse(sync_update.m_deltas)
+        #     self.assertFalse(sync_update.s_deltas)
+        #     self.assertFalse('Role Info' in sync_update.sync_warnings)
+        #     self.assertTrue('Role Info' in sync_update.sync_passes)
+        #
+        # except AssertionError as exc:
+        #     self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_do_report(self):
         suffix='do_report'
