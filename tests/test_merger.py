@@ -69,6 +69,82 @@ class TestMerger(unittest.TestCase):
         )
         raise AssertionError(msg)
 
+    def print_updates_summary(self, updates):
+        print("delta_master updates(%d):\n%s" % (
+            len(updates.delta_master), map(str, updates.delta_master))
+        )
+        print("delta_slave updates(%d):\n%s" % (
+            len(updates.delta_slave), map(str, updates.delta_slave))
+        )
+        print("master updates(%d):\n%s" % (
+            len(updates.master), map(str, updates.master))
+        )
+        print("new_master updates(%d):\n%s" % (
+            len(updates.new_master), map(str, updates.new_master))
+        )
+        print("new_slave updates(%d):\n%s" % (
+            len(updates.new_slave), map(str, updates.new_slave))
+        )
+        print("nonstatic_master updates(%d):\n%s" % (
+            len(updates.nonstatic_master), map(str, updates.nonstatic_master))
+        )
+        print("nonstatic_slave updates(%d):\n%s" % (
+            len(updates.nonstatic_slave), map(str, updates.nonstatic_slave))
+        )
+        print("problematic updates(%d):\n%s" % (
+            len(updates.problematic), map(str, updates.problematic))
+        )
+        print("slave updates(%d):\n%s" % (
+            len(updates.slave), map(str, updates.slave))
+        )
+        print("static updates(%d):\n%s" % (
+                len(updates.static), map(str, updates.static))
+         )
+
+    def print_update(self, update):
+        print(
+            (
+                "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
+                ":\n%s\npasses:\n%s\nreflections:\n%s"
+            ) % (
+                update,
+                update.old_m_object,
+                pformat(dict(update.old_m_object)),
+                update.old_s_object,
+                pformat(dict(update.old_s_object)),
+                update.display_sync_warnings(),
+                update.display_sync_passes(),
+                update.display_sync_reflections(),
+            )
+        )
+
+    def print_user_summary(self, user):
+        print("pformat@dict:\n%s" % pformat(dict(user)))
+        print("pformat@dir:\n%s" % pformat(dir(user)))
+        print("str@.act_modtime:\n%s" % str(user.act_modtime))
+        print("str@.act_created:\n%s" % str(user.act_created))
+        print("str@.wp_created:\n%s" % str(user.wp_created))
+        print("str@.wp_modtime:\n%s" % str(user.wp_modtime))
+        print("str@.last_sale:\n%s" % str(user.last_sale))
+        print("str@.last_modtime:\n%s" % str(user.last_modtime))
+        print("pformat@.name.to_dict:\n%s" % pformat(dict(user.name.to_dict())))
+        # print(
+        #     "pformat@.shipping_address.valid:\n%s" %
+        #     pformat(user.shipping_address.valid)
+        # )
+        # print("pformat@.shipping_address.kwargs:\n%s" % \
+        #       pformat(user.shipping_address.kwargs))
+        # print("pformat@.shipping_address.to_dict:\n%s" % \
+        #       pformat(dict(user.shipping_address.to_dict())))
+        # print(".billing_address:\n%s" % user.billing_address)
+        # print("pformat@.billing_address.to_dict:\n%s" % \
+        #       pformat(dict(user.billing_address.to_dict())))
+        # print("pformat@.phones.to_dict:\n%s" % pformat(dict(user.phones.to_dict())))
+        # print("pformat@.socials.to_dict:\n%s" % pformat(dict(user.socials.to_dict())))
+        # print("pformat@.wpid:\n%s" % pformat(user.wpid))
+        # print("pformat@.email:\n%s" % pformat(user.email))
+        # print("pformat@.edited_email:%s" % pformat(first_usr['Edited E-mail']))
+
     def test_init_settings(self):
 
         self.assertEqual(self.settings.master_name, "ACT")
@@ -110,26 +186,7 @@ class TestMerger(unittest.TestCase):
 
         #first user:
         first_usr = usr_list[0]
-        # print("pformat@dict:\n%s" % pformat(dict(first_usr)))
-        # print("pformat@dir:\n%s" % pformat(dir(first_usr)))
-        # print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
-        # print("str@.act_created:\n%s" % str(first_usr.act_created))
-        # print("str@.wp_created:\n%s" % str(first_usr.wp_created))
-        # print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
-        # print("str@.last_sale:\n%s" % str(first_usr.last_sale))
-        # print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
-        # print("str@.act_last_transaction:\n%s" % str(first_usr.act_last_transaction))
-        # print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
-        # print("pformat@.shipping_address.valid:\n%s" % pformat(first_usr.shipping_address.valid))
-        # print("pformat@.shipping_address.kwargs:\n%s" % \
-        #       pformat(first_usr.shipping_address.kwargs))
-        # print("pformat@.shipping_address.to_dict:\n%s" % \
-        #       pformat(dict(first_usr.shipping_address.to_dict())))
-        # print(".billing_address:\n%s" % first_usr.billing_address)
-        # print("pformat@.billing_address.to_dict:\n%s" % \
-        #       pformat(dict(first_usr.billing_address.to_dict())))
-        # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
-        # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
+        # self.print_user_summary(first_usr)
 
         self.assertEqual(first_usr.name.schema, None)
         self.assertEqual(first_usr.name.first_name, 'Giacobo')
@@ -197,30 +254,7 @@ class TestMerger(unittest.TestCase):
 
         first_usr = usr_list[0]
         if Registrar.DEBUG_MESSAGE:
-            print("pformat@dict:\n%s" % pformat(dict(first_usr)))
-            print("pformat@dir:\n%s" % pformat(dir(first_usr)))
-            print("str@.act_modtime:\n%s" % str(first_usr.act_modtime))
-            print("str@.act_created:\n%s" % str(first_usr.act_created))
-            print("str@.wp_created:\n%s" % str(first_usr.wp_created))
-            print("str@.wp_modtime:\n%s" % str(first_usr.wp_modtime))
-            print("str@.last_sale:\n%s" % str(first_usr.last_sale))
-            print("str@.last_modtime:\n%s" % str(first_usr.last_modtime))
-            print("pformat@.name.to_dict:\n%s" % pformat(dict(first_usr.name.to_dict())))
-            # print(
-            #     "pformat@.shipping_address.valid:\n%s" %
-            #     pformat(first_usr.shipping_address.valid)
-            # )
-            # print("pformat@.shipping_address.kwargs:\n%s" % \
-            #       pformat(first_usr.shipping_address.kwargs))
-            # print("pformat@.shipping_address.to_dict:\n%s" % \
-            #       pformat(dict(first_usr.shipping_address.to_dict())))
-            # print(".billing_address:\n%s" % first_usr.billing_address)
-            # print("pformat@.billing_address.to_dict:\n%s" % \
-            #       pformat(dict(first_usr.billing_address.to_dict())))
-            # print("pformat@.phones.to_dict:\n%s" % pformat(dict(first_usr.phones.to_dict())))
-            # print("pformat@.socials.to_dict:\n%s" % pformat(dict(first_usr.socials.to_dict())))
-            # print("pformat@.wpid:\n%s" % pformat(first_usr.wpid))
-            # print("pformat@.email:\n%s" % pformat(first_usr.email))
+            self.print_user_summary(first_usr)
 
         self.assertEqual(first_usr.name.schema, 'TT')
         self.assertEqual(first_usr.name.first_name, 'Gustav')
@@ -262,7 +296,6 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.role.role, "WN")
         self.assertEqual(first_usr.wpid, '1080')
         self.assertEqual(first_usr.email, 'GSAMPLE6@FREE.FR')
-        # print("pformat@.edited_email:%s" % pformat(first_usr['Edited E-mail']))
         # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
     def test_do_match(self):
@@ -309,34 +342,11 @@ class TestMerger(unittest.TestCase):
         #     Registrar.DEBUG_WARN = True
 
         # if Registrar.DEBUG_MESSAGE:
-        #     print("delta_master updates:\n%s" % map(str, (self.updates.delta_master)))
-        #     print("delta_slave updates:\n%s" % map(str, (self.updates.delta_slave)))
-        #     print("master updates:\n%s" % map(str, (self.updates.master)))
-        #     print("new_master updates:\n%s" % map(str, (self.updates.new_master)))
-        #     print("new_slave updates:\n%s" % map(str, (self.updates.new_slave)))
-        #     print("nonstatic_master updates:\n%s" % map(str, (self.updates.nonstatic_master)))
-        #     print("nonstatic_slave updates:\n%s" % map(str, (self.updates.nonstatic_slave)))
-        #     print("problematic updates:\n%s" % map(str, (self.updates.problematic)))
-        #     print("slave updates:\n%s" % map(str, (self.updates.slave)))
-        #     print("static updates:\n%s" % map(str, (self.updates.static)))
-        #     quit()
+        #     self.print_updates_summary(self.updates)
         #
         #     for update in self.updates.static:
-        #         print(
-        #             (
-        #                 "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
-        #                 ":\n%s\npasses:\n%s\nreflections:\n%s"
-        #             ) % (
-        #                 update,
-        #                 update.old_m_object,
-        #                 pformat(dict(update.old_m_object)),
-        #                 update.old_s_object,
-        #                 pformat(dict(update.old_s_object)),
-        #                 update.display_sync_warnings(),
-        #                 update.display_sync_passes(),
-        #                 update.display_sync_reflections(),
-        #             )
-        #         )
+        #         self.print_update(update)
+
         #TODO: Re-enable when test below working
         self.assertEqual(len(self.updates.delta_master), 6)
         self.assertEqual(len(self.updates.delta_slave), 6)
@@ -348,6 +358,7 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(len(self.updates.problematic), 0)
         self.assertEqual(len(self.updates.slave), 7)
         self.assertEqual(len(self.updates.static), 7)
+
 
         updates_static = self.updates.static[:]
 
@@ -624,6 +635,53 @@ class TestMerger(unittest.TestCase):
             # print(sync_update.display_update_list(sync_update.sync_warnings))
             # self.assertEqual(sync_update.sync_warnings['Role'][0]['old_value'], 'WN')
             # self.assertEqual(sync_update.sync_warnings['Role'][0]['new_value'], 'RN')
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+    @unittest.skip("Failing")
+    def test_do_merge_false_pos(self):
+        self.settings.master_file = os.path.join(tests_datadir, "merger_master_false_positive.csv")
+        self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_false_positive.csv")
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.matches, self.parsers, self.settings
+        )
+        self.assertTrue(self.matches)
+        self.updates = do_merge(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        # self.print_updates_summary(self.updates)
+        sync_update = self.updates.problematic[0]
+        self.print_update(sync_update)
+        try:
+            # import pudb; pudb.set_trace()
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C031472')
+            self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_m_object.role.role, 'WN')
+            self.assertEqual(sync_update.old_s_object.wpid, '17769')
+            self.assertEqual(sync_update.old_s_object.role.direct_brand, 'VuTan Wholesale')
+            self.assertEqual(sync_update.old_s_object.role.role, None)
+            self.assertEqual(sync_update.new_m_object, None)
+            # self.assertEqual(sync_update.new_s_object, None)
+
+            self.assertFalse(sync_update.m_deltas)
+            self.assertFalse(sync_update.s_deltas)
+
+            # self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
+            # self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
+            # self.assertEqual(sync_update.new_s_object.role.role, 'RN')
+            # self.assertEqual(str(sync_update.new_s_object.role), 'RN; VuTan Wholesale')
+
+            # self.assertTrue(sync_update.s_deltas)
+
+            # self.assertEqual(sync_update.get_old_s_value('Role'), '')
+            # self.assertEqual(sync_update.get_new_s_value('Role'), 'RN')
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
