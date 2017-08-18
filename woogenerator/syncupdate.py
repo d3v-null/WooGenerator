@@ -72,64 +72,46 @@ class SyncUpdate(Registrar):
 
     @property
     def s_updated(self):
-        """
-        Return whether slave has been updated
-        """
+        """Return whether slave has been updated."""
         return bool(self.new_s_object)
 
     @property
     def m_updated(self):
-        """
-        Return whether master has been updated
-        """
+        """Return whether master has been updated."""
         return bool(self.new_m_object)
 
     @property
     def e_updated(self):
-        """
-        Return whether either master or slave has updated
-        """
+        """Return whether either master or slave has updated."""
         return self.s_updated or self.m_updated
 
     @property
     def l_time(self):
-        """
-        Return latest modtime out of master and slave
-        """
+        """Return latest modtime out of master and slave."""
         return max(self.m_time, self.s_time)
 
     @property
     def m_mod(self):
-        """
-        Return whether has been updated since last sync
-        """
+        """Return whether has been updated since last sync."""
         return self.m_time >= self.t_time
 
     @property
     def s_mod(self):
-        """
-        Return whether slave has been updated since last sync
-        """
+        """Return whether slave has been updated since last sync."""
         return self.s_time >= self.t_time
 
     @property
     def master_id(self):
-        """
-        Abstract method fo getting the ID of the master object
-        """
+        """Abstract method fo getting the ID of the master object."""
         raise NotImplementedError()
 
     @property
     def slave_id(self):
-        """
-        Abstract method fo getting the ID of the slave object
-        """
+        """Abstract method fo getting the ID of the slave object."""
         raise NotImplementedError()
 
     def get_winner_name(self, m_time, s_time):
-        """
-        Get the name of the database containing the winning object (master / slave)
-        """
+        """Get the name of the database containing the winning object (master / slave)."""
         if not s_time:
             return self.master_name
         elif not m_time:
@@ -139,26 +121,20 @@ class SyncUpdate(Registrar):
 
     @classmethod
     def parse_m_time(cls, raw_m_time):
-        """
-        Parse a raw act-like time string
-        """
+        """Parse a raw act-like time string."""
         return TimeUtils.act_server_to_local_time(
             TimeUtils.act_strp_mktime(raw_m_time)
         )
 
     @classmethod
     def parse_s_time(cls, raw_s_time):
-        """
-        Parse a raw wp-like time string
-        """
+        """Parse a raw wp-like time string."""
         return TimeUtils.wp_server_to_local_time(
             TimeUtils.wp_strp_mktime(raw_s_time)
         )
 
     def sanitize_value(self, col, value):
-        """
-        Sanitize a value dependent on the col the value is from
-        """
+        """Sanitize a value dependent on the col the value is from."""
         if 'phone' in col.lower():
             if 'preferred' in col.lower():
                 if value and len(SanitationUtils.strip_non_numbers(value)) > 1:
@@ -166,18 +142,21 @@ class SyncUpdate(Registrar):
         return value
 
     def get_old_m_value(self, col):
+        """Get master value from old object."""
         value = self.old_m_object.get(col)
         if value is not None:
             return self.sanitize_value(col, value)
         return ""
 
     def get_old_s_value(self, col):
+        """Get slave value from old object."""
         value = self.old_s_object.get(col)
         if value is not None:
             return self.sanitize_value(col, value)
         return ""
 
     def get_new_m_value(self, col):
+        """Get master value from new object."""
         if self.new_m_object:
             value = self.new_m_object.get(col)
             if value is not None:
@@ -186,6 +165,7 @@ class SyncUpdate(Registrar):
         return self.get_old_m_value(col)
 
     def get_new_s_value(self, col):
+        """Get slave value from new object."""
         if self.new_s_object:
             value = self.new_s_object.get(col)
             if value is not None:
@@ -194,6 +174,7 @@ class SyncUpdate(Registrar):
         return self.get_old_s_value(col)
 
     def values_similar(self, col, m_value, s_value):
+        """Check if two values are similar. Depends on col."""
         response = False
         if not (m_value or s_value):
             response = True
@@ -216,9 +197,10 @@ class SyncUpdate(Registrar):
                     col, m_value, s_value, response))
         return response
 
-    def col_identical(self, col):
-        m_value = self.get_new_m_value(col)
-        s_value = self.get_new_s_value(col)
+    def old_col_identical(self, col):
+        """For given col, check if the master value is similar to the slave value in old objects."""
+        m_value = self.get_old_m_value(col)
+        s_value = self.get_old_s_value(col)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -226,7 +208,8 @@ class SyncUpdate(Registrar):
                     col, m_value, s_value, response))
         return response
 
-    def col_similar(self, col):
+    def new_col_similar(self, col):
+        """For given col, check if the master value is similar to the slave value in new objects."""
         m_value = self.get_new_m_value(col)
         s_value = self.get_new_s_value(col)
         response = self.values_similar(col, m_value, s_value)
@@ -237,6 +220,7 @@ class SyncUpdate(Registrar):
         return response
 
     def new_col_identical(self, col):
+        """For given col, check if the master value is equal to the slave value in new objects."""
         m_value = self.get_new_m_value(col)
         s_value = self.get_new_s_value(col)
         response = m_value == s_value
@@ -246,49 +230,51 @@ class SyncUpdate(Registrar):
                     col, m_value, s_value, response))
         return response
 
-    def m_col_static(self, col):
-        """Check if the old master value is equal to the new master value."""
-        o_value = self.get_old_m_value(col)
-        n_value = self.get_new_m_value(col)
+    def col_static(self, col, subject):
+        """For given col, check if the old value is similar to the new value in subject."""
+        if subject == self.master_name:
+            o_value = self.get_old_m_value(col)
+            n_value = self.get_new_m_value(col)
+        elif subject == self.slave_name:
+            o_value = self.get_old_s_value(col)
+            n_value = self.get_new_s_value(col)
         response = o_value == n_value
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
                     col, o_value, n_value, response))
         return response
+
+    def col_semi_static(self, col, subject):
+        """For given col, check if the old value is equal to the new value in subject."""
+        if subject == self.master_name:
+            o_value = self.get_old_m_value(col)
+            n_value = self.get_new_m_value(col)
+        elif subject == self.slave_name:
+            o_value = self.get_old_s_value(col)
+            n_value = self.get_new_s_value(col)
+        response = self.values_similar(col, o_value, n_value)
+        if self.DEBUG_UPDATE:
+            self.register_message(
+                self.test_to_str(
+                    col, o_value, n_value, response))
+        return response
+
+    def m_col_static(self, col):
+        """For given col, check if the old value is equal to the new value in master."""
+        return self.col_static(col, self.master_name)
 
     def s_col_static(self, col):
-        """Check if the old slave value is equal to the new slave value."""
-        o_value = self.get_old_s_value(col)
-        n_value = self.get_new_s_value(col)
-        response = o_value == n_value
-        if self.DEBUG_UPDATE:
-            self.register_message(
-                self.test_to_str(
-                    col, o_value, n_value, response))
-        return response
+        """For given col, check if the old value is equal to the new value in slave."""
+        return self.col_static(col, self.slave_name)
 
     def m_col_semi_static(self, col):
-        """Check if the old master value is similar to the new master value."""
-        o_value = self.get_old_m_value(col)
-        n_value = self.get_new_m_value(col)
-        response = self.values_similar(col, o_value, n_value)
-        if self.DEBUG_UPDATE:
-            self.register_message(
-                self.test_to_str(
-                    col, o_value, n_value, response))
-        return response
+        """For given col, check if the old value is similar to the new value in master."""
+        return self.col_semi_static(col, self.master_name)
 
     def s_col_semi_static(self, col):
-        """Check if the old slave value is similar to the new slave value."""
-        o_value = self.get_old_s_value(col)
-        n_value = self.get_new_s_value(col)
-        response = self.values_similar(col, o_value, n_value)
-        if self.DEBUG_UPDATE:
-            self.register_message(
-                self.test_to_str(
-                    col, o_value, n_value, response))
-        return response
+        """For given col, check if the old value is similar to the new value in slave."""
+        return self.col_semi_static(col, self.slave_name)
 
     def test_to_str(self, col, val1, val2, res):
         return u"testing col %s: %s | %s -> %s" % (
@@ -540,8 +526,10 @@ class SyncUpdate(Registrar):
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
-        self.add_sync_warning(**update_params)
+        col = update_params['col']
         self.set_loser_value(**update_params)
+        # if self.col_(col)
+        self.add_sync_warning(**update_params)
 
     def tie_update(self, **update_params):
         # print "tie_update ", col, reason
@@ -628,7 +616,7 @@ class SyncUpdate(Registrar):
 
         sync_mode = str(data['sync']).lower()
 
-        if self.col_identical(col):
+        if self.new_col_identical(col):
             update_params['reason'] = 'identical'
             self.tie_update(**update_params)
             return
@@ -646,7 +634,7 @@ class SyncUpdate(Registrar):
             elif 'slave' in sync_mode:
                 winner = self.slave_name
         else:
-            if self.col_similar(col):
+            if self.new_col_similar(col):
                 update_params['reason'] = 'similar'
                 self.tie_update(**update_params)
                 return
