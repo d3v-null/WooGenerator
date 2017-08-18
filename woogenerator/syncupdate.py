@@ -182,9 +182,9 @@ class SyncUpdate(Registrar):
             response = False
         # check if they are similar
         # if hasattr(m_value, 'reprocess_kwargs') and m_value.reprocess_kwargs:
-        if col == 'Role Info':
-            if hasattr(m_value, 'similar') and callable(m_value.similar):
-                response = m_value.similar(s_value)
+        # if col == 'Role Info':
+        if hasattr(m_value, 'similar') and callable(m_value.similar):
+            response = m_value.similar(s_value)
         similar_m_value = SanitationUtils.similar_comparison(m_value)
         similar_s_value = SanitationUtils.similar_comparison(s_value)
 
