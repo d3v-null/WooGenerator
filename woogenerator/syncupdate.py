@@ -449,7 +449,6 @@ class SyncUpdate(Registrar):
         )
 
     def set_loser_value(self, **update_params):
-
         for key in ['col', 'data', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
@@ -466,17 +465,11 @@ class SyncUpdate(Registrar):
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
-            if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
-                # print "setting s_deltas"
-                self.s_deltas = True
         elif loser == self.master_name:
             # If we are changing master
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
-            if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
-                # print "setting m_deltas"
-                self.m_deltas = True
 
         if data.get('delta'):
             delta_col = self.col_data.delta_col(col)
@@ -502,7 +495,15 @@ class SyncUpdate(Registrar):
         else:
             new_loser_object[col] = update_params['new_value']
 
-        # new_loser_object[col] = update_params['new_value']
+        # Check update is actually semistatic before marking as changed
+        if self.col_semi_static(col, loser):
+            raise UserWarning("col shouldn't be updated: %s" % update_params)
+
+        if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
+            if loser == self.slave_name:
+                self.s_deltas = True
+            elif loser == self.master_name:
+                self.m_deltas = True
 
         self.updates += 1
         if data.get('static'):
@@ -526,9 +527,13 @@ class SyncUpdate(Registrar):
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
-        col = update_params['col']
-        self.set_loser_value(**update_params)
-        # if self.col_(col)
+        try:
+            self.set_loser_value(**update_params)
+        except UserWarning:
+            update_params['reason'] = 'similar'
+            del update_params['subject']
+            self.tie_update(**update_params)
+            return
         self.add_sync_warning(**update_params)
 
     def tie_update(self, **update_params):
