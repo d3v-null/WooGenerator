@@ -30,7 +30,10 @@ class TestFieldGroups(unittest.TestCase):
             Registrar.DEBUG_CONTACT = True
             # Registrar.DEBUG_ADDRESS = True
 
-class TestContactAddress(TestFieldGroups):
+class TestContactAddressPost(TestFieldGroups):
+    def setUp(self):
+        super(TestContactAddressPost, self).setUp()
+        FieldGroup.perform_post = True
     # thoroughfare tests
 
     def test_thoroughfare_num_off_line(self):
@@ -679,7 +682,6 @@ class TestContactAddress(TestFieldGroups):
 
 class TestContactAddressNoPost(TestFieldGroups):
     def setUp(self):
-        FieldGroup.perform_post = False
         super(TestContactAddressNoPost, self).setUp()
         FieldGroup.perform_post = False
         self.ca_a = ContactAddress(
