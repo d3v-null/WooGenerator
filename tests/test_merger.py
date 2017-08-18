@@ -62,7 +62,7 @@ class TestMerger(unittest.TestCase):
         self.updates = UpdateNamespace()
 
     def fail_syncupdate_assertion(self, exc, sync_update):
-        msg = "failed assertion: %s\n%s\n%s" % (
+        msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (
             pformat(sync_update.sync_warnings.items()),
             sync_update.tabulate(tablefmt='simple'),
             traceback.format_exc(exc),
