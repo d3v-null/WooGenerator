@@ -589,7 +589,7 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    @unittest.skip("Failing")
+    # @unittest.skip("Failing")
     def test_do_merge_false_pos(self):
         self.settings.master_file = os.path.join(tests_datadir, "merger_master_false_positive.csv")
         self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_false_positive.csv")
@@ -607,8 +607,8 @@ class TestMerger(unittest.TestCase):
             self.matches, self.updates, self.parsers, self.settings
         )
         # self.print_updates_summary(self.updates)
-        sync_update = self.updates.problematic[0]
-        self.print_update(sync_update)
+        sync_update = self.updates.static[0]
+        # self.print_update(sync_update)
         try:
             # import pudb; pudb.set_trace()
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C031472')
@@ -622,6 +622,8 @@ class TestMerger(unittest.TestCase):
 
             self.assertFalse(sync_update.m_deltas)
             self.assertFalse(sync_update.s_deltas)
+            self.assertFalse('Role Info' in sync_update.sync_warnings)
+            self.assertTrue('Role Info' in sync_update.sync_passes)
 
             # self.assertEqual(sync_update.new_s_object.role.schema, 'TT')
             # self.assertEqual(sync_update.new_s_object.role.direct_brand, 'VuTan Wholesale')
