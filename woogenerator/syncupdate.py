@@ -462,11 +462,13 @@ class SyncUpdate(Registrar):
 
         if loser == self.slave_name:
             # If we are changing slave
+            prev_new_loser_object = self.new_s_object
             if not self.new_s_object:
                 self.new_s_object = deepcopy(self.old_s_object)
             new_loser_object = self.new_s_object
         elif loser == self.master_name:
             # If we are changing master
+            prev_new_loser_object = self.new_m_object
             if not self.new_m_object:
                 self.new_m_object = deepcopy(self.old_m_object)
             new_loser_object = self.new_m_object
@@ -497,7 +499,12 @@ class SyncUpdate(Registrar):
 
         # Check update is actually semistatic before marking as changed
         if self.col_semi_static(col, loser):
-            raise UserWarning("col shouldn't be updated: %s" % update_params)
+            # revert new_loser_object
+            if loser == self.slave_name:
+                self.new_s_object = prev_new_loser_object
+            if loser == self.master_name:
+                self.new_m_object = prev_new_loser_object
+            raise UserWarning("col shouldn't be updated, too similar: %s" % update_params)
 
         if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
             if loser == self.slave_name:
