@@ -187,10 +187,12 @@ class SyncUpdate(Registrar):
 
     def get_old_m_value(self, col):
         """Get master value from old object."""
+        # TODO: deprecate this
         return self.get_old_subject_value(col, self.master_name)
 
     def get_old_s_value(self, col):
         """Get slave value from old object."""
+        # TODO: deprecate this
         return self.get_old_subject_value(col, self.slave_name)
 
     def get_new_subject_value(self, col, subject):
@@ -205,10 +207,12 @@ class SyncUpdate(Registrar):
 
     def get_new_m_value(self, col):
         """Get master value from new object."""
+        # TODO: deprecate this
         return self.get_new_subject_value(col, self.master_name)
 
     def get_new_s_value(self, col):
         """Get slave value from new object."""
+        # TODO: deprecate this
         return self.get_new_subject_value(col, self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
@@ -292,18 +296,22 @@ class SyncUpdate(Registrar):
 
     def m_col_static(self, col):
         """For given col, check if the old value is equal to the new value in master."""
+        # TODO: deprecate this
         return self.col_static(col, self.master_name)
 
     def s_col_static(self, col):
         """For given col, check if the old value is equal to the new value in slave."""
+        # TODO: deprecate this
         return self.col_static(col, self.slave_name)
 
     def m_col_semi_static(self, col):
         """For given col, check if the old value is similar to the new value in master."""
+        # TODO: deprecate this
         return self.col_semi_static(col, self.master_name)
 
     def s_col_semi_static(self, col):
         """For given col, check if the old value is similar to the new value in slave."""
+        # TODO: deprecate this
         return self.col_semi_static(col, self.slave_name)
 
     def col_violates_invincible(self, **update_params):
