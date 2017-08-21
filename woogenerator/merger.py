@@ -459,12 +459,14 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
     for object_data in parsers.master.objects.values():
         if fn_user_older_than_wp(settings['old_threshold'])(object_data):
             details = TimeUtils.wp_time_to_string(
-                object_data.act_last_transaction)
+                object_data.act_last_transaction
+            ) or "UNKN"
             duplicates.add_conflictor(
                 object_data, "last_transaction_old", 0.5, details)
         elif fn_user_older_than_wp(settings['oldish_threshold'])(object_data):
             details = TimeUtils.wp_time_to_string(
-                object_data.act_last_transaction)
+                object_data.act_last_transaction
+            ) or "UNKN"
             duplicates.add_conflictor(
                 object_data, "last_transaction_oldish", 0.2, details)
 
@@ -940,15 +942,16 @@ def do_report(matches, updates, parsers, settings):
             "%ssync_report_duplicate_%s.html" % (settings.file_prefix, settings.file_suffix))
 
         with io.open(settings['repd_path'], 'w+', encoding='utf8') as repd_file:
-            dup_css = "\n".join(
+            dup_css = "\n".join([
                 ".highlight_old {color: red !important; }"
                 ".highlight_oldish {color: orange;}"
                 ".highlight_master {background: lightblue !important;}"
                 ".highlight_slave {background: lightpink !important;}"
-            )
+            ])
 
             dup_reporter = HtmlReporter(css=dup_css)
 
+            do_report_duplicates_summary(matches, updates, parsers, settings, dup_reporter)
             do_report_duplicates(matches, updates, parsers, settings, dup_reporter)
 
             repd_file.write(dup_reporter.get_document_unicode())

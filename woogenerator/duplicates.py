@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from tabulate import tabulate
 
-from woogenerator.utils import SanitationUtils
+from woogenerator.utils import Registrar, SanitationUtils
 
 
 def object_glb_index_fn(object_data):
