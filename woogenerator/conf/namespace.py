@@ -136,10 +136,12 @@ class SettingsNamespaceProto(argparse.Namespace):
     def pickle_path_full(self):
         if hasattr(self, 'pickle_file') and getattr(self, 'pickle_file'):
             return getattr(self, 'pickle_file')
-        response = '%s.pickle' % self.import_name
+        response = self.import_name
+        if self.get('progress'):
+            response += '_%s' % self['progress']
         if self.pickle_folder_full:
             response = os.path.join(self.pickle_folder_full, response)
-        return response
+        return response + '.pickle'
 
     @property
     def file_prefix(self):
@@ -150,6 +152,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         response = ""
         if self.testmode:
             response += "_test"
+        if self.get('picklemode'):
+            response += "_pickle"
         return response
 
     @property

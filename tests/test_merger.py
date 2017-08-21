@@ -34,7 +34,6 @@ class TestMerger(unittest.TestCase):
         # self.settings.master_parse_limit = 10
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
-        self.parsers = ParserNamespace()
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
@@ -58,6 +57,7 @@ class TestMerger(unittest.TestCase):
             argparser_class=ArgumentParserUser
         )
 
+        self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
 

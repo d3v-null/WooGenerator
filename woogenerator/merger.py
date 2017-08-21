@@ -908,9 +908,9 @@ def do_report(matches, updates, parsers, settings):
 
 def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
     """Save execution state of a pickle file which can be restored later."""
-    Registrar.register_progress("pickling updates")
-
-    pickle_obj = (matches, updates, parsers, settings, progress)
+    Registrar.register_progress("pickling state")
+    settings.progress = progress
+    pickle_obj = (matches, updates, parsers, settings)
 
     with open(settings.pickle_path_full, 'w') as pickle_file:
         dill.dump(pickle_obj, pickle_file)
@@ -923,15 +923,16 @@ def unpickle_state(settings_pickle):
 
     with open(settings_pickle.pickle_path_full) as pickle_file:
         pickle_obj = dill.load(pickle_file)
-        matches, updates, parsers, settings, progress = pickle_obj
+        matches, updates, parsers, settings = pickle_obj
+        settings.picklemode = True
 
     if settings_pickle.get('override_progress'):
-        progress = settings_pickle['override_progress']
+        settings.progress = settings_pickle['override_progress']
 
-    if progress in ['sync']:
+    if settings.progress in ['sync']:
         matches = do_match(parsers, settings)
         updates = do_merge(matches, parsers, settings)
-    if progress in ['sync', 'report']:
+    if settings.progress in ['sync', 'report']:
         do_report(matches, updates, parsers, settings)
         do_updates(updates, settings)
 
