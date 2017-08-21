@@ -321,6 +321,7 @@ class SyncUpdate(Registrar):
         return self.col_semi_static(col, self.slave_name)
 
     def col_violates_invincible(self, **update_params):
+        """Determine if an update to a column has violated an invincibility condition."""
         for key in ['col', 'data', 'subject']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
