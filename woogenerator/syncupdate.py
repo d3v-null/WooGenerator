@@ -106,6 +106,20 @@ class SyncUpdate(Registrar):
         elif subject == self.slave_name:
             return self.s_time
 
+    def get_new_subject_object(self, subject):
+        """Return the new object associated with the subject."""
+        if subject == self.master_name:
+            return self.new_m_object
+        elif subject == self.slave_name:
+            return self.new_s_object
+
+    def get_old_subject_object(self, subject):
+        """Return the new object associated with the subject."""
+        if subject == self.master_name:
+            return self.old_m_object
+        elif subject == self.slave_name:
+            return self.old_s_object
+
     @property
     def m_mod(self):
         """Return whether has been updated since last sync."""
@@ -164,37 +178,38 @@ class SyncUpdate(Registrar):
                     return ""
         return value
 
-    def get_old_m_value(self, col):
-        """Get master value from old object."""
-        value = self.old_m_object.get(col)
+    def get_old_subject_value(self, col, subject):
+        """Get the value for the subject's old object."""
+        value = self.get_old_subject_object(subject).get(col)
         if value is not None:
             return self.sanitize_value(col, value)
         return ""
+
+    def get_old_m_value(self, col):
+        """Get master value from old object."""
+        return self.get_old_subject_value(col, self.master_name)
 
     def get_old_s_value(self, col):
         """Get slave value from old object."""
-        value = self.old_s_object.get(col)
-        if value is not None:
-            return self.sanitize_value(col, value)
-        return ""
+        return self.get_old_subject_value(col, self.slave_name)
+
+    def get_new_subject_value(self, col, subject):
+        """Get the value for the subject's new object."""
+        new_object = self.get_new_subject_object(subject)
+        if new_object:
+            value = new_object.get(col)
+            if value is not None:
+                return self.sanitize_value(col, value)
+            return ""
+        return self.get_old_subject_value(col, subject)
 
     def get_new_m_value(self, col):
         """Get master value from new object."""
-        if self.new_m_object:
-            value = self.new_m_object.get(col)
-            if value is not None:
-                return self.sanitize_value(col, value)
-            return ""
-        return self.get_old_m_value(col)
+        return self.get_new_subject_value(col, self.master_name)
 
     def get_new_s_value(self, col):
         """Get slave value from new object."""
-        if self.new_s_object:
-            value = self.new_s_object.get(col)
-            if value is not None:
-                return self.sanitize_value(col, value)
-            return ""
-        return self.get_old_s_value(col)
+        return self.get_new_subject_value(col, self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
         """Check if two values are similar. Depends on col."""
@@ -222,8 +237,8 @@ class SyncUpdate(Registrar):
 
     def old_col_identical(self, col):
         """For given col, check if the master value is similar to the slave value in old objects."""
-        m_value = self.get_old_m_value(col)
-        s_value = self.get_old_s_value(col)
+        m_value = self.get_old_subject_value(col, self.master_name)
+        s_value = self.get_old_subject_value(col, self.slave_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -233,8 +248,8 @@ class SyncUpdate(Registrar):
 
     def new_col_similar(self, col):
         """For given col, check if the master value is similar to the slave value in new objects."""
-        m_value = self.get_new_m_value(col)
-        s_value = self.get_new_s_value(col)
+        m_value = self.get_new_subject_value(col, self.master_name)
+        s_value = self.get_new_subject_value(col, self.slave_name)
         response = self.values_similar(col, m_value, s_value)
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -244,8 +259,8 @@ class SyncUpdate(Registrar):
 
     def new_col_identical(self, col):
         """For given col, check if the master value is equal to the slave value in new objects."""
-        m_value = self.get_new_m_value(col)
-        s_value = self.get_new_s_value(col)
+        m_value = self.get_new_subject_value(col, self.master_name)
+        s_value = self.get_new_subject_value(col, self.slave_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -255,12 +270,8 @@ class SyncUpdate(Registrar):
 
     def col_static(self, col, subject):
         """For given col, check if the old value is similar to the new value in subject."""
-        if subject == self.master_name:
-            o_value = self.get_old_m_value(col)
-            n_value = self.get_new_m_value(col)
-        elif subject == self.slave_name:
-            o_value = self.get_old_s_value(col)
-            n_value = self.get_new_s_value(col)
+        o_value = self.get_old_subject_value(col, subject)
+        n_value = self.get_new_subject_value(col, subject)
         response = o_value == n_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -270,12 +281,8 @@ class SyncUpdate(Registrar):
 
     def col_semi_static(self, col, subject):
         """For given col, check if the old value is equal to the new value in subject."""
-        if subject == self.master_name:
-            o_value = self.get_old_m_value(col)
-            n_value = self.get_new_m_value(col)
-        elif subject == self.slave_name:
-            o_value = self.get_old_s_value(col)
-            n_value = self.get_new_s_value(col)
+        o_value = self.get_old_subject_value(col, subject)
+        n_value = self.get_new_subject_value(col, subject)
         response = self.values_similar(col, o_value, n_value)
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -300,19 +307,15 @@ class SyncUpdate(Registrar):
         return self.col_semi_static(col, self.slave_name)
 
     def col_violates_invincible(self, **update_params):
-        pass
-        # for key in ['col', 'data', 'subject']:
-        #     assert key in update_params, 'missing mandatory update param, %s from %s' % (
-        #         key, update_params)
-        #
-        # loser = update_params['subject']
-        # col = update_params['col']
-        # data = update_params['data']
-        #
-        # if subject == self.master_name:
-        #     value = self.get_new_m_value(col)
-        # elif subject == self.slave_name:
-        #     value = self.get_new_s_value(col)
+        for key in ['col', 'data', 'subject']:
+            assert key in update_params, 'missing mandatory update param, %s from %s' % (
+                key, update_params)
+
+        subject = update_params['subject']
+        col = update_params['col']
+        data = update_params['data']
+
+        value = self.get_new_subject_value(col, subject)
 
 
     def test_to_str(self, col, val1, val2, res):
@@ -634,7 +637,6 @@ class SyncUpdate(Registrar):
 
     def get_col_mod_time(self, col, subject):
         pass
-        # if subject == self.master:
 
     def get_m_col_mod_time(self, col):
         return self.get_col_mod_time(col, self.master_name)
@@ -748,16 +750,16 @@ class SyncUpdate(Registrar):
         data = update_params['data']
 
         if data.get('reflective') or data.get('sync'):
-            update_params['m_value'] = self.get_new_m_value(col)
-            update_params['s_value'] = self.get_new_s_value(col)
-            update_params['m_col_time'] = self.get_m_col_mod_time(col)
-            update_params['s_col_time'] = self.get_s_col_mod_time(col)
+            update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
+            update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
+            update_params['m_col_time'] = self.get_col_mod_time(col, self.master_name)
+            update_params['s_col_time'] = self.get_col_mod_time(col, self.slave_name)
 
             if data.get('reflective'):
                 self.reflect_col(**update_params)
 
-            update_params['m_value'] = self.get_new_m_value(col)
-            update_params['s_value'] = self.get_new_s_value(col)
+            update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
+            update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
 
             if data.get('sync'):
                 self.sync_col(**update_params)
@@ -1052,11 +1054,11 @@ class SyncUpdateUsr(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_new_m_value('MYOB Card ID')
+        return self.get_new_subject_value('MYOB Card ID', self.master_name)
 
     @property
     def slave_id(self):
-        return self.get_new_s_value("Wordpress ID")
+        return self.get_new_subject_value("Wordpress ID", self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateUsr, self).values_similar(
@@ -1148,8 +1150,8 @@ class SyncUpdateUsr(SyncUpdate):
         ]
         for tracking_name, cols in self.col_data.get_act_tracked_cols().items():
             col = cols[0]
-            m_col_mod_time = self.get_m_col_mod_time(col)
-            s_col_mod_time = self.get_s_col_mod_time(col)
+            m_col_mod_time = self.get_col_mod_time(col, self.master_name)
+            s_col_mod_time = self.get_col_mod_time(col, self.slave_name)
             if m_col_mod_time or s_col_mod_time:
                 info_components.append(info_fmt % (tracking_name, '%s: %s; %s: %s' % (
                     self.master_name,
@@ -1322,11 +1324,11 @@ class SyncUpdateProd(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_new_m_value('rowcount')
+        return self.get_new_subject_value('rowcount', self.master_name)
 
     @property
     def slave_id(self):
-        return self.get_new_s_value('ID')
+        return self.get_new_subject_value('ID', self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateProd, self).values_similar(
@@ -1453,11 +1455,11 @@ class SyncUpdateCatWoo(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_new_m_value('rowcount')
+        return self.get_new_subject_value('rowcount', self.master_name)
 
     @property
     def slave_id(self):
-        return self.get_new_s_value('ID')
+        return self.get_new_subject_value('ID', self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
         response = super(SyncUpdateCatWoo, self).values_similar(
