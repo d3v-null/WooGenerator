@@ -1561,6 +1561,7 @@ class ColDataUser(ColDataBase):
             'sync': True,
             'warn': True,
             'static': True,
+            'invincible':'master',
             # 'visible':True,
             'contact': True,
         }),
