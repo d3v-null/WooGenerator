@@ -65,17 +65,16 @@ class UsrSyncClientSshAct(SyncClientAbstract):
 
     def exec_silent_command_assert(self, command):
         self.assert_connect()
-        stdin, stdout, stderr = self.service.exec_command(command)
-        if stdin:
-            pass  # gets rid of annoying warnings
+        _, stdout, stderr = self.service.exec_command(command)
         possible_errors = stdout.readlines() + stderr.readlines()
-        for error in possible_errors:
+        while possible_errors:
+            error = possible_errors.pop(0)
             if re.match("^Countries.*", error):
                 # print error
                 continue
             assert not error, "command <%s> returned errors: %s" % (
                 SanitationUtils.coerce_unicode(command),
-                SanitationUtils.coerce_unicode(error)
+                SanitationUtils.coerce_unicode(possible_errors)
             )
 
     def put_file(self, local_path, remote_path):
