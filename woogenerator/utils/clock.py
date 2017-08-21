@@ -75,9 +75,19 @@ class TimeUtils(object):
     @classmethod
     def act_strp_mktime(cls, string):
         """ takes an act formatted time string, returns number of seconds since epoch """
-        assert isinstance(
-            string, basestring), "param must be a string not %s" % type(string)
-        return cls.star_strp_mktime(string, cls.actTimeFormat)
+        assert isinstance(string, basestring), \
+            "param must be a string not %s" % type(string)
+
+        response = None
+        exceptions = []
+        for fmt in [cls.actTimeFormat, cls.actDateFormat]:
+            try:
+                response = cls.star_strp_mktime(string, fmt)
+            except ValueError as exc:
+                exceptions.append(exc)
+        if response is None and exceptions:
+            raise exceptions[0]
+        return response
 
     @classmethod
     def wp_strp_mktime(cls, string):
