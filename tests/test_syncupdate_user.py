@@ -494,8 +494,8 @@ class TestSyncUpdateUserInvincible(TestSyncUpdateUserAbstract):
         usr_m = ImportUser(
             {
                 'E-mail': 'donnag04@hotmail.com',
-                'First Name': u'DONNA',
-                'Surname': u'MOORE',
+                'First Name': u'OLD',
+                'Surname': u'NAME',
                 'Edited Name': '27/08/2015 11:18:00 AM',
                 'Edited Phone Numbers': '29/06/2016 11:48:14 AM',
                 'Edited in Act': '15/08/2016 5:33:41 PM',
@@ -514,8 +514,8 @@ class TestSyncUpdateUserInvincible(TestSyncUpdateUserAbstract):
                 'Edited Name': u'2015-11-08 17:35:12',
                 'Edited Phone Numbers': u'2015-11-08 17:35:12',
                 'Edited in Wordpress': u'2016-11-08 17:35:12',
-                'First Name': u'Donna',
-                'Surname': u'Moore',
+                'First Name': u'NEWNAME',
+                'Surname': u'',
                 'Wordpress ID': u'16458',
                 'Wordpress Username': 'donnag04@hotmail.com',
                 '_row': []
@@ -524,10 +524,24 @@ class TestSyncUpdateUserInvincible(TestSyncUpdateUserAbstract):
             row=[],
         )
 
+        # import pudb; pudb.set_trace()
+
         sync_update = SyncUpdateUsrApi(usr_m, usr_s)
         sync_update.update(ColDataUser.get_sync_cols())
-
-        self.assertGreater(sync_update.s_time, sync_update.m_time)
+        try:
+            self.assertGreater(sync_update.s_time, sync_update.m_time)
+            self.assertGreater(
+                sync_update.get_s_col_mod_time('Name'),
+                sync_update.get_m_col_mod_time('Name')
+            )
+            self.assertEqual(str(sync_update.old_m_object.name), 'OLD NAME')
+            self.assertEqual(str(sync_update.old_s_object.name), 'NEWNAME')
+            self.assertIn('Name', sync_update.sync_passes)
+            self.assertNotIn('Name', sync_update.sync_warnings)
+            self.assertEqual(str(sync_update.new_m_object.name), 'OLD NAME')
+            self.assertEqual(str(sync_update.new_s_object.name), 'NEWNAME')
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
 class TestSyncUpdateUserApi(TestSyncUpdateUserAbstract):
     def test_sync_phone(self):

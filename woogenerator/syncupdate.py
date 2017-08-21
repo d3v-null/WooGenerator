@@ -113,6 +113,12 @@ class SyncUpdate(Registrar):
         elif subject == self.slave_name:
             return self.new_s_object
 
+    def set_new_subject_object(self, value, subject):
+        if subject == self.master_name:
+            self.new_m_object = value
+        elif subject == self.slave_name:
+            self.new_s_object = value
+
     def get_old_subject_object(self, subject):
         """Return the new object associated with the subject."""
         if subject == self.master_name:
@@ -318,13 +324,21 @@ class SyncUpdate(Registrar):
         for key in ['col', 'data', 'subject']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
-
+        return
         subject = update_params['subject']
-        col = update_params['col']
         data = update_params['data']
-
-        value = self.get_new_subject_value(col, subject)
-
+        col_aliases = data.get('aliases', [])
+        for col_alias in col_aliases:
+            new_alias_value = self.get_new_subject_value(col_alias, subject)
+            col_alias_data = self.col_data.data.get(col_alias, {})
+            col_alias_invincibility = str(col_alias_data.get('invincible')).lower()
+            if col_alias_invincibility and not new_alias_value:
+                failed_conditions = [
+                    (col_alias_invincibility == 'both' or col_alias_invincibility == 'true'),
+                    (col_alias_invincibility == 'master' and subject == self.master_name),
+                    (col_alias_invincibility == 'slave' and subject == self.slave_name),
+                ]
+                return any(failed_conditions)
 
     def test_to_str(self, col, val1, val2, res):
         return u"testing col %s: %s | %s -> %s" % (
@@ -510,18 +524,14 @@ class SyncUpdate(Registrar):
 
         prev_old_val_hash = self.snapshot_hash(update_params['old_value'])
 
-        if loser == self.slave_name:
-            # If we are changing slave
-            prev_new_loser_object = self.new_s_object
-            if not self.new_s_object:
-                self.new_s_object = deepcopy(self.old_s_object)
-            new_loser_object = self.new_s_object
-        elif loser == self.master_name:
-            # If we are changing master
-            prev_new_loser_object = self.new_m_object
-            if not self.new_m_object:
-                self.new_m_object = deepcopy(self.old_m_object)
-            new_loser_object = self.new_m_object
+        new_loser_object = self.get_new_subject_object(loser)
+        prev_new_loser_object = bool(new_loser_object)
+        if not prev_new_loser_object:
+            old_object = self.get_old_subject_object(loser)
+            self.set_new_subject_object(deepcopy(old_object), loser)
+            new_loser_object = self.get_new_subject_object(loser)
+        prev_loser_val = deepcopy(new_loser_object.get(col))
+
 
         if data.get('delta'):
             delta_col = self.col_data.delta_col(col)
@@ -531,18 +541,6 @@ class SyncUpdate(Registrar):
                     new_loser_object[delta_col].perform_post = False
 
         if data.get('aliases') and getattr(new_loser_object[col], 'reprocess_kwargs'):
-            if Registrar.DEBUG_UPDATE:
-                Registrar.register_message((
-                    "setting col %s in loser object %s because %s.\n"
-                    "from %50s to %50s\n%s"
-                ) % (
-                    col,
-                    str(new_loser_object),
-                    reason,
-                    new_loser_object[col],
-                    update_params['new_value'],
-                    self.tabulate()
-                ))
             new_loser_object[col].update_from(update_params['new_value'], data.get('aliases'))
         else:
             new_loser_object[col] = update_params['new_value']
@@ -552,14 +550,15 @@ class SyncUpdate(Registrar):
         col_semi_static = self.col_semi_static(col, loser)
         if col_semi_static or col_violates_invincible:
             # revert new_loser_object
-            if loser == self.slave_name:
-                self.new_s_object = prev_new_loser_object
-            if loser == self.master_name:
-                self.new_m_object = prev_new_loser_object
+            if not prev_new_loser_object:
+                self.set_new_subject_object(prev_new_loser_object, loser)
+            else:
+                new_loser_object[col] = prev_loser_val
             if col_violates_invincible:
                 raise InvincibilityViolation("col should't be updated, violates invincibility: %s" % update_params)
             if col_semi_static:
                 raise SemistaticViolation("col shouldn't be updated, too similar: %s" % update_params)
+
 
         if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
             if loser == self.slave_name:
@@ -734,7 +733,7 @@ class SyncUpdate(Registrar):
             update_params['new_value'] = update_params['m_value']
             update_params['old_value'] = update_params['s_value']
 
-        if 'invincible' in sync_mode and not update_params['new_value']:
+        if 'invincible' in data and not update_params['new_value']:
             update_params['reason'] = 'invincible'
             self.tie_update(**update_params)
             return
@@ -765,9 +764,8 @@ class SyncUpdate(Registrar):
 
             if data.get('reflective'):
                 self.reflect_col(**update_params)
-
-            update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
-            update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
+                update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
+                update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
 
             if data.get('sync'):
                 self.sync_col(**update_params)
