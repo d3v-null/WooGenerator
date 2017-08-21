@@ -1984,7 +1984,7 @@ class ColDataUser(ColDataBase):
             # 'label':'business_type',
             'import': True,
             'user': True,
-            'sync': True,
+            'sync': 'master_invincible',
             'visible': True,
             # 'mutable':True
         }),
@@ -2001,7 +2001,7 @@ class ColDataUser(ColDataBase):
             # 'label':'how_hear_about',
             'import': True,
             'user': True,
-            'sync': True,
+            'sync': 'master_invincible',
             # 'visible':True,
             'default':'',
         }),

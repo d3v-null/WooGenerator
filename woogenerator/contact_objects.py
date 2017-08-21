@@ -26,6 +26,7 @@ class FieldGroup(Registrar):
     equality_keys = []
     similarity_keys = []
     mandatory_keys = []
+    invincible_keys = []
     key_mappings = {}
     fieldGroupType = 'GRP'
     _supports_tablefmt = True

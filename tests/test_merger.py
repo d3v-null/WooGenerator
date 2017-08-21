@@ -344,8 +344,8 @@ class TestMerger(unittest.TestCase):
         # if Registrar.DEBUG_MESSAGE:
         #     self.print_updates_summary(self.updates)
         #
-        #     for update in self.updates.static:
-        #         self.print_update(update)
+        # for update in self.updates.static:
+        #     self.print_update(update)
 
         #TODO: Re-enable when test below working
         self.assertEqual(len(self.updates.delta_master), 6)
@@ -395,10 +395,12 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.rowcount, 92)
             self.assertEqual(sync_update.old_m_object.role.direct_brand, 'TechnoTan')
             self.assertEqual(sync_update.old_m_object.role.role, 'ADMIN')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), "Event")
             self.assertEqual(sync_update.old_s_object.wpid, '1439')
             self.assertEqual(sync_update.old_s_object.rowcount, 13)
             self.assertEqual(sync_update.old_s_object.role.direct_brand, 'TechnoTan')
             self.assertEqual(sync_update.old_s_object.role.role, 'ADMIN')
+            self.assertEqual(sync_update.old_s_object.get('Business Type'), "Worked for Business using TT")
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'Staff')
             self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'Staff')
@@ -432,6 +434,8 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
         sync_update = updates_static.pop(0)
+        self.print_update(sync_update)
+
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001939')
             self.assertEqual(sync_update.old_m_object.rowcount, 62)
@@ -439,16 +443,26 @@ class TestMerger(unittest.TestCase):
             self.assertEqual(sync_update.old_m_object.role.direct_brand, None)
             self.assertEqual(sync_update.old_m_object.name.first_name, 'Bevvy')
             self.assertEqual(sync_update.old_m_object.name.family_name, 'Brazear')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), None)
             self.assertEqual(sync_update.old_s_object.wpid, '1172')
             self.assertEqual(sync_update.old_s_object.rowcount, 68)
             self.assertEqual(sync_update.old_s_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.old_s_object.role.direct_brand, 'Pending')
+            # self.assertEqual(sync_update.old_s_object.get('Business Type'), 'Unknown')
             self.assertEqual(sync_update.new_m_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.new_m_object.role.direct_brand, 'Staff')
+            self.assertEqual(sync_update.new_m_object.get('Business Type'), None)
             self.assertEqual(sync_update.new_s_object.role.role, 'ADMIN')
             self.assertEqual(sync_update.new_s_object.role.direct_brand, 'Staff')
+            # self.assertEqual(sync_update.new_s_object.get('Business Type'), 'Unknown')
             self.assertTrue(sync_update.m_deltas)
             self.assertTrue(sync_update.s_deltas)
+            # TODO: uncomment these
+            master_updates = sync_update.get_master_updates()
+            self.assertFalse('Business Type' in master_updates)
+            slave_updates = sync_update.get_slave_updates()
+            self.assertFalse('Business Type' in slave_updates)
+
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 

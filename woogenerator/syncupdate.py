@@ -667,6 +667,11 @@ class SyncUpdate(Registrar):
             update_params['new_value'] = update_params['m_value']
             update_params['old_value'] = update_params['s_value']
 
+        if 'invincible' in sync_mode and not update_params['new_value']:
+            update_params['reason'] = 'invincible'
+            self.tie_update(**update_params)
+            return
+
         if 'reason' not in update_params:
             if not update_params['new_value']:
                 update_params['reason'] = 'deleting'
