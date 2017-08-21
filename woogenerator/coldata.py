@@ -2349,6 +2349,8 @@ class ColDataUser(ColDataBase):
                         #         cols[tracking_name] = cols.get(tracking_name, []) + [key]
         return cols
 
+    get_slave_tracked_cols = get_wp_tracked_cols
+
     @classmethod
     def get_act_tracked_cols(cls):
         cols = OrderedDict()
@@ -2365,6 +2367,8 @@ class ColDataUser(ColDataBase):
                             this_tracking_name, []) + [alias]
         return cols
 
+    get_master_tracked_cols = get_act_tracked_cols
+
     @classmethod
     def get_act_future_tracked_cols(cls):
         cols = OrderedDict()
@@ -2380,6 +2384,8 @@ class ColDataUser(ColDataBase):
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
         return cols
+
+    get_master_future_tracked_cols = get_act_future_tracked_cols
 
     @classmethod
     def get_act_import_cols(cls):

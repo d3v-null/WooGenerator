@@ -90,6 +90,13 @@ class SyncUpdate(Registrar):
         """Return latest modtime out of master and slave."""
         return max(self.m_time, self.s_time)
 
+    def get_subject_mod_time(self, subject):
+        """Return the modtime of a subject."""
+        if subject == self.master_name:
+            return self.m_time
+        elif subject == self.slave_name:
+            return self.s_time
+
     @property
     def m_mod(self):
         """Return whether has been updated since last sync."""
@@ -132,6 +139,13 @@ class SyncUpdate(Registrar):
         return TimeUtils.wp_server_to_local_time(
             TimeUtils.wp_strp_mktime(raw_s_time)
         )
+
+    def parse_subject_time(self, raw_time, subject):
+        """Parse a raw time string for a given subject's format."""
+        if subject == self.master_name:
+            return self.parse_m_time(raw_time)
+        elif subject == self.slave_name:
+            return self.parse_s_time(raw_time)
 
     def sanitize_value(self, col, value):
         """Sanitize a value dependent on the col the value is from."""
@@ -579,11 +593,15 @@ class SyncUpdate(Registrar):
                 slave_update_params['new_value'] = update_params['reflected_slave']
                 self.loser_update(**slave_update_params)
 
-    def get_m_col_mod_time(self, _):
-        return None
+    def get_col_mod_time(self, col, subject):
+        pass
+        # if subject == self.master:
 
-    def get_s_col_mod_time(self, _):
-        return None
+    def get_m_col_mod_time(self, col):
+        return self.get_col_mod_time(col, self.master_name)
+
+    def get_s_col_mod_time(self, col):
+        return self.get_col_mod_time(col, self.slave_name)
 
     def reflect_col(self, **update_params):
         for key in ['col', 'data', 'm_value', 's_value']:
@@ -1050,47 +1068,33 @@ class SyncUpdateUsr(SyncUpdate):
         #     ))
         return response
 
-    #
-    def get_m_col_mod_time(self, col):
+    def get_col_mod_time(self, col, subject):
+        response = self.get_subject_mod_time(subject)
+        if subject == self.master_name:
+            tracked_cols_items = self.col_data.get_master_tracked_cols().items()
+            future_tracked_cols_items = self.col_data.get_act_future_tracked_cols().items()
+            old_object = self.old_m_object
+        elif subject == self.slave_name:
+            tracked_cols_items = self.col_data.get_wp_tracked_cols().items()
+            future_tracked_cols_items = []
+            old_object = self.old_s_object
+
         if self.col_data.data.get(col, {}).get('tracked'):
             col_tracking_name = self.col_data.mod_time_col(col)
         else:
             col_tracking_name = None
-            for tracking_name, tracked_cols in self.col_data.get_act_tracked_cols().items():
+            for tracking_name, tracked_cols in tracked_cols_items:
                 if col in tracked_cols:
                     col_tracking_name = tracking_name
 
         if col_tracking_name:
-            # print 's_col_mod_time tracking_name', col_tracking_name
-            if self.old_m_object.get(col_tracking_name):
-                # print 's_col_mod_time tracking_name exists', \
-                #         self.old_m_object.get(col_tracking_name), \
-                #         ' -> ',\
-                #         self.parse_m_time(self.old_m_object.get(col_tracking_name))
-                return self.parse_m_time(
-                    self.old_m_object.get(col_tracking_name))
-            elif col_tracking_name not in self.col_data.get_act_future_tracked_cols().items():
-                return None
-        return self.m_time
-
-    def get_s_col_mod_time(self, col):
-        if self.col_data.data.get(col, {}).get('tracked'):
-            col_tracking_name = self.col_data.mod_time_col(col)
-        else:
-            col_tracking_name = None
-            for tracking_name, tracked_cols in self.col_data.get_wp_tracked_cols().items():
-                if col in tracked_cols:
-                    col_tracking_name = tracking_name
-
-        if col_tracking_name:
-            # print 'm_col_mod_time tracking_name', col_tracking_name
-            if self.old_s_object.get(col_tracking_name):
-                return self.parse_s_time(
-                    self.old_s_object.get(col_tracking_name))
-            else:
-                return None
-
-        return self.s_time
+            if old_object.get(col_tracking_name):
+                response = self.parse_subject_time(
+                    old_object.get(col_tracking_name), subject
+                )
+            elif col_tracking_name not in future_tracked_cols_items:
+                response = None
+        return response
 
     def get_info_components(self, info_fmt="%s"):
         info_components = super(
