@@ -139,8 +139,8 @@ class ImportUser(ImportObject):
         response = self.last_sale
         if not response:
             response = self.act_created
-        assert response, "customer should always have a create (%s) or last sale (%s)" % (
-            self.act_created, self.last_sale)
+        # assert response, "customer should always have a create (%s) or last sale (%s)" % (
+        #     self.act_created, self.last_sale)
         return response
 
     def __init__(self, data, **kwargs):

@@ -212,6 +212,15 @@ class SettingsNamespaceProto(argparse.Namespace):
     def null_client_class(self):
         return SyncClientLocal
 
+    @property
+    def col_data_class(self):
+        """ Class used to obtain column metadata. """
+        return ColDataBase
+
+    @property
+    def basic_cols(self):
+        return self.col_data_class.get_basic_cols()
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 

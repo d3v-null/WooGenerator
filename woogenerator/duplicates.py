@@ -91,7 +91,7 @@ class DuplicateObject(object):
             reason_table.append([
                 reason,
                 reason_info['weighting'],
-                reason_info['details']
+                reason_info.get('details')
             ])
 
         obj_container = self.object_data.containerize()
