@@ -5,6 +5,7 @@ Utilites for storing and performing operations on pending updates
 from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
+import traceback
 
 from tabulate import tabulate
 
@@ -15,6 +16,14 @@ from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
+class SyncViolation(UserWarning):
+    """Update violates some sync condition"""
+
+class InvincibilityViolation(SyncViolation):
+    """Update violates an invincibility condition."""
+
+class SemistaticViolation(SyncViolation):
+    """Update violates a semistatic condition."""
 
 class SyncUpdate(Registrar):
     """
@@ -290,6 +299,22 @@ class SyncUpdate(Registrar):
         """For given col, check if the old value is similar to the new value in slave."""
         return self.col_semi_static(col, self.slave_name)
 
+    def col_violates_invincible(self, **update_params):
+        pass
+        # for key in ['col', 'data', 'subject']:
+        #     assert key in update_params, 'missing mandatory update param, %s from %s' % (
+        #         key, update_params)
+        #
+        # loser = update_params['subject']
+        # col = update_params['col']
+        # data = update_params['data']
+        #
+        # if subject == self.master_name:
+        #     value = self.get_new_m_value(col)
+        # elif subject == self.slave_name:
+        #     value = self.get_new_s_value(col)
+
+
     def test_to_str(self, col, val1, val2, res):
         return u"testing col %s: %s | %s -> %s" % (
             unicode(col),
@@ -494,7 +519,7 @@ class SyncUpdate(Registrar):
                 if data.get('aliases'):
                     new_loser_object[delta_col].perform_post = False
 
-        if data.get('aliases') and new_loser_object[col].reprocess_kwargs:
+        if data.get('aliases') and getattr(new_loser_object[col], 'reprocess_kwargs'):
             if Registrar.DEBUG_UPDATE:
                 Registrar.register_message((
                     "setting col %s in loser object %s because %s.\n"
@@ -511,14 +536,19 @@ class SyncUpdate(Registrar):
         else:
             new_loser_object[col] = update_params['new_value']
 
-        # Check update is actually semistatic before marking as changed
-        if self.col_semi_static(col, loser):
+        # Check update does not violate conditions before marking as changed
+        col_violates_invincible = self.col_violates_invincible(**update_params)
+        col_semi_static = self.col_semi_static(col, loser)
+        if col_semi_static or col_violates_invincible:
             # revert new_loser_object
             if loser == self.slave_name:
                 self.new_s_object = prev_new_loser_object
             if loser == self.master_name:
                 self.new_m_object = prev_new_loser_object
-            raise UserWarning("col shouldn't be updated, too similar: %s" % update_params)
+            if col_violates_invincible:
+                raise InvincibilityViolation("col should't be updated, violates invincibility: %s" % update_params)
+            if col_semi_static:
+                raise SemistaticViolation("col shouldn't be updated, too similar: %s" % update_params)
 
         if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
             if loser == self.slave_name:
@@ -550,12 +580,21 @@ class SyncUpdate(Registrar):
 
         try:
             self.set_loser_value(**update_params)
-        except UserWarning:
-            update_params['reason'] = 'similar'
-            del update_params['subject']
-            self.tie_update(**update_params)
+        except InvincibilityViolation:
+            update_params['reason'] = 'invincible'
+        except SemistaticViolation:
+            update_params['reason'] = 'semistatic'
+        except Exception as exc:
+            raise UserWarning("Unhandled Exception in set_loser_value:\n%s" % (
+                traceback.format_exc(exc)
+            ))
+        else:
+            self.add_sync_warning(**update_params)
             return
-        self.add_sync_warning(**update_params)
+
+        del update_params['subject']
+        self.tie_update(**update_params)
+        return
 
     def tie_update(self, **update_params):
         # print "tie_update ", col, reason

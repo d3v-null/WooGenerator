@@ -4,15 +4,15 @@ import unittest
 from os import path, sys
 
 from context import woogenerator
-from test_syncupdate import TestSyncUpdateAbstract
 from test_sync_client import AbstractSyncClientTestCase
+from test_syncupdate import TestSyncUpdateAbstract
 from woogenerator.coldata import ColDataUser
 from woogenerator.conf.namespace import SettingsNamespaceUser
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import SocialMediaFields
 from woogenerator.matching import MatchList, UsernameMatcher
 from woogenerator.parsing.user import CsvParseUser, CsvParseUserApi, ImportUser
-from woogenerator.syncupdate import SyncUpdateUsrApi, SyncUpdateUsr
+from woogenerator.syncupdate import SyncUpdateUsr, SyncUpdateUsrApi
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
 if __name__ == '__main__' and __package__ is None:
@@ -488,6 +488,46 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
         parsed_s_time = SyncUpdateUsr.parse_s_time("2017-04-14 02:13:09")
         # print("parsed_s_time: %s" % pformat(parsed_s_time))
         self.assertEqual(parsed_s_time, 1492099989)
+
+class TestSyncUpdateUserInvincible(TestSyncUpdateUserAbstract):
+    def test_sync_name_invincible(self):
+        usr_m = ImportUser(
+            {
+                'E-mail': 'donnag04@hotmail.com',
+                'First Name': u'DONNA',
+                'Surname': u'MOORE',
+                'Edited Name': '27/08/2015 11:18:00 AM',
+                'Edited Phone Numbers': '29/06/2016 11:48:14 AM',
+                'Edited in Act': '15/08/2016 5:33:41 PM',
+                'Edited in Wordpress': u'False',
+                'MYOB Card ID': 'C000598',
+                '_row': []
+            },
+            rowcount=2,
+            row=[],
+        )
+
+        usr_s = ImportUser(
+            {
+                'Contact': u'Donna Moore',
+                'E-mail': u'donnag04@hotmail.com',
+                'Edited Name': u'2015-11-08 17:35:12',
+                'Edited Phone Numbers': u'2015-11-08 17:35:12',
+                'Edited in Wordpress': u'2016-11-08 17:35:12',
+                'First Name': u'Donna',
+                'Surname': u'Moore',
+                'Wordpress ID': u'16458',
+                'Wordpress Username': 'donnag04@hotmail.com',
+                '_row': []
+            },
+            rowcount=2,
+            row=[],
+        )
+
+        sync_update = SyncUpdateUsrApi(usr_m, usr_s)
+        sync_update.update(ColDataUser.get_sync_cols())
+
+        self.assertGreater(sync_update.s_time, sync_update.m_time)
 
 class TestSyncUpdateUserApi(TestSyncUpdateUserAbstract):
     def test_sync_phone(self):
