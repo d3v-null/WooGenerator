@@ -310,22 +310,22 @@ def do_merge(matches, parsers, settings):
 
         if sync_update.s_updated:
             sync_slave_updates = sync_update.get_slave_updates()
-            if 'E-mail' in sync_slave_updates:
-                new_email = sync_slave_updates['E-mail']
-                if new_email in parsers.slave.emails:
-                    m_objects = [m_object]
-                    s_objects = [s_object] + parsers.slave.emails[new_email]
-                    SanitationUtils.safe_print("duplicate emails",
-                                               m_objects, s_objects)
-                    try:
-                        matches.conflict['email'].add_match(
-                            Match(m_objects, s_objects))
-                    except Exception as exc:
-                        SanitationUtils.safe_print(
-                            ("something happened adding an email "
-                             "conflict, new_email: %s ; exception: %s") %
-                            (new_email, exc))
-                    continue
+            new_email = sync_slave_updates.get('E-mail', None)
+            new_email = SanitationUtils.normalize_val(new_email)
+            if new_email and new_email in parsers.slave.emails:
+                m_objects = [m_object]
+                s_objects = [s_object] + parsers.slave.emails[new_email]
+                SanitationUtils.safe_print("duplicate emails",
+                                           m_objects, s_objects)
+                try:
+                    matches.conflict['email'].add_match(
+                        Match(m_objects, s_objects))
+                except Exception as exc:
+                    SanitationUtils.safe_print(
+                        ("something happened adding an email "
+                         "conflict, new_email: %s ; exception: %s") %
+                        (new_email, exc))
+                continue
 
         if not sync_update.important_static:
             if sync_update.m_updated and sync_update.s_updated:
