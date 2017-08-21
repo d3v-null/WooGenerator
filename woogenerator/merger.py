@@ -154,8 +154,15 @@ def export_master_parser(parsers, settings):
         os.path.join(settings.in_folder_full, settings.m_x_name),
         settings.col_data_class.get_act_import_col_names())
 
-def do_match(matches, parsers, settings):
+def do_match(parsers, settings):
     """For every item in slave, find its counterpart in master."""
+
+    matches = MatchNamespace()
+    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
+
+    if not settings.do_sync:
+        return matches
+
     Registrar.register_progress("Processing matches")
 
     parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
@@ -249,9 +256,14 @@ def do_match(matches, parsers, settings):
 
     return matches
 
-def do_merge(matches, updates, parsers, settings):
+def do_merge(matches, parsers, settings):
     """For a given list of matches, return a description of updates required to merge them."""
     Registrar.register_progress("BEGINNING MERGE (%d)" % len(matches.globals))
+
+    updates = UpdateNamespace()
+
+    if not settings.do_sync:
+        return updates
 
     sync_cols = settings.col_data_class.get_sync_cols()
 
@@ -905,17 +917,21 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
 
     print "state saved to %s" % settings.pickle_path_full
 
-def unpickle_state(settings):
+def unpickle_state(settings_pickle):
     """Restore state from a pickle file."""
     Registrar.register_progress("restoring state from pickle")
 
-    with open(settings.pickle_path_full) as pickle_file:
+    with open(settings_pickle.pickle_path_full) as pickle_file:
         pickle_obj = dill.load(pickle_file)
         matches, updates, parsers, settings, progress = pickle_obj
 
-    # TODO: some way to change settings after restore state
+    if settings_pickle.get('override_progress'):
+        progress = settings_pickle['override_progress']
 
-    if progress == 'report':
+    if progress in ['sync']:
+        matches = do_match(parsers, settings)
+        updates = do_merge(matches, parsers, settings)
+    if progress in ['sync', 'report']:
         do_report(matches, updates, parsers, settings)
         do_updates(updates, settings)
 
@@ -1081,13 +1097,10 @@ def main(override_args=None, settings=None):
     parsers = populate_master_parsers(parsers, settings)
     # export_master_parser(parsers, settings)
 
-    matches = MatchNamespace()
-    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
-    updates = UpdateNamespace()
+    pickle_state(None, None, parsers, settings, 'sync')
 
-    if settings['do_sync']:
-        matches = do_match(matches, parsers, settings)
-        updates = do_merge(matches, updates, parsers, settings)
+    matches = do_match(parsers, settings)
+    updates = do_merge(matches, parsers, settings)
 
     pickle_state(matches, updates, parsers, settings, 'report')
 

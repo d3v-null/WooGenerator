@@ -299,6 +299,7 @@ class TestMerger(unittest.TestCase):
         # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
     def test_do_match(self):
+        self.settings.do_sync = True
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -306,7 +307,7 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.assertEqual(len(self.matches.globals), 8)
         # print("global matches:\n%s" % pformat(self.matches.globals))
@@ -322,6 +323,7 @@ class TestMerger(unittest.TestCase):
         )
 
     def test_do_merge_basic(self):
+        self.settings.do_sync = True
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
@@ -332,10 +334,10 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
+            self.matches, self.parsers, self.settings
         )
         # if self.debug:
         #     Registrar.DEBUG_MESSAGE = True
@@ -491,6 +493,7 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_do_merge_hard_1(self):
+        self.settings.do_sync = True
         suffix = 'hard_1'
         for source, line in [('master', 8), ('slave', 89)]:
             with open(getattr(self.settings, '%s_file' % source)) as import_file:
@@ -514,10 +517,10 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
+            self.matches, self.parsers, self.settings
         )
         sync_update = self.updates.static.pop()
         try:
@@ -543,6 +546,7 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_do_merge_hard_2(self):
+        self.settings.do_sync = True
         suffix = 'hard_2'
         for source, line in [('master', 96), ('slave', 100)]:
             with open(getattr(self.settings, '%s_file' % source)) as import_file:
@@ -562,10 +566,10 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
+            self.matches, self.parsers, self.settings
         )
         sync_update = self.updates.static.pop()
         try:
@@ -608,6 +612,7 @@ class TestMerger(unittest.TestCase):
 
     # @unittest.skip("Failing")
     def test_do_merge_false_pos(self):
+        self.settings.do_sync = True
         self.settings.master_file = os.path.join(tests_datadir, "merger_master_false_positive.csv")
         self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_false_positive.csv")
         self.parsers = populate_master_parsers(
@@ -617,11 +622,11 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.assertTrue(self.matches)
         self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
+            self.matches, self.parsers, self.settings
         )
         # self.print_updates_summary(self.updates)
         self.assertFalse(self.updates.static)
@@ -652,7 +657,6 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             print("out dir is %s" % temp_out_dir)
         self.settings.out_folder = temp_out_dir
-        self.settings.do_merge = True
         self.settings.do_sync = True
         if self.debug:
             print("rep_path_full is %s" % self.settings.rep_path_full)
@@ -664,10 +668,10 @@ class TestMerger(unittest.TestCase):
             self.parsers, self.settings
         )
         self.matches = do_match(
-            self.matches, self.parsers, self.settings
+            self.parsers, self.settings
         )
         self.updates = do_merge(
-            self.matches, self.updates, self.parsers, self.settings
+            self.matches, self.parsers, self.settings
         )
         do_report(
             self.matches, self.updates, self.parsers, self.settings
