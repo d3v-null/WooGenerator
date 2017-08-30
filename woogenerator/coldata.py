@@ -1618,6 +1618,7 @@ class ColDataUser(ColDataBase):
             'sync': True,
             'visible': True,
             'mutable': True,
+            'invincible':'master',
         }),
         ('Phone Preferred', {
             'wp': {
