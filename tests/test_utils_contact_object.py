@@ -1041,21 +1041,46 @@ class TestContactPhones(TestFieldGroups):
         self.assertFalse(phones_1.empty)
 
 class TestSocialMediaGroup(TestFieldGroups):
-
-    def test_print(self):
-        smf = SocialMediaFields(
+    def setUp(self):
+        super(TestSocialMediaGroup, self).setUp()
+        self.smf_m_args = dict(
             facebook='facebook',
             twitter='@twitter',
             gplus='+gplus',
             instagram='@insta',
-            # website = 'http://www.google.com'
+            website = 'www.google.com'
+        )
+        self.smf_s_args = dict(
+            facebook='facebook',
+            twitter='@twitter',
+            gplus='+gplus',
+            instagram='@insta',
+            website = 'http://www.google.com'
         )
 
-        # self.assertEqual(smf['Web Site'], 'http://www.google.com')
-        self.assertEqual(smf['Facebook Username'], 'facebook')
-        self.assertEqual(smf['Twitter Username'], '@twitter')
-        self.assertEqual(smf['GooglePlus Username'], '+gplus')
-        self.assertEqual(smf['Instagram Username'], '@insta')
+    def test_basic(self):
+        smf_m = SocialMediaFields(
+            **self.smf_m_args
+        )
+
+        self.assertEqual(smf_m['Web Site'], 'www.google.com')
+        self.assertEqual(smf_m['Facebook Username'], 'facebook')
+        self.assertEqual(smf_m['Twitter Username'], '@twitter')
+        self.assertEqual(smf_m['GooglePlus Username'], '+gplus')
+        self.assertEqual(smf_m['Instagram Username'], '@insta')
+
+        smf_s = SocialMediaFields(
+            **self.smf_s_args
+        )
+
+        self.assertEqual(smf_s['Web Site'], 'http://www.google.com')
+        self.assertEqual(smf_s['Facebook Username'], 'facebook')
+        self.assertEqual(smf_s['Twitter Username'], '@twitter')
+        self.assertEqual(smf_s['GooglePlus Username'], '+gplus')
+        self.assertEqual(smf_s['Instagram Username'], '@insta')
+
+        self.assertNotEqual(smf_m, smf_s)
+        self.assertTrue(smf_m.similar(smf_s))
 
 class TestRoleGroup(TestFieldGroups):
 

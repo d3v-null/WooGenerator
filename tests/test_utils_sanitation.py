@@ -46,6 +46,18 @@ class TestSanitationUtils(TestCase):
             [u'www.technotan.com.au']
         )
 
+    # def test_strip_scheme(self):
+    #     self.assertEqual(
+    #         'www.google.com/',
+    #         SanitationUtils.strip_url_scheme('http://www.google.com/')
+    #     )
+
+    def test_strip_protocol(self):
+        self.assertEqual(
+            'www.google.com/',
+            SanitationUtils.strip_url_protocol('http://www.google.com/')
+        )
+
     def test_encode_json(self):
         pass
 

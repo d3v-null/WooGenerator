@@ -453,6 +453,19 @@ class SanitationUtils(object):
             print "strip_url_protocol", repr(string), repr(str_out)
         return str_out
 
+    # @classmethod
+    # def strip_url_scheme(cls, url):
+    #     str_out = url
+    #     result = urlparse(url)
+    #     if result:
+    #         if result.scheme:
+    #             remove_str = '%s:' % result.scheme
+    #             if str_out.startswith(remove_str):
+    #                 str_out = str_out[len(remove_str):]
+    #     if Registrar.DEBUG_UTILS:
+    #         print "strip_url_scheme", repr(url), repr(str_out)
+    #     return str_out
+
     @classmethod
     def strip_url_host(cls, url):
         str_out = url

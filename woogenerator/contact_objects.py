@@ -1508,6 +1508,11 @@ class SocialMediaFields(FieldGroup):
             return self.properties.get('website')
         return self.kwargs.get('website')
 
+    def normalize_val(self, key, val):
+        val = super(SocialMediaFields, self).normalize_val(key, val)
+        val = SanitationUtils.strip_url_protocol(val)
+        return val
+
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = "; "
