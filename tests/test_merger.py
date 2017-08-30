@@ -492,20 +492,28 @@ class TestMerger(unittest.TestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    def make_temp_with_lines(self, filename, lines, suffix=''):
+        source = os.path.basename(filename)
+        with open(filename) as in_file:
+            in_contents = in_file.readlines()
+            new_contents = [
+                in_contents[line] for line in lines
+            ]
+            _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
+            with open(new_filename, 'w+') as new_file:
+                new_file.writelines(new_contents)
+            return new_filename
+
     def test_do_merge_hard_1(self):
         self.settings.do_sync = True
         suffix = 'hard_1'
         for source, line in [('master', 8), ('slave', 89)]:
-            with open(getattr(self.settings, '%s_file' % source)) as import_file:
-                import_contents = import_file.readlines()
-                new_contents = [import_contents[0], import_contents[line]]
-                _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
-                # print("seting %s to %s with contents:\n%s" % (
-                #     source, new_filename, pformat(new_contents)
-                # ))
-                with open(new_filename, 'w+') as new_file:
-                    new_file.writelines(new_contents)
-                setattr(self.settings, '%s_file' % source, new_filename)
+            new_filename = self.make_temp_with_lines(
+                getattr(self.settings, '%s_file' % source),
+                [0, line],
+                suffix
+            )
+            setattr(self.settings, '%s_file' % source, new_filename)
 
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
@@ -549,16 +557,12 @@ class TestMerger(unittest.TestCase):
         self.settings.do_sync = True
         suffix = 'hard_2'
         for source, line in [('master', 96), ('slave', 100)]:
-            with open(getattr(self.settings, '%s_file' % source)) as import_file:
-                import_contents = import_file.readlines()
-                new_contents = [import_contents[0], import_contents[line]]
-                _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
-                # print("seting %s to %s with contents:\n%s" % (
-                #     source, new_filename, pformat(new_contents)
-                # ))
-                with open(new_filename, 'w+') as new_file:
-                    new_file.writelines(new_contents)
-                setattr(self.settings, '%s_file' % source, new_filename)
+            new_filename = self.make_temp_with_lines(
+                getattr(self.settings, '%s_file' % source),
+                [0, line],
+                suffix
+            )
+            setattr(self.settings, '%s_file' % source, new_filename)
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
