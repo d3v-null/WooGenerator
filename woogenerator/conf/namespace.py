@@ -813,9 +813,11 @@ class MetaSettings(object):
     """
     Store information about settings object as it transitions between states.
     """
-    states = OrderedDict()
-    known_keys = set()
-    override_args = None
+
+    def __init__(self):
+        self.states = OrderedDict()
+        self.known_keys = set()
+        self.override_args = None
 
     def set_override_args(self, override_args):
         self.override_args = override_args
