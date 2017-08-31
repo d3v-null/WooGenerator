@@ -53,7 +53,7 @@ class TimeUtils(object):
     @classmethod
     def star_strp_mktime(cls, string, fmt=wpTimeFormat):
         # type: (basestring, basestring) -> int
-        """ takes a time string and a format, returns number of seconds since epoch """
+        """ take a time string and a format, returns number of seconds since epoch """
         if string:
             if isinstance(string, datetime.datetime):
                 # sometimes yaml does strings as datetime.datetime
@@ -74,7 +74,8 @@ class TimeUtils(object):
 
     @classmethod
     def act_strp_mktime(cls, string):
-        """ takes an act formatted time string, returns number of seconds since epoch """
+        """ take an act formatted date or time string (eg. "8/11/2016 1:38:51 PM"),
+        returns number of seconds since epoch """
         assert isinstance(string, basestring), \
             "param must be a string not %s" % type(string)
 
@@ -91,19 +92,19 @@ class TimeUtils(object):
 
     @classmethod
     def wp_strp_mktime(cls, string):
-        """ takes a wp formatted time string (eg. "2015-07-13 22:33:05"),
+        """ take a wp formatted time string (eg. "2015-07-13 22:33:05"),
         returns number of seconds since epoch """
         return cls.star_strp_mktime(string)
 
     @classmethod
     def act_strp_mkdate(cls, string):
-        """ takes an act formatted date string (eg. "13/07/2015"),
+        """ take an act formatted date string (eg. "13/07/2015"),
         returns number of seconds since epoch """
         return cls.star_strp_mktime(string, cls.actDateFormat)
 
     @classmethod
     def g_drive_strp_mk_time(cls, string):
-        """ takes a gDrive formatted time string (eg. "2016-07-13 22:33:05"),
+        """ take a gDrive formatted time string (eg. "2016-07-13 22:33:05"),
         returns number of seconds since epoch """
         return cls.star_strp_mktime(string, cls.gDriveTimeFormat)
 
@@ -148,7 +149,7 @@ class TimeUtils(object):
     @classmethod
     def local_to_server_time(cls, time_int, timezone_offset=time.timezone):
         """
-        takes a time in local time (int), and an offset (int)
+        take a time in local time (int), and an offset (int)
         returns the time in server time (int)
         """
         return int(time_int - timezone_offset)
@@ -156,7 +157,7 @@ class TimeUtils(object):
     @classmethod
     def server_to_local_time(cls, time_int, timezone_offset=time.timezone):
         """
-        takes a time in server time (int), and an offset (int)
+        take a time in server time (int), and an offset (int)
         returns the time in local time (int)
         """
         return int(time_int + timezone_offset)
@@ -164,7 +165,7 @@ class TimeUtils(object):
     @classmethod
     def wp_server_to_local_time(cls, time_int):
         """
-        takes a time in wp server time (int),
+        take a time in wp server time (int),
         returns the time in local time (int)
         """
         return cls.server_to_local_time(time_int, cls._wpSrvOffset)
@@ -172,7 +173,7 @@ class TimeUtils(object):
     @classmethod
     def act_server_to_local_time(cls, time_int):
         """
-        takes a time in act server time (int),
+        take a time in act server time (int),
         returns the time in local time (int)
         """
         return cls.server_to_local_time(time_int, cls.actSrvOffset)
