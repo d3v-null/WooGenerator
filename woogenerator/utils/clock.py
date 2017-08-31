@@ -195,6 +195,13 @@ class TimeUtils(object):
         if not time_struct:
             time_struct = cls.current_loctstruct()
         return time.strftime(cls.msTimeFormat, time_struct)
+
+    @classmethod
+    def get_system_timezone(cls):
+        """
+        Get timezone offset as configured by system.
+        """
+        return time.strftime("%z", time.gmtime())
     #
     # @classmethod
     # def get_timestamp(cls, time_struct=None):

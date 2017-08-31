@@ -18,7 +18,7 @@ from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
-from woogenerator.utils import Registrar  # , SanitationUtils
+from woogenerator.utils import Registrar, TimeUtils
 
 
 class TestMerger(unittest.TestCase):
@@ -225,6 +225,25 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.socials.website, website)
         self.assertEqual(first_usr['Web Site'], website)
 
+        self.assertEqual(first_usr.role.role, "RN")
+        self.assertEqual(first_usr.role.direct_brand, "TechnoTan Wholesale")
+
+        # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
+
+    @unittest.skipIf(
+        TimeUtils.get_system_timezone != '+1000',
+        'Tests calibrated for AEST'
+    )
+    def test_populate_master_parsers_time(self):
+        """check master time is parsed correctly (skip tests if not local)"""
+        self.settings.master_parse_limit = 4
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        usr_list = self.parsers.master.get_obj_list()
+        self.assertTrue(len(usr_list))
+        first_usr = usr_list[0]
+
         self.assertEqual(first_usr.act_modtime, 1284447467.0)
         self.assertEqual(first_usr.act_created, 1303530357.0)
         self.assertEqual(first_usr.wp_created, 1406544037.0)
@@ -232,10 +251,7 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.last_sale, 1445691600.0)
         self.assertEqual(first_usr.last_modtime, 1445691600.0)
         self.assertEqual(first_usr.act_last_transaction, 1445691600.0)
-        self.assertEqual(first_usr.role.role, "RN")
-        self.assertEqual(first_usr.role.direct_brand, "TechnoTan Wholesale")
 
-        # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 
     def test_populate_slave_parsers(self):
         self.parsers = populate_slave_parsers(
@@ -286,17 +302,29 @@ class TestMerger(unittest.TestCase):
         )
         self.assertEqual(first_usr.socials.twitter, "bblakeway7")
 
+        self.assertEqual(first_usr.role.direct_brand, "Pending")
+        self.assertEqual(first_usr.role.role, "WN")
+        self.assertEqual(first_usr.wpid, '1080')
+        self.assertEqual(first_usr.email, 'GSAMPLE6@FREE.FR')
+        # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
+
+    @unittest.skipIf(
+        TimeUtils.get_system_timezone != '+1000',
+        'Tests calibrated for AEST'
+    )
+    def test_populate_slave_parsers_time(self):
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        usr_list = self.parsers.slave.get_obj_list()
+        self.assertTrue(len(usr_list))
+        first_usr = usr_list[0]
         self.assertEqual(first_usr.act_modtime, None)
         self.assertEqual(first_usr.act_created, None)
         self.assertEqual(first_usr.wp_created, 1479060113.0)
         self.assertEqual(first_usr.wp_modtime, None)
         self.assertEqual(first_usr.last_sale, None)
         self.assertEqual(first_usr.last_modtime, 1479060113.0)
-        self.assertEqual(first_usr.role.direct_brand, "Pending")
-        self.assertEqual(first_usr.role.role, "WN")
-        self.assertEqual(first_usr.wpid, '1080')
-        self.assertEqual(first_usr.email, 'GSAMPLE6@FREE.FR')
-        # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
     def test_do_match(self):
         self.settings.do_sync = True

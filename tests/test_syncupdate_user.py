@@ -481,6 +481,10 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        TimeUtils.get_system_timezone != '+1000',
+        'Tests calibrated for AEST'
+    )
     def test_parse_time(self):
         parsed_m_time = SyncUpdateUsr.parse_m_time("8/11/2016 1:38:51 PM")
         # print("parsed_m_time: %s" % pformat(parsed_m_time))
