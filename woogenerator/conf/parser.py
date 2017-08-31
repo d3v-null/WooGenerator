@@ -653,8 +653,11 @@ class ArgumentParserUser(ArgumentParserCommon):
             '--email-file',
             help='file containing list of emails to filer on (one per line)')
         filter_group.add_argument(
-            '--emails',
+            '--filter-emails',
             help='list of emails to filer on')
+        filter_group.add_argument(
+            '--ignore-cards',
+            help='list of cards to ignore')
         filter_group.add_argument(
             '--since-m',
             help='filter out master records edited before this date')

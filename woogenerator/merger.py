@@ -40,6 +40,9 @@ def timediff(settings):
 
 def populate_filter_settings(settings):
     """Populate the settings for filtering input data."""
+
+    Registrar.register_progress("Prepare Filter Data")
+
     if settings['do_filter']:
         # TODO: I don't think emails filter is actually working
         filter_files = {
@@ -62,16 +65,23 @@ def populate_filter_settings(settings):
                         "could not open %s file [%s] from %s" % (
                             key, filter_file, unicode(os.getcwd())))
                     raise exc
-        if 'emails' in settings and settings.emails:
-            if not 'emails' in settings.filter_items or not settings.filter_items['emails']:
+        if settings.get('filter_emails'):
+            if not settings.filter_items.get('emails'):
                 settings.filter_items['emails'] = []
-            settings.filter_items['emails'].extend(settings.emails.split(','))
-        if 'since_m' in settings:
+            settings.filter_items['emails'].extend(settings.get('filter_emails').split(','))
+        if settings.get('ignore_cards'):
+            if not settings.filter_items.get('ignore_cards'):
+                settings.filter_items['ignore_cards'] = []
+            settings.filter_items['ignore_cards'].extend(settings.get('ignore_cards').split(','))
+        if settings.get('since_m'):
             settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
-        if 'since_s' in settings:
+        if settings.get('since_s'):
             settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
     else:
         settings.filter_items = None
+
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message("filter_items: %s" % settings.filter_items)
 
 def populate_slave_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
@@ -531,6 +541,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
                 len(matches.duplicate['email'])
             }))
 
+    # TODO: use this
     match_list_instructions = {
         'cardMatcher.duplicate_matches':
         '%s records have multiple CARD IDs in %s' %
@@ -1119,8 +1130,6 @@ def main(override_args=None, settings=None):
         unpickle_state(settings)
         return settings
 
-    ### SET UP DIRECTORIES ###
-
     for path in (
             settings.in_folder_full, settings.out_folder_full,
             settings.log_folder_full, settings.pickle_folder_full
@@ -1128,18 +1137,7 @@ def main(override_args=None, settings=None):
         if not os.path.exists(path):
             os.mkdir(path)
 
-    ### PROCESS OTHER CONFIG ###
-
-    #########################################
-    # Prepare Filter Data
-    #########################################
-
-    Registrar.register_progress("Prepare Filter Data")
-
     populate_filter_settings(settings)
-
-    if Registrar.DEBUG_UPDATE and settings.do_filter:
-        Registrar.register_message("filter_items: %s" % settings.filter_items)
 
     parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)

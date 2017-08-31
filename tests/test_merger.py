@@ -14,7 +14,7 @@ from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
-                                 populate_slave_parsers, do_report)
+                                 populate_slave_parsers, do_report, populate_filter_settings)
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
@@ -493,6 +493,7 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def make_temp_with_lines(self, filename, lines, suffix=''):
+        """ Safely create a new temp file with the contents of filename at lines. """
         source = os.path.basename(filename)
         with open(filename) as in_file:
             in_contents = in_file.readlines()
@@ -681,6 +682,47 @@ class TestMerger(unittest.TestCase):
         do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
+
+    def test_filter_ignore_cards(self):
+        self.settings.do_filter = True
+        self.settings.ignore_cards = "C001280"
+        # Registrar.DEBUG_USR = True
+        # Registrar.DEBUG_MESSAGE = True
+        suffix = 'filter_ignore_cards'
+        for source, lines in [('master', [0, 8, 96]), ('slave', [0, 89, 100])]:
+            new_filename = self.make_temp_with_lines(
+                getattr(self.settings, '%s_file' % source),
+                lines,
+                suffix
+            )
+            setattr(self.settings, '%s_file' % source, new_filename)
+            print("opening %s" % new_filename)
+            with open(new_filename) as new_file:
+                print(new_file.readlines())
+        populate_filter_settings(self.settings)
+        self.assertTrue(self.settings.filter_items)
+        self.assertEqual(
+            self.settings.filter_items.get('ignore_cards'),
+            self.settings.ignore_cards.split(',')
+        )
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        # m_usr_list = self.parsers.master.get_obj_list()
+        # print("master parsers (%d): %s" % (len(m_usr_list), m_usr_list.tabulate()))
+        # s_usr_list = self.parsers.slave.get_obj_list()
+        # print("slave parsers (%d): %s" % (len(s_usr_list), s_usr_list.tabulate()))
+        # print("master parser cards: %s" % (self.parsers.master.cards.keys()))
+        self.assertTrue(
+            "C016546" in self.parsers.master.cards
+        )
+        self.assertFalse(
+            "C001280" in self.parsers.master.cards
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -590,42 +590,56 @@ class CsvParseUser(CsvParseBase):
 
     def validate_filters(self, object_data):
         if self.filter_items:
-            if 'roles' in self.filter_items.keys(
-            ) and object_data.role not in self.filter_items['roles']:
+            if 'roles' in self.filter_items \
+            and object_data.role not in self.filter_items['roles']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not match role"
                         % object_data.__repr__())
                 return False
-            if 'sinceM' in self.filter_items.keys(
-            ) and object_data.act_modtime < self.filter_items['sinceM']:
+            if 'sinceM' in self.filter_items \
+            and object_data.act_modtime < self.filter_items['sinceM']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not meet sinceM condition"
                         % object_data.__repr__())
                 return False
-            if 'sinceS' in self.filter_items.keys(
-            ) and object_data.wp_modtime < self.filter_items['sinceS']:
+            if 'sinceS' in self.filter_items \
+            and object_data.wp_modtime < self.filter_items['sinceS']:
                 if self.DEBUG_USR:
                     self.register_message(
                         "could not register object %s because did not meet sinceS condition"
                         % object_data.__repr__())
                 return False
-            if object_data.username in self.filter_items.get('users', []):
-                return True
-            if object_data.MYOBID in self.filter_items.get('cards', []):
-                return True
-            if object_data.email in self.filter_items.get('emails', []):
-                return True
-            if self.DEBUG_USR:
-                self.register_message(
-                    (
-                        "could not register object %s because did not "
-                        "meet users, cards or emails conditions"
-                    ) % object_data.__repr__())
-            return False
-        else:
-            return True
+            if 'users' in self.filter_items \
+            and object_data.username not in self.filter_items['users']:
+                if self.DEBUG_USR:
+                    self.register_message(
+                        "could not register object %s because did not meet username condition"
+                        % object_data.__repr__())
+                return False
+            if 'cards' in self.filter_items \
+            and object_data.MYOBID not in self.filter_items['cards']:
+                if self.DEBUG_USR:
+                    self.register_message(
+                        "could not register object %s because did not meet cards condition"
+                        % object_data.__repr__())
+                return False
+            if 'ignore_cards' in self.filter_items \
+            and object_data.MYOBID in self.filter_items['ignore_cards']:
+                if self.DEBUG_USR:
+                    self.register_message(
+                        "could not register object %s because did not meet ignore cards condition"
+                        % object_data.__repr__())
+                return False
+            if 'emails' in self.filter_items \
+            and object_data.email not in self.filter_items['emails']:
+                if self.DEBUG_USR:
+                    self.register_message(
+                        "could not register object %s because did not meet emails condition"
+                        % object_data.__repr__())
+                return False
+        return True
 
     def register_object(self, object_data):
         if not self.validate_filters(object_data):
