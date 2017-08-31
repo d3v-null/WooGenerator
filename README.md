@@ -120,25 +120,31 @@ Todo: Are these still dependencies?
 
 Cygwin Packages
 ---------------
-If you're running cygwin:
+If you're running cygwin, you may or may not need these:
 
 ```
-  apt-cyg install \
+apt-cyg install \
     cygwin-devel \
+    cygwin32-w32api-headers \
     exiv2 \
     gcc-core \
-    gexiv2 \
     libboost_python-devel \
+    libboost-devel \
     libexiv2-devel \
+    libffi6 \
+    libffi-devel \
+    mingw64-i686-boost \
     mingw64-i686-binutils \
     mingw64-i686-gcc-core \
     mingw64-i686-headers \
     mingw64-i686-openssl \
     mingw64-i686-pkg-config \
+    mingw64-i686-libffi \
     mingw64-i686-runtime \
     mingw64-i686-windows-default-manifest \
     mingw64-i686-winpthreads \
     mingw64-i686-zlib \
+    mingw64-x86_64-boost \
     mingw64-x86_64-binutils \
     mingw64-x86_64-exiv2 \
     mingw64-x86_64-gcc-core \
@@ -153,11 +159,14 @@ If you're running cygwin:
     openssl \
     openssl-devel \
     python \
+    python-crypto \
     python-cffi \
     python-gi \
     python-imaging \
     python-ply \
     python-pycparser \
+    python2-cffi \
+    python3-cffi \
     rsync \
     scons \
     w32api-headers \
@@ -169,9 +178,13 @@ Other Libraries
 
 Testing
 ====
-to test X
+To install testing suite:
+```bash
+pip install pytest pytest-pudb mock radon mccabe pycodestyle pylama pylint
 ```
-    python -m unittest discover tests
+to test all:
+```bash
+pytest
 ```
 
 Running
