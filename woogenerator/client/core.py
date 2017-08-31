@@ -41,11 +41,6 @@ class AbstractServiceInterface(object):
         """ Abstract method for getting data from the service"""
         raise NotImplementedError()
 
-    def post(self, *args, **kwargs):
-        """ Abstract method for posting data to the service """
-        raise NotImplementedError()
-
-
 class WPAPIService(API, AbstractServiceInterface):
     """ A child of the wordpress API that implements the Service interface """
 
