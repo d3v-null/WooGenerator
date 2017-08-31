@@ -7,6 +7,8 @@ import sys
 import time
 from collections import OrderedDict
 from pprint import pformat
+from tabulate import tabulate
+from copy import copy
 
 from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.prod import ProdSyncClientWC
@@ -807,14 +809,81 @@ def init_registrar(settings):
     Registrar.DEBUG_WOO = settings.debug_woo
     Registrar.DEBUG_TRACE = settings.debug_trace
 
+class MetaSettings(object):
+    """
+    Store information about settings object as it transitions between states.
+    """
+    states = OrderedDict()
+    known_keys = set()
+    override_args = None
+
+    def set_override_args(self, override_args):
+        self.override_args = override_args
+
+    def add_state(self, name, vars_=None, configs=None):
+        assert name not in self.states, "state already added"
+        state_dict = {}
+        if vars_:
+            self.known_keys = self.known_keys | set(vars_.keys())
+            state_dict["vars"] = vars_
+        state_dict['configs'] = configs if configs else []
+        self.states[name] = state_dict
+
+    def set_state_vars(self, name, vars_):
+        if not name in self.states:
+            self.states[name] = {}
+        self.states[name]['vars'] = vars_
+
+    def tabulate(self, tablefmt=None, ignore_keys=None):
+        subtitle_fmt = "*%s*"
+        info_delimeter = "\n"
+        info_fmt = "%s: %s"
+        if tablefmt == "html":
+            subtitle_fmt = "<h3>%s</h3>"
+            info_delimeter = "<br/>"
+            info_fmt = "<strong>%s:</strong> %s"
+
+        info_components = []
+        info_components += [subtitle_fmt % "Configs"]
+        seen_configs = []
+        for state_name, state in self.states.items():
+            state_configs = state.get('configs', [])
+            unseen_configs = [
+                config for config in state_configs if config not in seen_configs
+            ]
+            info_components += [info_fmt % (
+                state_name,
+                ", ".join(unseen_configs)
+            )]
+            seen_configs += unseen_configs
+
+        info_components += [subtitle_fmt % "Settings"]
+        if ignore_keys is None:
+            ignore_keys = []
+        state_table = [['key'] + self.states.keys()]
+        for key in sorted(list(self.known_keys)):
+            if key in ignore_keys:
+                continue
+            state_table_row = [key] + [
+                state.get('vars', {}).get(key) for state in self.states.values()
+            ]
+            state_table.append(state_table_row)
+        info_components += [tabulate(state_table, tablefmt=tablefmt, headers="firstrow")]
+
+        return info_delimeter.join(info_components)
+
 
 def init_settings(override_args=None, settings=None, argparser_class=None):
     """
     Load config file and initialise settings object from given argparser class.
     """
 
+    meta_settings = MetaSettings()
+
     if not settings:
         settings = argparser_class.namespace()
+
+    meta_settings.add_state('init', copy(vars(settings)))
 
     ### First round of argument parsing determines which config files to read
     ### from core config files, CLI args and env vars
@@ -826,14 +895,17 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     parser_override = {'namespace':settings}
     if override_args is not None:
         parser_override['args'] = override_args
+        meta_settings.set_override_args(override_args)
         settings.called_with_args = override_args
     else:
         settings.called_with_args = sys.argv
 
     settings, _ = proto_argparser.parse_known_args(**parser_override)
 
+    meta_settings.add_state('proto', copy(vars(settings)))
 
-    Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
+    # Registrar.DEBUG_MESSAGE = True
+    # Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
 
     ### Second round gets all the arguments from all config files
 
@@ -856,19 +928,21 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
             parser_override['args'] = []
         parser_override['args'] += ['--help']
 
-    Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
-    Registrar.register_message(
-        "default_config_files: \n%s" % pformat(argparser.default_config_files)
-    )
+    # Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
+    # Registrar.register_message(
+    #     "default_config_files: \n%s" % pformat(argparser.default_config_files)
+    # )
 
     # defaults first
     settings = argparser.parse_args(**parser_override)
+
+    meta_settings.add_state('main', copy(vars(settings)), argparser.default_config_files)
 
     init_registrar(settings)
 
     # argparser.print_values()
 
-    Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
+    # Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
 
     # then user config
     # for conf in settings.second_stage_configs:
@@ -883,5 +957,12 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
                            settings.merge_mode, settings.last_sync)
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
+
+    Registrar.register_message(
+        "meta settings:\n%s" %
+        meta_settings.tabulate(ignore_keys=['called_with_args'])
+    )
+
+    quit()
 
     return settings
