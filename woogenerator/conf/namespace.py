@@ -963,6 +963,4 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
         meta_settings.tabulate(ignore_keys=['called_with_args'])
     )
 
-    quit()
-
     return settings

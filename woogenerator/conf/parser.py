@@ -13,7 +13,7 @@ from .__init__ import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                        DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
                        DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
                        DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
-                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH)
+                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH, DEFAULTS_USER_PATH)
 from .namespace import (SettingsNamespaceProd, SettingsNamespaceProto,
                         SettingsNamespaceUser)
 
@@ -629,7 +629,7 @@ class ArgumentParserUser(ArgumentParserCommon):
         kwargs['description'] = \
             'Merge contact records between two databases'
         if not kwargs.get('extra_default_config_files'):
-            kwargs['extra_default_config_files'] = [DEFAULTS_PROD_PATH]
+            kwargs['extra_default_config_files'] = [DEFAULTS_USER_PATH]
         super(ArgumentParserUser, self).__init__(**kwargs)
 
     def add_download_options(self, download_group):
