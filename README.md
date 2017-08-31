@@ -100,22 +100,14 @@ Store your ssh / mysql credentials in your product syncing config file, default:
 
 ```
 
-Other dependencies
-------------------
+Python Version
+---
 
 make sure you are using python2:
 
-`python -c "import sys; print sys.version"`
-
-Now you can install packages
-
-`sudo -H pip2 install --upgrade $(cat requirements.txt)`
-
-Todo: Are these still dependencies?
-```
-  pygobject3 \
-  iptcinfo \
-  bzr \
+```bash
+python -c "import sys; print sys.version"
+# Should be 2.7.X
 ```
 
 Cygwin Packages
@@ -173,8 +165,20 @@ apt-cyg install \
     w32api-runtime \
 ```
 
-Other Libraries
----------------
+Python packages
+---
+Now you can install packages
+
+```bash
+sudo -H pip2 install --upgrade $(cat requirements.txt)
+```
+
+Todo: Are these still dependencies?
+```
+  pygobject3 \
+  iptcinfo \
+  bzr \
+```
 
 Testing
 ====
