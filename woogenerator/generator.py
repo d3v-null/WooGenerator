@@ -159,8 +159,8 @@ def process_images(settings, parsers):
     Registrar.register_progress("processing images")
 
     if Registrar.DEBUG_IMG:
-        Registrar.register_message("Looking in folders: %s" %
-                                   settings.img_raw_folders)
+        Registrar.register_message("Looking in dirs: %s" %
+                                   settings.img_raw_dirs)
 
     def invalid_image(img_name, error):
         """Register error globally and attribute to image."""
@@ -171,25 +171,25 @@ def process_images(settings, parsers):
         parsers.master.images[img_name].invalidate(error)
 
     ls_raw = {}
-    for folder in settings.img_raw_folders:
-        if folder:
-            ls_raw[folder] = os.listdir(folder)
+    for dir in settings.img_raw_dirs:
+        if dir:
+            ls_raw[dir] = os.listdir(dir)
 
     def get_raw_image(img_name):
         """
-        Find the path of the image in the raw image folders.
+        Find the path of the image in the raw image dirs.
 
         Args:
             img_name (str):
                 the name of the file to search for
 
         Returns:
-            The path of the image within the raw image folders
+            The path of the image within the raw image dirs
 
         Raises:
             IOError: file could not be found
         """
-        for path in settings.img_raw_folders:
+        for path in settings.img_raw_dirs:
             if path and img_name in ls_raw[path]:
                 return os.path.join(path, img_name)
         raise IOError("no image named %s found" % str(img_name))
@@ -320,10 +320,10 @@ def process_images(settings, parsers):
     # # RSYNC
     # # ------
     #
-    # if not os.path.exists(wpaiFolder):
-    #     os.makedirs(wpaiFolder)
+    # if not os.path.exists(wpai_dir):
+    #     os.makedirs(wpai_dir)
     #
-    # rsync.main([os.path.join(img_dst,'*'), wpaiFolder])
+    # rsync.main([os.path.join(img_dst,'*'), wpai_dir])
 
 def export_parsers(settings, parsers):
     """Export key information from the parsers to spreadsheets."""
@@ -380,7 +380,7 @@ def export_parsers(settings, parsers):
                 if special_products:
                     fla_name, fla_ext = os.path.splitext(settings.fla_path)
                     fls_path = os.path.join(
-                        settings.out_folder_full,
+                        settings.out_dir_full,
                         fla_name + "-" + current_special + fla_ext)
                     special_product_list = WooProdList(special_products)
                     special_product_list.export_items(fls_path,
@@ -389,7 +389,7 @@ def export_parsers(settings, parsers):
                 if special_variations:
                     flv_name, flv_ext = os.path.splitext(settings.flv_path)
                     flvs_path = os.path.join(
-                        settings.out_folder_full,
+                        settings.out_dir_full,
                         flv_name + "-" + current_special + flv_ext)
 
                     sp_variation_list = WooVarList(special_variations)
@@ -399,7 +399,7 @@ def export_parsers(settings, parsers):
         updated_products = parsers.master.updated_products.values()
         if updated_products:
             fla_name, fla_ext = os.path.splitext(settings.fla_path)
-            flu_path = os.path.join(settings.out_folder_full,
+            flu_path = os.path.join(settings.out_dir_full,
                                     fla_name + "-Updated" + fla_ext)
 
             updated_product_list = WooProdList(updated_products)
@@ -409,7 +409,7 @@ def export_parsers(settings, parsers):
 
         if updated_variations:
             flv_name, flv_ext = os.path.splitext(settings.flv_path)
-            flvu_path = os.path.join(settings.out_folder_full,
+            flvu_path = os.path.join(settings.out_dir_full,
                                      flv_name + "-Updated" + flv_ext)
 
             updated_variations_list = WooVarList(updated_variations)
@@ -422,8 +422,8 @@ def main(override_args=None, settings=None):
 
     # PROCESS CONFIG
 
-    settings.dprc_path = os.path.join(settings.in_folder_full, 'DPRC.csv')
-    settings.dprp_path = os.path.join(settings.in_folder_full, 'DPRP.csv')
+    settings.dprc_path = os.path.join(settings.in_dir_full, 'DPRC.csv')
+    settings.dprp_path = os.path.join(settings.in_dir_full, 'DPRP.csv')
 
     settings.add_special_categories = settings.do_specials and settings['do_categories']
 
@@ -435,10 +435,10 @@ def main(override_args=None, settings=None):
     if settings.auto_delete_old:
         raise UserWarning("auto-delete not implemented yet")
 
-    if settings.img_raw_folder is not None:
-        settings.img_raw_folders.append(settings.img_raw_folder)
-    if settings.img_raw_extra_folder is not None:
-        settings.img_raw_folders.append(settings.img_raw_extra_folder)
+    if settings.img_raw_dir is not None:
+        settings.img_raw_dirs.append(settings.img_raw_dir)
+    if settings.img_raw_extra_dir is not None:
+        settings.img_raw_dirs.append(settings.img_raw_extra_dir)
 
     TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
     SyncUpdate.set_globals(settings.master_name, settings.slave_name,
@@ -448,18 +448,18 @@ def main(override_args=None, settings=None):
     if settings.variant:
         suffix += "-" + settings.variant
 
-    settings.fla_path = os.path.join(settings.out_folder_full,
+    settings.fla_path = os.path.join(settings.out_dir_full,
                                      "flattened-" + suffix + ".csv")
-    settings.flv_path = os.path.join(settings.out_folder_full,
+    settings.flv_path = os.path.join(settings.out_dir_full,
                                      "flattened-variations-" + suffix + ".csv")
-    settings.cat_path = os.path.join(settings.out_folder_full,
+    settings.cat_path = os.path.join(settings.out_dir_full,
                                      "categories-" + suffix + ".csv")
-    settings.myo_path = os.path.join(settings.out_folder_full,
+    settings.myo_path = os.path.join(settings.out_dir_full,
                                      "myob-" + suffix + ".csv")
-    # bunPath = os.path.join(settings.out_folder_full , "bundles-"+suffix+".csv")
-    if settings.get('web_folder'):
+    # bun_path = os.path.join(settings.out_dir_full , "bundles-"+suffix+".csv")
+    if settings.get('web_dir'):
         settings['rep_web_path'] = os.path.join(
-            settings.get('web_folder'),
+            settings.get('web_dir'),
             settings.rep_name
         )
         settings['rep_web_link'] = urlparse.urljoin(
@@ -468,9 +468,9 @@ def main(override_args=None, settings=None):
         )
 
     settings['slave_delta_csv_path'] = os.path.join(
-        settings.out_folder_full, "delta_report_wp%s.csv" % suffix)
+        settings.out_dir_full, "delta_report_wp%s.csv" % suffix)
 
-    settings.img_dst = os.path.join(settings.img_cmp_folder,
+    settings.img_dst = os.path.join(settings.img_cmp_dir,
                                     "images-" + settings.schema)
 
     if settings.do_specials:
@@ -1478,7 +1478,7 @@ def main(override_args=None, settings=None):
             if settings['web_browser']:
                 os.environ['BROWSER'] = settings['web_browser']
                 # print "set browser environ to %s" % repr(web_browser)
-            # print "moved file from %s to %s" % (settings.rep_path_full, repWebPath)
+            # print "moved file from %s to %s" % (settings.rep_path_full, repWeb_path)
 
             webbrowser.open(settings['rep_web_link'])
     else:

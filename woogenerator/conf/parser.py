@@ -68,7 +68,7 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             dest='testmode')
         self.add_argument(
             '--local-work-dir',
-            help='specify the directory containing all important folders'
+            help='specify the directory containing all important dirs'
         )
         self.add_argument(
             '--local-live-config',
@@ -85,25 +85,25 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             ),
         )
         self.add_argument(
-            '--in-folder',
+            '--in-dir',
             help=(
-                'Folder for import files. '
+                'Dir for import files. '
                 'Path relative to local-work-dir unless local-work-dir is falsey.'
             ),
             default=DEFAULT_LOCAL_IN_DIR,
         )
         self.add_argument(
-            '--out-folder',
+            '--out-dir',
             help=(
-                'Folder for output files. '
+                'Dir for output files. '
                 'Path relative to local-work-dir unless local-work-dir is falsey.'
             ),
             default=DEFAULT_LOCAL_OUT_DIR,
         )
         self.add_argument(
-            '--log-folder',
+            '--log-dir',
             help=(
-                'Folder for log files. '
+                'Dir for log files. '
                 'Path relative to local-work-dir unless local-work-dir is falsey.'
             ),
             default=DEFAULT_LOCAL_LOG_DIR,
@@ -384,7 +384,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_argument('--pickle-file', help='location of saved state file')
         self.add_argument('--override-progress', help='override progress of saved state')
 
-        self.add_suppressed_argument('--web-folder')
+        self.add_suppressed_argument('--web-dir')
         self.add_suppressed_argument('--web-address')
         self.add_suppressed_argument('--web-browser')
 
@@ -479,7 +479,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         group = images_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-delete-images',
-            help='delete extra images in compressed folder',
+            help='delete extra images in compressed dir',
             action="store_true")
         group.add_argument(
             '--skip-delete-images',
@@ -489,7 +489,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         group = images_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-resize-images',
-            help='resize images in compressed folder',
+            help='resize images in compressed dir',
             action="store_true")
         group.add_argument(
             '--skip-resize-images',
@@ -499,7 +499,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         group = images_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-remeta-images',
-            help='remeta images in compressed folder',
+            help='remeta images in compressed dir',
             action="store_true")
         group.add_argument(
             '--skip-remeta-images',
@@ -512,17 +512,17 @@ class ArgumentParserProd(ArgumentParserCommon):
             type=ast.literal_eval,
             default=True)
         images_group.add_argument(
-            '--img-raw-folder',
+            '--img-raw-dir',
             help='location of raw images',
             type=unicode,
             default=DEFAULT_LOCAL_IMG_RAW_DIR
         )
         images_group.add_argument(
-            '--img-raw-extra-folder',
+            '--img-raw-extra-dir',
             type=unicode,
             help='location of additional raw images')
         images_group.add_argument(
-            '--img-cmp-folder',
+            '--img-cmp-dir',
             help='location of compressed images',
             default=DEFAULT_LOCAL_IMG_RAW_DIR
         )
@@ -722,7 +722,7 @@ class ArgumentParserUser(ArgumentParserCommon):
         self.add_suppressed_argument('--m-ssh-pass', type=str)
         self.add_suppressed_argument('--m-ssh-host', help='location of master ssh server')
         self.add_suppressed_argument('--m-ssh-port', type=int, help='master ssh port')
-        self.add_suppressed_argument('--remote-export-folder', type=str)
+        self.add_suppressed_argument('--remote-export-dir', type=str)
         self.add_suppressed_argument('--m-x-cmd', type=str)
         self.add_suppressed_argument('--m-i-cmd', type=str)
         self.add_suppressed_argument('--m-db-user', type=str)

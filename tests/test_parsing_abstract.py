@@ -303,26 +303,26 @@ class TestImportObject(unittest.TestCase):
 
 #
 # if __name__ == '__main__':
-#     in_folder = "../input/"
-#     # actPath = os.path.join(in_folder, 'partial act records.csv')
-#     actPath = os.path.join(in_folder, "500-act-records.csv")
-#     out_folder = "../output/"
-#     usrPath = os.path.join(out_folder, 'users.csv')
+#     in_dir = "../input/"
+#     # act_path = os.path.join(in_dir, 'partial act records.csv')
+#     act_path = os.path.join(in_dir, "500-act-records.csv")
+#     out_dir = "../output/"
+#     usr_path = os.path.join(out_dir, 'users.csv')
 #
 #     usrData = ColDataUser()
 #
 #     # print "import cols", usrData.get_import_cols()
 #     # print "defaults", usrData.get_defaults()
 #
-#     usrParser = CsvParseBase(
+#     usr_parser = CsvParseBase(
 #         cols = usrData.get_import_cols(),
 #         defaults = usrData.get_defaults()
 #     )
 #
-#     usrParser.analyse_file(actPath)
+#     usr_parser.analyse_file(act_path)
 #
-#     SanitationUtils.safe_print( usrParser.tabulate(cols = usrData.get_report_cols()))
-#     print ( usrParser.tabulate(cols = usrData.get_report_cols()))
+#     SanitationUtils.safe_print( usr_parser.tabulate(cols = usrData.get_report_cols()))
+#     print ( usr_parser.tabulate(cols = usrData.get_report_cols()))
 #
-#     for usr in usrParser.objects.values()[:3]:
+#     for usr in usr_parser.objects.values()[:3]:
 #         pprint(OrderedDict(usr))

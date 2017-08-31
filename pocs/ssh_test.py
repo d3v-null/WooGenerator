@@ -6,9 +6,9 @@ from parsing.flat import CsvParseUser, UsrObjList
 from woogenerator.utils import TimeUtils, SanitationUtils
 from itertools import chain
 
-srcFolder = "../source/"
+src_folder = "../source/"
 in_folder = "../input/"
-remoteExportFolder = "act_usr_exp/"
+remote_export_folder = "act_usr_exp/"
 yaml_path = "merger_config.yaml"
 
 import_name = TimeUtils.get_ms_timestamp()
@@ -28,8 +28,8 @@ with open(yaml_path) as stream:
     m_command = config.get('test_m_command')
 
 exportFilename = "act_x_test_" + import_name + ".csv"
-remoteExportPath = os.path.join(remoteExportFolder, exportFilename)
-maPath = os.path.join(in_folder, exportFilename)
+remote_export_path = os.path.join(remote_export_folder, exportFilename)
+ma_path = os.path.join(in_folder, exportFilename)
 maEncoding = "utf-8"
 
 paramikoSSHParams = {
@@ -45,8 +45,8 @@ fields = ";".join(actCols.keys())
 
 command = " ".join(filter(None, [
     'cd {wd};'.format(
-        wd=remoteExportFolder,
-    ) if remoteExportFolder else None,
+        wd=remote_export_folder,
+    ) if remote_export_folder else None,
     '{cmd} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
         cmd=m_command,
         db_name=m_db_name,
@@ -72,10 +72,10 @@ try:
     assert not possible_errors, "command returned errors: " + possible_errors
     try:
         sftp_client = sshClient.open_sftp()
-        sftp_client.chdir(remoteExportFolder)
+        sftp_client.chdir(remote_export_folder)
         fstat = sftp_client.stat(exportFilename)
         if fstat:
-            sftp_client.get(exportFilename, maPath)
+            sftp_client.get(exportFilename, ma_path)
     except Exception as exc:
         SanitationUtils.safe_print("ERROR IN SFTP: " + str(exc))
     finally:
@@ -86,13 +86,13 @@ except Exception as exc:
 finally:
     sshClient.close()
 
-maParser = CsvParseUser(
+ma_parser = CsvParseUser(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults(),
     contact_schema='act',
 )
 
-maParser.analyse_file(maPath, maEncoding)
+ma_parser.analyse_file(ma_path, maEncoding)
 
 
 def print_basic_columns(users):
@@ -109,4 +109,4 @@ def print_basic_columns(users):
         tablefmt='simple'
     ))
 
-print_basic_columns(list(chain(*maParser.emails.values()[:100])))
+print_basic_columns(list(chain(*ma_parser.emails.values()[:100])))

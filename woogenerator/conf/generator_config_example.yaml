@@ -26,10 +26,10 @@ oauth_client_id: <client ID here>
 oauth_client_secret: <client secret here>
 
 #Image Sources
-imgFolder_glb: <img dir here>
-imgFolder_extra: {
+img_dir_glb: <img dir here>
+img_dir_extra: {
     schema: <extra img dir here>
 }
 
 # Location of webserver directory
-web_folder: <web dir here>
+web_dir: <web dir here>

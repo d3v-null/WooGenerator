@@ -39,10 +39,10 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.local_live_config = getattr(self, 'local_live_config', None)
         self.local_test_config = getattr(self, 'local_test_config', None)
         self.testmode = getattr(self, 'testmode', DEFAULT_TESTMODE)
-        self.in_folder = getattr(self, 'in_folder', DEFAULT_LOCAL_IN_DIR)
-        self.out_folder = getattr(self, 'out_folder', DEFAULT_LOCAL_OUT_DIR)
-        self.log_folder = getattr(self, 'log_folder', DEFAULT_LOCAL_LOG_DIR)
-        self.pickle_folder = getattr(self, 'pickle_folder', DEFAULT_LOCAL_PICKLE_DIR)
+        self.in_dir = getattr(self, 'in_dir', DEFAULT_LOCAL_IN_DIR)
+        self.out_dir = getattr(self, 'out_dir', DEFAULT_LOCAL_OUT_DIR)
+        self.log_dir = getattr(self, 'log_dir', DEFAULT_LOCAL_LOG_DIR)
+        self.pickle_dir = getattr(self, 'pickle_dir', DEFAULT_LOCAL_PICKLE_DIR)
         self.import_name = getattr(self, 'import_name', TimeUtils.get_ms_timestamp())
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
@@ -99,37 +99,37 @@ class SettingsNamespaceProto(argparse.Namespace):
             return self.join_work_path(self.local_live_config)
 
     @property
-    def in_folder_full(self):
-        if self.in_folder:
-            return self.join_work_path(self.in_folder)
+    def in_dir_full(self):
+        if self.in_dir:
+            return self.join_work_path(self.in_dir)
 
     @property
-    def out_folder_full(self):
-        if self.out_folder:
-            return self.join_work_path(self.out_folder)
+    def out_dir_full(self):
+        if self.out_dir:
+            return self.join_work_path(self.out_dir)
 
     @property
-    def log_folder_full(self):
-        if self.log_folder:
-            return self.join_work_path(self.log_folder)
+    def log_dir_full(self):
+        if self.log_dir:
+            return self.join_work_path(self.log_dir)
 
     @property
-    def pickle_folder_full(self):
-        if self.pickle_folder:
-            return self.join_work_path(self.pickle_folder)
+    def pickle_dir_full(self):
+        if self.pickle_dir:
+            return self.join_work_path(self.pickle_dir)
 
     @property
     def log_path_full(self):
         response = '%s.log' % self.import_name
-        if self.log_folder_full:
-            response = os.path.join(self.log_folder_full, response)
+        if self.log_dir_full:
+            response = os.path.join(self.log_dir_full, response)
         return response
 
     @property
     def zip_path_full(self):
         response = '%s.zip' % self.import_name
-        if self.log_folder_full:
-            response = os.path.join(self.log_folder_full, response)
+        if self.log_dir_full:
+            response = os.path.join(self.log_dir_full, response)
         return response
 
     @property
@@ -139,8 +139,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         response = self.import_name
         if self.get('progress'):
             response += '_%s' % self['progress']
-        if self.pickle_folder_full:
-            response = os.path.join(self.pickle_folder_full, response)
+        if self.pickle_dir_full:
+            response = os.path.join(self.pickle_dir_full, response)
         return response + '.pickle'
 
     @property
@@ -163,22 +163,22 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def rep_path_full(self):
         response = self.rep_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
+        if self.out_dir_full:
+            response = os.path.join(self.out_dir_full, response)
         return response
 
     @property
     def m_fail_path_full(self):
         response = "%s_fails.csv" % self.master_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
+        if self.out_dir_full:
+            response = os.path.join(self.out_dir_full, response)
         return response
 
     @property
     def s_fail_path_full(self):
         response = "%s_fails.csv" % self.slave_name
-        if self.out_folder_full:
-            response = os.path.join(self.out_folder_full, response)
+        if self.out_dir_full:
+            response = os.path.join(self.out_dir_full, response)
         return response
 
     @property
@@ -236,8 +236,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.item_depth = getattr(self, 'item_depth', None)
         self.thumbsize_x = getattr(self, 'thumbsize_x', None)
         self.thumbsize_y = getattr(self, 'thumbsize_y', None)
-        self.img_raw_folder = getattr(self, 'img_raw_folder', None)
-        self.img_raw_extra_folder = getattr(self, 'img_raw_extra_folder', None)
+        self.img_raw_dir = getattr(self, 'img_raw_dir', None)
+        self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -267,12 +267,12 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def img_raw_folders(self):
+    def img_raw_dirs(self):
         response = []
-        if self.img_raw_folder:
-            response.append(self.img_raw_folder)
-        if self.img_raw_extra_folder:
-            response.append(self.img_raw_extra_folder)
+        if self.img_raw_dir:
+            response.append(self.img_raw_dir)
+        if self.img_raw_extra_dir:
+            response.append(self.img_raw_extra_dir)
         return response
 
     @property
@@ -293,7 +293,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.csv'
-        response = os.path.join(self.in_folder_full, response)
+        response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
@@ -302,7 +302,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
-        response = os.path.join(self.in_folder_full, response)
+        response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
@@ -485,7 +485,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
-        response = os.path.join(self.in_folder_full, response)
+        response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
@@ -494,7 +494,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
-        response = os.path.join(self.in_folder_full, response)
+        response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
@@ -576,9 +576,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def fs_params(self):
         response = {
             'import_name': self.import_name,
-            'remote_export_folder': self['remote_export_folder'],
-            'in_folder': self.in_folder_full,
-            'out_folder': self.out_folder_full
+            'remote_export_dir': self['remote_export_dir'],
+            'in_dir': self.in_dir_full,
+            'out_dir': self.out_dir_full
         }
         return response
 
@@ -843,7 +843,7 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     # TODO: test set local work dir
     # TODO: test set live config
     # TODO: test set test config
-    # TODO: move in, out, log folders to full
+    # TODO: move in, out, log dirs to full
     # TODO: move gen, dprc, dprp, spec to full calculated in settings
 
 

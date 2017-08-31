@@ -65,16 +65,16 @@ def send_zipped_file(zipped_file, recipients, sender, connect_params):
     server.sendmail(sender, recipients, themsg)
     server.quit()
 
-srcFolder = "../source/"
+src_folder = "../source/"
 in_folder = "../input/"
-yaml_path = os.path.join(srcFolder, "merger_config.yaml")
+yaml_path = os.path.join(src_folder, "merger_config.yaml")
 try:
     os.stat('source')
     os.chdir('source')
 except Exception as exc:
     if(exc):
         pass
-    os.chdir(srcFolder)
+    os.chdir(src_folder)
 print os.getcwd()
 
 with open(yaml_path) as stream:

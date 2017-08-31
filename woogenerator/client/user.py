@@ -171,14 +171,14 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         )
 
         import_name = self.fs_params['import_name']
-        out_folder = self.fs_params['out_folder']
-        remote_export_folder = self.fs_params['remote_export_folder']
+        out_dir = self.fs_params['out_dir']
+        remote_export_dir = self.fs_params['remote_export_dir']
         file_root = 'act_i_' + import_name + '_' + user_pkey
         file_name = file_root + '.csv'
-        local_path = os.path.join(out_folder, file_name)
-        remote_path = os.path.join(remote_export_folder, file_name)
+        local_path = os.path.join(out_dir, file_name)
+        remote_path = os.path.join(remote_export_dir, file_name)
         imported_file = os.path.join(
-            remote_export_folder, file_root + '.imported')
+            remote_export_dir, file_root + '.imported')
 
         with open(local_path, 'w+') as out_file:
             csvdialect = UnicodeCsvDialectUtils.ActOut
@@ -195,7 +195,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         self.put_file(local_path, remote_path)
 
         tokens = [
-            'cd ' + remote_export_folder + ';',
+            'cd ' + remote_export_dir + ';',
             '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
                 **self.db_params
             ),
@@ -207,7 +207,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         # command = " ".join(filter(None,))
         #
         # command = " ".join(filter(None,[
-        #     'cd ' + remote_export_folder + ';',
+        #     'cd ' + remote_export_dir + ';',
         #     '{db_i_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}"'.format(
         #         **self.db_params
         #     ),
@@ -233,15 +233,15 @@ class UsrSyncClientSshAct(SyncClientAbstract):
             pass
 
         import_name = self.fs_params['import_name']
-        remote_export_folder = self.fs_params['remote_export_folder']
+        remote_export_dir = self.fs_params['remote_export_dir']
         file_root = 'act_x_' + import_name
         file_name = file_root + '.csv'
         if not data_path:
-            data_path = os.path.join(self.fs_params['in_folder'], file_name)
-        remote_path = os.path.join(remote_export_folder, file_name)
+            data_path = os.path.join(self.fs_params['in_dir'], file_name)
+        remote_path = os.path.join(remote_export_dir, file_name)
 
         tokens = [
-            'cd ' + remote_export_folder + ';',
+            'cd ' + remote_export_dir + ';',
             '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
                 **self.db_params
             ),
@@ -252,7 +252,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         command = " ".join([token for token in tokens if token])
 
         # command = " ".join(filter(None,[
-        #     'cd ' + remote_export_folder + ';',
+        #     'cd ' + remote_export_dir + ';',
         #     '{db_x_exe} "-d{db_name}" "-h{db_host}" "-u{db_user}" "-p{db_pass}" -c"{fields}"'.format(
         #         **self.db_params
         #     ),

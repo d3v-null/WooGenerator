@@ -4,7 +4,7 @@ import re
 import csv
 
 in_folder = "../input/"
-testPath = os.path.join(in_folder, "insane.csv")
+test_path = os.path.join(in_folder, "insane.csv")
 
 sub_params = None
 sub_params = {
@@ -12,7 +12,7 @@ sub_params = {
     'repl': r',"\1\\n\2",'
 }
 
-with open(testPath) as testFile:
+with open(test_path) as testFile:
     if sub_params:
         with tempfile.TemporaryFile() as tempFile:
             tempFile.write(re.sub(sub_params.get('pattern'),

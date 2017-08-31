@@ -19,8 +19,8 @@ from sshtunnel import SSHTunnelForwarder
 
 in_folder = "../input/"
 out_folder = "../output/"
-logFolder = "../logs/"
-srcFolder = "../source"
+log_folder = "../logs/"
+src_folder = "../source"
 
 yaml_path = "generator_config.yaml"
 
@@ -37,12 +37,12 @@ with open(yaml_path) as stream:
         in_folder = config['in_folder']
     if 'out_folder' in config.keys():
         out_folder = config['out_folder']
-    if 'logFolder' in config.keys():
-        logFolder = config['logFolder']
+    if 'log_folder' in config.keys():
+        log_folder = config['log_folder']
 
     # mandatory
     web_folder = config.get('web_folder')
-    imgFolder_glb = config.get('imgFolder_glb')
+    img_folder_glb = config.get('img_folder_glb')
     myo_schemas = config.get('myo_schemas')
     woo_schemas = config.get('woo_schemas')
     taxo_depth = config.get('taxo_depth')
@@ -51,7 +51,7 @@ with open(yaml_path) as stream:
     # optional
     fallback_schema = config.get('fallback_schema')
     fallback_variant = config.get('fallback_variant')
-    imgFolder_extra = config.get('imgFolder_extra')
+    img_folder_extra = config.get('img_folder_extra')
 
     ssh_user = config.get('ssh_user')
     ssh_pass = config.get('ssh_pass')
@@ -65,18 +65,18 @@ with open(yaml_path) as stream:
     tbl_prefix = config.get('tbl_prefix', '')
 
 # mandatory params
-assert all([in_folder, out_folder, logFolder, web_folder, imgFolder_glb,
+assert all([in_folder, out_folder, log_folder, web_folder, img_folder_glb,
             woo_schemas, myo_schemas, taxo_depth, item_depth])
 
-genPath = os.path.join(in_folder, 'generator.csv')
+gen_path = os.path.join(in_folder, 'generator.csv')
 dprc_path = os.path.join(in_folder, 'DPRC.csv')
 dprp_path = os.path.join(in_folder, 'DPRP.csv')
-specPath = os.path.join(in_folder, 'specials.csv')
-usPath = os.path.join(in_folder, 'US.csv')
-xsPath = os.path.join(in_folder, 'XS.csv')
-imgFolder = [imgFolder_glb]
+spec_path = os.path.join(in_folder, 'specials.csv')
+us_path = os.path.join(in_folder, 'US.csv')
+xs_path = os.path.join(in_folder, 'XS.csv')
+img_folder = [img_folder_glb]
 
-sqlPath = os.path.join(srcFolder, 'select_productdata.sql')
+sql_path = os.path.join(src_folder, 'select_productdata.sql')
 
 col_data = ColDataWoo()
 
@@ -90,7 +90,7 @@ if sql_run:
             ssh_username=ssh_user,
             remote_bind_address=(remote_bind_host, remote_bind_port)
         ) as server,\
-            open(sqlPath) as sqlFile:
+            open(sql_path) as sqlFile:
         # server.start()
         print server.local_bind_address
         conn = MySQLdb.connect(
@@ -129,13 +129,13 @@ if sql_run:
 
 print sqlRows
 
-sqlParser = CsvParseTT
+sql_parser = CsvParseTT
 
-sqlParser = CsvParseTT(
+sql_parser = CsvParseTT(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults()
 )
 if sqlRows:
-    sqlParser.analyse_rows(sqlRows)
+    sql_parser.analyse_rows(sqlRows)
 
-print sqlParser.products
+print sql_parser.products

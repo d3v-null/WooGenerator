@@ -34,7 +34,7 @@ m-ssh-user: act_test
 m-ssh-pass: act_test_pass
 m-ssh-host: localhost
 m-ssh-port: 22
-remote-export-folder: /remote-export-folder/
+remote-export-dir: /remote-export-dir/
 m-x-cmd: export-command.exe
 m-i-cmd: import-command.exe
 m-db-user: act-db-user

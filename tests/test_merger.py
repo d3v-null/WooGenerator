@@ -661,7 +661,7 @@ class TestMerger(unittest.TestCase):
         temp_out_dir = tempfile.mkdtemp(suffix + '_out')
         if self.debug:
             print("out dir is %s" % temp_out_dir)
-        self.settings.out_folder = temp_out_dir
+        self.settings.out_dir = temp_out_dir
         self.settings.do_sync = True
         self.settings.process_duplicates = True
         if self.debug:

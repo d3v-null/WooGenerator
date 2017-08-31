@@ -58,7 +58,7 @@ def visit(cookie, dirname, names):
         dirname = dirname[len(cookie.sink_root):]
     target_dir = os.path.join(cookie.target_root, dirname)
     if not os.path.isdir(target_dir):
-        makeDir(cookie, target_dir)
+        make_dir(cookie, target_dir)
     sink_dir = os.path.join(cookie.sink_root, dirname)
 
     filters = []
@@ -75,7 +75,7 @@ def visit(cookie, dirname, names):
         while name_index < len(names):
             name = names[name_index]
             path = os.path.join(dirname, name)
-            path = convertPath(path)
+            path = convert_path(path)
             if os.path.isdir(os.path.join(sink_dir, name)):
                 path = path + "/"
             for filter in filters:
@@ -86,7 +86,7 @@ def visit(cookie, dirname, names):
                             if os.path.isfile(sink):
                                 removeFile(cookie, sink)
                             elif os.path.isdir(sink):
-                                removeDir(cookie, sink)
+                                remove_dir(cookie, sink)
                             else:
                                 logError(
                                     "Sink %s is neither a file nor a folder (skip removal)" % sink)
@@ -108,7 +108,7 @@ def visit(cookie, dirname, names):
                 if os.path.isfile(target):
                     removeFile(cookie, target)
                 elif os.path.isdir(target):
-                    removeDir(cookie, target)
+                    remove_dir(cookie, target)
                 else:
                     pass
 
@@ -126,7 +126,7 @@ def visit(cookie, dirname, names):
                         updateFile(cookie, sink, target)
                 elif os.path.isdir(target):
                     # file-folder
-                    removeDir(cookie, target)
+                    remove_dir(cookie, target)
                     copyFile(cookie, sink, target)
                 else:
                     # file-???
@@ -137,7 +137,7 @@ def visit(cookie, dirname, names):
                 if os.path.isfile(target):
                     # folder-file
                     removeFile(cookie, target)
-                    makeDir(cookie, target)
+                    make_dir(cookie, target)
             else:
                 # ???-xxx
                 logError(
@@ -150,7 +150,7 @@ def visit(cookie, dirname, names):
                 copyFile(cookie, sink, target)
             elif os.path.isdir(sink):
                 # folder
-                makeDir(cookie, target)
+                make_dir(cookie, target)
             else:
                 logError(
                     "Sink %s is neither a file nor a folder (skip update)" % sink)
@@ -279,7 +279,7 @@ def removeFile(cookie, target):
             logError("Fail to remove %s" % target)
 
 
-def makeDir(cookie, target):
+def make_dir(cookie, target):
     log(cookie, "make dir: %s" % target)
     if not cookie.dry_run:
         try:
@@ -288,33 +288,33 @@ def makeDir(cookie, target):
             logError("Fail to make dir %s" % target)
 
 
-def visitForPrepareRemoveDir(arg, dirname, names):
+def visitForPrepareRemove_dir(arg, dirname, names):
     for name in names:
         path = os.path.join(dirname, name)
         prepareRemoveFile(path)
 
 
-def prepareRemoveDir(path):
+def prepareRemove_dir(path):
     prepareRemoveFile(path)
-    os.path.walk(path, visitForPrepareRemoveDir, None)
+    os.path.walk(path, visitForPrepareRemove_dir, None)
 
 
 def OnRemoveDirError(func, path, excinfo):
     logError("Fail to remove %s" % path)
 
 
-def removeDir(cookie, target):
+def remove_dir(cookie, target):
     # Read only directory could not be deleted.
     log(cookie, "remove dir: %s" % target)
     if not cookie.dry_run:
-        prepareRemoveDir(target)
+        prepareRemove_dir(target)
         try:
             shutil.rmtree(target, False, OnRemoveDirError)
         except:
             logError("Fail to remove dir %s" % target)
 
 
-def convertPath(path):
+def convert_path(path):
     # Convert windows, mac path to unix version.
     separator = os.path.normpath("/")
     if separator != "/":

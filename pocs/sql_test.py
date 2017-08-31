@@ -7,7 +7,7 @@ from coldata import ColDataUser
 from parsing.flat import CsvParseUser
 from collections import OrderedDict
 
-srcFolder = "../source/"
+src_folder = "../source/"
 in_folder = "../input/"
 yaml_path = "merger_config.yaml"
 import_name = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -27,7 +27,7 @@ with open(yaml_path) as stream:
     db_name = config.get('db_name')
     tbl_prefix = config.get('tbl_prefix', '')
 
-sqlPath = os.path.join(srcFolder, "select_userdata_modtime.sql")
+sql_path = os.path.join(src_folder, "select_userdata_modtime.sql")
 
 col_data = ColDataUser()
 
@@ -40,7 +40,7 @@ with \
         ssh_username=ssh_user,
         remote_bind_address=(remote_bind_host, remote_bind_port)
     ) as server, \
-        open(sqlPath) as sqlFile:
+        open(sql_path) as sqlFile:
 
     # server.start()
     print server.local_bind_address
@@ -78,11 +78,11 @@ with \
 
 # print sa_rows
 
-saParser = CsvParseUser(
+sa_parser = CsvParseUser(
     cols=col_data.get_import_cols(),
     defaults=col_data.get_defaults()
 )
 if sa_rows:
-    saParser.analyse_rows(sa_rows)
+    sa_parser.analyse_rows(sa_rows)
 
-print saParser.tabulate()
+print sa_parser.tabulate()

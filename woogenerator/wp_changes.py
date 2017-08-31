@@ -38,8 +38,8 @@ def main(settings):
     with open(settings.yaml_path) as stream:
         config = yaml.load(stream)
 
-        if 'out_folder' in config.keys():
-            settings.out_folder = config['out_folder']
+        if 'out_dir' in config.keys():
+            settings.out_dir = config['out_dir']
 
         # mandatory
         # settings.merge_mode = config.get('merge_mode', 'sync')
@@ -62,7 +62,7 @@ def main(settings):
     #########################################
 
     file_suffix = "_test" if settings.test_mode else ""
-    rep_path = os.path.join(settings.out_folder,
+    rep_path = os.path.join(settings.out_dir,
                             "changes_report%s.html" % file_suffix)
 
     #########################################
@@ -181,11 +181,11 @@ def catch_main(settings=None):
     if settings is None:
         settings = argparse.Namespace()
 
-    settings.in_folder = "../input/"
-    settings.out_folder = "../output/"
-    settings.log_folder = "../logs/"
-    settings.src_folder = MODULE_LOCATION
-    settings.pkl_folder = "pickles/"
+    settings.in_dir = "../input/"
+    settings.out_dir = "../output/"
+    settings.log_dir = "../logs/"
+    settings.src_dir = MODULE_LOCATION
+    settings.pkl_dir = "pickles/"
 
     os.chdir(MODULE_PATH)
 
@@ -195,11 +195,11 @@ def catch_main(settings=None):
     settings.test_mode = True
     settings.rep_path = ''
     settings.yaml_path = os.path.join("merger_config.yaml")
-    settings.m_fail_path = os.path.join(settings.out_folder, "act_fails.csv")
-    settings.s_fail_path = os.path.join(settings.out_folder, "wp_fails.csv")
-    settings.log_path = os.path.join(settings.log_folder,
+    settings.m_fail_path = os.path.join(settings.out_dir, "act_fails.csv")
+    settings.s_fail_path = os.path.join(settings.out_dir, "wp_fails.csv")
+    settings.log_path = os.path.join(settings.log_dir,
                                      "log_%s.txt" % settings.import_name)
-    settings.zip_path = os.path.join(settings.log_folder,
+    settings.zip_path = os.path.join(settings.log_dir,
                                      "zip_%s.zip" % settings.import_name)
     settings.user_file = False
     settings.card_file = False

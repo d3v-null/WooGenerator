@@ -44,7 +44,6 @@ def populate_filter_settings(settings):
     Registrar.register_progress("Prepare Filter Data")
 
     if settings['do_filter']:
-        # TODO: I don't think emails filter is actually working
         filter_files = {
             'users': settings.get('user_file'),
             'emails': settings.get('email_file'),
@@ -54,7 +53,7 @@ def populate_filter_settings(settings):
         for key, filter_file in filter_files.items():
             if filter_file:
                 try:
-                    with open(os.path.join(settings.in_folder_full,
+                    with open(os.path.join(settings.in_dir_full,
                                            filter_file)) as filter_file_obj:
                         settings.filter_items[key] = [
                             re.sub(r'\s*([^\s].*[^\s])\s*(?:\n)', r'\1', line)
@@ -123,7 +122,7 @@ def populate_slave_parsers(parsers, settings):
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
     parsers.slave.get_obj_list().export_items(
-        os.path.join(settings.in_folder_full, settings.s_x_name),
+        os.path.join(settings.in_dir_full, settings.s_x_name),
         settings.col_data_class.get_wp_import_col_names())
 
 def populate_master_parsers(parsers, settings):
@@ -161,7 +160,7 @@ def populate_master_parsers(parsers, settings):
 def export_master_parser(parsers, settings):
     """Export the Masater parser to disk."""
     parsers.master.get_obj_list().export_items(
-        os.path.join(settings.in_folder_full, settings.m_x_name),
+        os.path.join(settings.in_dir_full, settings.m_x_name),
         settings.col_data_class.get_act_import_col_names())
 
 def do_match(parsers, settings):
@@ -175,7 +174,7 @@ def do_match(parsers, settings):
 
     Registrar.register_progress("Processing matches")
 
-    parsers.deny_anomalous('saParser.nousernames', parsers.slave.nousernames)
+    parsers.deny_anomalous('sa_parser.nousernames', parsers.slave.nousernames)
 
     username_matcher = UsernameMatcher()
     username_matcher.process_registers(parsers.slave.usernames,
@@ -205,7 +204,7 @@ def do_match(parsers, settings):
     # for every card in slave not already matched, check that it exists in
     # master
 
-    parsers.deny_anomalous('maParser.nocards', parsers.master.nocards)
+    parsers.deny_anomalous('ma_parser.nocards', parsers.master.nocards)
 
     card_matcher = CardMatcher(
         matches.globals.s_indices, matches.globals.m_indices
@@ -238,7 +237,7 @@ def do_match(parsers, settings):
 
     Registrar.register_progress("processing emails")
 
-    parsers.deny_anomalous("saParser.noemails", parsers.slave.noemails)
+    parsers.deny_anomalous("sa_parser.noemails", parsers.slave.noemails)
 
     email_matcher = NocardEmailMatcher(
         matches.globals.s_indices, matches.globals.m_indices
@@ -702,11 +701,11 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
         return
 
     settings.master_delta_csv_path = os.path.join(
-        settings.out_folder_full,
+        settings.out_dir_full,
         "%sdelta_report_%s_%s.csv" % \
             (settings.file_prefix, settings.master_name, settings.file_suffix))
     settings.slave_delta_csv_path = os.path.join(
-        settings.out_folder_full,
+        settings.out_dir_full,
         "%sdelta_report_%s_%s.csv" % \
             (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
@@ -812,13 +811,13 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
     # Registrar.register_progress("anomalous ParseLists: ")
 
     parse_list_instructions = {
-        "saParser.noemails":
+        "sa_parser.noemails":
         "%s records have invalid emails" % settings.slave_name,
-        "maParser.noemails":
+        "ma_parser.noemails":
         "%s records have invalid emails" % settings.master_name,
-        "maParser.nocards":
+        "ma_parser.nocards":
         "%s records have no cards" % settings.master_name,
-        "saParser.nousernames":
+        "sa_parser.nousernames":
         "%s records have no username" % settings.slave_name
     }
 
@@ -904,11 +903,11 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
 
 def do_report_bad_contact(matches, updates, parsers, settings):
     settings.w_pres_csv_path = os.path.join(
-        settings.out_folder_full,
+        settings.out_dir_full,
         "%ssync_report_%s_%s.csv" % \
             (settings.file_prefix, settings.slave_name, settings.file_suffix))
     settings.master_res_csv_path = os.path.join(
-        settings.out_folder_full,
+        settings.out_dir_full,
         "%ssync_report_%s_%s.csv" % \
             (settings.file_prefix, settings.master_name, settings.file_suffix))
 
@@ -949,7 +948,7 @@ def do_report(matches, updates, parsers, settings):
         Registrar.register_progress("Write Duplicates Report")
 
         settings.repd_path = os.path.join(
-            settings.out_folder_full,
+            settings.out_dir_full,
             "%ssync_report_duplicate_%s.html" % (settings.file_prefix, settings.file_suffix))
 
         with io.open(settings['repd_path'], 'w+', encoding='utf8') as repd_file:
@@ -1131,8 +1130,8 @@ def main(override_args=None, settings=None):
         return settings
 
     for path in (
-            settings.in_folder_full, settings.out_folder_full,
-            settings.log_folder_full, settings.pickle_folder_full
+            settings.in_dir_full, settings.out_dir_full,
+            settings.log_dir_full, settings.pickle_dir_full
     ):
         if not os.path.exists(path):
             os.mkdir(path)

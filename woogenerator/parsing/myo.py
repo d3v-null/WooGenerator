@@ -267,19 +267,19 @@ class MYOProdList(ShopProdList):
 
 # if __name__ == '__main__':
 #     print "Testing MYO script..."
-#     in_folder = "../input/"
+#     in_dir = "../input/"
 #     os.chdir('source')
 #
-#     genPath = os.path.join(in_folder, 'generator.csv')
+#     gen_path = os.path.join(in_dir, 'generator.csv')
 #
 #
 #     col_data = ColDataMyo()
-#     productParser = CsvParseMyo(
+#     product_parser = CsvParseMyo(
 #         cols = col_data.get_import_cols(),
 #         defaults = col_data.get_defaults(),
 #     )
-#     productParser.analyse_file(genPath)
-#     products = productParser.get_products().values()
+#     product_parser.analyse_file(gen_path)
+#     products = product_parser.get_products().values()
 #
 #     print "products:"
 #     prodList = MYOProdList(products)

@@ -29,8 +29,8 @@ class TestParseDyn(TestCase):
 
         # TODO: rewrite in htmlReporter
 
-        # out_folder = "../output/"
-        # out_path = os.path.join(out_folder, 'dynRules.html')
+        # out_dir = "../output/"
+        # out_path = os.path.join(out_dir, 'dynRules.html')
         # with open(out_path, 'w+') as out_file:
         #     def write_section(title, description, data, length=0,
         #                       html_class="results_section"):
