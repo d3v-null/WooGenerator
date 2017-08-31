@@ -87,16 +87,16 @@ Store your ssh / mysql credentials in your product syncing config file, default:
 
 ```
     ...
-    ssh_user: XXX
-    ssh_pass: XXX
-    ssh_host: XXX
-    ssh_port: 22
-    remote_bind_host: 127.0.0.1
-    remote_bind_port: 3306
-    db_user: XXX
-    db_pass: XXX
-    db_name: XXX
-    tbl_prefix: XXX
+    ssh-user: XXX
+    ssh-pass: XXX
+    ssh-host: XXX
+    ssh-port: 22
+    remote-bind-host: 127.0.0.1
+    remote-bind-port: 3306
+    db-user: XXX
+    db-pass: XXX
+    db-name: XXX
+    tbl-prefix: XXX
 
 ```
 
