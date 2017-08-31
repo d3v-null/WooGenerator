@@ -540,16 +540,6 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
                 len(matches.duplicate['email'])
             }))
 
-    # TODO: use this
-    match_list_instructions = {
-        'cardMatcher.duplicate_matches':
-        '%s records have multiple CARD IDs in %s' %
-        (settings.slave_name, settings.master_name),
-        'usernameMatcher.duplicate_matches':
-        '%s records have multiple USERNAMEs in %s' %
-        (settings.slave_name, settings.master_name)
-    }
-
     if address_duplicates:
 
         print "there are address duplicates"
@@ -569,6 +559,41 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
                     for address, objects in address_duplicates.items()
                 ]),
                 length=len(address_duplicates)))
+
+
+    match_list_instructions = {
+        'cardMatcher.duplicate_matches':
+        '%s records have multiple CARD IDs in %s' %
+        (settings.slave_name, settings.master_name),
+        'usernameMatcher.duplicate_matches':
+        '%s records have multiple USERNAMEs in %s' %
+        (settings.slave_name, settings.master_name)
+    }
+
+    for matchlist_type, match_list in matches.anomalous.items():
+        if not match_list:
+            continue
+        description = match_list_instructions.get(matchlist_type,
+                                                  matchlist_type)
+        if ('masterless' in matchlist_type or
+                'slaveless' in matchlist_type):
+            data = match_list.merge().tabulate(tablefmt="html")
+        else:
+            data = match_list.tabulate(
+                tablefmt="html",
+                # highlight_rules=highlight_rules_all
+            )
+            # TODO: maybe re-enable highlight rules?
+        duplicate_group.add_section(
+            HtmlReporter.Section(
+                matchlist_type,
+                **{
+                    # 'title': matchlist_type.title(),
+                    'description': description,
+                    'data': data,
+                    'length': len(match_list)
+                }))
+
     dup_reporter.add_group(duplicate_group)
 
 
@@ -759,10 +784,7 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
             settings['slave_delta_csv_path'],
             settings.col_data_class.get_col_names(all_delta_cols))
 
-def do_report_sync(matches, updates, parsers, settings, reporter):
-    if not settings.do_sync:
-        return
-
+def do_report_matches(matches, updates, parsers, settings, reporter):
     matching_group = HtmlReporter.Group('matching', 'Matching Results')
     matching_group.add_section(
         HtmlReporter.Section(
@@ -842,6 +864,10 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
 
     reporter.add_group(matching_group)
 
+def do_report_sync(matches, updates, parsers, settings, reporter):
+    if not settings.do_sync:
+        return
+
     syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
 
     syncing_group.add_section(
@@ -876,30 +902,6 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
             length=len(updates.problematic)))
 
     reporter.add_group(syncing_group)
-
-    for matchlist_type, match_list in matches.anomalous.items():
-        if not match_list:
-            continue
-        description = match_list_instructions.get(matchlist_type,
-                                                  matchlist_type)
-        if ('masterless' in matchlist_type or
-                'slaveless' in matchlist_type):
-            data = match_list.merge().tabulate(tablefmt="html")
-        else:
-            data = match_list.tabulate(
-                tablefmt="html",
-                # highlight_rules=highlight_rules_all
-            )
-            # TODO: maybe re-enable highlight rules?
-        matching_group.add_section(
-            HtmlReporter.Section(
-                matchlist_type,
-                **{
-                    # 'title': matchlist_type.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(match_list)
-                }))
 
 def do_report_bad_contact(matches, updates, parsers, settings):
     settings.w_pres_csv_path = os.path.join(
@@ -939,6 +941,7 @@ def do_report(matches, updates, parsers, settings):
         do_report_summary(matches, updates, parsers, settings, reporter)
         do_report_sanitizing(matches, updates, parsers, settings, reporter)
         do_report_delta(matches, updates, parsers, settings, reporter)
+        do_report_matches(matches, updates, parsers, settings, reporter)
         do_report_sync(matches, updates, parsers, settings, reporter)
 
         res_file.write(reporter.get_document_unicode())
