@@ -177,7 +177,18 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def repd_path_full(self):
-        response = self.rep_name
+        response = self.repd_name
+        if self.out_dir_full:
+            response = os.path.join(self.out_dir_full, response)
+        return response
+
+    @property
+    def reps_name(self):
+        return "%ssync_report_sanitation_%s.html" % (self.file_prefix, self.file_suffix)
+
+    @property
+    def reps_path_full(self):
+        response = self.reps_name
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
         return response
@@ -816,18 +827,6 @@ class UpdateNamespace(argparse.Namespace):
         self.delta_slave = []
         self.new_master = []
         self.new_slave = []
-
-class ReporterNamespace(argparse.Namespace):
-    """ Collect variables used in reporting into a single namespace. """
-
-    main_css = ""
-    dup_css = DUP_CSS
-
-    def __init__(self, *args, **kwargs):
-        super(ReporterNamespace, self).__init__(*args, **kwargs)
-        self.main = HtmlReporter(css=self.main_css)
-        self.dup = HtmlReporter(css=self.dup_css)
-
 
 def init_registrar(settings):
     # print "settings.verbosity = %s" % settings.verbosity

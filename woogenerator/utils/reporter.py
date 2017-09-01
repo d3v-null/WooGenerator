@@ -1,14 +1,32 @@
 from __future__ import absolute_import
 
+import io
 import os
 import re
 from collections import OrderedDict
+import argparse
 
 from woogenerator.duplicates import Duplicates
 from woogenerator.parsing.user import UsrObjList
 
 from .clock import TimeUtils
-from .core import SanitationUtils
+from .core import SanitationUtils, Registrar
+
+class ReporterNamespace(argparse.Namespace):
+    """ Collect variables used in reporting into a single namespace. """
+
+    def __init__(self, *args, **kwargs):
+        super(ReporterNamespace, self).__init__(*args, **kwargs)
+        self.main = HtmlReporter()
+        self.dup = HtmlReporter(css=DUP_CSS)
+        self.san = HtmlReporter()
+
+    def get_csv_files(self):
+        csv_files = OrderedDict()
+        for attr in ['main', 'dup', 'san']:
+            reporter = getattr(self, attr)
+            csv_files.update(reporter.csv_files)
+        return csv_files
 
 DUP_CSS = "\n".join([
     ".highlight_old {color: red !important; }"
@@ -114,9 +132,15 @@ class HtmlReporter(object):
     def __init__(self, css=None):
         self.groups = OrderedDict()
         self.css = css
+        self.csv_files = OrderedDict()
+        self.html_files = OrderedDict()
 
     def add_group(self, group):
         self.groups[group.classname] = group
+
+    def add_groups(self, *groups):
+        for group in groups:
+            self.add_group(group)
 
     def get_head(self):
         css = ''
@@ -187,8 +211,25 @@ class HtmlReporter(object):
     def get_document_unicode(self):
         return SanitationUtils.coerce_unicode(self.get_document())
 
+    def add_csv_file(self, name, path):
+        Registrar.register_message(
+            "wrote %s CSV file to %s" % (name, path)
+        )
+        self.csv_files[name] = path
 
-def do_report_duplicates_summary(matches, updates, parsers, settings, dup_reporter):
+    def add_html_file(self, name, path):
+        Registrar.register_message(
+            "wrote %s HTML file to %s" % (name, path)
+        )
+        self.html_files[name] = path
+
+    def write_to_file(self, name, path):
+        with io.open(path, 'w+', encoding='utf8') as rep_file:
+            rep_file.write(self.get_document_unicode())
+        self.add_html_file(name, path)
+
+
+def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     help_instructions = (
         "<p>This is a detailed report of all the duplicated and conflicting records. "
         "Ideally this report would be empty. </p>"
@@ -211,19 +252,19 @@ def do_report_duplicates_summary(matches, updates, parsers, settings, dup_report
         master_pkey="MYOB Card ID",
         slave_pkey="WP ID"
     )
-    summary_group = HtmlReporter.Group('summary_group', 'Summary')
-    summary_group.add_section(
+    group = HtmlReporter.Group('summary_group', 'Summary')
+    group.add_section(
         HtmlReporter.Section(
             'instructions',
             title='Instructions',
             data=help_instructions
         )
     )
-    dup_reporter.add_group(summary_group)
+    reporter.add_group(group)
 
-def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
+def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
-    duplicate_group = HtmlReporter.Group('dup', 'Duplicate Results')
+    group = HtmlReporter.Group('dup', 'Duplicate Results')
 
     dup_cols = OrderedDict(settings.basic_cols.items() + [
         # ('Create Date', {}),
@@ -317,7 +358,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
     # if Registrar.DEBUG_DUPLICATES:
     # print duplicates.tabulate({}, tablefmt='plain')
     if duplicates:
-        duplicate_group.add_section(
+        group.add_section(
             HtmlReporter.Section('all duplicates', **{
                 'title':
                 'All Duplicates',
@@ -337,7 +378,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
         cols=dup_cols,
         tablefmt="html",
         highlight_rules=highlight_rules_all)
-    duplicate_group.add_section(
+    group.add_section(
         HtmlReporter.Section(
             "email conflicts",
             **{
@@ -350,7 +391,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
     email_duplicate_data = matches.duplicate['email'].tabulate(
         tablefmt="html", highlight_rules=highlight_rules_all)
     if matches.duplicate['email']:
-        duplicate_group.add_section(
+        group.add_section(
             HtmlReporter.Section('email_duplicates', **{
                 'title':
                 'Email Duplicates',
@@ -366,7 +407,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
     if address_duplicates:
 
         print "there are address duplicates"
-        duplicate_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 'address_duplicates',
                 title='Duplicate %s Addresses' %
@@ -407,7 +448,7 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
                 # highlight_rules=highlight_rules_all
             )
             # TODO: maybe re-enable highlight rules?
-        duplicate_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 matchlist_type,
                 **{
@@ -417,10 +458,10 @@ def do_report_duplicates(matches, updates, parsers, settings, dup_reporter):
                     'length': len(match_list)
                 }))
 
-    dup_reporter.add_group(duplicate_group)
+    reporter.add_group(group)
 
 
-def do_report_summary(matches, updates, parsers, settings, reporter):
+def do_main_summary_group(reporter, matches, updates, parsers, settings):
     help_instructions = (
         "<p>This is a detailed report of all the changes that will be "
         "made if this sync were to go ahead. </p>"
@@ -470,81 +511,81 @@ def do_report_summary(matches, updates, parsers, settings, reporter):
         slave_pkey="WP ID"
     )
 
-    summary_group = HtmlReporter.Group('summary_group', 'Summary')
-    summary_group.add_section(
+    group = HtmlReporter.Group('summary_group', 'Summary')
+    group.add_section(
         HtmlReporter.Section(
             'instructions',
             title='Instructions',
             data=help_instructions
         )
     )
-    reporter.add_group(summary_group)
+    reporter.add_group(group)
 
-def do_report_sanitizing(matches, updates, parsers, settings, reporter):
-        address_cols = OrderedDict(settings.basic_cols.items() + [
-            ('address_reason', {}),
-            ('Edited Address', {}),
-            ('Edited Alt Address', {}),
-        ])
-        name_cols = OrderedDict(settings.basic_cols.items() + [
-            ('name_reason', {}),
-            ('Edited Name', {}),
-        ])
+def do_sanitizing_group(reporter, matches, updates, parsers, settings):
+    address_cols = OrderedDict(settings.basic_cols.items() + [
+        ('address_reason', {}),
+        ('Edited Address', {}),
+        ('Edited Alt Address', {}),
+    ])
+    name_cols = OrderedDict(settings.basic_cols.items() + [
+        ('name_reason', {}),
+        ('Edited Name', {}),
+    ])
 
-        sanitizing_group = HtmlReporter.Group('sanitizing',
-                                              'Sanitizing Results')
+    group = HtmlReporter.Group('sanitizing',
+                                          'Sanitizing Results')
 
-        if parsers.slave.bad_address:
-            sanitizing_group.add_section(
-                HtmlReporter.Section(
-                    's_bad_addresses_list',
-                    title='Bad %s Address List' % settings.slave_name.title(),
-                    description='%s records that have badly formatted addresses'
-                    % settings.slave_name,
-                    data=UsrObjList(parsers.slave.bad_address.values()).tabulate(
-                        cols=address_cols,
-                        tablefmt='html', ),
-                    length=len(parsers.slave.bad_address)))
+    if parsers.slave.bad_address:
+        group.add_section(
+            HtmlReporter.Section(
+                's_bad_addresses_list',
+                title='Bad %s Address List' % settings.slave_name.title(),
+                description='%s records that have badly formatted addresses'
+                % settings.slave_name,
+                data=UsrObjList(parsers.slave.bad_address.values()).tabulate(
+                    cols=address_cols,
+                    tablefmt='html', ),
+                length=len(parsers.slave.bad_address)))
 
-        if parsers.slave.bad_name:
-            sanitizing_group.add_section(
-                HtmlReporter.Section(
-                    's_bad_names_list',
-                    title='Bad %s Names List' % settings.slave_name.title(),
-                    description='%s records that have badly formatted names' %
-                    settings.slave_name,
-                    data=UsrObjList(parsers.slave.bad_name.values()).tabulate(
-                        cols=name_cols,
-                        tablefmt='html', ),
-                    length=len(parsers.slave.bad_name)))
+    if parsers.slave.bad_name:
+        group.add_section(
+            HtmlReporter.Section(
+                's_bad_names_list',
+                title='Bad %s Names List' % settings.slave_name.title(),
+                description='%s records that have badly formatted names' %
+                settings.slave_name,
+                data=UsrObjList(parsers.slave.bad_name.values()).tabulate(
+                    cols=name_cols,
+                    tablefmt='html', ),
+                length=len(parsers.slave.bad_name)))
 
-        if parsers.master.bad_address:
-            sanitizing_group.add_section(
-                HtmlReporter.Section(
-                    'm_bad_addresses_list',
-                    title='Bad %s Address List' % settings.master_name.title(),
-                    description='%s records that have badly formatted addresses'
-                    % settings.master_name,
-                    data=UsrObjList(parsers.master.bad_address.values()).tabulate(
-                        cols=address_cols,
-                        tablefmt='html', ),
-                    length=len(parsers.master.bad_address)))
+    if parsers.master.bad_address:
+        group.add_section(
+            HtmlReporter.Section(
+                'm_bad_addresses_list',
+                title='Bad %s Address List' % settings.master_name.title(),
+                description='%s records that have badly formatted addresses'
+                % settings.master_name,
+                data=UsrObjList(parsers.master.bad_address.values()).tabulate(
+                    cols=address_cols,
+                    tablefmt='html', ),
+                length=len(parsers.master.bad_address)))
 
-        if parsers.master.bad_name:
-            sanitizing_group.add_section(
-                HtmlReporter.Section(
-                    'm_bad_names_list',
-                    title='Bad %s Names List' % settings.master_name.title(),
-                    description='%s records that have badly formatted names' %
-                    settings.master_name,
-                    data=UsrObjList(parsers.master.bad_name.values()).tabulate(
-                        cols=name_cols,
-                        tablefmt='html', ),
-                    length=len(parsers.master.bad_name)))
+    if parsers.master.bad_name:
+        group.add_section(
+            HtmlReporter.Section(
+                'm_bad_names_list',
+                title='Bad %s Names List' % settings.master_name.title(),
+                description='%s records that have badly formatted names' %
+                settings.master_name,
+                data=UsrObjList(parsers.master.bad_name.values()).tabulate(
+                    cols=name_cols,
+                    tablefmt='html', ),
+                length=len(parsers.master.bad_name)))
 
-        reporter.add_group(sanitizing_group)
+    reporter.add_group(group)
 
-def do_report_delta(matches, updates, parsers, settings, reporter):
+def do_delta_group(reporter, matches, updates, parsers, settings):
     if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
         return
 
@@ -557,7 +598,7 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
         "%sdelta_report_%s_%s.csv" % \
             (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
-    delta_group = HtmlReporter.Group('deltas', 'Field Changes')
+    group = HtmlReporter.Group('deltas', 'Field Changes')
 
     m_delta_list = UsrObjList(
         filter(None, [update.new_m_object
@@ -576,7 +617,7 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
         ).items())
 
     if m_delta_list:
-        delta_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 'm_deltas',
                 title='%s Changes List' % settings.master_name.title(),
@@ -587,7 +628,7 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
                 length=len(m_delta_list)))
 
     if s_delta_list:
-        delta_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 's_deltas',
                 title='%s Changes List' % settings.slave_name.title(),
@@ -597,19 +638,22 @@ def do_report_delta(matches, updates, parsers, settings, reporter):
                     cols=all_delta_cols, tablefmt='html'),
                 length=len(s_delta_list)))
 
-    reporter.add_group(delta_group)
     if m_delta_list:
         m_delta_list.export_items(
             settings['master_delta_csv_path'],
             settings.col_data_class.get_col_names(all_delta_cols))
+        reporter.add_csv_file('master_delta', settings['master_delta_csv_path'])
     if s_delta_list:
         s_delta_list.export_items(
             settings['slave_delta_csv_path'],
             settings.col_data_class.get_col_names(all_delta_cols))
+        reporter.add_csv_file('slave_delta', settings['slave_delta_csv_path'])
 
-def do_report_matches(matches, updates, parsers, settings, reporter):
-    matching_group = HtmlReporter.Group('matching', 'Matching Results')
-    matching_group.add_section(
+    reporter.add_group(group)
+
+def do_matches_group(reporter, matches, updates, parsers, settings):
+    group = HtmlReporter.Group('matching', 'Matching Results')
+    group.add_section(
         HtmlReporter.Section(
             'perfect_matches',
             **{
@@ -643,7 +687,7 @@ def do_report_matches(matches, updates, parsers, settings, reporter):
             data = match_list.merge().tabulate(tablefmt="html")
         else:
             data = match_list.tabulate(tablefmt="html")
-        matching_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 matchlist_type,
                 **{
@@ -675,7 +719,7 @@ def do_report_matches(matches, updates, parsers, settings, reporter):
 
         data = usr_list.tabulate(tablefmt="html")
 
-        matching_group.add_section(
+        group.add_section(
             HtmlReporter.Section(
                 parselist_type,
                 **{
@@ -685,15 +729,15 @@ def do_report_matches(matches, updates, parsers, settings, reporter):
                     'length': len(parse_list)
                 }))
 
-    reporter.add_group(matching_group)
+    reporter.add_group(group)
 
-def do_report_sync(matches, updates, parsers, settings, reporter):
+def do_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync:
         return
 
-    syncing_group = HtmlReporter.Group('sync', 'Syncing Results')
+    group = HtmlReporter.Group('sync', 'Syncing Results')
 
-    syncing_group.add_section(
+    group.add_section(
         HtmlReporter.Section(
             (settings.master_name + "_updates"),
             description=settings.master_name +
@@ -704,7 +748,7 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
             ]),
             length=len(updates.master)))
 
-    syncing_group.add_section(
+    group.add_section(
         HtmlReporter.Section(
             (settings.slave_name + "_updates"),
             description=settings.slave_name + " items will be updated",
@@ -714,7 +758,7 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
             ]),
             length=len(updates.slave)))
 
-    syncing_group.add_section(
+    group.add_section(
         HtmlReporter.Section(
             "updates.problematic",
             description="items can't be merged because they are too dissimilar",
@@ -724,9 +768,9 @@ def do_report_sync(matches, updates, parsers, settings, reporter):
             ]),
             length=len(updates.problematic)))
 
-    reporter.add_group(syncing_group)
+    reporter.add_group(group)
 
-def do_report_bad_contact(matches, updates, parsers, settings):
+def do_report_bad_contact(reporter, matches, updates, parsers, settings):
     settings.w_pres_csv_path = os.path.join(
         settings.out_dir_full,
         "%ssync_report_%s_%s.csv" % \
@@ -748,7 +792,10 @@ def do_report_bad_contact(matches, updates, parsers, settings):
     if parsers.master.bad_name or parsers.master.bad_address:
         UsrObjList(parsers.master.bad_name.values() + parsers.master.bad_address.values())\
             .export_items(settings['master_res_csv_path'], csv_colnames)
+        reporter.add_csv_file('master_bad_name', settings['master_res_csv_path'])
+
 
     if parsers.slave.bad_name or parsers.slave.bad_address:
         UsrObjList(parsers.slave.bad_name.values() + parsers.master.bad_address.
                    values()).export_items(settings['w_pres_csv_path'], csv_colnames)
+        reporter.add_csv_file('slave_bad_name', settings['w_pres_csv_path'])

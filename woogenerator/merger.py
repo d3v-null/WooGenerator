@@ -19,7 +19,6 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 import dill
 from six.moves import input
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
-                                         ReporterNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
@@ -29,11 +28,12 @@ from woogenerator.matching import (CardMatcher, ConflictingMatchList,
 from woogenerator.syncupdate import SyncUpdateUsrApi
 from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
                                 TimeUtils)
-from woogenerator.utils.reporter import (do_report_delta, do_report_duplicates,
-                                         do_report_duplicates_summary,
-                                         do_report_matches,
-                                         do_report_sanitizing,
-                                         do_report_summary, do_report_sync)
+from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group, do_duplicates_group,
+                                         do_duplicates_summary_group,
+                                         do_matches_group,
+                                         do_sanitizing_group,
+                                         do_main_summary_group, do_sync_group,
+                                         do_report_bad_contact)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
@@ -372,32 +372,30 @@ def do_report(matches, updates, parsers, settings):
     """Write report of changes to be made."""
     reporters = ReporterNamespace()
 
-    if not settings.get('do_report'):
-        return reporters
+    if settings.get('do_report'):
+        Registrar.register_progress("Write Report")
 
-    Registrar.register_progress("Write Report")
+        do_main_summary_group(reporters.main, matches, updates, parsers, settings),
+        do_delta_group(reporters.main, matches, updates, parsers, settings),
+        do_matches_group(reporters.main, matches, updates, parsers, settings),
+        do_sync_group(reporters.main, matches, updates, parsers, settings)
+        reporters.main.write_to_file('main', settings.rep_path_full)
 
-    do_report_summary(matches, updates, parsers, settings, reporters.main)
-    do_report_sanitizing(matches, updates, parsers, settings, reporters.main)
-    do_report_delta(matches, updates, parsers, settings, reporters.main)
-    do_report_matches(matches, updates, parsers, settings, reporters.main)
-    do_report_sync(matches, updates, parsers, settings, reporters.main)
+        if settings.get('report_sanitation'):
+            Registrar.register_progress("Write Sanitation Report")
 
-    with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
+            do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
+            do_report_bad_contact(reporters.san, matches, updates, parsers, settings)
+            reporters.san.write_to_file('san', settings.reps_path_full)
 
-        res_file.write(reporters.main.get_document_unicode())
-    # print "WROTE FILE: ", settings.rep_path_full
+        if settings.get('report_duplicates'):
+            Registrar.register_progress("Write Duplicates Report")
 
-    if not settings.get('process_duplicates'):
-        return reporters
+            do_duplicates_summary_group(reporters.dup, matches, updates, parsers, settings),
+            do_duplicates_group(reporters.dup, matches, updates, parsers, settings)
+            reporters.dup.write_to_file('dup', settings.repd_path_full)
 
-    Registrar.register_progress("Write Duplicates Report")
-
-    do_report_duplicates_summary(matches, updates, parsers, settings, reporters.dup)
-    do_report_duplicates(matches, updates, parsers, settings, reporters.dup)
-
-    with io.open(settings.repd_path_full, 'w+', encoding='utf8') as repd_file:
-        repd_file.write(reporters.dup.get_document_unicode())
+    return reporters
 
 def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
     """Save execution state of a pickle file which can be restored later."""

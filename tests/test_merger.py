@@ -41,7 +41,7 @@ class TestMerger(unittest.TestCase):
         Registrar.DEBUG_PROGRESS = False
 
         self.debug = False
-        # self.debug = True
+        self.debug = True
         if self.debug:
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
@@ -691,7 +691,8 @@ class TestMerger(unittest.TestCase):
             print("out dir is %s" % temp_out_dir)
         self.settings.out_dir = temp_out_dir
         self.settings.do_sync = True
-        self.settings.process_duplicates = True
+        self.settings.report_duplicates = True
+        self.settings.report_sanitation = True
         if self.debug:
             print("rep_path_full is %s" % self.settings.rep_path_full)
         # self.settings.process_duplicates = True

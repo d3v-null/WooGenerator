@@ -13,7 +13,8 @@ from .__init__ import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                        DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
                        DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
                        DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
-                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH, DEFAULTS_USER_PATH)
+                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH,
+                       DEFAULTS_USER_PATH)
 from .namespace import (SettingsNamespaceProd, SettingsNamespaceProto,
                         SettingsNamespaceUser)
 
@@ -363,6 +364,23 @@ class ArgumentParserCommon(ArgumentParserProto):
             action="store_true",
             default=False
         )
+        report_group.add_argument(
+            '--report-sanitation',
+            help='Add sanitation information to report',
+            default=False,
+            action='store_true'
+        )
+        report_group.add_argument(
+            '--report-duplicates',
+            help='Add duplicates information to report',
+            default=False,
+            action='store_true'
+        )
+        report_group.add_argument(
+            '--exclude-cols',
+            help='exclude these columns from the reports',
+            default=[]
+        )
         group = report_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-mail',
@@ -597,13 +615,8 @@ class ArgumentParserProd(ArgumentParserCommon):
             '--slave-offset',
             help='offset when using the slave api (for debugging)')
 
-    def add_report_options(self, report_group):
-        super(ArgumentParserProd, self).add_report_options(report_group)
-        report_group.add_argument(
-            '--exclude-cols',
-            help='exclude these columns from the reports',
-            default=[]
-        )
+    # def add_report_options(self, report_group):
+    #     super(ArgumentParserProd, self).add_report_options(report_group)
 
     def add_other_options(self):
         super(ArgumentParserProd, self).add_other_options()
@@ -695,11 +708,6 @@ class ArgumentParserUser(ArgumentParserCommon):
             help='don\'t post process the contacts',
             action="store_false",
             dest='do_post')
-        processing_group.add_argument(
-            '--process-duplicates',
-            help="do extra processing to figure out duplicates",
-            default=False,
-            action="store_true")
         processing_group.add_argument(
             '--reflect-only',
             help="report only changes do to reflection, not syncing",
