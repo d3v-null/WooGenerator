@@ -1,43 +1,25 @@
 import os
-import yaml
 import smtplib
-import zipfile
 import tempfile
+import zipfile
+import logging
 from email import encoders
 from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 
+from exchangelib import DELEGATE, IMPERSONATION, Account, Credentials, ServiceAccount, \
+    EWSDateTime, EWSTimeZone, Configuration, NTLM, CalendarItem, Message, \
+    Mailbox, Attendee, Q, ExtendedProperty, FileAttachment, ItemAttachment, \
+    HTMLBody, Build, Version
 
-def send_file_zipped(the_file, recipients, sender='you@you.com'):
-    zf = tempfile.TemporaryFile(prefix='mail', suffix='.zip')
-    zip = zipfile.ZipFile(zf, 'w')
-    zip.write(the_file)
-    zip.close()
-    zf.seek(0)
-
-    # Create the message
-    themsg = MIMEMultipart()
-    themsg['Subject'] = 'File %s' % the_file
-    themsg['To'] = ', '.join(recipients)
-    themsg['From'] = sender
-    themsg.preamble = 'I am not using a MIME-aware mail reader.\n'
-    msg = MIMEBase('application', 'zip')
-    msg.set_payload(zf.read())
-    encoders.encode_base64(msg)
-    msg.add_header('Content-Disposition', 'attachment',
-                   filename=the_file + '.zip')
-    themsg.attach(msg)
-    themsg = themsg.as_string()
-
-    # send the message
-    smtp = smtplib.SMTP()
-    smtp.connect()
-    smtp.sendmail(sender, recipients, themsg)
-    smtp.close()
+from context import TESTS_DATA_DIR, woogenerator
+from woogenerator.conf.namespace import SettingsNamespaceUser, init_settings
+from woogenerator.conf.parser import ArgumentParserUser
+from woogenerator.utils import Registrar
 
 
-def send_zipped_file(zipped_file, recipients, sender, connect_params):
+def send_zipped_file_smtp(zipped_file, recipients, sender, connect_params):
     for param in ['host', 'port', 'user', 'pass']:
         assert param in connect_params, 'must specify mandatory parameter %s' % param
 
@@ -60,38 +42,81 @@ def send_zipped_file(zipped_file, recipients, sender, connect_params):
     server = smtplib.SMTP(connect_params['host'], connect_params['port'])
     server.ehlo()
     server.starttls()
-    server.login('derwentx@gmail.com', 'Opensesami0114')
+    server.login(connect_params['user'], connect_params['pass'])
 
     server.sendmail(sender, recipients, themsg)
     server.quit()
 
-src_folder = "../source/"
-in_folder = "../input/"
-yaml_path = os.path.join(src_folder, "merger_config.yaml")
-try:
-    os.stat('source')
-    os.chdir('source')
-except Exception as exc:
-    if(exc):
-        pass
-    os.chdir(src_folder)
-print os.getcwd()
+def send_zipped_file_exchange(zipped_file, recipients, sender, connect_params):
+    for param in ['host', 'port', 'user', 'pass']:
+        assert param in connect_params, 'must specify mandatory parameter %s' % param
 
-with open(yaml_path) as stream:
-    config = yaml.load(stream)
+    credentials = ServiceAccount(
+        username=connect_params['user'],
+        password=connect_params['pass']
+    )
 
-    smtp_user = config.get('smtp_user')
-    smtp_pass = config.get('smtp_pass')
-    smtp_host = config.get('smtp_host')
-    smtp_port = config.get('smtp_port', 25)
+    print("creds are:\n%s" % credentials)
 
-send_zipped_file(
-    '/Users/Derwent/Desktop/test.zip',
-    ['webmaster@technotan.com.au'],
-    'webmaster@technotan.com.au',
-    connect_params={
-        'host': smtp_host,
-        'port': smtp_port,
-        'user': smtp_user,
-        'pass': smtp_pass
-    })
+    config = Configuration(
+        server=connect_params['host'],
+        credentials=credentials,
+        # version=version,
+        # auth_type=NTLM
+    )
+
+    print("config is:\n%s" % config)
+
+    account = Account(
+        primary_smtp_address=connect_params['sender'],
+        credentials=credentials,
+        autodiscover=False,
+        config=config,
+        access_type=DELEGATE
+    )
+
+    message = Message(
+        account=account,
+        subject='TEST: File %s' % zipped_file,
+        body='',
+        to_recipients=recipients
+    )
+
+    with open(zipped_file, 'w+') as zf:
+        attachment = FileAttachment(name=zipped_file, content=zf.read())
+        message.attach(attachment)
+
+    message.send_and_save()
+
+def main():
+    logging.basicConfig(level=logging.DEBUG)
+
+    settings = SettingsNamespaceUser()
+    settings.local_work_dir = '/Users/Derwent/Documents/woogenerator'
+    settings.local_live_config = None
+    settings.local_test_config = "conf_user.yaml"
+    Registrar.DEBUG_MESSAGE = True
+    settings = init_settings(
+        settings=settings,
+        argparser_class=ArgumentParserUser
+    )
+    print("connect paarams: %s" % settings.email_connect_params)
+
+    mail_args = [
+        os.path.join(TESTS_DATA_DIR, 'test.zip'),
+        settings.get('mail_recipients', []),
+        settings.get('mail_sender'),
+        settings.email_connect_params
+    ]
+
+    if settings.get('mail_type') == 'exchange':
+        send_zipped_file_exchange(
+            *mail_args
+        )
+    else:
+        send_zipped_file_smtp(
+            *mail_args
+        )
+
+if __name__ == '__main__':
+    main()

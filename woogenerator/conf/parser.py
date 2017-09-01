@@ -375,6 +375,13 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--wc-api-secret', type=str)
         self.add_suppressed_argument('--wc-api-version', type=str)
         self.add_suppressed_argument('--store-url', type=str)
+        self.add_suppressed_argument('--mail-type', type=str)
+        self.add_suppressed_argument('--mail-host', type=str)
+        self.add_suppressed_argument('--mail-port', type=int)
+        self.add_suppressed_argument('--mail-user', type=str)
+        self.add_suppressed_argument('--mail-pass', type=str)
+        self.add_suppressed_argument('--mail-sender', type=str)
+        self.add_suppressed_argument('--mail-recipients', type=str, nargs='*')
 
     def add_other_options(self):
         self.add_suppressed_argument('--master-name')
@@ -729,8 +736,3 @@ class ArgumentParserUser(ArgumentParserCommon):
         self.add_suppressed_argument('--m-db-pass', type=str)
         self.add_suppressed_argument('--m-db-name', type=str)
         self.add_suppressed_argument('--m-db-host', type=str)
-
-        self.add_suppressed_argument('--smtp-host', type=str)
-        self.add_suppressed_argument('--smtp-port', type=int)
-        self.add_suppressed_argument('--smtp-user', type=str)
-        self.add_suppressed_argument('--smtp-pass', type=str)

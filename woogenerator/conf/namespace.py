@@ -223,6 +223,20 @@ class SettingsNamespaceProto(argparse.Namespace):
     def basic_cols(self):
         return self.col_data_class.get_basic_cols()
 
+    @property
+    def email_connect_params(self):
+        response = {}
+        for resp_key, self_key in [
+            ('host', 'mail_host'),
+            ('port', 'mail_port'),
+            ('user', 'mail_user'),
+            ('pass', 'mail_pass'),
+            ('sender', 'mail_sender'),
+        ]:
+            if hasattr(self, self_key):
+                response[resp_key] = self[self_key]
+        return response
+
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 
