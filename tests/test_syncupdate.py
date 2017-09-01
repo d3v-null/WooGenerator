@@ -2,7 +2,7 @@ import traceback
 import unittest
 from pprint import pformat
 
-from context import get_testdata, tests_datadir, woogenerator
+from context import get_testdata, TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
                                          UpdateNamespace, init_settings)
@@ -14,7 +14,7 @@ class TestSyncUpdateAbstract(unittest.TestCase):
     config_file = None
     settings_namespace_class = SettingsNamespaceProto
     argument_parser_class = ArgumentParserCommon
-    local_work_dir = tests_datadir
+    local_work_dir = TESTS_DATA_DIR
     override_args = ''
 
     def setUp(self):

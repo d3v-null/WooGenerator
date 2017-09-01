@@ -5,7 +5,7 @@ import unittest
 import configargparse
 from pprint import pformat
 
-from context import tests_datadir
+from context import TESTS_DATA_DIR
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProd
 from woogenerator.utils import Registrar
 # from woogenerator import config
@@ -40,7 +40,7 @@ class TestConfigProd(unittest.TestCase):
         # TODO: complete this
         parser = configargparse.ArgParser(
             default_config_files=[
-                os.path.join(tests_datadir, 'baseconfig.yaml')
+                os.path.join(TESTS_DATA_DIR, 'baseconfig.yaml')
             ],
             config_file_parser_class=configargparse.YAMLConfigFileParser
         )
@@ -49,8 +49,8 @@ class TestConfigProd(unittest.TestCase):
         parser.add('--an-argument')
 
         arg_string = ("--my-config %s --my-other-config %s") % (
-            os.path.join(tests_datadir, 'overconfig.yaml'),
-            os.path.join(tests_datadir, 'otherconfig.yaml'),
+            os.path.join(TESTS_DATA_DIR, 'overconfig.yaml'),
+            os.path.join(TESTS_DATA_DIR, 'otherconfig.yaml'),
         )
         options = parser.parse_args(args=arg_string.split())
         # print "parsed options: %s" % pformat(vars(options))

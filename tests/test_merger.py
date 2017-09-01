@@ -7,7 +7,7 @@ import traceback
 import unittest
 from pprint import pformat
 
-from context import tests_datadir, woogenerator
+from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
@@ -24,13 +24,13 @@ from woogenerator.utils import Registrar, TimeUtils
 class TestMerger(unittest.TestCase):
     def setUp(self):
         self.settings = SettingsNamespaceUser()
-        self.settings.local_work_dir = tests_datadir
+        self.settings.local_work_dir = TESTS_DATA_DIR
         self.settings.local_live_config = None
         self.settings.local_test_config = "merger_config_test.yaml"
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
-        self.settings.master_file = os.path.join(tests_datadir, "merger_master_dummy.csv")
-        self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_dummy.csv")
+        self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_dummy.csv")
+        self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_dummy.csv")
         # self.settings.master_parse_limit = 10
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
@@ -646,8 +646,8 @@ class TestMerger(unittest.TestCase):
     # @unittest.skip("Failing")
     def test_do_merge_false_pos(self):
         self.settings.do_sync = True
-        self.settings.master_file = os.path.join(tests_datadir, "merger_master_false_positive.csv")
-        self.settings.slave_file = os.path.join(tests_datadir, "merger_slave_false_positive.csv")
+        self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_false_positive.csv")
+        self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_false_positive.csv")
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )

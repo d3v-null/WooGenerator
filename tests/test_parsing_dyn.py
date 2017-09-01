@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict
 from unittest import TestCase, main
 
-from context import tests_datadir
+from context import TESTS_DATA_DIR
 from woogenerator.utils import SanitationUtils, Registrar
 from woogenerator.parsing.abstract import ObjList
 from woogenerator.parsing.dyn import CsvParseDyn
@@ -20,7 +20,7 @@ class TestParseDyn(TestCase):
 
     def test_parse_dyn(self):
 
-        dprp_path = os.path.join(tests_datadir, 'DPRP.csv')
+        dprp_path = os.path.join(TESTS_DATA_DIR, 'DPRP.csv')
 
         dyn_parser = CsvParseDyn()
         dyn_parser.analyse_file(dprp_path)

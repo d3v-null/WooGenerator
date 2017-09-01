@@ -4,7 +4,7 @@ from os import sys, path
 import unittest
 
 from context import woogenerator
-from context import get_testdata, tests_datadir
+from context import get_testdata, TESTS_DATA_DIR
 from woogenerator.metagator import MetaGator
 from woogenerator.utils import Registrar
 
@@ -12,7 +12,7 @@ from woogenerator.utils import Registrar
 class testMetaGator(unittest.TestCase):
 
     def setUp(self):
-        self.work_dir = tests_datadir
+        self.work_dir = TESTS_DATA_DIR
         # assert os.path.isdir(self.work_dir)
         self.newmeta = {
             'title': u'TITLE \xa9 \u2014',

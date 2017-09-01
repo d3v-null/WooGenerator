@@ -15,22 +15,22 @@ from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParserNamespace
 from woogenerator.generator import populate_master_parsers
 
-from context import tests_datadir
+from context import TESTS_DATA_DIR
 
 
 class TestGenerator(TestCase):
     def setUp(self):
 
         self.settings = SettingsNamespaceProd()
-        self.settings.local_work_dir = tests_datadir
+        self.settings.local_work_dir = TESTS_DATA_DIR
         self.settings.local_live_config = None
         self.settings.local_test_config = "generator_config_test.yaml"
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
-        self.settings.master_file = os.path.join(tests_datadir,
+        self.settings.master_file = os.path.join(TESTS_DATA_DIR,
                                                  "generator_master_dummy.csv")
         self.settings.specials_file = os.path.join(
-            tests_datadir, "generator_specials_dummy.csv")
+            TESTS_DATA_DIR, "generator_specials_dummy.csv")
         self.settings.do_specials = True
         # self.settings.master_limit = 10
         self.override_args = ""

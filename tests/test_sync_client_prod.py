@@ -2,7 +2,7 @@ import random
 import unittest
 from collections import OrderedDict
 
-from context import woogenerator, tests_datadir
+from context import woogenerator, TESTS_DATA_DIR
 from tests.test_sync_client import AbstractSyncClientTestCase
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.parsing.api import CsvParseWooApi

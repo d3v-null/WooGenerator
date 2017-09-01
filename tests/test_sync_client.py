@@ -4,7 +4,7 @@ from os import path, sys
 
 import yaml
 
-from context import get_testdata, tests_datadir, woogenerator
+from context import get_testdata, TESTS_DATA_DIR, woogenerator
 from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
@@ -19,7 +19,7 @@ class AbstractSyncClientTestCase(unittest.TestCase):
     config_file = None
     settings_namespace_class = SettingsNamespaceProto
     argument_parser_class = ArgumentParserCommon
-    local_work_dir = tests_datadir
+    local_work_dir = TESTS_DATA_DIR
     override_args = ''
 
     def setUp(self):

@@ -6,7 +6,7 @@ from pprint import pformat
 
 from tests.test_sync_client import AbstractSyncClientTestCase
 
-from context import tests_datadir, woogenerator
+from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWC, UsrSyncClientWP)
 from woogenerator.coldata import ColDataUser

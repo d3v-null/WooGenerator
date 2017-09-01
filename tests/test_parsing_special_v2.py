@@ -2,7 +2,7 @@ import os
 import time
 import unittest
 
-from context import get_testdata, tests_datadir, woogenerator
+from context import get_testdata, TESTS_DATA_DIR, woogenerator
 from woogenerator.parsing.special import CsvParseSpecial
 from woogenerator.utils import Registrar, TimeUtils
 
@@ -12,7 +12,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
     def setUp(self):
         # import_name = TimeUtils.get_ms_timestamp()
 
-        self.spec_path = os.path.join(tests_datadir, "specials_v2.csv")
+        self.spec_path = os.path.join(TESTS_DATA_DIR, "specials_v2.csv")
 
         self.special_parser_args = {
             # 'import_name':import_name

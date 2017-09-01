@@ -7,7 +7,7 @@ from woogenerator.coldata import ColDataWoo
 from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
-from context import tests_datadir
+from context import TESTS_DATA_DIR
 
 
 # TODO: fix this skip
@@ -49,7 +49,7 @@ class TestCSVParseWoo(TestCase):
         # }
 
         self.gen_path = os.path.join(
-            tests_datadir,
+            TESTS_DATA_DIR,
             "generator_master_dummy.csv"
         )
 
