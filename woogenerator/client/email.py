@@ -10,6 +10,7 @@ import exchangelib
 
 from .core import ClientAbstract
 
+MAX_BODY_LEN = 1000000
 
 class EmailClient(ClientAbstract):
     """ Interface with a mail client. Boilerplate """
@@ -76,11 +77,15 @@ class EmailClientExchange(ClientAbstract):
         self.attempt_connect()
 
     def compose_message(self, sender, recipients, subject, body, text_body=None):
+        if body == None:
+            body = ''
+        if text_body == None:
+            text_body = ''
         message = exchangelib.Message(
             account=self.service,
             subject=subject,
-            body=body,
-            text_body=text_body,
+            body=body[:MAX_BODY_LEN],
+            text_body=text_body[:MAX_BODY_LEN],
             to_recipients=recipients
         )
         return message
