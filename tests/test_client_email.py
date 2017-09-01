@@ -25,7 +25,6 @@ class TestClientEmailExchange(TestClientEmail):
             attachment = os.path.join(TESTS_DATA_DIR, 'test.zip')
             message = email_client.attach_file(message, attachment)
 
-
     @unittest.skip("destructive tests skipped")
     def test_send_destructive(self):
         with self.settings.email_client(self.settings.email_connect_params) as email_client:

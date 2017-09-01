@@ -711,6 +711,9 @@ class TestMerger(unittest.TestCase):
             self.matches, self.updates, self.parsers, self.settings
         )
 
+    def test_do_summary(self):
+        pass
+
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True
         self.settings.ignore_cards = "C001280"

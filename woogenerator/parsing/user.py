@@ -11,7 +11,8 @@ from woogenerator.contact_objects import (ContactAddress, ContactName,
                                           ContactPhones, RoleGroup,
                                           SocialMediaFields)
 from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
-                                SeqUtils, TimeUtils)
+                                SeqUtils)
+from woogenerator.utils.clock import TimeUtils
 
 from .abstract import CsvParseBase, ImportObject, ObjList
 

@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from tabulate import tabulate
 
-from woogenerator.utils import Registrar, SanitationUtils
+from woogenerator.utils import SanitationUtils
 
 
 def object_glb_index_fn(object_data):
@@ -106,8 +106,8 @@ class DuplicateObject(object):
 class Duplicates(OrderedDict):
     """a dictionary of duplicates stored by index"""
 
-    def __init__(self):
-        super(Duplicates, self).__init__()
+    # def __init__(self):
+    #     super(Duplicates, self).__init__()
 
     def add_conflictors(self, conflictors, reason, weighting=1):
         assert isinstance(
