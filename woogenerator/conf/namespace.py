@@ -24,6 +24,7 @@ from woogenerator.parsing.user import CsvParseUser
 from woogenerator.parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from woogenerator.syncupdate import SyncUpdate
 from woogenerator.utils import Registrar, TimeUtils
+from woogenerator.utils.reporter import HtmlReporter, DUP_CSS
 
 from .__init__ import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                        DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
@@ -165,6 +166,17 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def rep_path_full(self):
+        response = self.rep_name
+        if self.out_dir_full:
+            response = os.path.join(self.out_dir_full, response)
+        return response
+
+    @property
+    def repd_name(self):
+        return "%ssync_report_duplicate_%s.html" % (self.file_prefix, self.file_suffix)
+
+    @property
+    def repd_path_full(self):
         response = self.rep_name
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
@@ -805,6 +817,18 @@ class UpdateNamespace(argparse.Namespace):
         self.new_master = []
         self.new_slave = []
 
+class ReporterNamespace(argparse.Namespace):
+    """ Collect variables used in reporting into a single namespace. """
+
+    main_css = ""
+    dup_css = DUP_CSS
+
+    def __init__(self, *args, **kwargs):
+        super(ReporterNamespace, self).__init__(*args, **kwargs)
+        self.main = HtmlReporter(css=self.main_css)
+        self.dup = HtmlReporter(css=self.dup_css)
+
+
 def init_registrar(settings):
     # print "settings.verbosity = %s" % settings.verbosity
     # print "settings.quiet = %s" % settings.quiet
@@ -938,9 +962,6 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
 
     meta_settings.add_state('proto', copy(vars(settings)))
 
-    # Registrar.DEBUG_MESSAGE = True
-    # Registrar.register_message("proto settings: \n%s" % pformat(vars(settings)))
-
     ### Second round gets all the arguments from all config files
 
     # TODO: implement "ask for password" feature
@@ -950,8 +971,6 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     # TODO: test set live config
     # TODO: test set test config
     # TODO: move in, out, log dirs to full
-    # TODO: move gen, dprc, dprp, spec to full calculated in settings
-
 
     for conf in settings.second_stage_configs:
         # print "adding conf: %s" % conf
@@ -962,10 +981,6 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
             parser_override['args'] = []
         parser_override['args'] += ['--help']
 
-    # Registrar.register_message("parser: \n%s" % pformat(argparser.get_actions()))
-    # Registrar.register_message(
-    #     "default_config_files: \n%s" % pformat(argparser.default_config_files)
-    # )
 
     # defaults first
     settings = argparser.parse_args(**parser_override)
@@ -973,17 +988,6 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     meta_settings.add_state('main', copy(vars(settings)), argparser.default_config_files)
 
     init_registrar(settings)
-
-    # argparser.print_values()
-
-    # Registrar.register_message("Raw settings (defaults): %s" % pformat(vars(settings)))
-
-    # then user config
-    # for conf in settings.second_stage_configs:
-    #     with open(conf, 'r') as config_file:
-    #         settings, _ = argparser.parse_known_args(config_file_contents=config_file.read())
-
-    # Registrar.register_message("Raw settings (user): %s" % pformat(vars(settings)))
 
     # Init class variables
 
