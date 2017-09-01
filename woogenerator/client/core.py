@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+Boilerplate for unifying interfaces for disparate API clients.
+"""
+
 from __future__ import absolute_import
 
 import codecs
@@ -54,7 +58,6 @@ class ClientAbstract(Registrar):
 
     def __init__(self, connect_params, **kwargs):
         self.connect_params = connect_params
-        self.limit = kwargs.get('limit')
         self.service = None
         self.attempt_connect()
 
@@ -101,6 +104,10 @@ class ClientAbstract(Registrar):
 
 class SyncClientAbstract(ClientAbstract):
     """ Interface with a service as a client to perform syncing. """
+
+    def __init__(self, connect_params, **kwargs):
+        super(SyncClientAbstract, self).__init__(connect_params, **kwargs)
+        self.limit = kwargs.get('limit')
 
     def analyse_remote(self, parser, *args, **kwargs):
         """

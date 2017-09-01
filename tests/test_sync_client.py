@@ -21,6 +21,7 @@ class AbstractSyncClientTestCase(unittest.TestCase):
     argument_parser_class = ArgumentParserCommon
     local_work_dir = TESTS_DATA_DIR
     override_args = ''
+    debug = False
 
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
@@ -29,6 +30,9 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         self.settings.local_work_dir = self.local_work_dir
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
+
+        if self.debug:
+            Registrar.DEBUG_MESSAGE = True
 
         self.settings = init_settings(
             settings=self.settings,
@@ -40,10 +44,10 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         Registrar.DEBUG_WARN = False
         Registrar.DEBUG_MESSAGE = False
         Registrar.DEBUG_PROGRESS = False
-
-        # Registrar.DEBUG_PROGRESS = True
-        # Registrar.DEBUG_MESSAGE = True
-        # Registrar.DEBUG_ERROR = True
+        if self.debug:
+            Registrar.DEBUG_PROGRESS = True
+            Registrar.DEBUG_MESSAGE = True
+            Registrar.DEBUG_ERROR = True
 
 
 @unittest.skip('Tests not mocked yet')

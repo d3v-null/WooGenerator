@@ -1,17 +1,11 @@
 import os
 import smtplib
-import tempfile
-import zipfile
 import logging
 from email import encoders
-from email.message import Message
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 
-from exchangelib import DELEGATE, IMPERSONATION, Account, Credentials, ServiceAccount, \
-    EWSDateTime, EWSTimeZone, Configuration, NTLM, CalendarItem, Message, \
-    Mailbox, Attendee, Q, ExtendedProperty, FileAttachment, ItemAttachment, \
-    HTMLBody, Build, Version
+import exchangelib
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.namespace import SettingsNamespaceUser, init_settings
@@ -48,17 +42,17 @@ def send_zipped_file_smtp(zipped_file, recipients, sender, connect_params):
     server.quit()
 
 def send_zipped_file_exchange(zipped_file, recipients, sender, connect_params):
-    for param in ['host', 'port', 'user', 'pass']:
+    for param in ['host', 'sender', 'user', 'pass']:
         assert param in connect_params, 'must specify mandatory parameter %s' % param
 
-    credentials = ServiceAccount(
+    credentials = exchangelib.ServiceAccount(
         username=connect_params['user'],
         password=connect_params['pass']
     )
 
     print("creds are:\n%s" % credentials)
 
-    config = Configuration(
+    config = exchangelib.Configuration(
         server=connect_params['host'],
         credentials=credentials,
         # version=version,
@@ -67,15 +61,15 @@ def send_zipped_file_exchange(zipped_file, recipients, sender, connect_params):
 
     print("config is:\n%s" % config)
 
-    account = Account(
+    account = exchangelib.Account(
         primary_smtp_address=connect_params['sender'],
         credentials=credentials,
         autodiscover=False,
         config=config,
-        access_type=DELEGATE
+        access_type=exchangelib.DELEGATE
     )
 
-    message = Message(
+    message = exchangelib.Message(
         account=account,
         subject='TEST: File %s' % zipped_file,
         body='',
@@ -83,7 +77,7 @@ def send_zipped_file_exchange(zipped_file, recipients, sender, connect_params):
     )
 
     with open(zipped_file, 'w+') as zf:
-        attachment = FileAttachment(name=zipped_file, content=zf.read())
+        attachment = exchangelib.FileAttachment(name=zipped_file, content=zf.read())
         message.attach(attachment)
 
     message.send_and_save()

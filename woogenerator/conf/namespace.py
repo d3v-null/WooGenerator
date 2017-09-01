@@ -14,6 +14,7 @@ from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWP)
+from woogenerator.client.email import EmailClientSMTP, EmailClientExchange
 from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
                                   ColDataWoo)
 from woogenerator.contact_objects import FieldGroup
@@ -224,15 +225,32 @@ class SettingsNamespaceProto(argparse.Namespace):
         return self.col_data_class.get_basic_cols()
 
     @property
+    def email_client(self):
+        if self.get('mail_type') == 'exchange':
+            return EmailClientExchange
+        elif self.get('mail_type') == 'smtp':
+            return EmailClientSMTP
+        else:
+            raise ValueError("No mail type specified")
+
+    @property
     def email_connect_params(self):
         response = {}
-        for resp_key, self_key in [
+        potential_keys = [
             ('host', 'mail_host'),
-            ('port', 'mail_port'),
             ('user', 'mail_user'),
             ('pass', 'mail_pass'),
-            ('sender', 'mail_sender'),
-        ]:
+        ]
+        client = self.email_client
+        if issubclass(client, EmailClientExchange):
+            potential_keys += [
+                ('sender', 'mail_sender'),
+            ]
+        elif issubclass(client, EmailClientSMTP):
+            potential_keys += [
+                ('port', 'mail_port'),
+            ]
+        for resp_key, self_key in potential_keys:
             if hasattr(self, self_key):
                 response[resp_key] = self[self_key]
         return response
