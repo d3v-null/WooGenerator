@@ -16,7 +16,7 @@ woo-schemas:
 schema: CA
 
 add-special-categories: false
-show-report: true
+do-report: true
 do-images: false
 do-delete-images: false
 do-resize-images: false

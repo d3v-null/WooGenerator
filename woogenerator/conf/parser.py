@@ -339,14 +339,14 @@ class ArgumentParserCommon(ArgumentParserProto):
     def add_report_options(self, report_group):
         group = report_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--show-report',
+            '--do-report',
             help='generate report files',
             action="store_true")
         group.add_argument(
             '--skip-report',
             help='don\'t generate report files',
             action="store_false",
-            dest='show_report')
+            dest='do_report')
         group = report_group.add_mutually_exclusive_group()
         group.add_argument(
             '--print-report',
@@ -363,6 +363,17 @@ class ArgumentParserCommon(ArgumentParserProto):
             action="store_true",
             default=False
         )
+        group = report_group.add_mutually_exclusive_group()
+        group.add_argument(
+            '--do-mail',
+            help='email summary of actions upon completion',
+            action="store_true",
+            default=False)
+        group.add_argument(
+            '--skip-mail',
+            help='don\'t email summary',
+            action="store_false",
+            dest='do_mail')
 
     def add_client_options(self, client_group):
         self.add_suppressed_argument('--wp-user', type=str)

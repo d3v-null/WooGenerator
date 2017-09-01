@@ -1472,7 +1472,7 @@ def main(override_args=None, settings=None):
 
     Registrar.register_progress("Displaying reports")
 
-    if settings.show_report:
+    if settings.do_report:
         if settings['rep_web_path']:
             shutil.copyfile(settings.rep_path_full, settings['rep_web_path'])
             if settings['web_browser']:

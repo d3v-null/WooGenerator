@@ -181,7 +181,7 @@ case "$sync_subject" in
     fi
     if [[ "$sync_report_answer" == "$ANSWER_TRUE" ]] ; then
       sync_command+=('--download-slave' '--do-sync')
-      sync_command+=('--show-report')
+      sync_command+=('--do-report')
       sync_report=true
     else
       sync_command+=('--skip-download-slave' '--skip-sync')

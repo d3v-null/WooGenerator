@@ -5,7 +5,7 @@ slave-name: WORDPRESS
 schema: TT
 last-sync: !!str 2015-05-29 04:33:40
 
-show-report: true
+do-report: true
 skip-download-master: true
 
 wp-api-key: v4dw5kZxoSzD

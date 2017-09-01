@@ -323,7 +323,7 @@ class ProductsForm(SyncForm):
         # self.generate_report = self.add_simple_question(
         #     name="Generate Report",
         #     help_str="Would you like to generate a sync report? (slow)",
-        #     cmd_particles=['--skip-report', '--show-report'],
+        #     cmd_particles=['--skip-report', '--do-report'],
         #     value=0
         # )
 
