@@ -48,14 +48,14 @@ class WPAPIService(API, AbstractServiceInterface):
         """ Overrides AbstractServiceInterface, connect not used """
         pass
 
-
-class SyncClientAbstract(Registrar):
-    """docstring for UsrSyncClient_Abstract"""
+class ClientAbstract(Registrar):
+    """ Interface with a service as a client. Boilerplate. """
     service_builder = AbstractServiceInterface
 
     def __init__(self, connect_params, **kwargs):
         self.connect_params = connect_params
         self.limit = kwargs.get('limit')
+        self.service = None
         self.attempt_connect()
 
     def __enter__(self):
@@ -99,12 +99,8 @@ class SyncClientAbstract(Registrar):
         self.service = self.service_builder(*positional_args, **
                                             self.connect_params)
 
-    # def __exit__(self, exit_type, value, traceback):
-    #     raise NotImplementedError()
-    #
-    # @property
-    # def connection_ready(self):
-    #     raise NotImplementedError()
+class SyncClientAbstract(ClientAbstract):
+    """ Interface with a service as a client to perform syncing. """
 
     def analyse_remote(self, parser, *args, **kwargs):
         """
