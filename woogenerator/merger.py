@@ -480,7 +480,7 @@ def do_updates(updates, reporters, settings):
 
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
-    if settings['ask_before_update']:
+    if len(all_updates) and settings['ask_before_update']:
         try:
             raw_in = input(
                 "Please read reports and press Enter to continue or c to cancel..."
