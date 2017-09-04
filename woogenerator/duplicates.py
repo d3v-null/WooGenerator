@@ -67,16 +67,15 @@ class DuplicateObject(object):
             self.reasons[reason]['details'] = details
 
     def tabulate(self, cols, tablefmt=None, highlight_rules=None):
-        if not tablefmt:
-            tablefmt = 'html'
-        linedelim = "\n"
         if tablefmt == 'html':
-            linedelim = '<br/>'
-        inner_title_fstr = "%10s | %10s | %3d:%3s"
-        title_fstr = "-> %s" % inner_title_fstr
-        if tablefmt == 'html':
+            inner_title_fstr = "%s | %s | %d:%s"
             title_fstr = "<h3>%s</h3>" % inner_title_fstr
-        # out = "-> %10s | %10s | %3d | %3s " % (
+            linedelim = '<br/>'
+        else:
+            inner_title_fstr = "%10s | %10s | %3d:%3s"
+            title_fstr = "-> %s" % inner_title_fstr
+            linedelim = "\n"
+
         out = title_fstr % (
             self.m_index,
             self.s_index,
@@ -95,7 +94,10 @@ class DuplicateObject(object):
             ])
 
         obj_container = self.object_data.containerize()
+
         out += obj_container.tabulate(cols, tablefmt, highlight_rules)
+
+        out += linedelim
 
         out += tabulate(reason_table, tablefmt=tablefmt,
                         headers=["Reason", "Weighting", "Details"])
@@ -130,12 +132,12 @@ class Duplicates(OrderedDict):
         self[duplicate_index].add_reason(reason, weighting, details)
 
     def tabulate(self, cols, tablefmt=None, highlight_rules=None):
-        if not tablefmt:
-            tablefmt = 'html'
         out = ""
-        linedelim = "\n"
         if tablefmt == 'html':
             linedelim = '<br/>'
+        else:
+            linedelim = "\n"
+
         #pylint: disable=E1101
         out += linedelim.join(
             [duplicate.tabulate(cols, tablefmt, highlight_rules)

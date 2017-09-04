@@ -18,15 +18,14 @@ from .core import Registrar, SanitationUtils
 class ReporterNamespace(argparse.Namespace):
     """ Collect variables used in reporting into a single namespace. """
 
-    reporter_attrs = ['main', 'dup', 'san', 'match', 'fail']
+    reporter_attrs = ['main', 'dup', 'san', 'match']
 
     def __init__(self, *args, **kwargs):
         super(ReporterNamespace, self).__init__(*args, **kwargs)
         self.main = HtmlReporter()
-        self.dup = HtmlReporter(css=DUP_CSS)
+        self.dup = RenderableReporter(css=DUP_CSS)
         self.san = HtmlReporter()
         self.match = HtmlReporter()
-        self.fail = HtmlReporter()
 
     def get_csv_files(self):
         csv_files = OrderedDict()
@@ -53,6 +52,7 @@ class OptionalFormatter(Formatter):
     """ Formatter where keys are optional """
     def get_value(self, key, args, kwds):
         if isinstance(key, basestring):
+            print("getting key %s from kwds %s" % (key, kwds))
             return kwds.get(key, '')
         return Formatter.get_value(self, key, args, kwds)
 
@@ -110,7 +110,7 @@ class AbstractReporter(object):
             if fmt=='html':
                 return (u'<p class="description {class}">'
                         u'<strong>{strong}</strong>{description}</p>')
-            return u"\n{strong} {description}"
+            return u"\n{strong}{description}"
 
         @classmethod
         def get_data_fmt(cls, fmt=None):
@@ -331,60 +331,75 @@ class RenderableReporter(AbstractReporter):
     """ Report renderable objects in html or plaintext. """
 
     class Section(AbstractReporter.Section):
-        def render(self, fmt=None):
-            # TODO: this
-            pass
-
+        def render_data(self, fmt=None):
+            response = self.data(fmt)
+            response = SanitationUtils.coerce_unicode(response)
+            if fmt == 'html':
+                response = re.sub(
+                    ur"<table>", ur'<table class="table table-striped">', response
+                )
+            response = self.format(self.get_data_fmt(fmt), data=response)
+            return response
 
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
-    # def render_help_instruction(fmt=None):
-    #     response = u""
-    #     formatter = OptionalFormatter()
-    #     for format_spec, format_kwargs in [
-    #         (reporter.Section.get_descr_fmt(fmt), {
-    #             'description':(
-    #                 "This is a detailed report of all the duplicated and "
-    #                 "conflicting records. Ideally this report would be empty."
-    #             )
-    #         })
-    #         (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Sections'}),
-    #         (reporter.Section.get_classed_descr_fmt(fmt))
-    #     ]:
-    #         response += formatter.format(format_spec, **format_kwargs)
-    #     return response
+    def render_help_instructions(fmt=None):
+        response = u""
+        for format_spec, format_kwargs in [
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "This is a detailed report of all the duplicated and "
+                    "conflicting records. Ideally this report would be empty."
+                )
+            }),
+            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Sections'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Usernamematcher.Duplicate_Matches',
+                'description':(
+                    " are instances where multiple records from a single database "
+                    "were found to have the same username which is certainly an "
+                    "indicator of erroneous data."
+                )
+            }),
+            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Colours'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'class':'highlight_master',
+                'strong':settings.master_name,
+                'description':" records are highlighted with a light blue background"
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'class':'highlight_slave',
+                'strong':settings.slave_name,
+                'description':" records are highlighted with a light pink background"
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'class':'highlight_old',
+                'strong':'Old',
+                'description':(" records are highlighted with a red font. "
+                                "By default these are older than 5 years")
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'class':'highlight_oldish',
+                'strong':'Old-ish',
+                'description':(" records are highlighted with an orange font. "
+                                "By default these are older than 3 years")
+            })
+        ]:
+            response += reporter.format(format_spec, **format_kwargs)
+        return response
 
-    help_instructions = (
-        "<p>This is a detailed report of all the duplicated and conflicting records. Ideally this report would be empty. </p>"
-        "<h3>Sections</h3>"
-        "<p><strong>Usernamematcher.Duplicate_Matches</strong> are instances where "
-        "multiple records from a single database were found to have the same username "
-        "which is certainly an indicator of erroneous data.</p>"
-        "<h3>Colours</h3>"
-        "<p class='highlight_master'><strong>{master_name}</strong> records are "
-        "highlighted with a light blue background<p>"
-        "<p class='highlight_slave'><strong>{slave_name}</strong> records are "
-        "highlighted with a light pink background<p>"
-        "<p class='highlight_old'><strong>Old</strong> records are highlighted "
-        "with a red font. By default these are older than 5 years<p>"
-        "<p class='highlight_oldish'><strong>Old-ish</strong> records are "
-        "highlighted with a red font. By default these are older than 3 years<p>"
-    ).format(
-        master_name=settings.master_name,
-        slave_name=settings.slave_name,
-    )
-    group = HtmlReporter.Group('summary_group', 'Summary')
+    group = reporter.Group('summary_group', 'Summary')
     group.add_section(
-        HtmlReporter.Section(
+        reporter.Section(
             'instructions',
             title='Instructions',
-            data=help_instructions
+            data=render_help_instructions
         )
     )
     reporter.add_group(group)
 
 def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
-    group = HtmlReporter.Group('dup', 'Duplicate Results')
+    group = reporter.Group('dup', 'Duplicate Results')
 
     dup_cols = OrderedDict(settings.basic_cols.items() + [
         # ('Create Date', {}),
@@ -478,71 +493,83 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     # if Registrar.DEBUG_DUPLICATES:
     # print duplicates.tabulate({}, tablefmt='plain')
     if duplicates:
+        def render_all_duplicates(fmt):
+            return duplicates.tabulate(
+                dup_cols, tablefmt=fmt, highlight_rules=highlight_rules_all
+            )
+
         group.add_section(
-            HtmlReporter.Section('all duplicates', **{
-                'title':
-                'All Duplicates',
-                'description':
-                "%s records are involved in duplicates" %
+            reporter.Section(
+                'all duplicates',
+                title='All Duplicates',
+                description="%s records are involved in duplicates" %
                 settings.master_name,
-                'data':
-                duplicates.tabulate(
-                    dup_cols,
-                    tablefmt='html',
-                    highlight_rules=highlight_rules_all),
-                'length':
-                len(duplicates)
-            }))
+                data=render_all_duplicates,
+                length=len(duplicates)
+            ))
 
-    email_conflict_data = matches.conflict['email'].tabulate(
-        cols=dup_cols,
-        tablefmt="html",
-        highlight_rules=highlight_rules_all)
-    group.add_section(
-        HtmlReporter.Section(
-            "email conflicts",
-            **{
-                # 'title': matchlist_type.title(),
-                'description': "email conflicts",
-                'data': email_conflict_data,
-                'length': len(matches.conflict['email'])
-            }))
+    if matches.conflict['email']:
+        def render_email_conflicts(fmt):
+            return matches.conflict['email'].tabulate(
+                cols=dup_cols,
+                tablefmt=fmt,
+                highlight_rules=highlight_rules_all
+            )
 
-    email_duplicate_data = matches.duplicate['email'].tabulate(
-        tablefmt="html", highlight_rules=highlight_rules_all)
-    if matches.duplicate['email']:
         group.add_section(
-            HtmlReporter.Section('email_duplicates', **{
-                'title':
-                'Email Duplicates',
-                'description':
-                "%s records match with multiple records in %s on email"
-                % (settings.slave_name, settings.master_name),
-                'data':
-                email_duplicate_data,
-                'length':
-                len(matches.duplicate['email'])
-            }))
+            reporter.Section(
+                "email conflicts",
+                description= "email conflicts",
+                data= render_email_conflicts,
+                length= len(matches.conflict['email'])
+            )
+        )
+
+    if matches.duplicate['email']:
+        def render_email_duplicates(fmt):
+            return matches.duplicate['email'].tabulate(
+                tablefmt=fmt,
+                highlight_rules=highlight_rules_all
+            )
+
+        group.add_section(
+            reporter.Section(
+                'email_duplicates',
+                title='Email Duplicates',
+                description="%s records match with multiple records in %s on email" % (
+                    settings.slave_name, settings.master_name
+                ),
+                data= render_email_duplicates,
+                length= len(matches.duplicate['email'])
+            ))
 
     if address_duplicates:
-
-        print "there are address duplicates"
+        def render_address_duplicates(fmt):
+            if fmt == 'html':
+                duplicate_delmieter = u"<br/>"
+                duplicate_format = u"<h4>%s</h4><p>%s</p>"
+            else:
+                duplicate_delmieter = u"\n"
+                duplicate_format = u"**%s**\n%s"
+            return duplicate_delmieter.join([
+                duplicate_format % (
+                    address,
+                    UsrObjList(objects).tabulate(
+                        cols=dup_cols,
+                        tablefmt=fmt,
+                        highlight_rules=highlight_rules_all
+                    )
+                ) for address, objects in address_duplicates.items()
+            ])
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 'address_duplicates',
-                title='Duplicate %s Addresses' %
-                settings.master_name.title(),
-                description='%s addresses that appear in multiple records'
-                % settings.master_name,
-                data="<br/>".join([
-                    "<h4>%s</h4><p>%s</p>" % (address, UsrObjList(
-                        objects).tabulate(
-                            cols=dup_cols,
-                            tablefmt='html',
-                            highlight_rules=highlight_rules_old))
-                    for address, objects in address_duplicates.items()
-                ]),
-                length=len(address_duplicates)))
+                title='Duplicate %s Addresses' % settings.master_name.title(),
+                description='%s addresses that appear in multiple records' % settings.master_name,
+                data=render_address_duplicates,
+                length=len(address_duplicates)
+            )
+        )
 
 
     match_list_instructions = {
@@ -557,26 +584,26 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
-        description = match_list_instructions.get(matchlist_type,
-                                                  matchlist_type)
-        if ('masterless' in matchlist_type or
-                'slaveless' in matchlist_type):
-            data = match_list.merge().tabulate(tablefmt="html")
-        else:
-            data = match_list.tabulate(
-                tablefmt="html",
-                # highlight_rules=highlight_rules_all
-            )
+        description = match_list_instructions.get(matchlist_type, matchlist_type)
+        def render_matchlist_data(fmt):
+            if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+                data = match_list.merge().tabulate(tablefmt=fmt)
+            else:
+                data = match_list.tabulate(
+                    tablefmt=fmt,
+                    highlight_rules=highlight_rules_all
+                )
             # TODO: maybe re-enable highlight rules?
+            return data
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 matchlist_type,
-                **{
-                    # 'title': matchlist_type.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(match_list)
-                }))
+                title=matchlist_type.title(),
+                description=description,
+                data=render_matchlist_data,
+                length=len(match_list)
+            )
+        )
 
     reporter.add_group(group)
 

@@ -767,6 +767,7 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             print("Summary HTML:\n%s" % summary_html)
             print("Summary Text:\n%s" % summary_text)
+            print("Duplicate report text:\n%s" % self.reporters.dup.get_summary_text())
 
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True

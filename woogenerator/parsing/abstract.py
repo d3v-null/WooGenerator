@@ -108,7 +108,7 @@ class ObjList(list, Registrar):
                 row = [obj.identifier]
 
                 # process highlighting rules
-                if highlight_rules:
+                if highlight_rules and tablefmt == 'html':
                     classes = []
                     for highlight_class, rule in highlight_rules:
                         if rule(obj):
