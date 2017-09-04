@@ -363,10 +363,10 @@ class SyncUpdate(Registrar):
         if update_type in ['WARN', 'PROB']:
             if 'new_value' in update_params:
                 out += " | OLD: %s " % SanitationUtils.coerce_ascii(
-                    update_params['new_value'])
+                    update_params['old_value'])
             if 'old_value' in update_params:
                 out += " | NEW: %s " % SanitationUtils.coerce_ascii(
-                    update_params['old_value'])
+                    update_params['new_value'])
         return out
 
     def add_problematic_update(self, **update_params):
