@@ -4,6 +4,7 @@ import argparse
 import io
 import re
 from collections import OrderedDict
+from string import Formatter
 
 import unicodecsv
 
@@ -48,12 +49,26 @@ DUP_CSS = "\n".join([
     ".highlight_slave {background: lightpink !important;}"
 ])
 
+class OptionalFormatter(Formatter):
+    """ Formatter where keys are optional """
+    def get_value(self, key, args, kwds):
+        if isinstance(key, basestring):
+            return kwds.get(key, '')
+        return Formatter.get_value(self, key, args, kwds)
+
 class AbstractReporter(object):
+    formatter = OptionalFormatter()
     def __init__(self, css=None):
         self.groups = OrderedDict()
         self.css = css
         self.csv_files = OrderedDict()
         self.html_files = OrderedDict()
+
+    @classmethod
+    def format(cls, format_spec, *format_args, **format_kwargs):
+        return cls.formatter.format(
+            format_spec, *format_args, **format_kwargs
+        )
 
     class Section(object):
         def __init__(self, classname, title=None,
@@ -66,58 +81,69 @@ class AbstractReporter(object):
             self.length = length
             self.classname = classname
 
-        def get_data_heading_fmt(self, fmt):
+        @classmethod
+        def format(cls, *args, **kwargs):
+            return AbstractReporter.format(*args, **kwargs)
+
+        @classmethod
+        def get_data_heading_fmt(cls, fmt):
             if fmt=='html':
                 return u"<h3>{heading}</h3>"
             else:
                 return u"*{heading}*"
 
-        def get_data_separator(self, fmt):
+        @classmethod
+        def get_data_separator(cls, fmt):
             if fmt=='html':
                 return u"<hr>"
             else:
                 return u"\n" + ("-" * 50) + "\n"
 
-        def get_title_fmt(self, fmt=None):
+        @classmethod
+        def get_title_fmt(cls, fmt=None):
             if fmt=='html':
                 return u"<h2>{title}</h2>"
             return u"\n**{title}**\n"
 
-        def get_descr_fmt(self, fmt=None):
+        @classmethod
+        def get_descr_fmt(cls, fmt=None):
             if fmt=='html':
-                return u'<p class="description">{description}</p>'
-            return u"\n{description}"
+                return (u'<p class="description {class}">'
+                        u'<strong>{strong}</strong>{description}</p>')
+            return u"\n{strong} {description}"
 
-        def get_data_fmt(self, fmt=None):
+        @classmethod
+        def get_data_fmt(cls, fmt=None):
             if fmt=='html':
-                return u'<p class="data">{data}</p>'
+                return u'<p class="data {class}">{data}</p>'
             return u'\n{data}'
 
         def get_section_fmt(self, fmt=None):
+            if not fmt == 'html':
+                return u"{title}{description}{data}"
             section_id = SanitationUtils.make_safe_class(self.classname)
             section_id = SanitationUtils.coerce_unicode(section_id)
-            if fmt=='html':
-                out = u'<div class="section">'
-                out += (u'<a data-toggle="collapse" href="#{0}" aria-expanded="true" '
-                        u'data-target="#{0}" aria-controls="{0}">').format(
-                            section_id
-                        )
-                out += u"{title}"
-                out += u"</a>"
-                out += u'<div class="collapse" id="' + section_id + '">'
-                out += u"{description}"
-                out += u"{data}"
-                out += u'</div>'
-                return out
-            else:
-                return u"{title}{description}{data}"
+            out = u'<div class="section">'
+            out += self.format(
+                (u'<a data-toggle="collapse" href="#{0}" aria-expanded="true" '
+                 u'data-target="#{0}" aria-controls="{0}">'),
+                section_id
+            )
+            out += u"{title}"
+            out += u"</a>"
+            out += u'<div class="collapse" id="' + section_id + '">'
+            out += u"{description}"
+            out += u"{data}"
+            out += u'</div>'
+            return out
+
 
         def render_title(self, fmt=None):
             response = self.title
             response = SanitationUtils.coerce_unicode(response)
             if self.length:
                 response += u' ({})'.format(self.length)
-            response = self.get_title_fmt(fmt).format(title=response)
+            response = self.format(self.get_title_fmt(fmt), title=response)
             return response
 
         def render_description(self, fmt=None):
@@ -125,7 +151,7 @@ class AbstractReporter(object):
             response = SanitationUtils.coerce_unicode(response)
             if self.length is not None:
                 response = u"{length} ".format(length=self.length) + response
-            response = self.get_descr_fmt(fmt).format(description=response)
+            response = self.format(self.get_descr_fmt(fmt), description=response)
             return response
 
         def render_data(self, fmt=None):
@@ -135,14 +161,15 @@ class AbstractReporter(object):
                 response = re.sub(
                     ur"<table>", ur'<table class="table table-striped">', response
                 )
-            response = self.get_data_fmt(fmt).format(data=response)
+            response = self.format(self.get_data_fmt(fmt), data=response)
             return response
 
         def render(self, fmt=None):
             data = self.render_data(fmt)
             data = SanitationUtils.coerce_unicode(data)
 
-            out = self.get_section_fmt(fmt).format(
+            out = self.format(
+                self.get_section_fmt(fmt),
                 title=self.render_title(fmt),
                 data=data,
                 description=self.render_description(fmt)
@@ -171,24 +198,30 @@ class AbstractReporter(object):
         def add_section(self, section):
             self.sections[section.classname] = section
 
-        def get_title_fmt(self, fmt=None):
+        @classmethod
+        def format(cls, *args, **kwargs):
+            return AbstractReporter.format(*args, **kwargs)
+
+        @classmethod
+        def get_title_fmt(cls, fmt=None):
             if fmt == 'html':
                 return "<h1>{title}</h1>"
             else:
                 return "\n***{title}***\n"
 
-        def get_group_div_fmt(self, fmt=None):
+        @classmethod
+        def get_group_div_fmt(cls, fmt=None):
             if fmt == 'html':
-                return '<div class="group">{group}</div>'
+                return '<div class="group {class}">{group}</div>'
             else:
                 return '\n{group}'
 
         def render(self, fmt=None):
             out = ''
-            out += self.get_title_fmt(fmt).format(title=self.title)
+            out += self.format(self.get_title_fmt(fmt), title=self.title)
             for section in self.sections.values():
                 out += section.render(fmt)
-            out = self.get_group_div_fmt(fmt).format(group=out)
+            out = self.format(self.get_group_div_fmt(fmt), group=out)
             out = SanitationUtils.coerce_unicode(out)
             return out
 
@@ -305,28 +338,39 @@ class RenderableReporter(AbstractReporter):
 
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     # def render_help_instruction(fmt=None):
+    #     response = u""
+    #     formatter = OptionalFormatter()
+    #     for format_spec, format_kwargs in [
+    #         (reporter.Section.get_descr_fmt(fmt), {
+    #             'description':(
+    #                 "This is a detailed report of all the duplicated and "
+    #                 "conflicting records. Ideally this report would be empty."
+    #             )
+    #         })
+    #         (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Sections'}),
+    #         (reporter.Section.get_classed_descr_fmt(fmt))
+    #     ]:
+    #         response += formatter.format(format_spec, **format_kwargs)
+    #     return response
 
     help_instructions = (
-        "<p>This is a detailed report of all the duplicated and conflicting records. "
-        "Ideally this report would be empty. </p>"
+        "<p>This is a detailed report of all the duplicated and conflicting records. Ideally this report would be empty. </p>"
         "<h3>Sections</h3>"
         "<p><strong>Usernamematcher.Duplicate_Matches</strong> are instances where "
         "multiple records from a single database were found to have the same username "
         "which is certainly an indicator of erroneous data.</p>"
         "<h3>Colours</h3>"
-        "<p class='highlight_master'><strong>Master</strong> Master records are "
-        "highlighted with a light pink background<p>"
-        "<p class='highlight_slave'><strong>Slave</strong> Slave records are "
+        "<p class='highlight_master'><strong>{master_name}</strong> records are "
         "highlighted with a light blue background<p>"
-        "<p class='highlight_old'><strong>Old Records</strong> Old records are "
-        "highlighted with a red font. By default these are older than 5 years<p>"
-        "<p class='highlight_oldish'><strong>Old-ish Records</strong> Old-ish records are "
+        "<p class='highlight_slave'><strong>{slave_name}</strong> records are "
+        "highlighted with a light pink background<p>"
+        "<p class='highlight_old'><strong>Old</strong> records are highlighted "
+        "with a red font. By default these are older than 5 years<p>"
+        "<p class='highlight_oldish'><strong>Old-ish</strong> records are "
         "highlighted with a red font. By default these are older than 3 years<p>"
     ).format(
         master_name=settings.master_name,
         slave_name=settings.slave_name,
-        master_pkey="MYOB Card ID",
-        slave_pkey="WP ID"
     )
     group = HtmlReporter.Group('summary_group', 'Summary')
     group.add_section(

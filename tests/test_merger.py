@@ -692,6 +692,7 @@ class TestMerger(unittest.TestCase):
         # except AssertionError as exc:
         #     self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skip("this is an exact subset of test_do_updates")
     def test_do_report(self):
         suffix='do_report'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
@@ -713,6 +714,7 @@ class TestMerger(unittest.TestCase):
             self.matches, self.updates, self.parsers, self.settings
         )
 
+    @unittest.skip("this is an exact subset of test_do_summary")
     def test_do_updates(self):
         suffix='do_updates'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
