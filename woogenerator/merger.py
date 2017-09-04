@@ -613,12 +613,18 @@ def do_summary(settings, reporters, status):
                 pprint(message, indent=4, width=80, depth=2)
 
     try:
-        files_to_zip = []
-        for attr in [
+        files_to_zip = [
             'm_fail_path_full', 's_fail_path_full',
             'rep_path_full',
             'master_path', 'slave_path', 'pickle_file_full'
-        ]:
+        ]
+        for csv_file in reporters.get_csv_files().values():
+            if csv_file not in files_to_zip:
+                files_to_zip.append(csv_file)
+        for html_file in reporters.get_html_files().values():
+            if html_file not in files_to_zip:
+                files_to_zip.append(html_file)
+        for attr in files_to_zip:
             files_to_zip.append(settings.get(attr))
     except Exception as exc:
         print traceback.format_exc()
@@ -634,7 +640,11 @@ def do_summary(settings, reporters, status):
         Registrar.register_message('wrote file %s' % settings.zip_path_full)
 
     if settings.get('do_mail'):
-        do_mail(settings)
+        do_mail(
+            settings,
+            reporters.main.get_summary_html(),
+            reporters.main.get_summary_text()
+        )
 
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
