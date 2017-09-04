@@ -68,9 +68,9 @@ class AbstractReporter(object):
 
         def get_data_heading_fmt(self, fmt):
             if fmt=='html':
-                return u"<h3>%s</h3>"
+                return u"<h3>{heading}</h3>"
             else:
-                return u"*%s*"
+                return u"*{heading}*"
 
         def get_data_separator(self, fmt):
             if fmt=='html':
@@ -80,18 +80,18 @@ class AbstractReporter(object):
 
         def get_title_fmt(self, fmt=None):
             if fmt=='html':
-                return u"<h2>%s</h2>"
-            return u"\n**%s**\n"
+                return u"<h2>{title}</h2>"
+            return u"\n**{title}**\n"
 
         def get_descr_fmt(self, fmt=None):
             if fmt=='html':
-                return u'<p class="description">%s</p>'
-            return u"\n%s"
+                return u'<p class="description">{description}</p>'
+            return u"\n{description}"
 
         def get_data_fmt(self, fmt=None):
             if fmt=='html':
-                return u'<p class="data">%s</p>'
-            return u'\n%s'
+                return u'<p class="data">{data}</p>'
+            return u'\n{data}'
 
         def get_section_fmt(self, fmt=None):
             section_id = SanitationUtils.make_safe_class(self.classname)
@@ -117,15 +117,15 @@ class AbstractReporter(object):
             response = SanitationUtils.coerce_unicode(response)
             if self.length:
                 response += u' ({})'.format(self.length)
-            response = self.get_title_fmt(fmt) % response
+            response = self.get_title_fmt(fmt).format(title=response)
             return response
 
         def render_description(self, fmt=None):
             response = self.description
             response = SanitationUtils.coerce_unicode(response)
             if self.length is not None:
-                response = u"%d %s" % (self.length, response)
-            response = self.get_descr_fmt(fmt) % response
+                response = u"{length} ".format(length=self.length) + response
+            response = self.get_descr_fmt(fmt).format(description=response)
             return response
 
         def render_data(self, fmt=None):
@@ -135,7 +135,7 @@ class AbstractReporter(object):
                 response = re.sub(
                     ur"<table>", ur'<table class="table table-striped">', response
                 )
-            response = self.get_data_fmt(fmt) % response
+            response = self.get_data_fmt(fmt).format(data=response)
             return response
 
         def render(self, fmt=None):
@@ -173,22 +173,22 @@ class AbstractReporter(object):
 
         def get_title_fmt(self, fmt=None):
             if fmt == 'html':
-                return "<h1>%s</h1>"
+                return "<h1>{title}</h1>"
             else:
-                return "***%s***"
+                return "\n***{title}***\n"
 
         def get_group_div_fmt(self, fmt=None):
             if fmt == 'html':
-                return '<div class="group">%s</div>'
+                return '<div class="group">{group}</div>'
             else:
-                return '%s'
+                return '\n{group}'
 
         def render(self, fmt=None):
             out = ''
-            out += self.get_title_fmt(fmt) % self.title
+            out += self.get_title_fmt(fmt).format(title=self.title)
             for section in self.sections.values():
                 out += section.render(fmt)
-            out = self.get_group_div_fmt(fmt) % out
+            out = self.get_group_div_fmt(fmt).format(group=out)
             out = SanitationUtils.coerce_unicode(out)
             return out
 
@@ -304,6 +304,8 @@ class RenderableReporter(AbstractReporter):
 
 
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
+    # def render_help_instruction(fmt=None):
+
     help_instructions = (
         "<p>This is a detailed report of all the duplicated and conflicting records. "
         "Ideally this report would be empty. </p>"
