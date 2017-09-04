@@ -1,6 +1,5 @@
 """Module for updating woocommerce and ACT databases from ACT import file."""
 
-# import argparse
 import io
 import os
 import re
@@ -11,14 +10,14 @@ import zipfile
 from bisect import insort
 from pprint import pformat, pprint
 
+import dill
 import sshtunnel
-import unicodecsv
 from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
-import dill
 from six.moves import input
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+from woogenerator.conf.namespace import (FailuresNamespace, MatchNamespace,
+                                         ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
@@ -28,12 +27,13 @@ from woogenerator.matching import (CardMatcher, ConflictingMatchList,
 from woogenerator.syncupdate import SyncUpdateUsrApi
 from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
                                 TimeUtils)
-from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group, do_duplicates_group,
+from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group,
+                                         do_duplicates_group,
                                          do_duplicates_summary_group,
+                                         do_main_summary_group,
                                          do_matches_group,
-                                         do_sanitizing_group,
-                                         do_main_summary_group, do_sync_group,
-                                         do_report_bad_contact)
+                                         do_report_bad_contact,
+                                         do_sanitizing_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
@@ -432,35 +432,22 @@ def unpickle_state(settings_pickle):
         do_report(matches, updates, parsers, settings)
         do_updates(updates, settings)
 
-def output_failures(failures, file_path):
-    """Output a list of lists of failures as a csv file to the path specified."""
-    with open(file_path, 'w+') as out_file:
-        for failure in failures:
-            Registrar.register_error(failure)
-        dictwriter = unicodecsv.DictWriter(
-            out_file,
-            fieldnames=[
-                'update', 'master', 'slave', 'mchanges', 'schanges',
-                'exception'
-            ],
-            extrasaction='ignore', )
-        dictwriter.writerows(failures)
-        print "WROTE FILE: ", file_path
-
-def handle_failed_update(update, fail_list, exc, settings, source=None):
+def handle_failed_update(update, failures, exc, settings, source=None):
     """Handle a failed update."""
-    fail_list.append({
+    fail = {
         'update': update,
         'master': SanitationUtils.coerce_unicode(update.new_m_object),
         'slave': SanitationUtils.coerce_unicode(update.new_s_object),
         'mchanges': SanitationUtils.coerce_unicode(update.get_master_updates()),
         'schanges': SanitationUtils.coerce_unicode(update.get_slave_updates()),
         'exception': repr(exc)
-    })
+    }
     if source == settings.master_name:
         pkey = update.master_id
+        failures.master.append(fail)
     elif source == settings.slave_name:
         pkey = update.slave_id
+        failures.slave.append(fail)
     else:
         pkey = ''
     Registrar.register_error(
@@ -482,15 +469,11 @@ def handle_failed_update(update, fail_list, exc, settings, source=None):
         if not boring:
             import pudb; pudb.set_trace()
 
-    return fail_list
-
 def do_updates(updates, reporters, settings):
     """Perform a list of updates."""
     all_updates = updates.static
     if settings.do_problematic:
         all_updates += updates.problematic
-
-    Registrar.register_progress("Updating databases (%d)" % len(all_updates))
 
     if not all_updates:
         return
@@ -507,11 +490,10 @@ def do_updates(updates, reporters, settings):
         if raw_in == 'c':
             raise SystemExit
 
-    master_failures = []
-    slave_failures = []
-
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(len(all_updates))
+
+    failures = FailuresNamespace()
 
     slave_client_args = settings.slave_upload_client_args
     slave_client_class = settings.slave_upload_client_class
@@ -533,19 +515,17 @@ def do_updates(updates, reporters, settings):
                 try:
                     update.update_master(master_client)
                 except Exception as exc:
-                    master_failures = handle_failed_update(
-                        update, master_failures, exc, settings, source=settings.master_name
+                    handle_failed_update(
+                        update, failures, exc, settings, source=settings.master_name
                     )
             if settings['update_slave'] and update.s_updated:
                 try:
                     update.update_slave(slave_client)
                 except Exception as exc:
-                    slave_failures = handle_failed_update(
-                        update, slave_failures, exc, settings, source=settings.slave_name
+                    handle_failed_update(
+                        update, failures, exc, settings, source=settings.slave_name
                     )
-
-    output_failures(master_failures, settings.m_fail_path_full)
-    output_failures(slave_failures, settings.s_fail_path_full)
+    return failures
 
 def main(override_args=None, settings=None):
     """Use settings object to load config file and detect changes in wordpress."""
@@ -580,7 +560,9 @@ def main(override_args=None, settings=None):
 
     reporters = do_report(matches, updates, parsers, settings)
 
-    reporters = do_updates(updates, reporters, settings)
+    failures = do_updates(updates, settings)
+    if failures:
+        do_report_failures(reporters.fail, failures, settings)
 
     return reporters
 

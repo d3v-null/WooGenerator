@@ -1,19 +1,24 @@
 from __future__ import absolute_import
 
+import argparse
 import io
 import os
 import re
 from collections import OrderedDict
-import argparse
+
+import unicodecsv
 
 from woogenerator.duplicates import Duplicates
 from woogenerator.parsing.user import UsrObjList
 
 from .clock import TimeUtils
-from .core import SanitationUtils, Registrar
+from .core import Registrar, SanitationUtils
+
 
 class ReporterNamespace(argparse.Namespace):
     """ Collect variables used in reporting into a single namespace. """
+
+    reporter_attrs = ['main', 'dup', 'san', 'match', 'fail']
 
     def __init__(self, *args, **kwargs):
         super(ReporterNamespace, self).__init__(*args, **kwargs)
@@ -21,13 +26,21 @@ class ReporterNamespace(argparse.Namespace):
         self.dup = HtmlReporter(css=DUP_CSS)
         self.san = HtmlReporter()
         self.match = HtmlReporter()
+        self.fail = HtmlReporter()
 
     def get_csv_files(self):
         csv_files = OrderedDict()
-        for attr in ['main', 'dup', 'san']:
+        for attr in self.reporter_attrs:
             reporter = getattr(self, attr)
             csv_files.update(reporter.csv_files)
         return csv_files
+
+    def get_html_files(self):
+        html_files = OrderedDict()
+        for attr in self.reporter_attrs:
+            reporter = getattr(self, attr)
+            html_files.update(reporter.html_files)
+        return html_files
 
 DUP_CSS = "\n".join([
     ".highlight_old {color: red !important; }"
@@ -800,3 +813,24 @@ def do_report_bad_contact(reporter, matches, updates, parsers, settings):
         UsrObjList(parsers.slave.bad_name.values() + parsers.master.bad_address.
                    values()).export_items(settings['w_pres_csv_path'], csv_colnames)
         reporter.add_csv_file('slave_bad_name', settings['w_pres_csv_path'])
+
+def do_report_failures(reporter, failures, settings):
+    """Output a list of lists of failures as a csv file to the path specified."""
+    for source in ['master', 'slave']:
+        failures = getattr(failures, source)
+
+        # TODO: Write failure HTML report here
+
+        file_path = settings.get(source[0] + '_fail_path_full')
+        with open(file_path, 'w+') as out_file:
+            for failure in failures:
+                Registrar.register_error(failure)
+            dictwriter = unicodecsv.DictWriter(
+                out_file,
+                fieldnames=[
+                    'update', 'master', 'slave', 'mchanges', 'schanges',
+                    'exception'
+                ],
+                extrasaction='ignore', )
+            dictwriter.writerows(failures)
+        reporter.add_csv_file(source, file_path)

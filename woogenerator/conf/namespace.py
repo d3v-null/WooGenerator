@@ -823,6 +823,17 @@ class UpdateNamespace(argparse.Namespace):
         self.new_master = []
         self.new_slave = []
 
+class FailuresNamespace(argparse.Namespace):
+    """ Collect information about failures into a single namespace. """
+
+    def __init__(self, *args, **kwargs):
+        super(FailuresNamespace, self).__init__(*args, **kwargs)
+        self.master = []
+        self.slave = []
+
+    def __bool__(self):
+        return bool(self.master or self.slave)
+
 def init_registrar(settings):
     # print "settings.verbosity = %s" % settings.verbosity
     # print "settings.quiet = %s" % settings.quiet
