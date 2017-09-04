@@ -20,6 +20,7 @@ class ReporterNamespace(argparse.Namespace):
         self.main = HtmlReporter()
         self.dup = HtmlReporter(css=DUP_CSS)
         self.san = HtmlReporter()
+        self.match = HtmlReporter()
 
     def get_csv_files(self):
         csv_files = OrderedDict()

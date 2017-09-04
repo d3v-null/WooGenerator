@@ -377,6 +377,12 @@ class ArgumentParserCommon(ArgumentParserProto):
             action='store_true'
         )
         report_group.add_argument(
+            '--report-matching',
+            help='Add matching information to report',
+            default=False,
+            action='store_true'
+        )
+        report_group.add_argument(
             '--exclude-cols',
             help='exclude these columns from the reports',
             default=[]

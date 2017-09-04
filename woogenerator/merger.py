@@ -377,7 +377,6 @@ def do_report(matches, updates, parsers, settings):
 
         do_main_summary_group(reporters.main, matches, updates, parsers, settings),
         do_delta_group(reporters.main, matches, updates, parsers, settings),
-        do_matches_group(reporters.main, matches, updates, parsers, settings),
         do_sync_group(reporters.main, matches, updates, parsers, settings)
         reporters.main.write_to_file('main', settings.rep_path_full)
 
@@ -387,6 +386,12 @@ def do_report(matches, updates, parsers, settings):
             do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
             do_report_bad_contact(reporters.san, matches, updates, parsers, settings)
             reporters.san.write_to_file('san', settings.reps_path_full)
+
+        if settings.get('report_matching'):
+            Registrar.register_progress("Write Matching Report")
+
+            do_matches_group(reporters.match, matches, updates, parsers, settings),
+            reporters.match.write_to_file('match', settings.repm_path_full)
 
         if settings.get('report_duplicates'):
             Registrar.register_progress("Write Duplicates Report")
