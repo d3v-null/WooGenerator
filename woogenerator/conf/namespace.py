@@ -24,7 +24,6 @@ from woogenerator.parsing.user import CsvParseUser
 from woogenerator.parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from woogenerator.syncupdate import SyncUpdate
 from woogenerator.utils import Registrar, TimeUtils
-from woogenerator.utils.reporter import HtmlReporter, DUP_CSS
 
 from .__init__ import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                        DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
@@ -74,9 +73,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
 
     def join_work_path(self, path):
-
         """ Join a given path relative to the local-work-dir in this namespace. """
-
         response = path
         if self.local_work_dir and path:
             response = os.path.join(self.local_work_dir, path)
@@ -113,6 +110,10 @@ class SettingsNamespaceProto(argparse.Namespace):
             return self.join_work_path(self.out_dir)
 
     @property
+    def report_dir_full(self):
+        return self.out_dir_full
+
+    @property
     def log_dir_full(self):
         if self.log_dir:
             return self.join_work_path(self.log_dir)
@@ -121,31 +122,6 @@ class SettingsNamespaceProto(argparse.Namespace):
     def pickle_dir_full(self):
         if self.pickle_dir:
             return self.join_work_path(self.pickle_dir)
-
-    @property
-    def log_path_full(self):
-        response = '%s.log' % self.import_name
-        if self.log_dir_full:
-            response = os.path.join(self.log_dir_full, response)
-        return response
-
-    @property
-    def zip_path_full(self):
-        response = '%s.zip' % self.import_name
-        if self.log_dir_full:
-            response = os.path.join(self.log_dir_full, response)
-        return response
-
-    @property
-    def pickle_path_full(self):
-        if hasattr(self, 'pickle_file') and getattr(self, 'pickle_file'):
-            return getattr(self, 'pickle_file')
-        response = self.import_name
-        if self.get('progress'):
-            response += '_%s' % self['progress']
-        if self.pickle_dir_full:
-            response = os.path.join(self.pickle_dir_full, response)
-        return response + '.pickle'
 
     @property
     def file_prefix(self):
@@ -158,48 +134,6 @@ class SettingsNamespaceProto(argparse.Namespace):
             response += "_test"
         if self.get('picklemode'):
             response += "_pickle"
-        return response
-
-    @property
-    def rep_path_full(self):
-        response = '%ssync_report%s.html' % (self.file_prefix, self.file_suffix)
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
-        return response
-
-    @property
-    def repd_path_full(self):
-        response = "%ssync_report_duplicate_%s.html" % (self.file_prefix, self.file_suffix)
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
-        return response
-
-    @property
-    def reps_path_full(self):
-        response = "%ssync_report_sanitation_%s.html" % (self.file_prefix, self.file_suffix)
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
-        return response
-
-    @property
-    def repm_path_full(self):
-        response = "%ssync_report_matching_%s.html" % (self.file_prefix, self.file_suffix)
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
-        return response
-
-    @property
-    def m_fail_path_full(self):
-        response = "%s_fails.csv" % self.master_name
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
-        return response
-
-    @property
-    def s_fail_path_full(self):
-        response = "%s_fails.csv" % self.slave_name
-        if self.out_dir_full:
-            response = os.path.join(self.out_dir_full, response)
         return response
 
     @property
@@ -271,6 +205,124 @@ class SettingsNamespaceProto(argparse.Namespace):
         for resp_key, self_key in potential_keys:
             if hasattr(self, self_key):
                 response[resp_key] = self[self_key]
+        return response
+
+    # File paths for reporting / piclking
+
+    @property
+    def pickle_path(self):
+        if hasattr(self, 'pickle_file') and getattr(self, 'pickle_file'):
+            return getattr(self, 'pickle_file')
+        response = self.import_name
+        if self.get('progress'):
+            response += '_%s' % self['progress']
+        response += '.pickle'
+        if self.pickle_dir_full:
+            response = os.path.join(self.pickle_dir_full, response)
+        return response
+
+    @property
+    def rep_main_path(self):
+        response = '%ssync_report%s.html' % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_dup_path(self):
+        response = "%ssync_report_duplicate_%s.html" % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_san_path(self):
+        response = "%ssync_report_sanitation_%s.html" % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_san_master_csv_path(self):
+        response = "%s_bad_contact_%s_%s.csv" % (
+            self.file_prefix, self.slave_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_san_slave_csv_path(self):
+        response = "%s_bad_contact_%s_%s.csv" % (
+            self.file_prefix, self.slave_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_match_path(self):
+        response = "%ssync_report_matching_%s.html" % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_fail_master_csv_path(self):
+        response = "%s%s_fails_%s.csv" % (
+            self.file_prefix, self.master_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_fail_slave_csv_path(self):
+        response = "%s%s_fails_%s.csv" % (
+            self.file_prefix, self.slave_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_delta_master_csv_path(self):
+        response = "%s%s_deltas_%s.csv" % (
+            self.file_prefix, self.master_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def rep_delta_slave_csv_path(self):
+        response = "%s%s_deltas_%s.csv" % (
+            self.file_prefix, self.slave_name, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
+    def log_path(self):
+        response = '%s.log' % self.import_name
+        if self.log_dir_full:
+            response = os.path.join(self.log_dir_full, response)
+        return response
+
+    @property
+    def zip_path(self):
+        response = '%s.zip' % self.import_name
+        if self.log_dir_full:
+            response = os.path.join(self.log_dir_full, response)
         return response
 
 class SettingsNamespaceProd(SettingsNamespaceProto):

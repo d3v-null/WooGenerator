@@ -32,8 +32,7 @@ from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group,
                                          do_duplicates_group,
                                          do_duplicates_summary_group,
                                          do_main_summary_group,
-                                         do_matches_group,
-                                         do_report_bad_contact,
+                                         do_matches_group, do_report_failures,
                                          do_sanitizing_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
@@ -379,27 +378,26 @@ def do_report(matches, updates, parsers, settings):
         do_main_summary_group(reporters.main, matches, updates, parsers, settings),
         do_delta_group(reporters.main, matches, updates, parsers, settings),
         do_sync_group(reporters.main, matches, updates, parsers, settings)
-        reporters.main.write_to_file('main', settings.rep_path_full)
+        reporters.main.write_to_file('main', settings.rep_main_path)
 
         if settings.get('report_sanitation'):
             Registrar.register_progress("Write Sanitation Report")
 
             do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
-            do_report_bad_contact(reporters.san, matches, updates, parsers, settings)
-            reporters.san.write_to_file('san', settings.reps_path_full)
+            reporters.san.write_to_file('san', settings.rep_san_path)
 
         if settings.get('report_matching'):
             Registrar.register_progress("Write Matching Report")
 
             do_matches_group(reporters.match, matches, updates, parsers, settings),
-            reporters.match.write_to_file('match', settings.repm_path_full)
+            reporters.match.write_to_file('match', settings.rep_match_path)
 
         if settings.get('report_duplicates'):
             Registrar.register_progress("Write Duplicates Report")
 
             do_duplicates_summary_group(reporters.dup, matches, updates, parsers, settings),
             do_duplicates_group(reporters.dup, matches, updates, parsers, settings)
-            reporters.dup.write_to_file('dup', settings.repd_path_full)
+            reporters.dup.write_to_file('dup', settings.rep_dup_path)
 
     return reporters
 
@@ -409,16 +407,16 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
     settings.progress = progress
     pickle_obj = (matches, updates, parsers, settings)
 
-    with open(settings.pickle_path_full, 'w') as pickle_file:
+    with open(settings.pickle_path, 'w') as pickle_file:
         dill.dump(pickle_obj, pickle_file)
 
-    print "state saved to %s" % settings.pickle_path_full
+    print "state saved to %s" % settings.pickle_path
 
 def unpickle_state(settings_pickle):
     """Restore state from a pickle file."""
     Registrar.register_progress("restoring state from pickle")
 
-    with open(settings_pickle.pickle_path_full) as pickle_file:
+    with open(settings_pickle.pickle_path) as pickle_file:
         pickle_obj = dill.load(pickle_file)
         matches, updates, parsers, settings = pickle_obj
         settings.picklemode = True
@@ -470,7 +468,7 @@ def handle_failed_update(update, failures, exc, settings, source=None):
         if not boring:
             import pudb; pudb.set_trace()
 
-def do_updates(updates, reporters, settings):
+def do_updates(updates, settings):
     """Perform a list of updates."""
     all_updates = updates.static
     if settings.do_problematic:
@@ -558,7 +556,7 @@ def main(override_args=None, settings=None):
 
     failures = do_updates(updates, settings)
     if failures:
-        do_report_failures(reporters.fail, failures, settings)
+        do_report_failures(reporters.main, failures, settings)
 
     return reporters
 
@@ -571,16 +569,18 @@ def do_mail(settings, summary_html=None, summary_text=None):
             summary_html,
             summary_text
         )
-        message = email_client.attach_file(message, settings.zip_path_full)
+        message = email_client.attach_file(message, settings.zip_path)
         email_client.send(message)
 
-def do_summary(settings, reporters, status):
-    if not settings.get('summary_html'):
-        settings['summary_html'] = ""
-    settings.summary_html = ("<p>Sync failed with status %s</p>" % status)
+def do_summary(settings, reporters, status=1, reason=None):
+    if status:
+        summary_text = "Sync failed with status %s (%s)" % (reason, status)
+    else:
+        summary_html = "Sync succeeded"
+    summary_html = "<p>%s</p>" % summary_text
 
     # TODO: move this block to Registrar.write_log()
-    with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
+    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
@@ -591,23 +591,22 @@ def do_summary(settings, reporters, status):
                 pprint(message, indent=4, width=80, depth=2)
 
     try:
-        files_to_zip = [
-            'm_fail_path_full', 's_fail_path_full',
-            'rep_path_full',
+        attrs_to_zip = [
             'master_path', 'slave_path', 'pickle_file_full'
         ]
         for csv_file in reporters.get_csv_files().values():
-            if csv_file not in files_to_zip:
-                files_to_zip.append(csv_file)
+            if csv_file not in attrs_to_zip:
+                attrs_to_zip.append(csv_file)
         for html_file in reporters.get_html_files().values():
-            if html_file not in files_to_zip:
-                files_to_zip.append(html_file)
-        for attr in files_to_zip:
+            if html_file not in attrs_to_zip:
+                attrs_to_zip.append(html_file)
+        files_to_zip = []
+        for attr in attrs_to_zip:
             files_to_zip.append(settings.get(attr))
     except Exception as exc:
         print traceback.format_exc()
 
-    with zipfile.ZipFile(settings.zip_path_full, 'w') as zip_file:
+    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)
@@ -615,13 +614,16 @@ def do_summary(settings, reporters, status):
             except Exception as exc:
                 if exc:
                     pass
-        Registrar.register_message('wrote file %s' % settings.zip_path_full)
+        Registrar.register_message('wrote file %s' % settings.zip_path)
+
+    summary_html += reporters.main.get_summary_html()
+    summary_text += "\n%s" % reporters.main.get_summary_text()
 
     if settings.get('do_mail'):
         do_mail(
             settings,
-            reporters.main.get_summary_html(),
-            reporters.main.get_summary_text()
+            summary_html,
+            summary_text
         )
 
 def catch_main(override_args=None):
@@ -630,6 +632,7 @@ def catch_main(override_args=None):
     reporters = None
 
     status = 0
+    reason = None
 
     try:
         reporters = main(settings=settings, override_args=override_args)
@@ -637,13 +640,17 @@ def catch_main(override_args=None):
         pass
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
         status = 69  # service unavailable
+        reason = "Service unavailable"
     except IOError:
         status = 74
-        print "cwd: %s" % os.getcwd()
+        reason = "IOError"
+        print "IOError. cwd: %s" % os.getcwd()
     except UserWarning:
         status = 65
+        reason = "User Warning"
     except Exception:
         status = 1
+        reason = "Other"
     finally:
         if status:
             Registrar.register_error(traceback.format_exc())
@@ -651,7 +658,7 @@ def catch_main(override_args=None):
                 import pudb; pudb.set_trace()
 
     try:
-        do_summary(settings, reporters, status)
+        do_summary(settings, reporters, status, reason)
     except (SystemExit, KeyboardInterrupt):
         status = 0
     except Exception:

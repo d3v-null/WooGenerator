@@ -546,8 +546,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
         ('Edited Name', {}),
     ])
 
-    group = HtmlReporter.Group('sanitizing',
-                                          'Sanitizing Results')
+    group = HtmlReporter.Group('sanitizing', 'Sanitizing Results')
 
     if parsers.slave.bad_address:
         group.add_section(
@@ -597,20 +596,35 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
                     tablefmt='html', ),
                 length=len(parsers.master.bad_name)))
 
+    csv_colnames = settings.col_data_class.get_col_names(
+        OrderedDict(settings.basic_cols.items() + settings.col_data_class.name_cols([
+            'address_reason',
+            'name_reason',
+            'Edited Name',
+            'Edited Address',
+            'Edited Alt Address',
+        ]).items()))
+
+    if parsers.master.bad_name or parsers.master.bad_address:
+        bad_master_users = UsrObjList(
+            parsers.master.bad_name.values() + parsers.master.bad_address.values()
+        )
+        bad_master_users.export_items(settings.rep_san_master_csv_path, csv_colnames)
+        reporter.add_csv_file('master_sanitation', settings.rep_san_master_csv_path)
+
+
+    if parsers.slave.bad_name or parsers.slave.bad_address:
+        bad_slave_users = UsrObjList(
+            parsers.slave.bad_name.values() + parsers.slave.bad_address.values()
+        )
+        bad_slave_users.export_items(settings.rep_san_slave_csv_path, csv_colnames)
+        reporter.add_csv_file('slave_sanitation', settings.rep_san_slave_csv_path)
+
     reporter.add_group(group)
 
 def do_delta_group(reporter, matches, updates, parsers, settings):
     if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
         return
-
-    settings.master_delta_csv_path = os.path.join(
-        settings.out_dir_full,
-        "%sdelta_report_%s_%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-    settings.slave_delta_csv_path = os.path.join(
-        settings.out_dir_full,
-        "%sdelta_report_%s_%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
 
     group = HtmlReporter.Group('deltas', 'Field Changes')
 
@@ -654,14 +668,14 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
 
     if m_delta_list:
         m_delta_list.export_items(
-            settings['master_delta_csv_path'],
+            settings.rep_delta_master_csv_path,
             settings.col_data_class.get_col_names(all_delta_cols))
-        reporter.add_csv_file('master_delta', settings['master_delta_csv_path'])
+        reporter.add_csv_file('delta_master', settings.rep_delta_master_csv_path)
     if s_delta_list:
         s_delta_list.export_items(
-            settings['slave_delta_csv_path'],
+            settings.rep_delta_slave_csv_path,
             settings.col_data_class.get_col_names(all_delta_cols))
-        reporter.add_csv_file('slave_delta', settings['slave_delta_csv_path'])
+        reporter.add_csv_file('delta_slave', settings.rep_delta_slave_csv_path)
 
     reporter.add_group(group)
 
@@ -784,44 +798,15 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
     reporter.add_group(group)
 
-def do_report_bad_contact(reporter, matches, updates, parsers, settings):
-    settings.w_pres_csv_path = os.path.join(
-        settings.out_dir_full,
-        "%ssync_report_%s_%s.csv" % \
-            (settings.file_prefix, settings.slave_name, settings.file_suffix))
-    settings.master_res_csv_path = os.path.join(
-        settings.out_dir_full,
-        "%ssync_report_%s_%s.csv" % \
-            (settings.file_prefix, settings.master_name, settings.file_suffix))
-
-    csv_colnames = settings.col_data_class.get_col_names(
-        OrderedDict(settings.basic_cols.items() + settings.col_data_class.name_cols([
-            'address_reason',
-            'name_reason',
-            'Edited Name',
-            'Edited Address',
-            'Edited Alt Address',
-        ]).items()))
-
-    if parsers.master.bad_name or parsers.master.bad_address:
-        UsrObjList(parsers.master.bad_name.values() + parsers.master.bad_address.values())\
-            .export_items(settings['master_res_csv_path'], csv_colnames)
-        reporter.add_csv_file('master_bad_name', settings['master_res_csv_path'])
-
-
-    if parsers.slave.bad_name or parsers.slave.bad_address:
-        UsrObjList(parsers.slave.bad_name.values() + parsers.master.bad_address.
-                   values()).export_items(settings['w_pres_csv_path'], csv_colnames)
-        reporter.add_csv_file('slave_bad_name', settings['w_pres_csv_path'])
-
 def do_report_failures(reporter, failures, settings):
     """Output a list of lists of failures as a csv file to the path specified."""
     for source in ['master', 'slave']:
-        failures = getattr(failures, source)
-
+        source_failures = getattr(failures, source)
+        if not source_failures:
+            continue
         # TODO: Write failure HTML report here
 
-        file_path = settings.get(source[0] + '_fail_path_full')
+        file_path = settings.get('rep_fail_%s_path_full' % source)
         with open(file_path, 'w+') as out_file:
             for failure in failures:
                 Registrar.register_error(failure)

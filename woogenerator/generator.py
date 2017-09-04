@@ -457,7 +457,7 @@ def main(override_args=None, settings=None):
     settings.myo_path = os.path.join(settings.out_dir_full,
                                      "myob-" + suffix + ".csv")
     # bun_path = os.path.join(settings.out_dir_full , "bundles-"+suffix+".csv")
-    rep_name = os.path.basename(settings.rep_path_full)
+    rep_name = os.path.basename(settings.rep_main_path)
     if settings.get('web_dir'):
         settings['rep_web_path'] = os.path.join(
             settings.get('web_dir'),
@@ -468,7 +468,7 @@ def main(override_args=None, settings=None):
             rep_name
         )
 
-    settings['slave_delta_csv_path'] = os.path.join(
+    settings['rep_delta_slave_csv_path'] = os.path.join(
         settings.out_dir_full, "delta_report_wp%s.csv" % suffix)
 
     settings.img_dst = os.path.join(settings.img_cmp_dir,
@@ -1027,7 +1027,7 @@ def main(override_args=None, settings=None):
 
     Registrar.register_progress("Write Report")
 
-    with io.open(settings.rep_path_full, 'w+', encoding='utf8') as res_file:
+    with io.open(settings.rep_main_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
         # basic_cols = ColDataWoo.get_basic_cols()
@@ -1077,7 +1077,7 @@ def main(override_args=None, settings=None):
 
             if s_delta_list:
                 s_delta_list.export_items(
-                    settings['slave_delta_csv_path'],
+                    settings['rep_delta_slave_csv_path'],
                     ColDataWoo.get_col_names(all_delta_cols))
 
         #
@@ -1475,11 +1475,11 @@ def main(override_args=None, settings=None):
 
     if settings.do_report:
         if settings['rep_web_path']:
-            shutil.copyfile(settings.rep_path_full, settings['rep_web_path'])
+            shutil.copyfile(settings.rep_main_path, settings['rep_web_path'])
             if settings['web_browser']:
                 os.environ['BROWSER'] = settings['web_browser']
                 # print "set browser environ to %s" % repr(web_browser)
-            # print "moved file from %s to %s" % (settings.rep_path_full, repWeb_path)
+            # print "moved file from %s to %s" % (settings.rep_main_path, repWeb_path)
 
             webbrowser.open(settings['rep_web_link'])
     else:
@@ -1521,7 +1521,7 @@ def catch_main(override_args=None):
                 import pudb; pudb.set_trace()
 
 
-    with io.open(settings.log_path_full, 'w+', encoding='utf8') as log_file:
+    with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
             log_file.writelines([SanitationUtils.coerce_unicode(source)])
@@ -1536,10 +1536,10 @@ def catch_main(override_args=None):
     #########################################
 
     files_to_zip = [
-        settings.m_fail_path_full, settings.s_fail_path_full, settings.rep_path_full
+        settings.rep_fail_master_csv_path, settings.rep_fail_slave_csv_path, settings.rep_main_path
     ]
 
-    with zipfile.ZipFile(settings.zip_path_full, 'w') as zip_file:
+    with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             try:
                 os.stat(file_to_zip)

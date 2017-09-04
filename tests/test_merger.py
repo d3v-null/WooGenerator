@@ -1,4 +1,5 @@
 from __future__ import print_function
+
 # from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import os
 # import sys
@@ -10,11 +11,14 @@ from pprint import pformat
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
-                                         UpdateNamespace, init_settings)
+                                         UpdateNamespace, init_dirs, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
-from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
-                                 populate_slave_parsers, do_report, populate_filter_settings)
+from woogenerator.merger import (do_match, do_merge, do_report,
+                                 do_report_failures, do_summary, do_updates,
+                                 populate_filter_settings,
+                                 populate_master_parsers,
+                                 populate_slave_parsers)
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
@@ -31,6 +35,15 @@ class TestMerger(unittest.TestCase):
         self.settings.download_master = False
         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_dummy.csv")
         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_dummy.csv")
+        self.settings.testmode = True
+        self.settings.do_sync = True
+        self.settings.report_duplicates = True
+        self.settings.report_sanitation = True
+        self.settings.report_matching = True
+        # TODO: mock out update clients
+        self.settings.update_master = False
+        self.settings.update_slave = False
+        self.settings.ask_before_update = False
         # self.settings.master_parse_limit = 10
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
@@ -327,7 +340,6 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(first_usr.last_modtime, 1479060113.0)
 
     def test_do_match(self):
-        self.settings.do_sync = True
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -351,7 +363,6 @@ class TestMerger(unittest.TestCase):
         )
 
     def test_do_merge_basic(self):
-        self.settings.do_sync = True
         if self.debug:
             Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_WARN = False
@@ -534,7 +545,6 @@ class TestMerger(unittest.TestCase):
             return new_filename
 
     def test_do_merge_hard_1(self):
-        self.settings.do_sync = True
         suffix = 'hard_1'
         for source, line in [('master', 8), ('slave', 89)]:
             new_filename = self.make_temp_with_lines(
@@ -583,7 +593,6 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_do_merge_hard_2(self):
-        self.settings.do_sync = True
         suffix = 'hard_2'
         for source, line in [('master', 96), ('slave', 100)]:
             new_filename = self.make_temp_with_lines(
@@ -645,7 +654,6 @@ class TestMerger(unittest.TestCase):
 
     # @unittest.skip("Failing")
     def test_do_merge_false_pos(self):
-        self.settings.do_sync = True
         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_false_positive.csv")
         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_false_positive.csv")
         self.parsers = populate_master_parsers(
@@ -686,17 +694,9 @@ class TestMerger(unittest.TestCase):
 
     def test_do_report(self):
         suffix='do_report'
-        temp_out_dir = tempfile.mkdtemp(suffix + '_out')
-        if self.debug:
-            print("out dir is %s" % temp_out_dir)
-        self.settings.out_dir = temp_out_dir
-        self.settings.do_sync = True
-        self.settings.report_duplicates = True
-        self.settings.report_sanitation = True
-        self.settings.report_matching = True
-        if self.debug:
-            print("rep_path_full is %s" % self.settings.rep_path_full)
-        # self.settings.process_duplicates = True
+        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        self.settings.local_work_dir = temp_working_dir
+        init_dirs(self.settings)
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -713,8 +713,55 @@ class TestMerger(unittest.TestCase):
             self.matches, self.updates, self.parsers, self.settings
         )
 
+    def test_do_updates(self):
+        suffix='do_updates'
+        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        self.settings.local_work_dir = temp_working_dir
+        init_dirs(self.settings)
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.parsers, self.settings
+        )
+        self.reporters = do_report(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        self.failures = do_updates(
+            self.updates, self.settings
+        )
+
     def test_do_summary(self):
-        pass
+        suffix='do_summary'
+        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        self.settings.local_work_dir = temp_working_dir
+        init_dirs(self.settings)
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.parsers, self.settings
+        )
+        self.reporters = do_report(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+        self.failures = do_updates(
+            self.updates, self.settings
+        )
+        do_report_failures(self.reporters.main, self.failures, self.settings)
+        do_summary(self.settings, self.reporters, )
 
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True
