@@ -413,33 +413,32 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     # creating a list of all the potential objects to delete and WHY
     # they should be deleted.
 
+    def obj_source_is(object_data, target_source):
+        """Check if the object source equals target source."""
+        obj_source = object_data.get('source')
+        if obj_source and target_source == obj_source:
+            return True
+
     def fn_obj_source_is(target_source):
         """Return function that checks if object source equals target source."""
-        def obj_source_is(object_data):
-            """Check if the object source equals target source."""
-            obj_source = object_data.get('source')
-            if obj_source and target_source == obj_source:
-                return True
+        return functools.partial(obj_source_is, target_source=target_source)
 
-        return obj_source_is
+    def user_older_than(user_data, wp_time_obj):
+        """Determine if user is older than a given wp_time object."""
+        if fn_obj_source_is(settings.master_name)(user_data):
+            try:
+                user_time_obj = getattr(user_data, 'act_last_transaction')
+            except AssertionError:
+                return True
+        else:
+            user_time_obj = user_data.last_modtime
+        return user_time_obj < wp_time_obj
 
     def fn_user_older_than_wp(wp_time):
         """Return function ot check user is older than wp_time."""
         wp_time_obj = TimeUtils.wp_strp_mktime(wp_time)
         assert wp_time_obj, "should be valid time struct: %s" % wp_time
-
-        def user_older_than(user_data):
-            """Determine if user is older than wp_time."""
-            if fn_obj_source_is(settings.master_name)(user_data):
-                try:
-                    user_time_obj = getattr(user_data, 'act_last_transaction')
-                except AssertionError:
-                    return True
-            else:
-                user_time_obj = user_data.last_modtime
-            return user_time_obj < wp_time_obj
-
-        return user_older_than
+        return functools.partial(user_older_than, wp_time_obj=wp_time_obj)
 
     duplicates = Duplicates()
 
