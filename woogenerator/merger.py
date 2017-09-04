@@ -378,26 +378,26 @@ def do_report(matches, updates, parsers, settings):
         do_main_summary_group(reporters.main, matches, updates, parsers, settings),
         do_delta_group(reporters.main, matches, updates, parsers, settings),
         do_sync_group(reporters.main, matches, updates, parsers, settings)
-        reporters.main.write_to_file('main', settings.rep_main_path)
+        reporters.main.write_document_to_file('main', settings.rep_main_path)
 
         if settings.get('report_sanitation'):
             Registrar.register_progress("Write Sanitation Report")
 
             do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
-            reporters.san.write_to_file('san', settings.rep_san_path)
+            reporters.san.write_document_to_file('san', settings.rep_san_path)
 
         if settings.get('report_matching'):
             Registrar.register_progress("Write Matching Report")
 
             do_matches_group(reporters.match, matches, updates, parsers, settings),
-            reporters.match.write_to_file('match', settings.rep_match_path)
+            reporters.match.write_document_to_file('match', settings.rep_match_path)
 
         if settings.get('report_duplicates'):
             Registrar.register_progress("Write Duplicates Report")
 
             do_duplicates_summary_group(reporters.dup, matches, updates, parsers, settings),
             do_duplicates_group(reporters.dup, matches, updates, parsers, settings)
-            reporters.dup.write_to_file('dup', settings.rep_dup_path)
+            reporters.dup.write_document_to_file('dup', settings.rep_dup_path)
 
     return reporters
 

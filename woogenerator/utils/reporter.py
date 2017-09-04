@@ -1,8 +1,7 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import argparse
 import io
-import os
 import re
 from collections import OrderedDict
 
@@ -49,13 +48,14 @@ DUP_CSS = "\n".join([
     ".highlight_slave {background: lightpink !important;}"
 ])
 
-class HtmlReporter(object):
-    """docstring for htmlReporter"""
+class AbstractReporter(object):
+    def __init__(self, css=None):
+        self.groups = OrderedDict()
+        self.css = css
+        self.csv_files = OrderedDict()
+        self.html_files = OrderedDict()
 
     class Section(object):
-        data_heading_fmt = "<h3>%s</h3>"
-        data_separater = "<hr>"
-
         def __init__(self, classname, title=None,
                      description="", data="", length=None):
             if title is None:
@@ -66,40 +66,88 @@ class HtmlReporter(object):
             self.length = length
             self.classname = classname
 
-        def render(self, fmt=None):
+        def get_data_heading_fmt(self, fmt):
             if fmt=='html':
-                title_fmt = "<h2>%s</h2>"
-                descr_fmt = '<p class="description">%s</p>'
-                data_fmt = '<p class="data">%s</p>'
+                return u"<h3>%s</h3>"
             else:
-                title_fmt = "**%s**"
-                descr_fmt = '\n%s'
-                data_fmt = '\n%s'
+                return u"*%s*"
 
-            out = ''
+        def get_data_separator(self, fmt):
+            if fmt=='html':
+                return u"<hr>"
+            else:
+                return u"\n" + ("-" * 50) + "\n"
+
+        def get_title_fmt(self, fmt=None):
+            if fmt=='html':
+                return u"<h2>%s</h2>"
+            return u"\n**%s**\n"
+
+        def get_descr_fmt(self, fmt=None):
+            if fmt=='html':
+                return u'<p class="description">%s</p>'
+            return u"\n%s"
+
+        def get_data_fmt(self, fmt=None):
+            if fmt=='html':
+                return u'<p class="data">%s</p>'
+            return u'\n%s'
+
+        def get_section_fmt(self, fmt=None):
             section_id = SanitationUtils.make_safe_class(self.classname)
-            if fmt == 'html':
-                out = '<div class="section">'
-                out += ('<a data-toggle="collapse" href="#{0}" aria-expanded="true" '
-                        'data-target="#{0}" aria-controls="{0}">').format(
+            section_id = SanitationUtils.coerce_unicode(section_id)
+            if fmt=='html':
+                out = u'<div class="section">'
+                out += (u'<a data-toggle="collapse" href="#{0}" aria-expanded="true" '
+                        u'data-target="#{0}" aria-controls="{0}">').format(
                             section_id
                         )
-            title = self.title
-            title += ' ({})'.format(self.length) if self.length else ''
-            out += title_fmt % title
-            out += '</a>' if fmt == 'html' else ''
-            out += '<div class="collapse" id="' + section_id + '">'
+                out += u"{title}"
+                out += u"</a>"
+                out += u'<div class="collapse" id="' + section_id + '">'
+                out += u"{description}"
+                out += u"{data}"
+                out += u'</div>'
+                return out
+            else:
+                return u"{title}{description}{data}"
 
-            description = (str(self.length) if self.length else "No") + ' ' + self.description
-            out += descr_fmt % description
+        def render_title(self, fmt=None):
+            response = self.title
+            response = SanitationUtils.coerce_unicode(response)
+            if self.length:
+                response += u' ({})'.format(self.length)
+            response = self.get_title_fmt(fmt) % response
+            return response
 
-            data = self.data
+        def render_description(self, fmt=None):
+            response = self.description
+            response = SanitationUtils.coerce_unicode(response)
+            if self.length is not None:
+                response = u"%d %s" % (self.length, response)
+            response = self.get_descr_fmt(fmt) % response
+            return response
+
+        def render_data(self, fmt=None):
+            response = self.data
+            response = SanitationUtils.coerce_unicode(response)
             if fmt == 'html':
-                data = re.sub("<table>", "<table class=\"table table-striped\">",
-                              SanitationUtils.coerce_unicode(self.data))
-            out += data_fmt % data
+                response = re.sub(
+                    ur"<table>", ur'<table class="table table-striped">', response
+                )
+            response = self.get_data_fmt(fmt) % response
+            return response
 
-            out += '</div>' if fmt == 'html' else ''
+        def render(self, fmt=None):
+            data = self.render_data(fmt)
+            data = SanitationUtils.coerce_unicode(data)
+
+            out = self.get_section_fmt(fmt).format(
+                title=self.render_title(fmt),
+                data=data,
+                description=self.render_description(fmt)
+            )
+
             out = SanitationUtils.coerce_unicode(out)
             return out
 
@@ -123,17 +171,24 @@ class HtmlReporter(object):
         def add_section(self, section):
             self.sections[section.classname] = section
 
-        def render(self, fmt=None):
+        def get_title_fmt(self, fmt=None):
             if fmt == 'html':
-                title_fmt = "<h1>%s</h1>"
+                return "<h1>%s</h1>"
             else:
-                title_fmt = "***%s***"
+                return "***%s***"
+
+        def get_group_div_fmt(self, fmt=None):
+            if fmt == 'html':
+                return '<div class="group">%s</div>'
+            else:
+                return '%s'
+
+        def render(self, fmt=None):
             out = ''
-            out += '<div class="group">' if fmt == 'html' else ''
-            out += title_fmt % self.title
+            out += self.get_title_fmt(fmt) % self.title
             for section in self.sections.values():
                 out += section.render(fmt)
-            out += '</div>' if fmt == 'html' else ''
+            out = self.get_group_div_fmt(fmt) % out
             out = SanitationUtils.coerce_unicode(out)
             return out
 
@@ -142,12 +197,6 @@ class HtmlReporter(object):
 
         def to_text(self):
             return self.render()
-
-    def __init__(self, css=None):
-        self.groups = OrderedDict()
-        self.css = css
-        self.csv_files = OrderedDict()
-        self.html_files = OrderedDict()
 
     def add_group(self, group):
         self.groups[group.classname] = group
@@ -237,10 +286,21 @@ class HtmlReporter(object):
         )
         self.html_files[name] = path
 
-    def write_to_file(self, name, path):
+    def write_document_to_file(self, name, path):
         with io.open(path, 'w+', encoding='utf8') as rep_file:
             rep_file.write(self.get_document_unicode())
         self.add_html_file(name, path)
+
+class HtmlReporter(AbstractReporter):
+    """**DEPRECATED** Reporter which produces only html"""
+
+class RenderableReporter(AbstractReporter):
+    """ Report renderable objects in html or plaintext. """
+
+    class Section(AbstractReporter.Section):
+        def render(self, fmt=None):
+            # TODO: this
+            pass
 
 
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
