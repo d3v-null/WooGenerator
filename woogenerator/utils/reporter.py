@@ -25,8 +25,8 @@ class ReporterNamespace(argparse.Namespace):
         super(ReporterNamespace, self).__init__(*args, **kwargs)
         self.main = RenderableReporter()
         self.dup = RenderableReporter(css=DUP_CSS)
-        self.san = HtmlReporter()
-        self.match = HtmlReporter()
+        self.san = RenderableReporter()
+        self.match = RenderableReporter()
 
     def get_csv_files(self):
         csv_files = OrderedDict()
@@ -579,33 +579,39 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     match_list_instructions = {
         'cardMatcher.duplicate_matches':
-        '%s records have multiple CARD IDs in %s' %
-        (settings.slave_name, settings.master_name),
+        '%s records have multiple CARD IDs in %s' % (
+            settings.slave_name, settings.master_name
+        ),
         'usernameMatcher.duplicate_matches':
-        '%s records have multiple USERNAMEs in %s' %
-        (settings.slave_name, settings.master_name)
+        '%s records have multiple USERNAMEs in %s' % (
+            settings.slave_name, settings.master_name
+        )
     }
+
+    def render_matchlist_data(fmt, match_list, matchlist_type):
+        if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+            data = match_list.merge().tabulate(tablefmt=fmt)
+        else:
+            data = match_list.tabulate(
+                tablefmt=fmt,
+                highlight_rules=highlight_rules_all
+            )
+        return data
 
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
         description = match_list_instructions.get(matchlist_type, matchlist_type)
-        def render_matchlist_data(fmt):
-            if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
-                data = match_list.merge().tabulate(tablefmt=fmt)
-            else:
-                data = match_list.tabulate(
-                    tablefmt=fmt,
-                    highlight_rules=highlight_rules_all
-                )
-            # TODO: maybe re-enable highlight rules?
-            return data
         group.add_section(
             reporter.Section(
                 matchlist_type,
                 title=matchlist_type.title(),
                 description=description,
-                data=render_matchlist_data,
+                data=functools.partial(
+                    render_matchlist_data,
+                    matchlist_type=matchlist_type,
+                    match_list=match_list
+                ),
                 length=len(match_list)
             )
         )
@@ -638,36 +644,6 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
                     "and that the value in the delta email or delta role field is incorrect. "
                     "If an email or role is changed to the wrong value, it could stop the "
                     "customer from being able to log in or purchase items correctly."
-                )
-            }),
-            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Matching Results'}),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
-                    "These reports show the results of the matching algorithm. "
-                )
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Perfect Matches',
-                'description':(
-                    " show matches that were detected without ambiguity."
-                )
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Masterless Card Matches',
-                'description':(
-                    " are instances where a record in {slave_name} is seen to "
-                    "have a {master_pkey} value that is that is not found in "
-                    "{master_name}. This could mean that the {master_name} "
-                    "record associated with that user has been deleted or badly "
-                    "merged."
-                )
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Slaveless Username Matches',
-                'description':(
-                    " are instances where a record in {master_name} has a "
-                    "username value that is not found in {slave_name}. This "
-                    "could be because the {slave_name} account was deleted."
                 )
             }),
             (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Syncing Results'}),
@@ -746,57 +722,6 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
         ('name_reason', {}),
         ('Edited Name', {}),
     ])
-
-    group = reporter.Group('sanitizing', 'Sanitizing Results')
-
-    if parsers.slave.bad_address:
-        group.add_section(
-            reporter.Section(
-                's_bad_addresses_list',
-                title='Bad %s Address List' % settings.slave_name.title(),
-                description='%s records that have badly formatted addresses'
-                % settings.slave_name,
-                data=UsrObjList(parsers.slave.bad_address.values()).tabulate(
-                    cols=address_cols,
-                    tablefmt='html', ),
-                length=len(parsers.slave.bad_address)))
-
-    if parsers.slave.bad_name:
-        group.add_section(
-            reporter.Section(
-                's_bad_names_list',
-                title='Bad %s Names List' % settings.slave_name.title(),
-                description='%s records that have badly formatted names' %
-                settings.slave_name,
-                data=UsrObjList(parsers.slave.bad_name.values()).tabulate(
-                    cols=name_cols,
-                    tablefmt='html', ),
-                length=len(parsers.slave.bad_name)))
-
-    if parsers.master.bad_address:
-        group.add_section(
-            reporter.Section(
-                'm_bad_addresses_list',
-                title='Bad %s Address List' % settings.master_name.title(),
-                description='%s records that have badly formatted addresses'
-                % settings.master_name,
-                data=UsrObjList(parsers.master.bad_address.values()).tabulate(
-                    cols=address_cols,
-                    tablefmt='html', ),
-                length=len(parsers.master.bad_address)))
-
-    if parsers.master.bad_name:
-        group.add_section(
-            reporter.Section(
-                'm_bad_names_list',
-                title='Bad %s Names List' % settings.master_name.title(),
-                description='%s records that have badly formatted names' %
-                settings.master_name,
-                data=UsrObjList(parsers.master.bad_name.values()).tabulate(
-                    cols=name_cols,
-                    tablefmt='html', ),
-                length=len(parsers.master.bad_name)))
-
     csv_colnames = settings.col_data_class.get_col_names(
         OrderedDict(settings.basic_cols.items() + settings.col_data_class.name_cols([
             'address_reason',
@@ -806,20 +731,54 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
             'Edited Alt Address',
         ]).items()))
 
-    if parsers.master.bad_name or parsers.master.bad_address:
-        bad_master_users = UsrObjList(
-            parsers.master.bad_name.values() + parsers.master.bad_address.values()
-        )
-        bad_master_users.export_items(settings.rep_san_master_csv_path, csv_colnames)
-        reporter.add_csv_file('master_sanitation', settings.rep_san_master_csv_path)
+    group = reporter.Group('sanitizing', 'Sanitizing Results')
 
-
-    if parsers.slave.bad_name or parsers.slave.bad_address:
-        bad_slave_users = UsrObjList(
-            parsers.slave.bad_name.values() + parsers.slave.bad_address.values()
+    def render_bad_register(fmt, register, cols):
+        users = UsrObjList(register.values())
+        return users.tabulate(
+            cols=address_cols,
+            tablefmt=fmt
         )
-        bad_slave_users.export_items(settings.rep_san_slave_csv_path, csv_colnames)
-        reporter.add_csv_file('slave_sanitation', settings.rep_san_slave_csv_path)
+
+    for source in ['master', 'slave']:
+        parser = getattr(parsers, source)
+
+        if not (parser.bad_name or parser.bad_address):
+            continue
+
+        for attr, cols, descr_fmt in [
+            (
+                'bad_address',
+                address_cols,
+                '%s records that have badly formatted addresses'
+            ),
+            (
+                'bad_name',
+                name_cols,
+                '%s records that have badly formatted names'
+            )
+        ]:
+            register = getattr(parser, attr)
+            if not register:
+                continue
+            source_name = settings.get('%s_name' % source)
+            group.add_section(
+                reporter.Section(
+                    title="%s %s" % (attr.title(), source_name.title()),
+                    description=descr_fmt % source_name,
+                    data=functools.partial(
+                        render_bad_register, register=register, cols=cols
+                    ),
+                    length=len(register)
+                )
+            )
+
+        bad_users = UsrObjList(
+            parser.bad_name.values() + parser.bad_address.values()
+        )
+        report_path = settings.get('rep_san_%s_csv_path' % source)
+        bad_users.export_items(report_path, csv_colnames)
+        reporter.add_csv_file('master_sanitation', report_path)
 
     reporter.add_group(group)
 
@@ -883,53 +842,114 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
 
     reporter.add_group(group)
 
+def do_matches_summary_group(reporter, matches, updates, parsers, settings):
+    def render_help_instructions(fmt=None):
+        response = u""
+        for format_spec, format_kwargs in [
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "These reports show the results of the matching algorithm. "
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Perfect Matches',
+                'description':(
+                    " show matches that were detected without ambiguity."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Masterless Card Matches',
+                'description':(
+                    " are instances where a record in {slave_name} is seen to "
+                    "have a {master_pkey} value that is that is not found in "
+                    "{master_name}. This could mean that the {master_name} "
+                    "record associated with that user has been deleted or badly "
+                    "merged."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Slaveless Username Matches',
+                'description':(
+                    " are instances where a record in {master_name} has a "
+                    "username value that is not found in {slave_name}. This "
+                    "could be because the {slave_name} account was deleted."
+                )
+            })
+        ]:
+            if 'description' in format_kwargs:
+                format_kwargs['description'] = format_kwargs['description'].format(
+                    master_name=settings.master_name,
+                    slave_name=settings.slave_name,
+                    master_pkey="MYOB Card ID",
+                    slave_pkey="WP ID"
+                )
+            response += reporter.format(format_spec, **format_kwargs)
+        return response
+
+    group = reporter.Group('summary_group', 'Summary')
+    group.add_section(
+        reporter.Section(
+            'instructions',
+            title='Instructions',
+            data=render_help_instructions
+        )
+    )
+    reporter.add_group(group)
+
+
 def do_matches_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('matching', 'Matching Results')
+    def render_perfect_matches(fmt):
+        return matches.globals.tabulate(tablefmt=fmt)
+
     group.add_section(
         reporter.Section(
             'perfect_matches',
-            **{
-                'title':
-                'Perfect Matches',
-                'description':
-                "%s records match well with %s" % (
-                    settings.slave_name, settings.master_name),
-                'data':
-                matches.globals.tabulate(tablefmt="html"),
-                'length':
-                len(matches.globals)
-            }))
+            title='Perfect Matches',
+            description="%s records match well with %s" % (
+                settings.slave_name, settings.master_name),
+            data=render_perfect_matches,
+            length=len(matches.globals)
+        )
+    )
 
     match_list_instructions = {
         'cardMatcher.masterless_matches':
-        '%s records do not have a corresponding CARD ID in %s (deleted?)'
-        % (settings.slave_name, settings.master_name),
+        '%s records do not have a corresponding CARD ID in %s (deleted?)' % (
+            settings.slave_name, settings.master_name
+        ),
         'usernameMatcher.slaveless_matches':
-        '%s records have no USERNAMEs in %s' %
-        (settings.master_name, settings.slave_name),
+        '%s records have no USERNAMEs in %s' % (
+            settings.master_name, settings.slave_name
+        ),
     }
+
+    def render_matchlist_data(fmt, match_list, matchlist_type):
+        if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+            data = match_list.merge().tabulate(tablefmt=fmt)
+        else:
+            data = match_list.tabulate(
+                tablefmt=fmt,
+            )
+        return data
 
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
-        description = match_list_instructions.get(matchlist_type,
-                                                  matchlist_type)
-        if ('masterless' in matchlist_type or
-                'slaveless' in matchlist_type):
-            data = match_list.merge().tabulate(tablefmt="html")
-        else:
-            data = match_list.tabulate(tablefmt="html")
+        description = match_list_instructions.get(matchlist_type, matchlist_type)
         group.add_section(
             reporter.Section(
                 matchlist_type,
-                **{
-                    # 'title': matchlist_type.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(match_list)
-                }))
-
-    # Registrar.register_progress("anomalous ParseLists: ")
+                title=matchlist_type.title(),
+                description=description,
+                data=functools.partial(
+                    render_matchlist_data,
+                    matchlist_type=matchlist_type,
+                    match_list=match_list
+                ),
+                length=len(match_list)
+            )
+        )
 
     parse_list_instructions = {
         "sa_parser.noemails":
@@ -942,24 +962,29 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
         "%s records have no username" % settings.slave_name
     }
 
-    for parselist_type, parse_list in parsers.anomalous.items():
-        description = parse_list_instructions.get(parselist_type,
-                                                  parselist_type)
+    def render_parselist_data(fmt, parse_list, parselist_type):
         usr_list = UsrObjList()
         for obj in parse_list.values():
             usr_list.append(obj)
+        return usr_list.tabulate(tablefmt=fmt)
 
-        data = usr_list.tabulate(tablefmt="html")
-
+    for parselist_type, parse_list in parsers.anomalous.items():
+        if not parse_list:
+            continue
+        description = parse_list_instructions.get(parselist_type, parselist_type)
         group.add_section(
             reporter.Section(
                 parselist_type,
-                **{
-                    # 'title': matchlist_type.title(),
-                    'description': description,
-                    'data': data,
-                    'length': len(parse_list)
-                }))
+                title=parselist_type.title(),
+                description=description,
+                data=functools.partial(
+                    render_parselist_data,
+                    parselist_type=parselist_type,
+                    parse_list=parse_list
+                ),
+                length=len(parse_list)
+            )
+        )
 
     reporter.add_group(group)
 

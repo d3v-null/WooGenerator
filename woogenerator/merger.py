@@ -32,7 +32,9 @@ from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group,
                                          do_duplicates_group,
                                          do_duplicates_summary_group,
                                          do_main_summary_group,
-                                         do_matches_group, do_report_failures,
+                                         do_matches_group,
+                                         do_matches_summary_group,
+                                         do_report_failures,
                                          do_sanitizing_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
@@ -389,6 +391,7 @@ def do_report(matches, updates, parsers, settings):
         if settings.get('report_matching'):
             Registrar.register_progress("Write Matching Report")
 
+            do_matches_summary_group(reporters.match, matches, updates, parsers, settings)
             do_matches_group(reporters.match, matches, updates, parsers, settings),
             reporters.match.write_document_to_file('match', settings.rep_match_path)
 
