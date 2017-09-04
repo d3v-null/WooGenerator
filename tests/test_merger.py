@@ -710,9 +710,11 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.parsers, self.settings
         )
-        do_report(
+        self.reporters = do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
+        if self.debug:
+            print("Main report text:\n%s" % self.reporters.main.get_summary_text())
 
     @unittest.skip("this is an exact subset of test_do_summary")
     def test_do_updates(self):

@@ -5,6 +5,7 @@ import io
 import re
 from collections import OrderedDict
 from string import Formatter
+import functools
 
 import unicodecsv
 
@@ -22,7 +23,7 @@ class ReporterNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(ReporterNamespace, self).__init__(*args, **kwargs)
-        self.main = HtmlReporter()
+        self.main = RenderableReporter()
         self.dup = RenderableReporter(css=DUP_CSS)
         self.san = HtmlReporter()
         self.match = HtmlReporter()
@@ -52,7 +53,6 @@ class OptionalFormatter(Formatter):
     """ Formatter where keys are optional """
     def get_value(self, key, args, kwds):
         if isinstance(key, basestring):
-            print("getting key %s from kwds %s" % (key, kwds))
             return kwds.get(key, '')
         return Formatter.get_value(self, key, args, kwds)
 
@@ -344,7 +344,7 @@ class RenderableReporter(AbstractReporter):
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
         response = u""
-        for format_spec, format_kwargs in [
+        format_params = [
             (reporter.Section.get_descr_fmt(fmt), {
                 'description':(
                     "This is a detailed report of all the duplicated and "
@@ -360,6 +360,8 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
                     "indicator of erroneous data."
                 )
             }),
+        ]
+        if fmt == 'html': format_params += [
             (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Colours'}),
             (reporter.Section.get_descr_fmt(fmt), {
                 'class':'highlight_master',
@@ -383,7 +385,8 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
                 'description':(" records are highlighted with an orange font. "
                                 "By default these are older than 3 years")
             })
-        ]:
+        ]
+        for format_spec, format_kwargs in format_params:
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
@@ -483,9 +486,13 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
         ('highlight_slave', fn_obj_source_is(settings.slave_name))
     ]
 
+    fn_usr_oldish = fn_user_older_than_wp(settings['oldish_threshold'])
+    fn_usr_old = fn_user_older_than_wp(settings['old_threshold'])
+    assert id(fn_usr_old) != id(fn_usr_oldish)
+
     highlight_rules_old = [
-        ('highlight_oldish', fn_user_older_than_wp(settings['oldish_threshold'])),
-        ('highlight_old', fn_user_older_than_wp(settings['old_threshold']))
+        ('highlight_oldish', fn_usr_oldish),
+        ('highlight_old', fn_usr_old)
     ]
 
     highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
@@ -545,11 +552,10 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     if address_duplicates:
         def render_address_duplicates(fmt):
+            duplicate_delmieter = reporter.get_data_separator()
             if fmt == 'html':
-                duplicate_delmieter = u"<br/>"
                 duplicate_format = u"<h4>%s</h4><p>%s</p>"
             else:
-                duplicate_delmieter = u"\n"
                 duplicate_format = u"**%s**\n%s"
             return duplicate_delmieter.join([
                 duplicate_format % (
@@ -609,61 +615,124 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
 
 def do_main_summary_group(reporter, matches, updates, parsers, settings):
-    help_instructions = (
-        "<p>This is a detailed report of all the changes that will be "
-        "made if this sync were to go ahead. </p>"
-        "<h3>Field Changes</h3>"
-        "<p>These reports show all the changes that will happen to "
-        "the most important fields (default: email and role). "
-        "The role field shows the new value for role, and the Delta role "
-        "field shows the previous value for role if the value will be "
-        "changed by the update. Same for email: the email field shows the "
-        "new value for email, and the delta email field shows the old value "
-        "for email if it will be changed in the update."
-        "These are the most important changes to check. You should look to "
-        "make sure that the value in the the Email and Role field is correct "
-        "and that the value in the delta email or delta role field is incorrect. "
-        "If an email or role is changed to the wrong value, it could stop the "
-        "customer from being able to log in or purchase items correctly.</p>"
-        "<h3>Matching Results</h3>"
-        "<p>These reports show the results of the matching algorithm. </p>"
-        "<p><strong>Perfect Matches</strong> show matches that were detected "
-        "without ambiguity. </p>"
-        "<p><strong>Cardmatcher.Masterless_Matches</strong> are instances where "
-        "a record in {slave_name} is seen to have a {master_pkey} value that is "
-        "that is not found in {master_name}. This could mean that the {master_name}"
-        "record associated with that user has been deleted or badly merged.</p>"
-        "<p><strong>Usernamematcher.Slaveless_Matches</strong> are instances "
-        "where a record in {master_name} has a username value that is not found in"
-        "{slave_name}. This could be because the {slave_name} account was deleted.</p>"
-        "<h3>Syncing Results</h3><p>Each of the items in these reports has "
-        "the following sections:<br/><ul>"
-        "<li><strong>Update Name</strong> - The primary keys of the records "
-        "being synchronized ({master_pkey} and {slave_pkey}) which should "
-        "be unique for any matched records.</li>"
-        "<li><strong>OLD</strong> - The {master_name} and {slave_name} records "
-        "before the sync.</li>"
-        "<li><strong>INFO</strong> - Mostly information about mod times for "
-        "debugging.</li>"
-        "<li><strong>PROBLEMATIC CHANGES</strong> - instances where an important "
-        "field has been changed. Important fields can be configured in coldata.py"
-        "by changing the 'static' property.</li>"
-        "<li><strong>CHANGES</strong> - all changes including problematic</li>"
-        "<li><strong>NEW</strong> - the end result of all changed records after"
-        "syncing</li>"
-    ).format(
-        master_name=settings.master_name,
-        slave_name=settings.slave_name,
-        master_pkey="MYOB Card ID",
-        slave_pkey="WP ID"
-    )
+    def render_help_instructions(fmt=None):
+        response = u""
+        for format_spec, format_kwargs in [
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "This is a detailed report of all the changes that will be "
+                    "made if this sync were to go ahead."
+                )
+            }),
+            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Field Changes'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "These reports show all the changes that will happen to "
+                    "the most important fields (default: email and role). "
+                    "The role field shows the new value for role, and the Delta role "
+                    "field shows the previous value for role if the value will be "
+                    "changed by the update. Same for email: the email field shows the "
+                    "new value for email, and the delta email field shows the old value "
+                    "for email if it will be changed in the update."
+                    "These are the most important changes to check. You should look to "
+                    "make sure that the value in the the Email and Role field is correct "
+                    "and that the value in the delta email or delta role field is incorrect. "
+                    "If an email or role is changed to the wrong value, it could stop the "
+                    "customer from being able to log in or purchase items correctly."
+                )
+            }),
+            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Matching Results'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "These reports show the results of the matching algorithm. "
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Perfect Matches',
+                'description':(
+                    " show matches that were detected without ambiguity."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Masterless Card Matches',
+                'description':(
+                    " are instances where a record in {slave_name} is seen to "
+                    "have a {master_pkey} value that is that is not found in "
+                    "{master_name}. This could mean that the {master_name} "
+                    "record associated with that user has been deleted or badly "
+                    "merged."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Slaveless Username Matches',
+                'description':(
+                    " are instances where a record in {master_name} has a "
+                    "username value that is not found in {slave_name}. This "
+                    "could be because the {slave_name} account was deleted."
+                )
+            }),
+            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Syncing Results'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "Each of the items in these reports has the following sections:"
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'Update Name',
+                'description':(
+                    " - The primary keys of the records being synchronized "
+                    "({master_pkey} and {slave_pkey}) which should be unique "
+                    "for any matched records."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'OLD',
+                'description':(
+                    " - The {master_name} and {slave_name} records before the sync."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'INFO',
+                'description':(
+                    " - Mostly information about mod times for debugging."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'PROBLEMATIC CHANGES',
+                'description':(
+                    " - instances where an important field has been changed. "
+                    "Important fields can be configured in coldata.py by "
+                    "changing the 'static' property."
+                )
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'CHANGES',
+                'description': " - all changes including problematic."
+            }),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':'NEW',
+                'description':(
+                    " - the end result of all changed records after"
+                    "syncing"
+                )
+            }),
+        ]:
+            if 'description' in format_kwargs:
+                format_kwargs['description'] = format_kwargs['description'].format(
+                    master_name=settings.master_name,
+                    slave_name=settings.slave_name,
+                    master_pkey="MYOB Card ID",
+                    slave_pkey="WP ID"
+                )
+            response += reporter.format(format_spec, **format_kwargs)
+        return response
 
-    group = HtmlReporter.Group('summary_group', 'Summary')
+    group = reporter.Group('summary_group', 'Summary')
     group.add_section(
-        HtmlReporter.Section(
+        reporter.Section(
             'instructions',
             title='Instructions',
-            data=help_instructions
+            data=render_help_instructions
         )
     )
     reporter.add_group(group)
@@ -679,11 +748,11 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
         ('Edited Name', {}),
     ])
 
-    group = HtmlReporter.Group('sanitizing', 'Sanitizing Results')
+    group = reporter.Group('sanitizing', 'Sanitizing Results')
 
     if parsers.slave.bad_address:
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 's_bad_addresses_list',
                 title='Bad %s Address List' % settings.slave_name.title(),
                 description='%s records that have badly formatted addresses'
@@ -695,7 +764,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
 
     if parsers.slave.bad_name:
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 's_bad_names_list',
                 title='Bad %s Names List' % settings.slave_name.title(),
                 description='%s records that have badly formatted names' %
@@ -707,7 +776,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
 
     if parsers.master.bad_address:
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 'm_bad_addresses_list',
                 title='Bad %s Address List' % settings.master_name.title(),
                 description='%s records that have badly formatted addresses'
@@ -719,7 +788,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
 
     if parsers.master.bad_name:
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 'm_bad_names_list',
                 title='Bad %s Names List' % settings.master_name.title(),
                 description='%s records that have badly formatted names' %
@@ -759,7 +828,7 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
     if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
         return
 
-    group = HtmlReporter.Group('deltas', 'Field Changes')
+    group = reporter.Group('deltas', 'Field Changes')
 
     m_delta_list = UsrObjList(
         filter(None, [update.new_m_object
@@ -777,45 +846,48 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
             delta_cols.keys() + delta_cols.values()
         ).items())
 
-    if m_delta_list:
-        group.add_section(
-            HtmlReporter.Section(
-                'm_deltas',
-                title='%s Changes List' % settings.master_name.title(),
-                description='%s records that have changed important fields'
-                % settings.master_name,
-                data=m_delta_list.tabulate(
-                    cols=all_delta_cols, tablefmt='html'),
-                length=len(m_delta_list)))
+    def render_delta_list(fmt, delta_list):
+        return delta_list.tabulate(
+            cols=all_delta_cols, tablefmt=fmt
+        )
 
-    if s_delta_list:
-        group.add_section(
-            HtmlReporter.Section(
-                's_deltas',
-                title='%s Changes List' % settings.slave_name.title(),
-                description='%s records that have changed important fields'
-                % settings.slave_name,
-                data=s_delta_list.tabulate(
-                    cols=all_delta_cols, tablefmt='html'),
-                length=len(s_delta_list)))
+    for source, delta_list in [
+        ('master', m_delta_list),
+        ('slave', s_delta_list)
+    ]:
+        if not delta_list:
+            continue
 
-    if m_delta_list:
+        source_name = settings.get("%s_name" % source, '')
+
+        group.add_section(
+            reporter.Section(
+                "%s_deltas" % source,
+                title="%s Changes List" % source_name.title(),
+                description="%s records that have changed important fields" % (
+                    source_name
+                ),
+                data=functools.partial(render_delta_list, delta_list=delta_list),
+                length=len(delta_list)
+            )
+        )
+
+        csv_path = settings.get('rep_delta_%s_csv_path' % source)
+
         m_delta_list.export_items(
-            settings.rep_delta_master_csv_path,
+            csv_path,
             settings.col_data_class.get_col_names(all_delta_cols))
-        reporter.add_csv_file('delta_master', settings.rep_delta_master_csv_path)
-    if s_delta_list:
-        s_delta_list.export_items(
-            settings.rep_delta_slave_csv_path,
-            settings.col_data_class.get_col_names(all_delta_cols))
-        reporter.add_csv_file('delta_slave', settings.rep_delta_slave_csv_path)
+        reporter.add_csv_file(
+            '%s_master' % source,
+            csv_path
+        )
 
     reporter.add_group(group)
 
 def do_matches_group(reporter, matches, updates, parsers, settings):
-    group = HtmlReporter.Group('matching', 'Matching Results')
+    group = reporter.Group('matching', 'Matching Results')
     group.add_section(
-        HtmlReporter.Section(
+        reporter.Section(
             'perfect_matches',
             **{
                 'title':
@@ -849,7 +921,7 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
         else:
             data = match_list.tabulate(tablefmt="html")
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 matchlist_type,
                 **{
                     # 'title': matchlist_type.title(),
@@ -881,7 +953,7 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
         data = usr_list.tabulate(tablefmt="html")
 
         group.add_section(
-            HtmlReporter.Section(
+            reporter.Section(
                 parselist_type,
                 **{
                     # 'title': matchlist_type.title(),
@@ -896,38 +968,40 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync:
         return
 
-    group = HtmlReporter.Group('sync', 'Syncing Results')
+    group = reporter.Group('sync', 'Syncing Results')
 
-    group.add_section(
-        HtmlReporter.Section(
-            (settings.master_name + "_updates"),
-            description=settings.master_name +
-            " items will be updated",
-            data='<hr>'.join([
-                update.tabulate(tablefmt="html")
-                for update in updates.master
-            ]),
-            length=len(updates.master)))
+    def render_sync_section(fmt, attr):
+        delimeter = reporter.Section.get_data_separator(fmt)
+        return delimeter.join([
+            update.tabulate(tablefmt=fmt) for update in getattr(updates, attr)
+        ])
 
-    group.add_section(
-        HtmlReporter.Section(
-            (settings.slave_name + "_updates"),
-            description=settings.slave_name + " items will be updated",
-            data='<hr>'.join([
-                update.tabulate(tablefmt="html")
-                for update in updates.slave
-            ]),
-            length=len(updates.slave)))
+    for attr, name, description in [
+        (
+            'master',
+            settings.master_name + "_updates",
+            settings.master_name + " items will be updated"
+        ),
+        (
+            'slave',
+            settings.slave_name + "_updates",
+            settings.slave_name + " items will be updated"
+        ),
+        (
+            'problematic',
+            "problematic_updates",
+            "items can't be automatically merged because they are too dissimilar"
+        )
+    ]:
 
-    group.add_section(
-        HtmlReporter.Section(
-            "updates.problematic",
-            description="items can't be merged because they are too dissimilar",
-            data='<hr>'.join([
-                update.tabulate(tablefmt="html")
-                for update in updates.problematic
-            ]),
-            length=len(updates.problematic)))
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.partial(render_sync_section, attr=attr),
+                length=len(getattr(updates, attr))
+            )
+        )
 
     reporter.add_group(group)
 
