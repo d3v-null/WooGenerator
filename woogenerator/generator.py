@@ -457,14 +457,15 @@ def main(override_args=None, settings=None):
     settings.myo_path = os.path.join(settings.out_dir_full,
                                      "myob-" + suffix + ".csv")
     # bun_path = os.path.join(settings.out_dir_full , "bundles-"+suffix+".csv")
+    rep_name = os.path.basename(settings.rep_path_full)
     if settings.get('web_dir'):
         settings['rep_web_path'] = os.path.join(
             settings.get('web_dir'),
-            settings.rep_name
+            rep_name
         )
         settings['rep_web_link'] = urlparse.urljoin(
             settings.get('web_address'),
-            settings.rep_name
+            rep_name
         )
 
     settings['slave_delta_csv_path'] = os.path.join(

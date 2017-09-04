@@ -161,45 +161,29 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def rep_name(self):
-        return '%ssync_report%s.html' % (self.file_prefix, self.file_suffix)
-
-    @property
     def rep_path_full(self):
-        response = self.rep_name
+        response = '%ssync_report%s.html' % (self.file_prefix, self.file_suffix)
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
         return response
-
-    @property
-    def repd_name(self):
-        return "%ssync_report_duplicate_%s.html" % (self.file_prefix, self.file_suffix)
 
     @property
     def repd_path_full(self):
-        response = self.repd_name
+        response = "%ssync_report_duplicate_%s.html" % (self.file_prefix, self.file_suffix)
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
         return response
-
-    @property
-    def reps_name(self):
-        return "%ssync_report_sanitation_%s.html" % (self.file_prefix, self.file_suffix)
 
     @property
     def reps_path_full(self):
-        response = self.reps_name
+        response = "%ssync_report_sanitation_%s.html" % (self.file_prefix, self.file_suffix)
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
         return response
 
     @property
-    def repm_name(self):
-        return "%ssync_report_matching_%s.html" % (self.file_prefix, self.file_suffix)
-
-    @property
     def repm_path_full(self):
-        response = self.repm_name
+        response = "%ssync_report_matching_%s.html" % (self.file_prefix, self.file_suffix)
         if self.out_dir_full:
             response = os.path.join(self.out_dir_full, response)
         return response
