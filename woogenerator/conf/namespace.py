@@ -1007,3 +1007,12 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     )
 
     return settings
+
+def init_dirs(settings):
+    for path in (
+            settings.in_dir_full, settings.out_dir_full,
+            settings.log_dir_full, settings.pickle_dir_full,
+            settings.report_dir_full
+    ):
+        if not os.path.exists(path):
+            os.mkdir(path)

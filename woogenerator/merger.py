@@ -19,7 +19,8 @@ from six.moves import input
 from woogenerator.conf.namespace import (FailuresNamespace, MatchNamespace,
                                          ParserNamespace,
                                          SettingsNamespaceUser,
-                                         UpdateNamespace, init_settings)
+                                         UpdateNamespace, init_dirs,
+                                         init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.matching import (CardMatcher, ConflictingMatchList,
                                    EmailMatcher, Match, NocardEmailMatcher,
@@ -535,12 +536,7 @@ def main(override_args=None, settings=None):
         unpickle_state(settings)
         return settings
 
-    for path in (
-            settings.in_dir_full, settings.out_dir_full,
-            settings.log_dir_full, settings.pickle_dir_full
-    ):
-        if not os.path.exists(path):
-            os.mkdir(path)
+    init_dirs(settings)
 
     populate_filter_settings(settings)
 
