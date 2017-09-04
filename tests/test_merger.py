@@ -694,7 +694,7 @@ class TestMerger(unittest.TestCase):
 
     def test_do_report(self):
         suffix='do_report'
-        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         init_dirs(self.settings)
         self.parsers = populate_master_parsers(
@@ -715,7 +715,7 @@ class TestMerger(unittest.TestCase):
 
     def test_do_updates(self):
         suffix='do_updates'
-        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         init_dirs(self.settings)
         self.parsers = populate_master_parsers(
@@ -739,7 +739,7 @@ class TestMerger(unittest.TestCase):
 
     def test_do_summary(self):
         suffix='do_summary'
-        temp_working_dir = tempfile.mkdtemp(suffix + 'working')
+        temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         init_dirs(self.settings)
         self.parsers = populate_master_parsers(
@@ -761,7 +761,10 @@ class TestMerger(unittest.TestCase):
             self.updates, self.settings
         )
         do_report_failures(self.reporters.main, self.failures, self.settings)
-        do_summary(self.settings, self.reporters, )
+        summary_html, summary_text = do_summary(self.settings, self.reporters, 0)
+        if self.debug:
+            print("Summary HTML:\n%s" % summary_html)
+            print("Summary Text:\n%s" % summary_text)
 
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True

@@ -572,11 +572,11 @@ def do_mail(settings, summary_html=None, summary_text=None):
         message = email_client.attach_file(message, settings.zip_path)
         email_client.send(message)
 
-def do_summary(settings, reporters, status=1, reason=None):
+def do_summary(settings, reporters, status=1, reason="Uknown"):
     if status:
         summary_text = "Sync failed with status %s (%s)" % (reason, status)
     else:
-        summary_html = "Sync succeeded"
+        summary_text = "Sync succeeded"
     summary_html = "<p>%s</p>" % summary_text
 
     # TODO: move this block to Registrar.write_log()
@@ -626,6 +626,8 @@ def do_summary(settings, reporters, status=1, reason=None):
             summary_text
         )
 
+    return summary_html, summary_text
+
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
     settings = SettingsNamespaceUser()
@@ -658,7 +660,8 @@ def catch_main(override_args=None):
                 import pudb; pudb.set_trace()
 
     try:
-        do_summary(settings, reporters, status, reason)
+        summary_html, summary_text = do_summary(settings, reporters, status, reason)
+        print("Summary:\n%s" % summary_text)
     except (SystemExit, KeyboardInterrupt):
         status = 0
     except Exception:
