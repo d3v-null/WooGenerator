@@ -38,7 +38,6 @@ requirements = [
     'sshtunnel',
     'tabulate',
     'unicodecsv',
-    'Pillow==4.0.0',
     'google_api_python_client',
     'PyYAML',
     'wordpress-api',
