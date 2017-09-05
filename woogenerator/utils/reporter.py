@@ -1066,7 +1066,7 @@ def do_report_failures(reporter, failures, settings):
             reporter.Section(
                 name,
                 description=description,
-                data=functools.patial(render_fail_section, source_failures=source_failures),
+                data=functools.partial(render_fail_section, source_failures=source_failures),
                 length=len(source_failures)
             )
         )
