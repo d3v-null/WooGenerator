@@ -557,7 +557,7 @@ def main(override_args=None, settings=None):
 
     reporters = do_report(matches, updates, parsers, settings)
 
-    Registrar.register_message(reporters.main.get_summary_text())
+    Registrar.register_message("summary: \n%s" % reporters.main.get_summary_text())
 
     try:
         failures = do_updates(updates, settings)
