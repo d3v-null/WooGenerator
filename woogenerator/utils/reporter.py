@@ -8,6 +8,7 @@ from string import Formatter
 import functools
 
 import unicodecsv
+import tabulate
 
 from woogenerator.duplicates import Duplicates
 from woogenerator.parsing.user import UsrObjList
@@ -1041,11 +1042,35 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
 def do_report_failures(reporter, failures, settings):
     """Output a list of lists of failures as a csv file to the path specified."""
+
+    group = reporter.Group('fail', 'Fail Results')
+
+
     for source in ['master', 'slave']:
         source_failures = getattr(failures, source)
         if not source_failures:
             continue
         # TODO: Write failure HTML report here
+
+        cols = [
+            'update', 'master', 'slave', 'mchanges', 'schanges',
+            'exception'
+        ]
+
+        name = '%s_fails' % source
+        description = '%s records failed to sync because of an API client error' % source
+
+        def render_fail_section(fmt, failures):
+            return tabulate(failures, tablefmt=fmt)
+
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.patial(render_fail_section, source_failures=source_failures),
+                length=len(source_failures)
+            )
+        )
 
         file_path = settings.get('rep_fail_%s_path_full' % source)
         with open(file_path, 'w+') as out_file:
@@ -1053,10 +1078,7 @@ def do_report_failures(reporter, failures, settings):
                 Registrar.register_error(failure)
             dictwriter = unicodecsv.DictWriter(
                 out_file,
-                fieldnames=[
-                    'update', 'master', 'slave', 'mchanges', 'schanges',
-                    'exception'
-                ],
+                fieldnames=cols,
                 extrasaction='ignore', )
             dictwriter.writerows(failures)
         reporter.add_csv_file(source, file_path)

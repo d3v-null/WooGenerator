@@ -557,7 +557,12 @@ def main(override_args=None, settings=None):
 
     reporters = do_report(matches, updates, parsers, settings)
 
-    failures = do_updates(updates, settings)
+    Registrar.register_message(reporters.main.summary_text())
+
+    try:
+        failures = do_updates(updates, settings)
+    except (SystemExit, KeyboardInterrupt):
+        return reporters
     if failures:
         do_report_failures(reporters.main, failures, settings)
 
@@ -575,7 +580,7 @@ def do_mail(settings, summary_html=None, summary_text=None):
         message = email_client.attach_file(message, settings.zip_path)
         email_client.send(message)
 
-def do_summary(settings, reporters, status=1, reason="Uknown"):
+def do_summary(settings, reporters=None, status=1, reason="Uknown"):
     if status:
         summary_text = "Sync failed with status %s (%s)" % (reason, status)
     else:
@@ -599,14 +604,15 @@ def do_summary(settings, reporters, status=1, reason="Uknown"):
         ]
         for attr in attrs_to_zip:
             files_to_zip.append(settings.get(attr))
-        for name, csv_file in reporters.get_csv_files().items():
-            # print("appending CSV file %s = %s" % (name, csv_file))
-            if csv_file not in files_to_zip:
-                files_to_zip.append(csv_file)
-        for name, html_file in reporters.get_html_files().items():
-            # print("appending HTML file %s = %s" % (name, html_file))
-            if html_file not in files_to_zip:
-                files_to_zip.append(html_file)
+        if reporters is not None:
+            for name, csv_file in reporters.get_csv_files().items():
+                # print("appending CSV file %s = %s" % (name, csv_file))
+                if csv_file not in files_to_zip:
+                    files_to_zip.append(csv_file)
+            for name, html_file in reporters.get_html_files().items():
+                # print("appending HTML file %s = %s" % (name, html_file))
+                if html_file not in files_to_zip:
+                    files_to_zip.append(html_file)
     except Exception as exc:
         print traceback.format_exc()
 
@@ -627,8 +633,9 @@ def do_summary(settings, reporters, status=1, reason="Uknown"):
                     print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
 
-    summary_html += reporters.main.get_summary_html()
-    summary_text += "\n%s" % reporters.main.get_summary_text()
+    if reporters is not None:
+        summary_html += reporters.main.get_summary_html()
+        summary_text += "\n%s" % reporters.main.get_summary_text()
 
     if settings.get('do_mail'):
         do_mail(
