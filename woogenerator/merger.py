@@ -607,32 +607,24 @@ def do_summary(settings, reporters, status=1, reason="Uknown"):
             # print("appending HTML file %s = %s" % (name, html_file))
             if html_file not in files_to_zip:
                 files_to_zip.append(html_file)
-        # print("files to zip: %s" % files_to_zip)
-        # longest_common_prefix = files_to_zip[0]
-        # for file_to_zip in files_to_zip:
-        #     # print("examinig files_to_zip: %s" % file_to_zip)
-        #     for index, character in enumerate(file_to_zip):
-        #         if index >= len(longest_common_prefix):
-        #             continue
-        #         if character != longest_common_prefix[index]:
-        #             longest_common_prefix = longest_common_prefix[:index]
-        #     # print("longest_common_prefix: %s" % longest_common_prefix)
-        # if longest_common_prefix[-1] == '/':
-        #     longest_common_prefix = longest_common_prefix[:-1]
-        # if longest_common_prefix:
-        #     for index, file_to_zip in enumerate(files_to_zip):
-        #         files_to_zip[index] = file_to_zip[len(longest_common_prefix):]
     except Exception as exc:
         print traceback.format_exc()
 
     with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
+            arcname = os.path.basename(file_to_zip)
+            print("zipping file %s to %s" % (
+                file_to_zip, arcname
+            ))
             try:
                 os.stat(file_to_zip)
-                zip_file.write(file_to_zip)
+                zip_file.write(file_to_zip, arcname)
             except Exception as exc:
                 if exc:
-                    pass
+                    print("could not zip file %s: %s" % (
+                        file_to_zip, exc
+                    ))
+                    print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
 
     summary_html += reporters.main.get_summary_html()
