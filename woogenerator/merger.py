@@ -555,6 +555,8 @@ def main(override_args=None, settings=None):
 
     pickle_state(matches, updates, parsers, settings, 'report')
 
+    import pudb; pudb.set_trace()
+
     reporters = do_report(matches, updates, parsers, settings)
 
     Registrar.register_message("summary: \n%s" % reporters.main.get_summary_text())
