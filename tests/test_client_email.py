@@ -16,7 +16,7 @@ from woogenerator.merger import (do_match, do_merge, do_report,
 from woogenerator.utils import Registrar
 
 class TestClientEmail(AbstractSyncClientTestCase):
-    local_work_dir = '/Users/Derwent/Documents/woogenerator'
+    local_work_dir = os.path.expanduser('~/Documents/woogenerator')
     config_file = "conf_user.yaml"
     settings_namespace_class = SettingsNamespaceUser
     argument_parser_class = ArgumentParserUser
