@@ -431,6 +431,7 @@ def unpickle_state(settings_pickle):
         matches = do_match(parsers, settings)
         updates = do_merge(matches, parsers, settings)
     if settings.progress in ['sync', 'report']:
+        import pudb; pudb.set_trace()
         reporters = do_report(matches, updates, parsers, settings)
         failures = do_updates(updates, settings)
         if failures:
