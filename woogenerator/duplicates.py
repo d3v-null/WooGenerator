@@ -114,7 +114,7 @@ class Duplicates(OrderedDict):
     def add_conflictors(self, conflictors, reason, weighting=1):
         assert isinstance(
             conflictors, list), "conflictors should be in a list, instead %s " % type(conflictors)
-        assert isinstance(reason, str), "reason should be a string"
+        assert isinstance(reason, basestring), "reason should be a string"
         for duplicate_object in conflictors:
             # conflictors other than self
             co_conflictors = set(conflictors) - set(duplicate_object)

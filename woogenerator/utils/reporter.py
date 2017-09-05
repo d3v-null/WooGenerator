@@ -462,8 +462,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
                 continue
                 # only care about master duplicates at the moment
             duplicate_objects = list(match.m_objects)
-            duplicates.add_conflictors(duplicate_objects,
-                                       duplicate_type)
+            duplicates.add_conflictors(duplicate_objects, duplicate_type)
 
     address_duplicates = {}
     for address, objects in parsers.master.addresses.items():
