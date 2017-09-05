@@ -375,7 +375,7 @@ def do_report(matches, updates, parsers, settings):
     reporters = ReporterNamespace()
 
     if settings.get('do_report'):
-        Registrar.register_progress("Write Report")
+        Registrar.register_progress("Write Main Report")
 
         do_main_summary_group(reporters.main, matches, updates, parsers, settings),
         do_delta_group(reporters.main, matches, updates, parsers, settings),
@@ -406,7 +406,7 @@ def do_report(matches, updates, parsers, settings):
 
 def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
     """Save execution state of a pickle file which can be restored later."""
-    Registrar.register_progress("pickling state")
+    # Registrar.register_progress("pickling state")
     settings.progress = progress
     pickle_obj = (matches, updates, parsers, settings)
 

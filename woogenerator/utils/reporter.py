@@ -1071,13 +1071,14 @@ def do_report_failures(reporter, failures, settings):
             )
         )
 
-        file_path = settings.get('rep_fail_%s_path_full' % source)
-        with open(file_path, 'w+') as out_file:
-            for failure in failures:
-                Registrar.register_error(failure)
-            dictwriter = unicodecsv.DictWriter(
-                out_file,
-                fieldnames=cols,
-                extrasaction='ignore', )
-            dictwriter.writerows(failures)
-        reporter.add_csv_file(source, file_path)
+        file_path = settings.get('rep_fail_%s_csv_path' % source)
+        if file_path:
+            with open(file_path, 'w+') as out_file:
+                for failure in failures:
+                    Registrar.register_error(failure)
+                dictwriter = unicodecsv.DictWriter(
+                    out_file,
+                    fieldnames=cols,
+                    extrasaction='ignore', )
+                dictwriter.writerows(failures)
+            reporter.add_csv_file(source, file_path)
