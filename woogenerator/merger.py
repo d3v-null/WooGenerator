@@ -593,18 +593,35 @@ def do_summary(settings, reporters, status=1, reason="Uknown"):
                 pprint(message, indent=4, width=80, depth=2)
 
     try:
-        attrs_to_zip = [
-            'master_path', 'slave_path', 'pickle_file_full'
-        ]
-        for csv_file in reporters.get_csv_files().values():
-            if csv_file not in attrs_to_zip:
-                attrs_to_zip.append(csv_file)
-        for html_file in reporters.get_html_files().values():
-            if html_file not in attrs_to_zip:
-                attrs_to_zip.append(html_file)
         files_to_zip = []
+        attrs_to_zip = [
+            'master_path', 'slave_path', 'log_path'
+        ]
         for attr in attrs_to_zip:
             files_to_zip.append(settings.get(attr))
+        for name, csv_file in reporters.get_csv_files().items():
+            # print("appending CSV file %s = %s" % (name, csv_file))
+            if csv_file not in files_to_zip:
+                files_to_zip.append(csv_file)
+        for name, html_file in reporters.get_html_files().items():
+            # print("appending HTML file %s = %s" % (name, html_file))
+            if html_file not in files_to_zip:
+                files_to_zip.append(html_file)
+        # print("files to zip: %s" % files_to_zip)
+        # longest_common_prefix = files_to_zip[0]
+        # for file_to_zip in files_to_zip:
+        #     # print("examinig files_to_zip: %s" % file_to_zip)
+        #     for index, character in enumerate(file_to_zip):
+        #         if index >= len(longest_common_prefix):
+        #             continue
+        #         if character != longest_common_prefix[index]:
+        #             longest_common_prefix = longest_common_prefix[:index]
+        #     # print("longest_common_prefix: %s" % longest_common_prefix)
+        # if longest_common_prefix[-1] == '/':
+        #     longest_common_prefix = longest_common_prefix[:-1]
+        # if longest_common_prefix:
+        #     for index, file_to_zip in enumerate(files_to_zip):
+        #         files_to_zip[index] = file_to_zip[len(longest_common_prefix):]
     except Exception as exc:
         print traceback.format_exc()
 
