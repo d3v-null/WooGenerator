@@ -1074,7 +1074,7 @@ def do_report_failures(reporter, failures, settings):
         file_path = settings.get('rep_fail_%s_csv_path' % source)
         if file_path:
             with open(file_path, 'w+') as out_file:
-                for failure in getattr(failures, source):
+                for failure in source_failures:
                     Registrar.register_error(failure)
                 dictwriter = unicodecsv.DictWriter(
                     out_file,
