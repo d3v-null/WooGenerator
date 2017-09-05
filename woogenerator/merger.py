@@ -431,8 +431,11 @@ def unpickle_state(settings_pickle):
         matches = do_match(parsers, settings)
         updates = do_merge(matches, parsers, settings)
     if settings.progress in ['sync', 'report']:
-        do_report(matches, updates, parsers, settings)
-        do_updates(updates, settings)
+        reporters = do_report(matches, updates, parsers, settings)
+        failures = do_updates(updates, settings)
+        if failures:
+            do_report_failures(reporters.main, failures, settings)
+        return reporters
 
 def handle_failed_update(update, failures, exc, settings, source=None):
     """Handle a failed update."""
@@ -534,8 +537,7 @@ def main(override_args=None, settings=None):
     settings = init_settings(override_args, settings, ArgumentParserUser)
 
     if hasattr(settings, 'pickle_file') and getattr(settings, 'pickle_file'):
-        unpickle_state(settings)
-        return settings
+        return unpickle_state(settings)
 
     init_dirs(settings)
 
