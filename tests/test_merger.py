@@ -33,6 +33,7 @@ class TestMerger(unittest.TestCase):
         self.settings.local_test_config = "merger_config_test.yaml"
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
+        self.settings.download_slave = False
         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_dummy.csv")
         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_dummy.csv")
         self.settings.testmode = True
@@ -746,6 +747,7 @@ class TestMerger(unittest.TestCase):
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         init_dirs(self.settings)
+        self.settings.do_mail = False
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -769,7 +771,6 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             print("Summary HTML:\n%s" % summary_html)
             print("Summary Text:\n%s" % summary_text)
-            print("Duplicate report text:\n%s" % self.reporters.dup.get_summary_text())
 
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True
