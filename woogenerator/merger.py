@@ -586,10 +586,9 @@ def do_summary(settings, reporters, status=1, reason="Uknown"):
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
             print source
-            log_file.writelines([SanitationUtils.coerce_unicode(source)])
-            log_file.writelines([
-                SanitationUtils.coerce_unicode(message) for message in messages
-            ])
+            log_file.write(SanitationUtils.coerce_unicode(source) + u'\r\n')
+            for message in messages:
+                log_file.write(u'\t' + SanitationUtils.coerce_unicode(message) + u'\r\n')
             for message in messages:
                 pprint(message, indent=4, width=80, depth=2)
 
