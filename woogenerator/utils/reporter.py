@@ -238,10 +238,10 @@ class AbstractReporter(object):
         for group in groups:
             self.add_group(group)
 
-    def get_head(self):
-        css = ''
+    def get_css(self):
+        response = ''
         if self.css:
-            css = "<style>" + self.css + "</style>"
+            response = "<style>" + self.css + "</style>"
         bootstrap_link = (
             '<link rel="stylesheet"'
             ' href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"'
@@ -254,14 +254,19 @@ class AbstractReporter(object):
             ' integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r"'
             ' crossorigin="anonymous">'
         )
-        return """\
-<head>
-    <meta charset="UTF-8">
+        response = """\
     <!-- Latest compiled and minified CSS -->
 """ + bootstrap_link + """
     <!-- Optional theme -->
 """ + bootstrap_theme_link + """
-""" + css + """
+        """
+        return response
+
+    def get_head(self):
+        return """\
+<head>
+    <meta charset="UTF-8">
+""" + self.get_css() + """
 </head>
 """
 
@@ -286,7 +291,12 @@ class AbstractReporter(object):
         return out
 
     def get_summary_html(self):
-        return "<br/>".join(group.to_html() for group in self.groups.values())
+        response = "<br/>".join(group.to_html() for group in self.groups.values())
+        response = re.sub(
+            ur'<div class="collapse" ', ur'<div ', response
+        )
+        response = self.get_css() + "<br/>" + response
+        return response
 
     def get_summary_text(self):
         return "\n".join(group.to_text() for group in self.groups.values())
