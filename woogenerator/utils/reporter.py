@@ -1080,5 +1080,5 @@ def do_report_failures(reporter, failures, settings):
                     out_file,
                     fieldnames=cols,
                     extrasaction='ignore', )
-                dictwriter.writerows(failures)
+                dictwriter.writerows(source_failures)
             reporter.add_csv_file(source, file_path)
