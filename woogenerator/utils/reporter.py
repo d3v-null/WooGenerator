@@ -843,7 +843,7 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
 
         csv_path = settings.get('rep_delta_%s_csv_path' % source)
 
-        m_delta_list.export_items(
+        delta_list.export_items(
             csv_path,
             settings.col_data_class.get_col_names(all_delta_cols))
         reporter.add_csv_file(
