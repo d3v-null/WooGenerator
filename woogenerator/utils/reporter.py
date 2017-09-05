@@ -455,8 +455,8 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     for duplicate_type, duplicate_matchlist in matches.duplicate.items(
     ):
-        print "checking duplicates of type %s" % duplicate_type
-        print "len(duplicate_matchlist) %s" % len(duplicate_matchlist)
+        # print "checking duplicates of type %s" % duplicate_type
+        # print "len(duplicate_matchlist) %s" % len(duplicate_matchlist)
         for match in duplicate_matchlist:
             if match.m_len <= 1:
                 continue
