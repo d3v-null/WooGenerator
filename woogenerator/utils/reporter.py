@@ -561,7 +561,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     if address_duplicates:
         def render_address_duplicates(fmt):
-            duplicate_delmieter = reporter.get_data_separator()
+            duplicate_delmieter = reporter.Section.get_data_separator(fmt)
             if fmt == 'html':
                 duplicate_format = u"<h4>%s</h4><p>%s</p>"
             else:
