@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
+import os
 import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
@@ -79,19 +80,23 @@ class EmailClientExchange(ClientAbstract):
     def compose_message(self, sender, recipients, subject, body, text_body=None):
         if body == None:
             body = ''
+        body=body[:MAX_BODY_LEN]
         if text_body == None:
             text_body = ''
         message = exchangelib.Message(
             account=self.service,
             subject=subject,
-            body=body[:MAX_BODY_LEN],
             text_body=text_body[:MAX_BODY_LEN],
+            body=exchangelib.HTMLBody(
+                body[:MAX_BODY_LEN]
+            ),
             to_recipients=recipients
         )
         return message
 
-    def attach_file(self, message, filename):
-        with open(filename, 'w+') as attachment_file:
+    def attach_file(self, message, path):
+        filename = os.path.basename(path)
+        with open(path, 'w+') as attachment_file:
             attachment = exchangelib.FileAttachment(
                 name=filename,
                 content=attachment_file.read()
