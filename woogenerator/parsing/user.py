@@ -546,9 +546,9 @@ class CsvParseUser(CsvParseBase):
     #         register_name = 'companies'
     #     )
 
-    def register_filtered(self, object_data):
+    def register_filtered(self, object_data, reason):
         self.register_anything(
-            object_data,
+            (object_data, reason),
             self.filtered,
             object_data.index,
             singular=True,
@@ -592,59 +592,41 @@ class CsvParseUser(CsvParseBase):
     def validate_filters(self, object_data):
         if self.filter_items:
             if 'roles' in self.filter_items \
-            and object_data.role not in self.filter_items['roles']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not match role"
-                        % object_data.__repr__())
-                return False
+            and SanitationUtils.normalize_val(object_data.role) \
+            not in self.filter_items['roles']:
+                return "did not match role conditions"
             if 'sinceM' in self.filter_items \
             and object_data.act_modtime < self.filter_items['sinceM']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet sinceM condition"
-                        % object_data.__repr__())
-                return False
+                return "did not meet sinceM condition"
             if 'sinceS' in self.filter_items \
             and object_data.wp_modtime < self.filter_items['sinceS']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet sinceS condition"
-                        % object_data.__repr__())
-                return False
+                return "did not meet sinceS condition"
             if 'users' in self.filter_items \
-            and object_data.username not in self.filter_items['users']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet username condition"
-                        % object_data.__repr__())
-                return False
+            and SanitationUtils.normalize_val(object_data.username) \
+            not in self.filter_items['users']:
+                return "did not meet username condition"
             if 'cards' in self.filter_items \
-            and object_data.MYOBID not in self.filter_items['cards']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet cards condition"
-                        % object_data.__repr__())
-                return False
+            and SanitationUtils.normalize_val(object_data.MYOBID) \
+            not in self.filter_items['cards']:
+                return "did not meet cards condition"
             if 'ignore_cards' in self.filter_items \
-            and object_data.MYOBID in self.filter_items['ignore_cards']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet ignore cards condition"
-                        % object_data.__repr__())
-                return False
+            and SanitationUtils.normalize_val(object_data.MYOBID) \
+            in self.filter_items['ignore_cards']:
+                return "did not meet ignore cards condition"
             if 'emails' in self.filter_items \
-            and object_data.email not in self.filter_items['emails']:
-                if self.DEBUG_USR:
-                    self.register_message(
-                        "could not register object %s because did not meet emails condition"
-                        % object_data.__repr__())
-                return False
-        return True
+            and SanitationUtils.normalize_val(object_data.email) \
+            not in self.filter_items['emails']:
+                return "did not meet emails condition"
 
     def register_object(self, object_data):
-        if not self.validate_filters(object_data):
-            self.register_filtered(object_data)
+        reason = self.validate_filters(object_data)
+        if reason:
+            if self.DEBUG_USR:
+                self.register_message(
+                    "could not register object %s because %s" % (
+                        object_data.__repr__(), reason
+                    ))
+            self.register_filtered(object_data, reason)
             return
 
         email = object_data.email

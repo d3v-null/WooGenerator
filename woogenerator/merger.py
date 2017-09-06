@@ -83,6 +83,14 @@ def populate_filter_settings(settings):
             settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
         if settings.get('since_s'):
             settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+
+        for key in ['emails', 'cards', 'users']:
+            if key in settings.filter_items:
+                settings.filter_items[key] = [
+                    SanitationUtils.normalize_val(value) \
+                    for value in settings.filter_items[key]
+                ]
+
     else:
         settings.filter_items = None
 
@@ -124,11 +132,9 @@ def populate_slave_parsers(parsers, settings):
     with settings.slave_download_client_class(**settings.slave_download_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
-    # import pudb; pudb.set_trace()
-
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
-            "slave parser: \n%s",
+            "slave parser: \n%s" %
             SanitationUtils.coerce_unicode(parsers.slave.tabulate())
         )
 
@@ -166,7 +172,7 @@ def populate_master_parsers(parsers, settings):
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
-            "master parser: \n%s",
+            "master parser: \n%s" %
             SanitationUtils.coerce_unicode(parsers.master.tabulate())
         )
 
@@ -751,7 +757,7 @@ def catch_main(override_args=None):
                 import pudb; pudb.set_trace()
 
     try:
-        summary_html, summary_text = do_summary(settings, reporters, status, reason)
+        summary_html, summary_text = do_summary(settings, reporters, results, status, reason)
         # print("Summary:\n%s" % summary_text)
     except (SystemExit, KeyboardInterrupt):
         status = 0
