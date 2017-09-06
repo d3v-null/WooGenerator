@@ -30,17 +30,23 @@ class ReporterNamespace(argparse.Namespace):
         self.match = RenderableReporter()
         self.post = RenderableReporter()
 
+    @property
+    def as_dict(self):
+        return dict([
+            (attr, getattr(self, attr)) \
+            for attr in self.reporter_attrs \
+            if hasattr(self, attr)
+        ])
+
     def get_csv_files(self):
         csv_files = OrderedDict()
-        for attr in self.reporter_attrs:
-            reporter = getattr(self, attr)
+        for reporter in self.as_dict.values():
             csv_files.update(reporter.csv_files)
         return csv_files
 
     def get_html_files(self):
         html_files = OrderedDict()
-        for attr in self.reporter_attrs:
-            reporter = getattr(self, attr)
+        for reporter in self.as_dict.values():
             html_files.update(reporter.html_files)
         return html_files
 

@@ -731,8 +731,15 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             print("zip file stats: %s" % zip_stats)
             print("summary text is \n%s" % summary_text)
     else:
-        print("not emailing because not reporters or results.")
-        print("reporters: %s, results: %s" % (reporters, results))
+        print("not emailing because no reporters or results.")
+        print("reporters: \n%s" % ([
+            (name, len(reporter.groups)) \
+            for name, reporter in reporters.as_dict.items()
+        ]))
+        print("results: \n%s" % ([
+            (name, len(result)) \
+            for name, result in results.as_dict.items()
+        ]))
 
     return summary_html, summary_text
 

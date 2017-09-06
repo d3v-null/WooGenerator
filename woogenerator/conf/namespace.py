@@ -887,14 +887,25 @@ class UpdateNamespace(argparse.Namespace):
 class ResultsNamespace(argparse.Namespace):
     """ Collect information about failures into a single namespace. """
 
+    result_attrs = ['fails_master', 'fails_slave', 'successes']
+
     def __init__(self, *args, **kwargs):
         super(ResultsNamespace, self).__init__(*args, **kwargs)
         self.fails_master = []
         self.fails_slave = []
         self.successes = []
 
+    @property
+    def as_dict(self):
+        return dict([
+            (attr, getattr(self, attr)) \
+            for attr in self.result_attrs \
+            if hasattr(self, attr)
+        ])
+
+
     def __bool__(self):
-        return bool(self.fails_master or self.fails_slave or self.successes)
+        return bool(any(self.as_dict.values()))
 
 def init_registrar(settings):
     # print "settings.verbosity = %s" % settings.verbosity
