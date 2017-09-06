@@ -597,12 +597,12 @@ def main(override_args=None, settings=None):
     parsers = populate_master_parsers(parsers, settings)
     # export_master_parser(parsers, settings)
 
-    pickle_state(None, None, parsers, settings, 'sync')
+    # pickle_state(None, None, parsers, settings, 'sync')
 
     matches = do_match(parsers, settings)
     updates = do_merge(matches, parsers, settings)
 
-    pickle_state(matches, updates, parsers, settings, 'report')
+    # pickle_state(matches, updates, parsers, settings, 'report')
 
     reporters = do_report(matches, updates, parsers, settings)
 
