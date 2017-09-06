@@ -220,7 +220,7 @@ def do_match(parsers, settings):
             "username duplicates: %s" % len(username_matcher.duplicate_matches)
         )
 
-    Registrar.register_progress("processing cards")
+    # Registrar.register_progress("processing cards")
 
     # for every card in slave not already matched, check that it exists in
     # master
@@ -256,7 +256,7 @@ def do_match(parsers, settings):
 
     # #for every email in slave, check that it exists in master
 
-    Registrar.register_progress("processing emails")
+    # Registrar.register_progress("processing emails")
 
     parsers.deny_anomalous("sa_parser.noemails", parsers.slave.noemails)
 
@@ -433,7 +433,7 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
     with open(settings.pickle_path, 'w') as pickle_file:
         dill.dump(pickle_obj, pickle_file)
 
-    print "state saved to %s" % settings.pickle_path
+    Registrar.register_message("state saved to %s" % settings.pickle_path)
 
 def unpickle_state(settings_pickle):
     """Restore state from a pickle file."""
