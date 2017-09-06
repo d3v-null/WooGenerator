@@ -714,11 +714,22 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
         summary_text += "\n%s" % reporters.post.get_summary_text()
 
     if settings.get('do_mail') and reporters and results:
-        do_mail(
-            settings,
-            summary_html,
-            summary_text
-        )
+        try:
+            do_mail(
+                settings,
+                summary_html,
+                summary_text
+            )
+        except Exception as exc:
+            print traceback.format_exc()
+            print("Failed to send email because %s" % exc)
+            zip_stats = None
+            try:
+                zip_stats = os.stat(settings.zip_path)
+            except Exception as exc:
+                pass
+            print("zip file stats: %s" % zip_stats)
+            print("summary text is \n%s" % summary_text)
     else:
         print("not emailing because not reporters or results.")
         print("reporters: %s, results: %s" % (reporters, results))
@@ -759,7 +770,6 @@ def catch_main(override_args=None):
 
     try:
         summary_html, summary_text = do_summary(settings, reporters, results, status, reason)
-        # print("Summary:\n%s" % summary_text)
     except (SystemExit, KeyboardInterrupt):
         status = 0
     except Exception:
