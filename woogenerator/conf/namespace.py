@@ -931,6 +931,7 @@ def init_registrar(settings):
     Registrar.DEBUG_VARS = settings.debug_vars
     Registrar.DEBUG_WOO = settings.debug_woo
     Registrar.DEBUG_TRACE = settings.debug_trace
+    Registrar.DEBUG_USR = settings.debug_usr
 
 class MetaSettings(object):
     """
