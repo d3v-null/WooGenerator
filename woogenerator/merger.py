@@ -666,7 +666,8 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
     try:
         files_to_zip = []
         attrs_to_zip = [
-            'master_path', 'slave_path', 'log_path'
+            # 'master_path', 'slave_path',
+            'log_path'
         ]
         for attr in attrs_to_zip:
             files_to_zip.append(settings.get(attr))
