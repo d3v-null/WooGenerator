@@ -669,15 +669,39 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             # 'master_path', 'slave_path',
             'log_path'
         ]
+        reports_to_ignore = [
+
+        ]
         for attr in attrs_to_zip:
             files_to_zip.append(settings.get(attr))
         if reporters is not None:
             for name, csv_file in reporters.get_csv_files().items():
+                if name in reports_to_ignore:
+                    continue
                 if csv_file not in files_to_zip:
                     files_to_zip.append(csv_file)
+                size = None
+                try:
+                    size = os.path.getsize(csv_file)
+                except Exception:
+                    pass
+                print("csv report name %s, size %s" % (
+                    name, size
+                ))
+
             for name, html_file in reporters.get_html_files().items():
+                if name in reports_to_ignore:
+                    continue
                 if html_file not in files_to_zip:
                     files_to_zip.append(html_file)
+                size = None
+                try:
+                    size = os.path.getsize(html_file)
+                except Exception:
+                    pass
+                print("html report name %s, size %s" % (
+                    name, size
+                ))
     except Exception as exc:
         print traceback.format_exc()
 
