@@ -417,7 +417,9 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
 
 def unpickle_state(settings_pickle):
     """Restore state from a pickle file."""
-    Registrar.register_progress("restoring state from pickle")
+    Registrar.register_progress(
+        "restoring state from pickle of %s" % settings_pickle.import_name
+    )
 
     with open(settings_pickle.pickle_path) as pickle_file:
         pickle_obj = dill.load(pickle_file)
@@ -539,6 +541,8 @@ def main(override_args=None, settings=None):
 
     if hasattr(settings, 'pickle_file') and getattr(settings, 'pickle_file'):
         return unpickle_state(settings)
+    else:
+        Registrar.register_progress("Starting Merge %s" % settings.import_name)
 
     init_dirs(settings)
 
