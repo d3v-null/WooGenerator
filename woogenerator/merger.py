@@ -650,6 +650,7 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             summary_text += u"\nSlave Fails: %d" % len(results.fails_slave)
     else:
         summary_text += u"\nNo changes made"
+    summary_text += "Finished at %s" % TimeUtils.get_ms_timestamp()
     summary_html = "<p>%s</p>" % re.sub(ur'\n', ur'<br/>', summary_text)
 
     # TODO: move this block to Registrar.write_log()
