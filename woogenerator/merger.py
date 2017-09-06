@@ -124,6 +124,14 @@ def populate_slave_parsers(parsers, settings):
     with settings.slave_download_client_class(**settings.slave_download_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
+    # import pudb; pudb.set_trace()
+
+    if Registrar.DEBUG_UPDATE and settings.do_filter:
+        Registrar.register_message(
+            "slave parser: \n%s",
+            SanitationUtils.coerce_unicode(parsers.slave.tabulate())
+        )
+
     return parsers
 
 def export_slave_parser(parsers, settings):
@@ -704,6 +712,9 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             summary_html,
             summary_text
         )
+    else:
+        print("not emailing because not reporters or results.")
+        print("reporters: %s, results: %s" % (reporters, results))
 
     return summary_html, summary_text
 
