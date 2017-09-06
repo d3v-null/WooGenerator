@@ -529,23 +529,23 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
 
-    # if Registrar.DEBUG_DUPLICATES:
-    # print duplicates.tabulate({}, tablefmt='plain')
-    if duplicates:
-        def render_all_duplicates(fmt):
-            return duplicates.tabulate(
-                dup_cols, tablefmt=fmt, highlight_rules=highlight_rules_all
-            )
+    if Registrar.DEBUG_DUPLICATES:
+        # print duplicates.tabulate({}, tablefmt='plain')
+        if duplicates:
+            def render_all_duplicates(fmt):
+                return duplicates.tabulate(
+                    dup_cols, tablefmt=fmt, highlight_rules=highlight_rules_all
+                )
 
-        group.add_section(
-            reporter.Section(
-                'all duplicates',
-                title='All Duplicates',
-                description="%s records are involved in duplicates" %
-                settings.master_name,
-                data=render_all_duplicates,
-                length=len(duplicates)
-            ))
+            group.add_section(
+                reporter.Section(
+                    'all duplicates',
+                    title='All Duplicates',
+                    description="%s records are involved in duplicates" %
+                    settings.master_name,
+                    data=render_all_duplicates,
+                    length=len(duplicates)
+                ))
 
     if matches.conflict['email']:
         def render_email_conflicts(fmt):
