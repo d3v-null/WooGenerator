@@ -673,11 +673,9 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             files_to_zip.append(settings.get(attr))
         if reporters is not None:
             for name, csv_file in reporters.get_csv_files().items():
-                # print("appending CSV file %s = %s" % (name, csv_file))
                 if csv_file not in files_to_zip:
                     files_to_zip.append(csv_file)
             for name, html_file in reporters.get_html_files().items():
-                # print("appending HTML file %s = %s" % (name, html_file))
                 if html_file not in files_to_zip:
                     files_to_zip.append(html_file)
     except Exception as exc:
@@ -686,9 +684,6 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
     with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             arcname = os.path.basename(file_to_zip)
-            # print("zipping file %s to %s" % (
-            #     file_to_zip, arcname
-            # ))
             try:
                 os.stat(file_to_zip)
                 zip_file.write(file_to_zip, arcname)
@@ -699,16 +694,6 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     ))
                     print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
-
-    # try:
-    #     stats = os.stat(settings.zip_path)
-    #     print("zip file stats: %s" % stats)
-    # except Exception as exc:
-    #     if exc:
-    #         print("could not stat zip file %s" % (
-    #             settings.zip_path
-    #         ))
-    #         print traceback.format_exc()
 
     if reporters is not None:
         summary_html += reporters.post.get_summary_html()
