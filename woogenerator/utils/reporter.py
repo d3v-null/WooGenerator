@@ -1069,8 +1069,7 @@ def do_post_summary_group(reporter, settings):
 def do_failures_group(reporter, results, settings):
     """ Create failures report section. """
 
-    group = reporter.Group('fail', 'Fail Results')
-
+    group = reporter.Group('fail', 'Failed Updates')
 
     for source in ['master', 'slave']:
         source_failures = getattr(results, 'fails_%s' % source)
@@ -1113,4 +1112,22 @@ def do_failures_group(reporter, results, settings):
 def do_successes_group(reporter, results, settings):
     """ Create successes report section. """
 
-    pass
+    group = reporter.Group('success', 'Succesful Updates')
+
+    def render_update_list(fmt, update_list):
+        delimeter = reporter.Section.get_data_separator(fmt)
+        return delimeter.join([
+            update.tabulate(tablefmt=fmt) for update in update_list
+        ])
+
+    group.add_section(
+        reporter.Section(
+            'successes',
+            description='updates completed succesfully',
+            data=functools.partial(
+                render_update_list,
+                update_list=results.successes
+            ),
+            length=len(results.successes)
+        )
+    )
