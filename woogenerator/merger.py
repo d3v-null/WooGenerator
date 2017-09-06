@@ -431,7 +431,6 @@ def unpickle_state(settings_pickle):
         matches = do_match(parsers, settings)
         updates = do_merge(matches, parsers, settings)
     if settings.progress in ['sync', 'report']:
-        import pudb; pudb.set_trace()
         reporters = do_report(matches, updates, parsers, settings)
         failures = do_updates(updates, settings)
         if failures:
@@ -473,7 +472,8 @@ def handle_failed_update(update, failures, exc, settings, source=None):
                 boring = True
                 break
         if not boring:
-            import pudb; pudb.set_trace()
+            if Registrar.DEBUG_TRACE:
+                import pudb; pudb.set_trace()
 
 def do_updates(updates, settings):
     """Perform a list of updates."""
@@ -557,8 +557,6 @@ def main(override_args=None, settings=None):
     updates = do_merge(matches, parsers, settings)
 
     pickle_state(matches, updates, parsers, settings, 'report')
-
-    import pudb; pudb.set_trace()
 
     reporters = do_report(matches, updates, parsers, settings)
 
