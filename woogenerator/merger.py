@@ -501,8 +501,6 @@ def do_updates(updates, settings):
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(len(all_updates))
 
-    failures = FailuresNamespace()
-
     slave_client_args = settings.slave_upload_client_args
     slave_client_class = settings.slave_upload_client_class
     master_client_args = settings.master_upload_client_args
@@ -564,7 +562,9 @@ def main(override_args=None, settings=None):
 
     reporters = do_report(matches, updates, parsers, settings)
 
-    print("summary: \n%s" % reporters.main.get_summary_text())
+    Registrar.register_message(
+        "summary: \n%s" % reporters.main.get_summary_text()
+    )
 
     try:
         failures = do_updates(updates, settings)
@@ -640,11 +640,22 @@ def do_summary(settings, reporters=None, status=1, reason="Uknown"):
                     print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
 
+    try:
+        stats = os.stat(settings.zip_path)
+        print("zip file stats: %s" % stats)
+    except Exception as exc:
+        if exc:
+            print("could not stat zip file %s" % (
+                settings.zip_path
+            ))
+            print traceback.format_exc()
+
     if reporters is not None:
         summary_html += reporters.main.get_summary_html()
         summary_text += "\n%s" % reporters.main.get_summary_text()
 
-    if settings.get('do_mail'):
+    email_reports = settings.get('do_mail')
+    if email_reports:
         do_mail(
             settings,
             summary_html,
@@ -686,7 +697,7 @@ def catch_main(override_args=None):
 
     try:
         summary_html, summary_text = do_summary(settings, reporters, status, reason)
-        print("Summary:\n%s" % summary_text)
+        # print("Summary:\n%s" % summary_text)
     except (SystemExit, KeyboardInterrupt):
         status = 0
     except Exception:
