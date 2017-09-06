@@ -621,6 +621,8 @@ def do_mail(settings, summary_html=None, summary_text=None):
         email_client.send(message)
 
 def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"):
+    Registrar.register_progress("Doing summary for %s" % settings.import_name)
+
     if status:
         summary_text = u"Sync failed with status %s (%s)" % (reason, status)
     else:
