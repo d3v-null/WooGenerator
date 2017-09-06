@@ -593,7 +593,7 @@ def main(override_args=None, settings=None):
     reporters = do_report(matches, updates, parsers, settings)
 
     Registrar.register_message(
-        "summary: \n%s" % reporters.main.get_summary_text()
+        "pre-sync summary: \n%s" % reporters.main.get_summary_text()
     )
 
     try:
@@ -601,6 +601,10 @@ def main(override_args=None, settings=None):
     except (SystemExit, KeyboardInterrupt):
         return reporters, results
     do_report_post(reporters, results, settings)
+
+    Registrar.register_message(
+        "post-sync summary: \n%s" % reporters.post.get_summary_text()
+    )
 
     return reporters, results
 
@@ -664,9 +668,9 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
     with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
         for file_to_zip in files_to_zip:
             arcname = os.path.basename(file_to_zip)
-            print("zipping file %s to %s" % (
-                file_to_zip, arcname
-            ))
+            # print("zipping file %s to %s" % (
+            #     file_to_zip, arcname
+            # ))
             try:
                 os.stat(file_to_zip)
                 zip_file.write(file_to_zip, arcname)
@@ -678,15 +682,15 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
 
-    try:
-        stats = os.stat(settings.zip_path)
-        print("zip file stats: %s" % stats)
-    except Exception as exc:
-        if exc:
-            print("could not stat zip file %s" % (
-                settings.zip_path
-            ))
-            print traceback.format_exc()
+    # try:
+    #     stats = os.stat(settings.zip_path)
+    #     print("zip file stats: %s" % stats)
+    # except Exception as exc:
+    #     if exc:
+    #         print("could not stat zip file %s" % (
+    #             settings.zip_path
+    #         ))
+    #         print traceback.format_exc()
 
     if reporters is not None:
         summary_html += reporters.post.get_summary_html()
