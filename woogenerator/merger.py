@@ -673,7 +673,18 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
 
         ]
         for attr in attrs_to_zip:
-            files_to_zip.append(settings.get(attr))
+            filename = settings.get(attr)
+            if filename:
+                files_to_zip.append(settings.get(attr))
+                size = None
+                try:
+                    size = os.path.getsize(filename)
+                except Exception:
+                    pass
+                print("report name %s, size %s" % (
+                    filename, size
+                ))
+
         if reporters is not None:
             for name, csv_file in reporters.get_csv_files().items():
                 if name in reports_to_ignore:
@@ -718,6 +729,14 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     ))
                     print traceback.format_exc()
         Registrar.register_message('wrote file %s' % settings.zip_path)
+
+    zip_size = None
+    try:
+        zip_size = os.path.getsize(settings.zip_path)
+    except Exception:
+        pass
+    print("zip size is: %s" % zip_size)
+
 
     if reporters is not None:
         summary_html += reporters.post.get_summary_html()
