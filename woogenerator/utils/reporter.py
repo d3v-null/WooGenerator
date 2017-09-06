@@ -20,7 +20,7 @@ from .core import Registrar, SanitationUtils
 class ReporterNamespace(argparse.Namespace):
     """ Collect variables used in reporting into a single namespace. """
 
-    reporter_attrs = ['main', 'dup', 'san', 'match']
+    reporter_attrs = ['main', 'dup', 'san', 'match', 'post']
 
     def __init__(self, *args, **kwargs):
         super(ReporterNamespace, self).__init__(*args, **kwargs)
@@ -28,6 +28,7 @@ class ReporterNamespace(argparse.Namespace):
         self.dup = RenderableReporter(css=DUP_CSS)
         self.san = RenderableReporter()
         self.match = RenderableReporter()
+        self.post = RenderableReporter()
 
     def get_csv_files(self):
         csv_files = OrderedDict()
@@ -64,12 +65,7 @@ class AbstractReporter(object):
         self.css = css
         self.csv_files = OrderedDict()
         self.html_files = OrderedDict()
-
-    @classmethod
-    def format(cls, format_spec, *format_args, **format_kwargs):
-        return cls.formatter.format(
-            format_spec, *format_args, **format_kwargs
-        )
+        self.non_instructionals = []
 
     class Section(object):
         def __init__(self, classname, title=None,
@@ -187,7 +183,7 @@ class AbstractReporter(object):
 
     class Group(object):
 
-        def __init__(self, classname, title=None, sections=None):
+        def __init__(self, classname, title=None, sections=None, instructional=False):
             if title is None:
                 title = classname.title()
             if sections is None:
@@ -195,6 +191,7 @@ class AbstractReporter(object):
             self.title = title
             self.sections = sections
             self.classname = classname
+            self.instructional = instructional
 
         def add_section(self, section):
             self.sections[section.classname] = section
@@ -231,6 +228,26 @@ class AbstractReporter(object):
 
         def to_text(self):
             return self.render()
+
+
+    @classmethod
+    def format(cls, format_spec, *format_args, **format_kwargs):
+        return cls.formatter.format(
+            format_spec, *format_args, **format_kwargs
+        )
+
+    def yield_noninstructional_groups(self):
+        for group in self.groups.values():
+            if not group.instructional:
+                return group
+
+    @property
+    def contains_noninstructinoal_groups(self):
+        if list(self.yield_noninstructional_groups()):
+            return True
+
+    def __bool__(self):
+        return self.contains_noninstructinoal_groups
 
     def add_group(self, group):
         self.groups[group.classname] = group
@@ -401,7 +418,7 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
-    group = reporter.Group('summary_group', 'Summary')
+    group = reporter.Group('summary_group', 'Summary', instructional=True)
     group.add_section(
         reporter.Section(
             'instructions',
@@ -712,7 +729,7 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
-    group = reporter.Group('summary_group', 'Summary')
+    group = reporter.Group('summary_group', 'Summary', instructional=True)
     group.add_section(
         reporter.Section(
             'instructions',
@@ -896,7 +913,7 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
-    group = reporter.Group('summary_group', 'Summary')
+    group = reporter.Group('summary_group', 'Summary', instructional=True)
     group.add_section(
         reporter.Section(
             'instructions',
@@ -1039,14 +1056,18 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
     reporter.add_group(group)
 
-def do_report_failures(reporter, failures, settings):
-    """Output a list of lists of failures as a csv file to the path specified."""
+def do_post_summary_group(reporter, settings):
+    """ Create post-update summary report section. """
+    pass
+
+def do_failures_group(reporter, results, settings):
+    """ Create failures report section. """
 
     group = reporter.Group('fail', 'Fail Results')
 
 
     for source in ['master', 'slave']:
-        source_failures = getattr(failures, source)
+        source_failures = getattr(results, 'fails_%s' % source)
         if not source_failures:
             continue
         # TODO: Write failure HTML report here
@@ -1059,14 +1080,14 @@ def do_report_failures(reporter, failures, settings):
         name = '%s_fails' % source
         description = '%s records failed to sync because of an API client error' % source
 
-        def render_fail_section(fmt, failures):
-            return tabulate(failures, tablefmt=fmt)
+        def render_fail_section(fmt, fails):
+            return tabulate(fails, tablefmt=fmt)
 
         group.add_section(
             reporter.Section(
                 name,
                 description=description,
-                data=functools.partial(render_fail_section, source_failures=source_failures),
+                data=functools.partial(render_fail_section, fails=source_failures),
                 length=len(source_failures)
             )
         )
@@ -1074,11 +1095,16 @@ def do_report_failures(reporter, failures, settings):
         file_path = settings.get('rep_fail_%s_csv_path' % source)
         if file_path:
             with open(file_path, 'w+') as out_file:
-                for failure in source_failures:
-                    Registrar.register_error(failure)
+                # for failure in source_failures:
+                #     Registrar.register_error(failure)
                 dictwriter = unicodecsv.DictWriter(
                     out_file,
                     fieldnames=cols,
                     extrasaction='ignore', )
                 dictwriter.writerows(source_failures)
             reporter.add_csv_file(source, file_path)
+
+def do_successes_group(reporter, results, settings):
+    """ Create successes report section. """
+
+    pass

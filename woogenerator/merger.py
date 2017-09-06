@@ -16,8 +16,8 @@ from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from six.moves import input
-from woogenerator.conf.namespace import (FailuresNamespace, MatchNamespace,
-                                         ParserNamespace,
+from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+                                         ResultsNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_dirs,
                                          init_settings)
@@ -31,11 +31,13 @@ from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
 from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group,
                                          do_duplicates_group,
                                          do_duplicates_summary_group,
+                                         do_failures_group,
                                          do_main_summary_group,
                                          do_matches_group,
                                          do_matches_summary_group,
-                                         do_report_failures,
-                                         do_sanitizing_group, do_sync_group)
+                                         do_post_summary_group,
+                                         do_sanitizing_group,
+                                         do_successes_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
@@ -380,27 +382,31 @@ def do_report(matches, updates, parsers, settings):
         do_main_summary_group(reporters.main, matches, updates, parsers, settings),
         do_delta_group(reporters.main, matches, updates, parsers, settings),
         do_sync_group(reporters.main, matches, updates, parsers, settings)
-        reporters.main.write_document_to_file('main', settings.rep_main_path)
+        if reporters.main:
+            reporters.main.write_document_to_file('main', settings.rep_main_path)
 
         if settings.get('report_sanitation'):
             Registrar.register_progress("Write Sanitation Report")
 
             do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
-            reporters.san.write_document_to_file('san', settings.rep_san_path)
+            if reporters.san:
+                reporters.san.write_document_to_file('san', settings.rep_san_path)
 
         if settings.get('report_matching'):
             Registrar.register_progress("Write Matching Report")
 
             do_matches_summary_group(reporters.match, matches, updates, parsers, settings)
             do_matches_group(reporters.match, matches, updates, parsers, settings),
-            reporters.match.write_document_to_file('match', settings.rep_match_path)
+            if reporters.match:
+                reporters.match.write_document_to_file('match', settings.rep_match_path)
 
         if settings.get('report_duplicates'):
             Registrar.register_progress("Write Duplicates Report")
 
             do_duplicates_summary_group(reporters.dup, matches, updates, parsers, settings),
             do_duplicates_group(reporters.dup, matches, updates, parsers, settings)
-            reporters.dup.write_document_to_file('dup', settings.rep_dup_path)
+            if reporters.dup:
+                reporters.dup.write_document_to_file('dup', settings.rep_dup_path)
 
     return reporters
 
@@ -434,12 +440,12 @@ def unpickle_state(settings_pickle):
         updates = do_merge(matches, parsers, settings)
     if settings.progress in ['sync', 'report']:
         reporters = do_report(matches, updates, parsers, settings)
-        failures = do_updates(updates, settings)
-        if failures:
-            do_report_failures(reporters.main, failures, settings)
-        return reporters
+        results = do_updates(updates, settings)
+        if results:
+            do_report_post(reporters.main, results, settings)
+        return reporters, results
 
-def handle_failed_update(update, failures, exc, settings, source=None):
+def handle_failed_update(update, results, exc, settings, source=None):
     """Handle a failed update."""
     fail = {
         'update': update,
@@ -451,10 +457,10 @@ def handle_failed_update(update, failures, exc, settings, source=None):
     }
     if source == settings.master_name:
         pkey = update.master_id
-        failures.master.append(fail)
+        results.fails_master.append(fail)
     elif source == settings.slave_name:
         pkey = update.slave_id
-        failures.slave.append(fail)
+        results.fails_slave.append(fail)
     else:
         pkey = ''
     Registrar.register_error(
@@ -483,10 +489,10 @@ def do_updates(updates, settings):
     if settings.do_problematic:
         all_updates += updates.problematic
 
-    failures = FailuresNamespace()
+    results = ResultsNamespace()
 
-    if not all_updates:
-        return failures
+    if not all_updates or not (settings.update_master or settings.update_slave):
+        return results
 
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
@@ -502,7 +508,7 @@ def do_updates(updates, settings):
         except SyntaxError:
             raw_in = ""
         if raw_in == 's':
-            return failures
+            return results
         if raw_in == 'c':
             raise SystemExit
 
@@ -525,21 +531,37 @@ def do_updates(updates, settings):
                     "performing update: \n%s",
                     SanitationUtils.coerce_unicode(update.tabulate())
                 )
+            update_was_performed = False
             if settings['update_master'] and update.m_updated:
                 try:
                     update.update_master(master_client)
+                    update_was_performed = True
                 except Exception as exc:
                     handle_failed_update(
-                        update, failures, exc, settings, source=settings.master_name
+                        update, results, exc, settings, source=settings.master_name
                     )
             if settings['update_slave'] and update.s_updated:
                 try:
                     update.update_slave(slave_client)
+                    update_was_performed = True
                 except Exception as exc:
                     handle_failed_update(
-                        update, failures, exc, settings, source=settings.slave_name
+                        update, results, exc, settings, source=settings.slave_name
                     )
-    return failures
+            if update_was_performed:
+                results.successes.append(update)
+    return results
+
+def do_report_post(reporters, results, settings):
+    """ Reports results from performing updates."""
+    if settings.get('do_report'):
+        Registrar.register_progress("Write Post Report")
+
+        do_post_summary_group(reporters.post, settings)
+        do_failures_group(reporters.post, results, settings)
+        do_successes_group(reporters.post, results, settings)
+        if reporters.post:
+            reporters.post.write_document_to_file('post', settings.rep_post_path)
 
 def main(override_args=None, settings=None):
     """Use settings object to load config file and detect changes in wordpress."""
@@ -575,13 +597,12 @@ def main(override_args=None, settings=None):
     )
 
     try:
-        failures = do_updates(updates, settings)
+        results = do_updates(updates, settings)
     except (SystemExit, KeyboardInterrupt):
-        return reporters
-    if failures:
-        do_report_failures(reporters.main, failures, settings)
+        return reporters, results
+    do_report_post(reporters, results, settings)
 
-    return reporters
+    return reporters, results
 
 def do_mail(settings, summary_html=None, summary_text=None):
     with settings.email_client(settings.email_connect_params) as email_client:
@@ -595,12 +616,21 @@ def do_mail(settings, summary_html=None, summary_text=None):
         message = email_client.attach_file(message, settings.zip_path)
         email_client.send(message)
 
-def do_summary(settings, reporters=None, status=1, reason="Uknown"):
+def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"):
     if status:
-        summary_text = "Sync failed with status %s (%s)" % (reason, status)
+        summary_text = u"Sync failed with status %s (%s)" % (reason, status)
     else:
-        summary_text = "Sync succeeded"
-    summary_html = "<p>%s</p>" % summary_text
+        summary_text = u"Sync succeeded"
+    if results:
+        if results.successes:
+            summary_text += u"\nSuccesses: %d" % len(results.successes)
+        if results.fails_master:
+            summary_text += u"\nMaster Fails: %d" % len(results.fails_master)
+        if results.fails_slave:
+            summary_text += u"\nSlave Fails: %d" % len(results.fails_slave)
+    else:
+        summary_text += u"\nNo changes made"
+    summary_html = "<p>%s</p>" % re.sub(ur'\n', ur'<br/>', summary_text)
 
     # TODO: move this block to Registrar.write_log()
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
@@ -659,11 +689,10 @@ def do_summary(settings, reporters=None, status=1, reason="Uknown"):
             print traceback.format_exc()
 
     if reporters is not None:
-        summary_html += reporters.main.get_summary_html()
-        summary_text += "\n%s" % reporters.main.get_summary_text()
+        summary_html += reporters.post.get_summary_html()
+        summary_text += "\n%s" % reporters.post.get_summary_text()
 
-    email_reports = settings.get('do_mail')
-    if email_reports:
+    if settings.get('do_mail') and reporters and results:
         do_mail(
             settings,
             summary_html,
@@ -675,13 +704,14 @@ def do_summary(settings, reporters=None, status=1, reason="Uknown"):
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
     settings = SettingsNamespaceUser()
-    reporters = None
+    reporters = ReporterNamespace()
+    results = ResultsNamespace()
 
     status = 0
     reason = None
 
     try:
-        reporters = main(settings=settings, override_args=override_args)
+        reporters, results = main(settings=settings, override_args=override_args)
     except (SystemExit, KeyboardInterrupt):
         pass
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):

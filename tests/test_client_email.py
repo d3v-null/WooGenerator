@@ -10,7 +10,7 @@ from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          UpdateNamespace, init_dirs, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.merger import (do_match, do_merge, do_report,
-                                 do_report_failures, do_summary, do_updates,
+                                 do_report_post, do_summary, do_updates,
                                  populate_master_parsers,
                                  populate_slave_parsers)
 from woogenerator.utils import Registrar
@@ -34,7 +34,7 @@ class TestClientEmailExchange(TestClientEmail):
             message = email_client.attach_file(message, attachment)
 
 class TestClientEmailExchangeDestructive(TestClientEmail):
-    @unittest.skip("destructive tests skipped")
+    # @unittest.skip("destructive tests skipped")
     def test_send_destructive(self):
         with self.settings.email_client(self.settings.email_connect_params) as email_client:
             message = email_client.compose_message(
@@ -47,7 +47,7 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
             message = email_client.attach_file(message, attachment)
             email_client.send(message)
 
-    @unittest.skip("destructive tests skipped")
+    # @unittest.skip("destructive tests skipped")
     def test_send_dummy_report(self):
         self.debug = True
         Registrar.DEBUG_ERROR = True
@@ -102,11 +102,11 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
         self.reporters = do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
-        self.failures = do_updates(
+        self.results = do_updates(
             self.updates, self.settings
         )
-        do_report_failures(self.reporters.main, self.failures, self.settings)
-        summary_html, summary_text = do_summary(self.settings, self.reporters, 0)
+        do_report_post(self.reporters, self.results, self.settings)
+        summary_html, summary_text = do_summary(self.settings, self.reporters, self.results, 0)
         # if self.debug:
         #     print("Summary HTML:\n%s" % summary_html)
         #     print("Summary Text:\n%s" % summary_text)

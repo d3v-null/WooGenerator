@@ -276,6 +276,15 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
+    def rep_post_path(self):
+        response = "%ssync_report_post_%s.html" % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
     def rep_fail_master_csv_path(self):
         response = "%s%s_fails_%s.csv" % (
             self.file_prefix, self.master_name, self.file_suffix
@@ -875,16 +884,17 @@ class UpdateNamespace(argparse.Namespace):
         self.new_master = []
         self.new_slave = []
 
-class FailuresNamespace(argparse.Namespace):
+class ResultsNamespace(argparse.Namespace):
     """ Collect information about failures into a single namespace. """
 
     def __init__(self, *args, **kwargs):
-        super(FailuresNamespace, self).__init__(*args, **kwargs)
-        self.master = []
-        self.slave = []
+        super(ResultsNamespace, self).__init__(*args, **kwargs)
+        self.fails_master = []
+        self.fails_slave = []
+        self.successes = []
 
     def __bool__(self):
-        return bool(self.master or self.slave)
+        return bool(self.fails_master or self.fails_slave or self.successes)
 
 def init_registrar(settings):
     # print "settings.verbosity = %s" % settings.verbosity
