@@ -483,18 +483,26 @@ def do_updates(updates, settings):
     if settings.do_problematic:
         all_updates += updates.problematic
 
+    failures = FailuresNamespace()
+
     if not all_updates:
-        return
+        return failures
 
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
     if len(all_updates) and settings['ask_before_update']:
         try:
-            raw_in = input(
-                "Please read reports and press Enter to continue or c to cancel..."
-            )
+            raw_in = input( "\n".join([
+                "Please read reports and then make your selection",
+                " - press Enter to continue and perform updates",
+                " - press s to skip updates",
+                " - press c to cancel",
+                "..."
+            ]))
         except SyntaxError:
             raw_in = ""
+        if raw_in == 's':
+            return failures
         if raw_in == 'c':
             raise SystemExit
 
