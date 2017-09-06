@@ -1064,7 +1064,29 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
 def do_post_summary_group(reporter, settings):
     """ Create post-update summary report section. """
-    pass
+    group = reporter.Group('summary_group', 'Summary', instructional=True)
+
+    def render_help_instructions(fmt=None):
+        response = u""
+        for format_spec, format_kwargs in [
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description':(
+                    "This is a sumary of the completed updates. "
+                )
+            }),
+        ]:
+            response += reporter.format(format_spec, **format_kwargs)
+        return response
+
+    group.add_section(
+        reporter.Section(
+            'instructions',
+            title='Instructions',
+            data=render_help_instructions
+        )
+    )
+    reporter.add_group(group)
+
 
 def do_failures_group(reporter, results, settings):
     """ Create failures report section. """
