@@ -805,14 +805,15 @@ class SyncUpdate(Registrar):
         ])
         out_str += info_delimeter
 
-        info_components = self.get_info_components(info_fmt)
-        if info_components:
-            info_components = [subtitle_fmt % "INFO"] + info_components
-            out_str += info_delimeter.join(filter(None, info_components))
-            out_str += info_delimeter
+        if Registrar.DEBUG_UPDATE:
+            info_components = self.get_info_components(info_fmt)
+            if info_components:
+                info_components = [subtitle_fmt % "INFO"] + info_components
+                out_str += info_delimeter.join(filter(None, info_components))
+                out_str += info_delimeter
 
         changes_components = []
-        if not self.important_static:
+        if Registrar.DEBUG_UPDATE and not self.important_static:
             changes_components += [
                 subtitle_fmt % 'PROBLEMATIC CHANGES (%d)' % len(
                     self.sync_problematics),
@@ -835,22 +836,23 @@ class SyncUpdate(Registrar):
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
         out_str += info_delimeter
-        passes_components = []
-        if self.sync_passes:
-            passes_components += [
-                subtitle_fmt % "PASSES (%d)" % len(self.sync_passes),
-                self.display_sync_passes(tablefmt)
-            ]
-        out_str += info_delimeter.join(filter(None, passes_components))
-        out_str += info_delimeter
-        reflection_components = []
-        if self.sync_reflections:
-            reflection_components += [
-                subtitle_fmt % "REFLECTIONS (%d)" % len(self.sync_reflections),
-                self.display_sync_reflections(tablefmt)
-            ]
-        out_str += info_delimeter.join(filter(None, reflection_components))
-        out_str += info_delimeter
+        if Registrar.DEBUG_UPDATE:
+            passes_components = []
+            if self.sync_passes:
+                passes_components += [
+                    subtitle_fmt % "PASSES (%d)" % len(self.sync_passes),
+                    self.display_sync_passes(tablefmt)
+                ]
+            out_str += info_delimeter.join(filter(None, passes_components))
+            out_str += info_delimeter
+            reflection_components = []
+            if self.sync_reflections:
+                reflection_components += [
+                    subtitle_fmt % "REFLECTIONS (%d)" % len(self.sync_reflections),
+                    self.display_sync_reflections(tablefmt)
+                ]
+            out_str += info_delimeter.join(filter(None, reflection_components))
+            out_str += info_delimeter
         new_match = Match([self.new_m_object], [self.new_s_object])
         out_str += info_delimeter
         out_str += info_delimeter.join([
