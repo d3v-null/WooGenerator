@@ -143,7 +143,7 @@ def populate_slave_parsers(parsers, settings):
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
     parsers.slave.get_obj_list().export_items(
-        os.path.join(settings.in_dir_full, settings.s_x_name),
+        settings.slave_path,
         settings.col_data_class.get_wp_import_col_names())
 
 def populate_master_parsers(parsers, settings):
