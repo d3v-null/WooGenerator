@@ -994,28 +994,28 @@ class Registrar(object):
     DEBUG_MESSAGE = False
     DEBUG_PROGRESS = True
     DEBUG_ABSTRACT = False
-    DEBUG_PARSER = False
-    DEBUG_UPDATE = False
-    DEBUG_GEN = False
-    DEBUG_MYO = False
-    DEBUG_TREE = False
-    DEBUG_WOO = False
     DEBUG_ADDRESS = False
-    DEBUG_NAME = False
-    DEBUG_UTILS = False
+    DEBUG_API = False
+    DEBUG_CATS = False
     DEBUG_CLIENT = False
     DEBUG_CONTACT = False
-    DEBUG_IMG = False
-    DEBUG_API = False
-    DEBUG_SHOP = False
-    DEBUG_MRO = False
-    DEBUG_GDRIVE = False
-    DEBUG_SPECIAL = False
-    DEBUG_CATS = False
-    DEBUG_VARS = False
     DEBUG_DUPLICATES = False
-    DEBUG_USR = False
+    DEBUG_GDRIVE = False
+    DEBUG_GEN = False
+    DEBUG_IMG = False
+    DEBUG_MRO = False
+    DEBUG_MYO = False
+    DEBUG_NAME = False
+    DEBUG_PARSER = False
+    DEBUG_SHOP = False
+    DEBUG_SPECIAL = False
     DEBUG_TRACE = False
+    DEBUG_TREE = False
+    DEBUG_UPDATE = False
+    DEBUG_USR = False
+    DEBUG_UTILS = False
+    DEBUG_VARS = False
+    DEBUG_WOO = False
 
     @classmethod
     def conflict_resolver(cls, *_):
