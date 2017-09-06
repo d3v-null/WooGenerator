@@ -42,7 +42,7 @@ class EmailClientSMTP(ClientAbstract):
         return message
 
     def attach_file(self, message, filename):
-        with open(filename, 'w+') as attachment_file:
+        with open(filename, 'r') as attachment_file:
             # Create the message
             msg = MIMEBase('application', 'zip')
             msg.set_payload(attachment_file.read())
@@ -96,7 +96,7 @@ class EmailClientExchange(ClientAbstract):
 
     def attach_file(self, message, path):
         filename = os.path.basename(path)
-        with open(path, 'w+') as attachment_file:
+        with open(path, 'r') as attachment_file:
             attachment = exchangelib.FileAttachment(
                 name=filename,
                 content=attachment_file.read()
