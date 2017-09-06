@@ -1021,17 +1021,17 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
 
     reporter.add_group(group)
 
+def render_update_list(fmt, reporter, update_list):
+    delimeter = reporter.Section.get_data_separator(fmt)
+    return delimeter.join([
+        update.tabulate(tablefmt=fmt) for update in update_list
+    ])
+
 def do_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync:
         return
 
     group = reporter.Group('sync', 'Syncing Results')
-
-    def render_sync_section(fmt, attr):
-        delimeter = reporter.Section.get_data_separator(fmt)
-        return delimeter.join([
-            update.tabulate(tablefmt=fmt) for update in getattr(updates, attr)
-        ])
 
     for attr, name, description in [
         (
@@ -1050,13 +1050,17 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
             "items can't be automatically merged because they are too dissimilar"
         )
     ]:
-
+        target_update_list = getattr(updates, attr)
         group.add_section(
             reporter.Section(
                 name,
                 description=description,
-                data=functools.partial(render_sync_section, attr=attr),
-                length=len(getattr(updates, attr))
+                data=functools.partial(
+                    render_update_list,
+                    update_list=target_update_list,
+                    reporter=reporter
+                ),
+                length=len(target_update_list)
             )
         )
 
@@ -1136,20 +1140,16 @@ def do_successes_group(reporter, results, settings):
 
     group = reporter.Group('success', 'Succesful Updates')
 
-    def render_update_list(fmt, update_list):
-        delimeter = reporter.Section.get_data_separator(fmt)
-        return delimeter.join([
-            update.tabulate(tablefmt=fmt) for update in update_list
-        ])
-
+    target_update_list = results.successes
     group.add_section(
         reporter.Section(
             'successes',
             description='updates completed succesfully',
             data=functools.partial(
                 render_update_list,
-                update_list=results.successes
+                update_list=target_update_list,
+                reporter=reporter
             ),
-            length=len(results.successes)
+            length=len(target_update_list)
         )
     )
