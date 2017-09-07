@@ -7,16 +7,19 @@ import tempfile
 import traceback
 import unittest
 from pprint import pformat
+
 import mock
 
 from context import TESTS_DATA_DIR, woogenerator
+from mock_utils import MockUtils
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
-                                         UpdateNamespace, init_dirs, init_settings)
+                                         UpdateNamespace, init_dirs,
+                                         init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
-from woogenerator.merger import (do_match, do_merge, do_report,
-                                 do_report_post, do_summary, do_updates,
+from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
+                                 do_summary, do_updates,
                                  populate_filter_settings,
                                  populate_master_parsers,
                                  populate_slave_parsers)
@@ -24,7 +27,6 @@ from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import Registrar, TimeUtils
-from mock_utils import MockUtils
 
 
 class TestMerger(unittest.TestCase):
@@ -74,7 +76,7 @@ class TestMerger(unittest.TestCase):
             Registrar.DEBUG_PROGRESS = True
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_PARSER = True
-            Registrar.DEBUG_CONTACT = True
+            # Registrar.DEBUG_CONTACT = True
 
         self.parsers = ParserNamespace()
         self.matches = MatchNamespace()

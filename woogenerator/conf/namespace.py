@@ -6,15 +6,17 @@ import os
 import sys
 import time
 from collections import OrderedDict
-from pprint import pformat
-from tabulate import tabulate
 from copy import copy
+from pprint import pformat
 
-from woogenerator.client.core import SyncClientGDrive, SyncClientLocal, SyncClientNull
+from tabulate import tabulate
+
+from woogenerator.client.core import (SyncClientGDrive, SyncClientLocal,
+                                      SyncClientNull)
+from woogenerator.client.email import EmailClientExchange, EmailClientSMTP
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWP)
-from woogenerator.client.email import EmailClientSMTP, EmailClientExchange
 from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
                                   ColDataWoo)
 from woogenerator.contact_objects import FieldGroup

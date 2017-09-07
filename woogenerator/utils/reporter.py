@@ -1,14 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
 import argparse
+import functools
 import io
 import re
 from collections import OrderedDict
+from pprint import pformat
 from string import Formatter
-import functools
 
-import unicodecsv
 import tabulate
+import unicodecsv
 
 from woogenerator.duplicates import Duplicates
 from woogenerator.parsing.user import UsrObjList
@@ -1077,7 +1078,7 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
-def do_post_summary_group(reporter, settings):
+def do_post_summary_group(reporter, results, settings):
     """ Create post-update summary report section. """
     group = reporter.Group('summary_group', 'Summary', instructional=True)
 
@@ -1101,6 +1102,54 @@ def do_post_summary_group(reporter, settings):
         )
     )
 
+    def render_details(fmt=None):
+        response = u""
+        response_components = [
+            (reporter.Section.get_descr_fmt(fmt), {
+                'strong':"Finished at:",
+                'description':" %s" % TimeUtils.get_ms_timestamp()
+            })
+        ]
+        if results:
+            if results.successes:
+                response_components.append(
+                    (reporter.Section.get_descr_fmt(fmt), {
+                        'strong':"Successes:",
+                        'description':" %s" % len(results.successes)
+                    }),
+                )
+            if results.fails_master:
+                response_components.append(
+                    (reporter.Section.get_descr_fmt(fmt), {
+                        'strong':"Master Fails:",
+                        'description':" %s" % len(results.fails_master)
+                    }),
+                )
+            if results.fails_slave:
+                response_components.append(
+                    (reporter.Section.get_descr_fmt(fmt), {
+                        'strong':"Slave Fails:",
+                        'description':" %s" % len(results.fails_slave)
+                    }),
+                )
+        else:
+            response_components.append(
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'strong':"No changes made",
+                }),
+            )
+        for format_spec, format_kwargs in response_components:
+            response += reporter.format(format_spec, **format_kwargs)
+        return response
+
+    group.add_section(
+        reporter.Section(
+            'destails',
+            title='Details',
+            data=render_details
+        )
+    )
+
     if group:
         reporter.add_group(group)
 
@@ -1109,6 +1158,41 @@ def do_failures_group(reporter, results, settings):
     """ Create failures report section. """
 
     group = reporter.Group('fail', 'Failed Updates')
+
+    def get_fail_table(fmt, fails):
+        fail_table = []
+        for update, exc in fails:
+            fail_row = OrderedDict([
+                ('update', update),
+                ('master', SanitationUtils.coerce_unicode(update.new_m_object)),
+                ('slave', SanitationUtils.coerce_unicode(update.new_s_object)),
+            ])
+            master_updates = update.get_master_updates()
+            slave_updates = update.get_slave_updates()
+            if fmt:
+                fail_row.update([
+                    ('mchanges', tabulate.tabulate(
+                        master_updates.items(), headers=['Key', 'Value'], tablefmt=fmt
+                    )),
+                    ('schanges', tabulate.tabulate(
+                        slave_updates.items(), headers=['Key', 'Value'], tablefmt=fmt
+                    )),
+                ])
+            else:
+                fail_row.update([
+                    ('mchanges', SanitationUtils.coerce_unicode(master_updates)),
+                    ('schanges', SanitationUtils.coerce_unicode(slave_updates)),
+                ])
+            fail_row.update([
+                ('exception', repr(exc))
+            ])
+            print("Fail row:\n%s\n" % pformat(fail_row))
+            fail_table.append(fail_row)
+        return fail_table
+
+    def render_fail_section(fmt, fails):
+        fail_table = get_fail_table(fmt, fails)
+        return tabulate.tabulate(fail_table, tablefmt=fmt, headers=headers)
 
     for source in ['master', 'slave']:
         source_failures = getattr(results, 'fails_%s' % source)
@@ -1120,12 +1204,12 @@ def do_failures_group(reporter, results, settings):
             'update', 'master', 'slave', 'mchanges', 'schanges',
             'exception'
         ]
+        headers = OrderedDict([
+            (col, col.title()) for col in cols
+        ])
 
         name = '%s_fails' % source
         description = '%s records failed to sync because of an API client error' % source
-
-        def render_fail_section(fmt, fails):
-            return tabulate.tabulate(fails, tablefmt=fmt)
 
         group.add_section(
             reporter.Section(
@@ -1145,7 +1229,9 @@ def do_failures_group(reporter, results, settings):
                     out_file,
                     fieldnames=cols,
                     extrasaction='ignore', )
-                dictwriter.writerows(source_failures)
+                dictwriter.writerows(
+                    get_fail_table(None, source_failures)
+                )
             reporter.add_csv_file(source, file_path)
 
     if group:

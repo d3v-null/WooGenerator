@@ -8,6 +8,7 @@ import time
 import traceback
 import zipfile
 from bisect import insort
+from collections import OrderedDict
 from pprint import pformat, pprint
 
 import dill
@@ -461,14 +462,7 @@ def unpickle_state(settings_pickle):
 
 def handle_failed_update(update, results, exc, settings, source=None):
     """Handle a failed update."""
-    fail = {
-        'update': update,
-        'master': SanitationUtils.coerce_unicode(update.new_m_object),
-        'slave': SanitationUtils.coerce_unicode(update.new_s_object),
-        'mchanges': SanitationUtils.coerce_unicode(update.get_master_updates()),
-        'schanges': SanitationUtils.coerce_unicode(update.get_slave_updates()),
-        'exception': repr(exc)
-    }
+    fail = (update, exc)
     if source == settings.master_name:
         pkey = update.master_id
         results.fails_master.append(fail)
@@ -571,7 +565,7 @@ def do_report_post(reporters, results, settings):
     if settings.get('do_report'):
         Registrar.register_progress("Write Post Report")
 
-        do_post_summary_group(reporters.post, settings)
+        do_post_summary_group(reporters.post, results, settings)
         do_failures_group(reporters.post, results, settings)
         do_successes_group(reporters.post, results, settings)
         if reporters.post:
@@ -641,16 +635,6 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
         summary_text = u"Sync failed with status %s (%s)" % (reason, status)
     else:
         summary_text = u"Sync succeeded"
-    if results:
-        if results.successes:
-            summary_text += u"\nSuccesses: %d" % len(results.successes)
-        if results.fails_master:
-            summary_text += u"\nMaster Fails: %d" % len(results.fails_master)
-        if results.fails_slave:
-            summary_text += u"\nSlave Fails: %d" % len(results.fails_slave)
-    else:
-        summary_text += u"\nNo changes made"
-    summary_text += "\nFinished at %s" % TimeUtils.get_ms_timestamp()
 
     summary_html = "<p>%s</p>" % re.sub(ur'\n', ur'\n<br/>\n', summary_text)
 

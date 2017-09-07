@@ -2,10 +2,10 @@
 Utilites for storing and performing operations on pending updates
 """
 
+import traceback
 from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
-import traceback
 
 from tabulate import tabulate
 
@@ -15,6 +15,7 @@ from woogenerator.contact_objects import ContactAddress, FieldGroup
 from woogenerator.matching import Match
 from woogenerator.parsing.abstract import ImportObject
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
+
 
 class SyncViolation(UserWarning):
     """Update violates some sync condition"""
