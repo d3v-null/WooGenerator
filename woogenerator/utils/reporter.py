@@ -220,6 +220,9 @@ class AbstractReporter(object):
             else:
                 return '\n{group}'
 
+        def __bool__(self):
+            return bool(self.sections)
+
         def render(self, fmt=None):
             out = ''
             out += self.format(self.get_title_fmt(fmt), title=self.title)
@@ -432,7 +435,8 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
             data=render_help_instructions
         )
     )
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
@@ -649,7 +653,8 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
             )
         )
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 
 def do_main_summary_group(reporter, matches, updates, parsers, settings):
@@ -743,7 +748,8 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
             data=render_help_instructions
         )
     )
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_sanitizing_group(reporter, matches, updates, parsers, settings):
     address_cols = OrderedDict(settings.basic_cols.items() + [
@@ -813,7 +819,8 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
         bad_users.export_items(report_path, csv_colnames)
         reporter.add_csv_file('master_sanitation', report_path)
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_delta_group(reporter, matches, updates, parsers, settings):
     if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
@@ -873,7 +880,8 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
             csv_path
         )
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_matches_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
@@ -927,7 +935,8 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
             data=render_help_instructions
         )
     )
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 
 def do_matches_group(reporter, matches, updates, parsers, settings):
@@ -1019,7 +1028,8 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
             )
         )
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def render_update_list(fmt, reporter, update_list):
     delimeter = reporter.Section.get_data_separator(fmt)
@@ -1064,7 +1074,8 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
             )
         )
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_post_summary_group(reporter, settings):
     """ Create post-update summary report section. """
@@ -1089,7 +1100,9 @@ def do_post_summary_group(reporter, settings):
             data=render_help_instructions
         )
     )
-    reporter.add_group(group)
+
+    if group:
+        reporter.add_group(group)
 
 
 def do_failures_group(reporter, results, settings):
@@ -1135,7 +1148,8 @@ def do_failures_group(reporter, results, settings):
                 dictwriter.writerows(source_failures)
             reporter.add_csv_file(source, file_path)
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
 
 def do_successes_group(reporter, results, settings):
     """ Create successes report section. """
@@ -1158,4 +1172,5 @@ def do_successes_group(reporter, results, settings):
         )
     )
 
-    reporter.add_group(group)
+    if group:
+        reporter.add_group(group)
