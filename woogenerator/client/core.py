@@ -19,7 +19,7 @@ import httplib2
 import oauth2client
 from apiclient import discovery
 from oauth2client import client, tools
-from requests import ConnectionError, ReadTimeout
+import requests
 from simplejson import JSONDecodeError
 
 from woogenerator.utils import ProgressCounter, Registrar, SanitationUtils
@@ -122,6 +122,21 @@ class SyncClientAbstract(ClientAbstract):
         if updates:
             assert pkey, "must have a valid primary key"
             assert self.connection_ready, "connection should be ready"
+
+class SyncClientNull(SyncClientAbstract):
+    """ Designed to act like a client but fails on all actions """
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def attempt_connect(self):
+        pass
+
+    def __exit__(self, exit_type, value, traceback):
+        pass
+
+    def upload_changes(self, pkey, updates=None):
+        raise UserWarning("Using null client class")
 
 
 class SyncClientLocal(SyncClientAbstract):
@@ -408,7 +423,7 @@ class SyncClientRest(SyncClientAbstract):
             # get API response
             try:
                 self.prev_response = self.service.get(self.next_endpoint)
-            except ReadTimeout as exc:
+            except requests.ReadTimeout as exc:
                 # instead of processing this endoint, do the page product by
                 # product
                 if self.limit > 1:
@@ -447,7 +462,7 @@ class SyncClientRest(SyncClientAbstract):
 
             # handle API errors
             if self.prev_response.status_code in range(400, 500):
-                raise ConnectionError('api call failed: %dd with %s' % (
+                raise requests.ConnectionError('api call failed: %dd with %s' % (
                     self.prev_response.status_code, self.prev_response.text))
 
             # can still 200 and fail
@@ -455,7 +470,7 @@ class SyncClientRest(SyncClientAbstract):
                 prev_response_json = self.prev_response.json()
             except JSONDecodeError:
                 prev_response_json = {}
-                exc = ConnectionError(
+                exc = requests.ConnectionError(
                     'api call to %s failed: %s' %
                     (self.next_endpoint, self.prev_response.text))
                 Registrar.register_error(exc)
@@ -463,7 +478,7 @@ class SyncClientRest(SyncClientAbstract):
             # if Registrar.DEBUG_API:
             #     Registrar.register_message('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
-                raise ConnectionError('first api call returned errors: %s' %
+                raise requests.ConnectionError('first api call returned errors: %s' %
                                       (prev_response_json['errors']))
 
             # process API headers

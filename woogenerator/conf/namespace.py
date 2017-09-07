@@ -10,7 +10,7 @@ from pprint import pformat
 from tabulate import tabulate
 from copy import copy
 
-from woogenerator.client.core import SyncClientGDrive, SyncClientLocal
+from woogenerator.client.core import SyncClientGDrive, SyncClientLocal, SyncClientNull
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWP)
@@ -164,8 +164,13 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def null_client_class(self):
+    def local_client_class(self):
         return SyncClientLocal
+
+    @property
+    def null_client_class(self):
+        return SyncClientNull
+
 
     @property
     def col_data_class(self):
@@ -455,7 +460,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def master_download_client_class(self):
         """ The class which is used to download and parse master data. """
-        response = self.null_client_class
+        response = self.local_client_class
         if self.download_master:
             response = SyncClientGDrive
         return response
@@ -463,7 +468,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def master_upload_client_class(self):
         """ The class which is used to download and parse master data. """
-        response = self.null_client_class
+        response = self.local_client_class
         if self['update_master']:
             response = SyncClientGDrive
         return response
@@ -510,7 +515,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_download_client_class(self):
-        response = self.null_client_class
+        response = self.local_client_class
         if self['download_slave']:
             response = ProdSyncClientWC
         return response
@@ -535,7 +540,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_upload_client_class(self):
-        response = self.null_client_class
+        response = self.local_client_class
         if self['update_slave']:
             response = ProdSyncClientWC
         return response
@@ -636,7 +641,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def master_download_client_class(self):
         """ The class which is used to download and parse master data. """
 
-        response = self.null_client_class
+        response = self.local_client_class
         if self.download_master:
             response = UsrSyncClientSshAct
         return response
@@ -645,7 +650,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def master_upload_client_class(self):
         """ The class which is used to download and parse master data. """
 
-        response = self.null_client_class
+        response = self.local_client_class
         if self['update_master']:
             response = UsrSyncClientSshAct
         return response
@@ -760,7 +765,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def slave_download_client_class(self):
-        response = self.null_client_class
+        response = self.local_client_class
         if self.get('download_slave'):
             response = UsrSyncClientSqlWP
         return response
@@ -809,7 +814,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def slave_upload_client_class(self):
-        response = self.null_client_class
+        response = self.local_client_class
         if self.get('update_slave'):
             response = UsrSyncClientWP
         return response
