@@ -57,7 +57,7 @@ class TestMerger(unittest.TestCase):
         Registrar.DEBUG_PROGRESS = False
 
         self.debug = False
-        self.debug = True
+        # self.debug = True
         if self.debug:
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
