@@ -651,17 +651,18 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
     else:
         summary_text += u"\nNo changes made"
     summary_text += "\nFinished at %s" % TimeUtils.get_ms_timestamp()
+
     summary_html = "<p>%s</p>" % re.sub(ur'\n', ur'\n<br/>\n', summary_text)
 
     # TODO: move this block to Registrar.write_log()
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
-            print source
             log_file.write(SanitationUtils.coerce_unicode(source) + u'\r\n')
             for message in messages:
                 log_file.write(u'\t' + SanitationUtils.coerce_unicode(message) + u'\r\n')
             for message in messages:
-                pprint(message, indent=4, width=80, depth=2)
+                if Registrar.DEBUG_MESSAGE:
+                    pprint(message, indent=4, width=80, depth=2)
 
     try:
         files_to_zip = []
@@ -681,7 +682,7 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     size = os.path.getsize(filename)
                 except Exception:
                     pass
-                print("report name %s, size %s" % (
+                Registrar.register_message("file name %s, size %s" % (
                     filename, size
                 ))
 
@@ -696,7 +697,7 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     size = os.path.getsize(csv_file)
                 except Exception:
                     pass
-                print("csv report name %s, size %s" % (
+                Registrar.register_message("csv report name %s, size %s" % (
                     name, size
                 ))
 
@@ -710,10 +711,18 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                     size = os.path.getsize(html_file)
                 except Exception:
                     pass
-                print("html report name %s, size %s" % (
+                Registrar.register_message("html report name %s, size %s" % (
                     name, size
                 ))
     except Exception as exc:
+        Registrar.register_warning(
+            (
+                "could not get files to zip: %s\n%s"
+            ) % (
+                exc,
+                traceback.format_exc()
+            )
+        )
         print traceback.format_exc()
 
     with zipfile.ZipFile(settings.zip_path, 'w') as zip_file:
@@ -723,11 +732,15 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                 os.stat(file_to_zip)
                 zip_file.write(file_to_zip, arcname)
             except Exception as exc:
-                if exc:
-                    print("could not zip file %s: %s" % (
-                        file_to_zip, exc
-                    ))
-                    print traceback.format_exc()
+                Registrar.register_warning(
+                    (
+                        "could not zip file %s: %s\n%s"
+                    ) % (
+                        file_to_zip,
+                        exc,
+                        traceback.format_exc()
+                    )
+                )
         Registrar.register_message('wrote file %s' % settings.zip_path)
 
     zip_size = None
@@ -735,8 +748,8 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
         zip_size = os.path.getsize(settings.zip_path)
     except Exception:
         pass
-    print("zip size is: %s" % zip_size)
 
+    Registrar.register_message("zip size is: %s" % zip_size)
 
     if reporters is not None:
         summary_html += reporters.post.get_summary_html()
@@ -750,25 +763,41 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
                 summary_text
             )
         except Exception as exc:
-            print traceback.format_exc()
-            print("Failed to send email because %s" % exc)
             zip_stats = None
             try:
                 zip_stats = os.stat(settings.zip_path)
             except Exception as exc:
                 pass
-            print("zip file stats: %s" % zip_stats)
-            print("summary text is \n%s" % summary_text)
+            Registrar.register_warning(
+                (
+                    "%s\n"
+                    "Failed to send email because %s\n"
+                    "zip file stats: %s\n"
+                    "summary text is \n%s"
+                ) % (
+                    traceback.format_exc(),
+                    exc,
+                    zip_stats,
+                    summary_text
+                )
+            )
     else:
-        print("not emailing because no reporters or results.")
-        print("reporters: \n%s" % ([
-            (name, len(reporter.groups)) \
-            for name, reporter in reporters.as_dict.items()
-        ]))
-        print("results: \n%s" % ([
-            (name, len(result)) \
-            for name, result in results.as_dict.items()
-        ]))
+        Registrar.register_warning(
+            (
+                "not emailing because no reporters or results.\n"
+                 "reporters: \n%s"
+                 "results: \n%s"
+            ) % (
+                [
+                    (name, len(reporter.groups)) \
+                    for name, reporter in reporters.as_dict.items()
+                ],
+                [
+                    (name, len(result)) \
+                    for name, result in results.as_dict.items()
+                ]
+            )
+        )
 
     return summary_html, summary_text
 

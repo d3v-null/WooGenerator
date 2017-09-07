@@ -51,6 +51,15 @@ class TestMerger(unittest.TestCase):
         # self.settings.slave_parse_limit = 10
         self.override_args = ""
 
+        self.settings.verbosity = 0
+        self.settings.quiet = True
+
+        self.settings = init_settings(
+            settings=self.settings,
+            override_args=self.override_args,
+            argparser_class=ArgumentParserUser
+        )
+
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
         Registrar.DEBUG_MESSAGE = False
@@ -66,12 +75,6 @@ class TestMerger(unittest.TestCase):
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_PARSER = True
             Registrar.DEBUG_CONTACT = True
-
-        self.settings = init_settings(
-            settings=self.settings,
-            override_args=self.override_args,
-            argparser_class=ArgumentParserUser
-        )
 
         self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
@@ -180,13 +183,6 @@ class TestMerger(unittest.TestCase):
     def test_populate_master_parsers(self):
         self.settings.master_parse_limit = 4
 
-        # Registrar.DEBUG_ERROR = True
-        # Registrar.DEBUG_WARN = True
-        # Registrar.DEBUG_MESSAGE = True
-        # Registrar.DEBUG_CONTACT = True
-        # Registrar.DEBUG_ADDRESS = True
-        # Registrar.DEBUG_NAME = True
-
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -285,7 +281,7 @@ class TestMerger(unittest.TestCase):
         self.assertTrue(len(usr_list))
 
         first_usr = usr_list[0]
-        if Registrar.DEBUG_MESSAGE:
+        if self.debug:
             self.print_user_summary(first_usr)
 
         self.assertEqual(first_usr.name.schema, 'TT')
@@ -366,9 +362,6 @@ class TestMerger(unittest.TestCase):
         )
 
     def test_do_merge_basic(self):
-        if self.debug:
-            Registrar.DEBUG_MESSAGE = False
-            Registrar.DEBUG_WARN = False
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -381,17 +374,7 @@ class TestMerger(unittest.TestCase):
         self.updates = do_merge(
             self.matches, self.parsers, self.settings
         )
-        # if self.debug:
-        #     Registrar.DEBUG_MESSAGE = True
-        #     Registrar.DEBUG_WARN = True
 
-        # if Registrar.DEBUG_MESSAGE:
-        #     self.print_updates_summary(self.updates)
-        #
-        # for update in self.updates.static:
-        #     self.print_update(update)
-
-        #TODO: Re-enable when test below working
         self.assertEqual(len(self.updates.delta_master), 6)
         self.assertEqual(len(self.updates.delta_slave), 6)
         self.assertEqual(len(self.updates.master), 7)
@@ -478,7 +461,6 @@ class TestMerger(unittest.TestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
         sync_update = updates_static.pop(0)
-        self.print_update(sync_update)
 
         try:
             self.assertEqual(sync_update.old_m_object.MYOBID, 'C001939')
@@ -557,9 +539,6 @@ class TestMerger(unittest.TestCase):
             )
             setattr(self.settings, '%s_file' % source, new_filename)
 
-        if self.debug:
-            Registrar.DEBUG_MESSAGE = False
-            Registrar.DEBUG_WARN = False
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -844,8 +823,6 @@ class TestMerger(unittest.TestCase):
     def test_filter_ignore_cards(self):
         self.settings.do_filter = True
         self.settings.ignore_cards = "C001280"
-        # Registrar.DEBUG_USR = True
-        # Registrar.DEBUG_MESSAGE = True
         suffix = 'filter_ignore_cards'
         for source, lines in [('master', [0, 8, 96]), ('slave', [0, 89, 100])]:
             new_filename = self.make_temp_with_lines(
@@ -854,9 +831,9 @@ class TestMerger(unittest.TestCase):
                 suffix
             )
             setattr(self.settings, '%s_file' % source, new_filename)
-            print("opening %s" % new_filename)
-            with open(new_filename) as new_file:
-                print(new_file.readlines())
+            if self.debug:
+                with open(new_filename) as new_file:
+                    print(new_file.readlines())
         populate_filter_settings(self.settings)
         self.assertTrue(self.settings.filter_items)
         self.assertEqual(

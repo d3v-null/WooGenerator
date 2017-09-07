@@ -20,6 +20,7 @@ class TestClientEmail(AbstractSyncClientTestCase):
     config_file = "conf_user.yaml"
     settings_namespace_class = SettingsNamespaceUser
     argument_parser_class = ArgumentParserUser
+    debug = False
 
 class TestClientEmailExchange(TestClientEmail):
     def test_email_basic(self):
@@ -34,7 +35,7 @@ class TestClientEmailExchange(TestClientEmail):
             message = email_client.attach_file(message, attachment)
 
 class TestClientEmailExchangeDestructive(TestClientEmail):
-    # @unittest.skip("destructive tests skipped")
+    @unittest.skip("destructive tests skipped")
     def test_send_destructive(self):
         with self.settings.email_client(self.settings.email_connect_params) as email_client:
             message = email_client.compose_message(
@@ -47,12 +48,8 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
             message = email_client.attach_file(message, attachment)
             email_client.send(message)
 
-    # @unittest.skip("destructive tests skipped")
+    @unittest.skip("destructive tests skipped")
     def test_send_dummy_report(self):
-        self.debug = True
-        Registrar.DEBUG_ERROR = True
-        Registrar.DEBUG_WARN = True
-        Registrar.DEBUG_MESSAGE = True
         self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()

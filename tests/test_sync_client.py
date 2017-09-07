@@ -30,9 +30,8 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         self.settings.local_work_dir = self.local_work_dir
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
-
-        if self.debug:
-            Registrar.DEBUG_MESSAGE = True
+        self.settings.verbosity = 0
+        self.settings.quiet = True
 
         self.settings = init_settings(
             settings=self.settings,
