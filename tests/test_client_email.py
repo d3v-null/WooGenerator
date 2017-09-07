@@ -1,10 +1,12 @@
 import os
 import tempfile
 import unittest
+import mock
 
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
+from mock_utils import MockUtils
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_dirs, init_settings)
@@ -13,7 +15,6 @@ from woogenerator.merger import (do_match, do_merge, do_report,
                                  do_report_post, do_summary, do_updates,
                                  populate_master_parsers,
                                  populate_slave_parsers)
-from woogenerator.utils import Registrar
 
 class TestClientEmail(AbstractSyncClientTestCase):
     local_work_dir = os.path.expanduser('~/Documents/woogenerator')
@@ -66,8 +67,6 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
         self.settings.report_sanitation = True
         self.settings.report_matching = True
         # TODO: mock out update clients
-        self.settings.update_master = False
-        self.settings.update_slave = False
         self.settings.ask_before_update = False
         self.override_args = ""
 
@@ -99,9 +98,21 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
         self.reporters = do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
-        self.results = do_updates(
-            self.updates, self.settings
-        )
+        self.settings.update_master = True
+        self.settings.update_slave = True
+        with mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ):
+            self.results = do_updates(
+                self.updates, self.settings
+            )
         do_report_post(self.reporters, self.results, self.settings)
         summary_html, summary_text = do_summary(self.settings, self.reporters, self.results, 0)
         # if self.debug:
