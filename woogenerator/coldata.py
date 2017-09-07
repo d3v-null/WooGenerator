@@ -1612,7 +1612,9 @@ class ColDataUser(ColDataBase):
                 'meta': True,
                 'key': 'pref_mob'
             },
-            'act': True,
+            'act': {
+                'options':['True', 'False']
+            },
             # 'label':'pref_mob',
             'import': True,
             'user': True,
@@ -1630,16 +1632,24 @@ class ColDataUser(ColDataBase):
                 'meta': True,
                 'key': 'pref_tel'
             },
-            'act': True,
+            'act': {
+                'options':['True', 'False']
+            },
             # 'label':'pref_tel',
             'import': True,
             'user': True,
             'sync': True,
             'visible': True,
             'mutable': True,
+            'invincible':'master',
         }),
-
-
+        # TODO: implement pref method
+        # ('Pref Method', {
+        #     'wp': False,
+        #     'wp-api': False,
+        #     'import': False,
+        #     'sync': ''
+        # }),
         ('Address', {
             'act': False,
             'wp': False,
