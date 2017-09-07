@@ -7,6 +7,7 @@ import tempfile
 import traceback
 import unittest
 from pprint import pformat
+import mock
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
@@ -23,6 +24,7 @@ from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import Registrar, TimeUtils
+from mock_utils import MockUtils
 
 
 class TestMerger(unittest.TestCase):
@@ -717,7 +719,6 @@ class TestMerger(unittest.TestCase):
         if self.debug:
             print("Main report text:\n%s" % self.reporters.main.get_summary_text())
 
-    @unittest.skip("this is an exact subset of test_do_summary")
     def test_do_updates(self):
         suffix='do_updates'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
@@ -738,15 +739,28 @@ class TestMerger(unittest.TestCase):
         self.reporters = do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
-        self.results = do_updates(
-            self.updates, self.settings
-        )
+        with mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ):
+            self.results = do_updates(
+                self.updates, self.settings
+            )
+        self.assertTrue(self.results)
 
-    def test_do_summary(self):
+    def test_do_report_post(self):
         suffix='do_summary'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         init_dirs(self.settings)
+        self.settings.update_master = True
+        self.settings.update_slave = True
         self.settings.do_mail = False
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
@@ -763,9 +777,62 @@ class TestMerger(unittest.TestCase):
         self.reporters = do_report(
             self.matches, self.updates, self.parsers, self.settings
         )
-        self.results = do_updates(
-            self.updates, self.settings
+
+        with mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ):
+            self.results = do_updates(
+                self.updates, self.settings
+            )
+
+        do_report_post(self.reporters, self.results, self.settings)
+        self.assertTrue(self.reporters.post.groups.get('fail'))
+        self.assertFalse(self.reporters.post.groups.get('success'))
+
+    def test_do_summary(self):
+        suffix='do_summary'
+        temp_working_dir = tempfile.mkdtemp(suffix + '_working')
+        self.settings.local_work_dir = temp_working_dir
+        init_dirs(self.settings)
+        self.settings.update_master = True
+        self.settings.update_slave = True
+        self.settings.do_mail = False
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
         )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.parsers, self.settings
+        )
+        self.reporters = do_report(
+            self.matches, self.updates, self.parsers, self.settings
+        )
+
+        with mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+            new_callable=mock.PropertyMock,
+            return_value = self.settings.null_client_class
+        ):
+            self.results = do_updates(
+                self.updates, self.settings
+            )
         do_report_post(self.reporters, self.results, self.settings)
         summary_html, summary_text = do_summary(
             self.settings, self.reporters, self.results, 0
