@@ -631,7 +631,7 @@ def do_mail(settings, summary_html=None, summary_text=None):
 def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"):
     Registrar.register_progress("Doing summary for %s" % settings.import_name)
 
-    if status:
+    if status or results.fails_master or results.fails_slave:
         summary_text = u"Sync failed with status %s (%s)" % (reason, status)
     else:
         summary_text = u"Sync succeeded"

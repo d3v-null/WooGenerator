@@ -1171,22 +1171,22 @@ def do_failures_group(reporter, results, settings):
             slave_updates = update.get_slave_updates()
             if fmt:
                 fail_row.update([
-                    ('mchanges', tabulate.tabulate(
+                    ('master_changes', tabulate.tabulate(
                         master_updates.items(), headers=['Key', 'Value'], tablefmt=fmt
                     )),
-                    ('schanges', tabulate.tabulate(
+                    ('slave_changes', tabulate.tabulate(
                         slave_updates.items(), headers=['Key', 'Value'], tablefmt=fmt
                     )),
                 ])
             else:
                 fail_row.update([
-                    ('mchanges', SanitationUtils.coerce_unicode(master_updates)),
-                    ('schanges', SanitationUtils.coerce_unicode(slave_updates)),
+                    ('master_changes', SanitationUtils.coerce_unicode(master_updates)),
+                    ('slave_changes', SanitationUtils.coerce_unicode(slave_updates)),
                 ])
             fail_row.update([
                 ('exception', repr(exc))
             ])
-            print("Fail row:\n%s\n" % pformat(fail_row))
+            # print("Fail row:\n%s\n" % pformat(fail_row))
             fail_table.append(fail_row)
         return fail_table
 
@@ -1201,7 +1201,7 @@ def do_failures_group(reporter, results, settings):
         # TODO: Write failure HTML report here
 
         cols = [
-            'update', 'master', 'slave', 'mchanges', 'schanges',
+            'update', 'master', 'slave', 'master_changes', 'slave_changes',
             'exception'
         ]
         headers = OrderedDict([
