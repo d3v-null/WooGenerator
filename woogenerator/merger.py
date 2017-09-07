@@ -670,7 +670,7 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
             'log_path'
         ]
         reports_to_ignore = [
-            'dup'
+            # 'dup'
         ]
         for attr in attrs_to_zip:
             filename = settings.get(attr)

@@ -1112,7 +1112,7 @@ def do_failures_group(reporter, results, settings):
         description = '%s records failed to sync because of an API client error' % source
 
         def render_fail_section(fmt, fails):
-            return tabulate(fails, tablefmt=fmt)
+            return tabulate.tabulate(fails, tablefmt=fmt)
 
         group.add_section(
             reporter.Section(
@@ -1135,12 +1135,16 @@ def do_failures_group(reporter, results, settings):
                 dictwriter.writerows(source_failures)
             reporter.add_csv_file(source, file_path)
 
+    reporter.add_group(group)
+
 def do_successes_group(reporter, results, settings):
     """ Create successes report section. """
 
     group = reporter.Group('success', 'Succesful Updates')
 
     target_update_list = results.successes
+    if not target_update_list:
+        return
     group.add_section(
         reporter.Section(
             'successes',
@@ -1153,3 +1157,5 @@ def do_successes_group(reporter, results, settings):
             length=len(target_update_list)
         )
     )
+
+    reporter.add_group(group)
