@@ -129,6 +129,39 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         )
         return os.path.join(self.out_dir_full, response)
 
+
+    @property
+    def flu_path(self):
+        """ The path which the flattened updated csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened-updated', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def flvu_path(self):
+        """ The path which the flattened updated variations csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened-variations-updated', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def fls_path(self):
+        """ The path which the flattened specials csv file is stored. """
+        response = "%s%s-%s-%s.csv" % (
+            self.file_prefix, 'flattened', self.current_special_id, self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def flvs_path(self):
+        """ The path which the flattened specials variations csv file is stored. """
+        response = "%s%s-%s-%s.csv" % (
+            self.file_prefix, 'flattened-variations', self.current_special_id, self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
     @property
     def cat_path(self):
         """ The path which the categories csv file is stored. """
@@ -288,3 +321,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = super(SettingsNamespaceProd, self).dirs or []
         response.extend(self.img_raw_dirs)
         response.append(self.img_cmp_dir)
+
+    @property
+    def current_special_id(self):
+        response = self.get('current_special')
+        if self.get('current_special_groups'):
+            response = self.current_special_groups[0].special_id
+        return response

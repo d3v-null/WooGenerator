@@ -372,50 +372,34 @@ def export_parsers(settings, parsers):
 
         # specials
         if settings.do_specials:
-            current_special = getattr(settings, 'current_special', None)
-            if settings.current_special_groups:
-                current_special = settings.current_special_groups[0].special_id
-            # print "current special is %s" % current_special
-            if current_special:
+            if settings.current_special_id:
                 special_products = parsers.master.onspecial_products.values()
                 if special_products:
-                    fla_name, fla_ext = os.path.splitext(settings.fla_path)
-                    fls_path = os.path.join(
-                        settings.out_dir_full,
-                        fla_name + "-" + current_special + fla_ext)
                     special_product_list = WooProdList(special_products)
-                    special_product_list.export_items(fls_path,
-                                                      product_colnames)
+                    special_product_list.export_items(
+                        settings.fls_path, product_colnames
+                    )
                 special_variations = parsers.master.onspecial_variations.values()
                 if special_variations:
-                    flv_name, flv_ext = os.path.splitext(settings.flv_path)
-                    flvs_path = os.path.join(
-                        settings.out_dir_full,
-                        flv_name + "-" + current_special + flv_ext)
-
                     sp_variation_list = WooVarList(special_variations)
-                    sp_variation_list.export_items(flvs_path,
-                                                   variation_col_names)
+                    sp_variation_list.export_items(
+                        settings.flvs_path, variation_col_names
+                    )
 
         updated_products = parsers.master.updated_products.values()
         if updated_products:
-            fla_name, fla_ext = os.path.splitext(settings.fla_path)
-            flu_path = os.path.join(settings.out_dir_full,
-                                    fla_name + "-Updated" + fla_ext)
-
             updated_product_list = WooProdList(updated_products)
-            updated_product_list.export_items(flu_path, product_colnames)
+            updated_product_list.export_items(
+                settings.flu_path, product_colnames
+            )
 
         updated_variations = parsers.master.updated_variations.values()
 
         if updated_variations:
-            flv_name, flv_ext = os.path.splitext(settings.flv_path)
-            flvu_path = os.path.join(settings.out_dir_full,
-                                     flv_name + "-Updated" + flv_ext)
-
             updated_variations_list = WooVarList(updated_variations)
             updated_variations_list.export_items(
-                flvu_path, variation_col_names)
+                settings.flvu_path, variation_col_names
+            )
 
 def main(override_args=None, settings=None):
     """Main function for generator."""
