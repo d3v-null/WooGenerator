@@ -10,13 +10,9 @@ from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWC, UsrSyncClientWP)
 from woogenerator.coldata import ColDataUser
-from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         SettingsNamespaceUser,
-                                         UpdateNamespace, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.matching import MatchList, UsernameMatcher
-from woogenerator.merger import (do_match, do_merge, populate_master_parsers,
-                                 populate_slave_parsers)
+from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.parsing.user import CsvParseUser, CsvParseUserApi
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 # from woogenerator.coldata import ColDataWoo

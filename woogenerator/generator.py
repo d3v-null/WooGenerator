@@ -28,9 +28,8 @@ from .conf.parser import ArgumentParserProd
 from .matching import (CategoryMatcher, MatchList, ProductMatcher,
                        VariationMatcher)
 from .metagator import MetaGator
-from .namespace.core import (MatchNamespace, ParserNamespace,
-                             UpdateNamespace, init_dirs,
-                             init_settings)
+from .namespace.core import (MatchNamespace, ParserNamespace, UpdateNamespace,
+                             init_dirs, init_settings)
 from .namespace.prod import SettingsNamespaceProd
 from .parsing.api import CsvParseWooApi
 from .parsing.dyn import CsvParseDyn

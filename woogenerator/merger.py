@@ -22,8 +22,9 @@ from six.moves import input
 from .conf.parser import ArgumentParserUser
 from .matching import (CardMatcher, ConflictingMatchList, EmailMatcher, Match,
                        NocardEmailMatcher, UsernameMatcher)
+from .namespace.user import SettingsNamespaceUser
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
-                             SettingsNamespaceUser, UpdateNamespace, init_dirs,
+                             UpdateNamespace, init_dirs,
                              init_settings)
 from .syncupdate import SyncUpdateUsrApi
 from .utils import ProgressCounter, Registrar, SanitationUtils, TimeUtils

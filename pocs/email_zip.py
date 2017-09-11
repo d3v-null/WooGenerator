@@ -1,6 +1,6 @@
+import logging
 import os
 import smtplib
-import logging
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -8,8 +8,9 @@ from email.mime.multipart import MIMEMultipart
 import exchangelib
 
 from context import TESTS_DATA_DIR, woogenerator
-from woogenerator.namespace.core import SettingsNamespaceUser, init_settings
 from woogenerator.conf.parser import ArgumentParserUser
+from woogenerator.namespace.core import init_settings
+from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.utils import Registrar
 
 

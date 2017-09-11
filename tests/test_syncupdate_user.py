@@ -7,7 +7,7 @@ from context import woogenerator
 from test_sync_client import AbstractSyncClientTestCase
 from test_syncupdate import TestSyncUpdateAbstract
 from woogenerator.coldata import ColDataUser
-from woogenerator.namespace.core import SettingsNamespaceUser
+from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import SocialMediaFields
 from woogenerator.matching import MatchList, UsernameMatcher

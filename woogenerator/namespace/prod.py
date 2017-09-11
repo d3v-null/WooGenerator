@@ -1,5 +1,7 @@
 """Provide configuration namespaces for product data."""
 
+from __future__ import absolute_import
+
 import os
 
 from ..client.core import SyncClientGDrive, SyncClientNull

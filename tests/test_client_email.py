@@ -1,20 +1,23 @@
 import os
 import tempfile
 import unittest
-import mock
 
+import mock
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
-from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         SettingsNamespaceUser,
-                                         UpdateNamespace, init_dirs, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.merger import (do_match, do_merge, do_report,
-                                 do_report_post, do_summary, do_updates,
+from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
+                                 do_summary, do_updates,
                                  populate_master_parsers,
                                  populate_slave_parsers)
+from woogenerator.namespace.user import SettingsNamespaceUser
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
+                                         UpdateNamespace, init_dirs,
+                                         init_settings)
+
+
 
 class TestClientEmail(AbstractSyncClientTestCase):
     local_work_dir = os.path.expanduser('~/Documents/woogenerator')

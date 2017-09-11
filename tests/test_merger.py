@@ -12,10 +12,6 @@ import mock
 
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
-from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         SettingsNamespaceUser,
-                                         UpdateNamespace, init_dirs,
-                                         init_settings)
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
@@ -23,6 +19,10 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_filter_settings,
                                  populate_master_parsers,
                                  populate_slave_parsers)
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
+                                         UpdateNamespace, init_dirs,
+                                         init_settings)
+from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
