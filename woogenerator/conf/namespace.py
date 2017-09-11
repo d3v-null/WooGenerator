@@ -422,8 +422,23 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
-        response = os.path.join(self.in_dir_full, response)
-        return response
+        return os.path.join(self.in_dir_full, response)
+
+    @property
+    def dprc_path(self):
+        """ The path which the dynampic pricing category data is stored. """
+        if hasattr(self, 'dprc_file') and getattr(self, 'dprc_file'):
+            return getattr(self, 'dprc_file')
+        response = '%s%s-%s.csv' % (self.file_prefix, 'dprc', self.import_name)
+        return os.path.join(self.in_dir_full, response)
+
+    @property
+    def dprp_path(self):
+        """ The path which the dynampic pricing product data is stored. """
+        if hasattr(self, 'dprp_file') and getattr(self, 'dprp_file'):
+            return getattr(self, 'dprp_file')
+        response = '%s%s-%s.csv' % (self.file_prefix, 'dprp', self.import_name)
+        return os.path.join(self.in_dir_full, response)
 
     @property
     def master_parser_class(self):

@@ -23,7 +23,8 @@ from woogenerator.client.prod import CatSyncClientWC
 from woogenerator.coldata import ColDataBase, ColDataWoo
 from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProd,
-                                         UpdateNamespace, init_settings)
+                                         UpdateNamespace, init_dirs,
+                                         init_settings)
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
@@ -421,9 +422,6 @@ def main(override_args=None, settings=None):
     settings = init_settings(override_args, settings, ArgumentParserProd)
 
     # PROCESS CONFIG
-
-    settings.dprc_path = os.path.join(settings.in_dir_full, 'DPRC.csv')
-    settings.dprp_path = os.path.join(settings.in_dir_full, 'DPRP.csv')
 
     settings.add_special_categories = settings.do_specials and settings['do_categories']
 
