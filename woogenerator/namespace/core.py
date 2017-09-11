@@ -19,7 +19,6 @@ from ..conf.core import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                          DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
                          DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
 from ..conf.parser import ArgumentParserCommon
-from ..contact_objects import FieldGroup
 from ..matching import MatchList
 from ..syncupdate import SyncUpdate
 from ..utils import Registrar, TimeUtils
@@ -476,21 +475,19 @@ class ParserNamespace(argparse.Namespace):
             # print "could not deny anomalous parse list", parselist_type, exc
             self.anomalous[parselist_type] = anomalous_parselist
 
+# TODO: move to matching
 class MatchNamespace(argparse.Namespace):
     """ Collect variables used in matching into a single namespace. """
 
     def __init__(self, index_fn=None, *args, **kwargs):
         super(MatchNamespace, self).__init__(*args, **kwargs)
         self.globals = MatchList(index_fn=index_fn)
-        self.new_master = MatchList(index_fn=index_fn)
-        self.new_slave = MatchList(index_fn=index_fn)
         self.masterless = MatchList(index_fn=index_fn)
         self.slaveless = MatchList(index_fn=index_fn)
         self.anomalous = OrderedDict()
         self.duplicate = OrderedDict()
         self.conflict = OrderedDict()
-        self.delete_slave = OrderedDict()
-        self.delete_master = OrderedDict()
+
 
     def deny_anomalous(self, match_list_type, anomalous_match_list):
         """Add the matchlist to the list of anomalous match lists if it is not empty."""
@@ -514,8 +511,8 @@ class UpdateNamespace(argparse.Namespace):
         self.nonstatic_slave = []
         self.delta_master = []
         self.delta_slave = []
-        self.new_master = []
-        self.new_slave = []
+        self.masterless = []
+        self.slaveless = []
 
 class ResultsNamespace(argparse.Namespace):
     """ Collect information about failures into a single namespace. """

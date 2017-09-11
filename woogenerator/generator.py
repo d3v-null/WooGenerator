@@ -4,12 +4,10 @@ from __future__ import absolute_import
 
 import io
 import os
-import re
 import shutil
 import sys
 import time
 import traceback
-import urlparse
 import webbrowser
 import zipfile
 from bisect import insort
@@ -20,25 +18,24 @@ from exitstatus import ExitStatus
 from httplib2 import ServerNotFoundError
 from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
-from tabulate import tabulate
 
 from .client.prod import CatSyncClientWC
 from .coldata import ColDataBase, ColDataWoo
-from .conf.parser import ArgumentParserProd
-from .matching import (CategoryMatcher, MatchList, ProductMatcher,
-                       VariationMatcher)
+from .matching import CategoryMatcher, ProductMatcher, VariationMatcher
 from .metagator import MetaGator
-from .namespace.core import MatchNamespace, ParserNamespace, UpdateNamespace
+from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
+                             UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
 from .parsing.api import CsvParseWooApi
 from .parsing.dyn import CsvParseDyn
 from .parsing.myo import MYOProdList
 from .parsing.shop import ShopObjList
 from .parsing.special import CsvParseSpecial
-from .parsing.woo import CsvParseWoo, WooCatList, WooProdList, WooVarList
+from .parsing.woo import WooCatList, WooProdList, WooVarList
 from .syncupdate import SyncUpdateCatWoo, SyncUpdateProdWoo, SyncUpdateVarWoo
 from .utils import (HtmlReporter, ProgressCounter, Registrar, SanitationUtils,
                     SeqUtils)
+from .utils.reporter import ReporterNamespace
 
 
 def timediff(settings):
@@ -425,510 +422,530 @@ def export_parsers(settings, parsers):
                 settings.flvu_path, variation_col_names
             )
 
-def main(override_args=None, settings=None):
-    """Main function for generator."""
-    if not settings:
-        settings = SettingsNamespaceProd()
-    settings.init_settings(override_args)
+def product_index_fn(product):
+    """Return the codesum of the product."""
+    return product.codesum
 
-    settings.init_dirs()
+def category_index_fn(category):
+    """Return the title of the category."""
+    return category.title
 
-    ########################################
-    # Create Product Parser object
-    ########################################
+def do_match_categories(parsers, matches, settings):
+    if Registrar.DEBUG_CATS:
+        Registrar.register_message(
+            "matching %d master categories with %d slave categories" %
+            (len(parsers.master.categories),
+             len(parsers.slave.categories)))
 
-    parsers = ParserNamespace()
-    parsers = populate_master_parsers(parsers, settings)
+    category_matcher = CategoryMatcher()
+    category_matcher.clear()
+    category_matcher.process_registers(
+        parsers.slave.categories, parsers.master.categories
+    )
 
-    check_warnings()
+    matches.category.globals.add_matches(category_matcher.pure_matches)
+    matches.category.masterless.add_matches(category_matcher.masterless_matches)
+    matches.category.slaveless.add_matches(category_matcher.slaveless_matches)
 
-    #########################################
-    # Images
-    #########################################
+    if Registrar.DEBUG_CATS:
+        if category_matcher.pure_matches:
+            Registrar.register_message("All Category matches:\n%s" % (
+                '\n'.join(map(str, category_matcher.matches))))
 
-    if settings.do_images and settings.schema_is_woo:
-        process_images(settings, parsers)
+    matches.category.valid += category_matcher.pure_matches
 
-    #########################################
-    # Export Info to Spreadsheets
-    #########################################
+    if category_matcher.duplicate_matches:
+        matches.category.duplicate['title'] = category_matcher.duplicate_matches
 
-    export_parsers(settings, parsers)
-
-    #########################################
-    # Attempt download API data
-    #########################################
-
-    parsers = populate_master_parsers(parsers, settings)
-
-    #########################################
-    # Attempt Matching
-    #########################################
-
-    Registrar.register_progress("Attempting matching")
-
-    updates = UpdateNamespace()
-    variation_updates = UpdateNamespace()
-    category_updates = UpdateNamespace()
-
-    def product_index_fn(product):
-        """Return the codesum of the product."""
-        return product.codesum
-
-    matches = MatchNamespace(index_fn=product_index_fn)
-    variation_matches = MatchNamespace(index_fn=product_index_fn)
-
-    def category_index_fn(category):
-        """Return the title of the category."""
-        return category.title
-
-    category_matches = MatchNamespace(index_fn=category_index_fn)
-    category_matches.new_slave = OrderedDict()
-
-    if settings['do_sync']:
-        if settings['do_categories']:
-            if Registrar.DEBUG_CATS:
-                Registrar.register_message(
-                    "matching %d master categories with %d slave categories" %
-                    (len(parsers.master.categories),
-                     len(parsers.slave.categories)))
-
-            category_matcher = CategoryMatcher()
-            category_matcher.clear()
-            category_matcher.process_registers(parsers.slave.categories,
-                                               parsers.master.categories)
-
-            if Registrar.DEBUG_CATS:
-                if category_matcher.pure_matches:
-                    Registrar.register_message("All Category matches:\n%s" % (
-                        '\n'.join(map(str, category_matcher.matches))))
-
-            valid_category_matches = []
-            valid_category_matches += category_matcher.pure_matches
-
-            if category_matcher.duplicate_matches:
-
-                invalid_category_matches = []
-                for match in category_matcher.duplicate_matches:
-                    master_taxo_sums = [cat.namesum for cat in match.m_objects]
-                    if all(master_taxo_sums) \
-                            and SeqUtils.check_equal(master_taxo_sums) \
-                            and not len(match.s_objects) > 1:
-                        valid_category_matches.append(match)
-                    else:
-                        invalid_category_matches.append(match)
-                if invalid_category_matches:
-                    exc = UserWarning(
-                        "categories couldn't be synchronized because of ambiguous names:\n%s"
-                        % '\n'.join(map(str, invalid_category_matches)))
-                    Registrar.register_error(exc)
-                    raise exc
-
-            if category_matcher.slaveless_matches and category_matcher.masterless_matches:
-                exc = UserWarning(
-                    "You may want to fix up the following categories before syncing:\n%s\n%s"
-                    %
-                    ('\n'.join(map(str, category_matcher.slaveless_matches)),
-                     '\n'.join(map(str, category_matcher.masterless_matches))))
-                Registrar.register_error(exc)
-                # raise exc
-
-            category_matches.globals.add_matches(category_matcher.pure_matches)
-            category_matches.masterless.add_matches(
-                category_matcher.masterless_matches)
-            category_matches.slaveless.add_matches(
-                category_matcher.slaveless_matches)
-
-            sync_cols = ColDataWoo.get_wpapi_category_cols()
-
-            # print "SYNC COLS: %s" % pformat(sync_cols.items())
-
-            for match in enumerate(valid_category_matches):
-                s_object = match.s_object
-                for m_object in match.m_objects:
-                    # m_object = match.m_objects[0]
-
-                    sync_update = SyncUpdateCatWoo(m_object, s_object)
-
-                    sync_update.update(sync_cols)
-
-                    # print sync_update.tabulate()
-
-                    if not sync_update.important_static:
-                        insort(category_updates.problematic, sync_update)
-                        continue
-
-                    if sync_update.m_updated:
-                        category_updates.master.append(sync_update)
-
-                    if sync_update.s_updated:
-                        category_updates.slave.append(sync_update)
-
-            for update in category_updates.master:
-                if Registrar.DEBUG_UPDATE:
-                    Registrar.register_message(
-                        "performing update < %5s | %5s > = \n%100s, %100s " %
-                        (update.master_id, update.slave_id,
-                         str(update.old_m_object), str(update.old_s_object)))
-                if not update.master_id in parsers.master.categories:
-                    exc = UserWarning(
-                        "couldn't fine pkey %s in parsers.master.categories" %
-                        update.master_id)
-                    Registrar.register_error(exc)
-                    continue
-                for col, warnings in update.sync_warnings.items():
-                    if not col == 'ID':
-                        continue
-                    for warning in warnings:
-                        if not warning['subject'] == update.master_name:
-                            continue
-
-                        new_val = warning['new_value']
-                        parsers.master.categories[update.master_id][
-                            col] = new_val
-
-            if Registrar.DEBUG_CATS:
-                Registrar.register_message("NEW CATEGORIES: %d" %
-                                           (len(category_matches.slaveless)))
-
-            if settings['auto_create_new']:
-                # create categories that do not yet exist on slave
-
-                if Registrar.DEBUG_CATS:
-                    Registrar.DEBUG_API = True
-
-                with CatSyncClientWC(settings['slave_wp_api_params']) as client:
-                    if Registrar.DEBUG_CATS:
-                        Registrar.register_message("created cat client")
-                    new_categories = [
-                        match.m_object for match in category_matches.slaveless
-                    ]
-                    if Registrar.DEBUG_CATS:
-                        Registrar.register_message("new categories %s" %
-                                                   new_categories)
-
-                    while new_categories:
-                        category = new_categories.pop(0)
-                        if category.parent:
-                            parent = category.parent
-                            if not parent.isRoot and not parent.wpid and parent in new_categories:
-                                new_categories.append(category)
-                                continue
-
-                        m_api_data = category.to_api_data(
-                            ColDataWoo, 'wp-api')
-                        for key in ['id', 'slug', 'sku']:
-                            if key in m_api_data:
-                                del m_api_data[key]
-                        m_api_data['name'] = category.woo_cat_name
-                        # print "uploading category: %s" % m_api_data
-                        # pprint(m_api_data)
-                        if settings['update_slave']:
-                            response = client.create_item(m_api_data)
-                            # print response
-                            # print response.json()
-                            response_api_data = response.json()
-                            response_api_data = response_api_data.get(
-                                'product_category', response_api_data)
-                            parsers.slave.process_api_category(
-                                response_api_data)
-                            api_cat_translation = OrderedDict()
-                            for key, data in ColDataWoo.get_wpapi_category_cols(
-                            ).items():
-                                try:
-                                    wp_api_key = data['wp-api']['key']
-                                except (IndexError, TypeError):
-                                    wp_api_key = key
-                                api_cat_translation[wp_api_key] = key
-                            # print "TRANSLATION: ", api_cat_translation
-                            category_parser_data = parsers.slave.translate_keys(
-                                response_api_data, api_cat_translation)
-                            if Registrar.DEBUG_CATS:
-                                Registrar.register_message(
-                                    "category being updated with parser data: %s"
-                                    % category_parser_data)
-                            category.update(category_parser_data)
-
-                            # print "CATEGORY: ", category
-            elif category_matches.slaveless:
-                for slaveless_category_match in category_matches.slaveless:
-                    exc = UserWarning("category needs to be created: %s" %
-                                      slaveless_category_match.m_objects[0])
-                    Registrar.register_warning(exc)
-
-        # print parsers.master.to_str_tree()
-        # if Registrar.DEBUG_CATS:
-        #     print "product parser"
-        #     for key, category in parsers.master.categories.items():
-        #         print "%5s | %50s | %s" % (key, category.title[:50],
-        #                                    category.wpid)
-        # if Registrar.DEBUG_CATS:
-        #     print "api product parser info"
-        #     print "there are %s slave categories registered" % len(
-        #         parsers.slave.categories)
-        #     print "there are %s children of API root" % len(
-        #         parsers.slave.root_data.children)
-        #     print parsers.slave.to_str_tree()
-        #     for key, category in parsers.slave.categories.items():
-        #         print "%5s | %50s" % (key, category.title[:50])
-
-        product_matcher = ProductMatcher()
-        product_matcher.process_registers(parsers.slave.products,
-                                          parsers.master.products)
-        # print product_matcher.__repr__()
-
-        matches.globals.add_matches(product_matcher.pure_matches)
-        matches.masterless.add_matches(
-            product_matcher.masterless_matches)
-        matches.slaveless.add_matches(
-            product_matcher.slaveless_matches)
-
-        sync_cols = ColDataWoo.get_wpapi_cols()
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("sync_cols: %s" % repr(sync_cols))
-
-        for col in settings['exclude_cols']:
-            if col in sync_cols:
-                del sync_cols[col]
-
-        if product_matcher.duplicate_matches:
+        for match in category_matcher.duplicate_matches:
+            master_taxo_sums = [cat.namesum for cat in match.m_objects]
+            if all(master_taxo_sums) \
+            and SeqUtils.check_equal(master_taxo_sums) \
+            and not len(match.s_objects) > 1:
+                matches.category.valid.append(match)
+            else:
+                matches.category.invalid.append(match)
+        if matches.category.invalid:
             exc = UserWarning(
-                "products couldn't be synchronized because of ambiguous SKUs:%s"
-                % '\n'.join(map(str, product_matcher.duplicate_matches)))
+                "categories couldn't be synchronized because of ambiguous names:\n%s"
+                % '\n'.join(map(str, matches.category.invalid)))
             Registrar.register_error(exc)
             raise exc
 
-        for _, prod_match in enumerate(product_matcher.pure_matches):
+    if category_matcher.slaveless_matches and category_matcher.masterless_matches:
+        exc = UserWarning(
+            "You may want to fix up the following categories before syncing:\n%s\n%s"
+            %
+            ('\n'.join(map(str, category_matcher.slaveless_matches)),
+             '\n'.join(map(str, category_matcher.masterless_matches))))
+        Registrar.register_error(exc)
+        # raise exc
+
+    # print parsers.master.to_str_tree()
+    # if Registrar.DEBUG_CATS:
+    #     print "product parser"
+    #     for key, category in parsers.master.categories.items():
+    #         print "%5s | %50s | %s" % (key, category.title[:50],
+    #                                    category.wpid)
+    # if Registrar.DEBUG_CATS:
+    #     print "api product parser info"
+    #     print "there are %s slave categories registered" % len(
+    #         parsers.slave.categories)
+    #     print "there are %s children of API root" % len(
+    #         parsers.slave.root_data.children)
+    #     print parsers.slave.to_str_tree()
+    #     for key, category in parsers.slave.categories.items():
+    #         print "%5s | %50s" % (key, category.title[:50])
+
+def do_match(parsers, matches, settings):
+    """For every item in slave, find its counterpart in master."""
+
+    Registrar.register_progress("Attempting matching")
+
+    matches.variation = MatchNamespace(index_fn=product_index_fn)
+
+    matches.category = MatchNamespace(index_fn=category_index_fn)
+    matches.category.valid = []
+    matches.category.invalid = []
+    matches.category.prod = OrderedDict()
+
+    if not settings['do_sync']:
+        return matches
+
+    product_matcher = ProductMatcher()
+    product_matcher.process_registers(
+        parsers.slave.products, parsers.master.products
+    )
+    # print product_matcher.__repr__()
+
+    matches.globals.add_matches(product_matcher.pure_matches)
+    matches.masterless.add_matches(product_matcher.masterless_matches)
+    matches.slaveless.add_matches(product_matcher.slaveless_matches)
+
+    if product_matcher.duplicate_matches:
+        exc = UserWarning(
+            "products couldn't be synchronized because of ambiguous SKUs:%s"
+            % '\n'.join(map(str, product_matcher.duplicate_matches)))
+        Registrar.register_error(exc)
+        raise exc
+
+    if settings['do_categories']:
+        category_matcher = CategoryMatcher()
+
+        for _, prod_match in enumerate(matches.globals):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
                 Registrar.register_message("processing prod_match: %s" %
                                            prod_match.tabulate())
             m_object = prod_match.m_object
             s_object = prod_match.s_object
+            match_index = prod_match.get_singular_index
 
-            sync_update = SyncUpdateProdWoo(m_object, s_object)
+            category_matcher.clear()
+            category_matcher.process_registers(
+                s_object.categories, m_object.categories
+            )
 
-            # , "gcs %s is not variation but object is" % repr(gcs)
-            assert not m_object.isVariation
-            # , "gcs %s is not variation but object is" % repr(gcs)
-            assert not s_object.isVariation
+            product_category_matches = MatchNamespace(index_fn=category_index_fn)
+
+            product_category_matches.globals.add_matches(
+                category_matcher.pure_matches
+            )
+            product_category_matches.masterless.add_matches(
+                category_matcher.masterless_matches
+            )
+            product_category_matches.slaveless.add_matches(
+                category_matcher.slaveless_matches
+            )
+
+            matches.category.prod[match_index] = product_category_matches
+
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message(
+                    "category matches for update:\n%s" % (
+                        category_matcher.__repr__()))
+
+    if settings['do_variations']:
+
+        variation_matcher = VariationMatcher()
+        variation_matcher.process_registers(
+            parsers.slave.variations, parsers.master.variations
+        )
+
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("variation matcher:\n%s" %
+                                       variation_matcher.__repr__())
+
+        matches.variation.globals.add_matches(variation_matcher.pure_matches)
+        matches.variation.masterless.add_matches(variation_matcher.masterless_matches)
+        matches.variation.slaveless.add_matches(variation_matcher.slaveless_matches)
+        if variation_matcher.duplicate_matches:
+            matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
+
+def do_merge_categories(matches, parsers, updates, settings):
+    updates.category = UpdateNamespace()
+
+    sync_cols = ColDataWoo.get_wpapi_category_cols()
+
+    # print "SYNC COLS: %s" % pformat(sync_cols.items())
+
+    for match in enumerate(matches.category.valid):
+        s_object = match.s_object
+        for m_object in match.m_objects:
+            # m_object = match.m_objects[0]
+
+            sync_update = SyncUpdateCatWoo(m_object, s_object)
+
             sync_update.update(sync_cols)
 
             # print sync_update.tabulate()
 
-            if settings['do_categories']:
-                category_matcher.clear()
-                category_matcher.process_registers(s_object.categories,
-                                                   m_object.categories)
+            if not sync_update.important_static:
+                insort(updates.category.problematic, sync_update)
+                continue
 
-                update_params = {
-                    'col': 'catlist',
-                    'data': {
-                        # 'sync'
-                    },
-                    'subject': sync_update.slave_name
-                }
+            if sync_update.m_updated:
+                updates.category.master.append(sync_update)
 
-                change_match_list = category_matcher.masterless_matches
-                change_match_list.add_matches(
-                    category_matcher.slaveless_matches)
+            if sync_update.s_updated:
+                updates.category.slave.append(sync_update)
 
-                master_categories = set([
-                    master_category.wpid
-                    for master_category in m_object.categories.values()
-                    if master_category.wpid
-                ])
-                slave_categories = set([
-                    slave_category.wpid
-                    for slave_category in s_object.categories.values()
-                    if slave_category.wpid
-                ])
+    for update in updates.category.master:
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (update.master_id, update.slave_id,
+                 str(update.old_m_object), str(update.old_s_object)))
+        if not update.master_id in parsers.master.categories:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.categories" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        for col, warnings in update.sync_warnings.items():
+            if not col == 'ID':
+                continue
+            for warning in warnings:
+                if not warning['subject'] == update.master_name:
+                    continue
 
-                if Registrar.DEBUG_CATS:
-                    Registrar.register_message(
-                        "comparing categories of %s:\n%s\n%s\n%s\n%s" %
-                        (m_object.codesum, str(m_object.categories.values()),
-                         str(s_object.categories.values()),
-                         str(master_categories), str(slave_categories), ))
+                new_val = warning['new_value']
+                parsers.master.categories[update.master_id][col] = new_val
 
-                sync_update.old_m_object['catlist'] = list(master_categories)
-                sync_update.old_s_object['catlist'] = list(slave_categories)
+    if settings['auto_create_new']:
+        for match in enumerate(matches.category.slaveless):
+            m_object = match.m_object
+            sync_update = SyncUpdateCatWoo(m_object)
+            updates.category.slaveless.append(sync_update)
 
-                if change_match_list:
-                    assert \
-                        master_categories != slave_categories, \
-                        ("if change_match_list exists, then master_categories "
-                         "should not equal slave_categories.\nchange_match_list: \n%s") % \
-                        "\n".join(map(pformat, change_match_list))
-                    update_params['reason'] = 'updating'
-                    # update_params['subject'] = SyncUpdate.slave_name
 
-                    # master_categories = [category.woo_cat_name for category \
-                    #                      in change_match_list.merge().m_objects]
-                    # slave_categories =  [category.woo_cat_name for category \
-                    # in change_match_list.merge().s_objects]
 
-                    sync_update.loser_update(**update_params)
-                    # sync_update.new_m_object['catlist'] = master_categories
-                    # sync_update.new_s_object['catlist'] = master_categories
 
-                    # update_params['old_value'] = slave_categories
-                    # update_params['new_value'] = master_categories
-                else:
-                    assert\
-                        master_categories == slave_categories, \
-                        "should equal, %s | %s" % (
-                            repr(master_categories),
-                            repr(slave_categories)
-                        )
-                    update_params['reason'] = 'identical'
-                    sync_update.tie_update(**update_params)
+def do_merge(matches, parsers, updates, settings):
+    """For a given list of matches, return a description of updates required to merge them."""
 
-                if Registrar.DEBUG_CATS:
-                    Registrar.register_message(
-                        "category matches for update:\n%s" % (
-                            category_matcher.__repr__()))
+    updates.variation = UpdateNamespace()
 
-                for cat_match in category_matcher.masterless_matches:
-                    s_index = s_object.index
-                    if category_matches.delete_slave.get(s_index) is None:
-                        category_matches.delete_slave[s_index] = MatchList()
-                    category_matches.delete_slave[s_index].append(cat_match)
-                for cat_match in category_matcher.slaveless_matches:
-                    s_index = s_object.index
-                    if category_matches.new_slave.get(s_index) is None:
-                        category_matches.new_slave[s_index] = MatchList()
-                    category_matches.new_slave[s_index].append(cat_match)
+    if not settings['do_sync']:
+        return updates
+
+    # Merge products
+
+    sync_cols = ColDataWoo.get_wpapi_cols()
+    if Registrar.DEBUG_UPDATE:
+        Registrar.register_message("sync_cols: %s" % repr(sync_cols))
+
+    for col in settings['exclude_cols']:
+        if col in sync_cols:
+            del sync_cols[col]
+
+    for _, prod_match in enumerate(matches.globals):
+        if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
+            Registrar.register_message("processing prod_match: %s" %
+                                       prod_match.tabulate())
+        m_object = prod_match.m_object
+        s_object = prod_match.s_object
+
+        sync_update = SyncUpdateProdWoo(m_object, s_object)
+
+        # , "gcs %s is not variation but object is" % repr(gcs)
+        assert not m_object.isVariation
+        # , "gcs %s is not variation but object is" % repr(gcs)
+        assert not s_object.isVariation
+        sync_update.update(sync_cols)
+
+        # print sync_update.tabulate()
+
+        if settings['do_categories']:
+
+            update_params = {
+                'col': 'catlist',
+                'data': {
+                    # 'sync'
+                },
+                'subject': sync_update.slave_name
+            }
+
+            master_categories = set([
+                master_category.wpid
+                for master_category in m_object.categories.values()
+                if master_category.wpid
+            ])
+            slave_categories = set([
+                slave_category.wpid
+                for slave_category in s_object.categories.values()
+                if slave_category.wpid
+            ])
+
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message(
+                    "comparing categories of %s:\n%s\n%s\n%s\n%s" %
+                    (m_object.codesum, str(m_object.categories.values()),
+                     str(s_object.categories.values()),
+                     str(master_categories), str(slave_categories), ))
+
+            sync_update.old_m_object['catlist'] = list(master_categories)
+            sync_update.old_s_object['catlist'] = list(slave_categories)
+
+            match_index = prod_match.singular_index
+            product_category_matches = matches.category.prod.get(match_index)
+
+            if matches.category.prod[match_index].slaveless \
+            or matches.category.prod[match_index].masterless:
+                assert \
+                    master_categories != slave_categories, \
+                    ("if change_match_list exists, then master_categories "
+                     "should not equal slave_categories.\nchange_match_list: \n%s") % \
+                    "\n".join(map(pformat, product_category_matches))
+                update_params['reason'] = 'updating'
+
+                sync_update.loser_update(**update_params)
+            else:
+                assert\
+                    master_categories == slave_categories, \
+                    "should equal, %s | %s" % (
+                        repr(master_categories),
+                        repr(slave_categories)
+                    )
+                update_params['reason'] = 'identical'
+                sync_update.tie_update(**update_params)
+
+        # Assumes that GDrive is read only, doesn't care about master
+        # updates
+        if not sync_update.s_updated:
+            continue
+
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message("sync updates:\n%s" %
+                                       sync_update.tabulate())
+
+        if sync_update.s_updated and sync_update.s_deltas:
+            insort(updates.delta_slave, sync_update)
+
+        if not sync_update.important_static:
+            insort(updates.problematic, sync_update)
+            continue
+
+        if sync_update.s_updated:
+            insort(updates.slave, sync_update)
+
+    if settings['do_variations']:
+        var_sync_cols = ColDataWoo.get_wpapi_variable_cols()
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message("var_sync_cols: %s" %
+                                       repr(var_sync_cols))
+
+        if matches.variation.duplicate:
+            exc = UserWarning(
+                "variations couldn't be synchronized because of ambiguous SKUs:%s"
+                % '\n'.join(map(str, matches.variation.duplicate)))
+            Registrar.register_error(exc)
+            raise exc
+
+        for var_match_count, var_match in enumerate(matches.variation.globals):
+            # print "processing var_match: %s" % var_match.tabulate()
+            m_object = var_match.m_object
+            s_object = var_match.s_object
+
+            sync_update = SyncUpdateVarWoo(m_object, s_object)
+
+            sync_update.update(var_sync_cols)
 
             # Assumes that GDrive is read only, doesn't care about master
             # updates
             if not sync_update.s_updated:
                 continue
 
-            if Registrar.DEBUG_UPDATE:
-                Registrar.register_message("sync updates:\n%s" %
-                                           sync_update.tabulate())
-
-            if sync_update.s_updated and sync_update.s_deltas:
-                insort(updates.delta_slave, sync_update)
+            if Registrar.DEBUG_VARS:
+                Registrar.register_message("var update %d:\n%s" % (
+                    var_match_count, sync_update.tabulate()))
 
             if not sync_update.important_static:
-                insort(updates.problematic, sync_update)
+                insort(updates.variation.problematic, sync_update)
                 continue
 
             if sync_update.s_updated:
-                insort(updates.slave, sync_update)
+                insort(updates.variation.slave, sync_update)
 
-        if settings['do_variations']:
+        for var_match_count, var_match in enumerate(matches.variation.slaveless):
+            assert var_match.has_no_slave
+            m_object = var_match.m_object
 
-            variation_matcher = VariationMatcher()
-            variation_matcher.process_registers(parsers.slave.variations,
-                                                parsers.master.variations)
+            # sync_update = SyncUpdateVarWoo(m_object, None)
+
+            # sync_update.update(var_sync_cols)
 
             if Registrar.DEBUG_VARS:
-                Registrar.register_message("variation matcher:\n%s" %
-                                           variation_matcher.__repr__())
+                Registrar.register_message("var create %d:\n%s" % (
+                    var_match_count, m_object.identifier))
 
-            variation_matches.globals.add_matches(
-                variation_matcher.pure_matches)
-            variation_matches.masterless.add_matches(
-                variation_matcher.masterless_matches)
-            variation_matches.slaveless.add_matches(
-                variation_matcher.slaveless_matches)
+            # TODO: figure out which attribute terms to add
 
-            var_sync_cols = ColDataWoo.get_wpapi_variable_cols()
-            if Registrar.DEBUG_UPDATE:
-                Registrar.register_message("var_sync_cols: %s" %
-                                           repr(var_sync_cols))
+        for var_match_count, var_match in enumerate(matches.variation.masterless):
+            assert var_match.has_no_master
+            s_object = var_match.s_object
 
-            if variation_matcher.duplicate_matches:
-                exc = UserWarning(
-                    "variations couldn't be synchronized because of ambiguous SKUs:%s"
-                    % '\n'.join(map(str, variation_matcher.duplicate_matches)))
-                Registrar.register_error(exc)
-                raise exc
+            # sync_update = SyncUpdateVarWoo(None, s_object)
 
-            for var_match_count, var_match in enumerate(
-                    variation_matcher.pure_matches):
-                # print "processing var_match: %s" % var_match.tabulate()
-                m_object = var_match.m_object
-                s_object = var_match.s_object
+            # sync_update.update(var_sync_cols)
 
-                sync_update = SyncUpdateVarWoo(m_object, s_object)
+            if Registrar.DEBUG_VARS:
+                Registrar.register_message("var delete: %d:\n%s" % (
+                    var_match_count, s_object.identifier))
 
-                sync_update.update(var_sync_cols)
+            # TODO: figure out which attribute terms to delete
 
-                # Assumes that GDrive is read only, doesn't care about master
-                # updates
-                if not sync_update.s_updated:
-                    continue
-
-                if Registrar.DEBUG_VARS:
-                    Registrar.register_message("var update %d:\n%s" % (
-                        var_match_count, sync_update.tabulate()))
-
-                if not sync_update.important_static:
-                    insort(variation_updates.problematic, sync_update)
-                    continue
-
-                if sync_update.s_updated:
-                    insort(variation_updates.slave, sync_update)
-
-            for var_match_count, var_match in enumerate(
-                    variation_matcher.slaveless_matches):
-                assert var_match.has_no_slave
-                m_object = var_match.m_object
-
-                # sync_update = SyncUpdateVarWoo(m_object, None)
-
-                # sync_update.update(var_sync_cols)
-
-                if Registrar.DEBUG_VARS:
-                    Registrar.register_message("var create %d:\n%s" % (
-                        var_match_count, m_object.identifier))
-
-                # TODO: figure out which attribute terms to add
-
-            for var_match_count, var_match in enumerate(
-                    variation_matcher.masterless_matches):
-                assert var_match.has_no_master
-                s_object = var_match.s_object
-
-                # sync_update = SyncUpdateVarWoo(None, s_object)
-
-                # sync_update.update(var_sync_cols)
-
-                if Registrar.DEBUG_VARS:
-                    Registrar.register_message("var delete: %d:\n%s" % (
-                        var_match_count, s_object.identifier))
-
-                # TODO: figure out which attribute terms to delete
-
-        if settings['auto_create_new']:
-            for new_prod_count, new_prod_match in enumerate(
-                    product_matcher.slaveless_matches
-            ):
-                m_object = new_prod_match.m_object
-                Registrar.register_message(
-                    "will create product %d: %s" % (
-                        new_prod_count, m_object.identifier
-                    )
+    if settings['auto_create_new']:
+        for new_prod_count, new_prod_match in enumerate(matches.slaveless):
+            m_object = new_prod_match.m_object
+            Registrar.register_message(
+                "will create product %d: %s" % (
+                    new_prod_count, m_object.identifier
                 )
-                api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
-                for key in ['id', 'slug']:
-                    if key in api_data:
-                        del api_data[key]
-                # print "has api data: %s" % pformat(api_data)
-                updates.new_slave.append(api_data)
+            )
+            api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
+            for key in ['id', 'slug']:
+                if key in api_data:
+                    del api_data[key]
+            # print "has api data: %s" % pformat(api_data)
+            updates.slaveless.append(api_data)
 
-    check_warnings()
+def do_report_categories(matches, updates, parsers, settings):
+    Registrar.register_progress("Write Report")
 
-    # except Exception, exc:
-    #     Registrar.register_error(repr(exc))
-    #     settings.report_and_quit = True
+    with io.open(settings.rep_cat_path, 'w+', encoding='utf8') as res_file:
+        reporter = HtmlReporter()
 
-    #########################################
-    # Write Report
-    #########################################
+        syncing_group = HtmlReporter.Group('cats',
+                                           'Category Syncing Results')
+
+        # TODO: change this to change this to updates.category.prod
+        # syncing_group.add_section(
+        #     HtmlReporter.Section(
+        #         ('matches.category.delete_slave'),
+        #         description="%s items will leave categories" %
+        #         settings.slave_name,
+        #         data=tabulate(
+        #             [
+        #                 [
+        #                     index,
+        #                     # parsers.slave.products[index],
+        #                     # parsers.slave.products[index].categories,
+        #                     # ", ".join(category.woo_cat_name \
+        #                     # for category in matches_.merge().m_objects),
+        #                     ", ".join([
+        #                         category_.woo_cat_name
+        #                         for category_ in matches_.merge().s_objects
+        #                     ])
+        #                 ] for index, matches_ in matches.category.delete_slave.items()
+        #             ],
+        #             tablefmt="html"),
+        #         length=len(matches.category.delete_slave)
+        #         # data = '<hr>'.join([
+        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+        #         #         for index, match in matches.category.delete_slave.items()
+        #         #     ]
+        #         # )
+        #     ))
+
+
+        # TODO: change this to change this to updates.category.prod
+        # matches.category.delete_slave_ns_data = tabulate(
+        #     [
+        #         [
+        #             index,
+        #             ", ".join([
+        #                 category_.woo_cat_name
+        #                 for category_ in matches_.merge().s_objects
+        #                 if not re.search('Specials', category_.woo_cat_name)
+        #             ])
+        #         ] for index, matches_ in matches.category.delete_slave.items()
+        #     ],
+        #     tablefmt="html"
+        # )
+        #
+        # syncing_group.add_section(
+        #     HtmlReporter.Section(
+        #         ('matches.category.delete_slave_not_specials'),
+        #         description="%s items will leave categories" %
+        #         settings.slave_name,
+        #         data=matches.category.delete_slave_ns_data,
+        #         length=len(matches.category.delete_slave)
+        #         # data = '<hr>'.join([
+        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+        #         #         for index, match in matches.category.delete_slave.items()
+        #         #     ]
+        #         # )
+        #     ))
+
+
+        # TODO: change this to updates.category.prod
+        # syncing_group.add_section(
+        #     HtmlReporter.Section(
+        #         ('matches.category.slaveless'),
+        #         description="%s items will join categories" %
+        #         settings.slave_name,
+        #         data=tabulate(
+        #             [
+        #                 [
+        #                     index,
+        #                     # parsers.slave.products[index],
+        #                     # parsers.slave.products[index].categories,
+        #                     ", ".join([
+        #                         category_.woo_cat_name
+        #                         for category_ in matches_.merge()
+        #                         .m_objects
+        #                     ]),
+        #                     # ", ".join(category_.woo_cat_name \
+        #                     # for category_ in matches_.merge().s_objects)
+        #                 ] for index, matches_ in matches.category.slaveless.items()
+        #             ],
+        #             tablefmt="html"),
+        #         length=len(matches.category.slaveless)
+        #         # data = '<hr>'.join([
+        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+        #         #         for index, match in matches.category.delete_slave.items()
+        #         #     ]
+        #         # )
+        #     ))
+
+        reporter.add_group(syncing_group)
+
+    if not reporter.groups:
+        empty_group = HtmlReporter.Group('empty', 'Nothing to report')
+        # empty_group.add_section(
+        #     HtmlReporter.Section(
+        #         ('empty'),
+        #         data = ''
+        #
+        #     )
+        # )
+        Registrar.register_message('nothing to report')
+        reporter.add_group(empty_group)
+
+    res_file.write(reporter.get_document_unicode())
+
+
+def do_report(matches, updates, parsers, settings):
 
     Registrar.register_progress("Write Report")
 
@@ -1042,7 +1059,7 @@ def main(override_args=None, settings=None):
             if settings['do_categories']:
                 matching_group = HtmlReporter.Group(
                     'category_matching', 'Category Matching Results')
-                if category_matches.globals:
+                if matches.category.globals:
                     matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_category_matches',
@@ -1053,40 +1070,40 @@ def main(override_args=None, settings=None):
                                 "%s records match well with %s" % (
                                     settings.slave_name, settings.master_name),
                                 'data':
-                                category_matches.globals.tabulate(
+                                matches.category.globals.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(category_matches.globals)
+                                len(matches.category.globals)
                             }))
-                if category_matches.masterless:
+                if matches.category.masterless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'category_matches.masterless',
+                            'matches.category.masterless',
                             **{
                                 'title':
                                 'Masterless matches',
                                 'description':
                                 "matches are masterless",
                                 'data':
-                                category_matches.masterless.tabulate(
+                                matches.category.masterless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(category_matches.masterless)
+                                len(matches.category.masterless)
                             }))
-                if category_matches.slaveless:
+                if matches.category.slaveless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'category_matches.slaveless',
+                            'matches.category.slaveless',
                             **{
                                 'title':
                                 'Slaveless matches',
                                 'description':
                                 "matches are slaveless",
                                 'data':
-                                category_matches.slaveless.tabulate(
+                                matches.category.slaveless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(category_matches.slaveless)
+                                len(matches.category.slaveless)
                             }))
                 if matching_group.sections:
                     reporter.add_group(matching_group)
@@ -1094,7 +1111,7 @@ def main(override_args=None, settings=None):
             if settings['do_variations']:
                 matching_group = HtmlReporter.Group(
                     'variation_matching', 'Variation Matching Results')
-                if variation_matches.globals:
+                if matches.variation.globals:
                     matching_group.add_section(
                         HtmlReporter.Section(
                             'perfect_variation_matches',
@@ -1105,40 +1122,40 @@ def main(override_args=None, settings=None):
                                 "%s records match well with %s" % (
                                     settings.slave_name, settings.master_name),
                                 'data':
-                                variation_matches.globals.tabulate(
+                                matches.variation.globals.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(variation_matches.globals)
+                                len(matches.variation.globals)
                             }))
-                if variation_matches.masterless:
+                if matches.variation.masterless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'variation_matches.masterless',
+                            'matches.variation.masterless',
                             **{
                                 'title':
                                 'Masterless matches',
                                 'description':
                                 "matches are masterless",
                                 'data':
-                                variation_matches.masterless.tabulate(
+                                matches.variation.masterless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(variation_matches.masterless)
+                                len(matches.variation.masterless)
                             }))
-                if variation_matches.slaveless:
+                if matches.variation.slaveless:
                     matching_group.add_section(
                         HtmlReporter.Section(
-                            'variation_matches.slaveless',
+                            'matches.variation.slaveless',
                             **{
                                 'title':
                                 'Slaveless matches',
                                 'description':
                                 "matches are slaveless",
                                 'data':
-                                variation_matches.slaveless.tabulate(
+                                matches.variation.slaveless.tabulate(
                                     tablefmt="html"),
                                 'length':
-                                len(variation_matches.slaveless)
+                                len(matches.variation.slaveless)
                             }))
                 if matching_group.sections:
                     reporter.add_group(matching_group)
@@ -1183,146 +1200,111 @@ def main(override_args=None, settings=None):
                         " items will be updated",
                         data='<hr>'.join([
                             update.tabulate(tablefmt="html")
-                            for update in variation_updates.slave
+                            for update in updates.variation.slave
                         ]),
-                        length=len(variation_updates.slave)))
+                        length=len(updates.variation.slave)))
 
                 syncing_group.add_section(
                     HtmlReporter.Section(
-                        "variation_updates.problematic",
+                        "updates.variation.problematic",
                         description="items can't be merged because they are too dissimilar",
                         data='<hr>'.join([
                             update.tabulate(tablefmt="html")
-                            for update in variation_updates.problematic
+                            for update in updates.variation.problematic
                         ]),
-                        length=len(variation_updates.problematic)))
+                        length=len(updates.variation.problematic)))
 
                 reporter.add_group(syncing_group)
 
-        report_cats = settings['do_sync'] and settings['do_categories']
-        if report_cats:
-            # "reporting cats. settings['do_sync']: %s, do_categories: %s" % (
-            #     repr(settings['do_sync']), repr(settings['do_categories']))
-            syncing_group = HtmlReporter.Group('cats',
-                                               'Category Syncing Results')
-
-            syncing_group.add_section(
-                HtmlReporter.Section(
-                    ('category_matches.delete_slave'),
-                    description="%s items will leave categories" %
-                    settings.slave_name,
-                    data=tabulate(
-                        [
-                            [
-                                index,
-                                # parsers.slave.products[index],
-                                # parsers.slave.products[index].categories,
-                                # ", ".join(category.woo_cat_name \
-                                # for category in matches_.merge().m_objects),
-                                ", ".join([
-                                    category_.woo_cat_name
-                                    for category_ in matches_.merge().s_objects
-                                ])
-                            ] for index, matches_ in category_matches.delete_slave.items()
-                        ],
-                        tablefmt="html"),
-                    length=len(category_matches.delete_slave)
-                    # data = '<hr>'.join([
-                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in category_matches.delete_slave.items()
-                    #     ]
-                    # )
-                ))
-
-            category_matches.delete_slave_ns_data = tabulate(
-                [
-                    [
-                        index,
-                        ", ".join([
-                            category_.woo_cat_name
-                            for category_ in matches_.merge().s_objects
-                            if not re.search('Specials', category_.woo_cat_name)
-                        ])
-                    ] for index, matches_ in category_matches.delete_slave.items()
-                ],
-                tablefmt="html"
-            )
-
-            syncing_group.add_section(
-                HtmlReporter.Section(
-                    ('category_matches.delete_slave_not_specials'),
-                    description="%s items will leave categories" %
-                    settings.slave_name,
-                    data=category_matches.delete_slave_ns_data,
-                    length=len(category_matches.delete_slave)
-                    # data = '<hr>'.join([
-                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in category_matches.delete_slave.items()
-                    #     ]
-                    # )
-                ))
-
-            syncing_group.add_section(
-                HtmlReporter.Section(
-                    ('category_matches.new_slave'),
-                    description="%s items will join categories" %
-                    settings.slave_name,
-                    data=tabulate(
-                        [
-                            [
-                                index,
-                                # parsers.slave.products[index],
-                                # parsers.slave.products[index].categories,
-                                ", ".join([
-                                    category_.woo_cat_name
-                                    for category_ in matches_.merge()
-                                    .m_objects
-                                ]),
-                                # ", ".join(category_.woo_cat_name \
-                                # for category_ in matches_.merge().s_objects)
-                            ] for index, matches_ in category_matches.new_slave.items()
-                        ],
-                        tablefmt="html"),
-                    length=len(category_matches.new_slave)
-                    # data = '<hr>'.join([
-                    #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-                    #         for index, match in category_matches.delete_slave.items()
-                    #     ]
-                    # )
-                ))
-
-            reporter.add_group(syncing_group)
-
-        if not reporter.groups:
-            empty_group = HtmlReporter.Group('empty', 'Nothing to report')
-            # empty_group.add_section(
-            #     HtmlReporter.Section(
-            #         ('empty'),
-            #         data = ''
-            #
-            #     )
-            # )
-            Registrar.register_message('nothing to report')
-            reporter.add_group(empty_group)
-
         res_file.write(reporter.get_document_unicode())
 
-    if settings.report_and_quit:
-        sys.exit(ExitStatus.success)
 
-    check_warnings()
+def do_report_post(reporters, results, settings):
+    """ Reports results from performing updates."""
+    pass
 
-    #########################################
-    # Perform updates
-    #########################################
+def do_updates_categories(updates, parsers, results, settings):
+    """Perform a list of updates."""
+
+    if settings['auto_create_new']:
+        # create categories that do not yet exist on slave
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message("NEW CATEGORIES: %d" % (
+                len(updates.category.slaveless)
+            ))
+
+        if Registrar.DEBUG_CATS:
+            Registrar.DEBUG_API = True
+
+        with CatSyncClientWC(settings['slave_wp_api_params']) as client:
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message("created cat client")
+            new_categories = [
+                update.m_object for update in updates.category.slaveless
+            ]
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message("new categories %s" %
+                                           new_categories)
+
+            while new_categories:
+                category = new_categories.pop(0)
+                if category.parent:
+                    parent = category.parent
+                    if not parent.isRoot and not parent.wpid and parent in new_categories:
+                        new_categories.append(category)
+                        continue
+
+                m_api_data = category.to_api_data(
+                    ColDataWoo, 'wp-api')
+                for key in ['id', 'slug', 'sku']:
+                    if key in m_api_data:
+                        del m_api_data[key]
+                m_api_data['name'] = category.woo_cat_name
+                # print "uploading category: %s" % m_api_data
+                # pprint(m_api_data)
+                if settings['update_slave']:
+                    response = client.create_item(m_api_data)
+                    # print response
+                    # print response.json()
+                    response_api_data = response.json()
+                    response_api_data = response_api_data.get(
+                        'product_category', response_api_data)
+                    parsers.slave.process_api_category(
+                        response_api_data)
+                    api_cat_translation = OrderedDict()
+                    for key, data in ColDataWoo.get_wpapi_category_cols(
+                    ).items():
+                        try:
+                            wp_api_key = data['wp-api']['key']
+                        except (IndexError, TypeError):
+                            wp_api_key = key
+                        api_cat_translation[wp_api_key] = key
+                    # print "TRANSLATION: ", api_cat_translation
+                    category_parser_data = parsers.slave.translate_keys(
+                        response_api_data, api_cat_translation)
+                    if Registrar.DEBUG_CATS:
+                        Registrar.register_message(
+                            "category being updated with parser data: %s"
+                            % category_parser_data)
+                    category.update(category_parser_data)
+
+                    # print "CATEGORY: ", category
+    elif updates.category.slaveless:
+        for update in updates.category.slaveless:
+            exc = UserWarning("category needs to be created: %s" %
+                              update.m_object)
+            Registrar.register_warning(exc)
+
+def do_updates(updates, settings):
+    """Perform a list of updates."""
 
     all_product_updates = updates.slave
     if settings['do_variations']:
-        all_product_updates += variation_updates.slave
+        all_product_updates += updates.variation.slave
     if settings.do_problematic:
         all_product_updates += updates.problematic
         if settings['do_variations']:
-            all_product_updates += variation_updates.problematic
+            all_product_updates += updates.variation.problematic
 
     # don't perform updates if limit was set
     if settings['slave_parse_limit']:
@@ -1371,6 +1353,73 @@ def main(override_args=None, settings=None):
                         slave_failures.append(update)
                 # else:
                 #     print "no update made to %s " % str(update)
+
+def main(override_args=None, settings=None):
+    """Main function for generator."""
+    if not settings:
+        settings = SettingsNamespaceProd()
+    settings.init_settings(override_args)
+
+    settings.init_dirs()
+
+    ########################################
+    # Create Product Parser object
+    ########################################
+
+    parsers = ParserNamespace()
+    parsers = populate_master_parsers(parsers, settings)
+
+    check_warnings()
+
+    if settings.do_images and settings.schema_is_woo:
+        process_images(settings, parsers)
+
+    export_parsers(settings, parsers)
+
+    parsers = populate_master_parsers(parsers, settings)
+
+    matches = MatchNamespace(index_fn=product_index_fn)
+    updates = UpdateNamespace()
+    reporters = ReporterNamespace()
+    results = ResultsNamespace()
+
+    if settings['do_categories']:
+
+        matches = do_match_categories(parsers, matches, settings)
+        updates = do_merge_categories(matches, parsers, updates, settings)
+        reporters = do_report_categories(matches, updates, parsers, settings)
+        check_warnings()
+
+        try:
+            results = do_updates_categories(updates, parsers, results, settings)
+        except (SystemExit, KeyboardInterrupt):
+            return reporters, results
+
+
+    matches = do_match(parsers, matches, settings)
+    updates = do_merge(matches, parsers, updates, settings)
+    check_warnings()
+    reporters = do_report(matches, updates, parsers, settings)
+
+    if settings.report_and_quit:
+        sys.exit(ExitStatus.success)
+
+    check_warnings()
+
+    Registrar.register_message(
+        "pre-sync summary: \n%s" % reporters.main.get_summary_text()
+    )
+
+    try:
+        results = do_updates(updates, settings)
+    except (SystemExit, KeyboardInterrupt):
+        return reporters, results
+    do_report_post(reporters, results, settings)
+
+    Registrar.register_message(
+        "post-sync summary: \n%s" % reporters.post.get_summary_text()
+    )
+
 
                 #########################################
                 # Display reports

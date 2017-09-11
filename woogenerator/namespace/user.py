@@ -9,6 +9,7 @@ from ..client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
 from ..coldata import ColDataUser
 from ..conf.core import DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH
 from ..conf.parser import ArgumentParserUser
+from ..contact_objects import FieldGroup
 from ..parsing.user import CsvParseUser
 from .core import SettingsNamespaceProto
 
@@ -291,8 +292,6 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             }
         return response
 
-
-    @property
     def init_settings(self, override_args=None):
         super(SettingsNamespaceUser, self).init_settings(override_args)
         FieldGroup.do_post = self.do_post

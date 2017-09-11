@@ -95,11 +95,11 @@ class TestMerger(unittest.TestCase):
         print("master updates(%d):\n%s" % (
             len(updates.master), map(str, updates.master))
         )
-        print("new_master updates(%d):\n%s" % (
-            len(updates.new_master), map(str, updates.new_master))
+        print("masterless updates(%d):\n%s" % (
+            len(updates.masterless), map(str, updates.masterless))
         )
-        print("new_slave updates(%d):\n%s" % (
-            len(updates.new_slave), map(str, updates.new_slave))
+        print("slaveless updates(%d):\n%s" % (
+            len(updates.slaveless), map(str, updates.slaveless))
         )
         print("nonstatic_master updates(%d):\n%s" % (
             len(updates.nonstatic_master), map(str, updates.nonstatic_master))
@@ -375,8 +375,8 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(len(self.updates.delta_master), 6)
         self.assertEqual(len(self.updates.delta_slave), 6)
         self.assertEqual(len(self.updates.master), 7)
-        self.assertEqual(len(self.updates.new_master), 0)
-        self.assertEqual(len(self.updates.new_slave), 0)
+        self.assertEqual(len(self.updates.masterless), 0)
+        self.assertEqual(len(self.updates.slaveless), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.problematic), 0)

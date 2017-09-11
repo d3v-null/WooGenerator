@@ -192,6 +192,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         )
         return os.path.join(self.out_dir_full, response)
 
+    @property
+    def rep_cat_path(self):
+        response = '%ssync_report_cat%s.html' % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
 
     @property
     def rep_web_path(self):
@@ -390,7 +398,6 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def add_special_categories(self):
         return self.do_specials and self.do_categories
 
-    @property
     def init_settings(self, override_args=None):
         super(SettingsNamespaceProd, self).init_settings(override_args)
 

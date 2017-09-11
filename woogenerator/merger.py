@@ -261,8 +261,8 @@ def do_match(parsers, settings):
 
     email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
 
-    matches.new_master.add_matches(email_matcher.masterless_matches)
-    matches.new_slave.add_matches(email_matcher.slaveless_matches)
+    matches.masterless.add_matches(email_matcher.masterless_matches)
+    matches.slaveless.add_matches(email_matcher.slaveless_matches)
     matches.globals.add_matches(email_matcher.pure_matches)
     matches.duplicate['email'] = email_matcher.duplicate_matches
 
@@ -647,7 +647,6 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
     try:
         files_to_zip = []
         attrs_to_zip = [
-            # 'master_path', 'slave_path',
             'log_path'
         ]
         reports_to_ignore = [

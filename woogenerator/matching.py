@@ -182,6 +182,13 @@ class Match(object):
             self.woo_obj_list_repr(self.s_objects)
         ])
 
+    @property
+    def singular_index(self):
+        return " | ".join([
+            self.m_object.index,
+            self.s_object.index
+        ])
+
     def containerize(self):  # pylint: disable=too-many-branches
         """
         Return the objects within the match wrapped in the best possible container
