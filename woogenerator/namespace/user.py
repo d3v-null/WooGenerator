@@ -290,3 +290,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
                 'connect_params':self.slave_wp_api_params
             }
         return response
+
+
+    @property
+    def init_settings(self, override_args=None):
+        super(SettingsNamespaceUser, self).init_settings(override_args)
+        FieldGroup.do_post = self.do_post

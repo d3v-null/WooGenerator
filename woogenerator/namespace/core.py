@@ -450,7 +450,6 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         # Init class variables
 
-        FieldGroup.do_post = self.do_post
         SyncUpdate.set_globals(self.master_name, self.slave_name,
                                self.merge_mode, self.last_sync)
         TimeUtils.set_wp_srv_offset(self.wp_srv_offset)
