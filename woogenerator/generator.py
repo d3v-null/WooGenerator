@@ -153,6 +153,31 @@ def populate_master_parsers(parsers, settings):
 
         return parsers
 
+def populate_slave_parsers(parsers, settings):
+    """Populate the parsers for data from the slave database."""
+
+    if settings['download_slave']:
+
+        parsers.slave = CsvParseWooApi(
+            **settings['api_product_parser_args'])
+
+        slave_client_class = settings.slave_download_client_class
+        slave_client_args = settings.slave_download_client_args
+
+        # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
+        with slave_client_class(**slave_client_args) as client:
+            # try:
+            if settings['do_categories']:
+                client.analyse_remote_categories(parsers.slave)
+
+            Registrar.register_progress("analysing WC API data")
+
+            client.analyse_remote(
+                parsers.slave, limit=settings['slave_parse_limit'])
+
+        # print parsers.slave.categories
+    else:
+        parsers.slave = None
 
 def process_images(settings, parsers):
     """Process the images information in from the parsers."""
@@ -434,28 +459,7 @@ def main(override_args=None, settings=None):
     # Attempt download API data
     #########################################
 
-    if settings['download_slave']:
-
-        parsers.slave = CsvParseWooApi(
-            **settings['api_product_parser_args'])
-
-        slave_client_class = settings.slave_download_client_class
-        slave_client_args = settings.slave_download_client_args
-
-        # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
-        with slave_client_class(**slave_client_args) as client:
-            # try:
-            if settings['do_categories']:
-                client.analyse_remote_categories(parsers.slave)
-
-            Registrar.register_progress("analysing WC API data")
-
-            client.analyse_remote(
-                parsers.slave, limit=settings['slave_parse_limit'])
-
-        # print parsers.slave.categories
-    else:
-        parsers.slave = None
+    parsers = populate_master_parsers(parsers, settings)
 
     #########################################
     # Attempt Matching
