@@ -9,7 +9,6 @@ import exchangelib
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.namespace.core import init_settings
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.utils import Registrar
 
@@ -91,10 +90,7 @@ def main():
     settings.local_live_config = None
     settings.local_test_config = "conf_user.yaml"
     Registrar.DEBUG_MESSAGE = True
-    settings = init_settings(
-        settings=settings,
-        argparser_class=ArgumentParserUser
-    )
+    settings.init_settings()
     print("connect paarams: %s" % settings.email_connect_params)
 
     mail_args = [

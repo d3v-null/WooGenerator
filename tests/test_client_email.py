@@ -14,8 +14,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_slave_parsers)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         UpdateNamespace,
-                                         init_settings)
+                                         UpdateNamespace)
 
 
 
@@ -81,10 +80,8 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
         )
 
         self.settings.local_test_config = "merger_config_test.yaml"
-        self.settings = init_settings(
-            settings=self.settings,
+        self.settings.init_settings(
             override_args=self.override_args,
-            argparser_class=ArgumentParserUser
         )
         suffix='do_summary'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')

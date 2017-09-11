@@ -18,6 +18,7 @@ from ..conf.core import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                          DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
                          DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
                          DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
+from ..conf.parser import ArgumentParserCommon
 from ..contact_objects import FieldGroup
 from ..matching import MatchList
 from ..syncupdate import SyncUpdate
@@ -26,6 +27,8 @@ from ..utils import Registrar, TimeUtils
 
 class SettingsNamespaceProto(argparse.Namespace):
     """ Provide namespace for settings in first stage, supports getitem """
+
+    argparser_class=ArgumentParserCommon
 
     def __init__(self, *args, **kwargs):
         # This getattr stuff allows the attributes to be set in a subclass
@@ -340,10 +343,120 @@ class SettingsNamespaceProto(argparse.Namespace):
             response = os.path.join(self.log_dir_full, response)
         return response
 
+    def update(self, other):
+        """ Updates the namespace with vars from another namespace. """
+        self.__dict__.update(vars(other))
+
     def init_dirs(self):
         for path in list(set(self.dirs)):
             if path and not os.path.exists(path):
                 os.mkdir(path)
+
+    def init_registrar(self):
+        # print "self.verbosity = %s" % self.verbosity
+        # print "self.quiet = %s" % self.quiet
+        if self.verbosity > 0:
+            Registrar.DEBUG_PROGRESS = True
+            Registrar.DEBUG_ERROR = True
+        if self.verbosity > 1:
+            Registrar.DEBUG_MESSAGE = True
+        if self.quiet:
+            Registrar.DEBUG_PROGRESS = False
+            Registrar.DEBUG_ERROR = False
+            Registrar.DEBUG_MESSAGE = False
+
+        Registrar.DEBUG_ABSTRACT = self.debug_abstract
+        Registrar.DEBUG_ADDRESS = self.debug_address
+        Registrar.DEBUG_API = self.debug_api
+        Registrar.DEBUG_CATS = self.debug_cats
+        Registrar.DEBUG_CLIENT = self.debug_client
+        Registrar.DEBUG_CONTACT = self.debug_contact
+        Registrar.DEBUG_DUPLICATES = self.debug_duplicates
+        Registrar.DEBUG_GDRIVE = self.debug_gdrive
+        Registrar.DEBUG_GEN = self.debug_gen
+        Registrar.DEBUG_IMG = self.debug_img
+        Registrar.DEBUG_MRO = self.debug_mro
+        Registrar.DEBUG_MYO = self.debug_myo
+        Registrar.DEBUG_NAME = self.debug_name
+        Registrar.DEBUG_PARSER = self.debug_parser
+        Registrar.DEBUG_SHOP = self.debug_shop
+        Registrar.DEBUG_SPECIAL = self.debug_special
+        Registrar.DEBUG_TREE = self.debug_tree
+        Registrar.DEBUG_UPDATE = self.debug_update
+        Registrar.DEBUG_UTILS = self.debug_utils
+        Registrar.DEBUG_VARS = self.debug_vars
+        Registrar.DEBUG_WOO = self.debug_woo
+        Registrar.DEBUG_TRACE = self.debug_trace
+        Registrar.DEBUG_USR = self.debug_usr
+
+    def init_settings(self, override_args=None):
+        """
+        Load config file and initialise settings object from given argparser class.
+        """
+
+        meta_settings = MetaSettings()
+
+        meta_settings.add_state('init', copy(vars(self)))
+
+        ### First round of argument parsing determines which config files to read
+        ### from core config files, CLI args and env vars
+
+        proto_argparser = self.argparser_class.proto_argparser()
+
+        Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
+
+        parser_override = {'namespace':self}
+        if override_args is not None:
+            parser_override['args'] = override_args
+            meta_settings.set_override_args(override_args)
+            self.called_with_args = override_args
+        else:
+            self.called_with_args = sys.argv
+
+        proto_settings, _ = proto_argparser.parse_known_args(**parser_override)
+        self.update(proto_settings)
+
+        meta_settings.add_state('proto', copy(vars(proto_settings)))
+
+        ### Second round gets all the arguments from all config files
+
+        # TODO: implement "ask for password" feature
+        argparser = self.argparser_class()
+
+        # TODO: test set local work dir
+        # TODO: test set live config
+        # TODO: test set test config
+        # TODO: move in, out, log dirs to full
+
+        for conf in self.second_stage_configs:
+            # print "adding conf: %s" % conf
+            argparser.add_default_config_file(conf)
+
+        if self.help_verbose:
+            if 'args' not in parser_override:
+                parser_override['args'] = []
+            parser_override['args'] += ['--help']
+
+
+        # defaults first
+        main_settings = argparser.parse_args(**parser_override)
+        self.update(main_settings)
+
+        meta_settings.add_state('main', copy(vars(main_settings)), argparser.default_config_files)
+
+        self.init_registrar()
+
+        # Init class variables
+
+        FieldGroup.do_post = self.do_post
+        SyncUpdate.set_globals(self.master_name, self.slave_name,
+                               self.merge_mode, self.last_sync)
+        TimeUtils.set_wp_srv_offset(self.wp_srv_offset)
+
+        Registrar.register_message(
+            "meta settings:\n%s" %
+            meta_settings.tabulate(ignore_keys=['called_with_args'])
+        )
 
 class ParserNamespace(argparse.Namespace):
     """ Collect parser variables into a single namespace. """
@@ -426,43 +539,6 @@ class ResultsNamespace(argparse.Namespace):
     def __bool__(self):
         return bool(any(self.as_dict.values()))
 
-def init_registrar(settings):
-    # print "settings.verbosity = %s" % settings.verbosity
-    # print "settings.quiet = %s" % settings.quiet
-    if settings.verbosity > 0:
-        Registrar.DEBUG_PROGRESS = True
-        Registrar.DEBUG_ERROR = True
-    if settings.verbosity > 1:
-        Registrar.DEBUG_MESSAGE = True
-    if settings.quiet:
-        Registrar.DEBUG_PROGRESS = False
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_MESSAGE = False
-
-    Registrar.DEBUG_ABSTRACT = settings.debug_abstract
-    Registrar.DEBUG_ADDRESS = settings.debug_address
-    Registrar.DEBUG_API = settings.debug_api
-    Registrar.DEBUG_CATS = settings.debug_cats
-    Registrar.DEBUG_CLIENT = settings.debug_client
-    Registrar.DEBUG_CONTACT = settings.debug_contact
-    Registrar.DEBUG_DUPLICATES = settings.debug_duplicates
-    Registrar.DEBUG_GDRIVE = settings.debug_gdrive
-    Registrar.DEBUG_GEN = settings.debug_gen
-    Registrar.DEBUG_IMG = settings.debug_img
-    Registrar.DEBUG_MRO = settings.debug_mro
-    Registrar.DEBUG_MYO = settings.debug_myo
-    Registrar.DEBUG_NAME = settings.debug_name
-    Registrar.DEBUG_PARSER = settings.debug_parser
-    Registrar.DEBUG_SHOP = settings.debug_shop
-    Registrar.DEBUG_SPECIAL = settings.debug_special
-    Registrar.DEBUG_TREE = settings.debug_tree
-    Registrar.DEBUG_UPDATE = settings.debug_update
-    Registrar.DEBUG_UTILS = settings.debug_utils
-    Registrar.DEBUG_VARS = settings.debug_vars
-    Registrar.DEBUG_WOO = settings.debug_woo
-    Registrar.DEBUG_TRACE = settings.debug_trace
-    Registrar.DEBUG_USR = settings.debug_usr
-
 class MetaSettings(object):
     """
     Store information about settings object as it transitions between states.
@@ -527,76 +603,3 @@ class MetaSettings(object):
         info_components += [tabulate(state_table, tablefmt=tablefmt, headers="firstrow")]
 
         return info_delimeter.join(info_components)
-
-
-def init_settings(override_args=None, settings=None, argparser_class=None):
-    """
-    Load config file and initialise settings object from given argparser class.
-    """
-
-    meta_settings = MetaSettings()
-
-    if not settings:
-        settings = argparser_class.namespace()
-
-    meta_settings.add_state('init', copy(vars(settings)))
-
-    ### First round of argument parsing determines which config files to read
-    ### from core config files, CLI args and env vars
-
-    proto_argparser = argparser_class.proto_argparser()
-
-    Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
-
-    parser_override = {'namespace':settings}
-    if override_args is not None:
-        parser_override['args'] = override_args
-        meta_settings.set_override_args(override_args)
-        settings.called_with_args = override_args
-    else:
-        settings.called_with_args = sys.argv
-
-    settings, _ = proto_argparser.parse_known_args(**parser_override)
-
-    meta_settings.add_state('proto', copy(vars(settings)))
-
-    ### Second round gets all the arguments from all config files
-
-    # TODO: implement "ask for password" feature
-    argparser = argparser_class()
-
-    # TODO: test set local work dir
-    # TODO: test set live config
-    # TODO: test set test config
-    # TODO: move in, out, log dirs to full
-
-    for conf in settings.second_stage_configs:
-        # print "adding conf: %s" % conf
-        argparser.add_default_config_file(conf)
-
-    if settings.help_verbose:
-        if 'args' not in parser_override:
-            parser_override['args'] = []
-        parser_override['args'] += ['--help']
-
-
-    # defaults first
-    settings = argparser.parse_args(**parser_override)
-
-    meta_settings.add_state('main', copy(vars(settings)), argparser.default_config_files)
-
-    init_registrar(settings)
-
-    # Init class variables
-
-    FieldGroup.do_post = settings.do_post
-    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.last_sync)
-    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
-
-    Registrar.register_message(
-        "meta settings:\n%s" %
-        meta_settings.tabulate(ignore_keys=['called_with_args'])
-    )
-
-    return settings

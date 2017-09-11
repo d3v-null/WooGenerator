@@ -7,9 +7,6 @@ import os
 
 import configargparse
 
-from ..namespace.core import SettingsNamespaceProto
-from ..namespace.prod import SettingsNamespaceProd
-from ..namespace.user import SettingsNamespaceUser
 from ..utils import TimeUtils
 from .core import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                    DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
@@ -145,7 +142,6 @@ class ArgumentParserCommon(ArgumentParserProto):
     """
 
     proto_argparser = ArgumentParserProto
-    namespace = SettingsNamespaceProto
 
     def __init__(self, **kwargs):
         # set common defaults
@@ -462,7 +458,6 @@ class ArgumentParserProd(ArgumentParserCommon):
     """ Provide ArgumentParser class for product syncing. """
 
     proto_argparser = ArgumentParserProtoProd
-    namespace = SettingsNamespaceProd
 
     def __init__(self, **kwargs):
         kwargs['description'] = \
@@ -661,7 +656,6 @@ class ArgumentParserUser(ArgumentParserCommon):
     """ Provide ArgumentParser class for syncing contacts. """
 
     proto_argparser = ArgumentParserProtoUser
-    namespace = SettingsNamespaceUser
 
     def __init__(self, **kwargs):
         kwargs['description'] = \

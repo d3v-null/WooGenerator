@@ -36,7 +36,7 @@ import __init__
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils, SeqUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.namespace.core import ParserNamespace, init_settings, MatchNamespace
+from woogenerator.namespace.core import ParserNamespace, MatchNamespace
 from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
 
 """
@@ -320,7 +320,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         '-vvv'
     ]
 
-    settings = init_settings(override_args, settings, ArgumentParserUser)
+    settings.init_settings(override_args)
 
     assert schema_exists(settings.schema), \
         "schema %s should be in %s" % (settings.schema, SCHEMA_TRANSLATIONS)

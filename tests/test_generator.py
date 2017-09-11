@@ -11,7 +11,7 @@ from tabulate import tabulate
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.generator import populate_master_parsers
-from woogenerator.namespace.core import ParserNamespace, init_settings
+from woogenerator.namespace.core import ParserNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.woo import WooProdList
@@ -52,10 +52,7 @@ class TestGenerator(TestCase):
         # Registrar.DEBUG_WARN = False
         # Registrar.DEBUG_PROGRESS = False
 
-        self.settings = init_settings(
-            settings=self.settings,
-            override_args=self.override_args,
-            argparser_class=ArgumentParserProd)
+        self.settings.init_settings(self.override_args)
 
     def test_init_settings(self):
 

@@ -8,6 +8,7 @@ from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.prod import ProdSyncClientWC
 from ..coldata import ColDataBase, ColDataMyo, ColDataWoo
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
+from ..conf.parser import ArgumentParserProd
 from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from .core import SettingsNamespaceProto
@@ -15,6 +16,8 @@ from .core import SettingsNamespaceProto
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
+
+    argparser_class=ArgumentParserProd
 
     def __init__(self, *args, **kwargs):
         self.local_live_config = getattr(self, 'local_live_config',

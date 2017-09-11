@@ -5,7 +5,7 @@ from pprint import pformat
 from context import get_testdata, TESTS_DATA_DIR, woogenerator
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
-                                         UpdateNamespace, init_settings)
+                                         UpdateNamespace)
 from woogenerator.conf.parser import ArgumentParserCommon
 from woogenerator.utils import Registrar, TimeUtils
 
@@ -25,11 +25,7 @@ class TestSyncUpdateAbstract(unittest.TestCase):
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
 
-        self.settings = init_settings(
-            settings=self.settings,
-            override_args=self.override_args,
-            argparser_class=self.argument_parser_class
-        )
+        self.settings.init_settings(self.override_args)
 
         # with open(yaml_path) as stream:
         #     config = yaml.load(stream)

@@ -24,7 +24,7 @@ from .matching import (CardMatcher, ConflictingMatchList, EmailMatcher, Match,
                        NocardEmailMatcher, UsernameMatcher)
 from .namespace.user import SettingsNamespaceUser
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
-                             UpdateNamespace, init_settings)
+                             UpdateNamespace)
 from .syncupdate import SyncUpdateUsrApi
 from .utils import ProgressCounter, Registrar, SanitationUtils, TimeUtils
 from .utils.reporter import (ReporterNamespace, do_delta_group,
@@ -567,7 +567,9 @@ def do_report_post(reporters, results, settings):
 
 def main(override_args=None, settings=None):
     """Use settings object to load config file and detect changes in wordpress."""
-    settings = init_settings(override_args, settings, ArgumentParserUser)
+    if not settings:
+        settings = SettingsNamespaceUser()
+    settings.init_settings(override_args)
 
     if hasattr(settings, 'pickle_file') and getattr(settings, 'pickle_file'):
         return unpickle_state(settings)

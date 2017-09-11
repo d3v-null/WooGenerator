@@ -5,7 +5,7 @@ from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
-from woogenerator.namespace.core import SettingsNamespaceProto, init_settings
+from woogenerator.namespace.core import SettingsNamespaceProto
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.utils import Registrar, TimeUtils
 
@@ -28,11 +28,7 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         self.settings.verbosity = 0
         self.settings.quiet = True
 
-        self.settings = init_settings(
-            settings=self.settings,
-            override_args=self.override_args,
-            argparser_class=self.argument_parser_class
-        )
+        self.settings.init_settings(self.override_args)
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False

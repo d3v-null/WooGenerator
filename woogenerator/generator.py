@@ -28,8 +28,7 @@ from .conf.parser import ArgumentParserProd
 from .matching import (CategoryMatcher, MatchList, ProductMatcher,
                        VariationMatcher)
 from .metagator import MetaGator
-from .namespace.core import (MatchNamespace, ParserNamespace, UpdateNamespace,
-                             init_settings)
+from .namespace.core import MatchNamespace, ParserNamespace, UpdateNamespace
 from .namespace.prod import SettingsNamespaceProd
 from .parsing.api import CsvParseWooApi
 from .parsing.dyn import CsvParseDyn
@@ -403,7 +402,9 @@ def export_parsers(settings, parsers):
 
 def main(override_args=None, settings=None):
     """Main function for generator."""
-    settings = init_settings(override_args, settings, ArgumentParserProd)
+    if not settings:
+        settings = SettingsNamespaceProd()
+    settings.init_settings(override_args)
 
     settings.init_dirs()
 

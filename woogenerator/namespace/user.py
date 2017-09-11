@@ -8,12 +8,15 @@ from ..client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                            UsrSyncClientWP)
 from ..coldata import ColDataUser
 from ..conf.core import DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH
+from ..conf.parser import ArgumentParserUser
 from ..parsing.user import CsvParseUser
 from .core import SettingsNamespaceProto
 
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     """ Provide namespace for user settings. """
+    argparser_class=ArgumentParserUser
+
 
     def __init__(self, *args, **kwargs):
         self.local_live_config = \

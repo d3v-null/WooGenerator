@@ -20,8 +20,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_master_parsers,
                                  populate_slave_parsers)
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         UpdateNamespace,
-                                         init_settings)
+                                         UpdateNamespace)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
@@ -56,11 +55,7 @@ class TestMerger(unittest.TestCase):
         self.settings.verbosity = 0
         self.settings.quiet = True
 
-        self.settings = init_settings(
-            settings=self.settings,
-            override_args=self.override_args,
-            argparser_class=ArgumentParserUser
-        )
+        self.settings.init_settings(self.override_args)
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
