@@ -328,3 +328,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.get('current_special_groups'):
             response = self.current_special_groups[0].special_id
         return response
+
+    @property
+    def add_special_categories(self):
+        return self.do_specials and self.do_categories

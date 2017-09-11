@@ -409,8 +409,6 @@ def main(override_args=None, settings=None):
 
     # PROCESS CONFIG
 
-    settings.add_special_categories = settings.do_specials and settings['do_categories']
-
     # TODO: set up logging here instead of Registrar verbosity crap
 
     if settings['auto_create_new']:
