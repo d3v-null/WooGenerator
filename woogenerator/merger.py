@@ -8,7 +8,6 @@ import time
 import traceback
 import zipfile
 from bisect import insort
-from collections import OrderedDict
 from pprint import pformat, pprint
 
 import dill
