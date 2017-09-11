@@ -9,7 +9,7 @@ from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
 from woogenerator.coldata import ColDataWoo
-from woogenerator.conf.namespace import SettingsNamespaceProto, init_settings, SettingsNamespaceProd
+from woogenerator.namespace.core import SettingsNamespaceProto, init_settings, SettingsNamespaceProd
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
 from woogenerator.syncupdate import SyncUpdate
 from woogenerator.utils import Registrar, TimeUtils

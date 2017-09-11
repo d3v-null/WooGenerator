@@ -1,11 +1,13 @@
 """ Stores all information about how a record is duplicated and stores references to the objects
 with which it conflicts """
 
+from __future__ import absolute_import
+
 from collections import OrderedDict
 
 from tabulate import tabulate
 
-from woogenerator.utils import SanitationUtils
+from .utils import SanitationUtils
 
 
 def object_glb_index_fn(object_data):

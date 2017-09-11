@@ -2,19 +2,19 @@
 Utilites for storing and performing operations on pending updates
 """
 
+from __future__ import absolute_import
+
 import traceback
 from collections import OrderedDict
 from copy import copy, deepcopy
-from pprint import pformat
 
 from tabulate import tabulate
 
-from woogenerator.coldata import (ColDataBase, ColDataProd, ColDataUser,
-                                  ColDataWoo)
-from woogenerator.contact_objects import ContactAddress, FieldGroup
-from woogenerator.matching import Match
-from woogenerator.parsing.abstract import ImportObject
-from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
+from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo
+from .contact_objects import ContactAddress, FieldGroup
+from .matching import Match
+from .parsing.abstract import ImportObject
+from .utils import Registrar, SanitationUtils, TimeUtils
 
 
 class SyncViolation(UserWarning):

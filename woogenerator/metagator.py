@@ -2,12 +2,14 @@
 Utilities for mitigating images metadata.
 """
 
+from __future__ import absolute_import
+
 import os
 
 import piexif
 from PIL import Image, ImageFile, PngImagePlugin
 
-from woogenerator.utils import Registrar, SanitationUtils
+from .utils import Registrar, SanitationUtils
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

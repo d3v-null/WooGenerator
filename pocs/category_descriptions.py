@@ -38,7 +38,7 @@ from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import Registrar
 from woogenerator.conf.parser import ArgumentParserProd, ArgumentParserProtoProd
-from woogenerator.conf.namespace import SettingsNamespaceProd
+from woogenerator.namespace.core import SettingsNamespaceProd
 
 # Example: BioTan Plus special SP2017-05-22-STBTP
 def populate_examples(settings):

@@ -1,11 +1,13 @@
 """
 Utilities for matching lists of parsing.abstract.ImportObjects
 """
+
+from __future__ import absolute_import
+
 from collections import OrderedDict
 
-from woogenerator.parsing.abstract import ImportObject, ObjList
-from woogenerator.utils import (InheritenceUtils, Registrar, SanitationUtils,
-                                SeqUtils)
+from .parsing.abstract import ImportObject, ObjList
+from .utils import InheritenceUtils, Registrar, SanitationUtils, SeqUtils
 
 
 class Match(object):

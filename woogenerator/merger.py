@@ -1,5 +1,7 @@
 """Module for updating woocommerce and ACT databases from ACT import file."""
 
+from __future__ import absolute_import
+
 import io
 import os
 import re
@@ -16,28 +18,21 @@ from httplib2 import ServerNotFoundError
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from six.moves import input
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
-                                         ResultsNamespace,
-                                         SettingsNamespaceUser,
-                                         UpdateNamespace, init_dirs,
-                                         init_settings)
-from woogenerator.conf.parser import ArgumentParserUser
-from woogenerator.matching import (CardMatcher, ConflictingMatchList,
-                                   EmailMatcher, Match, NocardEmailMatcher,
-                                   UsernameMatcher)
-from woogenerator.syncupdate import SyncUpdateUsrApi
-from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
-                                TimeUtils)
-from woogenerator.utils.reporter import (ReporterNamespace, do_delta_group,
-                                         do_duplicates_group,
-                                         do_duplicates_summary_group,
-                                         do_failures_group,
-                                         do_main_summary_group,
-                                         do_matches_group,
-                                         do_matches_summary_group,
-                                         do_post_summary_group,
-                                         do_sanitizing_group,
-                                         do_successes_group, do_sync_group)
+
+from .conf.parser import ArgumentParserUser
+from .matching import (CardMatcher, ConflictingMatchList, EmailMatcher, Match,
+                       NocardEmailMatcher, UsernameMatcher)
+from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
+                             SettingsNamespaceUser, UpdateNamespace, init_dirs,
+                             init_settings)
+from .syncupdate import SyncUpdateUsrApi
+from .utils import ProgressCounter, Registrar, SanitationUtils, TimeUtils
+from .utils.reporter import (ReporterNamespace, do_delta_group,
+                             do_duplicates_group, do_duplicates_summary_group,
+                             do_failures_group, do_main_summary_group,
+                             do_matches_group, do_matches_summary_group,
+                             do_post_summary_group, do_sanitizing_group,
+                             do_successes_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 

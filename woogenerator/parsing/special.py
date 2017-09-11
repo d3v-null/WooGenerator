@@ -1,11 +1,9 @@
 from __future__ import absolute_import
 
-import time
 from collections import OrderedDict
 
-from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
-                                SeqUtils, TimeUtils)
-
+from ..utils import (DescriptorUtils, Registrar, SanitationUtils, SeqUtils,
+                     TimeUtils)
 from .abstract import BLANK_CELL
 from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
                    ImportTreeTaxo, ItemList, TaxoList)

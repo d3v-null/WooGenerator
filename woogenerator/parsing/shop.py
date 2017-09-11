@@ -6,9 +6,8 @@ from __future__ import absolute_import
 import bisect
 from collections import OrderedDict
 
-from woogenerator.coldata import ColDataProd
-from woogenerator.utils import Registrar, SanitationUtils
-
+from ..coldata import ColDataProd
+from ..utils import Registrar, SanitationUtils
 from .abstract import ObjList
 from .gen import CsvParseGenMixin
 from .tree import ItemList

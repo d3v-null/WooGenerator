@@ -1,4 +1,7 @@
 """Module for generating woocommerce csv import files from Google Drive Data."""
+
+from __future__ import absolute_import
+
 import io
 import os
 import re
@@ -19,27 +22,24 @@ from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from tabulate import tabulate
 
-from woogenerator.client.prod import CatSyncClientWC
-from woogenerator.coldata import ColDataBase, ColDataWoo
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
-                                         SettingsNamespaceProd,
-                                         UpdateNamespace, init_dirs,
-                                         init_settings)
-from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
-                                   VariationMatcher)
-from woogenerator.metagator import MetaGator
-from woogenerator.parsing.api import CsvParseWooApi
-from woogenerator.parsing.dyn import CsvParseDyn
-from woogenerator.parsing.myo import MYOProdList
-from woogenerator.parsing.shop import ShopObjList
-from woogenerator.parsing.special import CsvParseSpecial
-from woogenerator.parsing.woo import (CsvParseWoo, WooCatList, WooProdList,
-                                      WooVarList)
-from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
-                                     SyncUpdateProdWoo, SyncUpdateVarWoo)
-from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
-                                SanitationUtils, SeqUtils, TimeUtils)
+from .client.prod import CatSyncClientWC
+from .coldata import ColDataBase, ColDataWoo
+from .conf.parser import ArgumentParserProd
+from .matching import (CategoryMatcher, MatchList, ProductMatcher,
+                       VariationMatcher)
+from .metagator import MetaGator
+from .namespace.core import (MatchNamespace, ParserNamespace,
+                             SettingsNamespaceProd, UpdateNamespace, init_dirs,
+                             init_settings)
+from .parsing.api import CsvParseWooApi
+from .parsing.dyn import CsvParseDyn
+from .parsing.myo import MYOProdList
+from .parsing.shop import ShopObjList
+from .parsing.special import CsvParseSpecial
+from .parsing.woo import CsvParseWoo, WooCatList, WooProdList, WooVarList
+from .syncupdate import SyncUpdateCatWoo, SyncUpdateProdWoo, SyncUpdateVarWoo
+from .utils import (HtmlReporter, ProgressCounter, Registrar, SanitationUtils,
+                    SeqUtils)
 
 
 def timediff(settings):

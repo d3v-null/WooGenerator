@@ -11,28 +11,25 @@ from pprint import pformat
 
 from tabulate import tabulate
 
-from woogenerator.client.core import (SyncClientGDrive, SyncClientLocal,
-                                      SyncClientNull)
-from woogenerator.client.email import EmailClientExchange, EmailClientSMTP
-from woogenerator.client.prod import ProdSyncClientWC
-from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
-                                      UsrSyncClientWP)
-from woogenerator.coldata import (ColDataBase, ColDataMyo, ColDataUser,
-                                  ColDataWoo)
-from woogenerator.contact_objects import FieldGroup
-from woogenerator.matching import MatchList
-from woogenerator.parsing.myo import CsvParseMyo
-from woogenerator.parsing.user import CsvParseUser
-from woogenerator.parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
-from woogenerator.syncupdate import SyncUpdate
-from woogenerator.utils import Registrar, TimeUtils
-
-from .__init__ import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
-                       DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
-                       DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
-                       DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
-                       DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
-                       DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
+from ..client.core import SyncClientGDrive, SyncClientLocal, SyncClientNull
+from ..client.email import EmailClientExchange, EmailClientSMTP
+from ..client.prod import ProdSyncClientWC
+from ..client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
+                           UsrSyncClientWP)
+from ..coldata import ColDataBase, ColDataMyo, ColDataUser, ColDataWoo
+from ..conf.core import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
+                         DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
+                         DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
+                         DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
+                         DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
+                         DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
+from ..contact_objects import FieldGroup
+from ..matching import MatchList
+from ..parsing.myo import CsvParseMyo
+from ..parsing.user import CsvParseUser
+from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
+from ..syncupdate import SyncUpdate
+from ..utils import Registrar, TimeUtils
 
 
 class SettingsNamespaceProto(argparse.Namespace):

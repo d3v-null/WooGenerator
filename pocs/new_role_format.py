@@ -36,7 +36,7 @@ import __init__
 from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils, SeqUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
-from woogenerator.conf.namespace import ParserNamespace, init_settings, MatchNamespace
+from woogenerator.namespace.core import ParserNamespace, init_settings, MatchNamespace
 from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
 
 """

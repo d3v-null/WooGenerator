@@ -12,7 +12,7 @@ from woogenerator.parsing.woo import WooProdList
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import SettingsNamespaceProd, init_settings, ParserNamespace
+from woogenerator.namespace.core import SettingsNamespaceProd, init_settings, ParserNamespace
 from woogenerator.generator import populate_master_parsers
 
 from context import TESTS_DATA_DIR

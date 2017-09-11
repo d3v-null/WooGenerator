@@ -6,10 +6,9 @@ from __future__ import absolute_import
 import re
 from collections import OrderedDict
 
-from woogenerator.coldata import ColDataWoo
-from woogenerator.utils import (DescriptorUtils, PHPUtils, Registrar,
-                                SanitationUtils, SeqUtils, TimeUtils)
-
+from ..coldata import ColDataWoo
+from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
+                     SeqUtils, TimeUtils)
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,

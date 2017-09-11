@@ -2,6 +2,8 @@
 module for detecting changes in a wordpress database
 """
 
+from __future__ import absolute_import
+
 import argparse
 import io
 import json
@@ -18,9 +20,10 @@ from sshtunnel import SSHTunnelForwarder
 from tabulate import tabulate
 
 import MySQLdb
-from woogenerator import MODULE_LOCATION, MODULE_PATH
-from woogenerator.utils import (HtmlReporter, Registrar, SanitationUtils,
-                                SeqUtils, TimeUtils)
+
+from . import MODULE_LOCATION, MODULE_PATH
+from .utils import (HtmlReporter, Registrar, SanitationUtils, SeqUtils,
+                    TimeUtils)
 
 
 def timediff(settings):

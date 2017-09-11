@@ -18,8 +18,8 @@ from pprint import pformat
 import unicodecsv
 from tabulate import tabulate
 
-from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
-                                SeqUtils, UnicodeCsvDialectUtils)
+from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
+                     UnicodeCsvDialectUtils)
 
 BLANK_CELL = ''
 

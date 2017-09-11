@@ -9,7 +9,7 @@ from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import TimeUtils
 from woogenerator.coldata import ColDataWoo
-from woogenerator.conf.namespace import SettingsNamespaceProd
+from woogenerator.namespace.core import SettingsNamespaceProd
 from woogenerator.conf.parser import ArgumentParserProd
 
 class TestProdSyncClient(AbstractSyncClientTestCase):

@@ -8,9 +8,8 @@ from copy import copy
 
 import bleach
 
-from woogenerator.utils import (DescriptorUtils, PHPUtils, SanitationUtils,
-                                SeqUtils, ValidationUtils)
-
+from ..utils import (DescriptorUtils, PHPUtils, SanitationUtils, SeqUtils,
+                     ValidationUtils)
 from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
                    ImportTreeTaxo)
 

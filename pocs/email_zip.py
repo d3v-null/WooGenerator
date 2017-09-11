@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 import exchangelib
 
 from context import TESTS_DATA_DIR, woogenerator
-from woogenerator.conf.namespace import SettingsNamespaceUser, init_settings
+from woogenerator.namespace.core import SettingsNamespaceUser, init_settings
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.utils import Registrar
 

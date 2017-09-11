@@ -12,7 +12,7 @@ import mock
 
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_dirs,
                                          init_settings)

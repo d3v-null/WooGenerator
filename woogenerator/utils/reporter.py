@@ -5,14 +5,13 @@ import functools
 import io
 import re
 from collections import OrderedDict
-from pprint import pformat
 from string import Formatter
 
 import tabulate
 import unicodecsv
 
-from woogenerator.duplicates import Duplicates
-from woogenerator.parsing.user import UsrObjList
+from ..duplicates import Duplicates
+from ..parsing.user import UsrObjList
 
 from .clock import TimeUtils
 from .core import Registrar, SanitationUtils

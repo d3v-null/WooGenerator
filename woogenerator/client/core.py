@@ -17,14 +17,15 @@ from urlparse import urlparse
 
 import httplib2
 import oauth2client
+import requests
 from apiclient import discovery
 from oauth2client import client, tools
-import requests
 from simplejson import JSONDecodeError
 
-from woogenerator.utils import ProgressCounter, Registrar, SanitationUtils
 from wordpress import API
 from wordpress.helpers import UrlUtils
+
+from ..utils import ProgressCounter, Registrar, SanitationUtils
 
 
 class AbstractServiceInterface(object):

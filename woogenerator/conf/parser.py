@@ -7,16 +7,15 @@ import os
 
 import configargparse
 
-from woogenerator.utils import TimeUtils
-
-from .__init__ import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
-                       DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
-                       DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
-                       DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
-                       DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH,
-                       DEFAULTS_USER_PATH)
-from .namespace import (SettingsNamespaceProd, SettingsNamespaceProto,
-                        SettingsNamespaceUser)
+from ..namespace.core import (SettingsNamespaceProd, SettingsNamespaceProto,
+                              SettingsNamespaceUser)
+from ..utils import TimeUtils
+from .core import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
+                   DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,
+                   DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH,
+                   DEFAULT_LOCAL_USER_PATH, DEFAULT_LOCAL_USER_TEST_PATH,
+                   DEFAULTS_COMMON_PATH, DEFAULTS_PROD_PATH,
+                   DEFAULTS_USER_PATH)
 
 
 class ArgumentParserProto(configargparse.ArgumentParser):

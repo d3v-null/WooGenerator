@@ -7,7 +7,7 @@ from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_dirs, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser

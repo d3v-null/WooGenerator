@@ -10,7 +10,7 @@ from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.user import (UsrSyncClientSqlWP, UsrSyncClientSshAct,
                                       UsrSyncClientWC, UsrSyncClientWP)
 from woogenerator.coldata import ColDataUser
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceUser,
                                          UpdateNamespace, init_settings)
 from woogenerator.conf.parser import ArgumentParserUser

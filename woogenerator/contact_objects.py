@@ -2,14 +2,16 @@
 Container objects for storing contact data
 """
 
+from __future__ import absolute_import
+
 from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
 
 from tabulate import tabulate
 
-from woogenerator.utils import (AddressUtils, DescriptorUtils, NameUtils,
-                                Registrar, SanitationUtils, SeqUtils)
+from .utils import (AddressUtils, DescriptorUtils, NameUtils, Registrar,
+                    SanitationUtils, SeqUtils)
 
 STRICT_ADDRESS = False
 STRICT_ADDRESS = True

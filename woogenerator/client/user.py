@@ -10,11 +10,10 @@ import pymysql
 import unicodecsv
 from sshtunnel import SSHTunnelForwarder
 
-from .core import (SyncClientAbstract, SyncClientWC,
-                                      SyncClientWP)
-from woogenerator.coldata import ColDataUser
-from woogenerator.utils import (ProgressCounter, Registrar, SanitationUtils,
-                                TimeUtils, UnicodeCsvDialectUtils)
+from ..coldata import ColDataUser
+from ..utils import (ProgressCounter, Registrar, SanitationUtils, TimeUtils,
+                     UnicodeCsvDialectUtils)
+from .core import SyncClientAbstract, SyncClientWC, SyncClientWP
 
 
 class UsrSyncClientWC(SyncClientWC):

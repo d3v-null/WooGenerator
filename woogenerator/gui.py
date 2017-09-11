@@ -11,9 +11,9 @@ from pprint import pformat
 
 import npyscreen
 
-from woogenerator import generator, merger
-from woogenerator.utils import overrides
-from woogenerator.utils.core import SeqUtils
+from . import generator, merger
+from .utils import overrides
+from .utils.core import SeqUtils
 
 ScreenOffset = namedtuple('Offset', ['col', 'row'])
 logging.basicConfig(filename="woogenerator.log", level=logging.DEBUG)

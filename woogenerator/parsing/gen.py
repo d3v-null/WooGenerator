@@ -10,9 +10,7 @@ from __future__ import absolute_import
 
 from collections import OrderedDict
 
-from woogenerator.utils import (DescriptorUtils, Registrar, SanitationUtils,
-                                SeqUtils)
-
+from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
                    ImportTreeTaxo)
 

@@ -3,7 +3,7 @@ import unittest
 from pprint import pformat
 
 from context import get_testdata, TESTS_DATA_DIR, woogenerator
-from woogenerator.conf.namespace import (MatchNamespace, ParserNamespace,
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
                                          UpdateNamespace, init_settings)
 from woogenerator.conf.parser import ArgumentParserCommon

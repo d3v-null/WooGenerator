@@ -5,8 +5,7 @@ from __future__ import absolute_import
 
 from collections import OrderedDict
 
-from woogenerator.utils import Registrar
-
+from ..utils import Registrar
 from .abstract import CsvParseBase, ImportObject, ObjList
 
 

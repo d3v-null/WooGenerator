@@ -6,9 +6,8 @@ from __future__ import absolute_import
 from collections import OrderedDict
 from pprint import pformat
 
-from woogenerator.coldata import ColDataWoo
-from woogenerator.utils import Registrar, SanitationUtils
-
+from ..coldata import ColDataWoo
+from ..utils import Registrar, SanitationUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenObject
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,

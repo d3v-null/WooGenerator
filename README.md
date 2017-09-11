@@ -195,12 +195,12 @@ Running
 ====
 If you want to run the gui:
 
-`python woogenerator/gui.py`
+`python -m woogenerator.gui`
 
 If you're syncing products:
 
-`python woogenerator/generator.py --help`
+`python -m woogenerator.generator --help`
 
 If you're syncing users:
 
-`python woogenerator/merger.py --help`
+`python -m woogenerator.merger --help`

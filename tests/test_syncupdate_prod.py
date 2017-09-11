@@ -1,7 +1,7 @@
 from context import woogenerator
 from woogenerator.coldata import ColDataProd
 from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.conf.namespace import SettingsNamespaceProd
+from woogenerator.namespace.core import SettingsNamespaceProd
 from test_syncupdate import TestSyncUpdateAbstract
 
 # from woogenerator.contact_objects import ...
