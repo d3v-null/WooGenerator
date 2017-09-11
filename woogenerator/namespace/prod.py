@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import os
+import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.prod import ProdSyncClientWC
@@ -12,6 +13,8 @@ from ..conf.parser import ArgumentParserProd
 from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from .core import SettingsNamespaceProto
+from ..utils import Registrar
+
 
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
@@ -191,6 +194,52 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
 
     @property
+    def rep_web_path(self):
+        response = os.path.basename(self.rep_main_path)
+        if self.get('web_dir'):
+            response = os.path.join(self.web_dir, response)
+        return response
+
+    @property
+    def rep_web_link(self):
+        response = os.path.basename(self.rep_main_path)
+        if self.get('web_address'):
+            response = urlparse.urljoin(
+                self.web_address, response
+            )
+        return response
+
+    @property
+    def img_dst(self):
+        response = 'images'
+        if self.schema:
+            response += '-' + self.schema
+        if self.get('img_cmd_dir'):
+            response = os.path.join(self.img_cmd_dir, response)
+        return response
+
+    @property
+    def exclude_cols(self):
+        response = []
+        if not self.do_images:
+            response.extend(['Images', 'imgsum'])
+        if not self.do_categories:
+            response.extend(['catsum', 'catlist'])
+        if not self.do_dyns:
+            response.extend([
+                'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
+                'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
+            ])
+        if not self.do_specials:
+            response.extend([
+                'SCHEDULE', 'sale_price', 'sale_price_dates_from',
+                'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
+                'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
+                'DPS', 'DPF', 'DPT'
+            ])
+        return response
+
+    @property
     def master_parser_class(self):
         """ Class used to parse master data """
         if self.schema_is_myo:
@@ -322,8 +371,13 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def dirs(self):
         response = super(SettingsNamespaceProd, self).dirs or []
-        response.extend(self.img_raw_dirs)
-        response.append(self.img_cmp_dir)
+        if self.get('img_raw_dirs'):
+            response.extend(self.img_raw_dirs)
+        if self.get('img_cmp_dir'):
+            response.append(self.img_cmp_dir)
+        if self.get('web_dir'):
+            response.append(self.web_dir)
+        return response
 
     @property
     def current_special_id(self):
@@ -335,3 +389,23 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def add_special_categories(self):
         return self.do_specials and self.do_categories
+
+    @property
+    def init_settings(self, override_args=None):
+        super(SettingsNamespaceProd, self).init_settings(override_args)
+
+        if self['auto_create_new']:
+            exc = UserWarning("auto-create not fully implemented yet")
+            Registrar.register_warning(exc)
+        if self.auto_delete_old:
+            raise UserWarning("auto-delete not implemented yet")
+
+        if self.do_specials:
+            if self['current_special']:
+                CsvParseWoo.current_special = self['current_special']
+            CsvParseWoo.specialsCategory = "Specials"
+            CsvParseWoo.add_special_categories = self['add_special_categories']
+
+        CsvParseWoo.do_images = self.do_images
+        CsvParseWoo.do_dyns = self.do_dyns
+        CsvParseWoo.do_specials = self.do_specials

@@ -408,63 +408,6 @@ def main(override_args=None, settings=None):
 
     settings.init_dirs()
 
-    # PROCESS CONFIG
-
-    # TODO: set up logging here instead of Registrar verbosity crap
-
-    if settings['auto_create_new']:
-        exc = UserWarning("auto-create not fully implemented yet")
-        Registrar.register_warning(exc)
-    if settings.auto_delete_old:
-        raise UserWarning("auto-delete not implemented yet")
-
-    rep_name = os.path.basename(settings.rep_main_path)
-    if settings.get('web_dir'):
-        settings['rep_web_path'] = os.path.join(
-            settings.get('web_dir'),
-            rep_name
-        )
-        settings['rep_web_link'] = urlparse.urljoin(
-            settings.get('web_address'),
-            rep_name
-        )
-
-    settings.img_dst = os.path.join(settings.img_cmp_dir,
-                                    "images-" + settings.schema)
-
-    if settings.do_specials:
-        if settings['current_special']:
-            CsvParseWoo.current_special = settings['current_special']
-        CsvParseWoo.specialsCategory = "Specials"
-        CsvParseWoo.add_special_categories = settings['add_special_categories']
-
-    CsvParseWoo.do_images = settings.do_images
-    CsvParseWoo.do_dyns = settings.do_dyns
-    CsvParseWoo.do_specials = settings.do_specials
-
-    if not settings.get('exclude_cols'):
-        settings['exclude_cols'] = []
-
-    if not settings.do_images:
-        settings['exclude_cols'].extend(['Images', 'imgsum'])
-
-    if not settings['do_categories']:
-        settings['exclude_cols'].extend(['catsum', 'catlist'])
-
-    if not settings.do_dyns:
-        settings['exclude_cols'].extend([
-            'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
-            'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
-        ])
-
-    if not settings.do_specials:
-        settings['exclude_cols'].extend([
-            'SCHEDULE', 'sale_price', 'sale_price_dates_from',
-            'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
-            'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
-            'DPS', 'DPF', 'DPT'
-        ])
-
     ########################################
     # Create Product Parser object
     ########################################

@@ -420,7 +420,9 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         ### Second round gets all the arguments from all config files
 
+        # TODO: set up logging here instead of Registrar verbosity crap
         # TODO: implement "ask for password" feature
+
         argparser = self.argparser_class()
 
         # TODO: test set local work dir
