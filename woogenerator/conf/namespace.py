@@ -426,7 +426,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def dprc_path(self):
-        """ The path which the dynampic pricing category data is stored. """
+        """ The path which the dynamic pricing category data is stored. """
         if hasattr(self, 'dprc_file') and getattr(self, 'dprc_file'):
             return getattr(self, 'dprc_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'dprc', self.import_name)
@@ -434,11 +434,52 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def dprp_path(self):
-        """ The path which the dynampic pricing product data is stored. """
+        """ The path which the dynamic pricing product data is stored. """
         if hasattr(self, 'dprp_file') and getattr(self, 'dprp_file'):
             return getattr(self, 'dprp_file')
         response = '%s%s-%s.csv' % (self.file_prefix, 'dprp', self.import_name)
         return os.path.join(self.in_dir_full, response)
+
+    @property
+    def fla_path(self):
+        """ The path which the flattened csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def flv_path(self):
+        """ The path which the flattened variation csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened-variations', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def cat_path(self):
+        """ The path which the categories csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'categories', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def myo_path(self):
+        """ The path which the myob csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'myob', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def rep_delta_slave_csv_path(self):
+        """ The path which the delta slave csv report is stored. """
+        response = "%s%s_%s-%s.csv" % (
+            self.file_prefix, 'delta_report', self.slave_name, self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
 
     @property
     def master_parser_class(self):

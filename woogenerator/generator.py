@@ -421,6 +421,8 @@ def main(override_args=None, settings=None):
     """Main function for generator."""
     settings = init_settings(override_args, settings, ArgumentParserProd)
 
+    init_dirs(settings)
+
     # PROCESS CONFIG
 
     settings.add_special_categories = settings.do_specials and settings['do_categories']
@@ -438,23 +440,6 @@ def main(override_args=None, settings=None):
     if settings.img_raw_extra_dir is not None:
         settings.img_raw_dirs.append(settings.img_raw_extra_dir)
 
-    TimeUtils.set_wp_srv_offset(settings.wp_srv_offset)
-    SyncUpdate.set_globals(settings.master_name, settings.slave_name,
-                           settings.merge_mode, settings.last_sync)
-
-    suffix = settings.schema
-    if settings.variant:
-        suffix += "-" + settings.variant
-
-    settings.fla_path = os.path.join(settings.out_dir_full,
-                                     "flattened-" + suffix + ".csv")
-    settings.flv_path = os.path.join(settings.out_dir_full,
-                                     "flattened-variations-" + suffix + ".csv")
-    settings.cat_path = os.path.join(settings.out_dir_full,
-                                     "categories-" + suffix + ".csv")
-    settings.myo_path = os.path.join(settings.out_dir_full,
-                                     "myob-" + suffix + ".csv")
-    # bun_path = os.path.join(settings.out_dir_full , "bundles-"+suffix+".csv")
     rep_name = os.path.basename(settings.rep_main_path)
     if settings.get('web_dir'):
         settings['rep_web_path'] = os.path.join(
@@ -465,9 +450,6 @@ def main(override_args=None, settings=None):
             settings.get('web_address'),
             rep_name
         )
-
-    settings['rep_delta_slave_csv_path'] = os.path.join(
-        settings.out_dir_full, "delta_report_wp%s.csv" % suffix)
 
     settings.img_dst = os.path.join(settings.img_cmp_dir,
                                     "images-" + settings.schema)
