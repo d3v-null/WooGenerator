@@ -20,7 +20,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_master_parsers,
                                  populate_slave_parsers)
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         UpdateNamespace, init_dirs,
+                                         UpdateNamespace,
                                          init_settings)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
@@ -681,7 +681,7 @@ class TestMerger(unittest.TestCase):
         suffix='do_report'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
-        init_dirs(self.settings)
+        self.settings.init_dirs()
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -704,7 +704,7 @@ class TestMerger(unittest.TestCase):
         suffix='do_updates'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
-        init_dirs(self.settings)
+        self.settings.init_dirs()
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -739,7 +739,7 @@ class TestMerger(unittest.TestCase):
         suffix='do_summary'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
-        init_dirs(self.settings)
+        self.settings.init_dirs()
         self.settings.update_master = True
         self.settings.update_slave = True
         self.settings.do_mail = False
@@ -781,7 +781,7 @@ class TestMerger(unittest.TestCase):
         suffix='do_summary'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
-        init_dirs(self.settings)
+        self.settings.init_dirs()
         self.settings.update_master = True
         self.settings.update_slave = True
         self.settings.do_mail = False

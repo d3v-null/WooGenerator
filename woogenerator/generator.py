@@ -29,7 +29,7 @@ from .matching import (CategoryMatcher, MatchList, ProductMatcher,
                        VariationMatcher)
 from .metagator import MetaGator
 from .namespace.core import (MatchNamespace, ParserNamespace, UpdateNamespace,
-                             init_dirs, init_settings)
+                             init_settings)
 from .namespace.prod import SettingsNamespaceProd
 from .parsing.api import CsvParseWooApi
 from .parsing.dyn import CsvParseDyn
@@ -421,7 +421,7 @@ def main(override_args=None, settings=None):
     """Main function for generator."""
     settings = init_settings(override_args, settings, ArgumentParserProd)
 
-    init_dirs(settings)
+    settings.init_dirs()
 
     # PROCESS CONFIG
 
@@ -434,11 +434,6 @@ def main(override_args=None, settings=None):
         Registrar.register_warning(exc)
     if settings.auto_delete_old:
         raise UserWarning("auto-delete not implemented yet")
-
-    if settings.img_raw_dir is not None:
-        settings.img_raw_dirs.append(settings.img_raw_dir)
-    if settings.img_raw_extra_dir is not None:
-        settings.img_raw_dirs.append(settings.img_raw_extra_dir)
 
     rep_name = os.path.basename(settings.rep_main_path)
     if settings.get('web_dir'):

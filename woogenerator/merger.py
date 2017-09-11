@@ -24,8 +24,7 @@ from .matching import (CardMatcher, ConflictingMatchList, EmailMatcher, Match,
                        NocardEmailMatcher, UsernameMatcher)
 from .namespace.user import SettingsNamespaceUser
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
-                             UpdateNamespace, init_dirs,
-                             init_settings)
+                             UpdateNamespace, init_settings)
 from .syncupdate import SyncUpdateUsrApi
 from .utils import ProgressCounter, Registrar, SanitationUtils, TimeUtils
 from .utils.reporter import (ReporterNamespace, do_delta_group,
@@ -575,7 +574,7 @@ def main(override_args=None, settings=None):
     else:
         Registrar.register_progress("Starting Merge %s" % settings.import_name)
 
-    init_dirs(settings)
+    settings.init_dirs()
 
     populate_filter_settings(settings)
 

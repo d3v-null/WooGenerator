@@ -115,6 +115,16 @@ class SettingsNamespaceProto(argparse.Namespace):
             return self.join_work_path(self.pickle_dir)
 
     @property
+    def dirs(self):
+        return [
+            self.in_dir_full,
+            self.out_dir_full,
+            self.report_dir_full,
+            self.log_dir_full,
+            self.pickle_dir_full,
+        ]
+
+    @property
     def file_prefix(self):
         return ""
 
@@ -329,6 +339,11 @@ class SettingsNamespaceProto(argparse.Namespace):
         if self.log_dir_full:
             response = os.path.join(self.log_dir_full, response)
         return response
+
+    def init_dirs(self):
+        for path in list(set(self.dirs)):
+            if path and not os.path.exists(path):
+                os.mkdir(path)
 
 class ParserNamespace(argparse.Namespace):
     """ Collect parser variables into a single namespace. """
@@ -585,12 +600,3 @@ def init_settings(override_args=None, settings=None, argparser_class=None):
     )
 
     return settings
-
-def init_dirs(settings):
-    for path in (
-            settings.in_dir_full, settings.out_dir_full,
-            settings.log_dir_full, settings.pickle_dir_full,
-            settings.report_dir_full
-    ):
-        if not os.path.exists(path):
-            os.mkdir(path)

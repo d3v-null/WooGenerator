@@ -14,7 +14,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_slave_parsers)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         UpdateNamespace, init_dirs,
+                                         UpdateNamespace,
                                          init_settings)
 
 
@@ -89,7 +89,7 @@ class TestClientEmailExchangeDestructive(TestClientEmail):
         suffix='do_summary'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
-        init_dirs(self.settings)
+        self.settings.init_dirs()
         self.settings.do_mail = True
 
         self.matches = do_match(

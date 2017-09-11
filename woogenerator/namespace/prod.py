@@ -30,6 +30,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.thumbsize_y = getattr(self, 'thumbsize_y', None)
         self.img_raw_dir = getattr(self, 'img_raw_dir', None)
         self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
+        self.img_cmp_dir = getattr(self, 'img_cmp_dir', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -281,3 +282,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'connect_params':self.slave_wc_api_params
         }
         return response
+
+    @property
+    def dirs(self):
+        response = super(SettingsNamespaceProd, self).dirs or []
+        response.extend(self.img_raw_dirs)
+        response.append(self.img_cmp_dir)
