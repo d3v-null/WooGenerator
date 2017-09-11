@@ -7,8 +7,8 @@ import os
 
 import configargparse
 
-from ..namespace.core import (SettingsNamespaceProd, SettingsNamespaceProto,
-                              SettingsNamespaceUser)
+from ..namespace.core import SettingsNamespaceProto, SettingsNamespaceUser
+from ..namespace.prod import SettingsNamespaceProd
 from ..utils import TimeUtils
 from .core import (DEFAULT_LOCAL_IMG_RAW_DIR, DEFAULT_LOCAL_IN_DIR,
                    DEFAULT_LOCAL_LOG_DIR, DEFAULT_LOCAL_OUT_DIR,

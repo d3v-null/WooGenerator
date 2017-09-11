@@ -2,15 +2,17 @@ import random
 import unittest
 from collections import OrderedDict
 
-from context import woogenerator, TESTS_DATA_DIR
 from tests.test_sync_client import AbstractSyncClientTestCase
+
+from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.coldata import ColDataWoo
+from woogenerator.conf.parser import ArgumentParserProd
+from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import TimeUtils
-from woogenerator.coldata import ColDataWoo
-from woogenerator.namespace.core import SettingsNamespaceProd
-from woogenerator.conf.parser import ArgumentParserProd
+
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
     config_file = "generator_config_test.yaml"

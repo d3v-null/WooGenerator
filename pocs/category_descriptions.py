@@ -1,44 +1,28 @@
-import io
-import os
-import re
-import shutil
-import sys
-import time
-import traceback
-import urlparse
-import webbrowser
-import zipfile
-import platform
-from bisect import insort
-from collections import OrderedDict
-from pprint import pformat, pprint
-
 import argparse
+
 from StringIO import StringIO
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
-from httplib2 import ServerNotFoundError
-from PIL import Image
-from tabulate import tabulate
-from exitstatus import ExitStatus
+from pprint import pformat
 
 import __init__
+from woogenerator.client.core import SyncClientGDrive, SyncClientLocalStream
+from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.coldata import ColDataBase, ColDataMyo, ColDataWoo
+from woogenerator.conf.parser import (ArgumentParserProd,
+                                      ArgumentParserProtoProd)
 from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
 from woogenerator.metagator import MetaGator
+from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import CsvParseWooApi
 from woogenerator.parsing.dyn import CsvParseDyn
 from woogenerator.parsing.myo import CsvParseMyo, MYOProdList
 from woogenerator.parsing.special import CsvParseSpecial
 from woogenerator.parsing.woo import (CsvParseTT, CsvParseVT, CsvParseWoo,
                                       WooCatList, WooProdList, WooVarList)
-from woogenerator.client.core import SyncClientGDrive, SyncClientLocalStream
-from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.syncupdate import (SyncUpdate, SyncUpdateCatWoo,
                                      SyncUpdateProdWoo, SyncUpdateVarWoo)
 from woogenerator.utils import Registrar
-from woogenerator.conf.parser import ArgumentParserProd, ArgumentParserProtoProd
-from woogenerator.namespace.core import SettingsNamespaceProd
+
 
 # Example: BioTan Plus special SP2017-05-22-STBTP
 def populate_examples(settings):

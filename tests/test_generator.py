@@ -1,21 +1,25 @@
 from __future__ import print_function
+
 import os
+import unittest
 # import sys
 from pprint import pformat
-import unittest
 from unittest import TestCase
+
 from tabulate import tabulate
+
+from context import TESTS_DATA_DIR, woogenerator
+from woogenerator.conf.parser import ArgumentParserProd
+from woogenerator.generator import populate_master_parsers
+from woogenerator.namespace.core import ParserNamespace, init_settings
+from woogenerator.namespace.prod import SettingsNamespaceProd
+from woogenerator.parsing.special import SpecialGruopList
+from woogenerator.parsing.woo import WooProdList
+from woogenerator.utils import Registrar, SanitationUtils
+
 # import argparse
 
-from context import woogenerator
-from woogenerator.parsing.woo import WooProdList
-from woogenerator.parsing.special import SpecialGruopList
-from woogenerator.utils import Registrar, SanitationUtils
-from woogenerator.conf.parser import ArgumentParserProd
-from woogenerator.namespace.core import SettingsNamespaceProd, init_settings, ParserNamespace
-from woogenerator.generator import populate_master_parsers
 
-from context import TESTS_DATA_DIR
 
 
 class TestGenerator(TestCase):

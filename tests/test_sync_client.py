@@ -1,17 +1,12 @@
-import os
 import unittest
-from os import path, sys
 
-import yaml
-
-from context import get_testdata, TESTS_DATA_DIR, woogenerator
+from context import TESTS_DATA_DIR, get_testdata, woogenerator
 from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
-from woogenerator.coldata import ColDataWoo
-from woogenerator.namespace.core import SettingsNamespaceProto, init_settings, SettingsNamespaceProd
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
-from woogenerator.syncupdate import SyncUpdate
+from woogenerator.namespace.core import SettingsNamespaceProto, init_settings
+from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.utils import Registrar, TimeUtils
 
 
