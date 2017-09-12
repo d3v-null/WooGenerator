@@ -135,6 +135,11 @@ class TestGenerator(AbstractSyncManagerTestCase):
                     tabulate(first_group.children, tablefmt='simple')),
                  pformat(dict(first_group)), pformat(dir(first_group))))
 
+    def test_populate_slave_parsers(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        # TODO: finish this
+        # self.parsers = populate_slave_parsers(self.parsers, self.settings)
+
 
 if __name__ == '__main__':
     unittest.main()
