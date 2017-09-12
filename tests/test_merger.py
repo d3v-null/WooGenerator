@@ -1,10 +1,7 @@
 from __future__ import print_function
 
-# from unittest import TestCase, main, skip, TestSuite, TextTestRunner
 import os
-# import sys
 import tempfile
-import traceback
 import unittest
 from pprint import pformat
 
@@ -13,7 +10,6 @@ import mock
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  do_summary, do_updates,
@@ -22,9 +18,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_slave_parsers)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
-# from woogenerator.coldata import ColDataWoo
-# from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
-from woogenerator.utils import Registrar, TimeUtils
+from woogenerator.utils import TimeUtils
 
 
 class TestMerger(AbstractSyncManagerTestCase):
@@ -48,14 +42,6 @@ class TestMerger(AbstractSyncManagerTestCase):
         self.settings.ask_before_update = False
 
         self.settings.init_settings(self.override_args)
-
-    def fail_syncupdate_assertion(self, exc, sync_update):
-        msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (
-            pformat(sync_update.sync_warnings.items()),
-            sync_update.tabulate(tablefmt='simple'),
-            traceback.format_exc(exc),
-        )
-        raise AssertionError(msg)
 
     def print_updates_summary(self, updates):
         print("delta_master updates(%d):\n%s" % (
@@ -88,23 +74,6 @@ class TestMerger(AbstractSyncManagerTestCase):
         print("static updates(%d):\n%s" % (
                 len(updates.static), map(str, updates.static))
          )
-
-    def print_update(self, update):
-        print(
-            (
-                "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
-                ":\n%s\npasses:\n%s\nreflections:\n%s"
-            ) % (
-                update,
-                update.old_m_object,
-                pformat(dict(update.old_m_object)),
-                update.old_s_object,
-                pformat(dict(update.old_s_object)),
-                update.display_sync_warnings(),
-                update.display_sync_passes(),
-                update.display_sync_reflections(),
-            )
-        )
 
     def print_user_summary(self, user):
         print("pformat@dict:\n%s" % pformat(dict(user)))
@@ -484,19 +453,6 @@ class TestMerger(AbstractSyncManagerTestCase):
             self.assertFalse(sync_update.s_deltas)
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-
-    def make_temp_with_lines(self, filename, lines, suffix=''):
-        """ Safely create a new temp file with the contents of filename at lines. """
-        source = os.path.basename(filename)
-        with open(filename) as in_file:
-            in_contents = in_file.readlines()
-            new_contents = [
-                in_contents[line] for line in lines
-            ]
-            _, new_filename = tempfile.mkstemp('%s_%s' % (source, suffix))
-            with open(new_filename, 'w+') as new_file:
-                new_file.writelines(new_contents)
-            return new_filename
 
     def test_do_merge_hard_1(self):
         suffix = 'hard_1'
