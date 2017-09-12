@@ -114,18 +114,6 @@ class MetaGator(Registrar):
             title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName, '')
             description = exif_dict["0th"].get(
                 piexif.ImageIFD.ImageDescription, '')
-            #
-            # for index, field in (
-            #     ('Iptc.Application2.Headline', 'title'),
-            #     ('Iptc.Application2.Caption', 'description')
-            # ):
-            #     if(index in imgmeta.iptc_keys):
-            #         value = imgmeta[index].value
-            #         if isinstance(value, list):
-            #             value = value[0]
-            #
-            #         if field == 'title': title = value
-            #         if field == 'description': description = value
         else:
             raise Exception("not an image file: ", self.ext)
 
