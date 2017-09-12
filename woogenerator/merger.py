@@ -124,7 +124,10 @@ def populate_slave_parsers(parsers, settings):
 
     Registrar.register_progress("analysing slave user data")
 
-    with settings.slave_download_client_class(**settings.slave_download_client_args) as client:
+    slave_client_class = settings.slave_download_client_class
+    slave_client_args = settings.slave_download_client_args
+
+    with slave_client_class(**slave_client_args) as client:
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
