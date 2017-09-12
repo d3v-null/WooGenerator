@@ -12,6 +12,7 @@ import mock
 
 from context import TESTS_DATA_DIR, woogenerator
 from mock_utils import MockUtils
+from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
@@ -19,8 +20,6 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_filter_settings,
                                  populate_master_parsers,
                                  populate_slave_parsers)
-from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
-                                         UpdateNamespace)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.coldata import ColDataWoo
@@ -28,12 +27,12 @@ from woogenerator.syncupdate import SyncUpdate
 from woogenerator.utils import Registrar, TimeUtils
 
 
-class TestMerger(unittest.TestCase):
+class TestMerger(AbstractSyncManagerTestCase):
+    settings_namespace_class = SettingsNamespaceUser
+    config_file = "merger_config_test.yaml"
+
     def setUp(self):
-        self.settings = SettingsNamespaceUser()
-        self.settings.local_work_dir = TESTS_DATA_DIR
-        self.settings.local_live_config = None
-        self.settings.local_test_config = "merger_config_test.yaml"
+        super(TestMerger, self).setUp()
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
         self.settings.download_slave = False
@@ -44,38 +43,11 @@ class TestMerger(unittest.TestCase):
         self.settings.report_duplicates = True
         self.settings.report_sanitation = True
         self.settings.report_matching = True
-        # TODO: mock out update clients
         self.settings.update_master = False
         self.settings.update_slave = False
         self.settings.ask_before_update = False
-        # self.settings.master_parse_limit = 10
-        # self.settings.slave_parse_limit = 10
-        self.override_args = ""
-
-        self.settings.verbosity = 0
-        self.settings.quiet = True
 
         self.settings.init_settings(self.override_args)
-
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-        Registrar.DEBUG_PROGRESS = False
-
-        self.debug = False
-        # self.debug = True
-        if self.debug:
-            Registrar.DEBUG_ERROR = True
-            Registrar.DEBUG_WARN = True
-            Registrar.DEBUG_MESSAGE = True
-            Registrar.DEBUG_PROGRESS = True
-            # Registrar.DEBUG_ABSTRACT = True
-            # Registrar.DEBUG_PARSER = True
-            # Registrar.DEBUG_CONTACT = True
-
-        self.parsers = ParserNamespace()
-        self.matches = MatchNamespace()
-        self.updates = UpdateNamespace()
 
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (

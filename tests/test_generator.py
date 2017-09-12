@@ -4,11 +4,11 @@ import os
 import unittest
 # import sys
 from pprint import pformat
-from unittest import TestCase
 
 from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
+from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.generator import populate_master_parsers
 from woogenerator.namespace.core import ParserNamespace
@@ -22,36 +22,20 @@ from woogenerator.utils import Registrar, SanitationUtils
 
 
 
-class TestGenerator(TestCase):
+class TestGenerator(AbstractSyncManagerTestCase):
+    settings_namespace_class = SettingsNamespaceProd
+    config_file = "generator_config_test.yaml"
     def setUp(self):
-
-        self.settings = SettingsNamespaceProd()
-        self.settings.local_work_dir = TESTS_DATA_DIR
-        self.settings.local_live_config = None
-        self.settings.local_test_config = "generator_config_test.yaml"
+        super(TestGenerator, self).setUp()
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
-        self.settings.master_file = os.path.join(TESTS_DATA_DIR,
-                                                 "generator_master_dummy.csv")
+        self.settings.master_file = os.path.join(
+            TESTS_DATA_DIR, "generator_master_dummy.csv"
+        )
         self.settings.specials_file = os.path.join(
-            TESTS_DATA_DIR, "generator_specials_dummy.csv")
+            TESTS_DATA_DIR, "generator_specials_dummy.csv"
+        )
         self.settings.do_specials = True
-        # self.settings.master_limit = 10
-        self.override_args = ""
-        self.parsers = ParserNamespace()
-
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-        Registrar.DEBUG_PROGRESS = False
-
-        # Registrar.DEBUG_MESSAGE = True
-        # Registrar.DEBUG_ERROR = True
-        # Registrar.DEBUG_ABSTRACT = True
-        # Registrar.DEBUG_PARSER = True
-        # Registrar.DEBUG_WARN = False
-        # Registrar.DEBUG_PROGRESS = False
-
         self.settings.init_settings(self.override_args)
 
     def test_init_settings(self):
