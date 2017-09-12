@@ -205,7 +205,9 @@ class SanitationUtils(object):
     def ascii_to_unicode(cls, ascii_str):
         assert isinstance(ascii_str, str),\
             "parameter should be str not %s" % type(ascii_str)
-        unicode_return = converters.to_unicode(ascii_str, "ascii")
+        # literal_eval("b'{}'".format(ascii_str)).decode('utf-8')
+        # unicode_return = converters.to_unicode(ascii_str, "ascii")
+        unicode_return = ascii_str.decode('unicode-escape')
         assert isinstance(unicode_return, unicode),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
