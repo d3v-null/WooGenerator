@@ -220,16 +220,8 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         except:
             raise Exception("import didn't produce a .imported file")
 
-    def analyse_remote(self, parser, **kwargs): # since=None, limit=None):
+    def export_remote(self, data_path, **kwargs):
         since = kwargs.get('since', '1970-01-01')
-        limit = kwargs.get('limit', self.limit)
-        dialect_suggestion = kwargs.get('dialect_suggestion', self.dialect_suggestion)
-        encoding = kwargs.get('encoding', self.encoding)
-        data_path = kwargs.get('data_path')
-
-        # TODO: implement limit
-        if limit:
-            pass
 
         import_name = self.fs_params['import_name']
         remote_export_dir = self.fs_params['remote_export_dir']
@@ -258,12 +250,25 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         #     '-s"%s"' % since,
         #     '"%s"' % file_name
         # ]))
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "export command: %s" % command
+            )
 
         # print "executing export command..."
         self.exec_silent_command_assert(command)
         # print "donloading file..."
         self.get_delete_file(remote_path, data_path)
         # print "analysing file..."
+
+    def analyse_remote(self, parser, **kwargs): # since=None, limit=None):
+        dialect_suggestion = kwargs.pop('dialect_suggestion', self.dialect_suggestion)
+        data_path = kwargs.pop('data_path')
+        encoding = kwargs.pop('encoding', self.encoding)
+        limit = kwargs.pop('limit', self.limit)
+
+        self.export_remote(data_path, **kwargs)
+
         parser.analyse_file(
             data_path,
             dialect_suggestion=dialect_suggestion,

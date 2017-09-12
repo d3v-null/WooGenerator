@@ -19,12 +19,11 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from six.moves import input
 
-from .conf.parser import ArgumentParserUser
 from .matching import (CardMatcher, ConflictingMatchList, EmailMatcher, Match,
                        NocardEmailMatcher, UsernameMatcher)
-from .namespace.user import SettingsNamespaceUser
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
+from .namespace.user import SettingsNamespaceUser
 from .syncupdate import SyncUpdateUsrApi
 from .utils import ProgressCounter, Registrar, SanitationUtils, TimeUtils
 from .utils.reporter import (ReporterNamespace, do_delta_group,
@@ -165,7 +164,9 @@ def populate_master_parsers(parsers, settings):
 
     Registrar.register_progress("analysing master user data")
 
-    with settings.master_download_client_class(**settings.master_download_client_args) as client:
+    master_client_class = settings.master_download_client_class
+    master_client_args = settings.master_download_client_args
+    with master_client_class(**master_client_args) as client:
         client.analyse_remote(parsers.master, data_path=settings.master_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:

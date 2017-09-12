@@ -33,9 +33,8 @@ from .parsing.shop import ShopObjList
 from .parsing.special import CsvParseSpecial
 from .parsing.woo import WooCatList, WooProdList, WooVarList
 from .syncupdate import SyncUpdateCatWoo, SyncUpdateProdWoo, SyncUpdateVarWoo
-from .utils import (HtmlReporter, ProgressCounter, Registrar, SanitationUtils,
-                    SeqUtils)
-from .utils.reporter import ReporterNamespace
+from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
+from .utils.reporter import HtmlReporter, ReporterNamespace
 
 
 def timediff(settings):

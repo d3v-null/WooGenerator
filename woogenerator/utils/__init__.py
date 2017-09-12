@@ -15,6 +15,5 @@ from .core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
                    Registrar, ValidationUtils, PHPUtils, ProgressCounter,
                    UnicodeCsvDialectUtils, FileUtils)
 from .contact import NameUtils, AddressUtils
-from .reporter import HtmlReporter
 from .clock import TimeUtils
 from .inheritence import InheritenceUtils, overrides
