@@ -109,11 +109,12 @@ class MetaGator(Registrar):
             except IOError:
                 raise Exception("file not found")
 
-            exif_dict = piexif.load(img.info["exif"])
+            exif_dict = {}
+            if "exif" in img.info:
+                exif_dict = piexif.load(img.info["exif"])
 
-            title = exif_dict["0th"].get(piexif.ImageIFD.DocumentName, '')
-            description = exif_dict["0th"].get(
-                piexif.ImageIFD.ImageDescription, '')
+            title = exif_dict.get("0th",{}).get(piexif.ImageIFD.DocumentName, '')
+            description = exif_dict.get("0th",{}).get(piexif.ImageIFD.ImageDescription, '')
         else:
             raise Exception("not an image file: ", self.ext)
 

@@ -37,7 +37,8 @@ class testMetaGator(unittest.TestCase):
         file_path = self.create_temporary_copy(file_path)
         metagator = MetaGator(file_path)
         response = metagator.read_meta()
-        self.assertFalse(response)
+        self.assertTrue(response)
+        self.assertEquals({'title':u'', 'description':u''}, response)
 
     def test_JPG_Write(self):
         file_path = os.path.join(self.local_work_dir, 'sample_img.jpg')
