@@ -225,8 +225,6 @@ class ImportUser(ImportObject):
 
         self['Address'] = ContactAddress(schema, **address_kwargs)
 
-        # print "ADDRESS: ", self['Address']
-
         alt_address_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
@@ -242,18 +240,17 @@ class ImportUser(ImportObject):
 
         self['Home Address'] = ContactAddress(schema, **alt_address_kwargs)
 
-        # print "HOME ADDRESS: ", self['Home Address']
-
         phone_kwargs = OrderedDict(filter(None, [
             ((key, data.get(value)) if data.get(value) else None) for key, value in
             {
                 'mob_number': 'Mobile Phone',
                 'tel_number': 'Phone',
                 'fax_number': 'Fax',
-                'mob_pref': 'Mobile Phone Preferred',
-                'tel_pref': 'Phone Preferred',
+                'pref_method': 'Pref Method',
             }.items()
         ]))
+        phone_kwargs['pref_data'] = ColDataUser.data.get('Pref Method', {})
+        phone_kwargs['master_schema'] = ColDataUser.master_schema
 
         self['Phone Numbers'] = ContactPhones(schema, **phone_kwargs)
 

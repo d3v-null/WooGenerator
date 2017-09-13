@@ -4,16 +4,14 @@ import unittest
 from os import path, sys
 
 from context import woogenerator
-from test_sync_client import AbstractSyncClientTestCase
 from test_syncupdate import TestSyncUpdateAbstract
 from woogenerator.coldata import ColDataUser
-from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.contact_objects import SocialMediaFields
-from woogenerator.matching import MatchList, UsernameMatcher
-from woogenerator.parsing.user import CsvParseUser, CsvParseUserApi, ImportUser
+from woogenerator.namespace.user import SettingsNamespaceUser
+from woogenerator.parsing.user import ImportUser
 from woogenerator.syncupdate import SyncUpdateUsr, SyncUpdateUsrApi
-from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
+from woogenerator.utils import Registrar, TimeUtils
 
 if __name__ == '__main__' and __package__ is None:
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -310,14 +308,14 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_m_deltas(self):
+        # import pudb; pudb.set_trace()
+
         master_object = self.usr_md1
-        self.assertEqual(
-            master_object.role.role, 'WN'
-        )
+        self.assertEqual(master_object.role.role, 'WN')
+        self.assertEqual(master_object.role.direct_brand, 'TechnoTan Wholesale')
         slave_object = self.usr_sd1
-        self.assertEqual(
-            slave_object.role.role, 'RN'
-        )
+        self.assertEqual(slave_object.role.role, 'RN')
+        self.assertEqual(slave_object.role.direct_brand, None)
         sync_update = SyncUpdateUsr(master_object, slave_object)
         sync_update.update(ColDataUser.get_sync_cols())
         # sync_update.m_deltas(ColDataUser.get_delta_cols())

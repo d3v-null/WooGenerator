@@ -162,10 +162,6 @@ class TestMerger(AbstractSyncManagerTestCase):
         self.assertEqual(first_usr.phones.mob_number, '+614 40 564 957')
         self.assertEqual(first_usr.phones.tel_number, '02 2791 7625')
         self.assertEqual(first_usr.phones.fax_number, '07 5971 6312')
-        self.assertEqual(
-            str(first_usr.phones),
-            "02 2791 7625 PREF; +614 40 564 957 PREF; 07 5971 6312"
-        )
         self.assertEqual(first_usr.socials.twitter, "kmainstone5")
         website = ("https://wikispaces.com/vivamus/metus/arcu/adipiscing.jpg?"
                    "duis=justo" "&consequat=sollicitudin" "&dui=ut"
@@ -246,10 +242,6 @@ class TestMerger(AbstractSyncManagerTestCase):
         self.assertEqual(first_usr.phones.mob_number, '+614 37 941 958')
         self.assertEqual(first_usr.phones.tel_number, '07 2258 3571')
         self.assertEqual(first_usr.phones.fax_number, '07 4029 1259')
-        self.assertEqual(
-            str(first_usr.phones),
-            "07 2258 3571 PREF; +614 37 941 958 PREF; 07 4029 1259"
-        )
         self.assertEqual(first_usr.socials.twitter, "bblakeway7")
 
         self.assertEqual(first_usr.role.direct_brand, "Pending")

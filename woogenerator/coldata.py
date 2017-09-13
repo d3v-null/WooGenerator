@@ -1196,6 +1196,8 @@ class ColDataWoo(ColDataProd):
 class ColDataUser(ColDataBase):
     # modTimeSuffix = ' Modified'
 
+    master_schema = 'act'
+
     modMapping = {
         'Home Address': 'Alt Address',
     }
@@ -1352,8 +1354,6 @@ class ColDataUser(ColDataBase):
                 'Memo',
                 'Spouse',
                 'Salutation',
-                'Search Text',
-                'HO Contact',
                 'Contact'
             ],
             'user': True,
@@ -1540,9 +1540,15 @@ class ColDataUser(ColDataBase):
 
 
         ('Phone Numbers', {
+            'act': False,
+            'wp': False,
             'tracked': 'future',
-            'aliases': ['Mobile Phone', 'Phone', 'Fax'],
-            # 'Mobile Phone Preferred', 'Phone Preferred', ]
+            'aliases': [
+                'Mobile Phone', 'Phone', 'Fax'
+                'Mobile Phone Preferred', 'Phone Preferred',
+                'Pref Method'
+            ],
+            'import': False,
             'basic': True,
             'report': True,
         }),
@@ -1587,6 +1593,18 @@ class ColDataUser(ColDataBase):
             'invincible':'master',
             # 'visible':True,
         }),
+        ('Home Phone', {
+            'act': True,
+            # 'label':'billing_phone',
+            'import': True,
+            'user': True,
+            # 'report': True,
+            'sync': True,
+            'warn': True,
+            'static': True,
+            'invincible':'master',
+            # 'visible':True,
+        }),
         ('Fax', {
             'wp': {
                 'meta': True,
@@ -1605,53 +1623,76 @@ class ColDataUser(ColDataBase):
             'visible': True,
             'mutable': True,
         }),
-        ('Mobile Phone Preferred', {
-            'wp': {
-                'meta': True,
-                'key': 'pref_mob'
-            },
-            'wp-api': {
-                'meta': True,
-                'key': 'pref_mob'
-            },
-            'act': {
-                'options':['True', 'False']
-            },
-            # 'label':'pref_mob',
-            'import': True,
-            'user': True,
-            'sync': True,
-            'visible': True,
-            'mutable': True,
-            'invincible':'master',
-        }),
-        ('Phone Preferred', {
-            'wp': {
-                'meta': True,
-                'key': 'pref_tel'
-            },
-            'wp-api': {
-                'meta': True,
-                'key': 'pref_tel'
-            },
-            'act': {
-                'options':['True', 'False']
-            },
-            # 'label':'pref_tel',
-            'import': True,
-            'user': True,
-            'sync': True,
-            'visible': True,
-            'mutable': True,
-            'invincible':'master',
-        }),
         # TODO: implement pref method
-        # ('Pref Method', {
-        #     'wp': False,
-        #     'wp-api': False,
-        #     'import': False,
-        #     'sync': ''
+        ('Pref Method', {
+            'wp': {
+                'meta': True,
+                'key': 'pref_method',
+                'options':['', 'pref_mob', 'pref_tel', '']
+            },
+            'wp-api': {
+                'meta': True,
+                'key': 'pref_method',
+                'options':['', 'pref_mob', 'pref_tel', '']
+            },
+            'import': True,
+            'act':{
+                'options':['E-mail', 'Mobile', 'Phone', 'SMS']
+            }
+        }),
+        # ('Mobile Phone Preferred', {
+        #     'wp': {
+        #         'meta': True,
+        #         'key': 'pref_mob'
+        #     },
+        #     'wp-api': {
+        #         'meta': True,
+        #         'key': 'pref_mob'
+        #     },
+        #     'act': {
+        #         'options':['True', 'False']
+        #     },
+        #     # 'label':'pref_mob',
+        #     'import': True,
+        #     'user': True,
+        #     'sync': True,
+        #     'visible': True,
+        #     'mutable': True,
+        #     'invincible':'master',
         # }),
+        # ('Phone Preferred', {
+        #     'wp': {
+        #         'meta': True,
+        #         'key': 'pref_tel'
+        #     },
+        #     'wp-api': {
+        #         'meta': True,
+        #         'key': 'pref_tel'
+        #     },
+        #     'act': {
+        #         'options':['True', 'False']
+        #     },
+        #     # 'label':'pref_tel',
+        #     'import': True,
+        #     'user': True,
+        #     'sync': True,
+        #     'visible': True,
+        #     'mutable': True,
+        #     'invincible':'master',
+        # }),
+        # ('Home Phone Preferred', {
+        #     'act': {
+        #         'options':['True', 'False']
+        #     },
+        #     # 'label':'pref_tel',
+        #     'import': True,
+        #     'user': True,
+        #     'sync': True,
+        #     'visible': True,
+        #     'mutable': True,
+        #     'invincible':'master',
+        # }),
+
         ('Address', {
             'act': False,
             'wp': False,
@@ -2238,12 +2279,30 @@ class ColDataUser(ColDataBase):
             'import': True,
             'tracked': True,
             'default': '',
-        })
+        }),
         # ('rowcount', {
         #     # 'import':True,
         #     # 'user':True,
         #     'report':True,
         # }),
+
+        # Other random fields that I don't understand
+        ("Direct Customer", {
+            'act':True,
+            'import': True,
+        }),
+        ("Mobile Phone Status", {
+            'act':True,
+            'import': True,
+        }),
+        ("Home Phone Status", {
+            'act':True,
+            'import': True,
+        }),
+        ("Phone Status", {
+            'act':True,
+            'import': True,
+        }),
     ])
 
     def __init__(self, data=None):
@@ -2348,44 +2407,32 @@ class ColDataUser(ColDataBase):
     #     return cols
 
     @classmethod
-    def get_wp_tracked_cols(cls):
+    def get_tracked_cols(cls, schema=None):
+        if not schema:
+            schema=cls.master_schema
         cols = OrderedDict()
         for col, data in cls.data.items():
             if data.get('tracked'):
                 tracking_name = cls.mod_time_col(col)
                 for alias in data.get('aliases', []) + [col]:
                     alias_data = cls.data.get(alias, {})
-                    if alias_data.get('wp'):
+                    if alias_data.get(schema):
                         this_tracking_name = tracking_name
                         if alias_data.get('tracked'):
                             this_tracking_name = cls.mod_time_col(alias)
                         cols[this_tracking_name] = cols.get(
                             this_tracking_name, []) + [alias]
-                        # wp_data = alias_data.get('wp')
-
-                        # if hasattr(wp_data, '__getitem__') and wp_data.get('key'):
-                        #     key = wp_data.get('key')
-                        #     if key and not key in cols.get(tracking_name, []):
-                        #         cols[tracking_name] = cols.get(tracking_name, []) + [key]
         return cols
+
+    @classmethod
+    def get_wp_tracked_cols(cls):
+        return cls.get_tracked_cols('wp')
 
     get_slave_tracked_cols = get_wp_tracked_cols
 
     @classmethod
     def get_act_tracked_cols(cls):
-        cols = OrderedDict()
-        for col, data in cls.data.items():
-            if data.get('tracked'):
-                tracking_name = cls.mod_time_col(col)
-                for alias in data.get('aliases', []) + [col]:
-                    alias_data = cls.data.get(alias, {})
-                    if alias_data.get('act'):
-                        this_tracking_name = tracking_name
-                        if alias_data.get('tracked'):
-                            this_tracking_name = cls.mod_time_col(alias)
-                        cols[this_tracking_name] = cols.get(
-                            this_tracking_name, []) + [alias]
-        return cols
+        return cls.get_tracked_cols('act')
 
     get_master_tracked_cols = get_act_tracked_cols
 

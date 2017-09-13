@@ -87,7 +87,8 @@ class FieldGroup(Registrar):
             cols = other.key_mappings.keys()
         for col in cols:
             attr = self.get_mapped_attr(col)
-            self.kwargs[attr] = copy(other[attr])
+            val = copy(other[attr])
+            self.kwargs[attr] = val
         if self.reprocess_kwargs:
             self.process_kwargs()
 
@@ -1384,21 +1385,74 @@ class ContactPhones(FieldGroup):
     key_mappings = {
         'mob_number': ['Mobile Phone'],
         'tel_number': ['Phone'],
+        'home_number': ['Home Phone'],
         'fax_number': ['Fax'],
         'mob_pref': ['Mobile Phone Preferred'],
         'tel_pref': ['Phone Preferred'],
+        'pref_method': ['Pref Method'],
     }
+    reprocess_kwargs = True
 
     # def __init__(self, schema=None, **kwargs):
     #     super(ContactPhones, self).__init__(**kwargs)
 
+    def is_master_schema(self, schema=None):
+        if not (schema and self.properties.get('master_schema')):
+            return
+        return schema.lower() == self.properties.get('master_schema').lower()
+
+    def get_pref(self, schema=None, index=None):
+        pref_data = self.properties.get('pref_data')
+        if not (schema and index and pref_data):
+            return
+        options = pref_data.get(schema.lower(), {}).get('options', [])
+        if not (options and index < len(options)):
+            return
+        return options[index]
+
+    def get_index(self, schema=None, pref=None):
+        pref_data = self.properties.get('pref_data')
+        if not (schema and pref and pref_data):
+            return
+        options = pref_data.get(schema.lower(), {}).get('options', [])
+        if not (options and pref in options):
+            return
+        return options.index(pref)
+
+    def translate_pref(self, from_schema=None, to_schema=None, pref=None):
+        if not (pref and to_schema and from_schema):
+            return pref
+        index = self.get_index(from_schema, pref)
+        if index is None:
+            return pref
+        return self.get_pref(to_schema, index)
+
+
     def process_kwargs(self):
         super(ContactPhones, self).process_kwargs()
-        if not self.empty:
-            for key, value in self.kwargs.items():
-                if '_number' in key:
+        if self.empty:
+            return
+        for key, value in self.kwargs.items():
+            if '_number' in key:
+                if value is not None:
                     value = SanitationUtils.strip_non_phone_characters(value)
-                self.properties[key] = value
+            self.properties[key] = value
+        # process pref_method, convert to master schema
+        if all(
+            key in self.properties for key in \
+            ['pref_method', 'master_schema', 'pref_data']
+        ):
+            if not self.is_master_schema(self.schema):
+                pref_method = self.properties['pref_method']
+                if ',' in pref_method:
+                    pref_method = pref_method.split(',')[0]
+                pref_method = self.translate_pref(
+                    self.schema,
+                    self.properties['master_schema'],
+                    pref_method
+                )
+                self.properties['pref_method'] = pref_method
+
 
     mob_number = DescriptorUtils.kwarg_alias_property(
         'mob_number',
@@ -1421,31 +1475,39 @@ class ContactPhones(FieldGroup):
         if 'fax_number' in self.properties else ""
     )
 
-    mob_pref = DescriptorUtils.kwarg_alias_property(
-        'mob_pref', lambda self: self.properties.get('mob_pref'))
+    # mob_pref = DescriptorUtils.kwarg_alias_property(
+    #     'mob_pref', lambda self: self.properties.get('mob_pref'))
+    #
+    # tel_pref = DescriptorUtils.kwarg_alias_property(
+    #     'tel_pref', lambda self: self.properties.get('tel_pref'))
 
-    tel_pref = DescriptorUtils.kwarg_alias_property(
-        'tel_pref', lambda self: self.properties.get('tel_pref'))
+    @property
+    def pref_method(self):
+        response = self['pref_method']
+        if not self.is_master_schema(self.schema):
+            response = self.translate_pref(
+                self.properties.get('master_schema'),
+                self.schema,
+                response
+            )
+        return response
+
 
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = "; "
-        tel_line = (("TEL: " + self.tel_number)
-                    if self.debug and self.tel_number else self.tel_number)
-        if self.tel_pref and tel_line:
-            tel_line += ' PREF'
-        mob_line = (("MOB: " + self.mob_number)
-                    if self.debug and self.mob_number else self.mob_number)
-        if mob_line and self.mob_pref:
-            mob_line += ' PREF'
-        fax_line = (("FAX: " + self.fax_number)
-                    if self.debug and self.fax_number else self.fax_number)
-        return SanitationUtils.coerce_unicode(prefix + delimeter.join(
-            filter(None, [
-                tel_line,
-                mob_line,
-                fax_line,
-            ])))
+        components = []
+        for key in ['tel', 'mob', 'fax']:
+            attr = getattr(self, '%s_number' % key)
+            if attr:
+                component = ""
+                if self.debug:
+                    component += "%s: " % key.upper()
+                component += attr
+                components.append(attr)
+        return SanitationUtils.coerce_unicode(
+            prefix + delimeter.join(components)
+        )
 
     def __str__(self, tablefmt=None):
         return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
