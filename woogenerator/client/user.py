@@ -27,11 +27,6 @@ class UsrSyncClientWP(SyncClientWP):
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
 
-    # def upload_changes(self, user_pkey, updates=None):
-    #     # if Registrar.DEBUG_UPDATE:
-    #     #     import pudb; pudb.set_trace()
-    #     super(UsrSyncClientWP, self).upload_changes(user_pkey, updates)
-
 class UsrSyncClientSshAct(SyncClientAbstract):
 
     def __init__(self, connect_params, db_params, fs_params, **kwargs):

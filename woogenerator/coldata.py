@@ -1544,12 +1544,13 @@ class ColDataUser(ColDataBase):
             'wp': False,
             'tracked': 'future',
             'aliases': [
-                'Mobile Phone', 'Phone', 'Fax'
-                'Mobile Phone Preferred', 'Phone Preferred',
-                'Pref Method'
+                'Mobile Phone', 'Phone', 'Fax',
+                # 'Mobile Phone Preferred', 'Phone Preferred',
+                # 'Pref Method'
             ],
             'import': False,
             'basic': True,
+            'sync': True,
             'report': True,
         }),
 
@@ -1566,7 +1567,7 @@ class ColDataUser(ColDataBase):
             # 'label':'mobile_number',
             'import': True,
             'user': True,
-            'sync': True,
+            # 'sync': True,
             'warn': True,
             'static': True,
             'invincible':'master',
@@ -1587,7 +1588,7 @@ class ColDataUser(ColDataBase):
             'import': True,
             'user': True,
             # 'report': True,
-            'sync': True,
+            # 'sync': True,
             'warn': True,
             'static': True,
             'invincible':'master',
@@ -1599,7 +1600,7 @@ class ColDataUser(ColDataBase):
             'import': True,
             'user': True,
             # 'report': True,
-            'sync': True,
+            # 'sync': True,
             'warn': True,
             'static': True,
             'invincible':'master',
@@ -1618,7 +1619,7 @@ class ColDataUser(ColDataBase):
             # 'label':'fax_number',
             'import': True,
             'user': True,
-            'sync': True,
+            # 'sync': True,
             'contact': True,
             'visible': True,
             'mutable': True,
@@ -1635,10 +1636,13 @@ class ColDataUser(ColDataBase):
                 'key': 'pref_method',
                 'options':['', 'pref_mob', 'pref_tel', '']
             },
-            'import': True,
             'act':{
-                'options':['E-mail', 'Mobile', 'Phone', 'SMS']
-            }
+                'options':['E-mail', 'Mobile', 'Phone', 'SMS'],
+                'sync':False
+            },
+            'invincible': 'master',
+            'sync': False,
+            'import': False,
         }),
         # ('Mobile Phone Preferred', {
         #     'wp': {
@@ -2291,18 +2295,18 @@ class ColDataUser(ColDataBase):
             'act':True,
             'import': True,
         }),
-        ("Mobile Phone Status", {
-            'act':True,
-            'import': True,
-        }),
-        ("Home Phone Status", {
-            'act':True,
-            'import': True,
-        }),
-        ("Phone Status", {
-            'act':True,
-            'import': True,
-        }),
+        # ("Mobile Phone Status", {
+        #     'act':True,
+        #     'import': True,
+        # }),
+        # ("Home Phone Status", {
+        #     'act':True,
+        #     'import': True,
+        # }),
+        # ("Phone Status", {
+        #     'act':True,
+        #     'import': True,
+        # }),
     ])
 
     def __init__(self, data=None):

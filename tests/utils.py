@@ -1,4 +1,5 @@
 import mock
+import socket
 
 class MockUtils(object):
     @classmethod
@@ -30,3 +31,18 @@ class MockUtils(object):
     #
     #     def __exit__(self, exc_type, exc_value, exc_traceback):
     #         self.patch.__exit__(exc_type, exc_value, exc_traceback)
+
+class ConnectionUtils(object):
+
+    @classmethod
+    def check_connection(cls):
+        try:
+            # see if we can resolve the host name -- tells us if there is
+            # a DNS listening
+
+            # connect to the host -- tells us if the host is actually
+            # reachable
+            socket.create_connection(('8.8.8.8', 80), 2)
+            return True
+        except:
+            pass

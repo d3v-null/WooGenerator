@@ -368,6 +368,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_leading_whitespace(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'^\s*', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_leading_whitespace", repr(string), repr(str_out)
@@ -375,6 +377,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_leading_newline(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'^(\\n|\n)*', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_leading_newline", repr(string), repr(str_out)
@@ -382,6 +386,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_tailing_whitespace(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'\s*$', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_tailing_whitespace", repr(string), repr(str_out)
@@ -389,6 +395,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_tailing_newline(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'(\\n|\n)*$', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_tailing_newline", repr(string), repr(str_out)
@@ -396,6 +404,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_all_whitespace(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'\s', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_all_whitespace", repr(string), repr(str_out)
@@ -403,6 +413,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_extra_whitespace(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'\s{2,}', ' ', string)
         if Registrar.DEBUG_UTILS:
             print "strip_extra_whitespace", repr(string), repr(str_out)
@@ -410,6 +422,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_non_numbers(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'[^\d]', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_non_numbers", repr(string), repr(str_out)
@@ -417,11 +431,15 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_non_phone_characters(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(cls.disallowedPhoneCharRegex, '', string)
         return str_out
 
     @classmethod
     def strip_punctuation(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'[%s]' % ''.join(cls.punctuationChars), '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_punctuation", repr(string), repr(str_out)
@@ -429,6 +447,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_area_code(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r'\s*\+\d{2,3}\s*', '', string)
         if Registrar.DEBUG_UTILS:
             print "strip_area_code", repr(string), repr(str_out)
@@ -436,6 +456,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_url_protocol(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r"^\w+://", "", string)
         if Registrar.DEBUG_UTILS:
             print "strip_url_protocol", repr(string), repr(str_out)
@@ -443,6 +465,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_p_tags(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r"</?p[^>]*>", "", string)
         if Registrar.DEBUG_UTILS:
             print "strip_url_protocol", repr(string), repr(str_out)
@@ -450,6 +474,8 @@ class SanitationUtils(object):
 
     @classmethod
     def strip_br_tags(cls, string):
+        if not isinstance(string, basestring):
+            return string
         str_out = re.sub(r"</?\s*br\s*/?>", "", string)
         if Registrar.DEBUG_UTILS:
             print "strip_url_protocol", repr(string), repr(str_out)

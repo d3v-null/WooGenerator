@@ -383,15 +383,6 @@ class ImportUser(ImportObject):
             return self.__getitem__(key)
         except KeyError:
             return default
-    #     if Registrar.DEBUG_TRACE:
-    #         import pudb; pudb.set_trace()
-    #     for alias, keys in self.alias_mapping.items():
-    #         if key in keys and self[alias] is not None:
-    #             return self[alias][key]
-    #     try:
-    #         return super(ImportUser, self).get(key, default)
-    #     except:
-    #         return None
 
     @staticmethod
     def get_new_obj_container():

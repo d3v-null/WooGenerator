@@ -60,9 +60,10 @@ class FieldGroup(Registrar):
                 if not self.kwargs.get(key)
             ]
             return any(empty_mandatory_keys)
-        else:
-            return not any(self.kwargs.values())
-
+        for key in self.key_mappings.keys():
+            if self.kwargs.get(key):
+                return False
+        return True
 
     def process_kwargs(self):
         self.init_properties()
@@ -216,10 +217,15 @@ class FieldGroup(Registrar):
             reason = self.reason
 
         printable_kwargs = {}
-        if self.kwargs:
-            for key, arg in self.kwargs.items():
-                if arg:
-                    printable_kwargs[key] = [sanitizer(arg)]
+
+        for key in self.key_mappings.keys():
+            if key in self:
+                printable_kwargs[key] = [sanitizer(self[key])]
+
+        # for attr in self.key_mappings.keys():
+        #     val = getattr(self, attr)
+        #     if val is not None:
+        #         printable_kwargs[attr] = [sanitizer(val)]
 
         table = OrderedDict()
 
@@ -1380,18 +1386,18 @@ class ContactName(ContactObject):
 
 class ContactPhones(FieldGroup):
     fieldGroupType = "PHONES"
-    equality_keys = ['tel_number', 'mob_number']
+    equality_keys = ['tel_number', 'mob_number', 'fax_number', 'pref_method']
+    number_prefixes = ['mob', 'tel', 'home', 'fax']
     similarity_keys = equality_keys[:]
     key_mappings = {
         'mob_number': ['Mobile Phone'],
         'tel_number': ['Phone'],
         'home_number': ['Home Phone'],
         'fax_number': ['Fax'],
-        'mob_pref': ['Mobile Phone Preferred'],
-        'tel_pref': ['Phone Preferred'],
         'pref_method': ['Pref Method'],
     }
     reprocess_kwargs = True
+    # perform_post = True
 
     # def __init__(self, schema=None, **kwargs):
     #     super(ContactPhones, self).__init__(**kwargs)
@@ -1420,13 +1426,42 @@ class ContactPhones(FieldGroup):
         return options.index(pref)
 
     def translate_pref(self, from_schema=None, to_schema=None, pref=None):
-        if not (pref and to_schema and from_schema):
+        if not (pref and to_schema and from_schema) or from_schema == to_schema:
             return pref
         index = self.get_index(from_schema, pref)
         if index is None:
             return pref
         return self.get_pref(to_schema, index)
 
+    @FieldGroup.empty.getter
+    def empty(self):
+        response = super(ContactPhones, self).empty
+        return response
+
+    def __eq__(self, other):
+        checks = [
+            self['pref_method'] == other['pref_method']
+        ]
+        for key in self.number_prefixes:
+            attr = '%s_number' % key
+            checks.append(getattr(self, attr, None) == getattr(other, attr, None))
+        return all(checks)
+
+    def similar(self, other):
+        checks = [
+            self.numbers == other.numbers,
+            self['pref_method'] == other['pref_method']
+        ]
+        return all(checks)
+
+    @property
+    def numbers(self):
+        response = set()
+        for attr in self.number_prefixes:
+            val = getattr(self, '%s_number' % attr, None)
+            if val and val not in response:
+                response.add(val)
+        return sorted(list(response))
 
     def process_kwargs(self):
         super(ContactPhones, self).process_kwargs()
@@ -1444,13 +1479,14 @@ class ContactPhones(FieldGroup):
         ):
             if not self.is_master_schema(self.schema):
                 pref_method = self.properties['pref_method']
-                if ',' in pref_method:
-                    pref_method = pref_method.split(',')[0]
-                pref_method = self.translate_pref(
-                    self.schema,
-                    self.properties['master_schema'],
-                    pref_method
-                )
+                if pref_method is not None:
+                    if ',' in pref_method:
+                        pref_method = pref_method.split(',')[0]
+                    pref_method = self.translate_pref(
+                        self.schema,
+                        self.properties['master_schema'],
+                        pref_method
+                    )
                 self.properties['pref_method'] = pref_method
 
 
@@ -1458,21 +1494,18 @@ class ContactPhones(FieldGroup):
         'mob_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('mob_number'))
-        if 'mob_number' in self.properties else ""
     )
 
     tel_number = DescriptorUtils.kwarg_alias_property(
         'tel_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('tel_number'))
-        if 'tel_number' in self.properties else ""
     )
 
     fax_number = DescriptorUtils.kwarg_alias_property(
         'fax_number',
         lambda self:
         SanitationUtils.strip_non_numbers(self.properties.get('fax_number'))
-        if 'fax_number' in self.properties else ""
     )
 
     # mob_pref = DescriptorUtils.kwarg_alias_property(
@@ -1497,14 +1530,16 @@ class ContactPhones(FieldGroup):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = "; "
         components = []
-        for key in ['tel', 'mob', 'fax']:
-            attr = getattr(self, '%s_number' % key)
+        for key in self.number_prefixes:
+            attr = getattr(self, '%s_number' % key, None)
             if attr:
                 component = ""
                 if self.debug:
                     component += "%s: " % key.upper()
                 component += attr
                 components.append(attr)
+        if getattr(self, 'pref_method', None):
+            components.append('(%s)' % self.pref_method)
         return SanitationUtils.coerce_unicode(
             prefix + delimeter.join(components)
         )

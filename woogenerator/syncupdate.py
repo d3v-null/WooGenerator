@@ -596,10 +596,10 @@ class SyncUpdate(Registrar):
             update_params['reason'] = 'invincible'
         except SemistaticViolation:
             update_params['reason'] = 'semistatic'
-        except Exception as exc:
-            raise UserWarning("Unhandled Exception in set_loser_value:\n%s" % (
-                traceback.format_exc(exc)
-            ))
+        # except Exception as exc:
+        #     raise UserWarning("Unhandled Exception in set_loser_value:\n%s" % (
+        #         traceback.format_exc(exc)
+        #     ))
         else:
             self.add_sync_warning(**update_params)
             return
@@ -700,8 +700,8 @@ class SyncUpdate(Registrar):
             update_params['reason'] = 'identical'
             self.tie_update(**update_params)
             return
-        else:
-            pass
+        # else:
+        #     pass
 
         winner = self.get_winner_name(
             update_params['m_col_time'], update_params['s_col_time']
@@ -1074,22 +1074,12 @@ class SyncUpdateUsr(SyncUpdate):
         response = super(SyncUpdateUsr, self).values_similar(
             col, m_value, s_value)
         if not response:
-            if "phone" in col.lower():
-                if "preferred" in col.lower():
-                    m_preferred = SanitationUtils.similar_tru_str_comparison(
-                        m_value)
-                    s_preferred = SanitationUtils.similar_tru_str_comparison(
-                        s_value)
-                    # print repr(m_value), " -> ", m_preferred
-                    # print repr(s_value), " -> ", s_preferred
-                    if m_preferred == s_preferred:
-                        response = True
-                else:
-                    m_phone = SanitationUtils.similar_phone_comparison(m_value)
-                    s_phone = SanitationUtils.similar_phone_comparison(s_value)
-                    plen = min(len(m_phone), len(s_phone))
-                    if plen > 7 and m_phone[-plen:] == s_phone[-plen:]:
-                        response = True
+            if col.lower() in ['phone', 'mobile phone', 'home phone', 'fax']:
+                m_phone = SanitationUtils.similar_phone_comparison(m_value)
+                s_phone = SanitationUtils.similar_phone_comparison(s_value)
+                plen = min(len(m_phone), len(s_phone))
+                if plen > 7 and m_phone[-plen:] == s_phone[-plen:]:
+                    response = True
             elif "role" == col.lower():
                 m_role = SanitationUtils.similar_comparison(m_value)
                 s_role = SanitationUtils.similar_comparison(s_value)
@@ -1180,9 +1170,9 @@ class SyncUpdateUsr(SyncUpdate):
         if col in self.col_data.data.keys():
             data = self.col_data.data[col]
             if data.get(self.s_meta_target):
-                data_s = data.get(self.s_meta_target, {})
-                if not data_s.get('final') and data_s.get('key'):
-                    updates[data_s.get('key')] = self.new_s_object.get(col)
+                data_target = data.get(self.s_meta_target, {})
+                if not data_target.get('final') and data_target.get('key'):
+                    updates[data_target.get('key')] = self.new_s_object.get(col)
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:
@@ -1203,9 +1193,9 @@ class SyncUpdateUsr(SyncUpdate):
             data = self.col_data.data[col]
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
-                    self.register_message(u"wp exists")
-                data_s = data.get(self.s_meta_target, {})
-                if not data_s.get('final') and data_s.get('key'):
+                    self.register_message(u"target exists")
+                data_target = data.get(self.s_meta_target, {})
+                if not data_target.get('final') and data_target.get('key'):
                     new_val = self.new_s_object.get(col)
                     updates[col] = new_val
                     if self.DEBUG_UPDATE:
@@ -1238,7 +1228,7 @@ class SyncUpdateUsr(SyncUpdate):
             data = self.col_data.data[col]
             if data.get(self.m_meta_target):
                 if self.DEBUG_UPDATE:
-                    self.register_message(u"wp exists")
+                    self.register_message(u"target exists")
                 new_val = self.new_m_object.get(col)
                 updates[col] = new_val
                 if self.DEBUG_UPDATE:
@@ -1272,9 +1262,6 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
         return value
 
     def get_slave_updates_native_rec(self, col, updates=None):
-        # if Registrar.DEBUG_TRACE and 'phone' in col.lower():
-            # import pudb; pudb.set_trace()
-
         if updates is None:
             updates = OrderedDict()
         if self.DEBUG_UPDATE:
@@ -1287,17 +1274,17 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.register_message(u"wp-api exists")
-                data_s = data.get(self.s_meta_target, {})
-                if not data_s.get('final') and data_s.get('key'):
+                data_target = data.get(self.s_meta_target, {})
+                if not data_target.get('final') and data_target.get('key'):
                     new_val = self.new_s_object.get(col)
                     try:
                         new_val = self.s_validate_col(col, new_val)
                     except UserWarning:
                         return updates
                     new_key = col
-                    if 'key' in data_s:
-                        new_key = data_s.get('key')
-                    if data_s.get('meta'):
+                    if 'key' in data_target:
+                        new_key = data_target.get('key')
+                    if data_target.get('meta'):
                         if 'meta' not in updates:
                             updates['meta'] = OrderedDict()
                         updates['meta'][new_key] = new_val
@@ -1381,11 +1368,11 @@ class SyncUpdateProdWoo(SyncUpdateProd):
         if col in self.col_data.data:
             data = self.col_data.data[col]
             if self.s_meta_target in data:
-                data_s = data[self.s_meta_target]
-                if 'key' in data_s:
-                    key = data_s.get('key')
+                data_target = data[self.s_meta_target]
+                if 'key' in data_target:
+                    key = data_target.get('key')
                     val = self.new_s_object.get(col)
-                    if data_s.get('meta'):
+                    if data_target.get('meta'):
                         if not val:
                             if 'delete_meta' not in updates:
                                 updates['delete_meta'] = []
@@ -1395,9 +1382,9 @@ class SyncUpdateProdWoo(SyncUpdateProd):
                             updates['custom_meta'] = OrderedDict()
                         updates['custom_meta'][key] = val
 
-                    elif not data_s.get('final'):
+                    elif not data_target.get('final'):
                         updates[key] = val
-                elif 'special' in data_s:
+                elif 'special' in data_target:
                     key = col
                     val = self.new_s_object.get(col)
                     updates[key] = val
@@ -1415,8 +1402,8 @@ class SyncUpdateProdWoo(SyncUpdateProd):
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.register_message(u"wp exists")
-                data_s = data.get(self.s_meta_target, {})
-                if not data_s.get('final') and data_s.get('key'):
+                data_target = data.get(self.s_meta_target, {})
+                if not data_target.get('final') and data_target.get('key'):
                     new_val = self.new_s_object.get(col)
                     updates[col] = new_val
                     if self.DEBUG_UPDATE:
@@ -1493,11 +1480,11 @@ class SyncUpdateCatWoo(SyncUpdate):
         if col in self.col_data.data:
             data = self.col_data.data[col]
             if self.s_meta_target in data:
-                data_s = data[self.s_meta_target]
-                if 'key' in data_s:
-                    key = data_s.get('key')
+                data_target = data[self.s_meta_target]
+                if 'key' in data_target:
+                    key = data_target.get('key')
                     val = self.new_s_object.get(col)
-                    if data_s.get('meta'):
+                    if data_target.get('meta'):
                         if not val:
                             if 'delete_meta' not in updates:
                                 updates['delete_meta'] = []
@@ -1507,9 +1494,9 @@ class SyncUpdateCatWoo(SyncUpdate):
                             updates['custom_meta'] = OrderedDict()
                         updates['custom_meta'][key] = val
 
-                    elif not data_s.get('final'):
+                    elif not data_target.get('final'):
                         updates[key] = val
-                elif 'special' in data_s:
+                elif 'special' in data_target:
                     key = col
                     val = self.new_s_object.get(col)
                     updates[key] = val
@@ -1527,8 +1514,8 @@ class SyncUpdateCatWoo(SyncUpdate):
             if data.get(self.s_meta_target):
                 if self.DEBUG_UPDATE:
                     self.register_message(u"wp exists")
-                data_s = data.get(self.s_meta_target, {})
-                if not data_s.get('final') and data_s.get('key'):
+                data_target = data.get(self.s_meta_target, {})
+                if not data_target.get('final') and data_target.get('key'):
                     new_val = self.new_s_object.get(col)
                     updates[col] = new_val
                     if self.DEBUG_UPDATE:

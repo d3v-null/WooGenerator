@@ -8,7 +8,7 @@ from pprint import pformat
 import mock
 
 from context import TESTS_DATA_DIR, woogenerator
-from mock_utils import MockUtils
+from utils import MockUtils
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
@@ -85,6 +85,7 @@ class TestMerger(AbstractSyncManagerTestCase):
         print("str@.last_sale:\n%s" % str(user.last_sale))
         print("str@.last_modtime:\n%s" % str(user.last_modtime))
         print("pformat@.name.to_dict:\n%s" % pformat(dict(user.name.to_dict())))
+        print("pformat@.phones.to_dict:\n%s" % pformat(dict(user.phones.to_dict())))
         # print(
         #     "pformat@.shipping_address.valid:\n%s" %
         #     pformat(user.shipping_address.valid)

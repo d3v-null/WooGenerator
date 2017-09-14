@@ -308,8 +308,6 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_m_deltas(self):
-        # import pudb; pudb.set_trace()
-
         master_object = self.usr_md1
         self.assertEqual(master_object.role.role, 'WN')
         self.assertEqual(master_object.role.direct_brand, 'TechnoTan Wholesale')
@@ -526,8 +524,6 @@ class TestSyncUpdateUserInvincible(TestSyncUpdateUserAbstract):
             row=[],
         )
 
-        # import pudb; pudb.set_trace()
-
         sync_update = SyncUpdateUsrApi(usr_m, usr_s)
         sync_update.update(ColDataUser.get_sync_cols())
         try:
@@ -588,7 +584,8 @@ class TestSyncUpdateUserApi(TestSyncUpdateUserAbstract):
         )
 
         sync_update = SyncUpdateUsrApi(usr_m, usr_s)
-        sync_update.update(ColDataUser.get_sync_cols())
+        cols = ColDataUser.get_sync_cols()
+        sync_update.update(cols)
         # print sync_update.tabulate()
 
         self.assertEqual(sync_update.new_s_object.phones.mob_number, '0414298163')

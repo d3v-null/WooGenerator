@@ -6,7 +6,7 @@ import mock
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
-from mock_utils import MockUtils
+from utils import MockUtils, ConnectionUtils
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  do_summary, do_updates,
@@ -26,6 +26,10 @@ class TestClientEmail(AbstractSyncClientTestCase):
     debug = False
 
 class TestClientEmailExchange(TestClientEmail):
+    @unittest.skipIf(
+        not ConnectionUtils.check_connection(),
+        "can't preform test without connection"
+    )
     def test_email_basic(self):
         with self.settings.email_client(self.settings.email_connect_params) as email_client:
             message = email_client.compose_message(

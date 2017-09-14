@@ -37,7 +37,6 @@ class testColDataUser(TestCase):
             'Mobile Phone',
             'Phone',
             'Fax',
-            'Pref Method',
             'Address 1',
             'Address 2',
             'City',

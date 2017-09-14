@@ -16,6 +16,7 @@ class TestSyncUpdateAbstract(unittest.TestCase):
     argument_parser_class = ArgumentParserCommon
     local_work_dir = TESTS_DATA_DIR
     override_args = ''
+    debug = False
 
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
@@ -42,9 +43,7 @@ class TestSyncUpdateAbstract(unittest.TestCase):
         Registrar.DEBUG_MESSAGE = False
         Registrar.DEBUG_PROGRESS = False
 
-        debug = False
-        # debug = True
-        if debug:
+        if self.debug:
             # FieldGroup.perform_post = True
             # FieldGroup.DEBUG_WARN = True
             # FieldGroup.DEBUG_MESSAGE = True
@@ -56,7 +55,7 @@ class TestSyncUpdateAbstract(unittest.TestCase):
             Registrar.DEBUG_WARN = True
             Registrar.DEBUG_MESSAGE = True
             Registrar.DEBUG_PROGRESS = True
-            # Registrar.DEBUG_UPDATE = True
+            Registrar.DEBUG_UPDATE = True
             # Registrar.DEBUG_USR = True
             # Registrar.DEBUG_CONTACT = True
             # Registrar.DEBUG_NAME = True
