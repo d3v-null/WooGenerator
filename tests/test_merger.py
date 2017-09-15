@@ -8,8 +8,8 @@ from pprint import pformat
 import mock
 
 from context import TESTS_DATA_DIR, woogenerator
-from utils import MockUtils
 from test_sync_manager import AbstractSyncManagerTestCase
+from utils import MockUtils
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  do_summary, do_updates,

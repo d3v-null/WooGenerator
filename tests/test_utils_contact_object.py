@@ -11,7 +11,7 @@ from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.coldata import ColDataUser
 
 
-class TestFieldGroups(unittest.TestCase):
+class TestFieldGroup(unittest.TestCase):
 
     def setUp(self):
         # defaults
@@ -31,12 +31,17 @@ class TestFieldGroups(unittest.TestCase):
             Registrar.DEBUG_CONTACT = True
             # Registrar.DEBUG_ADDRESS = True
 
-class TestContactAddressPost(TestFieldGroups):
+class TestFieldGroupPost(TestFieldGroup):
     def setUp(self):
-        super(TestContactAddressPost, self).setUp()
+        super(TestFieldGroupPost, self).setUp()
         FieldGroup.perform_post = True
-    # thoroughfare tests
 
+class TestFieldGroupNoPost(TestFieldGroup):
+    def setUp(self):
+        super(TestFieldGroupNoPost, self).setUp()
+        FieldGroup.perform_post = False
+
+class TestContactAddressPost(TestFieldGroupPost):
     def test_thoroughfare_num_off_line(self):
         address = ContactAddress(
             line1="SHOP 10, 575/577",
@@ -681,7 +686,7 @@ class TestContactAddressPost(TestFieldGroups):
 
     # TODO: "1st floor"
 
-class TestContactAddressNoPost(TestFieldGroups):
+class TestContactAddressNoPost(TestFieldGroupNoPost):
     def setUp(self):
         super(TestContactAddressNoPost, self).setUp()
         FieldGroup.perform_post = False
@@ -732,7 +737,7 @@ class TestContactAddressNoPost(TestFieldGroups):
         self.assertTrue(self.ca_c.similar(self.ca_b))
 
 
-class TestContactName(TestFieldGroups):
+class TestContactName(TestFieldGroup):
 
     def test_basic_name(self):
         name = ContactName(
@@ -925,11 +930,7 @@ class TestContactName(TestFieldGroups):
 #
 
 
-class TestContactPhonesPost(TestFieldGroups):
-    def setUp(self):
-        super(TestContactPhonesPost, self).setUp()
-        FieldGroup.perform_post = True
-
+class TestContactPhonesPost(TestFieldGroupPost):
     def test_phones_equality_basic_post(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
@@ -1131,11 +1132,7 @@ class TestContactPhonesPost(TestFieldGroups):
         self.assertEqual(self.phones_2b['pref_method'], 'Phone')
 
 
-class TestContactPhonesNoPost(TestFieldGroups):
-    def setUp(self):
-        super(TestContactPhonesNoPost, self).setUp()
-        FieldGroup.perform_post = False
-
+class TestContactPhonesNoPost(TestFieldGroupNoPost):
     def test_phones_equality_basic_nopost(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
@@ -1189,7 +1186,7 @@ class TestContactPhonesNoPost(TestFieldGroups):
         self.assertFalse(self.phones_1.empty)
 
 
-class TestSocialMediaGroup(TestFieldGroups):
+class TestSocialMediaGroup(TestFieldGroup):
     def setUp(self):
         super(TestSocialMediaGroup, self).setUp()
         self.smf_m_args = dict(
@@ -1231,7 +1228,7 @@ class TestSocialMediaGroup(TestFieldGroups):
         self.assertNotEqual(smf_m, smf_s)
         self.assertTrue(smf_m.similar(smf_s))
 
-class TestRoleGroup(TestFieldGroups):
+class TestRoleGroup(TestFieldGroup):
 
     def fail_rolegroup_assertion(self, exc, role_info_a, role_info_b):
         msg = "Failed assertion: \n%s\nleft:  %s / %s\nright: %s / %s" % (
