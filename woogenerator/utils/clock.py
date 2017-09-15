@@ -94,7 +94,17 @@ class TimeUtils(object):
     def wp_strp_mktime(cls, string):
         """ take a wp formatted time string (eg. "2015-07-13 22:33:05"),
         returns number of seconds since epoch """
-        return cls.star_strp_mktime(string)
+
+        response = None
+        exceptions = []
+        for fmt in [cls.wpTimeFormat, cls.dateFormat]:
+            try:
+                response = cls.star_strp_mktime(string, fmt)
+            except ValueError as exc:
+                exceptions.append(exc)
+        if response is None and exceptions:
+            raise exceptions[0]
+        return response
 
     @classmethod
     def act_strp_mkdate(cls, string):
