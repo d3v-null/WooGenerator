@@ -153,7 +153,7 @@ class ImportUser(ImportObject):
                 raise exc
         super(ImportUser, self).__init__(data, **kwargs)
         for key in [
-                'E-mail', 'MYOB Card ID', 'Wordpress Username', #'Role',
+                'E-mail', 'MYOB Card ID', 'Wordpress Username',  # 'Role',
                 'contact_schema', 'Wordpress ID'
         ]:
             val = kwargs.get(key, "")
@@ -273,7 +273,9 @@ class ImportUser(ImportObject):
         social_media_kwargs['website'] = urls.pop(0) if urls else None
 
         if self.DEBUG_USR and self.DEBUG_CONTACT:
-            self.register_message("social_media_kwargs: %s" % pformat(social_media_kwargs))
+            self.register_message(
+                "social_media_kwargs: %s" %
+                pformat(social_media_kwargs))
 
         self['Social Media'] = SocialMediaFields(schema, **social_media_kwargs)
 
@@ -577,32 +579,32 @@ class CsvParseUser(CsvParseBase):
     def validate_filters(self, object_data):
         if self.filter_items:
             if 'roles' in self.filter_items \
-            and SanitationUtils.normalize_val(object_data.role) \
-            not in self.filter_items['roles']:
+                    and SanitationUtils.normalize_val(object_data.role) \
+                    not in self.filter_items['roles']:
                 return "did not match role conditions"
             if self.source == self.master_name \
-            and 'since_m' in self.filter_items \
-            and object_data.act_modtime < self.filter_items['since_m']:
+                    and 'since_m' in self.filter_items \
+                    and object_data.act_modtime < self.filter_items['since_m']:
                 return "did not meet since_m condition"
             if self.source == self.slave_name \
-            and 'since_s' in self.filter_items \
-            and object_data.wp_modtime < self.filter_items['since_s']:
+                    and 'since_s' in self.filter_items \
+                    and object_data.wp_modtime < self.filter_items['since_s']:
                 return "did not meet since_s condition"
             if 'users' in self.filter_items \
-            and SanitationUtils.normalize_val(object_data.username) \
-            not in self.filter_items['users']:
+                    and SanitationUtils.normalize_val(object_data.username) \
+                    not in self.filter_items['users']:
                 return "did not meet username condition"
             if 'cards' in self.filter_items \
-            and SanitationUtils.normalize_val(object_data.MYOBID) \
-            not in self.filter_items['cards']:
+                    and SanitationUtils.normalize_val(object_data.MYOBID) \
+                    not in self.filter_items['cards']:
                 return "did not meet cards condition"
             if 'ignore_cards' in self.filter_items \
-            and SanitationUtils.normalize_val(object_data.MYOBID) \
-            in self.filter_items['ignore_cards']:
+                    and SanitationUtils.normalize_val(object_data.MYOBID) \
+                    in self.filter_items['ignore_cards']:
                 return "did not meet ignore cards condition"
             if 'emails' in self.filter_items \
-            and SanitationUtils.normalize_val(object_data.email) \
-            not in self.filter_items['emails']:
+                    and SanitationUtils.normalize_val(object_data.email) \
+                    not in self.filter_items['emails']:
                 return "did not meet emails condition"
 
     def register_object(self, object_data):
@@ -729,7 +731,7 @@ class CsvParseUserApi(CsvParseUser):
         for col, col_data in ColDataUser.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
-            except:
+            except BaseException:
                 wp_api_key = col
             core_translation[wp_api_key] = col
         if Registrar.DEBUG_API:

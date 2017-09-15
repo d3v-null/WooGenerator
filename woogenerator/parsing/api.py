@@ -207,7 +207,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
-            except:
+            except BaseException:
                 wp_api_key = col
             core_translation[wp_api_key] = col
         category_search_data = {}
@@ -355,7 +355,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data['wp-api']['key']
-            except:
+            except BaseException:
                 wp_api_key = col
             core_translation[wp_api_key] = col
         parser_data.update(**cls.translate_keys(api_data, core_translation))
@@ -366,7 +366,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             for col, col_data in ColDataWoo.get_wpapi_meta_cols().items():
                 try:
                     wp_api_key = col_data['wp-api']['key']
-                except:
+                except BaseException:
                     wp_api_key = col
                 meta_translation[wp_api_key] = col
             parser_data.update(

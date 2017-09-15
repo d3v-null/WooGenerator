@@ -126,7 +126,7 @@ def main(settings):
                 raise Exception()
             return map_obj
             # return tabulate(map_obj, headers="keys", tablefmt="html")
-        except:
+        except BaseException:
             return map_json
 
     def map2table(map_obj):
@@ -214,7 +214,7 @@ def catch_main(settings=None):
         main(settings)
     except SystemExit:
         exit()
-    except:
+    except BaseException:
         Registrar.register_error(traceback.format_exc())
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:

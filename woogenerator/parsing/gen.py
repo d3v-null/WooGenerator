@@ -83,7 +83,7 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     def name_ancestors(self):
         return self.ancestors
 
-    def get_code_delimeter(self, other): #pylint: disable=no-self-use,unused-argument
+    def get_code_delimeter(self, other):  # pylint: disable=no-self-use,unused-argument
         return ''
 
     def join_codes(self, ancestors):
@@ -253,7 +253,7 @@ class CsvParseGenMixin(object):
     def sanitize_cell(cls, cell):
         return SanitationUtils.sanitize_cell(cell)
 
-    def get_parser_data(self, **kwargs): #pylint: disable=unused-argument
+    def get_parser_data(self, **kwargs):  # pylint: disable=unused-argument
         if Registrar.DEBUG_MRO:
             Registrar.register_message(' ')
         defaults = {
@@ -268,7 +268,8 @@ class CsvParseGenMixin(object):
 
 
 # , CSVParse_Shop):
-class CsvParseGenTree(CsvParseTree, CsvParseGenMixin): #pylint: disable=abstract-method
+class CsvParseGenTree(
+        CsvParseTree, CsvParseGenMixin):  # pylint: disable=abstract-method
     """ Parser for tree-based generator structure """
 
     sanitize_cell = CsvParseGenMixin.sanitize_cell
@@ -367,7 +368,7 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin): #pylint: disable=abstract
     def change_item(self, item):
         return SanitationUtils.shorten(self.item_regex, self.item_subs, item)
 
-    def change_fullname(self, item): #pylint: disable=no-self-use
+    def change_fullname(self, item):  # pylint: disable=no-self-use
         subs = OrderedDict([(' \xe2\x80\x94 ', ' ')])
         return SanitationUtils.shorten(
             SanitationUtils.compile_regex(subs), subs, item)

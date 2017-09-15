@@ -59,6 +59,7 @@ def check_warnings():
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
 
+
 def populate_master_parsers(parsers, settings):
     """Create and populates the various parsers."""
     things_to_check = [
@@ -77,7 +78,9 @@ def populate_master_parsers(parsers, settings):
     parsers.special = CsvParseSpecial()
 
     if Registrar.DEBUG_GEN:
-        Registrar.register_message("master_download_client_args: %s" % settings.master_download_client_args)
+        Registrar.register_message(
+            "master_download_client_args: %s" %
+            settings.master_download_client_args)
 
     with settings.master_download_client_class(**settings.master_download_client_args) as client:
         if settings.schema_is_woo:
@@ -122,22 +125,26 @@ def populate_master_parsers(parsers, settings):
                         "current_special_groups: %s" % settings.current_special_groups
                     )
 
-        parsers.master = settings.master_parser_class(**settings.master_parser_args)
+        parsers.master = settings.master_parser_class(
+            **settings.master_parser_args
+        )
 
         Registrar.register_progress("analysing master product data")
 
         analysis_kwargs = {
-            'data_path':settings.master_path,
-            'gid':settings.gen_gid,
-            'limit':settings['master_parse_limit']
+            'data_path': settings.master_path,
+            'gid': settings.gen_gid,
+            'limit': settings['master_parse_limit']
         }
         if Registrar.DEBUG_PARSER:
             Registrar.register_message("analysis_kwargs: %s" % analysis_kwargs)
 
         client.analyse_remote(parsers.master, **analysis_kwargs)
 
-        if Registrar.DEBUG_PARSER and hasattr(parsers.master, 'categories_name'):
-            for category_name, category_list in getattr(parsers.master, 'categories_name').items():
+        if Registrar.DEBUG_PARSER and hasattr(
+                parsers.master, 'categories_name'):
+            for category_name, category_list in getattr(
+                    parsers.master, 'categories_name').items():
                 if len(category_list) < 2:
                     continue
                 if SeqUtils.check_equal(
@@ -148,6 +155,7 @@ def populate_master_parsers(parsers, settings):
                 ))
 
         return parsers
+
 
 def populate_slave_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
@@ -174,6 +182,7 @@ def populate_slave_parsers(parsers, settings):
         # print parsers.slave.categories
     else:
         parsers.slave = None
+
 
 def process_images(settings, parsers):
     """Process the images information in from the parsers."""
@@ -317,8 +326,9 @@ def process_images(settings, parsers):
                 imgmeta = MetaGator(img_dst_path)
                 imgmeta.write_meta(title, description)
                 if Registrar.DEBUG_IMG:
-                    Registrar.register_message("old dest img meta: %s" % imgmeta.read_meta(), img)
-
+                    Registrar.register_message(
+                        "old dest img meta: %s" %
+                        imgmeta.read_meta(), img)
 
                 image = Image.open(img_dst_path)
                 image.thumbnail(settings.thumbsize)
@@ -345,6 +355,7 @@ def process_images(settings, parsers):
     #     os.makedirs(wpai_dir)
     #
     # rsync.main([os.path.join(img_dst,'*'), wpai_dir])
+
 
 def export_parsers(settings, parsers):
     """Export key information from the parsers to spreadsheets."""
@@ -421,13 +432,16 @@ def export_parsers(settings, parsers):
                 settings.flvu_path, variation_col_names
             )
 
+
 def product_index_fn(product):
     """Return the codesum of the product."""
     return product.codesum
 
+
 def category_index_fn(category):
     """Return the title of the category."""
     return category.title
+
 
 def do_match_categories(parsers, matches, settings):
     if Registrar.DEBUG_CATS:
@@ -443,7 +457,8 @@ def do_match_categories(parsers, matches, settings):
     )
 
     matches.category.globals.add_matches(category_matcher.pure_matches)
-    matches.category.masterless.add_matches(category_matcher.masterless_matches)
+    matches.category.masterless.add_matches(
+        category_matcher.masterless_matches)
     matches.category.slaveless.add_matches(category_matcher.slaveless_matches)
 
     if Registrar.DEBUG_CATS:
@@ -459,8 +474,8 @@ def do_match_categories(parsers, matches, settings):
         for match in category_matcher.duplicate_matches:
             master_taxo_sums = [cat.namesum for cat in match.m_objects]
             if all(master_taxo_sums) \
-            and SeqUtils.check_equal(master_taxo_sums) \
-            and not len(match.s_objects) > 1:
+                    and SeqUtils.check_equal(master_taxo_sums) \
+                    and not len(match.s_objects) > 1:
                 matches.category.valid.append(match)
             else:
                 matches.category.invalid.append(match)
@@ -495,6 +510,7 @@ def do_match_categories(parsers, matches, settings):
     #     print parsers.slave.to_str_tree()
     #     for key, category in parsers.slave.categories.items():
     #         print "%5s | %50s" % (key, category.title[:50])
+
 
 def do_match(parsers, matches, settings):
     """For every item in slave, find its counterpart in master."""
@@ -544,7 +560,8 @@ def do_match(parsers, matches, settings):
                 s_object.categories, m_object.categories
             )
 
-            product_category_matches = MatchNamespace(index_fn=category_index_fn)
+            product_category_matches = MatchNamespace(
+                index_fn=category_index_fn)
 
             product_category_matches.globals.add_matches(
                 category_matcher.pure_matches
@@ -575,10 +592,13 @@ def do_match(parsers, matches, settings):
                                        variation_matcher.__repr__())
 
         matches.variation.globals.add_matches(variation_matcher.pure_matches)
-        matches.variation.masterless.add_matches(variation_matcher.masterless_matches)
-        matches.variation.slaveless.add_matches(variation_matcher.slaveless_matches)
+        matches.variation.masterless.add_matches(
+            variation_matcher.masterless_matches)
+        matches.variation.slaveless.add_matches(
+            variation_matcher.slaveless_matches)
         if variation_matcher.duplicate_matches:
             matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
+
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
@@ -635,8 +655,6 @@ def do_merge_categories(matches, parsers, updates, settings):
             m_object = match.m_object
             sync_update = SyncUpdateCatWoo(m_object)
             updates.category.slaveless.append(sync_update)
-
-
 
 
 def do_merge(matches, parsers, updates, settings):
@@ -709,7 +727,7 @@ def do_merge(matches, parsers, updates, settings):
             product_category_matches = matches.category.prod.get(match_index)
 
             if matches.category.prod[match_index].slaveless \
-            or matches.category.prod[match_index].masterless:
+                    or matches.category.prod[match_index].masterless:
                 assert \
                     master_categories != slave_categories, \
                     ("if change_match_list exists, then master_categories "
@@ -785,7 +803,8 @@ def do_merge(matches, parsers, updates, settings):
             if sync_update.s_updated:
                 insort(updates.variation.slave, sync_update)
 
-        for var_match_count, var_match in enumerate(matches.variation.slaveless):
+        for var_match_count, var_match in enumerate(
+                matches.variation.slaveless):
             assert var_match.has_no_slave
             m_object = var_match.m_object
 
@@ -799,7 +818,8 @@ def do_merge(matches, parsers, updates, settings):
 
             # TODO: figure out which attribute terms to add
 
-        for var_match_count, var_match in enumerate(matches.variation.masterless):
+        for var_match_count, var_match in enumerate(
+                matches.variation.masterless):
             assert var_match.has_no_master
             s_object = var_match.s_object
 
@@ -827,6 +847,7 @@ def do_merge(matches, parsers, updates, settings):
                     del api_data[key]
             # print "has api data: %s" % pformat(api_data)
             updates.slaveless.append(api_data)
+
 
 def do_report_categories(matches, updates, parsers, settings):
     Registrar.register_progress("Write Report")
@@ -866,7 +887,6 @@ def do_report_categories(matches, updates, parsers, settings):
         #         # )
         #     ))
 
-
         # TODO: change this to change this to updates.category.prod
         # matches.category.delete_slave_ns_data = tabulate(
         #     [
@@ -895,7 +915,6 @@ def do_report_categories(matches, updates, parsers, settings):
         #         #     ]
         #         # )
         #     ))
-
 
         # TODO: change this to updates.category.prod
         # syncing_group.add_section(
@@ -1222,6 +1241,7 @@ def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
     pass
 
+
 def do_updates_categories(updates, parsers, results, settings):
     """Perform a list of updates."""
 
@@ -1294,6 +1314,7 @@ def do_updates_categories(updates, parsers, results, settings):
                               update.m_object)
             Registrar.register_warning(exc)
 
+
 def do_updates(updates, settings):
     """Perform a list of updates."""
 
@@ -1353,6 +1374,7 @@ def do_updates(updates, settings):
                 # else:
                 #     print "no update made to %s " % str(update)
 
+
 def main(override_args=None, settings=None):
     """Main function for generator."""
     if not settings:
@@ -1390,10 +1412,10 @@ def main(override_args=None, settings=None):
         check_warnings()
 
         try:
-            results = do_updates_categories(updates, parsers, results, settings)
+            results = do_updates_categories(
+                updates, parsers, results, settings)
         except (SystemExit, KeyboardInterrupt):
             return reporters, results
-
 
     matches = do_match(parsers, matches, settings)
     updates = do_merge(matches, parsers, updates, settings)
@@ -1419,10 +1441,9 @@ def main(override_args=None, settings=None):
         "post-sync summary: \n%s" % reporters.post.get_summary_text()
     )
 
-
-                #########################################
-                # Display reports
-                #########################################
+    #########################################
+    # Display reports
+    #########################################
 
     Registrar.register_progress("Displaying reports")
 
@@ -1432,7 +1453,8 @@ def main(override_args=None, settings=None):
             if settings['web_browser']:
                 os.environ['BROWSER'] = settings['web_browser']
                 # print "set browser environ to %s" % repr(web_browser)
-            # print "moved file from %s to %s" % (settings.rep_main_path, repWeb_path)
+            # print "moved file from %s to %s" % (settings.rep_main_path,
+            # repWeb_path)
 
             webbrowser.open(settings['rep_web_link'])
     else:
@@ -1449,7 +1471,8 @@ def catch_main(override_args=None):
     if override_args is not None:
         override_args_repr = ' '.join(override_args)
 
-    full_run_str = "%s %s %s" % (str(sys.executable), str(file_path), override_args_repr)
+    full_run_str = "%s %s %s" % (
+        str(sys.executable), str(file_path), override_args_repr)
 
     settings = SettingsNamespaceProd()
 
@@ -1465,14 +1488,14 @@ def catch_main(override_args=None):
         status = 65
     except SystemExit:
         status = ExitStatus.failure
-    except:
+    except BaseException:
         status = 1
     finally:
         if status:
             Registrar.register_error(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
-
+                import pudb
+                pudb.set_trace()
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():
@@ -1497,7 +1520,7 @@ def catch_main(override_args=None):
             try:
                 os.stat(file_to_zip)
                 zip_file.write(file_to_zip)
-            except:
+            except BaseException:
                 pass
         Registrar.register_message('wrote file %s' % zip_file.filename)
 

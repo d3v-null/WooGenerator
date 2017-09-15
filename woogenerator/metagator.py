@@ -13,6 +13,7 @@ from .utils import Registrar, SanitationUtils
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 class MetaGator(Registrar):
     """
     Mitigates image metadata.
@@ -113,8 +114,9 @@ class MetaGator(Registrar):
             if "exif" in img.info:
                 exif_dict = piexif.load(img.info["exif"])
 
-            title = exif_dict.get("0th",{}).get(piexif.ImageIFD.DocumentName, '')
-            description = exif_dict.get("0th",{}).get(piexif.ImageIFD.ImageDescription, '')
+            exif_dict_0 = exif_dict.get("0th", {})
+            title = exif_dict_0.get(piexif.ImageIFD.DocumentName, '')
+            description = exif_dict_0.get(piexif.ImageIFD.ImageDescription, '')
         else:
             raise Exception("not an image file: ", self.ext)
 

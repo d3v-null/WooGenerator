@@ -140,7 +140,7 @@ class Duplicates(OrderedDict):
         else:
             linedelim = "\n"
 
-        #pylint: disable=E1101
+        # pylint: disable=E1101
         out += linedelim.join(
             [duplicate.tabulate(cols, tablefmt, highlight_rules)
              for duplicate in sorted(self.values(), reverse=True)[:100]]

@@ -27,6 +27,7 @@ class UsrSyncClientWP(SyncClientWP):
     def endpoint_plural(self):
         return "%ss?context=edit" % self.endpoint_singular
 
+
 class UsrSyncClientSshAct(SyncClientAbstract):
 
     def __init__(self, connect_params, db_params, fs_params, **kwargs):
@@ -82,7 +83,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         if remote_dir:
             try:
                 sftp_client.stat(remote_dir)
-            except:
+            except BaseException:
                 sftp_client.mkdir(remote_dir)
         sftp_client.put(local_path, remote_path)
         fstat = sftp_client.stat(remote_path)
@@ -212,7 +213,7 @@ class UsrSyncClientSshAct(SyncClientAbstract):
 
         try:
             self.remove_remote_file(imported_file)
-        except:
+        except BaseException:
             raise Exception("import didn't produce a .imported file")
 
     def export_remote(self, data_path, **kwargs):
@@ -256,8 +257,9 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         self.get_delete_file(remote_path, data_path)
         # print "analysing file..."
 
-    def analyse_remote(self, parser, **kwargs): # since=None, limit=None):
-        dialect_suggestion = kwargs.pop('dialect_suggestion', self.dialect_suggestion)
+    def analyse_remote(self, parser, **kwargs):  # since=None, limit=None):
+        dialect_suggestion = kwargs.pop(
+            'dialect_suggestion', self.dialect_suggestion)
         data_path = kwargs.pop('data_path')
         encoding = kwargs.pop('encoding', self.encoding)
         limit = kwargs.pop('limit', self.limit)
@@ -379,8 +381,7 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
                 )
                 for key, name in wp_db_meta_cols.items()
             ]
-            )
-        )
+        ))
 
         # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColDataUser.get_wp_cols().items()))
 

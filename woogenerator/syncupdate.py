@@ -20,11 +20,14 @@ from .utils import Registrar, SanitationUtils, TimeUtils
 class SyncViolation(UserWarning):
     """Update violates some sync condition"""
 
+
 class InvincibilityViolation(SyncViolation):
     """Update violates an invincibility condition."""
 
+
 class SemistaticViolation(SyncViolation):
     """Update violates a semistatic condition."""
+
 
 class SyncUpdate(Registrar):
     """
@@ -327,12 +330,16 @@ class SyncUpdate(Registrar):
         for col_alias in col_aliases:
             new_alias_value = self.get_new_subject_value(col_alias, subject)
             col_alias_data = self.col_data.data.get(col_alias, {})
-            col_alias_invincibility = str(col_alias_data.get('invincible')).lower()
+            col_alias_invincibility = str(
+                col_alias_data.get('invincible')).lower()
             if col_alias_invincibility and not new_alias_value:
                 failed_conditions = [
-                    (col_alias_invincibility == 'both' or col_alias_invincibility == 'true'),
-                    (col_alias_invincibility == 'master' and subject == self.master_name),
-                    (col_alias_invincibility == 'slave' and subject == self.slave_name),
+                    (col_alias_invincibility ==
+                     'both' or col_alias_invincibility == 'true'),
+                    (col_alias_invincibility ==
+                     'master' and subject == self.master_name),
+                    (col_alias_invincibility ==
+                     'slave' and subject == self.slave_name),
                 ]
                 return any(failed_conditions)
 
@@ -404,7 +411,8 @@ class SyncUpdate(Registrar):
         if self.DEBUG_UPDATE:
             self.register_message(self.update_to_str('REFL', update_params))
 
-    def display_update_list(self, update_list, tablefmt=None, update_type=None):
+    def display_update_list(
+            self, update_list, tablefmt=None, update_type=None):
         if not update_list:
             return ""
 
@@ -455,7 +463,7 @@ class SyncUpdate(Registrar):
                         raw_time = int(warning[key])
                         if raw_time:
                             warning_fmtd[key] = \
-                            TimeUtils.wp_time_to_string(raw_time)
+                                TimeUtils.wp_time_to_string(raw_time)
                     except Exception as exc:
                         if exc:
                             pass
@@ -464,7 +472,8 @@ class SyncUpdate(Registrar):
                     for key, value in warning['data'].items():
                         if value and key in ['static', 'delta']:
                             true_data_keys.append(key)
-                    warning_fmtd['data'] = "; ".join(map(str.upper, true_data_keys))
+                    warning_fmtd['data'] = "; ".join(
+                        map(str.upper, true_data_keys))
                 subjects[subject].append(warning_fmtd)
         tables = []
         for warnings in subjects.values():
@@ -479,13 +488,15 @@ class SyncUpdate(Registrar):
         return self.display_update_list(self.sync_warnings, tablefmt)
 
     def display_sync_passes(self, tablefmt=None):
-        return self.display_update_list(self.sync_passes, tablefmt, update_type='pass')
+        return self.display_update_list(
+            self.sync_passes, tablefmt, update_type='pass')
 
     def display_problematic_updates(self, tablefmt=None):
         return self.display_update_list(self.sync_problematics, tablefmt)
 
     def display_sync_reflections(self, tablefmt=None):
-        return self.display_update_list(self.sync_reflections, tablefmt, update_type='reflect')
+        return self.display_update_list(
+            self.sync_reflections, tablefmt, update_type='reflect')
 
     # def getOldLoserObject(self, winner=None):
     #     if not winner: winner = self.winner
@@ -528,7 +539,6 @@ class SyncUpdate(Registrar):
             new_loser_object = self.get_new_subject_object(loser)
         prev_loser_val = deepcopy(new_loser_object.get(col))
 
-
         if data.get('delta'):
             delta_col = self.col_data.delta_col(col)
             if not new_loser_object.get(delta_col):
@@ -536,8 +546,10 @@ class SyncUpdate(Registrar):
                 if data.get('aliases'):
                     new_loser_object[delta_col].perform_post = False
 
-        if data.get('aliases') and getattr(new_loser_object[col], 'reprocess_kwargs'):
-            new_loser_object[col].update_from(update_params['new_value'], data.get('aliases'))
+        if data.get('aliases') and getattr(
+                new_loser_object[col], 'reprocess_kwargs'):
+            new_loser_object[col].update_from(
+                update_params['new_value'], data.get('aliases'))
         else:
             new_loser_object[col] = update_params['new_value']
 
@@ -551,10 +563,13 @@ class SyncUpdate(Registrar):
             else:
                 new_loser_object[col] = prev_loser_val
             if col_violates_invincible:
-                raise InvincibilityViolation("col should't be updated, violates invincibility: %s" % update_params)
+                raise InvincibilityViolation(
+                    "col should't be updated, violates invincibility: %s" %
+                    update_params)
             if col_semi_static:
-                raise SemistaticViolation("col shouldn't be updated, too similar: %s" % update_params)
-
+                raise SemistaticViolation(
+                    "col shouldn't be updated, too similar: %s" %
+                    update_params)
 
         if data.get('delta') and reason in ['updating', 'deleting', 'reflect']:
             if loser == self.slave_name:
@@ -573,9 +588,8 @@ class SyncUpdate(Registrar):
                 self.important_static = False
 
         assert \
-        prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
-        "should never update old_value"
-
+            prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
+            "should never update old_value"
 
     # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
     # m_time=None):
@@ -682,7 +696,8 @@ class SyncUpdate(Registrar):
             self.reflect_update(**update_params)
 
     def sync_col(self, **update_params):
-        for key in ['col', 'data', 'm_value', 's_value', 'm_col_time', 's_col_time']:
+        for key in ['col', 'data', 'm_value',
+                    's_value', 'm_col_time', 's_col_time']:
             assert \
                 key in update_params, 'missing mandatory update param %s' % key
         col = update_params['col']
@@ -714,7 +729,7 @@ class SyncUpdate(Registrar):
                 return
 
             if self.merge_mode == 'merge' \
-            and not (update_params['m_value'] and update_params['s_value']):
+                    and not (update_params['m_value'] and update_params['s_value']):
                 if winner == self.slave_name and not update_params['s_value']:
                     winner = self.master_name
                     update_params['reason'] = 'merging'
@@ -753,15 +768,21 @@ class SyncUpdate(Registrar):
         data = update_params['data']
 
         if data.get('reflective') or data.get('sync'):
-            update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
-            update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
-            update_params['m_col_time'] = self.get_col_mod_time(col, self.master_name)
-            update_params['s_col_time'] = self.get_col_mod_time(col, self.slave_name)
+            update_params['m_value'] = self.get_new_subject_value(
+                col, self.master_name)
+            update_params['s_value'] = self.get_new_subject_value(
+                col, self.slave_name)
+            update_params['m_col_time'] = self.get_col_mod_time(
+                col, self.master_name)
+            update_params['s_col_time'] = self.get_col_mod_time(
+                col, self.slave_name)
 
             if data.get('reflective'):
                 self.reflect_col(**update_params)
-                update_params['m_value'] = self.get_new_subject_value(col, self.master_name)
-                update_params['s_value'] = self.get_new_subject_value(col, self.slave_name)
+                update_params['m_value'] = self.get_new_subject_value(
+                    col, self.master_name)
+                update_params['s_value'] = self.get_new_subject_value(
+                    col, self.slave_name)
 
             if data.get('sync'):
                 self.sync_col(**update_params)
@@ -843,7 +864,8 @@ class SyncUpdate(Registrar):
             reflection_components = []
             if self.sync_reflections:
                 reflection_components += [
-                    subtitle_fmt % "REFLECTIONS (%d)" % len(self.sync_reflections),
+                    subtitle_fmt % "REFLECTIONS (%d)" % len(
+                        self.sync_reflections),
                     self.display_sync_reflections(tablefmt)
                 ]
             out_str += info_delimeter.join(filter(None, reflection_components))
@@ -921,8 +943,8 @@ class SyncUpdate(Registrar):
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
-                    "NO %s CHANGES: must have a primary key to update user data: " % \
-                        self.slave_name + repr(exc)
+                    "NO %s CHANGES: must have a primary key to update user data: " %
+                    self.slave_name + repr(exc)
                 )
                 pkey = None
                 return info_delimeter.join(print_elements)
@@ -967,7 +989,7 @@ class SyncUpdate(Registrar):
             except Exception as exc:
                 print_elements.append(
                     ("NO %s CHANGES: "
-                     "must have a primary key to update user data: ") % \
+                     "must have a primary key to update user data: ") %
                     self.master_name + repr(exc))
                 pkey = None
                 return info_delimeter.join(print_elements)
@@ -1166,7 +1188,8 @@ class SyncUpdateUsr(SyncUpdate):
             if data.get(self.s_meta_target):
                 data_target = data.get(self.s_meta_target, {})
                 if not data_target.get('final') and data_target.get('key'):
-                    updates[data_target.get('key')] = self.new_s_object.get(col)
+                    updates[data_target.get(
+                        'key')] = self.new_s_object.get(col)
             if data.get('aliases'):
                 data_aliases = data.get('aliases')
                 for alias in data_aliases:

@@ -73,7 +73,9 @@ class ImportWooMixin(object):
                 SanitationUtils.normalize_val(special) for special in self.specials
         ]:
             if self.DEBUG_SPECIAL:
-                self.register_message("testing special %s matches special: %s" % (special_compare, special_search))
+                self.register_message(
+                    "testing special %s matches special: %s" %
+                    (special_compare, special_search))
             if special_search in special_compare:
                 return True
 
@@ -613,7 +615,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             elif not len(this_images) and len(ancestor_images):
                 self.register_image(ancestor_images[0], object_data)
 
-
     def process_categories(self, object_data):
         if object_data.isProduct:
             for ancestor in object_data.taxo_ancestors:
@@ -1043,7 +1044,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.register_message("special %s exists!" % special)
 
             if object_data.isVariable:
-                # special is calculated for variations but not variables, which is fine
+                # special is calculated for variations but not variables, which
+                # is fine
                 continue
 
             specialparams = self.special_rules[special]
@@ -1072,7 +1074,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                 discount = specialparams.get(tier)
                 if self.DEBUG_SPECIAL:
-                    self.register_message("discount for %s: %s" % (tier, discount))
+                    self.register_message(
+                        "discount for %s: %s" %
+                        (tier, discount))
                 if not discount:
                     continue
 
@@ -1118,8 +1122,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     }.items():
                         if self.DEBUG_SPECIAL:
                             self.register_message(
-                                "special %s setting object_data[ %s ] to %s " % \
-                                    (special, key, value)
+                                "special %s setting object_data[ %s ] to %s " %
+                                (special, key, value)
                             )
                         object_data[key] = value
 

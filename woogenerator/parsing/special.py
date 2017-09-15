@@ -48,7 +48,8 @@ class ImportSpecialObject(ImportTreeObject, ImportSpecialMixin):
 class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     container = SpecialGruopList
 
-    special_id = DescriptorUtils.safe_key_property(ImportSpecialMixin.groupIDKey)
+    special_id = DescriptorUtils.safe_key_property(
+        ImportSpecialMixin.groupIDKey)
     start_time = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.startTimeKey)
     end_time = DescriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
@@ -69,7 +70,7 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
 
         try:
             self.special_id
-        except:
+        except BaseException:
             raise UserWarning('ID exist for Special to be valid')
 
     @property

@@ -383,7 +383,7 @@ class ImportStack(list):
         for object_data in self:
             try:
                 out += object_data.identifier + "\n"
-            except:
+            except BaseException:
                 out += repr(object_data) + "\n"
         return out
 
@@ -586,7 +586,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         try:
             depth = kwargs['depth']
             assert depth is not None
-        except:
+        except BaseException:
             depth = self.depth(kwargs['row'])
             kwargs['depth'] = depth
         if self.DEBUG_TREE:

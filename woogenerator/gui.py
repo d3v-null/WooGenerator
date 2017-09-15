@@ -385,7 +385,7 @@ class CustomersForm(SyncForm):
     ]
 
     # def create(self):
-        # super(CustomersForm, self).create()
+    # super(CustomersForm, self).create()
 
 
 class ConfirmForm(SyncForm):
@@ -558,11 +558,14 @@ def main():
         traceback.print_exception(*sys.exc_info())
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
     if wg_app.command_script == 'generator.py':
-        override_args = SeqUtils.filter_unique_true(sys.argv[1:] + wg_app.command_args.split())
+        override_args = SeqUtils.filter_unique_true(
+            sys.argv[1:] + wg_app.command_args.split())
         generator.catch_main(override_args=override_args)
     if wg_app.command_script == 'merger.py':
-        override_args = SeqUtils.filter_unique_true(sys.argv[1:] + wg_app.command_args.split())
+        override_args = SeqUtils.filter_unique_true(
+            sys.argv[1:] + wg_app.command_args.split())
         merger.catch_main(override_args=override_args)
+
 
 if __name__ == "__main__":
     logging.debug("\n\nEntering main!")

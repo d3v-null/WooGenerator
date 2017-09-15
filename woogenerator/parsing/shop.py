@@ -176,7 +176,7 @@ class ImportShopMixin(object):
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
-                    except:
+                    except BaseException:
                         wp_api_key = col
                     api_data[wp_api_key] = self[col]
             if self.parent and self.parent.wpid:
@@ -187,14 +187,14 @@ class ImportShopMixin(object):
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
-                    except:
+                    except BaseException:
                         wp_api_key = col
                     api_data[wp_api_key] = self[col]
             for col, col_data in col_data.get_wpapi_meta_cols(api).items():
                 if col in self:
                     try:
                         wp_api_key = col_data[api]['key']
-                    except:
+                    except BaseException:
                         wp_api_key = col
                     if 'meta' not in api_data:
                         api_data['meta'] = {}

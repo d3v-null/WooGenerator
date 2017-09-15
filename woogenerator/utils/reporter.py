@@ -33,8 +33,8 @@ class ReporterNamespace(argparse.Namespace):
     @property
     def as_dict(self):
         return dict([
-            (attr, getattr(self, attr)) \
-            for attr in self.reporter_attrs \
+            (attr, getattr(self, attr))
+            for attr in self.reporter_attrs
             if hasattr(self, attr)
         ])
 
@@ -50,6 +50,7 @@ class ReporterNamespace(argparse.Namespace):
             html_files.update(reporter.html_files)
         return html_files
 
+
 DUP_CSS = "\n".join([
     ".highlight_old {color: red !important; }"
     ".highlight_oldish {color: orange;}"
@@ -57,15 +58,19 @@ DUP_CSS = "\n".join([
     ".highlight_slave {background: lightpink !important;}"
 ])
 
+
 class OptionalFormatter(Formatter):
     """ Formatter where keys are optional """
+
     def get_value(self, key, args, kwds):
         if isinstance(key, basestring):
             return kwds.get(key, '')
         return Formatter.get_value(self, key, args, kwds)
 
+
 class AbstractReporter(object):
     formatter = OptionalFormatter()
+
     def __init__(self, css=None):
         self.groups = OrderedDict()
         self.css = css
@@ -90,34 +95,34 @@ class AbstractReporter(object):
 
         @classmethod
         def get_data_heading_fmt(cls, fmt):
-            if fmt=='html':
+            if fmt == 'html':
                 return u"<h3>{heading}</h3>"
             else:
                 return u"*{heading}*"
 
         @classmethod
         def get_data_separator(cls, fmt):
-            if fmt=='html':
+            if fmt == 'html':
                 return u"<hr>"
             else:
                 return u"\n" + ("-" * 50) + "\n"
 
         @classmethod
         def get_title_fmt(cls, fmt=None):
-            if fmt=='html':
+            if fmt == 'html':
                 return u"<h2>{title}</h2>"
             return u"\n**{title}**\n"
 
         @classmethod
         def get_descr_fmt(cls, fmt=None):
-            if fmt=='html':
+            if fmt == 'html':
                 return (u'<p class="description {class}">'
                         u'<strong>{strong}</strong>{description}</p>')
             return u"\n{strong}{description}"
 
         @classmethod
         def get_data_fmt(cls, fmt=None):
-            if fmt=='html':
+            if fmt == 'html':
                 return u'<p class="data {class}">{data}</p>'
             return u'\n{data}'
 
@@ -140,7 +145,6 @@ class AbstractReporter(object):
             out += u'</div>'
             return out
 
-
         def render_title(self, fmt=None):
             response = self.title
             response = SanitationUtils.coerce_unicode(response)
@@ -154,7 +158,9 @@ class AbstractReporter(object):
             response = SanitationUtils.coerce_unicode(response)
             if self.length is not None:
                 response = u"{length} ".format(length=self.length) + response
-            response = self.format(self.get_descr_fmt(fmt), description=response)
+            response = self.format(
+                self.get_descr_fmt(fmt),
+                description=response)
             return response
 
         def render_data(self, fmt=None):
@@ -189,7 +195,8 @@ class AbstractReporter(object):
 
     class Group(object):
 
-        def __init__(self, classname, title=None, sections=None, instructional=False):
+        def __init__(self, classname, title=None,
+                     sections=None, instructional=False):
             if title is None:
                 title = classname.title()
             if sections is None:
@@ -237,7 +244,6 @@ class AbstractReporter(object):
 
         def to_text(self):
             return self.render()
-
 
     @classmethod
     def format(cls, format_spec, *format_args, **format_kwargs):
@@ -318,7 +324,8 @@ class AbstractReporter(object):
         return out
 
     def get_summary_html(self):
-        response = "<br/>".join(group.to_html() for group in self.groups.values())
+        response = "<br/>".join(group.to_html()
+                                for group in self.groups.values())
         response = re.sub(
             ur'<div class="collapse" ', ur'<div ', response
         )
@@ -361,8 +368,10 @@ class AbstractReporter(object):
             rep_file.write(self.get_document_unicode())
         self.add_html_file(name, path)
 
+
 class HtmlReporter(AbstractReporter):
     """**DEPRECATED** Reporter which produces only html"""
+
 
 class RenderableReporter(AbstractReporter):
     """ Report renderable objects in html or plaintext. """
@@ -378,51 +387,55 @@ class RenderableReporter(AbstractReporter):
             response = self.format(self.get_data_fmt(fmt), data=response)
             return response
 
+
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
         response = u""
         format_params = [
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "This is a detailed report of all the duplicated and "
                     "conflicting records. Ideally this report would be empty."
                 )
             }),
-            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Sections'}),
+            (reporter.Section.get_data_heading_fmt(
+                fmt), {'heading': 'Sections'}),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Usernamematcher.Duplicate_Matches',
-                'description':(
+                'strong': 'Usernamematcher.Duplicate_Matches',
+                'description': (
                     " are instances where multiple records from a single database "
                     "were found to have the same username which is certainly an "
                     "indicator of erroneous data."
                 )
             }),
         ]
-        if fmt == 'html': format_params += [
-            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Colours'}),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'class':'highlight_master',
-                'strong':settings.master_name,
-                'description':" records are highlighted with a light blue background"
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'class':'highlight_slave',
-                'strong':settings.slave_name,
-                'description':" records are highlighted with a light pink background"
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'class':'highlight_old',
-                'strong':'Old',
-                'description':(" records are highlighted with a red font. "
-                                "By default these are older than 5 years")
-            }),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'class':'highlight_oldish',
-                'strong':'Old-ish',
-                'description':(" records are highlighted with an orange font. "
-                                "By default these are older than 3 years")
-            })
-        ]
+        if fmt == 'html':
+            format_params += [
+                (reporter.Section.get_data_heading_fmt(
+                    fmt), {'heading': 'Colours'}),
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'class': 'highlight_master',
+                    'strong': settings.master_name,
+                    'description': " records are highlighted with a light blue background"
+                }),
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'class': 'highlight_slave',
+                    'strong': settings.slave_name,
+                    'description': " records are highlighted with a light pink background"
+                }),
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'class': 'highlight_old',
+                    'strong': 'Old',
+                    'description': (" records are highlighted with a red font. "
+                                    "By default these are older than 5 years")
+                }),
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'class': 'highlight_oldish',
+                    'strong': 'Old-ish',
+                    'description': (" records are highlighted with an orange font. "
+                                    "By default these are older than 3 years")
+                })
+            ]
         for format_spec, format_kwargs in format_params:
             response += reporter.format(format_spec, **format_kwargs)
         return response
@@ -437,6 +450,7 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     )
     if group:
         reporter.add_group(group)
+
 
 def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
@@ -562,9 +576,9 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
         group.add_section(
             reporter.Section(
                 "email conflicts",
-                description= "email conflicts",
-                data= render_email_conflicts,
-                length= len(matches.conflict['email'])
+                description="email conflicts",
+                data=render_email_conflicts,
+                length=len(matches.conflict['email'])
             )
         )
 
@@ -582,8 +596,8 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
                 description="%s records match with multiple records in %s on email" % (
                     settings.slave_name, settings.master_name
                 ),
-                data= render_email_duplicates,
-                length= len(matches.duplicate['email'])
+                data=render_email_duplicates,
+                length=len(matches.duplicate['email'])
             ))
 
     if address_duplicates:
@@ -613,7 +627,6 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
             )
         )
 
-
     match_list_instructions = {
         'cardMatcher.duplicate_matches':
         '%s records have multiple CARD IDs in %s' % (
@@ -638,7 +651,8 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
-        description = match_list_instructions.get(matchlist_type, matchlist_type)
+        description = match_list_instructions.get(
+            matchlist_type, matchlist_type)
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -662,14 +676,15 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
         response = u""
         for format_spec, format_kwargs in [
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "This is a detailed report of all the changes that will be "
                     "made if this sync were to go ahead."
                 )
             }),
-            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Field Changes'}),
+            (reporter.Section.get_data_heading_fmt(
+                fmt), {'heading': 'Field Changes'}),
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "These reports show all the changes that will happen to "
                     "the most important fields (default: email and role). "
                     "The role field shows the new value for role, and the Delta role "
@@ -684,47 +699,48 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
                     "customer from being able to log in or purchase items correctly."
                 )
             }),
-            (reporter.Section.get_data_heading_fmt(fmt), {'heading':'Syncing Results'}),
+            (reporter.Section.get_data_heading_fmt(
+                fmt), {'heading': 'Syncing Results'}),
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "Each of the items in these reports has the following sections:"
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Update Name',
-                'description':(
+                'strong': 'Update Name',
+                'description': (
                     " - The primary keys of the records being synchronized "
                     "({master_pkey} and {slave_pkey}) which should be unique "
                     "for any matched records."
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'OLD',
-                'description':(
+                'strong': 'OLD',
+                'description': (
                     " - The {master_name} and {slave_name} records before the sync."
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'INFO',
-                'description':(
+                'strong': 'INFO',
+                'description': (
                     " - Mostly information about mod times for debugging."
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'PROBLEMATIC CHANGES',
-                'description':(
+                'strong': 'PROBLEMATIC CHANGES',
+                'description': (
                     " - instances where an important field has been changed. "
                     "Important fields can be configured in coldata.py by "
                     "changing the 'static' property."
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'CHANGES',
+                'strong': 'CHANGES',
                 'description': " - all changes including problematic."
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'NEW',
-                'description':(
+                'strong': 'NEW',
+                'description': (
                     " - the end result of all changed records after"
                     "syncing"
                 )
@@ -750,6 +766,7 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
     )
     if group:
         reporter.add_group(group)
+
 
 def do_sanitizing_group(reporter, matches, updates, parsers, settings):
     address_cols = OrderedDict(settings.basic_cols.items() + [
@@ -822,6 +839,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+
 def do_delta_group(reporter, matches, updates, parsers, settings):
     if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
         return
@@ -865,7 +883,8 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
                 description="%s records that have changed important fields" % (
                     source_name
                 ),
-                data=functools.partial(render_delta_list, delta_list=delta_list),
+                data=functools.partial(
+                    render_delta_list, delta_list=delta_list),
                 length=len(delta_list)
             )
         )
@@ -883,24 +902,25 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+
 def do_matches_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
         response = u""
         for format_spec, format_kwargs in [
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "These reports show the results of the matching algorithm. "
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Perfect Matches',
-                'description':(
+                'strong': 'Perfect Matches',
+                'description': (
                     " show matches that were detected without ambiguity."
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Masterless Card Matches',
-                'description':(
+                'strong': 'Masterless Card Matches',
+                'description': (
                     " are instances where a record in {slave_name} is seen to "
                     "have a {master_pkey} value that is that is not found in "
                     "{master_name}. This could mean that the {master_name} "
@@ -909,8 +929,8 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
                 )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':'Slaveless Username Matches',
-                'description':(
+                'strong': 'Slaveless Username Matches',
+                'description': (
                     " are instances where a record in {master_name} has a "
                     "username value that is not found in {slave_name}. This "
                     "could be because the {slave_name} account was deleted."
@@ -941,6 +961,7 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
 
 def do_matches_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('matching', 'Matching Results')
+
     def render_perfect_matches(fmt):
         return matches.globals.tabulate(tablefmt=fmt)
 
@@ -978,7 +999,8 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
-        description = match_list_instructions.get(matchlist_type, matchlist_type)
+        description = match_list_instructions.get(
+            matchlist_type, matchlist_type)
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -1013,7 +1035,8 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
     for parselist_type, parse_list in parsers.anomalous.items():
         if not parse_list:
             continue
-        description = parse_list_instructions.get(parselist_type, parselist_type)
+        description = parse_list_instructions.get(
+            parselist_type, parselist_type)
         group.add_section(
             reporter.Section(
                 parselist_type,
@@ -1031,11 +1054,13 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+
 def render_update_list(fmt, reporter, update_list):
     delimeter = reporter.Section.get_data_separator(fmt)
     return delimeter.join([
         update.tabulate(tablefmt=fmt) for update in update_list
     ])
+
 
 def do_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync:
@@ -1077,6 +1102,7 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+
 def do_post_summary_group(reporter, results, settings):
     """ Create post-update summary report section. """
     group = reporter.Group('summary_group', 'Summary', instructional=True)
@@ -1085,7 +1111,7 @@ def do_post_summary_group(reporter, results, settings):
         response = u""
         for format_spec, format_kwargs in [
             (reporter.Section.get_descr_fmt(fmt), {
-                'description':(
+                'description': (
                     "This is a sumary of the completed updates. "
                 )
             }),
@@ -1105,36 +1131,36 @@ def do_post_summary_group(reporter, results, settings):
         response = u""
         response_components = [
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong':"Finished at:",
-                'description':" %s" % TimeUtils.get_ms_timestamp()
+                'strong': "Finished at:",
+                'description': " %s" % TimeUtils.get_ms_timestamp()
             })
         ]
         if results:
             if results.successes:
                 response_components.append(
                     (reporter.Section.get_descr_fmt(fmt), {
-                        'strong':"Successes:",
-                        'description':" %s" % len(results.successes)
+                        'strong': "Successes:",
+                        'description': " %s" % len(results.successes)
                     }),
                 )
             if results.fails_master:
                 response_components.append(
                     (reporter.Section.get_descr_fmt(fmt), {
-                        'strong':"Master Fails:",
-                        'description':" %s" % len(results.fails_master)
+                        'strong': "Master Fails:",
+                        'description': " %s" % len(results.fails_master)
                     }),
                 )
             if results.fails_slave:
                 response_components.append(
                     (reporter.Section.get_descr_fmt(fmt), {
-                        'strong':"Slave Fails:",
-                        'description':" %s" % len(results.fails_slave)
+                        'strong': "Slave Fails:",
+                        'description': " %s" % len(results.fails_slave)
                     }),
                 )
         else:
             response_components.append(
                 (reporter.Section.get_descr_fmt(fmt), {
-                    'strong':"No changes made",
+                    'strong': "No changes made",
                 }),
             )
         for format_spec, format_kwargs in response_components:
@@ -1179,7 +1205,8 @@ def do_failures_group(reporter, results, settings):
                 ])
             else:
                 fail_row.update([
-                    ('master_changes', SanitationUtils.coerce_unicode(master_updates)),
+                    ('master_changes',
+                     SanitationUtils.coerce_unicode(master_updates)),
                     ('slave_changes', SanitationUtils.coerce_unicode(slave_updates)),
                 ])
             fail_row.update([
@@ -1214,7 +1241,8 @@ def do_failures_group(reporter, results, settings):
             reporter.Section(
                 name,
                 description=description,
-                data=functools.partial(render_fail_section, fails=source_failures),
+                data=functools.partial(
+                    render_fail_section, fails=source_failures),
                 length=len(source_failures)
             )
         )
@@ -1235,6 +1263,7 @@ def do_failures_group(reporter, results, settings):
 
     if group:
         reporter.add_group(group)
+
 
 def do_successes_group(reporter, results, settings):
     """ Create successes report section. """

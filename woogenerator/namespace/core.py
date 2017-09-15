@@ -27,11 +27,12 @@ from ..utils import Registrar, TimeUtils
 class SettingsNamespaceProto(argparse.Namespace):
     """ Provide namespace for settings in first stage, supports getitem """
 
-    argparser_class=ArgumentParserCommon
+    argparser_class = ArgumentParserCommon
 
     def __init__(self, *args, **kwargs):
         # This getattr stuff allows the attributes to be set in a subclass
-        self.local_work_dir = getattr(self, 'local_work_dir', DEFAULT_LOCAL_WORK_DIR)
+        self.local_work_dir = getattr(
+            self, 'local_work_dir', DEFAULT_LOCAL_WORK_DIR)
         self.local_live_config = getattr(self, 'local_live_config', None)
         self.local_test_config = getattr(self, 'local_test_config', None)
         self.testmode = getattr(self, 'testmode', DEFAULT_TESTMODE)
@@ -39,7 +40,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.out_dir = getattr(self, 'out_dir', DEFAULT_LOCAL_OUT_DIR)
         self.log_dir = getattr(self, 'log_dir', DEFAULT_LOCAL_LOG_DIR)
         self.pickle_dir = getattr(self, 'pickle_dir', DEFAULT_LOCAL_PICKLE_DIR)
-        self.import_name = getattr(self, 'import_name', TimeUtils.get_ms_timestamp())
+        self.import_name = getattr(
+            self, 'import_name', TimeUtils.get_ms_timestamp())
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
         self.start_time = getattr(self, 'start_time', time.time())
@@ -64,7 +66,6 @@ class SettingsNamespaceProto(argparse.Namespace):
             return self[key]
         except KeyError:
             return default
-
 
     def join_work_path(self, path):
         """ Join a given path relative to the local-work-dir in this namespace. """
@@ -174,7 +175,6 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def null_client_class(self):
         return SyncClientNull
-
 
     @property
     def col_data_class(self):
@@ -400,14 +400,17 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         meta_settings.add_state('init', copy(vars(self)))
 
-        ### First round of argument parsing determines which config files to read
-        ### from core config files, CLI args and env vars
+        # First round of argument parsing determines which config files to read
+        # from core config files, CLI args and env vars
 
         proto_argparser = self.argparser_class.proto_argparser()
 
-        Registrar.register_message("proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
+        Registrar.register_message(
+            "proto_parser: \n%s" %
+            pformat(proto_argparser.get_actions())
+        )
 
-        parser_override = {'namespace':self}
+        parser_override = {'namespace': self}
         if override_args is not None:
             parser_override['args'] = override_args
             meta_settings.set_override_args(override_args)
@@ -420,7 +423,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         meta_settings.add_state('proto', copy(vars(proto_settings)))
 
-        ### Second round gets all the arguments from all config files
+        # Second round gets all the arguments from all config files
 
         # TODO: set up logging here instead of Registrar verbosity crap
         # TODO: implement "ask for password" feature
@@ -441,12 +444,15 @@ class SettingsNamespaceProto(argparse.Namespace):
                 parser_override['args'] = []
             parser_override['args'] += ['--help']
 
-
         # defaults first
         main_settings = argparser.parse_args(**parser_override)
         self.update(main_settings)
 
-        meta_settings.add_state('main', copy(vars(main_settings)), argparser.default_config_files)
+        meta_settings.add_state(
+            'main',
+            copy(
+                vars(main_settings)),
+            argparser.default_config_files)
 
         self.init_registrar()
 
@@ -459,6 +465,7 @@ class SettingsNamespaceProto(argparse.Namespace):
             "meta settings:\n%s" %
             meta_settings.tabulate(ignore_keys=['called_with_args'])
         )
+
 
 class ParserNamespace(argparse.Namespace):
     """ Collect parser variables into a single namespace. """
@@ -478,6 +485,8 @@ class ParserNamespace(argparse.Namespace):
             self.anomalous[parselist_type] = anomalous_parselist
 
 # TODO: move to matching
+
+
 class MatchNamespace(argparse.Namespace):
     """ Collect variables used in matching into a single namespace. """
 
@@ -490,7 +499,6 @@ class MatchNamespace(argparse.Namespace):
         self.duplicate = OrderedDict()
         self.conflict = OrderedDict()
 
-
     def deny_anomalous(self, match_list_type, anomalous_match_list):
         """Add the matchlist to the list of anomalous match lists if it is not empty."""
         try:
@@ -499,6 +507,7 @@ class MatchNamespace(argparse.Namespace):
             # print "could not deny anomalous match list", match_list_type,
             # exc
             self.anomalous[match_list_type] = anomalous_match_list
+
 
 class UpdateNamespace(argparse.Namespace):
     """ Collect variables used in updates into a single namespace. """
@@ -516,6 +525,7 @@ class UpdateNamespace(argparse.Namespace):
         self.masterless = []
         self.slaveless = []
 
+
 class ResultsNamespace(argparse.Namespace):
     """ Collect information about failures into a single namespace. """
 
@@ -530,14 +540,14 @@ class ResultsNamespace(argparse.Namespace):
     @property
     def as_dict(self):
         return dict([
-            (attr, getattr(self, attr)) \
-            for attr in self.result_attrs \
+            (attr, getattr(self, attr))
+            for attr in self.result_attrs
             if hasattr(self, attr)
         ])
 
-
     def __bool__(self):
         return bool(any(self.as_dict.values()))
+
 
 class MetaSettings(object):
     """
@@ -600,6 +610,8 @@ class MetaSettings(object):
                 state.get('vars', {}).get(key) for state in self.states.values()
             ]
             state_table.append(state_table_row)
-        info_components += [tabulate(state_table, tablefmt=tablefmt, headers="firstrow")]
+        info_components += [tabulate(state_table,
+                                     tablefmt=tablefmt,
+                                     headers="firstrow")]
 
         return info_delimeter.join(info_components)

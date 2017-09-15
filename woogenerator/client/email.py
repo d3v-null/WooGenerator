@@ -13,6 +13,7 @@ from .core import ClientAbstract
 
 MAX_BODY_LEN = 1000000
 
+
 class EmailClient(ClientAbstract):
     """ Interface with a mail client. Boilerplate """
 
@@ -20,11 +21,13 @@ class EmailClient(ClientAbstract):
         """ Send an email.message object using the mail client. """
         raise NotImplementedError()
 
-    def compose_message(self, sender, recipients, subject, body, text_body=None):
+    def compose_message(self, sender, recipients,
+                        subject, body, text_body=None):
         raise NotImplementedError()
 
     def attach_file(self, message, filename):
         raise NotImplementedError()
+
 
 class EmailClientSMTP(ClientAbstract):
     """ Interface with an SMTP mail client. """
@@ -33,7 +36,8 @@ class EmailClientSMTP(ClientAbstract):
     def __exit__(self, exit_type, value, traceback):
         self.service.quit()
 
-    def compose_message(self, sender, recipients, subject, body, text_body=None):
+    def compose_message(self, sender, recipients,
+                        subject, body, text_body=None):
         message = MIMEMultipart()
         message['Subject'] = subject
         message['To'] = ', '.join(recipients)
@@ -68,6 +72,7 @@ class EmailClientSMTP(ClientAbstract):
             self.connect_params['user'], self.connect_params['pass']
         )
 
+
 class EmailClientExchange(ClientAbstract):
     """ Interface with an exchange mail client """
     service_builder = exchangelib.Account
@@ -77,11 +82,12 @@ class EmailClientExchange(ClientAbstract):
         self.service = None
         self.attempt_connect()
 
-    def compose_message(self, sender, recipients, subject, body, text_body=None):
-        if body == None:
+    def compose_message(self, sender, recipients,
+                        subject, body, text_body=None):
+        if body is None:
             body = ''
-        body=body[:MAX_BODY_LEN]
-        if text_body == None:
+        body = body[:MAX_BODY_LEN]
+        if text_body is None:
             text_body = ''
         message = exchangelib.Message(
             account=self.service,

@@ -57,7 +57,7 @@ class FieldGroup(Registrar):
     def empty(self):
         if self.enforce_mandatory_keys and self.mandatory_keys:
             empty_mandatory_keys = [
-                key for key in self.mandatory_keys \
+                key for key in self.mandatory_keys
                 if not self.kwargs.get(key)
             ]
             return any(empty_mandatory_keys)
@@ -159,7 +159,6 @@ class FieldGroup(Registrar):
         #     for item in [key] + value
         # ]
 
-
     def __copy__(self):
         # print "calling copy on ", self
         response = self.__class__(self.schema, **copy(self.kwargs))
@@ -169,7 +168,8 @@ class FieldGroup(Registrar):
     def __deepcopy__(self, memodict=None):
         # print ("calling deepcopy on ", self)
         # print ("-> kwargs ", deepcopy(self.kwargs, memodict))
-        response = self.__class__(self.schema, **deepcopy(self.kwargs, memodict))
+        response = self.__class__(
+            self.schema, **deepcopy(self.kwargs, memodict))
         # print (" -> response", response, response.kwargs)
         return response
 
@@ -386,7 +386,7 @@ class ContactObject(FieldGroup):
     @property
     def names(self):
         if self.properties.get('names') or self.properties.get('careof_names') \
-        or self.properties.get('organization_names'):
+                or self.properties.get('organization_names'):
             out = ", ".join(
                 filter(None, [
                     " ".join(filter(None, names))
@@ -444,7 +444,7 @@ class ContactAddress(ContactObject):
         # if not schema: self.schema = self.__class__.determine_source(**self.kwargs)
 
         lines = SeqUtils.filter_unique_true([
-            SanitationUtils.normalize_val(self.kwargs.get(key, '')) \
+            SanitationUtils.normalize_val(self.kwargs.get(key, ''))
             for key in ['line1', 'line2']
         ])
 
@@ -558,7 +558,8 @@ class ContactAddress(ContactObject):
                     coerce_unicode(self.properties['ambiguous_tokens']))
                 break
 
-        all_thoroughfares = self.properties['thoroughfares'] + self.properties['weak_thoroughfares']
+        all_thoroughfares = self.properties['thoroughfares'] + \
+            self.properties['weak_thoroughfares']
         if len(all_thoroughfares) > 1:
             self.enforce_strict(
                 'multiple thoroughfares: %s' %
@@ -706,14 +707,14 @@ class ContactAddress(ContactObject):
                                      None)
             self.add_weak_thoroughfare(weak_thoroughfare)
         elif not (self.properties['buildings']) \
-        and (self.properties['subunits'] or self.properties['floors'] \
-        or self.properties['deliveries']):
+            and (self.properties['subunits'] or self.properties['floors']
+                 or self.properties['deliveries']):
             if building:
                 self.add_building(building)
             else:
                 self.coerce_building(name)
         elif weak_thoroughfare \
-        and not self.properties['thoroughfares'] + self.properties['weak_thoroughfares']:
+                and not self.properties['thoroughfares'] + self.properties['weak_thoroughfares']:
             self.add_weak_thoroughfare(weak_thoroughfare)
         elif building and not self.properties['buildings']:
             self.add_building(building)
@@ -761,7 +762,8 @@ class ContactAddress(ContactObject):
         self.add_subunit(complete_subunit)
 
     def add_building(self, building):
-        all_thoroughfares = self.properties['thoroughfares'] + self.properties['weak_thoroughfares']
+        all_thoroughfares = self.properties['thoroughfares'] + \
+            self.properties['weak_thoroughfares']
         if all_thoroughfares:
             self.enforce_strict(
                 "Building (%s) should not come after thoroughfare (%s)" %
@@ -911,25 +913,25 @@ class ContactAddress(ContactObject):
 
     state = DescriptorUtils.kwarg_alias_property(
         'state',
-        lambda self: \
+        lambda self:
         self.properties.get('state')
     )
 
     country = DescriptorUtils.kwarg_alias_property(
         'country',
-        lambda self: \
+        lambda self:
         self.properties.get('country')
     )
 
     postcode = DescriptorUtils.kwarg_alias_property(
         'postcode',
-        lambda self: \
+        lambda self:
         self.properties.get('postcode')
     )
 
     city = DescriptorUtils.kwarg_alias_property(
         'city',
-        lambda self: \
+        lambda self:
         self.properties.get('city')
     )
 
@@ -1198,7 +1200,7 @@ class ContactName(ContactObject):
 
             if self.properties['unknowns']:
                 self.invalidate(
-                    "There are some unknown tokens: %s" % \
+                    "There are some unknown tokens: %s" %
                     SanitationUtils.coerce_bytes(
                         ' / '.join(self.properties['unknowns'])
                     )
@@ -1311,34 +1313,34 @@ class ContactName(ContactObject):
 
     first_name = DescriptorUtils.kwarg_alias_property(
         'first_name',
-        lambda self: \
+        lambda self:
         " ".join(filter(None, self.properties.get('first_names', [])))
     )
 
     family_name = DescriptorUtils.kwarg_alias_property(
         'family_name',
-        lambda self:\
+        lambda self:
         " ".join(filter(None, self.properties.get('family_names', [])))
     )
 
     middle_name = DescriptorUtils.kwarg_alias_property(
         'middle_name',
-        lambda self:\
+        lambda self:
         " ".join(filter(None, self.properties.get('middle_names', [])))
     )
 
     name_prefix = DescriptorUtils.kwarg_alias_property(
         'name_prefix',
-        lambda self: \
+        lambda self:
         " ".join(filter(None, self.properties.get('titles', [])))
     )
 
     name_suffix = DescriptorUtils.kwarg_alias_property(
         'name_suffix',
-        lambda self: \
+        lambda self:
         " ".join(filter(
             None,
-            self.properties.get('positions', []) \
+            self.properties.get('positions', [])
             + self.properties.get('suffixes', [])
         ))
     )
@@ -1378,12 +1380,13 @@ class ContactName(ContactObject):
              if self.debug and self.name_suffix else self.name_suffix),
             (("NOTES: (%s)" % self.name_notes) if self.debug and self.name_notes else "(%s)" %
              self.name_notes if self.name_notes else None),
-            (("|UNKN:" + " ".join(self.properties['unknowns']))\
+            (("|UNKN:" + " ".join(self.properties['unknowns']))
                 if self.debug and self.properties.get('unknowns') else "")
         ])))
 
     def __str__(self, tablefmt=None):
         return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
+
 
 class ContactPhones(FieldGroup):
     fieldGroupType = "PHONES"
@@ -1442,7 +1445,9 @@ class ContactPhones(FieldGroup):
         ]
         for key in self.number_prefixes:
             attr = '%s_number' % key
-            checks.append(getattr(self, attr, None) == getattr(other, attr, None))
+            checks.append(
+                getattr(self, attr, None) == getattr(other, attr, None)
+            )
         return all(checks)
 
     def similar(self, other):
@@ -1488,7 +1493,7 @@ class ContactPhones(FieldGroup):
             self.properties[key] = self.normalize_val(key, value)
         # process pref_method, convert to master source
         if all(
-            key in self.properties for key in \
+            key in self.properties for key in
             ['pref_method', 'pref_data']
         ):
             if not self.is_master_source(self.source):
@@ -1502,7 +1507,6 @@ class ContactPhones(FieldGroup):
                         pref_method
                     )
                 self.properties['pref_method'] = pref_method
-
 
     mob_number = DescriptorUtils.kwarg_alias_property(
         'mob_number',
@@ -1539,7 +1543,6 @@ class ContactPhones(FieldGroup):
             )
         return response
 
-
     def __unicode__(self, tablefmt=None):
         prefix = self.get_prefix() if self.debug else ""
         delimeter = "; "
@@ -1560,8 +1563,6 @@ class ContactPhones(FieldGroup):
 
     def __str__(self, tablefmt=None):
         return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
-
-
 
 
 class SocialMediaFields(FieldGroup):
@@ -1802,8 +1803,10 @@ class RoleGroup(FieldGroup):
         if direct_brand == "none":
             direct_brand = None
         if direct_brand:
-            direct_brand = SanitationUtils.strip_tailing_whitespace(direct_brand)
-            direct_brand = SanitationUtils.strip_leading_whitespace(direct_brand)
+            direct_brand = SanitationUtils.strip_tailing_whitespace(
+                direct_brand)
+            direct_brand = SanitationUtils.strip_leading_whitespace(
+                direct_brand)
             if direct_brand == "pending":
                 return ('-', None)
             direct_brand_tokens = direct_brand.lower().split(' ')
@@ -1824,11 +1827,12 @@ class RoleGroup(FieldGroup):
                         parsed_role = cls.get_role(
                             " ".join(remaining_tokens))
                         assert parsed_role, \
-                            "could not parse role: %s" % " ".join(remaining_tokens)
+                            "could not parse role: %s" \
+                            % " ".join(remaining_tokens)
                     break
 
             assert parsed_schema, \
-                "unkown brand: %s" %  direct_brand
+                "unkown brand: %s" % direct_brand
         # if Registrar.DEBUG_CONTACT:
         #     Registrar.register_message("returning schema: %s; role: %s" % (
         #         parsed_schema, parsed_role
@@ -1839,7 +1843,8 @@ class RoleGroup(FieldGroup):
     def parse_direct_brand_str(cls, direct_brand_str):
         parsed = []
         if direct_brand_str:
-            for direct_brand in map(str.lower, str(direct_brand_str).split(';')):
+            for direct_brand in map(str.lower, str(
+                    direct_brand_str).split(';')):
                 # print("looking at direct_brand: %s" % direct_brand)
                 parsed_schema, parsed_role = cls.parse_direct_brand(
                     direct_brand)
@@ -1910,11 +1915,12 @@ class RoleGroup(FieldGroup):
 
         if self.schema:
             assert \
-            self.schema_exists(self.schema), \
-            "schema should be valid: %s" % self.schema
+                self.schema_exists(self.schema), \
+                "schema should be valid: %s" % self.schema
 
         if self.kwargs.get('role'):
-            self.properties['role'] = self.normalize_role(self.kwargs.get('role'))
+            self.properties['role'] = self.normalize_role(
+                self.kwargs.get('role'))
             assert self.role_exists(self.properties['role']), \
                 "act_role should exist: %s" % self.properties['role']
             if self.properties['role'] == self.admin_role:
@@ -2048,7 +2054,9 @@ class RoleGroup(FieldGroup):
                     val = self.parse_direct_brand_str(val)
                     key = 'direct_brands'
                 except Exception as exc:
-                    raise ValueError("could not set direct brand because: %s" % exc)
+                    raise ValueError(
+                        "could not set direct brand because: %s" % exc
+                    )
         super(RoleGroup, self).__setitem__(key, val)
 
     def __getitem__(self, key):
@@ -2060,7 +2068,7 @@ class RoleGroup(FieldGroup):
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
                 return ";".join([
-                    self.format_direct_brand(*direct_brand_out) \
+                    self.format_direct_brand(*direct_brand_out)
                     for direct_brand_out in self.properties.get('direct_brands', [])
                 ])
             elif attr == 'role':

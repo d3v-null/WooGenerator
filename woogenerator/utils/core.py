@@ -1007,7 +1007,7 @@ class DebugUtils(object):
             line = inspect.stack()[level][2]
             baseline = "%s:%s" % (basename, line)
             return ".".join([baseline, str(procedure)])
-        except:
+        except BaseException:
             return None
 
     @classmethod
@@ -1099,7 +1099,7 @@ class Registrar(object):
         raise Exception(
             ("could not register %s in %s. \n"
              "Duplicate index: %s appears in rowcounts %s and %s"
-            ) % (
+             ) % (
                 str(new), register_name, index, new.rowcount, old.rowcount
             )
         )
@@ -1164,7 +1164,7 @@ class Registrar(object):
             try:
                 index = source.index
                 assert not callable(index)
-            except:
+            except BaseException:
                 index = source
         else:
             index = DebugUtils.get_caller_procedures()
@@ -1185,7 +1185,7 @@ class Registrar(object):
             try:
                 index = source.index
                 assert not callable(index)
-            except:
+            except BaseException:
                 index = source
         else:
             index = DebugUtils.get_caller_procedures()

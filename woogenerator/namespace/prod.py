@@ -16,11 +16,10 @@ from .core import SettingsNamespaceProto
 from ..utils import Registrar
 
 
-
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 
-    argparser_class=ArgumentParserProd
+    argparser_class = ArgumentParserProd
 
     def __init__(self, *args, **kwargs):
         self.local_live_config = getattr(self, 'local_live_config',
@@ -100,7 +99,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ The path which the specials data is downloaded to and read from. """
         if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
-        response = '%s%s-%s.csv' % (self.file_prefix, 'specials', self.import_name)
+        response = '%s%s-%s.csv' % (
+            self.file_prefix, 'specials', self.import_name
+        )
         return os.path.join(self.in_dir_full, response)
 
     @property
@@ -134,7 +135,6 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             self.file_prefix, 'flattened-variations', self.import_name
         )
         return os.path.join(self.out_dir_full, response)
-
 
     @property
     def flu_path(self):
@@ -267,7 +267,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'import_name': self.import_name,
             'cols': self.col_data_class.get_import_cols(),
             'defaults': self.col_data_class.get_defaults(),
-            'schema':self.schema,
+            'schema': self.schema,
         }
         for key, settings_key in [
                 ('item_depth', 'item_depth'),
@@ -277,8 +277,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
-        if getattr(self, 'do_categories', None) and getattr(self, 'current_special_groups', None):
-            response['add_special_categories'] = getattr(self, 'add_special_categories', None)
+        if getattr(self, 'do_categories', None) and getattr(
+                self, 'current_special_groups', None):
+            response['add_special_categories'] = getattr(
+                self, 'add_special_categories', None)
         return response
 
     @property
@@ -347,7 +349,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_download_client_args(self):
         response = {
-            'connect_params':self.slave_wc_api_params
+            'connect_params': self.slave_wc_api_params
         }
         return response
 
@@ -372,7 +374,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_upload_client_args(self):
         response = {
-            'connect_params':self.slave_wc_api_params
+            'connect_params': self.slave_wc_api_params
         }
         return response
 

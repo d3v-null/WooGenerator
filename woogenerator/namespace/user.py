@@ -16,8 +16,7 @@ from .core import SettingsNamespaceProto
 
 class SettingsNamespaceUser(SettingsNamespaceProto):
     """ Provide namespace for user settings. """
-    argparser_class=ArgumentParserUser
-
+    argparser_class = ArgumentParserUser
 
     def __init__(self, *args, **kwargs):
         self.local_live_config = \
@@ -48,12 +47,14 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def m_x_name(self):
         """ Name used for master export. """
-        return "%s_x%s_%s.csv" % (self.master_name, self.file_suffix, self.import_name)
+        return "%s_x%s_%s.csv" % (
+            self.master_name, self.file_suffix, self.import_name)
 
     @property
     def s_x_name(self):
         """ Name used for slave export. """
-        return "%s_x%s_%s.csv" % (self.slave_name, self.file_suffix, self.import_name)
+        return "%s_x%s_%s.csv" % (
+            self.slave_name, self.file_suffix, self.import_name)
 
     @property
     def col_data_class(self):
@@ -65,7 +66,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
-        response = '%s%s-%s.csv' % (self.file_prefix, 'master', self.import_name)
+        response = '%s%s-%s.csv' % (
+            self.file_prefix, 'master', self.import_name)
         response = os.path.join(self.in_dir_full, response)
         return response
 
@@ -74,7 +76,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         """ The path which the slave data is downloaded to and read from. """
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
-        response = '%s%s-%s.csv' % (self.file_prefix, 'slave', self.import_name)
+        response = '%s%s-%s.csv' % (
+            self.file_prefix, 'slave', self.import_name)
         response = os.path.join(self.in_dir_full, response)
         return response
 
@@ -87,10 +90,10 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def master_parser_args(self):
         """ Arguments used to create the master parser. """
         response = {
-            'cols':self.col_data_class.get_act_import_cols(),
-            'defaults':self.col_data_class.get_defaults(),
-            'contact_schema':'act',
-            'source':self.master_name,
+            'cols': self.col_data_class.get_act_import_cols(),
+            'defaults': self.col_data_class.get_defaults(),
+            'contact_schema': 'act',
+            'source': self.master_name,
             # 'schema':self.schema
         }
         for key, settings_key in [
@@ -173,9 +176,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         }
         if self.master_download_client_class == UsrSyncClientSshAct:
             response.update({
-                'connect_params':self.master_connect_params,
-                'db_params':self.master_db_params,
-                'fs_params':self.fs_params,
+                'connect_params': self.master_connect_params,
+                'db_params': self.master_db_params,
+                'fs_params': self.fs_params,
             })
         for key, settings_key in [
                 ('limit', 'master_parse_limit')
@@ -194,9 +197,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         }
         if self.master_upload_client_class == UsrSyncClientSshAct:
             response.update({
-                'connect_params':self.master_connect_params,
-                'db_params':self.master_db_params,
-                'fs_params':self.fs_params,
+                'connect_params': self.master_connect_params,
+                'db_params': self.master_db_params,
+                'fs_params': self.fs_params,
             })
         for key, settings_key in [
                 ('limit', 'master_parse_limit')
@@ -204,7 +207,6 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
-
 
     @property
     def slave_parser_class(self):
@@ -214,10 +216,10 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def slave_parser_args(self):
         response = {
-            'cols':self.col_data_class.get_wp_import_cols(),
-            'defaults':self.col_data_class.get_defaults(),
-            'source':self.slave_name,
-            'schema':self.schema
+            'cols': self.col_data_class.get_wp_import_cols(),
+            'defaults': self.col_data_class.get_defaults(),
+            'source': self.slave_name,
+            'schema': self.schema
         }
         for key, settings_key in [
                 ('filter_items', 'filter_items'),
@@ -264,9 +266,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         }
         if self.get('download_slave'):
             response.update({
-                'connect_params':self['slave_connect_params'],
-                'db_params':self['slave_db_params'],
-                'filter_items':self.get('filter_items')
+                'connect_params': self['slave_connect_params'],
+                'db_params': self['slave_db_params'],
+                'filter_items': self.get('filter_items')
             })
         for key, settings_key in [
                 ('limit', 'slave_parse_limit')
@@ -288,7 +290,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         }
         if self.get('update_slave'):
             response = {
-                'connect_params':self.slave_wp_api_params
+                'connect_params': self.slave_wp_api_params
             }
         return response
 

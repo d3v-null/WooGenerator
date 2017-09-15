@@ -120,7 +120,7 @@ class ObjList(list, Registrar):
                     row += [sanitizer(obj.get(col)) or ""]
                     try:
                         SanitationUtils.coerce_unicode(row[-1])
-                    except:
+                    except BaseException:
                         Registrar.register_warning(
                             "can't turn row into unicode: %s" %
                             SanitationUtils.coerce_unicode(row))
@@ -197,7 +197,8 @@ class ImportObject(OrderedDict, Registrar):
     rowKey = '_row'
 
     def __init__(self, *args, **kwargs):
-        # print "args = %s\nkwargs = %s\n" % (pformat(args), pformat(kwargs.items()))
+        # print "args = %s\nkwargs = %s\n" % (pformat(args),
+        # pformat(kwargs.items()))
         if self.DEBUG_MRO:
             self.register_message('ImportObject')
         data = args[0]

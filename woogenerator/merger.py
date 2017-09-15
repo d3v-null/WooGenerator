@@ -34,6 +34,7 @@ from .utils.reporter import (ReporterNamespace, do_delta_group,
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
 
+
 def populate_filter_settings(settings):
     """Populate the settings for filtering input data."""
 
@@ -63,24 +64,29 @@ def populate_filter_settings(settings):
         if settings.get('filter_emails'):
             if not settings.filter_items.get('emails'):
                 settings.filter_items['emails'] = []
-            settings.filter_items['emails'].extend(settings.get('filter_emails').split(','))
+            settings.filter_items['emails'].extend(
+                settings.get('filter_emails').split(','))
         if settings.get('filter_cards'):
             if not settings.filter_items.get('cards'):
                 settings.filter_items['cards'] = []
-            settings.filter_items['cards'].extend(settings.get('filter_cards').split(','))
+            settings.filter_items['cards'].extend(
+                settings.get('filter_cards').split(','))
         if settings.get('ignore_cards'):
             if not settings.filter_items.get('ignore_cards'):
                 settings.filter_items['ignore_cards'] = []
-            settings.filter_items['ignore_cards'].extend(settings.get('ignore_cards').split(','))
+            settings.filter_items['ignore_cards'].extend(
+                settings.get('ignore_cards').split(','))
         if settings.get('since_m'):
-            settings.filter_items['since_m'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+            settings.filter_items['since_m'] = TimeUtils.wp_strp_mktime(
+                settings['since_m'])
         if settings.get('since_s'):
-            settings.filter_items['since_s'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+            settings.filter_items['since_s'] = TimeUtils.wp_strp_mktime(
+                settings['since_s'])
 
         for key in ['emails', 'cards', 'users']:
             if key in settings.filter_items:
                 settings.filter_items[key] = [
-                    SanitationUtils.normalize_val(value) \
+                    SanitationUtils.normalize_val(value)
                     for value in settings.filter_items[key]
                 ]
 
@@ -89,6 +95,7 @@ def populate_filter_settings(settings):
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message("filter_items: %s" % settings.filter_items)
+
 
 def populate_slave_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
@@ -100,12 +107,13 @@ def populate_slave_parsers(parsers, settings):
                 'remote_bind_address'
         ]:
             try:
-                sshtunnel.check_address(settings.slave_connect_params.get(host_key))
+                sshtunnel.check_address(
+                    settings.slave_connect_params.get(host_key))
             except AttributeError:
-                Registrar.register_error("invalid host: %s -> %s" % \
+                Registrar.register_error("invalid host: %s -> %s" %
                                          (host_key, settings.get(host_key)))
             except Exception as exc:
-                raise UserWarning("Host must be valid: %s [%s = %s]" % \
+                raise UserWarning("Host must be valid: %s [%s = %s]" %
                                   (str(exc), host_key, repr(settings.get(host_key))))
         if Registrar.DEBUG_CLIENT:
             Registrar.register_message(
@@ -136,6 +144,7 @@ def populate_slave_parsers(parsers, settings):
 
     return parsers
 
+
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
     slave_items = parsers.slave.get_obj_list()
@@ -145,11 +154,13 @@ def export_slave_parser(parsers, settings):
             settings.col_data_class.get_wp_import_col_names()
         )
 
+
 def populate_master_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
     things_to_check = []
     if settings['download_master']:
-        things_to_check.extend(['master_connect_params', 'master_db_params', 'fs_params'])
+        things_to_check.extend(
+            ['master_connect_params', 'master_db_params', 'fs_params'])
     else:
         things_to_check.extend(['master_path'])
     for thing in things_to_check:
@@ -158,7 +169,10 @@ def populate_master_parsers(parsers, settings):
         )
         assert getattr(settings, thing), "settings must specify %s" % thing
 
-    Registrar.register_message("master_parser_args:\n%s" % pformat(settings.master_parser_args))
+    Registrar.register_message(
+        "master_parser_args:\n%s" %
+        pformat(
+            settings.master_parser_args))
 
     parsers.master = settings.master_parser_class(
         **settings.master_parser_args
@@ -179,6 +193,7 @@ def populate_master_parsers(parsers, settings):
 
     return parsers
 
+
 def export_master_parser(parsers, settings):
     """Export the Masater parser to disk."""
     master_items = parsers.master.get_obj_list()
@@ -188,11 +203,13 @@ def export_master_parser(parsers, settings):
             settings.col_data_class.get_act_import_col_names()
         )
 
+
 def do_match(parsers, settings):
     """For every item in slave, find its counterpart in master."""
 
     matches = MatchNamespace()
-    matches.conflict['email'] = ConflictingMatchList(index_fn=EmailMatcher.email_index_fn)
+    matches.conflict['email'] = ConflictingMatchList(
+        index_fn=EmailMatcher.email_index_fn)
 
     if not settings.do_sync:
         return matches
@@ -268,7 +285,9 @@ def do_match(parsers, settings):
         matches.globals.s_indices, matches.globals.m_indices
     )
 
-    email_matcher.process_registers(parsers.slave.nocards, parsers.master.emails)
+    email_matcher.process_registers(
+        parsers.slave.nocards,
+        parsers.master.emails)
 
     matches.masterless.add_matches(email_matcher.masterless_matches)
     matches.slaveless.add_matches(email_matcher.slaveless_matches)
@@ -289,6 +308,7 @@ def do_match(parsers, settings):
     # TODO: further sort emailMatcher
 
     return matches
+
 
 def do_merge(matches, parsers, settings):
     """For a given list of matches, return a description of updates required to merge them."""
@@ -390,6 +410,7 @@ def do_merge(matches, parsers, settings):
     Registrar.register_progress("COMPLETED MERGE")
     return updates
 
+
 def do_report(matches, updates, parsers, settings):
     """Write report of changes to be made."""
     reporters = ReporterNamespace()
@@ -397,38 +418,59 @@ def do_report(matches, updates, parsers, settings):
     if settings.get('do_report'):
         Registrar.register_progress("Write Main Report")
 
-        do_main_summary_group(reporters.main, matches, updates, parsers, settings),
-        do_delta_group(reporters.main, matches, updates, parsers, settings),
-        do_sync_group(reporters.main, matches, updates, parsers, settings)
+        do_main_summary_group(
+            reporters.main, matches, updates, parsers, settings
+        )
+        do_delta_group(
+            reporters.main, matches, updates, parsers, settings
+        )
+        do_sync_group(
+            reporters.main, matches, updates, parsers, settings
+        )
         if reporters.main:
-            reporters.main.write_document_to_file('main', settings.rep_main_path)
+            reporters.main.write_document_to_file(
+                'main', settings.rep_main_path)
 
         if settings.get('report_sanitation'):
             Registrar.register_progress("Write Sanitation Report")
 
-            do_sanitizing_group(reporters.san, matches, updates, parsers, settings),
+            do_sanitizing_group(
+                reporters.san, matches, updates, parsers, settings
+            )
             if reporters.san:
-                reporters.san.write_document_to_file('san', settings.rep_san_path)
+                reporters.san.write_document_to_file(
+                    'san', settings.rep_san_path)
 
         if settings.get('report_matching'):
             Registrar.register_progress("Write Matching Report")
 
-            do_matches_summary_group(reporters.match, matches, updates, parsers, settings)
-            do_matches_group(reporters.match, matches, updates, parsers, settings),
+            do_matches_summary_group(
+                reporters.match, matches, updates, parsers, settings
+            )
+            do_matches_group(
+                reporters.match, matches, updates, parsers, settings
+            ),
             if reporters.match:
-                reporters.match.write_document_to_file('match', settings.rep_match_path)
+                reporters.match.write_document_to_file(
+                    'match', settings.rep_match_path)
 
         if settings.get('report_duplicates'):
             Registrar.register_progress("Write Duplicates Report")
 
-            do_duplicates_summary_group(reporters.dup, matches, updates, parsers, settings),
-            do_duplicates_group(reporters.dup, matches, updates, parsers, settings)
+            do_duplicates_summary_group(
+                reporters.dup, matches, updates, parsers, settings),
+            do_duplicates_group(
+                reporters.dup, matches, updates, parsers, settings
+            )
             if reporters.dup:
-                reporters.dup.write_document_to_file('dup', settings.rep_dup_path)
+                reporters.dup.write_document_to_file(
+                    'dup', settings.rep_dup_path)
 
     return reporters
 
-def pickle_state(matches=None, updates=None, parsers=None, settings=None, progress=None):
+
+def pickle_state(matches=None, updates=None, parsers=None,
+                 settings=None, progress=None):
     """Save execution state of a pickle file which can be restored later."""
     # Registrar.register_progress("pickling state")
     settings.progress = progress
@@ -438,6 +480,7 @@ def pickle_state(matches=None, updates=None, parsers=None, settings=None, progre
         dill.dump(pickle_obj, pickle_file)
 
     Registrar.register_message("state saved to %s" % settings.pickle_path)
+
 
 def unpickle_state(settings_pickle):
     """Restore state from a pickle file."""
@@ -462,6 +505,7 @@ def unpickle_state(settings_pickle):
         if results:
             do_report_post(reporters.main, results, settings)
         return reporters, results
+
 
 def handle_failed_update(update, results, exc, settings, source=None):
     """Handle a failed update."""
@@ -492,7 +536,9 @@ def handle_failed_update(update, results, exc, settings, source=None):
                 break
         if not boring:
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
+                import pudb
+                pudb.set_trace()
+
 
 def do_updates(updates, settings):
     """Perform a list of updates."""
@@ -502,14 +548,15 @@ def do_updates(updates, settings):
 
     results = ResultsNamespace()
 
-    if not all_updates or not (settings.update_master or settings.update_slave):
+    if not all_updates or not (
+            settings.update_master or settings.update_slave):
         return results
 
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
 
     if len(all_updates) and settings['ask_before_update']:
         try:
-            raw_in = input( "\n".join([
+            raw_in = input("\n".join([
                 "Please read reports and then make your selection",
                 " - press Enter to continue and perform updates",
                 " - press s to skip updates",
@@ -532,8 +579,8 @@ def do_updates(updates, settings):
     master_client_class = settings.master_upload_client_class
 
     with \
-    master_client_class(**master_client_args) as master_client, \
-    slave_client_class(**slave_client_args) as slave_client:
+            master_client_class(**master_client_args) as master_client, \
+            slave_client_class(**slave_client_args) as slave_client:
         for count, update in enumerate(all_updates):
             if Registrar.DEBUG_PROGRESS:
                 update_progress_counter.maybe_print_update(count)
@@ -563,6 +610,7 @@ def do_updates(updates, settings):
                 results.successes.append(update)
     return results
 
+
 def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
     if settings.get('do_report'):
@@ -572,7 +620,9 @@ def do_report_post(reporters, results, settings):
         do_failures_group(reporters.post, results, settings)
         do_successes_group(reporters.post, results, settings)
         if reporters.post:
-            reporters.post.write_document_to_file('post', settings.rep_post_path)
+            reporters.post.write_document_to_file(
+                'post', settings.rep_post_path)
+
 
 def main(override_args=None, settings=None):
     """Use settings object to load config file and detect changes in wordpress."""
@@ -622,6 +672,7 @@ def main(override_args=None, settings=None):
 
     return reporters, results
 
+
 def do_mail(settings, summary_html=None, summary_text=None):
     with settings.email_client(settings.email_connect_params) as email_client:
         message = email_client.compose_message(
@@ -634,7 +685,9 @@ def do_mail(settings, summary_html=None, summary_text=None):
         message = email_client.attach_file(message, settings.zip_path)
         email_client.send(message)
 
-def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"):
+
+def do_summary(settings, reporters=None, results=None,
+               status=1, reason="Uknown"):
     Registrar.register_progress("Doing summary for %s" % settings.import_name)
 
     if status or results.fails_master or results.fails_slave:
@@ -649,7 +702,9 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
         for source, messages in Registrar.get_message_items(1).items():
             log_file.write(SanitationUtils.coerce_unicode(source) + u'\r\n')
             for message in messages:
-                log_file.write(u'\t' + SanitationUtils.coerce_unicode(message) + u'\r\n')
+                log_file.write(
+                    u'\t' + SanitationUtils.coerce_unicode(message) + u'\r\n'
+                )
             for message in messages:
                 if Registrar.DEBUG_MESSAGE:
                     pprint(message, indent=4, width=80, depth=2)
@@ -774,21 +829,22 @@ def do_summary(settings, reporters=None, results=None, status=1, reason="Uknown"
         Registrar.register_warning(
             (
                 "not emailing because no reporters or results.\n"
-                 "reporters: \n%s"
-                 "results: \n%s"
+                "reporters: \n%s"
+                "results: \n%s"
             ) % (
                 [
-                    (name, len(reporter.groups)) \
+                    (name, len(reporter.groups))
                     for name, reporter in reporters.as_dict.items()
                 ],
                 [
-                    (name, len(result)) \
+                    (name, len(result))
                     for name, result in results.as_dict.items()
                 ]
             )
         )
 
     return summary_html, summary_text
+
 
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
@@ -800,7 +856,8 @@ def catch_main(override_args=None):
     reason = None
 
     try:
-        reporters, results = main(settings=settings, override_args=override_args)
+        reporters, results = main(
+            settings=settings, override_args=override_args)
     except (SystemExit, KeyboardInterrupt):
         pass
     except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
@@ -820,10 +877,12 @@ def catch_main(override_args=None):
         if status:
             Registrar.register_error(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
+                import pudb
+                pudb.set_trace()
 
     try:
-        summary_html, summary_text = do_summary(settings, reporters, results, status, reason)
+        summary_html, summary_text = do_summary(
+            settings, reporters, results, status, reason)
     except (SystemExit, KeyboardInterrupt):
         status = 0
     except Exception:
@@ -833,9 +892,11 @@ def catch_main(override_args=None):
             print("Failed to do summary. Exception:")
             print(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
+                import pudb
+                pudb.set_trace()
 
     sys.exit(status)
+
 
 if __name__ == '__main__':
     catch_main()

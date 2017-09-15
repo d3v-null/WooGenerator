@@ -20,7 +20,10 @@ from .utils import Registrar
 def download_master(settings):
     """Populate the parsers for data from the slave database."""
 
-    Registrar.register_message("master_parser_args:\n%s" % pformat(settings.master_parser_args))
+    Registrar.register_message(
+        "master_parser_args:\n%s" %
+        pformat(settings.master_parser_args)
+    )
 
     Registrar.register_progress("analysing master user data")
 
@@ -35,6 +38,7 @@ def download_master(settings):
             "exported ACT data to %s" % settings.master_path
         )
 
+
 def main(override_args=None, settings=None):
     """Use settings object to load config file and detect changes in wordpress."""
     if not settings:
@@ -44,6 +48,7 @@ def main(override_args=None, settings=None):
     settings.init_dirs()
 
     download_master(settings)
+
 
 def catch_main(override_args=None):
     """Run the main function within a try statement and attempt to analyse failure."""
@@ -67,9 +72,11 @@ def catch_main(override_args=None):
         if status:
             Registrar.register_error(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
+                import pudb
+                pudb.set_trace()
 
     sys.exit(status)
+
 
 if __name__ == '__main__':
     catch_main()

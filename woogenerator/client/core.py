@@ -46,12 +46,14 @@ class AbstractServiceInterface(object):
         """ Abstract method for getting data from the service"""
         raise NotImplementedError()
 
+
 class WPAPIService(API, AbstractServiceInterface):
     """ A child of the wordpress API that implements the Service interface """
 
     def connect(self, connect_params):
         """ Overrides AbstractServiceInterface, connect not used """
         pass
+
 
 class ClientAbstract(Registrar):
     """ Interface with a service as a client. Boilerplate. """
@@ -103,6 +105,7 @@ class ClientAbstract(Registrar):
         self.service = self.service_builder(*positional_args, **
                                             self.connect_params)
 
+
 class SyncClientAbstract(ClientAbstract):
     """ Interface with a service as a client to perform syncing. """
 
@@ -123,6 +126,7 @@ class SyncClientAbstract(ClientAbstract):
         if updates:
             assert pkey, "must have a valid primary key"
             assert self.connection_ready, "connection should be ready"
+
 
 class SyncClientNull(SyncClientAbstract):
     """ Designed to act like a client but fails on all actions """
@@ -173,6 +177,7 @@ class SyncClientLocal(SyncClientAbstract):
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
         # return parser.analyse_stream(out_file, limit=limit,
         # encoding=out_encoding)
+
 
 class SyncClientLocalStream(SyncClientLocal):
     """ Designed to act like a GDrive client but work on a local stream instead """
@@ -480,7 +485,7 @@ class SyncClientRest(SyncClientAbstract):
             #     Registrar.register_message('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
                 raise requests.ConnectionError('first api call returned errors: %s' %
-                                      (prev_response_json['errors']))
+                                               (prev_response_json['errors']))
 
             # process API headers
             self.process_headers(self.prev_response)
@@ -540,14 +545,14 @@ class SyncClientRest(SyncClientAbstract):
 
     #
 
-    def analyse_remote(self, parser, **kwargs):# since=None, limit=None, search=None):
+    # since=None, limit=None, search=None):
+    def analyse_remote(self, parser, **kwargs):
         limit = kwargs.get('limit', self.limit)
         since = kwargs.get('since', self.since)
         search = kwargs.get('search')
         if since:
             pass
             # TODO: implement kwargs['since']
-
 
         result_count = 0
 
@@ -621,7 +626,7 @@ class SyncClientRest(SyncClientAbstract):
         assert response.status_code not in [400, 401], "API ERROR"
         try:
             assert response.json()
-        except:
+        except BaseException:
             raise UserWarning("json should exist, instead response was %s" %
                               response.text)
         assert not isinstance(

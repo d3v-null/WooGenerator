@@ -112,6 +112,7 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             action='store_true'
         )
 
+
 class ArgumentParserProtoProd(ArgumentParserProto):
     """ Provide namespace for product sync settings in first stage. """
 
@@ -123,6 +124,7 @@ class ArgumentParserProtoProd(ArgumentParserProto):
     #         kwargs['extra_default_config_files'] = [DEFAULTS_PROD_PATH]
     #     super(ArgumentParserProtoProd, self).__init__(**kwargs)
 
+
 class ArgumentParserProtoUser(ArgumentParserProto):
     """ Provide namespace for user sync settings in first stage. """
 
@@ -133,6 +135,7 @@ class ArgumentParserProtoUser(ArgumentParserProto):
     #     if not kwargs.get('extra_default_config_files'):
     #         kwargs['extra_default_config_files'] = [DEFAULTS_USER_PATH]
     #     super(ArgumentParserProtoUser, self).__init__(**kwargs)
+
 
 class ArgumentParserCommon(ArgumentParserProto):
     """
@@ -185,7 +188,6 @@ class ArgumentParserCommon(ArgumentParserProto):
     def add_suppressed_argument(self, name, **kwargs):
         kwargs['help'] = argparse.SUPPRESS
         self.add_argument(name, **kwargs)
-
 
     def add_download_options(self, download_group):
         """ Add options pertaining to downloading data. """
@@ -261,9 +263,11 @@ class ArgumentParserCommon(ArgumentParserProto):
         )
 
         current_tsecs = TimeUtils.current_tsecs()
-        year_tsecs = 60*60*24*365.25
-        old_threshold_str = TimeUtils.wp_time_to_string((current_tsecs - year_tsecs * 5))
-        oldis_threshold_str = TimeUtils.wp_time_to_string((current_tsecs - year_tsecs * 3))
+        year_tsecs = 60 * 60 * 24 * 365.25
+        old_threshold_str = TimeUtils.wp_time_to_string(
+            (current_tsecs - year_tsecs * 5))
+        oldis_threshold_str = TimeUtils.wp_time_to_string(
+            (current_tsecs - year_tsecs * 3))
         self.add_suppressed_argument(
             '--old_threshold',
             default=old_threshold_str
@@ -272,7 +276,6 @@ class ArgumentParserCommon(ArgumentParserProto):
             '--oldish_threshold',
             default=oldis_threshold_str
         )
-
 
     def add_update_options(self, update_group):
         """ Add options pertaining to updating database. """
@@ -417,15 +420,20 @@ class ArgumentParserCommon(ArgumentParserProto):
     def add_other_options(self):
         self.add_suppressed_argument('--master-name')
         self.add_suppressed_argument('--slave-name')
-        self.add_argument('--master-file', help='location of local master data file')
-        self.add_argument('--slave-file', help='location of local slave data file')
+        self.add_argument(
+            '--master-file',
+            help='location of local master data file')
+        self.add_argument(
+            '--slave-file',
+            help='location of local slave data file')
         self.add_argument('--pickle-file', help='location of saved state file')
-        self.add_argument('--override-progress', help='override progress of saved state')
+        self.add_argument(
+            '--override-progress',
+            help='override progress of saved state')
 
         self.add_suppressed_argument('--web-dir')
         self.add_suppressed_argument('--web-address')
         self.add_suppressed_argument('--web-browser')
-
 
     def add_debug_options(self):
         self.add_suppressed_argument('--debug-abstract', action='store_true')
@@ -632,8 +640,12 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--gdrive-app-name')
         self.add_suppressed_argument('--gdrive-oauth-client-id')
         self.add_suppressed_argument('--gdrive-oauth-client-secret')
-        self.add_suppressed_argument('--gdrive-credentials-dir', default='~/.credentials')
-        self.add_suppressed_argument('--gdrive-credentials-file', default='drive-woogenerator.json')
+        self.add_suppressed_argument(
+            '--gdrive-credentials-dir',
+            default='~/.credentials')
+        self.add_suppressed_argument(
+            '--gdrive-credentials-file',
+            default='drive-woogenerator.json')
         self.add_suppressed_argument('--gen-fid')
         self.add_suppressed_argument('--gen-gid')
         self.add_suppressed_argument('--dprc-gid')
@@ -651,6 +663,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--db-pass')
         self.add_suppressed_argument('--db-name')
         self.add_suppressed_argument('--tbl-prefix')
+
 
 class ArgumentParserUser(ArgumentParserCommon):
     """ Provide ArgumentParser class for syncing contacts. """
@@ -750,8 +763,10 @@ class ArgumentParserUser(ArgumentParserCommon):
 
         self.add_suppressed_argument('--m-ssh-user', type=str)
         self.add_suppressed_argument('--m-ssh-pass', type=str)
-        self.add_suppressed_argument('--m-ssh-host', help='location of master ssh server')
-        self.add_suppressed_argument('--m-ssh-port', type=int, help='master ssh port')
+        self.add_suppressed_argument(
+            '--m-ssh-host', help='location of master ssh server')
+        self.add_suppressed_argument(
+            '--m-ssh-port', type=int, help='master ssh port')
         self.add_suppressed_argument('--remote-export-dir', type=str)
         self.add_suppressed_argument('--m-x-cmd', type=str)
         self.add_suppressed_argument('--m-i-cmd', type=str)
