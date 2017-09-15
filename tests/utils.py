@@ -35,14 +35,10 @@ class MockUtils(object):
 class ConnectionUtils(object):
 
     @classmethod
-    def check_connection(cls):
+    def check_connection(cls, host='8.8.8.8', port=53, timeout=3):
         try:
-            # see if we can resolve the host name -- tells us if there is
-            # a DNS listening
-
-            # connect to the host -- tells us if the host is actually
-            # reachable
-            socket.create_connection(('8.8.8.8', 80), 2)
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
             return True
-        except:
+        except Exception as _:
             pass

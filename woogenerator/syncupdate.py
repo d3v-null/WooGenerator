@@ -32,15 +32,12 @@ class SyncUpdate(Registrar):
     """
 
     col_data = ColDataBase
-    master_name = None
-    slave_name = None
     merge_mode = None
     s_meta_target = None
     m_meta_target = 'act'
 
     @classmethod
-    def set_globals(cls, master_name, slave_name,
-                    merge_mode, default_last_sync):
+    def set_globals(cls, merge_mode, default_last_sync):
         """
         sets the class attributes to those specified in the user config
         """
