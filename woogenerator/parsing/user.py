@@ -580,12 +580,12 @@ class CsvParseUser(CsvParseBase):
             and SanitationUtils.normalize_val(object_data.role) \
             not in self.filter_items['roles']:
                 return "did not match role conditions"
-            if 'sinceM' in self.filter_items \
-            and object_data.act_modtime < self.filter_items['sinceM']:
-                return "did not meet sinceM condition"
-            if 'sinceS' in self.filter_items \
-            and object_data.wp_modtime < self.filter_items['sinceS']:
-                return "did not meet sinceS condition"
+            if 'since_m' in self.filter_items \
+            and object_data.act_modtime < self.filter_items['since_m']:
+                return "did not meet since_m condition"
+            if 'since_s' in self.filter_items \
+            and object_data.wp_modtime < self.filter_items['since_s']:
+                return "did not meet since_s condition"
             if 'users' in self.filter_items \
             and SanitationUtils.normalize_val(object_data.username) \
             not in self.filter_items['users']:

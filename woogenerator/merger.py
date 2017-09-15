@@ -73,9 +73,9 @@ def populate_filter_settings(settings):
                 settings.filter_items['ignore_cards'] = []
             settings.filter_items['ignore_cards'].extend(settings.get('ignore_cards').split(','))
         if settings.get('since_m'):
-            settings.filter_items['sinceM'] = TimeUtils.wp_strp_mktime(settings['since_m'])
+            settings.filter_items['since_m'] = TimeUtils.wp_strp_mktime(settings['since_m'])
         if settings.get('since_s'):
-            settings.filter_items['sinceS'] = TimeUtils.wp_strp_mktime(settings['since_s'])
+            settings.filter_items['since_s'] = TimeUtils.wp_strp_mktime(settings['since_s'])
 
         for key in ['emails', 'cards', 'users']:
             if key in settings.filter_items:
