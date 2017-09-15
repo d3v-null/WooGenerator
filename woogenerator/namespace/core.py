@@ -45,6 +45,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.start_time = getattr(self, 'start_time', time.time())
         self.schema = getattr(self, 'schema', None)
         self.download_master = getattr(self, 'download_master', False)
+        self.download_slave = getattr(self, 'download_slave', False)
         self.do_post = getattr(self, 'do_post', None)
 
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)

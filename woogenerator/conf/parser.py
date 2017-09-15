@@ -688,6 +688,9 @@ class ArgumentParserUser(ArgumentParserCommon):
             '--filter-emails',
             help='list of emails to filer on')
         filter_group.add_argument(
+            '--filter-cards',
+            help='list of cards to filer on')
+        filter_group.add_argument(
             '--ignore-cards',
             help='list of cards to ignore')
         filter_group.add_argument(

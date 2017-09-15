@@ -6,7 +6,6 @@ import io
 import os
 import re
 import sys
-import time
 import traceback
 import zipfile
 from bisect import insort
@@ -34,10 +33,6 @@ from .utils.reporter import (ReporterNamespace, do_delta_group,
                              do_successes_group, do_sync_group)
 
 BORING_EXCEPTIONS = [ConnectionError, ConnectTimeout, ReadTimeout]
-
-def timediff(settings):
-    """Return the time delta since the start time according to settings."""
-    return time.time() - settings.start_time
 
 def populate_filter_settings(settings):
     """Populate the settings for filtering input data."""
@@ -69,6 +64,10 @@ def populate_filter_settings(settings):
             if not settings.filter_items.get('emails'):
                 settings.filter_items['emails'] = []
             settings.filter_items['emails'].extend(settings.get('filter_emails').split(','))
+        if settings.get('filter_cards'):
+            if not settings.filter_items.get('cards'):
+                settings.filter_items['cards'] = []
+            settings.filter_items['cards'].extend(settings.get('filter_cards').split(','))
         if settings.get('ignore_cards'):
             if not settings.filter_items.get('ignore_cards'):
                 settings.filter_items['ignore_cards'] = []
@@ -589,7 +588,8 @@ def main(override_args=None, settings=None):
     if settings['download_slave']:
         export_slave_parser(parsers, settings)
     parsers = populate_master_parsers(parsers, settings)
-    # export_master_parser(parsers, settings)
+    if settings['download_master']:
+        export_master_parser(parsers, settings)
 
     # pickle_state(None, None, parsers, settings, 'sync')
 
