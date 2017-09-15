@@ -1447,7 +1447,7 @@ class ContactPhones(FieldGroup):
 
     def similar(self, other):
         checks = [
-            self.numbers == other.numbers,
+            self.normalized_numbers == other.normalized_numbers,
             self['pref_method'] == other['pref_method']
         ]
         return all(checks)
@@ -1461,15 +1461,28 @@ class ContactPhones(FieldGroup):
                 response.add(val)
         return sorted(list(response))
 
+    @property
+    def normalized_numbers(self):
+        response = set()
+        for attr in self.number_prefixes:
+            val = getattr(self, '%s_number' % attr, None)
+            val = self.normalize_val(attr, val)
+            val = SanitationUtils.similar_phone_comparison(val)
+            if val and val not in response:
+                response.add(val)
+        return sorted(list(response))
+
+    def normalize_val(self, key, val):
+        if '_number' in key:
+            val = SanitationUtils.strip_non_numbers(val)
+        return val
+
     def process_kwargs(self):
         super(ContactPhones, self).process_kwargs()
         if self.empty:
             return
         for key, value in self.kwargs.items():
-            if '_number' in key:
-                if value is not None:
-                    value = SanitationUtils.strip_non_phone_characters(value)
-            self.properties[key] = value
+            self.properties[key] = self.normalize_val(key, value)
         # process pref_method, convert to master source
         if all(
             key in self.properties for key in \
@@ -1491,19 +1504,19 @@ class ContactPhones(FieldGroup):
     mob_number = DescriptorUtils.kwarg_alias_property(
         'mob_number',
         lambda self:
-        SanitationUtils.strip_non_numbers(self.properties.get('mob_number'))
+        self.properties.get('mob_number')
     )
 
     tel_number = DescriptorUtils.kwarg_alias_property(
         'tel_number',
         lambda self:
-        SanitationUtils.strip_non_numbers(self.properties.get('tel_number'))
+        self.properties.get('tel_number')
     )
 
     fax_number = DescriptorUtils.kwarg_alias_property(
         'fax_number',
         lambda self:
-        SanitationUtils.strip_non_numbers(self.properties.get('fax_number'))
+        self.properties.get('fax_number')
     )
 
     # mob_pref = DescriptorUtils.kwarg_alias_property(

@@ -33,17 +33,12 @@ class TestFieldGroup(unittest.TestCase):
             Registrar.DEBUG_CONTACT = True
             # Registrar.DEBUG_ADDRESS = True
 
-class TestFieldGroupPost(TestFieldGroup):
-    def setUp(self):
-        super(TestFieldGroupPost, self).setUp()
-        FieldGroup.perform_post = True
-
 class TestFieldGroupNoPost(TestFieldGroup):
     def setUp(self):
         super(TestFieldGroupNoPost, self).setUp()
         FieldGroup.perform_post = False
 
-class TestContactAddressPost(TestFieldGroupPost):
+class TestContactAddressPost(TestFieldGroup):
     def test_thoroughfare_num_off_line(self):
         address = ContactAddress(
             line1="SHOP 10, 575/577",
@@ -817,22 +812,20 @@ class TestContactName(TestFieldGroup):
         self.assertEqual(name.first_name, name_copy.first_name)
         self.assertEqual(name.family_name, name_copy.family_name)
 
-#
-# def testcontactNameEquality():
-#     M = ContactName(
-#         first_name= 'JESSICA',
-#         family_name= 'TOLHURST'
-#     )
-#
-#     N = ContactName(
-#         first_name= 'JESSICA',
-#         family_name= 'ASDASD'
-#     )
-#
-#     assert M is not N
-#     assert M != N
-#     assert not (M == N)
-#     assert not M.similar(N)
+
+    def test_equality(self):
+        self.name_m = ContactName(
+            first_name= 'JESSICA',
+            family_name= 'TOLHURST'
+        )
+
+        self.name_n = ContactName(
+            first_name= 'JESSICA',
+            family_name= 'ASDASD'
+        )
+
+        self.assertNotEqual(self.name_m, self.name_n)
+        self.assertFalse(self.name_m.similar(self.name_n))
 #
 # def testContactName():
 #
@@ -932,7 +925,7 @@ class TestContactName(TestFieldGroup):
 #
 
 
-class TestContactPhonesPost(TestFieldGroupPost):
+class TestContactPhonesPost(TestFieldGroup):
     def test_phones_equality_basic(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
@@ -1132,7 +1125,6 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         mob_2_comp = SanitationUtils.similar_phone_comparison(self.phones_2.mob_number)
         self.assertEqual(mob_1_comp, mob_2_comp)
 
-    @unittest.skip("not implemented yet")
     def test_phones_equality_hard(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
@@ -1142,7 +1134,7 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         )
         self.assertFalse(self.phones_1.empty)
         self.assertFalse(self.phones_2.empty)
-        self.assertEqual(self.phones_1, self.phones_2)
+        self.assertNotEqual(self.phones_1, self.phones_2)
 
     def test_phones_similarity(self):
         self.phones_1 = ContactPhones(
@@ -1191,6 +1183,20 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='416160912',
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='0416160912',
+        )
+        self.assertTrue(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='93848512',
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='9384 8512',
+        )
+        self.assertTrue(self.phones_1.similar(self.phones_2))
 
     def test_phones_basic(self):
         numbers = ContactPhones(
@@ -1217,6 +1223,13 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.phones_1.mob_number = '0416160912'
         self.assertFalse(self.phones_1.empty)
 
+    def test_phone_empty(self):
+        self.phones_1 = ContactPhones(
+            mob_number=''
+        )
+        self.assertTrue(self.phones_1.empty)
+        self.phones_1.mob_number = '0416160912'
+        self.assertFalse(self.phones_1.empty)
 
 class TestSocialMediaGroup(TestFieldGroup):
     def setUp(self):

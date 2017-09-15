@@ -272,6 +272,20 @@ class SanitationUtils(object):
         return float_return
 
     @classmethod
+    def coerce_int(cls, thing):
+        unicode_thing = cls.compose(
+            cls.coerce_unicode
+        )(thing)
+        try:
+            int_return = int(unicode_thing)
+        except ValueError:
+            int_return = 0
+        assert isinstance(int_return, int),\
+            "something went wrong, should return str not %s" % type(
+                int_return)
+        return int_return
+
+    @classmethod
     def limit_string(cls, length):
         return lambda x: x[:length]
 
@@ -607,7 +621,8 @@ class SanitationUtils(object):
     @classmethod
     def similar_phone_comparison(cls, string):
         return cls.compose(
-            cls.strip_leading_whitespace,
+            cls.coerce_unicode,
+            cls.coerce_int,
             cls.strip_non_numbers,
             cls.strip_area_code,
             cls.strip_extra_whitespace,
