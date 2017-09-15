@@ -138,9 +138,11 @@ def populate_slave_parsers(parsers, settings):
 
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
-    parsers.slave.get_obj_list().export_items(
-        settings.slave_path,
-        settings.col_data_class.get_wp_import_col_names())
+    slave_items = parsers.slave.get_obj_list()
+    if slave_items:
+        slave_items.export_items(
+            settings.slave_path,
+            settings.col_data_class.get_wp_import_col_names())
 
 def populate_master_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
@@ -178,9 +180,11 @@ def populate_master_parsers(parsers, settings):
 
 def export_master_parser(parsers, settings):
     """Export the Masater parser to disk."""
-    parsers.master.get_obj_list().export_items(
-        os.path.join(settings.in_dir_full, settings.m_x_name),
-        settings.col_data_class.get_act_import_col_names())
+    master_items = parsers.master.get_obj_list()
+    if master_items:
+        master_items.export_items(
+            os.path.join(settings.in_dir_full, settings.m_x_name),
+            settings.col_data_class.get_act_import_col_names())
 
 def do_match(parsers, settings):
     """For every item in slave, find its counterpart in master."""
