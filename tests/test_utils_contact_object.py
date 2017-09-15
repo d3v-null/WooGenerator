@@ -18,6 +18,8 @@ class TestFieldGroup(unittest.TestCase):
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
         Registrar.DEBUG_MESSAGE = False
+        Registrar.master_name = "ACT"
+        Registrar.slave_name = "WP"
         FieldGroup.perform_post = True
         FieldGroup.enforce_mandatory_keys = False
 
@@ -958,15 +960,13 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             tel_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertNotEqual(self.phones_1, self.phones_2)
@@ -983,44 +983,38 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.assertTrue(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
             pref_method='Phone',
-            schema='ACT',
-            master_schema='ACT',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
-            schema='ACT',
-            master_schema='ACT',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
@@ -1031,8 +1025,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
             tel_number='93848512',
             fax_number='0892428032',
             pref_method='Phone',
-            schema='ACT',
-            master_schema='act',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
 
@@ -1053,15 +1046,13 @@ class TestContactPhonesPost(TestFieldGroupPost):
 
     def test_phone_pref_basic(self):
         self.phones_1a = ContactPhones(
-            schema='ACT',
+            source='ACT',
             pref_method='Mobile',
-            master_schema='act',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.phones_2a = ContactPhones(
-            schema='WP',
+            source='WP',
             pref_method='pref_mob',
-            master_schema='act',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.assertEqual(self.phones_1a['pref_method'], 'Mobile')
@@ -1069,14 +1060,12 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.assertEqual(self.phones_2a['pref_method'], 'Mobile')
         self.assertEqual(self.phones_2a.pref_method, 'pref_mob')
         self.phones_1b = ContactPhones(
-            schema='WP',
-            master_schema='act',
+            source='WP',
             pref_method='pref_tel',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.phones_2b = ContactPhones(
-            schema='ACT',
-            master_schema='act',
+            source='ACT',
             pref_method='Phone',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
@@ -1093,15 +1082,13 @@ class TestContactPhonesPost(TestFieldGroupPost):
 
     def test_phone_pref_basic_2(self):
         self.phones_1a = ContactPhones(
-            schema='ACT',
+            source='ACT',
             pref_method='Phone',
-            master_schema='act',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.phones_2a = ContactPhones(
-            schema='WP',
+            source='WP',
             pref_method='pref_tel',
-            master_schema='act',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.assertEqual(self.phones_1a['pref_method'], 'Phone')
@@ -1109,15 +1096,13 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.assertEqual(self.phones_2a['pref_method'], 'Phone')
         self.assertEqual(self.phones_2a.pref_method, 'pref_tel')
         self.phones_1b = ContactPhones(
-            schema='WP',
-            master_schema='act',
+            source='WP',
             pref_method='pref_mob',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.phones_2b = ContactPhones(
-            schema='ACT',
+            source='ACT',
             pref_method='Mobile',
-            master_schema='act',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
         self.assertEqual(self.phones_1b['pref_method'], 'Mobile')
@@ -1171,44 +1156,38 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.assertTrue(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
             pref_method='Phone',
-            schema='ACT',
-            master_schema='ACT',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
         self.phones_1 = ContactPhones(
             mob_number='0416160912',
-            schema='ACT',
-            master_schema='ACT',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.phones_2 = ContactPhones(
             mob_number='0416160912',
             pref_method='pref_mob',
-            schema='WP',
-            master_schema='ACT',
+            source='WP',
             pref_data=ColDataUser.data.get('Pref Method', {}),
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
@@ -1219,8 +1198,7 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
             tel_number='93848512',
             fax_number='0892428032',
             pref_method='Phone',
-            schema='ACT',
-            master_schema='act',
+            source='ACT',
             pref_data=ColDataUser.data.get('Pref Method', {})
         )
 

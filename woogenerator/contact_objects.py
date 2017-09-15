@@ -37,7 +37,7 @@ class FieldGroup(Registrar):
     reprocess_kwargs = False
     similar_all_keys = False
 
-    def __init__(self, schema=None, **kwargs):
+    def __init__(self, schema=None, source=None, **kwargs):
         super(FieldGroup, self).__init__()
         self.schema = schema
         self.debug = getattr(self, 'debug', self.DEBUG_CONTACT)
@@ -49,6 +49,7 @@ class FieldGroup(Registrar):
         self.problematic = False
         self.reason = ""
         self.properties = OrderedDict()
+        self.source = source
         if self.perform_post:
             self.process_kwargs()
 
@@ -1399,39 +1400,36 @@ class ContactPhones(FieldGroup):
     reprocess_kwargs = True
     # perform_post = True
 
-    # def __init__(self, schema=None, **kwargs):
-    #     super(ContactPhones, self).__init__(**kwargs)
-
-    def is_master_schema(self, schema=None):
-        if not (schema and self.properties.get('master_schema')):
+    def is_master_source(self, source=None):
+        if not (source and self.master_name):
             return
-        return schema.lower() == self.properties.get('master_schema').lower()
+        return source.lower() == self.master_name.lower()
 
-    def get_pref(self, schema=None, index=None):
+    def get_pref(self, source=None, index=None):
         pref_data = self.properties.get('pref_data')
-        if not (schema and index and pref_data):
+        if not (source and index and pref_data):
             return
-        options = pref_data.get(schema.lower(), {}).get('options', [])
+        options = pref_data.get(source.lower(), {}).get('options', [])
         if not (options and index < len(options)):
             return
         return options[index]
 
-    def get_index(self, schema=None, pref=None):
+    def get_index(self, source=None, pref=None):
         pref_data = self.properties.get('pref_data')
-        if not (schema and pref and pref_data):
+        if not (source and pref and pref_data):
             return
-        options = pref_data.get(schema.lower(), {}).get('options', [])
+        options = pref_data.get(source.lower(), {}).get('options', [])
         if not (options and pref in options):
             return
         return options.index(pref)
 
-    def translate_pref(self, from_schema=None, to_schema=None, pref=None):
-        if not (pref and to_schema and from_schema) or from_schema == to_schema:
+    def translate_pref(self, from_source=None, to_source=None, pref=None):
+        if not (pref and to_source and from_source) or from_source == to_source:
             return pref
-        index = self.get_index(from_schema, pref)
+        index = self.get_index(from_source, pref)
         if index is None:
             return pref
-        return self.get_pref(to_schema, index)
+        return self.get_pref(to_source, index)
 
     @FieldGroup.empty.getter
     def empty(self):
@@ -1472,19 +1470,19 @@ class ContactPhones(FieldGroup):
                 if value is not None:
                     value = SanitationUtils.strip_non_phone_characters(value)
             self.properties[key] = value
-        # process pref_method, convert to master schema
+        # process pref_method, convert to master source
         if all(
             key in self.properties for key in \
-            ['pref_method', 'master_schema', 'pref_data']
+            ['pref_method', 'pref_data']
         ):
-            if not self.is_master_schema(self.schema):
+            if not self.is_master_source(self.source):
                 pref_method = self.properties['pref_method']
                 if pref_method is not None:
                     if ',' in pref_method:
                         pref_method = pref_method.split(',')[0]
                     pref_method = self.translate_pref(
-                        self.schema,
-                        self.properties['master_schema'],
+                        self.source,
+                        self.master_name,
                         pref_method
                     )
                 self.properties['pref_method'] = pref_method
@@ -1517,10 +1515,10 @@ class ContactPhones(FieldGroup):
     @property
     def pref_method(self):
         response = self['pref_method']
-        if not self.is_master_schema(self.schema):
+        if not self.is_master_source(self.source):
             response = self.translate_pref(
-                self.properties.get('master_schema'),
-                self.schema,
+                self.master_name,
+                self.source,
                 response
             )
         return response

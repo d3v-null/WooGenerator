@@ -251,7 +251,6 @@ class ImportUser(ImportObject):
             }.items()
         ]))
         phone_kwargs['pref_data'] = ColDataUser.data.get('Pref Method', {})
-        phone_kwargs['master_schema'] = ColDataUser.master_schema
 
         self['Phone Numbers'] = ContactPhones(schema, **phone_kwargs)
 
