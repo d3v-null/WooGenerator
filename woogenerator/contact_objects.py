@@ -1468,6 +1468,9 @@ class ContactPhones(FieldGroup):
             val = getattr(self, '%s_number' % attr, None)
             val = self.normalize_val(attr, val)
             val = SanitationUtils.similar_phone_comparison(val)
+            if not val:
+                continue
+            val = val[-8:]
             if val and val not in response:
                 response.add(val)
         return sorted(list(response))

@@ -1197,6 +1197,13 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
             mob_number='9384 8512',
         )
         self.assertTrue(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='93848512',
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='08 9384 8512',
+        )
+        self.assertTrue(self.phones_1.similar(self.phones_2))
 
     def test_phones_basic(self):
         numbers = ContactPhones(
