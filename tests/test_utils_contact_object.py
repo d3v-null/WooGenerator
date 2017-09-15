@@ -931,7 +931,7 @@ class TestContactName(TestFieldGroup):
 
 
 class TestContactPhonesPost(TestFieldGroupPost):
-    def test_phones_equality_basic_post(self):
+    def test_phones_equality_basic(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -945,7 +945,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         mob_2_comp = SanitationUtils.similar_phone_comparison(self.phones_2.mob_number)
         self.assertEqual(mob_1_comp, mob_2_comp)
 
-    def test_phones_equality_hard_post(self):
+    def test_phones_equality_hard(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -971,7 +971,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         )
         self.assertNotEqual(self.phones_1, self.phones_2)
 
-    def test_phones_similarity_post(self):
+    def test_phones_similarity(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -1025,7 +1025,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         )
         self.assertFalse(self.phones_1.similar(self.phones_2))
 
-    def test_phones_basic_post(self):
+    def test_phones_basic(self):
         numbers = ContactPhones(
             mob_number='0416160912',
             tel_number='93848512',
@@ -1043,7 +1043,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.assertEqual(numbers.fax_number, '0892428032')
         self.assertEqual(numbers.pref_method, 'Phone')
 
-    def test_phone_empty_post(self):
+    def test_phone_empty(self):
         self.phones_1 = ContactPhones(
             mob_number=''
         )
@@ -1051,7 +1051,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.phones_1.mob_number = '0416160912'
         self.assertFalse(self.phones_1.empty)
 
-    def test_phone_pref_basic_post(self):
+    def test_phone_pref_basic(self):
         self.phones_1a = ContactPhones(
             schema='ACT',
             pref_method='Mobile',
@@ -1091,7 +1091,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
         self.assertEqual(self.phones_2b.pref_method, 'Mobile')
         self.assertEqual(self.phones_2b['pref_method'], 'Mobile')
 
-    def test_phone_pref_basic_2_post(self):
+    def test_phone_pref_basic_2(self):
         self.phones_1a = ContactPhones(
             schema='ACT',
             pref_method='Phone',
@@ -1133,7 +1133,7 @@ class TestContactPhonesPost(TestFieldGroupPost):
 
 
 class TestContactPhonesNoPost(TestFieldGroupNoPost):
-    def test_phones_equality_basic_nopost(self):
+    def test_phones_equality_basic(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -1148,7 +1148,7 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.assertEqual(mob_1_comp, mob_2_comp)
 
     @unittest.skip("not implemented yet")
-    def test_phones_equality_hard_nopost(self):
+    def test_phones_equality_hard(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
         )
@@ -1159,7 +1159,61 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.assertFalse(self.phones_2.empty)
         self.assertEqual(self.phones_1, self.phones_2)
 
-    def test_phones_basic_nopost(self):
+    def test_phones_similarity(self):
+        self.phones_1 = ContactPhones(
+            mob_number='0416160912'
+        )
+        self.phones_2 = ContactPhones(
+            tel_number='0416160912'
+        )
+        self.assertFalse(self.phones_1.empty)
+        self.assertFalse(self.phones_2.empty)
+        self.assertTrue(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='0416160912',
+            schema='WP',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='0416160912',
+            pref_method='pref_mob',
+            schema='WP',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.assertFalse(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='0416160912',
+            pref_method='Phone',
+            schema='ACT',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='0416160912',
+            pref_method='pref_mob',
+            schema='WP',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.assertFalse(self.phones_1.similar(self.phones_2))
+        self.phones_1 = ContactPhones(
+            mob_number='0416160912',
+            schema='ACT',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.phones_2 = ContactPhones(
+            mob_number='0416160912',
+            pref_method='pref_mob',
+            schema='WP',
+            master_schema='ACT',
+            pref_data=ColDataUser.data.get('Pref Method', {}),
+        )
+        self.assertFalse(self.phones_1.similar(self.phones_2))
+
+    def test_phones_basic(self):
         numbers = ContactPhones(
             mob_number='0416160912',
             tel_number='93848512',
@@ -1177,7 +1231,7 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.assertEqual(numbers.fax_number, '0892428032')
         self.assertEqual(numbers.pref_method, 'Phone')
 
-    def test_phone_empty_nopost(self):
+    def test_phone_empty(self):
         self.phones_1 = ContactPhones(
             mob_number=''
         )
