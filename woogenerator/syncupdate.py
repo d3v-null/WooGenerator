@@ -45,9 +45,6 @@ class SyncUpdate(Registrar):
         sets the class attributes to those specified in the user config
         """
         # TODO: Fix this awful mess
-
-        cls.master_name = master_name
-        cls.slave_name = slave_name
         cls.merge_mode = merge_mode
         cls.default_last_sync = default_last_sync
 

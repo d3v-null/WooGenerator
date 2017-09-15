@@ -91,7 +91,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             'defaults':self.col_data_class.get_defaults(),
             'contact_schema':'act',
             'source':self.master_name,
-            # 'schema':self.schema
+            'schema':self.schema
         }
         for key, settings_key in [
                 ('filter_items', 'filter_items'),

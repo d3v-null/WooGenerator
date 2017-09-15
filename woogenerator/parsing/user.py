@@ -247,6 +247,7 @@ class ImportUser(ImportObject):
                 'tel_number': 'Phone',
                 'fax_number': 'Fax',
                 'pref_method': 'Pref Method',
+                'source': 'source'
             }.items()
         ]))
         phone_kwargs['pref_data'] = ColDataUser.data.get('Pref Method', {})
@@ -580,10 +581,12 @@ class CsvParseUser(CsvParseBase):
             and SanitationUtils.normalize_val(object_data.role) \
             not in self.filter_items['roles']:
                 return "did not match role conditions"
-            if 'since_m' in self.filter_items \
+            if self.source == self.master_name \
+            and 'since_m' in self.filter_items \
             and object_data.act_modtime < self.filter_items['since_m']:
                 return "did not meet since_m condition"
-            if 'since_s' in self.filter_items \
+            if self.source == self.slave_name \
+            and 'since_s' in self.filter_items \
             and object_data.wp_modtime < self.filter_items['since_s']:
                 return "did not meet since_s condition"
             if 'users' in self.filter_items \

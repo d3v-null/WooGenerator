@@ -388,6 +388,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         Registrar.DEBUG_WOO = self.debug_woo
         Registrar.DEBUG_TRACE = self.debug_trace
         Registrar.DEBUG_USR = self.debug_usr
+        Registrar.master_name = self.master_name
+        Registrar.slave_name = self.slave_name
 
     def init_settings(self, override_args=None):
         """
@@ -450,8 +452,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         # Init class variables
 
-        SyncUpdate.set_globals(self.master_name, self.slave_name,
-                               self.merge_mode, self.last_sync)
+        SyncUpdate.set_globals(self.merge_mode, self.last_sync)
         TimeUtils.set_wp_srv_offset(self.wp_srv_offset)
 
         Registrar.register_message(
