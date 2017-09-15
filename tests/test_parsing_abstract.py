@@ -12,7 +12,7 @@ class TestImportObject(unittest.TestCase):
         # Masters
 
     # slaves
-    # args = (OrderedDict([('Tans Per Wk', ''),
+    # args = (OrderedDict([('Tans Per Week', ''),
     # ('MYOB Customer Card ID', ''),
     # ('GooglePlus Username', ''),
     # ('Home Address 2', ''),
@@ -95,7 +95,7 @@ class TestImportObject(unittest.TestCase):
     # args = (OrderedDict([('MYOB Card ID', u'C001280'),
     # ('Home Address 2', None),
     # ('Instagram Username', None),
-    # ('Tans Per Wk', ''),
+    # ('Tans Per Week', ''),
     # ('Added to mailing list', ''),
     # ('E-mail', u'bdransfield2g@qq.com'),
     # ('Shire', ''),
@@ -185,7 +185,7 @@ class TestImportObject(unittest.TestCase):
     # ('Home Address 2', None),
     # ('Instagram Username', None),
     # ('schema', None),
-    # ('Tans Per Wk', ''),
+    # ('Tans Per Week', ''),
     # ('Added to mailing list', ''),
     # ('E-mail', u'lhayeb@wikia.com'),
     # ('Shire', ''),

@@ -25,7 +25,7 @@ class TestUsrObj(TestCase):
             }
         )
         args = (OrderedDict([
-            ('Tans Per Wk', ''),
+            ('Tans Per Week', ''),
             ('MYOB Customer Card ID', ''),
             ('GooglePlus Username', ''),
             ('Home Address 2', ''),

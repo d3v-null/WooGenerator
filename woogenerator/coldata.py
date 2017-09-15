@@ -2085,7 +2085,7 @@ class ColDataUser(ColDataBase):
             'user': True,
             'sync': True,
         }),
-        ('Tans Per Wk', {
+        ('Tans Per Week', {
             'wp': {
                 'meta': True,
                 'key': 'tans_per_wk'

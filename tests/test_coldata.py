@@ -64,7 +64,7 @@ class testColDataUser(TestCase):
             'GooglePlus Username',
             'Instagram Username',
             'Added to mailing list',
-            'Tans Per Wk'
+            'Tans Per Week'
         ]:
             self.assertIn(key, importCols)
 
@@ -136,7 +136,7 @@ class testColDataUser(TestCase):
             ('business_type', 'Business Type'),
             ('how_hear_about', 'Lead Source'),
             ('referred_by', 'Referred By'),
-            ('tans_per_wk', 'Tans Per Wk'),
+            ('tans_per_wk', 'Tans Per Week'),
             ('personal_email', 'Personal E-mail'),
             ('edited_in_act', 'Edited in Act'),
             ('act_last_sale', 'Last Sale'),
