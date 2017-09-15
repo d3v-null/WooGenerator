@@ -365,31 +365,31 @@ class SettingsNamespaceProto(argparse.Namespace):
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
 
-        Registrar.DEBUG_ABSTRACT = self.debug_abstract
-        Registrar.DEBUG_ADDRESS = self.debug_address
-        Registrar.DEBUG_API = self.debug_api
-        Registrar.DEBUG_CATS = self.debug_cats
-        Registrar.DEBUG_CLIENT = self.debug_client
-        Registrar.DEBUG_CONTACT = self.debug_contact
-        Registrar.DEBUG_DUPLICATES = self.debug_duplicates
-        Registrar.DEBUG_GDRIVE = self.debug_gdrive
-        Registrar.DEBUG_GEN = self.debug_gen
-        Registrar.DEBUG_IMG = self.debug_img
-        Registrar.DEBUG_MRO = self.debug_mro
-        Registrar.DEBUG_MYO = self.debug_myo
-        Registrar.DEBUG_NAME = self.debug_name
-        Registrar.DEBUG_PARSER = self.debug_parser
-        Registrar.DEBUG_SHOP = self.debug_shop
-        Registrar.DEBUG_SPECIAL = self.debug_special
-        Registrar.DEBUG_TREE = self.debug_tree
-        Registrar.DEBUG_UPDATE = self.debug_update
-        Registrar.DEBUG_UTILS = self.debug_utils
-        Registrar.DEBUG_VARS = self.debug_vars
-        Registrar.DEBUG_WOO = self.debug_woo
-        Registrar.DEBUG_TRACE = self.debug_trace
-        Registrar.DEBUG_USR = self.debug_usr
-        Registrar.master_name = self.master_name
-        Registrar.slave_name = self.slave_name
+        Registrar.DEBUG_ABSTRACT = self.get('debug_abstract')
+        Registrar.DEBUG_ADDRESS = self.get('debug_address')
+        Registrar.DEBUG_API = self.get('debug_api')
+        Registrar.DEBUG_CATS = self.get('debug_cats')
+        Registrar.DEBUG_CLIENT = self.get('debug_client')
+        Registrar.DEBUG_CONTACT = self.get('debug_contact')
+        Registrar.DEBUG_DUPLICATES = self.get('debug_duplicates')
+        Registrar.DEBUG_GDRIVE = self.get('debug_gdrive')
+        Registrar.DEBUG_GEN = self.get('debug_gen')
+        Registrar.DEBUG_IMG = self.get('debug_img')
+        Registrar.DEBUG_MRO = self.get('debug_mro')
+        Registrar.DEBUG_MYO = self.get('debug_myo')
+        Registrar.DEBUG_NAME = self.get('debug_name')
+        Registrar.DEBUG_PARSER = self.get('debug_parser')
+        Registrar.DEBUG_SHOP = self.get('debug_shop')
+        Registrar.DEBUG_SPECIAL = self.get('debug_special')
+        Registrar.DEBUG_TREE = self.get('debug_tree')
+        Registrar.DEBUG_UPDATE = self.get('debug_update')
+        Registrar.DEBUG_UTILS = self.get('debug_utils')
+        Registrar.DEBUG_VARS = self.get('debug_vars')
+        Registrar.DEBUG_WOO = self.get('debug_woo')
+        Registrar.DEBUG_TRACE = self.get('debug_trace')
+        Registrar.DEBUG_USR = self.get('debug_usr')
+        Registrar.master_name = self.get('master_name')
+        Registrar.slave_name = self.get('slave_name')
 
     def init_settings(self, override_args=None):
         """
@@ -572,7 +572,7 @@ class MetaSettings(object):
         self.states[name] = state_dict
 
     def set_state_vars(self, name, vars_):
-        if not name in self.states:
+        if name not in self.states:
             self.states[name] = {}
         self.states[name]['vars'] = vars_
 

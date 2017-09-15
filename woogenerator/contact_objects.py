@@ -571,13 +571,13 @@ class ContactAddress(ContactObject):
 
     def parse_token(self, token_index, token):
         for getter, adder in [
-            (AddressUtils.get_delivery, self.add_delivery),
-            (AddressUtils.get_subunit, self.add_subunit),
-            (AddressUtils.get_floor, self.add_floor),
-            (AddressUtils.get_thoroughfare, self.add_thoroughfare),
-            (NameUtils.get_care_of, self.add_careof),
-            (NameUtils.get_organization, self.add_organization),
-            (AddressUtils.get_weak_subunit, self.add_weak_subunit)
+                (AddressUtils.get_delivery, self.add_delivery),
+                (AddressUtils.get_subunit, self.add_subunit),
+                (AddressUtils.get_floor, self.add_floor),
+                (AddressUtils.get_thoroughfare, self.add_thoroughfare),
+                (NameUtils.get_care_of, self.add_careof),
+                (NameUtils.get_organization, self.add_organization),
+                (AddressUtils.get_weak_subunit, self.add_weak_subunit)
         ]:
             result = getter(token)
             if result:

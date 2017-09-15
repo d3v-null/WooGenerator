@@ -1243,6 +1243,10 @@ class SyncUpdateUsr(SyncUpdate):
             if self.DEBUG_UPDATE:
                 self.register_message(u"col exists")
             data = self.col_data.data[col]
+            if self.DEBUG_UPDATE:
+                self.register_message(u"data: %s, target: %s" % (
+                    data, self.m_meta_target
+                ))
             if data.get(self.m_meta_target):
                 if self.DEBUG_UPDATE:
                     self.register_message(u"target exists")

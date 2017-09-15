@@ -641,10 +641,10 @@ def main(override_args=None, settings=None):
 
     parsers = ParserNamespace()
     parsers = populate_slave_parsers(parsers, settings)
-    if settings['download_slave']:
+    if settings['download_slave'] or settings['do_filter']:
         export_slave_parser(parsers, settings)
     parsers = populate_master_parsers(parsers, settings)
-    if settings['download_master']:
+    if settings['download_master'] or settings['do_filter']:
         export_master_parser(parsers, settings)
 
     # pickle_state(None, None, parsers, settings, 'sync')
