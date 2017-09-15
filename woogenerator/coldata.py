@@ -2094,6 +2094,7 @@ class ColDataUser(ColDataBase):
                 'meta': True,
                 'key': 'tans_per_wk'
             },
+            'act': True,
             'import': True,
             'user': True,
             'sync': True,
