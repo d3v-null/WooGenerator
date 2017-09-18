@@ -1536,6 +1536,7 @@ class ColDataUser(ColDataBase):
             'static': True,
             # 'visible':True,
             'tracked': True,
+            'invincible': 'master',
         }),
 
 
@@ -1994,6 +1995,7 @@ class ColDataUser(ColDataBase):
             'user': True,
             # 'report':True,
             'sync': 'master_override',
+            'invincible': 'master',
             'warn': True,
             'visible': True,
         }),
@@ -2084,6 +2086,7 @@ class ColDataUser(ColDataBase):
             'import': True,
             'user': True,
             'sync': True,
+            'invincible': 'master',
         }),
         ('Tans Per Week', {
             'wp': {
@@ -2098,7 +2101,8 @@ class ColDataUser(ColDataBase):
             'import': True,
             'user': True,
             'sync': True,
-            'default': ''
+            'default': '',
+            'invincible': 'master',
         }),
 
         # ('E-mails', {
@@ -2269,6 +2273,7 @@ class ColDataUser(ColDataBase):
             'user': True,
             'sync': True,
             'tracked': True,
+            'invincible': 'master',
         }),
 
         ("Added to mailing list", {
