@@ -11,7 +11,7 @@ from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.coldata import ColDataUser
 
 
-class TestFieldGroup(unittest.TestCase):
+class TestFieldGroupPost(unittest.TestCase):
 
     def setUp(self):
         # defaults
@@ -33,12 +33,12 @@ class TestFieldGroup(unittest.TestCase):
             Registrar.DEBUG_CONTACT = True
             # Registrar.DEBUG_ADDRESS = True
 
-class TestFieldGroupNoPost(TestFieldGroup):
+class TestFieldGroupNoPost(TestFieldGroupPost):
     def setUp(self):
         super(TestFieldGroupNoPost, self).setUp()
         FieldGroup.perform_post = False
 
-class TestContactAddressPost(TestFieldGroup):
+class TestContactAddressPost(TestFieldGroupPost):
     def test_thoroughfare_num_off_line(self):
         address = ContactAddress(
             line1="SHOP 10, 575/577",
@@ -734,7 +734,7 @@ class TestContactAddressNoPost(TestFieldGroupNoPost):
         self.assertTrue(self.ca_c.similar(self.ca_b))
 
 
-class TestContactName(TestFieldGroup):
+class TestContactName(TestFieldGroupPost):
 
     def test_basic_name(self):
         name = ContactName(
@@ -925,7 +925,7 @@ class TestContactName(TestFieldGroup):
 #
 
 
-class TestContactPhonesPost(TestFieldGroup):
+class TestContactPhonesPost(TestFieldGroupPost):
     def test_phones_equality_basic(self):
         self.phones_1 = ContactPhones(
             mob_number='0416160912'
@@ -1238,7 +1238,7 @@ class TestContactPhonesNoPost(TestFieldGroupNoPost):
         self.phones_1.mob_number = '0416160912'
         self.assertFalse(self.phones_1.empty)
 
-class TestSocialMediaGroup(TestFieldGroup):
+class TestSocialMediaGroup(TestFieldGroupPost):
     def setUp(self):
         super(TestSocialMediaGroup, self).setUp()
         self.smf_m_args = dict(
@@ -1280,8 +1280,7 @@ class TestSocialMediaGroup(TestFieldGroup):
         self.assertNotEqual(smf_m, smf_s)
         self.assertTrue(smf_m.similar(smf_s))
 
-class TestRoleGroup(TestFieldGroup):
-
+class TestRoleGroupCommon(object):
     def fail_rolegroup_assertion(self, exc, role_info_a, role_info_b):
         msg = "Failed assertion: \n%s\nleft:  %s / %s\nright: %s / %s" % (
             traceback.format_exc(exc),
@@ -1291,6 +1290,11 @@ class TestRoleGroup(TestFieldGroup):
             pformat(role_info_b.properties)
         )
         raise Exception(msg)
+
+class TestRoleGroupPost(TestFieldGroupPost, TestRoleGroupCommon):
+    def setUp(self):
+        super(TestRoleGroupPost, self).setUp()
+        RoleGroup.perform_post = True
 
     def test_role_group_basic(self):
         rgrp = RoleGroup(
@@ -1304,21 +1308,7 @@ class TestRoleGroup(TestFieldGroup):
         self.assertEqual(rgrp.role, 'WN')
         self.assertEqual(rgrp.direct_brand, 'TechnoTan Wholesale')
 
-    def test_role_group_no_post(self):
-        RoleGroup.perform_post = False
-        rgrp = RoleGroup(
-            role='WN',
-            direct_brand='TechnoTan Wholesale'
-        )
-
-        self.assertTrue(rgrp)
-        self.assertFalse(rgrp.empty)
-        self.assertTrue(rgrp.valid)
-        self.assertEqual(rgrp.role, 'WN')
-        self.assertEqual(rgrp.direct_brand, 'TechnoTan Wholesale')
-
     def test_role_group_reflect_equality(self):
-        RoleGroup.perform_post = True
         FieldGroup.enforce_mandatory_keys = False
 
         rgrp = RoleGroup(
@@ -1354,42 +1344,7 @@ class TestRoleGroup(TestFieldGroup):
         except AssertionError as exc:
             self.fail_rolegroup_assertion(exc, rgrp, reflected)
 
-    def test_role_group_reflect_equality_no_post(self):
-        RoleGroup.perform_post = False
-        FieldGroup.enforce_mandatory_keys = True
-
-        rgrp = RoleGroup(
-            role='WN',
-            direct_brand='TechnoTan Wholesale'
-        )
-        reflected = rgrp.reflect()
-        self.assertEqual(rgrp, reflected)
-
-        rgrp = RoleGroup(
-            role='RN',
-        )
-        reflected = rgrp.reflect()
-        try:
-            self.assertNotEqual(rgrp, reflected)
-        except AssertionError as exc:
-            self.fail_rolegroup_assertion(exc, rgrp, reflected)
-
-        rgrp = RoleGroup(
-            role='RN',
-            direct_brand='TechnoTan Retail'
-        )
-        reflected = rgrp.reflect()
-        self.assertEqual(rgrp, reflected)
-
-        rgrp = RoleGroup(
-            role='WN',
-            direct_brand='Pending'
-        )
-        reflected = rgrp.reflect()
-        self.assertNotEqual(rgrp, reflected)
-
-    def test_similarity_post(self):
-        RoleGroup.perform_post = True
+    def test_similarity(self):
         rgrp_m = RoleGroup(
             role='RN',
             direct_brand='Pending'
@@ -1403,50 +1358,7 @@ class TestRoleGroup(TestFieldGroup):
         )
         self.assertEqual(rgrp_s, rgrp_m)
 
-    def test_similarity_post_hard(self):
-        RoleGroup.perform_post = True
-        rgrp_m = RoleGroup(
-            role='WN',
-            direct_brand='VuTan Wholesale'
-        )
-        rgrp_s = RoleGroup(
-            role='WN',
-            direct_brand='VuTan',
-            schema='TT'
-        )
-        self.assertFalse(
-            rgrp_m.similar(rgrp_s)
-        )
-        rgrp_m = RoleGroup(
-            role='WN',
-            direct_brand='VuTan Wholesale'
-        )
-        rgrp_s = RoleGroup(
-            role='WN',
-            schema='TT'
-        )
-        self.assertFalse(
-            rgrp_m.similar(rgrp_s)
-        )
-
-    def test_similarity_nopost(self):
-        RoleGroup.perform_post = False
-        rgrp_m = RoleGroup(
-            role='RN',
-            direct_brand='Pending'
-        )
-        rgrp_s = RoleGroup(
-            role=None,
-            direct_brand='Pending'
-        )
-        self.assertTrue(
-            rgrp_s.similar(rgrp_m)
-        )
-        self.assertNotEqual(rgrp_s, rgrp_m)
-
-    def test_similarity_nopost_hard(self):
-        RoleGroup.perform_post = False
-
+    def test_similarity_hard(self):
         rgrp_m = RoleGroup(
             role='WN',
             direct_brand='VuTan Wholesale'
@@ -1473,8 +1385,6 @@ class TestRoleGroup(TestFieldGroup):
 
 
     def test_roles_jess(self):
-        RoleGroup.perform_post = True
-
         for direct_brand, role, expected_brand, expected_role in [
                 # If Direct Brand is TechnoTan and Role is WN
                 # Change Direct Brand to TechnoTan Wholesale and keep Role as WN
@@ -1630,7 +1540,6 @@ class TestRoleGroup(TestFieldGroup):
                 ))
 
     def test_roles_schema(self):
-        RoleGroup.perform_post = True
         for schema, direct_brand, role, expected_brands, expected_role in [
                 ('TT', 'VuTan Wholesale', 'WN', 'VuTan Wholesale', 'RN'),
                 ('VT', 'VuTan Wholesale', 'WN', 'VuTan Wholesale', 'WN'),
@@ -1685,8 +1594,96 @@ class TestRoleGroup(TestFieldGroup):
             RoleGroup.tokenwise_startswith(['mosaic', 'minerals'], ['mosaic', 'minerals'])
         )
 
-    def test_update_from(self):
+class TestRoleGroupNoPost(TestFieldGroupNoPost, TestRoleGroupCommon):
+    def setUp(self):
+        super(TestRoleGroupNoPost, self).setUp()
         RoleGroup.perform_post = False
+
+    def test_role_group_basic(self):
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brand='TechnoTan Wholesale'
+        )
+
+        self.assertTrue(rgrp)
+        self.assertFalse(rgrp.empty)
+        self.assertTrue(rgrp.valid)
+        self.assertEqual(rgrp.role, 'WN')
+        self.assertEqual(rgrp.direct_brand, 'TechnoTan Wholesale')
+
+    def test_role_group_reflect_equality(self):
+        FieldGroup.enforce_mandatory_keys = True
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brand='TechnoTan Wholesale'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+        )
+        reflected = rgrp.reflect()
+        try:
+            self.assertNotEqual(rgrp, reflected)
+        except AssertionError as exc:
+            self.fail_rolegroup_assertion(exc, rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='RN',
+            direct_brand='TechnoTan Retail'
+        )
+        reflected = rgrp.reflect()
+        self.assertEqual(rgrp, reflected)
+
+        rgrp = RoleGroup(
+            role='WN',
+            direct_brand='Pending'
+        )
+        reflected = rgrp.reflect()
+        self.assertNotEqual(rgrp, reflected)
+
+    def test_similarity(self):
+        rgrp_m = RoleGroup(
+            role='RN',
+            direct_brand='Pending'
+        )
+        rgrp_s = RoleGroup(
+            role=None,
+            direct_brand='Pending'
+        )
+        self.assertTrue(
+            rgrp_s.similar(rgrp_m)
+        )
+        self.assertNotEqual(rgrp_s, rgrp_m)
+
+    def test_similarity_hard(self):
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            direct_brand='VuTan',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+        rgrp_m = RoleGroup(
+            role='WN',
+            direct_brand='VuTan Wholesale'
+        )
+        rgrp_s = RoleGroup(
+            role='WN',
+            schema='TT'
+        )
+        self.assertFalse(
+            rgrp_m.similar(rgrp_s)
+        )
+
+    def test_update_from(self):
         master = RoleGroup(
             schema=None,
             role='WN',
@@ -1715,7 +1712,6 @@ class TestRoleGroup(TestFieldGroup):
         self.assertFalse(master.perform_post)
         self.assertFalse(slave.perform_post)
         self.assertTrue(slave_copy.perform_post)
-
 
 if __name__ == '__main__':
     unittest.main()

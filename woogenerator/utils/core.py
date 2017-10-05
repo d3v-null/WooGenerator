@@ -1050,6 +1050,7 @@ class Registrar(object):
     DEBUG_MYO = False
     DEBUG_NAME = False
     DEBUG_PARSER = False
+    DEBUG_ROLE = False
     DEBUG_SHOP = False
     DEBUG_SPECIAL = False
     DEBUG_TRACE = False

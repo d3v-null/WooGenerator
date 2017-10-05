@@ -1,8 +1,10 @@
 """ Boilerplate Test Cases common to merger and generator """
 
+from __future__ import print_function
+
 import os
-import traceback
 import tempfile
+import traceback
 import unittest
 from pprint import pformat
 
@@ -27,22 +29,26 @@ class AbstractSyncManagerTestCase(unittest.TestCase):
         self.settings.local_work_dir = self.local_work_dir
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
-        self.settings.verbosity = 0
-        self.settings.quiet = True
+        if self.debug:
+            self.settings.verbosity = 3
+            self.settings.quiet = False
+        else:
+            self.settings.verbosity = 0
+            self.settings.quiet = True
 
         self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
 
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-        Registrar.DEBUG_PROGRESS = False
-        if self.debug:
-            Registrar.DEBUG_PROGRESS = True
-            Registrar.DEBUG_MESSAGE = True
-            Registrar.DEBUG_ERROR = True
-            Registrar.DEBUG_WARN = True
+        # Registrar.DEBUG_ERROR = False
+        # Registrar.DEBUG_WARN = False
+        # Registrar.DEBUG_MESSAGE = False
+        # Registrar.DEBUG_PROGRESS = False
+        # if self.debug:
+        #     Registrar.DEBUG_PROGRESS = True
+        #     Registrar.DEBUG_MESSAGE = True
+        #     Registrar.DEBUG_ERROR = True
+        #     Registrar.DEBUG_WARN = True
 
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (

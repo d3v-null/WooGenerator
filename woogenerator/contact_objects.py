@@ -1811,18 +1811,18 @@ class RoleGroup(FieldGroup):
                 return ('-', None)
             direct_brand_tokens = direct_brand.lower().split(' ')
             # do tokenwise comparison on all possible schemes:
-            # if Registrar.DEBUG_CONTACT:
-            #     Registrar.register_message("direct brand tokens: %s" % direct_brand_tokens)
+            if Registrar.DEBUG_ROLE:
+                Registrar.register_message("direct brand tokens: %s" % direct_brand_tokens)
             for schema, brand in cls.schema_translations:
                 brand_tokens = brand.lower().split(' ')
-                # if Registrar.DEBUG_CONTACT:
-                #     Registrar.register_message("brand tokens: %s" % brand_tokens)
+                if Registrar.DEBUG_ROLE:
+                    Registrar.register_message("brand tokens: %s" % brand_tokens)
                 if cls.tokenwise_startswith(direct_brand_tokens, brand_tokens):
                     parsed_schema = schema
                     remaining_tokens = \
                         direct_brand_tokens[len(brand_tokens):]
-                    # if Registrar.DEBUG_CONTACT:
-                    #     Registrar.register_message("remaining tokens: %s" % remaining_tokens)
+                    if Registrar.DEBUG_ROLE:
+                        Registrar.register_message("remaining tokens: %s" % remaining_tokens)
                     if remaining_tokens:
                         parsed_role = cls.get_role(
                             " ".join(remaining_tokens))
@@ -1833,10 +1833,10 @@ class RoleGroup(FieldGroup):
 
             assert parsed_schema, \
                 "unkown brand: %s" % direct_brand
-        # if Registrar.DEBUG_CONTACT:
-        #     Registrar.register_message("returning schema: %s; role: %s" % (
-        #         parsed_schema, parsed_role
-        #     ))
+        if Registrar.DEBUG_ROLE:
+            Registrar.register_message("returning schema: %s; role: %s" % (
+                parsed_schema, parsed_role
+            ))
         return parsed_schema, parsed_role
 
     @classmethod
@@ -1928,8 +1928,8 @@ class RoleGroup(FieldGroup):
                 return
 
         parsed = self.parse_direct_brand_str(self.kwargs.get('direct_brand'))
-        # if self.debug:
-        #     self.register_message("parsed: %s" % pformat(parsed))
+        if Registrar.DEBUG_ROLE:
+            self.register_message("parsed: %s" % pformat(parsed))
         for count, (parsed_schema, parsed_role) in enumerate(parsed):
             if parsed_role == self.admin_role or parsed_schema == self.admin_brand:
                 self.properties['role'] = self.admin_role
@@ -1937,10 +1937,10 @@ class RoleGroup(FieldGroup):
                 break
             if parsed_schema == '-' and (len(parsed) - count > 1):
                 continue
-            # if self.debug:
-            #     self.register_message("analysing: %s / %s" % (
-            #         parsed_schema, parsed_role
-            #     ))
+            if Registrar.DEBUG_ROLE:
+                self.register_message("analysing: %s / %s" % (
+                    parsed_schema, parsed_role
+                ))
             if parsed_schema:
                 in_schema = True
                 if self.schema:
@@ -1967,9 +1967,9 @@ class RoleGroup(FieldGroup):
                             )
                             if self.schema:
                                 break
-                    # if self.debug:
-                    #     self.register_message(
-                    #         "role competitors: %s" % pformat(role_competitors))
+                    if Registrar.DEBUG_ROLE:
+                        self.register_message(
+                            "role competitors: %s" % pformat(role_competitors))
                     assert role_competitors, \
                         "cannot find a suitable role for schema %s out of %s. allowed:%s" % (
                             parsed_schema,
@@ -1977,13 +1977,13 @@ class RoleGroup(FieldGroup):
                             allowed_roles
                         )
                     _, winning_role, source = max(role_competitors)
-                    # if self.debug:
-                    #     self.register_message(
-                    #         "winner: %s, %s" % (winning_role, source)
-                    #     )
+                    if Registrar.DEBUG_ROLE:
+                        self.register_message(
+                            "winner: %s, %s" % (winning_role, source)
+                        )
                     if source != 'act_role' and in_schema:
-                        # if self.debug:
-                        #     self.register_message("source not act and in schema")
+                        if Registrar.DEBUG_ROLE:
+                            self.register_message("source not act and in schema")
                         self.properties['role'] = winning_role
 
                     if len(allowed_roles) > 1:
@@ -1992,13 +1992,13 @@ class RoleGroup(FieldGroup):
                         continue
                 self.properties['direct_brands'].append((parsed_schema, None))
 
-        # if self.debug:
-        #     self.register_message(
-        #         "direct_brands: %s, role: %s" % (
-        #             self.properties['direct_brands'],
-        #             self.properties['role']
-        #         )
-        #     )
+        if Registrar.DEBUG_ROLE:
+            self.register_message(
+                "direct_brands: %s, role: %s" % (
+                    self.properties['direct_brands'],
+                    self.properties['role']
+                )
+            )
 
         if not self.properties['direct_brands']:
             self.properties['direct_brands'] = [('-', None)]
@@ -2043,10 +2043,10 @@ class RoleGroup(FieldGroup):
         #     return role.upper()
 
     def __setitem__(self, key, val):
-        # if Registrar.DEBUG_CONTACT:
-        #     Registrar.register_message(
-        #         "setting key %s to val %s " % (key, val)
-        #     )
+        if Registrar.DEBUG_ROLE:
+            Registrar.register_message(
+                "setting key %s to val %s " % (key, val)
+            )
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
@@ -2060,10 +2060,10 @@ class RoleGroup(FieldGroup):
         super(RoleGroup, self).__setitem__(key, val)
 
     def __getitem__(self, key):
-        # if Registrar.DEBUG_CONTACT:
-        #     Registrar.register_message(
-        #         "getting key %s" % (key)
-        #     )
+        if Registrar.DEBUG_ROLE:
+            Registrar.register_message(
+                "getting key %s" % (key)
+            )
         if self.properties_override:
             attr = self.get_mapped_attr(key)
             if attr == 'direct_brand':
