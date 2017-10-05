@@ -1293,56 +1293,56 @@ class ColDataUser(ColDataBase):
             'default': '',
             # 'tracked':True,
         }),
-        ('Role Info', {
-            'aliases': [
-                'Role',
-                'Direct Brand'
-            ],
-            'sync': True,
-            'static': True,
-            'basic': True,
-            'report': True,
-            'delta': True,
-            # 'tracked': True,
-            'reflective': 'master',
-            'user': True,
-        }),
-        ('Role', {
-            'wp': {
-                'meta': True,
-                'key': 'act_role'
-            },
-            'wp-api': {
-                'meta': True,
-                'key': 'act_role'
-            },
-            # 'label': 'act_role',
-            'import': True,
-            'act': True,
-            # 'user': True,
-            # 'report': True,
-            # 'sync': True,
-            'warn': True,
-            'static': True,
-            # 'tracked':'future',
-        }),
-        ('Direct Brand', {
-            'import': True,
-            'wp': {
-                'meta': True,
-                'key': 'direct_brand'
-            },
-            'wp-api': {
-                'meta': True,
-                'key': 'direct_brand'
-            },
-            'act': True,
-            # 'label':'direct_brand',
-            # 'user': True,
-            # 'report': True,
-            # 'sync': 'master_override',
-            'warn': True,
-        }),
+        # ('Role Info', {
+        #     'aliases': [
+        #         'Role',
+        #         'Direct Brand'
+        #     ],
+        #     'sync': True,
+        #     'static': True,
+        #     'basic': True,
+        #     'report': True,
+        #     'delta': True,
+        #     # 'tracked': True,
+        #     'reflective': 'master',
+        #     'user': True,
+        # }),
+        # ('Role', {
+        #     'wp': {
+        #         'meta': True,
+        #         'key': 'act_role'
+        #     },
+        #     'wp-api': {
+        #         'meta': True,
+        #         'key': 'act_role'
+        #     },
+        #     # 'label': 'act_role',
+        #     'import': True,
+        #     'act': True,
+        #     # 'user': True,
+        #     # 'report': True,
+        #     # 'sync': True,
+        #     'warn': True,
+        #     'static': True,
+        #     # 'tracked':'future',
+        # }),
+        # ('Direct Brand', {
+        #     'import': True,
+        #     'wp': {
+        #         'meta': True,
+        #         'key': 'direct_brand'
+        #     },
+        #     'wp-api': {
+        #         'meta': True,
+        #         'key': 'direct_brand'
+        #     },
+        #     'act': True,
+        #     # 'label':'direct_brand',
+        #     # 'user': True,
+        #     # 'report': True,
+        #     # 'sync': 'master_override',
+        #     'warn': True,
+        # }),
 
         ('Name', {
             'aliases': [
