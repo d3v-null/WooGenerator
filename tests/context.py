@@ -11,6 +11,11 @@ TESTS_DATA_DIR = os.path.join(
     'sample_data'
 )
 
+SENSITIVE_DATA_DIR = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)),
+    'sample_data_sensitive'
+)
+
 def get_testdata(*paths):
     """Return test data"""
     path = os.path.join(TESTS_DATA_DIR, *paths)

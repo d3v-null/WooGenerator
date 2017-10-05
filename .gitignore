@@ -105,6 +105,7 @@ exc.txt
 exception.json
 tests/sample_data/merger_slave_sample.csv
 tests/sample_data/merger_master_sample.csv
+tests/sample_data_sensitive/*
 results - just conflicts.csv
 results.csv
 pocs/dyncat.csv

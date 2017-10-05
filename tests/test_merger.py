@@ -21,17 +21,24 @@ from woogenerator.syncupdate import SyncUpdate
 from woogenerator.utils import TimeUtils
 
 
-class TestMerger(AbstractSyncManagerTestCase):
+class TestMergerAbstract(AbstractSyncManagerTestCase):
+    """
+    Abstract utilities for testing merger.
+    """
+
     settings_namespace_class = SettingsNamespaceUser
     config_file = "merger_config_test.yaml"
+    data_dir = TESTS_DATA_DIR
+    master_file = "merger_master_dummy.csv"
+    slave_file = "merger_slave_dummy.csv"
 
     def setUp(self):
-        super(TestMerger, self).setUp()
+        super(TestMergerAbstract, self).setUp()
         self.settings.master_dialect_suggestion = "ActOut"
         self.settings.download_master = False
         self.settings.download_slave = False
-        self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_dummy.csv")
-        self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_dummy.csv")
+        self.settings.master_file = os.path.join(self.data_dir, self.master_file)
+        self.settings.slave_file = os.path.join(self.data_dir, self.slave_file)
         self.settings.testmode = True
         self.settings.do_sync = True
         self.settings.report_duplicates = True
@@ -76,8 +83,11 @@ class TestMerger(AbstractSyncManagerTestCase):
          )
 
     def print_user_summary(self, user):
+        if user is None:
+            print(user)
+            return
         print("pformat@dict:\n%s" % pformat(dict(user)))
-        print("pformat@dir:\n%s" % pformat(dir(user)))
+        # print("pformat@dir:\n%s" % pformat(dir(user)))
         print("str@.act_modtime:\n%s" % str(user.act_modtime))
         print("str@.act_created:\n%s" % str(user.act_created))
         print("str@.wp_created:\n%s" % str(user.wp_created))
@@ -85,7 +95,7 @@ class TestMerger(AbstractSyncManagerTestCase):
         print("str@.last_sale:\n%s" % str(user.last_sale))
         print("str@.last_modtime:\n%s" % str(user.last_modtime))
         print("pformat@.name.to_dict:\n%s" % pformat(dict(user.name.to_dict())))
-        print("pformat@.phones.to_dict:\n%s" % pformat(dict(user.phones.to_dict())))
+        # print("pformat@.phones.to_dict:\n%s" % pformat(dict(user.phones.to_dict())))
         # print(
         #     "pformat@.shipping_address.valid:\n%s" %
         #     pformat(user.shipping_address.valid)
@@ -98,11 +108,16 @@ class TestMerger(AbstractSyncManagerTestCase):
         # print("pformat@.billing_address.to_dict:\n%s" % \
         #       pformat(dict(user.billing_address.to_dict())))
         # print("pformat@.phones.to_dict:\n%s" % pformat(dict(user.phones.to_dict())))
+        print("pformat@.role.to_dict:\n%s" % pformat(dict(user.role.to_dict())))
         # print("pformat@.socials.to_dict:\n%s" % pformat(dict(user.socials.to_dict())))
         # print("pformat@.wpid:\n%s" % pformat(user.wpid))
         # print("pformat@.email:\n%s" % pformat(user.email))
         # print("pformat@.edited_email:%s" % pformat(first_usr['Edited E-mail']))
 
+class TestMergerSafe(TestMergerAbstract):
+    """
+    Safe tests for merger using randomized data
+    """
     def test_init_settings(self):
 
         self.assertEqual(self.settings.master_name, "ACT")

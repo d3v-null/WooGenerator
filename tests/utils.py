@@ -33,6 +33,7 @@ class MockUtils(object):
     #         self.patch.__exit__(exc_type, exc_value, exc_traceback)
 
 class ConnectionUtils(object):
+    """Utils for checking connection."""
 
     @classmethod
     def check_connection(cls, host='8.8.8.8', port=53, timeout=3):
@@ -40,5 +41,12 @@ class ConnectionUtils(object):
             socket.setdefaulttimeout(timeout)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
             return True
+        except Exception as _:
+            pass
+
+    @classmethod
+    def check_hostname(cls):
+        try:
+            return socket.gethostname()
         except Exception as _:
             pass
