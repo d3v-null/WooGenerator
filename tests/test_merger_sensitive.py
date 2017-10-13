@@ -91,7 +91,7 @@ class TestMergerSensitiveC005188(TestMergerSensitiveAbstract):
     """
     master_file = "user_master-2017-09-20_16-00-01_C005188.csv"
     slave_file = "user_slave-2017-09-20_16-00-01_C005188.csv"
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestMergerSensitiveAbstract, self).setUp()

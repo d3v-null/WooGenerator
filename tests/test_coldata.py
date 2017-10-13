@@ -23,7 +23,7 @@ class testColDataUser(TestCase):
             'E-mail',
             'Wordpress Username',
             'Wordpress ID',
-            'Role',
+            # 'Role',
             'Contact',
             'First Name',
             'Surname',
@@ -47,7 +47,9 @@ class testColDataUser(TestCase):
             'Home Address 1',
             'Home Address 2',
             'Home City', 'Home Postcode', 'Home Country', 'Home State',
-            'MYOB Customer Card ID', 'Client Grade', 'Direct Brand', 'Agent',
+            'MYOB Customer Card ID', 'Client Grade',
+            # 'Direct Brand',
+            'Agent',
             'Web Site',
             'ABN',
             'Business Type',
@@ -93,14 +95,17 @@ class testColDataUser(TestCase):
     def test_getDeltaCols(self):
         DeltaCols = ColDataUser.get_delta_cols()
         self.assertItemsEqual(DeltaCols, OrderedDict(
-            [('E-mail', 'Delta E-mail'), ('Role Info', 'Delta Role Info')]))
+            [
+                ('E-mail', 'Delta E-mail'),
+                # ('Role Info', 'Delta Role Info')
+            ]))
 
     def test_getAllWpDbCols(self):
         dbCols = ColDataUser.get_all_wpdb_cols()
         # print "dbCols %s" % pformat(dbCols.items())
         self.assertItemsEqual(dbCols, OrderedDict([
             ('myob_card_id', 'MYOB Card ID'),
-            ('act_role', 'Role'),
+            # ('act_role', 'Role'),
             ('nickname', 'Contact'),
             ('first_name', 'First Name'),
             ('last_name', 'Surname'),
@@ -130,7 +135,7 @@ class testColDataUser(TestCase):
             ('shipping_state', 'Home State'),
             ('myob_customer_card_id', 'MYOB Customer Card ID'),
             ('client_grade', 'Client Grade'),
-            ('direct_brand', 'Direct Brand'),
+            # ('direct_brand', 'Direct Brand'),
             ('agent', 'Agent'),
             ('abn', 'ABN'),
             ('business_type', 'Business Type'),

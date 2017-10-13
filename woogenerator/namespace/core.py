@@ -364,6 +364,7 @@ class SettingsNamespaceProto(argparse.Namespace):
             Registrar.DEBUG_PROGRESS = False
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_MESSAGE = False
+            Registrar.DEBUG_WARN = False
 
         Registrar.DEBUG_ABSTRACT = self.get('debug_abstract')
         Registrar.DEBUG_ADDRESS = self.get('debug_address')

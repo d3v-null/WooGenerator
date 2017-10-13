@@ -50,6 +50,44 @@ class AbstractSyncManagerTestCase(unittest.TestCase):
         #     Registrar.DEBUG_ERROR = True
         #     Registrar.DEBUG_WARN = True
 
+    def print_debug_config(self):
+        print("debug: %s, verbosity: %s, quiet: %s, Reg.DEBUG_MESSAGE: %s, Reg.DEBUG_WARN: %s" % (
+            self.debug, self.settings.verbosity, self.settings.quiet,
+            Registrar.DEBUG_MESSAGE, Registrar.DEBUG_WARN
+        ))
+
+    def print_updates_summary(self, updates):
+        print("delta_master updates(%d):\n%s" % (
+            len(updates.delta_master), map(str, updates.delta_master))
+        )
+        print("delta_slave updates(%d):\n%s" % (
+            len(updates.delta_slave), map(str, updates.delta_slave))
+        )
+        print("master updates(%d):\n%s" % (
+            len(updates.master), map(str, updates.master))
+        )
+        print("masterless updates(%d):\n%s" % (
+            len(updates.masterless), map(str, updates.masterless))
+        )
+        print("slaveless updates(%d):\n%s" % (
+            len(updates.slaveless), map(str, updates.slaveless))
+        )
+        print("nonstatic_master updates(%d):\n%s" % (
+            len(updates.nonstatic_master), map(str, updates.nonstatic_master))
+        )
+        print("nonstatic_slave updates(%d):\n%s" % (
+            len(updates.nonstatic_slave), map(str, updates.nonstatic_slave))
+        )
+        print("problematic updates(%d):\n%s" % (
+            len(updates.problematic), map(str, updates.problematic))
+        )
+        print("slave updates(%d):\n%s" % (
+            len(updates.slave), map(str, updates.slave))
+        )
+        print("static updates(%d):\n%s" % (
+            len(updates.static), map(str, updates.static))
+        )
+
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (
             pformat(sync_update.sync_warnings.items()),

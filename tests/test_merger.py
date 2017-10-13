@@ -10,6 +10,7 @@ import mock
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
+from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import FieldGroup
 from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  do_summary, do_updates,
@@ -18,7 +19,7 @@ from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
                                  populate_slave_parsers)
 from woogenerator.namespace.user import SettingsNamespaceUser
 from woogenerator.syncupdate import SyncUpdate
-from woogenerator.utils import TimeUtils
+from woogenerator.utils import TimeUtils, Registrar
 
 
 class TestMergerAbstract(AbstractSyncManagerTestCase):
@@ -48,39 +49,13 @@ class TestMergerAbstract(AbstractSyncManagerTestCase):
         self.settings.update_slave = False
         self.settings.ask_before_update = False
 
+        if not self.debug:
+            self.override_args = ' '.join(
+                token for token in self.override_args.split(' ') + [
+                    '--quiet',
+                ] if token
+            )
         self.settings.init_settings(self.override_args)
-
-    def print_updates_summary(self, updates):
-        print("delta_master updates(%d):\n%s" % (
-            len(updates.delta_master), map(str, updates.delta_master))
-        )
-        print("delta_slave updates(%d):\n%s" % (
-            len(updates.delta_slave), map(str, updates.delta_slave))
-        )
-        print("master updates(%d):\n%s" % (
-            len(updates.master), map(str, updates.master))
-        )
-        print("masterless updates(%d):\n%s" % (
-            len(updates.masterless), map(str, updates.masterless))
-        )
-        print("slaveless updates(%d):\n%s" % (
-            len(updates.slaveless), map(str, updates.slaveless))
-        )
-        print("nonstatic_master updates(%d):\n%s" % (
-            len(updates.nonstatic_master), map(str, updates.nonstatic_master))
-        )
-        print("nonstatic_slave updates(%d):\n%s" % (
-            len(updates.nonstatic_slave), map(str, updates.nonstatic_slave))
-        )
-        print("problematic updates(%d):\n%s" % (
-            len(updates.problematic), map(str, updates.problematic))
-        )
-        print("slave updates(%d):\n%s" % (
-            len(updates.slave), map(str, updates.slave))
-        )
-        print("static updates(%d):\n%s" % (
-                len(updates.static), map(str, updates.static))
-         )
 
     def print_user_summary(self, user):
         if user is None:
@@ -187,8 +162,9 @@ class TestMergerSafe(TestMergerAbstract):
         self.assertEqual(first_usr.socials.website, website)
         self.assertEqual(first_usr['Web Site'], website)
 
-        self.assertEqual(first_usr.role.role, "RN")
-        self.assertEqual(first_usr.role.direct_brand, "TechnoTan Wholesale")
+        if 'Role' in ColDataUser.data:
+            self.assertEqual(first_usr.role.role, "RN")
+            self.assertEqual(first_usr.role.direct_brand, "TechnoTan Wholesale")
 
         # print(SanitationUtils.coerce_bytes(usr_list.tabulate(tablefmt='simple')))
 
@@ -260,14 +236,16 @@ class TestMergerSafe(TestMergerAbstract):
         self.assertEqual(first_usr.phones.fax_number, '07 4029 1259')
         self.assertEqual(first_usr.socials.twitter, "bblakeway7")
 
-        self.assertEqual(first_usr.role.direct_brand, "Pending")
-        self.assertEqual(first_usr.role.role, "WN")
         self.assertEqual(first_usr.wpid, '1080')
         self.assertEqual(first_usr.email, 'GSAMPLE6@FREE.FR')
         # self.assertEqual(first_usr['Edited E-mail'], TimeUtils.)
 
+        if 'Role' in ColDataUser.data:
+            self.assertEqual(first_usr.role.direct_brand, "Pending")
+            self.assertEqual(first_usr.role.role, "WN")
+
     @unittest.skipIf(
-        TimeUtils.get_system_timezone != '+1000',
+        TimeUtils.get_system_timezone not in ['+1000', '+1100'],
         'Tests calibrated for AEST'
     )
     def test_populate_slave_parsers_time(self):
@@ -307,7 +285,11 @@ class TestMergerSafe(TestMergerAbstract):
             set(card_duplicate_s_indices).intersection(set(card_duplicate_m_indices))
         )
 
-    def test_do_merge_basic(self):
+    @unittest.skipIf(
+        'Role' in ColDataUser.data,
+        "Tests assume role not being synced"
+    )
+    def test_do_merge_basic_no_role(self):
         self.parsers = populate_master_parsers(
             self.parsers, self.settings
         )
@@ -320,6 +302,122 @@ class TestMergerSafe(TestMergerAbstract):
         self.updates = do_merge(
             self.matches, self.parsers, self.settings
         )
+        if self.debug:
+            self.print_updates_summary(self.updates)
+
+        self.assertEqual(len(self.updates.delta_master), 3)
+        self.assertEqual(len(self.updates.delta_slave), 4)
+        self.assertEqual(len(self.updates.master), 6)
+        self.assertEqual(len(self.updates.masterless), 0)
+        self.assertEqual(len(self.updates.slaveless), 0)
+        self.assertEqual(len(self.updates.nonstatic_master), 0)
+        self.assertEqual(len(self.updates.nonstatic_slave), 1)
+        self.assertEqual(len(self.updates.problematic), 0)
+        self.assertEqual(len(self.updates.slave), 7)
+        self.assertEqual(len(self.updates.static), 7)
+
+        updates_static = self.updates.static[:]
+
+        sync_update = updates_static.pop(0)
+        # This is tested in test_do_merge_hard_2
+
+        sync_update = updates_static.pop(0)
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001694')
+            self.assertEqual(sync_update.old_m_object.rowcount, 45)
+            self.assertEqual(sync_update.old_m_object.name.company, 'Livetube')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), 'Worked for Business using TT')
+            self.assertEqual(sync_update.old_s_object.wpid, '1143')
+            self.assertEqual(sync_update.old_s_object.rowcount, 37)
+            self.assertEqual(sync_update.old_s_object.get('Business Type'), None)
+
+            self.assertEqual(sync_update.new_m_object.get('Business Type'), 'Worked for Business using TT')
+            self.assertEqual(sync_update.new_s_object.get('Business Type'), 'Worked for Business using TT')
+            self.assertFalse(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        sync_update = updates_static.pop(0)
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001446')
+            self.assertEqual(sync_update.old_m_object.rowcount, 92)
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), "Event")
+            self.assertEqual(sync_update.old_s_object.wpid, '1439')
+            self.assertEqual(sync_update.old_s_object.rowcount, 13)
+            self.assertEqual(sync_update.old_s_object.get('Business Type'), "Worked for Business using TT")
+            self.assertTrue(sync_update.m_deltas)
+            self.assertFalse(sync_update.s_deltas)
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        sync_update = updates_static.pop(0)
+        # This is tested in test_do_merge_hard_1
+
+        sync_update = updates_static.pop(0)
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001794')
+            self.assertEqual(sync_update.old_m_object.rowcount, 43)
+            self.assertEqual(sync_update.old_m_object.name.first_name, 'Hatti')
+            self.assertEqual(sync_update.old_m_object.name.family_name, 'Clarson')
+            self.assertEqual(sync_update.old_s_object.wpid, '1379')
+            self.assertEqual(sync_update.old_s_object.rowcount, 44)
+            self.assertFalse(sync_update.m_deltas)
+            self.assertTrue(sync_update.s_deltas)
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+        sync_update = updates_static.pop(0)
+
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001939')
+            self.assertEqual(sync_update.old_m_object.rowcount, 62)
+            self.assertEqual(sync_update.old_m_object.name.first_name, 'Bevvy')
+            self.assertEqual(sync_update.old_m_object.name.family_name, 'Brazear')
+            self.assertEqual(sync_update.old_m_object.get('Business Type'), None)
+            self.assertEqual(sync_update.old_s_object.wpid, '1172')
+            self.assertEqual(sync_update.old_s_object.rowcount, 68)
+            self.assertEqual(sync_update.new_m_object.get('Business Type'), None)
+            self.assertTrue(sync_update.m_deltas)
+            self.assertFalse(sync_update.s_deltas)
+            master_updates = sync_update.get_master_updates()
+            self.assertFalse('Business Type' in master_updates)
+            slave_updates = sync_update.get_slave_updates()
+            self.assertFalse('Business Type' in slave_updates)
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+        sync_update = updates_static.pop(0)
+        try:
+            self.assertEqual(sync_update.old_m_object.MYOBID, 'C001129')
+            self.assertEqual(sync_update.old_m_object.rowcount, 84)
+            self.assertEqual(sync_update.old_m_object.name.first_name, 'Darwin')
+            self.assertEqual(sync_update.old_m_object.name.family_name, 'Athelstan')
+            self.assertEqual(sync_update.old_s_object.wpid, '1133')
+            self.assertEqual(sync_update.old_s_object.rowcount, 56)
+            self.assertTrue(sync_update.m_deltas)
+            self.assertFalse(sync_update.s_deltas)
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
+    def test_do_merge_basic_with_role(self):
+        self.parsers = populate_master_parsers(
+            self.parsers, self.settings
+        )
+        self.parsers = populate_slave_parsers(
+            self.parsers, self.settings
+        )
+        self.matches = do_match(
+            self.parsers, self.settings
+        )
+        self.updates = do_merge(
+            self.matches, self.parsers, self.settings
+        )
+        if self.debug:
+            self.print_updates_summary(self.updates)
 
         self.assertEqual(len(self.updates.delta_master), 6)
         self.assertEqual(len(self.updates.delta_slave), 6)
@@ -331,7 +429,6 @@ class TestMergerSafe(TestMergerAbstract):
         self.assertEqual(len(self.updates.problematic), 0)
         self.assertEqual(len(self.updates.slave), 7)
         self.assertEqual(len(self.updates.static), 7)
-
 
         updates_static = self.updates.static[:]
 
@@ -462,6 +559,10 @@ class TestMergerSafe(TestMergerAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
     def test_do_merge_hard_1(self):
         suffix = 'hard_1'
         for source, line in [('master', 8), ('slave', 89)]:
@@ -507,6 +608,10 @@ class TestMergerSafe(TestMergerAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
     def test_do_merge_hard_2(self):
         suffix = 'hard_2'
         for source, line in [('master', 96), ('slave', 100)]:
@@ -567,7 +672,7 @@ class TestMergerSafe(TestMergerAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    # @unittest.skip("Failing")
+
     def test_do_merge_false_pos(self):
         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_false_positive.csv")
         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_false_positive.csv")

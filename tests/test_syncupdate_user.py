@@ -307,6 +307,10 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
     def test_m_deltas(self):
         master_object = self.usr_md1
         self.assertEqual(master_object.role.role, 'WN')
@@ -331,6 +335,10 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
     def test_s_deltas(self):
         master_object = self.usr_md2
         slave_object = self.usr_sd2
@@ -411,6 +419,10 @@ class TestSyncUpdateUser(TestSyncUpdateUserAbstract):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @unittest.skipIf(
+        "Role" not in ColDataUser.data,
+        "tests assume role being synced"
+    )
     def test_s_deltas_b(self):
         master_object = self.usr_md1
         slave_object = self.usr_sd3
