@@ -13,6 +13,9 @@ woo-schemas:
     - CA
     - CB
 
+xero-schemas:
+    - XERO
+
 schema: CA
 
 add-special-categories: false

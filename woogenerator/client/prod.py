@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from collections import OrderedDict
 
 from .core import SyncClientWC
-
+from .xero import SyncClientXero
 
 class ProdSyncClientWC(SyncClientWC):
     endpoint_singular = 'product'
@@ -75,3 +75,6 @@ class ProdSyncClientWC(SyncClientWC):
 class CatSyncClientWC(SyncClientWC):
     endpoint_singular = 'product_category'
     endpoint_plural = 'products/categories'
+
+class ProdSyncClientXero(SyncClientXero):
+    endpoint_singular = 'item'

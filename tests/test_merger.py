@@ -48,13 +48,6 @@ class TestMergerAbstract(AbstractSyncManagerTestCase):
         self.settings.update_master = False
         self.settings.update_slave = False
         self.settings.ask_before_update = False
-
-        if not self.debug:
-            self.override_args = ' '.join(
-                token for token in self.override_args.split(' ') + [
-                    '--quiet',
-                ] if token
-            )
         self.settings.init_settings(self.override_args)
 
     def print_user_summary(self, user):

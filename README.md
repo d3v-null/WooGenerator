@@ -191,15 +191,23 @@ to test all:
 pytest
 ```
 
-Running
+Usage
 ====
 If you want to run the gui:
 
 `python -m woogenerator.gui`
 
-If you're syncing products:
+If you're syncing products between GDrive and WC:
 
 `python -m woogenerator.generator --help`
+
+If you're syncing products between GDrive and MYOB:
+
+`python -m woogenerator.generator --schema=MY --help`
+
+If you're syncing products between GDrive and Xero:
+
+`python -m woogenerator.generator --schema=Xero --help`
 
 If you're syncing users:
 

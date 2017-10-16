@@ -5,7 +5,9 @@ from woogenerator.client.core import SyncClientGDrive
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
-from woogenerator.namespace.core import SettingsNamespaceProto
+from woogenerator.namespace.core import (
+    MatchNamespace, ParserNamespace, SettingsNamespaceProto, UpdateNamespace
+)
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.utils import Registrar, TimeUtils
 
@@ -25,20 +27,14 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         self.settings.local_work_dir = self.local_work_dir
         self.settings.local_live_config = None
         self.settings.local_test_config = self.config_file
-        self.settings.verbosity = 0
-        self.settings.quiet = True
+        if self.debug:
+            self.settings.verbosity = 3
+            self.settings.quiet = False
+        else:
+            self.settings.verbosity = 0
+            self.settings.quiet = True
 
         self.settings.init_settings(self.override_args)
-
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
-        Registrar.DEBUG_PROGRESS = False
-        if self.debug:
-            Registrar.DEBUG_PROGRESS = True
-            Registrar.DEBUG_MESSAGE = True
-            Registrar.DEBUG_ERROR = True
-
 
 @unittest.skip('Tests not mocked yet')
 class TestSyncClient(AbstractSyncClientTestCase):

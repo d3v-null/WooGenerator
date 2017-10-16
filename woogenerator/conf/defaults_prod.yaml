@@ -7,6 +7,9 @@ myo-schemas:
 woo-schemas:
     - WC
 
+xero-schemas:
+    - XERO
+
 schema: WC
 
 thumbsize-x: 1920

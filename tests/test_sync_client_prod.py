@@ -204,7 +204,10 @@ class TestProdSyncClientConstructors(TestProdSyncClient):
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
 
-    @unittest.skip("won't work with dummy conf")
+    @unittest.skipIf(
+        TestProdSyncClient.local_work_dir == TESTS_DATA_DIR,
+        "won't work with dummy conf"
+    )
     def test_make_usr_m_down_client(self):
         self.settings.download_master = True
         master_client_args = self.settings.master_download_client_args
@@ -220,17 +223,26 @@ class TestProdSyncClientConstructors(TestProdSyncClient):
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
 
+class TestProdSyncClientXero(TestProdSyncClient):
+    # debug = True
+
+    @unittest.skipIf(
+        TestProdSyncClient.local_work_dir == TESTS_DATA_DIR,
+        "won't work with dummy conf"
+    )
+    def test_read(self):
+        self.settings.download_slave = True
+        self.settings.schema = 'XERO'
+        # if self.debug: import pudb; pudb.set_trace()
+        slave_client_args = self.settings.slave_download_client_args
+        slave_client_class = self.settings.slave_download_client_class
+        if self.debug:
+            print("slave_client_args: %s" % slave_client_args)
+            print("slave_client_class: %s" % slave_client_class)
+        with slave_client_class(**slave_client_args) as slave_client:
+            self.assertTrue(slave_client)
+            if self.debug:
+                print(slave_client.service.items.all()[:10])
+
 if __name__ == '__main__':
     unittest.main()
-
-    # testSuite = TestSuite()
-    # testSuite.addTest(TestProdSyncClient('test_upload_changes'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_changes_meta'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_delete_meta'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_changes_variation'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_changes_var_meta'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_delete_var_meta'))
-    # testSuite.addTest(TestProdSyncClient('test_get_single_page'))
-    # testSuite.addTest(TestProdSyncClient('test_read'))
-    # testSuite.addTest(TestProdSyncClient('test_upload_changes_var_meta'))
-    # TextTestRunner().run(testSuite)

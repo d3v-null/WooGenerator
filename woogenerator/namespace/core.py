@@ -169,6 +169,14 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
+    def slave_xero_api_params(self):
+        response = {
+            'api_key': self.get('xero_consumer_key'),
+            'rsa_key_file': self.get('xero_private_key_file')
+        }
+        return response
+
+    @property
     def local_client_class(self):
         return SyncClientLocal
 

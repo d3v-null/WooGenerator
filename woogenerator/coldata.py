@@ -235,6 +235,21 @@ class ColDataProd(ColDataBase):
         }),
     ])
 
+    @classmethod
+    def get_product_cols(cls):
+        return cls.get_export_cols('product')
+
+    @classmethod
+    def get_pricing_cols(cls):
+        return cls.get_export_cols('pricing')
+
+    @classmethod
+    def get_shipping_cols(cls):
+        return cls.get_export_cols('shipping')
+
+    @classmethod
+    def get_inventory_cols(cls):
+        return cls.get_export_cols('inventory')
 
 class ColDataMyo(ColDataProd):
 
@@ -312,10 +327,57 @@ class ColDataMyo(ColDataProd):
             data = self.data
         super(ColDataMyo, self).__init__(data)
 
-    @classmethod
-    def get_product_cols(cls):
-        return cls.get_export_cols('product')
+class ColDataXero(ColDataProd):
+    data = OrderedDict(ColDataProd.data.items() + [
+        ('ID', {
+            'xero-api': {
+                'key': 'ItemID'
+            },
+            'report': True,
+            'sync': 'slave_override',
+        }),
+        ('codesum', {
+            'xero-api': {
+                'key': 'Code'
+            },
+            'report': True
+        }),
+        ('itemsum', {
+            'xero-api': {
+                'key': 'Name'
+            },
+            'report': True,
+        }),
+        ('is_sold', {
+            'xero-api': {
+                'key': 'isSold'
+            }
+        }),
+        ('is_purchased', {
+            'xero-api': {
+                'key': 'isPurchased'
+            }
+        }),
+        ('descsum', {
+            'xero-api': {
+                'key': 'Description'
+            }
+        }),
+        ('sales_details', {
+            'xero-api': {
+                'key': 'SalesDetails'
+            },
+            'aliases': ['RNR']
+        }),
+        ('RNR', {
+            'xero-api': None
+        })
+    ])
 
+    def __init__(self, data=None):
+        if not data:
+            data = self.data
+        super(ColDataXero, self).__init__(data)
 
 class ColDataWoo(ColDataProd):
 
@@ -348,6 +410,8 @@ class ColDataWoo(ColDataProd):
             'product': True,
             'variation': True,
             'category': True,
+            'report': True,
+            'sync': True,
             'wp': {
                 'key': '_sku',
                 'meta': True
@@ -355,8 +419,9 @@ class ColDataWoo(ColDataProd):
             'wp-api': {
                 'key': 'sku'
             },
-            'report': True,
-            'sync': True
+            'xero-api': {
+                'key': 'Code'
+            },
         }),
         ('slug', {
             'category': True,
@@ -374,6 +439,9 @@ class ColDataWoo(ColDataProd):
             'label': 'post_title',
             'product': True,
             'variation': True,
+            'report': True,
+            'sync': 'not_variable',
+            'static': True,
             'wp': {
                 'key': 'post_title',
                 'meta': False
@@ -386,9 +454,9 @@ class ColDataWoo(ColDataProd):
                 'key': 'title',
                 'meta': False
             },
-            'report': True,
-            'sync': 'not_variable',
-            'static': True,
+            'xero-api': {
+                'key': 'Name'
+            },
         }),
         ('title', {
             'category': True,
@@ -442,7 +510,11 @@ class ColDataWoo(ColDataProd):
             'label': 'post_content',
             'tag': 'Description',
             'product': True,
-            'sync': 'not_variable'
+            'variation': False,
+            'sync': 'not_variable',
+            'xero-api': {
+                'key': 'Description'
+            }
         }),
         ('HTML Description', {
             'import': True,
@@ -1129,6 +1201,25 @@ class ColDataWoo(ColDataProd):
             'sync': True,
             'default': 'publish'
         }),
+        ('is_sold', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'wp-api': None,
+            'xero-api': {
+                'key': 'isSold'
+            }
+        }),
+        ('is_purchased', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'wp-api': None,
+            'xero-api': {
+                'key': 'isPurchased'
+            }
+        }),
+
     ])
 
     def __init__(self, data=None):
@@ -1137,28 +1228,12 @@ class ColDataWoo(ColDataProd):
         super(ColDataWoo, self).__init__(data)
 
     @classmethod
-    def get_product_cols(cls):
-        return cls.get_export_cols('product')
-
-    @classmethod
     def get_variation_cols(cls):
         return cls.get_export_cols('variation')
 
     @classmethod
     def get_category_cols(cls):
         return cls.get_export_cols('category')
-
-    @classmethod
-    def get_pricing_cols(cls):
-        return cls.get_export_cols('pricing')
-
-    @classmethod
-    def get_shipping_cols(cls):
-        return cls.get_export_cols('shipping')
-
-    @classmethod
-    def get_inventory_cols(cls):
-        return cls.get_export_cols('inventory')
 
     @classmethod
     def get_wp_cols(cls):

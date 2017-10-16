@@ -1,4 +1,4 @@
-"""Provide configuration namespaces for product data."""
+""" Provide configuration namespaces for GDrive <-> WC product sync. """
 
 from __future__ import absolute_import
 
@@ -6,11 +6,12 @@ import os
 import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
-from ..client.prod import ProdSyncClientWC
-from ..coldata import ColDataBase, ColDataMyo, ColDataWoo
+from ..client.prod import ProdSyncClientWC, ProdSyncClientXero
+from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.myo import CsvParseMyo
+from ..parsing.xero import CsvParseXero
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from .core import SettingsNamespaceProto
 from ..utils import Registrar
@@ -29,6 +30,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.variant = getattr(self, 'variant', None)
         self.woo_schemas = getattr(self, 'woo_schemas', [])
         self.myo_schemas = getattr(self, 'myo_schemas', [])
+        self.xero_schemas = getattr(self, 'xero_schemas', [])
         self.taxo_depth = getattr(self, 'taxo_depth', None)
         self.item_depth = getattr(self, 'item_depth', None)
         self.thumbsize_x = getattr(self, 'thumbsize_x', None)
@@ -45,6 +47,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def schema_is_myo(self):
         return self.schema in self.myo_schemas
+
+    @property
+    def schema_is_xero(self):
+        return self.schema in self.xero_schemas
 
     @property
     def thumbsize(self):
@@ -78,7 +84,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ Class used to obtain column metadata. """
         if self.schema_is_myo:
             return ColDataMyo
-        if self.schema_is_woo:
+        elif self.schema_is_xero:
+            return ColDataXero
+        elif self.schema_is_woo:
             return ColDataWoo
         return ColDataBase
 
@@ -252,6 +260,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ Class used to parse master data """
         if self.schema_is_myo:
             return CsvParseMyo
+        if self.schema_is_xero:
+            return CsvParseXero
         if self.schema_is_woo:
             if self.schema == CsvParseTT.target_schema:
                 return CsvParseTT
@@ -343,14 +353,19 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def slave_download_client_class(self):
         response = self.local_client_class
         if self['download_slave']:
-            response = ProdSyncClientWC
+            if self.schema_is_woo:
+                response = ProdSyncClientWC
+            elif self.schema_is_xero:
+                response = ProdSyncClientXero
         return response
 
     @property
     def slave_download_client_args(self):
-        response = {
-            'connect_params': self.slave_wc_api_params
-        }
+        response = {}
+        if self.schema_is_woo:
+            response = {'connect_params': self.slave_wc_api_params}
+        elif self.schema_is_xero:
+            response = {'connect_params': self.slave_xero_api_params}
         return response
 
     @property

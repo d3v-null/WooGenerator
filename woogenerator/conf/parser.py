@@ -631,6 +631,7 @@ class ArgumentParserProd(ArgumentParserCommon):
     def add_other_options(self):
         super(ArgumentParserProd, self).add_other_options()
         self.add_suppressed_argument('--myo-schemas', nargs='+')
+        self.add_suppressed_argument('--xero-schemas', nargs='+')
         self.add_suppressed_argument('--woo-schemas', nargs='+')
 
     def add_client_options(self, client_group):
@@ -663,6 +664,11 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--db-pass')
         self.add_suppressed_argument('--db-name')
         self.add_suppressed_argument('--tbl-prefix')
+
+        self.add_suppressed_argument('--xero-consumer-key')
+        self.add_suppressed_argument('--xero-consumer-secret')
+        self.add_suppressed_argument('--xero-private-key-file')
+        self.add_suppressed_argument('--xero-api-endpoint-url')
 
 
 class ArgumentParserUser(ArgumentParserCommon):

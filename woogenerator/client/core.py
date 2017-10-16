@@ -58,8 +58,13 @@ class WPAPIService(API, AbstractServiceInterface):
 class ClientAbstract(Registrar):
     """ Interface with a service as a client. Boilerplate. """
     service_builder = AbstractServiceInterface
+    service_name = 'UNKN'
 
     def __init__(self, connect_params, **kwargs):
+        """
+         - Connect params passed in to service builder,
+         - kwargs used to modify sync client
+        """
         self.connect_params = connect_params
         self.service = None
         self.attempt_connect()
@@ -94,7 +99,7 @@ class ClientAbstract(Registrar):
         Attempt to connect using instances `connect_params` and `service_builder`
         """
         positional_args = self.connect_params.pop('positional', [])
-        service_name = 'UNKN'
+        service_name = self.service_name
         if hasattr(self.service_builder, '__name__'):
             service_name = getattr(self.service_builder, '__name__')
         if self.DEBUG_API:
@@ -102,12 +107,15 @@ class ClientAbstract(Registrar):
                 "building service (%s) with positional: %s and keyword: %s" %
                 (str(service_name), str(positional_args),
                  str(self.connect_params)))
-        self.service = self.service_builder(*positional_args, **
-                                            self.connect_params)
-
+        self.service = self.service_builder(
+            *positional_args,
+            **self.connect_params
+        )
 
 class SyncClientAbstract(ClientAbstract):
     """ Interface with a service as a client to perform syncing. """
+
+    service_name = 'ABSTRACT'
 
     def __init__(self, connect_params, **kwargs):
         super(SyncClientAbstract, self).__init__(connect_params, **kwargs)
@@ -131,6 +139,8 @@ class SyncClientAbstract(ClientAbstract):
 class SyncClientNull(SyncClientAbstract):
     """ Designed to act like a client but fails on all actions """
 
+    service_name = 'NULL'
+
     def __init__(self, *args, **kwargs):
         pass
 
@@ -146,6 +156,8 @@ class SyncClientNull(SyncClientAbstract):
 
 class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
+
+    service_name = 'LOCAL'
 
     def __init__(self, **kwargs):
         self.dialect_suggestion = kwargs.pop('dialect_suggestion', None)
@@ -191,6 +203,7 @@ class SyncClientGDrive(SyncClientAbstract):
     Use google drive apiclient to build an api client
     """
     service_builder = discovery.build
+    service_name = 'GDRIVE'
 
     def __init__(self, gdrive_params, **kwargs):
         for key in [
@@ -323,13 +336,13 @@ class SyncClientGDrive(SyncClientAbstract):
                 if out_file:
                     message += ' to file %s' % data_path
 
+# TODO: probably move REST stuff to rest.py
 
 class SyncClientRest(SyncClientAbstract):
-    """
-    Client for the REST API
-    """
+    """ Abstract REST API Client. """
 
     service_builder = WPAPIService
+    service_name = 'REST'
     version = None
     endpoint_singular = ''
     mandatory_params = ['api_key', 'api_secret', 'url']
@@ -337,11 +350,13 @@ class SyncClientRest(SyncClientAbstract):
     default_namespace = 'wp-json'
     page_nesting = True
     search_param = None
+    key_translation = {
+        'api_key': 'consumer_key',
+        'api_secret': 'consumer_secret'
+    }
 
     class ApiIterator(Iterable):
-        """
-        An iterator for traversing items in the API
-        """
+        """ An iterator for traversing items in the API. """
 
         def __init__(self, service, endpoint):
             assert isinstance(service, WPAPIService)
@@ -502,10 +517,6 @@ class SyncClientRest(SyncClientAbstract):
         self.offset = connect_params.get('offset')
         self.since = kwargs.get('since')
 
-        key_translation = {
-            'api_key': 'consumer_key',
-            'api_secret': 'consumer_secret'
-        }
         for param in self.mandatory_params:
             assert param in connect_params and connect_params[param], \
                 "missing mandatory param (%s) from connect parameters: %s" \
@@ -514,14 +525,10 @@ class SyncClientRest(SyncClientAbstract):
         #
         superconnect_params = {}
 
-        # superconnect_params.update(
-        #     timeout=60
-        # )
-
         for key, value in connect_params.items():
             super_key = key
-            if key in key_translation:
-                super_key = key_translation[key]
+            if key in self.key_translation:
+                super_key = self.key_translation[key]
             superconnect_params[super_key] = value
 
         if 'api' not in superconnect_params:
