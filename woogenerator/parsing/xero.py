@@ -3,14 +3,31 @@ from __future__ import absolute_import
 import time
 
 from ..coldata import ColDataXero
-from ..utils import SeqUtils
-from .gen import CsvParseGenTree
+from ..utils import SeqUtils, DescriptorUtils
+from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .myo import CsvParseMyo
-from .shop import ImportShopProductMixin, ShopProdList
+from .shop import (
+    ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin, ShopProdList, CsvParseShopMixin
+)
 
+class ImportXeroMixin(object):
+    xeroidKey = 'ID'
+    xeroid = DescriptorUtils.safe_key_property(xeroidKey)
 
-class CsvParseXero(CsvParseGenTree):
-    productContainer = ImportShopProductMixin
+class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
+    pass
+
+class ImportXeroItem(ImportXeroObject, ImportGenItem):
+    pass
+
+class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
+    isProduct = ImportShopProductMixin.isProduct
+    name_delimeter = ' - '
+
+class CsvParseXero(CsvParseGenTree, CsvParseShopMixin):
+    objectContainer = ImportXeroObject
+    itemContainer = ImportXeroItem
+    productContainer = ImportXeroProduct
     coldata_class = ColDataXero
 
     @property
@@ -22,30 +39,32 @@ class CsvParseXero(CsvParseGenTree):
     # extra_taxo_subs = CsvParseMyo.extra_taxo_subs
     # extra_item_subs = CsvParseMyo.extra_item_subs
 
-    def __init__(
-        self, cols=None, defaults=None, schema='XERO', import_name="",
-        taxo_subs=None, item_subs=None, taxo_depth=3, item_depth=2,
-        meta_width=2
-    ):
+    def __init__(self, cols=None, defaults=None, **kwargs):
         if defaults is None:
             defaults = {}
         if cols is None:
             cols = {}
-        if taxo_subs is None:
-            taxo_subs = {}
-        if item_subs is None:
-            item_subs = {}
-        if not import_name:
-            import_name = time.strftime("%Y-%m-%d %H:%M:%S")
-        taxo_subs = SeqUtils.combine_ordered_dicts(taxo_subs, CsvParseXero.extra_taxo_subs)
-        item_subs = SeqUtils.combine_ordered_dicts(item_subs, CsvParseXero.extra_item_subs)
+        # kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
+        #     taxo_subs, CsvParseXero.extra_taxo_subs
+        # )
+        # kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
+        #     item_subs, CsvParseXero.extra_item_subs
+        # )
+        if not kwargs.get('schema'):
+            kwargs['schema'] = "XERO"
 
-        super(CsvParseXero, self).__init__(
-            cols, defaults, schema, taxo_subs, item_subs, taxo_depth,
-            item_depth, meta_width
-        )
+        super(CsvParseXero, self).__init__(cols, defaults, **kwargs)
+
+    def clear_transients(self):
+        CsvParseGenTree.clear_transients(self)
+        CsvParseShopMixin.clear_transients(self)
+
+    def register_object(self, object_data):
+        CsvParseGenTree.register_object(self, object_data)
+        CsvParseShopMixin.register_object(self, object_data)
 
 class XeroProdList(ShopProdList):
 
-    def get_report_cols(self):
+    @property
+    def report_cols(self):
         return CsvParseXero.coldata_class.get_product_cols()

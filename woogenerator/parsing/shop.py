@@ -440,11 +440,11 @@ class CsvParseShopMixin(object):
                 self.register_variation(parent_data, object_data)
             else:
                 self.register_product(object_data)
-            # if Registrar.DEBUG_SHOP:
-                # Registrar.register_message("Object is product")
-        # else:
-            # if Registrar.DEBUG_SHOP:
-            #     Registrar.register_message("Object is not product")
+            if Registrar.DEBUG_SHOP:
+                Registrar.register_message("Object is product")
+        else:
+            if Registrar.DEBUG_SHOP:
+                Registrar.register_message("Object is not product")
 
     def register_category(self, cat_data):
         assert\

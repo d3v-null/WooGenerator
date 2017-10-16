@@ -169,70 +169,70 @@ class ColDataProd(ColDataBase):
             'product': True,
             'report': True,
         }),
-        ('WNR', {
-            'product': True,
-            'report': True,
-            'pricing': True,
-        }),
-        ('RNR', {
-            'product': True,
-            'report': True,
-            'pricing': True,
-        }),
-        ('DNR', {
-            'product': True,
-            'report': True,
-            'pricing': True,
-        }),
-        ('weight', {
-            'import': True,
-            'product': True,
-            'variation': True,
-            'shipping': True,
-            'wp': {
-                'key': '_weight',
-                'meta': True
-            },
-            'wp-api': True,
-            'sync': True,
-            'report': True
-        }),
-        ('length', {
-            'import': True,
-            'product': True,
-            'variation': True,
-            'shipping': True,
-            'wp': {
-                'key': '_length',
-                'meta': True
-            },
-            'sync': True,
-            'report': True
-        }),
-        ('width', {
-            'import': True,
-            'product': True,
-            'variation': True,
-            'shipping': True,
-            'wp': {
-                'key': '_width',
-                'meta': True
-            },
-            'sync': True,
-            'report': True
-        }),
-        ('height', {
-            'import': True,
-            'product': True,
-            'variation': True,
-            'shipping': True,
-            'wp': {
-                'key': '_height',
-                'meta': True
-            },
-            'sync': True,
-            'report': True
-        }),
+        # ('WNR', {
+        #     'product': True,
+        #     'report': True,
+        #     'pricing': True,
+        # }),
+        # ('RNR', {
+        #     'product': True,
+        #     'report': True,
+        #     'pricing': True,
+        # }),
+        # ('DNR', {
+        #     'product': True,
+        #     'report': True,
+        #     'pricing': True,
+        # }),
+        # ('weight', {
+        #     'import': True,
+        #     'product': True,
+        #     'variation': True,
+        #     'shipping': True,
+        #     'wp': {
+        #         'key': '_weight',
+        #         'meta': True
+        #     },
+        #     'wp-api': True,
+        #     'sync': True,
+        #     'report': True
+        # }),
+        # ('length', {
+        #     'import': True,
+        #     'product': True,
+        #     'variation': True,
+        #     'shipping': True,
+        #     'wp': {
+        #         'key': '_length',
+        #         'meta': True
+        #     },
+        #     'sync': True,
+        #     'report': True
+        # }),
+        # ('width', {
+        #     'import': True,
+        #     'product': True,
+        #     'variation': True,
+        #     'shipping': True,
+        #     'wp': {
+        #         'key': '_width',
+        #         'meta': True
+        #     },
+        #     'sync': True,
+        #     'report': True
+        # }),
+        # ('height', {
+        #     'import': True,
+        #     'product': True,
+        #     'variation': True,
+        #     'shipping': True,
+        #     'wp': {
+        #         'key': '_height',
+        #         'meta': True
+        #     },
+        #     'sync': True,
+        #     'report': True
+        # }),
     ])
 
     @classmethod
@@ -334,19 +334,22 @@ class ColDataXero(ColDataProd):
                 'key': 'ItemID'
             },
             'report': True,
+            'product': True,
             'sync': 'slave_override',
         }),
         ('codesum', {
             'xero-api': {
                 'key': 'Code'
             },
-            'report': True
+            'report': True,
+            'product': True,
         }),
         ('itemsum', {
             'xero-api': {
                 'key': 'Name'
             },
             'report': True,
+            'product': True,
         }),
         ('is_sold', {
             'xero-api': {
@@ -370,7 +373,11 @@ class ColDataXero(ColDataProd):
             'aliases': ['RNR']
         }),
         ('RNR', {
-            'xero-api': None
+            'xero-api': None,
+            'product': True,
+            'report': True,
+            'pricing': True,
+            'import': True
         })
     ])
 

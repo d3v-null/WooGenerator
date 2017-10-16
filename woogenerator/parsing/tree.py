@@ -531,7 +531,10 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     def get_kwargs(self, all_data, container, **kwargs):
         kwargs = super(CsvParseTree, self).get_kwargs(
             all_data, container, **kwargs)
-        assert issubclass(container, ImportTreeObject)
+        assert \
+            issubclass(container, ImportTreeObject), \
+            "Container should inherit from tree object, instead found %s" % \
+                container.__name__
 
         # sanity check kwargs has been called with correct arguments
         for key in ['row', 'rowcount']:

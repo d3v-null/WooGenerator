@@ -266,13 +266,13 @@ class CsvParseGenMixin(object):
         # defaults.update(super_data)
         return defaults
 
-
-# , CSVParse_Shop):
-class CsvParseGenTree(
-        CsvParseTree, CsvParseGenMixin):  # pylint: disable=abstract-method
+class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
     """ Parser for tree-based generator structure """
 
     sanitize_cell = CsvParseGenMixin.sanitize_cell
+    objectContainer = CsvParseGenMixin.objectContainer
+    taxoContainer = CsvParseGenMixin.taxoContainer
+    itemContainer = CsvParseGenMixin.itemContainer
 
     def __init__(self, cols, defaults, schema, **kwargs):
         if self.DEBUG_MRO:
@@ -307,11 +307,13 @@ class CsvParseGenTree(
 
         cols = SeqUtils.combine_lists(cols, extra_cols)
         defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
+
+        kwargs['meta_width'] = kwargs.get('meta_width', 2)
+        assert kwargs['meta_width'] >= 2, "meta_width must be greater than 2 for a GEN subclass"
+
         super(CsvParseGenTree, self).__init__(cols, defaults, **kwargs)
         # CsvParseGenMixin.__init__(self, schema)
 
-        meta_width = kwargs.get('meta_width', 2)
-        assert meta_width >= 2, "meta_width must be greater than 2 for a GEN subclass"
 
         self.schema = schema
         self.taxo_subs = SeqUtils.combine_ordered_dicts(

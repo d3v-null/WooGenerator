@@ -1,0 +1,30 @@
+                     ,CAT1              ,CAT2  ,NAME1                                    ,NAME2                   ,CODE0,CODE1  ,CODE2,CODE3,CODE4    ,XERO,D,E,V,RNR   
+Products             ,                  
+                     ,Sport Equipment   ,      
+                     ,                  ,      ,Golf Balls                               ,                        ,     ,       ,     ,GB   ,         
+                     ,                  ,      ,                                         ,white single            ,     ,       ,     ,     ,1-White  ,Y   , , , ,5.60  
+                     ,                  ,      ,                                         ,white 3-pack            ,     ,       ,     ,     ,3-White  ,Y   , , , ,15.00 
+                     ,                  ,      ,                                         ,white 6-pack            ,     ,       ,     ,     ,6-White  ,Y   , , , ,24.99 
+                     ,                  ,      ,                                         ,white 9-pack            ,     ,       ,     ,     ,9-White  ,Y   , , , ,32.00 
+                     ,Apparel           ,      
+                     ,                  ,Shirts,                                         
+                     ,                  ,      ,T-Shirt                                  ,                        ,     ,       ,     ,TS   
+                     ,                  ,      ,                                         ,Large Black             ,     ,       ,     ,     ,L - Black,Y   , , , ,40.0  
+                     ,                  ,      ,                                         ,Medium Black            ,     ,       ,     ,     ,M - Black,Y   , , , ,40.0  
+                     ,                  ,      ,                                         ,Small Black             ,     ,       ,     ,     ,S - Black,Y   , , , ,40.0  
+Training & Consulting,                  
+                     ,Development Work  
+                     ,                  ,      ,Development work                         ,                        ,     ,       ,     ,Dev  
+                     ,                  ,      ,                                         ,developer onsite per day,     ,       ,     ,     ,D        ,Y   , , , ,650.00
+                     ,                  ,      ,                                         ,per hour rate           ,     ,       ,     ,     ,H        ,Y   , , , ,90.00 
+                     ,Project Management
+                     ,                  ,      ,Project Management                       ,                        ,     ,       ,     ,PM   
+                     ,                  ,      ,                                         ,onsite daily rate       ,     ,       ,     ,     ,D        ,Y   , , , ,700.00
+                     ,                  ,      ,Project management & implementation      ,                        ,     ,       ,     ,PM   
+                     ,                  ,      ,                                         ,branding                ,     ,       ,     ,     ,Br       ,Y   , , , ,250.00
+                     ,                  ,      ,                                         ,due dilligence          ,     ,       ,     ,     ,DD       ,Y   , , , ,105.00
+                     ,                  ,      ,                                         ,website                 ,     ,       ,     ,     ,We       ,Y   , , , ,300.00
+                     ,Training          ,      ,                                         ,                        ,     ,Train  
+                     ,                  ,      ,Half day training - Microsoft Office     ,                        ,     ,       ,     ,MS   ,         ,Y   , , , ,500.00
+                     ,Support           ,      ,                                         ,                        ,     ,Support
+                     ,                  ,      ,Desktop/network support via email & phone,                        ,     ,       ,     ,M    ,         ,Y   , , , ,500.00

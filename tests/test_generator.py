@@ -12,6 +12,8 @@ from woogenerator.generator import populate_master_parsers
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.woo import WooProdList
+from woogenerator.parsing.xero import XeroProdList
+from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 
 # import argparse
@@ -19,11 +21,11 @@ from woogenerator.utils import Registrar, SanitationUtils
 
 
 
-class TestGenerator(AbstractSyncManagerTestCase):
+class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
     def setUp(self):
-        super(TestGenerator, self).setUp()
+        super(TestGeneratorDummySpecials, self).setUp()
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
         self.settings.master_file = os.path.join(
@@ -140,6 +142,56 @@ class TestGenerator(AbstractSyncManagerTestCase):
         # TODO: finish this
         # self.parsers = populate_slave_parsers(self.parsers, self.settings)
 
+class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
+    settings_namespace_class = SettingsNamespaceProd
+    config_file = "generator_config_test.yaml"
+
+    # debug = True
+
+    def setUp(self):
+        super(TestGeneratorXeroDummy, self).setUp()
+        self.settings.download_master = False
+        self.settings.init_settings(self.override_args)
+        self.settings.schema = "XERO"
+        self.settings.master_file = os.path.join(
+            TESTS_DATA_DIR, "generator_master_dummy_xero.csv"
+        )
+        self.settings.master_dialect_suggestion = "SublimeCsvTable"
+        if self.debug:
+            Registrar.DEBUG_SHOP = True
+
+    def test_populate_master_parsers(self):
+        # if self.debug:
+        #     import pudb; pudb.set_trace()
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        if self.debug:
+            print("master objects: %s" % len(self.parsers.master.objects.values()))
+            print("master items: %s" % len(self.parsers.master.items.values()))
+            print("master products: %s" % len(self.parsers.master.products.values()))
+
+        self.assertEqual(len(self.parsers.master.objects.values()), 29)
+        self.assertEqual(len(self.parsers.master.items.values()), 20)
+
+        prod_list = XeroProdList(self.parsers.master.products.values())
+        if self.debug:
+            print("prod list:\n%s" % prod_list.tabulate())
+            item_list = ItemList(self.parsers.master.items.values())
+            print("item list:\n%s" % item_list.tabulate())
+
+        self.assertEqual(len(prod_list), 15)
+        first_prod = prod_list[0]
+        self.assertEqual(first_prod.codesum, "GB1-White")
+        self.assertEqual(first_prod.parent.codesum, "GB")
+        self.assertTrue(first_prod.isProduct)
+        self.assertFalse(first_prod.isCategory)
+        self.assertFalse(first_prod.isRoot)
+        self.assertFalse(first_prod.isTaxo)
+        self.assertFalse(first_prod.isVariable)
+        self.assertFalse(first_prod.isVariation)
+        for key, value in {
+                'RNR': u'5.60',
+        }.items():
+            self.assertEqual(first_prod[key], value)
 
 if __name__ == '__main__':
     unittest.main()
