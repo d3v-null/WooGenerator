@@ -1036,34 +1036,34 @@ class ContactName(ContactObject):
     def process_kwargs(self):
         super(ContactName, self).process_kwargs()
         if not self.empty:
-            if self.kwargs.get('country'):
-                country_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['country'])
-                country_identified = AddressUtils.identify_country(
-                    country_sanitized)
-                # if self.debug: print "country_sanitized", country_sanitized,
-                # "country_identified", country_identified
-                if country_sanitized != country_identified:
-                    self.properties['country'] = country_identified
-                else:
-                    self.properties['country'] = country_sanitized
-                # self.properties['remove_words'].append(country_sanitized)
+            # if self.kwargs.get('country'):
+            #     country_sanitized = AddressUtils.sanitize_state(
+            #         self.kwargs['country'])
+            #     country_identified = AddressUtils.identify_country(
+            #         country_sanitized)
+            #     # if self.debug: print "country_sanitized", country_sanitized,
+            #     # "country_identified", country_identified
+            #     if country_sanitized != country_identified:
+            #         self.properties['country'] = country_identified
+            #     else:
+            #         self.properties['country'] = country_sanitized
+            #     # self.properties['remove_words'].append(country_sanitized)
 
-            if self.kwargs.get('state'):
-                state_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['state'])
-                self.properties['remove_words'].append(state_sanitized)
-                state_identified = AddressUtils.identify_state(state_sanitized)
-                if state_identified != state_sanitized:
-                    self.properties['remove_words'].append(state_identified)
-                    self.properties['state'] = state_identified
-                else:
-                    self.properties['state'] = state_sanitized
-
-            if self.kwargs.get('city'):
-                city_sanitized = AddressUtils.sanitize_state(
-                    self.kwargs['city'])
-                self.properties['city'] = city_sanitized
+            # if self.kwargs.get('state'):
+            #     state_sanitized = AddressUtils.sanitize_state(
+            #         self.kwargs['state'])
+            #     self.properties['remove_words'].append(state_sanitized)
+            #     state_identified = AddressUtils.identify_state(state_sanitized)
+            #     if state_identified != state_sanitized:
+            #         self.properties['remove_words'].append(state_identified)
+            #         self.properties['state'] = state_identified
+            #     else:
+            #         self.properties['state'] = state_sanitized
+            #
+            # if self.kwargs.get('city'):
+            #     city_sanitized = AddressUtils.sanitize_state(
+            #         self.kwargs['city'])
+            #     self.properties['city'] = city_sanitized
 
             if self.kwargs.get('company'):
                 company_sanitized = SanitationUtils.normalize_val(
@@ -1088,10 +1088,7 @@ class ContactName(ContactObject):
                     ] if self.kwargs.get(key)
                 ])
             )
-            # full_name_components = SanitationUtils.normalize_val(
-            #     ' '.join(
-            #         filter(None,
-            #                map(lambda k: self.kwargs.get(k), ))))
+
 
             if full_name_contact and full_name_components:
                 no_punctuation_contact, no_punctuation_components = map(
@@ -1384,10 +1381,6 @@ class ContactName(ContactObject):
                 if self.debug and self.properties.get('unknowns') else "")
         ])))
 
-    def __str__(self, tablefmt=None):
-        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
-
-
 class ContactPhones(FieldGroup):
     fieldGroupType = "PHONES"
     equality_keys = ['tel_number', 'mob_number', 'fax_number', 'pref_method']
@@ -1561,10 +1554,6 @@ class ContactPhones(FieldGroup):
             prefix + delimeter.join(components)
         )
 
-    def __str__(self, tablefmt=None):
-        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
-
-
 class SocialMediaFields(FieldGroup):
     fieldGroupType = "SOCIALMEDIA"
     equality_keys = ['facebook', 'twitter', 'instagram', 'gplus', 'website']
@@ -1638,10 +1627,6 @@ class SocialMediaFields(FieldGroup):
                 self.instagram,
                 self.website,
             ])))
-
-    def __str__(self, tablefmt=None):
-        return SanitationUtils.coerce_bytes(self.__unicode__(tablefmt))
-
 
 class RoleGroup(FieldGroup):
     """ docstring for RoleGroup. """

@@ -195,9 +195,13 @@ class ImportUser(ImportObject):
                 'name_suffix': 'Name Suffix',
                 'contact': 'Contact',
                 'company': 'Company',
-                'city': 'City',
-                'country': 'Country',
-                'state': 'State',
+                # 'city': 'City',
+                # 'country': 'Country',
+                # 'state': 'State',
+                'display_name': 'Display Name',
+                'memo': 'Memo',
+                'business_owner': 'Spouse',
+                'saultation': 'Salutation'
             }.items()
         ]))
 

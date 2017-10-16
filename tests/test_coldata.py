@@ -153,7 +153,7 @@ class testColDataUser(TestCase):
             ('user_email', 'E-mail'),
             ('user_login', 'Wordpress Username'),
             ('ID', 'Wordpress ID'),
-            ('display_name', 'Contact'),
+            # ('display_name', 'Contact'),
             ('user_url', 'Web Site'),
             ('user_registered', 'Wordpress Start Date'),
             ('pref_method', 'Pref Method')

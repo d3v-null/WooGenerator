@@ -1346,6 +1346,8 @@ class ColDataUser(ColDataBase):
 
         ('Name', {
             'aliases': [
+                'Contact',
+                # 'Display Name',
                 'Name Prefix',
                 'First Name',
                 'Middle Name',
@@ -1354,7 +1356,6 @@ class ColDataUser(ColDataBase):
                 'Memo',
                 'Spouse',
                 'Salutation',
-                'Contact'
             ],
             'user': True,
             'sync': True,
@@ -1366,25 +1367,23 @@ class ColDataUser(ColDataBase):
         }),
         ('Contact', {
             'import': True,
-            'wp': {
-                'meta': False,
-                'key': 'display_name'
-            },
-            'wp-api': {
-                'meta': False,
-                'key': 'name'
-            },
             'act': True,
             'mutable': True,
             'visible': True,
-            # 'label':'contact_name',
-            # 'warn': True,
-            # 'user':True,
-            # 'sync':True,
-            # "static": True,
-            # 'report':True,
             'default': '',
         }),
+        # ('Display Name', {
+        #     'import': True,
+        #     'act': False
+        #     'wp': {
+        #         'meta': False,
+        #         'key': 'display_name'
+        #     },
+        #     'wp-api': {
+        #         'meta': False,
+        #         'key': 'name'
+        #     },
+        # })
         ('First Name', {
             'wp': {
                 'meta': True,
