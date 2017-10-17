@@ -13,7 +13,7 @@ from woogenerator.matching import (CategoryMatcher, MatchList, ProductMatcher,
                                    VariationMatcher)
 from woogenerator.metagator import MetaGator
 from woogenerator.namespace.prod import SettingsNamespaceProd
-from woogenerator.parsing.api import CsvParseWooApi
+from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.dyn import CsvParseDyn
 from woogenerator.parsing.myo import CsvParseMyo, MYOProdList
 from woogenerator.parsing.special import CsvParseSpecial

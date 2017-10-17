@@ -27,7 +27,7 @@ print "real world example"
 
 
 class ImportShopMixin(object):
-    isVariation = None
+    is_variation = None
 
 
 class ImportShopProductMixin(object):
@@ -35,19 +35,19 @@ class ImportShopProductMixin(object):
 
 
 class ImportShopProductVariationMixin(object):
-    isVariation = True
+    is_variation = True
 
 
-class ImportApiObject(object):
+class ImportWooApiObject(object):
     pass
 
 
-class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
+class ImportWooApiProduct(ImportWooApiObject, ImportShopProductMixin):
     pass
 
 
-class ImportApiProductVariation(
-        ImportApiProduct, ImportShopProductVariationMixin):
-    isVariation = ImportShopProductVariationMixin.isVariation
+class ImportWooApiProductVariation(
+        ImportWooApiProduct, ImportShopProductVariationMixin):
+    is_variation = ImportShopProductVariationMixin.is_variation
 
-print "isVariation of ImportApiProductVariation", ImportApiProductVariation.isVariation
+print "is_variation of ImportWooApiProductVariation", ImportWooApiProductVariation.is_variation

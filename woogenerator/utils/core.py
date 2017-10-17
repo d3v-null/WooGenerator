@@ -876,8 +876,26 @@ class SanitationUtils(object):
 
 class DescriptorUtils(object):
 
-    @staticmethod
-    def safe_key_property(key):
+    class DescriptorPropertySafe(property):
+        """
+        Differentiates safe properties created with DescriptorUtils from other properties.
+        """
+        pass
+
+    class DescriptorPropertySafeNormalized(property):
+        """
+        Differentiates safe normalized properties created with DescriptorUtils from other properties.
+        """
+        pass
+
+    class DescriptorPropertyKwargAlias(property):
+        """
+        Differentiates kwarg alias properties created with DescriptorUtils from other properties.
+        """
+        pass
+
+    @classmethod
+    def safe_key_property(cls, key):
         def getter(self):
             assert key in self.keys(), "{} must be set before get in {}".format(
                 key, repr(type(self)))
@@ -888,10 +906,10 @@ class DescriptorUtils(object):
                 key, type(value))
             self[key] = value
 
-        return property(getter, setter)
+        return cls.DescriptorPropertySafe(getter, setter)
 
-    @staticmethod
-    def safe_normalized_key_property(key):
+    @classmethod
+    def safe_normalized_key_property(cls, key):
         def getter(self):
             assert key in self.keys(), "{} must be set before get in {}".format(
                 key, repr(type(self)))
@@ -902,10 +920,10 @@ class DescriptorUtils(object):
                 key, type(value))
             self[key] = value
 
-        return property(getter, setter)
+        return cls.DescriptorPropertySafeNormalized(getter, setter)
 
-    @staticmethod
-    def kwarg_alias_property(key, handler):
+    @classmethod
+    def kwarg_alias_property(cls, key, handler):
         def getter(self):
             if self.properties_override:
                 retval = handler(self)
@@ -919,15 +937,15 @@ class DescriptorUtils(object):
             self.kwargs[key] = value
             self.process_kwargs()
 
-        return property(getter, setter)
+        return cls.DescriptorPropertyKwargAlias(getter, setter)
 
 
 class SeqUtils(object):
     """
     Utilities for manipulating sequences like lists and dicts
     """
-    @staticmethod
-    def combine_lists(list_a, list_b):
+    @classmethod
+    def combine_two_lists(cls, list_a, list_b):
         """
             Combines lists a and b uniquely, attempting to preserve order
         """
@@ -941,8 +959,15 @@ class SeqUtils(object):
                 response.append(element)
         return response
 
-    @staticmethod
-    def combine_ordered_dicts(dict_a, dict_b):
+    @classmethod
+    def combine_lists(cls, *args):
+        response = []
+        for arg in args:
+            response = cls.combine_two_lists(response, arg)
+        return response
+
+    @classmethod
+    def combine_two_ordered_dicts(cls, dict_a, dict_b):
         """
             Combines OrderedDict a with b by starting with A and overwriting with items from b.
             Attempts to preserve order
@@ -956,30 +981,37 @@ class SeqUtils(object):
             response[key] = value
         return response
 
-    @staticmethod
-    def filter_unique_true(list_a):
+    @classmethod
+    def combine_ordered_dicts(cls, *args):
+        response = OrderedDict()
+        for arg in args:
+            response = cls.combine_two_ordered_dicts(response, arg)
+        return response
+
+    @classmethod
+    def filter_unique_true(cls, list_a):
         response = []
         for i in list_a:
             if i and i not in response:
                 response.append(i)
         return response
 
-    @staticmethod
-    def get_all_keys(*args):
+    @classmethod
+    def get_all_keys(cls, *args):
         return SeqUtils.filter_unique_true(itertools.chain(*(
             arg.keys() for arg in args if isinstance(arg, dict)
         )))
 
-    @staticmethod
-    def keys_not_in(dictionary, keys):
+    @classmethod
+    def keys_not_in(cls, dictionary, keys):
         assert isinstance(dictionary, dict)
         return type(dictionary)([
             (key, value) for key, value in dictionary.items()
             if key not in keys
         ])
 
-    @staticmethod
-    def check_equal(iterator):
+    @classmethod
+    def check_equal(cls, iterator):
         """
         Check that all items in an iterator are equal.
 
@@ -1019,8 +1051,8 @@ class DebugUtils(object):
         procedures = map(cls.get_caller_procedure, range(1, levels + 1))
         return ">".join(reversed(filter(None, procedures)))
 
-    @staticmethod
-    def hashify(in_str):
+    @classmethod
+    def hashify(cls, in_str):
         out_str = "#" * (len(in_str) + 4) + "\n"
         out_str += "# " + in_str + " #\n"
         out_str += "#" * (len(in_str) + 4) + "\n"

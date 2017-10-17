@@ -197,8 +197,11 @@ class ImportObject(OrderedDict, Registrar):
     rowKey = '_row'
 
     def __init__(self, *args, **kwargs):
-        # print "args = %s\nkwargs = %s\n" % (pformat(args),
-        # pformat(kwargs.items()))
+        if self.DEBUG_ABSTRACT:
+            self.register_message("args = %s\nkwargs = %s\n" % (
+                pformat(args), pformat(kwargs.items())
+            ))
+
         if self.DEBUG_MRO:
             self.register_message('ImportObject')
         data = args[0]
@@ -215,24 +218,27 @@ class ImportObject(OrderedDict, Registrar):
         # Registrar.__init__(self)
         if self.DEBUG_PARSER:
             self.register_message(
-                'About to register child,\n -> DATA: %s\n -> KWARGS: %s' %
+                'Abstract init: \n -> DATA: %s\n -> KWARGS: %s' %
                 (pformat(data), pformat(kwargs)))
 
         rowcount = kwargs.pop(self.rowcountKey, None)
         if rowcount is not None:
             data[self.rowcountKey] = rowcount
-        OrderedDict.__init__(self, **data)
         row = kwargs.pop('row', None)
 
+        OrderedDict.__init__(self, data)
         if row is not None:
             self._row = row
         else:
             if '_row' not in self.keys():
                 self['_row'] = []
-        super(ImportObject, self).__init__(*args, **kwargs)
+        Registrar.__init__(self, *args, **kwargs)
 
     def __hash__(self):
         return hash(self.index)
+
+    def to_dict(self):
+        return OrderedDict(self)
 
     # TODO: refactor to get rid of row property, rename _row to row
     @property
@@ -343,7 +349,7 @@ class CsvParseBase(Registrar):
     Base class for Parsing spreadsheet-like formats.
     """
 
-    objectContainer = ImportObject
+    object_container = ImportObject
 
     def __init__(self, cols, defaults, **kwargs):
         # super(CsvParseBase, self).__init__()
@@ -475,7 +481,7 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_MRO:
             self.register_message(' ')
-        return self.objectContainer
+        return self.object_container
 
     def get_kwargs(self, all_data, container, **kwargs):  # pylint: disable=unused-argument
         """
@@ -733,7 +739,7 @@ class CsvParseBase(Registrar):
         """
         Return the objects parsed by this instance in their preferred container.
         """
-        list_class = self.objectContainer.container
+        list_class = self.object_container.container
         objlist = list_class(self.objects.values())
         return objlist
 
@@ -749,10 +755,10 @@ class CsvParseBase(Registrar):
         """
         Provide a basic string table representation of the objects parsed by this instance.
         """
-        obj_list = cls.objectContainer.container()
+        obj_list = cls.object_container.container()
         for _object in objects:
             obj_list.append(_object)
 
-        cols = cls.objectContainer.container.get_basic_cols()
+        cols = cls.object_container.container.get_basic_cols()
 
         SanitationUtils.safe_print(obj_list.tabulate(cols, tablefmt='simple'))

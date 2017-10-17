@@ -292,9 +292,6 @@ class ColDataMyo(ColDataProd):
             'product': True,
             'report': True,
         }),
-        ('HTML Description', {
-            'import': True,
-        }),
         ('Sell', {
             'default': 'S',
             'product': True,
@@ -329,20 +326,27 @@ class ColDataMyo(ColDataProd):
 
 class ColDataXero(ColDataProd):
     data = OrderedDict(ColDataProd.data.items() + [
-        ('ID', {
+        ('item_id', {
             'xero-api': {
                 'key': 'ItemID'
             },
-            'report': True,
-            'product': True,
+            # 'report': True,
+            # 'product': True,
             'sync': 'slave_override',
         }),
         ('codesum', {
             'xero-api': {
                 'key': 'Code'
             },
-            'report': True,
+            # 'report': True,
+            # 'product': True,
+        }),
+        ('Xero Description', {
+            'xero-api': {
+                'key': 'Description'
+            },
             'product': True,
+            'default': '',
         }),
         ('itemsum', {
             'xero-api': {
@@ -361,16 +365,10 @@ class ColDataXero(ColDataProd):
                 'key': 'isPurchased'
             }
         }),
-        ('descsum', {
-            'xero-api': {
-                'key': 'Description'
-            }
-        }),
         ('sales_details', {
             'xero-api': {
                 'key': 'SalesDetails'
             },
-            'aliases': ['RNR']
         }),
         ('RNR', {
             'xero-api': None,

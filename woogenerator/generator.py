@@ -26,7 +26,6 @@ from .metagator import MetaGator
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
-from .parsing.api import CsvParseWooApi
 from .parsing.dyn import CsvParseDyn
 from .parsing.myo import MYOProdList
 from .parsing.shop import ShopObjList
@@ -160,28 +159,26 @@ def populate_master_parsers(parsers, settings):
 def populate_slave_parsers(parsers, settings):
     """Populate the parsers for data from the slave database."""
 
-    if settings['download_slave']:
+    parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
 
-        parsers.slave = CsvParseWooApi(
-            **settings['api_product_parser_args'])
+    if settings.schema_is_woo and not settings['download_slave']:
+        #TODO: implement local woo slave
+        return
 
-        slave_client_class = settings.slave_download_client_class
-        slave_client_args = settings.slave_download_client_args
+    slave_client_class = settings.slave_download_client_class
+    slave_client_args = settings.slave_download_client_args
 
-        # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
-        with slave_client_class(**slave_client_args) as client:
-            # try:
-            if settings['do_categories']:
-                client.analyse_remote_categories(parsers.slave)
+    # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
+    with slave_client_class(**slave_client_args) as client:
+        # try:
+        if settings.schema_is_woo and settings['do_categories']:
+            client.analyse_remote_categories(parsers.slave)
 
-            Registrar.register_progress("analysing WC API data")
+        Registrar.register_progress("analysing API data")
 
-            client.analyse_remote(
-                parsers.slave, limit=settings['slave_parse_limit'])
+        client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
-        # print parsers.slave.categories
-    else:
-        parsers.slave = None
+    return parsers
 
 
 def process_images(settings, parsers):
@@ -685,9 +682,9 @@ def do_merge(matches, parsers, updates, settings):
         sync_update = SyncUpdateProdWoo(m_object, s_object)
 
         # , "gcs %s is not variation but object is" % repr(gcs)
-        assert not m_object.isVariation
+        assert not m_object.is_variation
         # , "gcs %s is not variation but object is" % repr(gcs)
-        assert not s_object.isVariation
+        assert not s_object.is_variation
         sync_update.update(sync_cols)
 
         # print sync_update.tabulate()
@@ -1269,7 +1266,7 @@ def do_updates_categories(updates, parsers, results, settings):
                 category = new_categories.pop(0)
                 if category.parent:
                     parent = category.parent
-                    if not parent.isRoot and not parent.wpid and parent in new_categories:
+                    if not parent.is_root and not parent.wpid and parent in new_categories:
                         new_categories.append(category)
                         continue
 
@@ -1392,12 +1389,12 @@ def main(override_args=None, settings=None):
 
     check_warnings()
 
-    if settings.do_images and settings.schema_is_woo:
+    if settings.schema_is_woo and settings.do_images:
         process_images(settings, parsers)
 
     export_parsers(settings, parsers)
 
-    parsers = populate_master_parsers(parsers, settings)
+    parsers = populate_slave_parsers(parsers, settings)
 
     matches = MatchNamespace(index_fn=product_index_fn)
     updates = UpdateNamespace()

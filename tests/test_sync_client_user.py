@@ -13,7 +13,7 @@ from woogenerator.coldata import ColDataUser
 from woogenerator.conf.parser import ArgumentParserUser
 from woogenerator.matching import MatchList, UsernameMatcher
 from woogenerator.namespace.user import SettingsNamespaceUser
-from woogenerator.parsing.user import CsvParseUser, CsvParseUserApi
+from woogenerator.parsing.user import CsvParseUser, ApiParseUser
 from woogenerator.syncupdate import SyncUpdate, SyncUpdateUsrApi
 # from woogenerator.coldata import ColDataWoo
 # from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
@@ -305,7 +305,7 @@ class TestUsrSyncClientDestructive(TestUsrSyncClient):
         api_import_cols = ColDataUser.get_wpapi_import_cols()
         self.assertTrue(api_import_cols)
 
-        sa_parser = CsvParseUserApi(
+        sa_parser = ApiParseUser(
             cols=ColDataUser.get_wp_import_cols(),
             defaults=ColDataUser.get_defaults()
         )
@@ -451,7 +451,7 @@ class TestSyncUpdateUsr(AbstractSyncClientTestCase):
 
         # print "MASTER RECORDS: \n", ma_parser.tabulate()
 
-        sa_parser = CsvParseUserApi(
+        sa_parser = ApiParseUser(
             cols=ColDataUser.get_wp_import_cols(),
             defaults=ColDataUser.get_defaults())
 

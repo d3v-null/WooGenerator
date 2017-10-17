@@ -7,7 +7,7 @@ from collections import OrderedDict
 from pprint import pformat
 
 from ..coldata import ColDataWoo
-from ..utils import Registrar, SanitationUtils
+from ..utils import Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenObject
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
@@ -17,85 +17,102 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
 from .tree import CsvParseTreeMixin
 from .woo import CsvParseWooMixin, ImportWooMixin
 
+class ImportApiObjectMixin(object):
 
-class ImportApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
-
-    def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportApiObject')
-        ImportGenObject.__init__(self, *args, **kwargs)
-        ImportShopMixin.__init__(self, *args, **kwargs)
-        ImportWooMixin.__init__(self, *args, **kwargs)
-        self.category_indexer = CsvParseWooMixin.get_title
+    def process_meta(self):
+        # API Objects don't process meta
+        pass
 
     @property
     def index(self):
-        return self.codesum
+        return self.api_id
 
     @property
     def identifier(self):
-        # identifier = super(ImportApiObject, self).identifier
+        # identifier = super(ImportWooApiObject, self).identifier
         return "|".join([
             'r:%s' % str(self.rowcount),
-            'w:%s' % str(self.get(self.wpidKey)),
+            'a:%s' % str(self.get(self.api_id)),
             self.codesum,
             self.title,
         ])
 
-    def process_meta(self):
-        # self.descsum = self.description
-        assert self.descsumKey in self, "descsum should be set in %s. data: %s " % (
-            self, self.items())
-        # self.namesum = self.title
-        assert self.namesumKey in self, "namesum should be set in %s. data: %s " % (
-            self, self.items())
-        # if self.isCategory:
-        #     self.codesum = ''
-        assert self.codesumKey in self, "codesum should be set in %s. data: %s " % (
-            self, self.items())
+class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin):
 
-
-class ImportApiProduct(ImportApiObject, ImportShopProductMixin):
-    isProduct = ImportShopProductMixin.isProduct
+    category_indexer = CsvParseWooMixin.get_title
+    process_meta = ImportApiObjectMixin.process_meta
+    index = ImportApiObjectMixin.index
+    identifier = ImportApiObjectMixin.identifier
+    api_id = ImportWooMixin.wpid_key
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportGenObject.verify_meta_keys,
+        ImportWooMixin.verify_meta_keys
+    )
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('ImportApiProduct')
+            self.register_message('ImportWooApiObject')
+        ImportGenObject.__init__(self, *args, **kwargs)
+        ImportShopMixin.__init__(self, *args, **kwargs)
+        ImportWooMixin.__init__(self, *args, **kwargs)
+
+
+    # def verify_meta(self):
+    #     # self.descsum = self.description
+    #     assert self.descsum_key in self, "descsum should be set in %s. data: %s " % (
+    #         self, self.items())
+    #     # self.namesum = self.title
+    #     assert self.namesum_key in self, "namesum should be set in %s. data: %s " % (
+    #         self, self.items())
+    #     # if self.is_category:
+    #     #     self.codesum = ''
+    #     assert self.codesum_key in self, "codesum should be set in %s. data: %s " % (
+    #         self, self.items())
+
+
+class ImportWooApiProduct(ImportWooApiObject, ImportShopProductMixin):
+    is_product = ImportShopProductMixin.is_product
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_MRO:
+            self.register_message('ImportWooApiProduct')
         if self.product_type:
             args[0]['prod_type'] = self.product_type
-        ImportApiObject.__init__(self, *args, **kwargs)
+        ImportWooApiObject.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
 
-class ImportApiProductSimple(ImportApiProduct, ImportShopProductSimpleMixin):
+class ImportWooApiProductSimple(ImportWooApiProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
 
 
-class ImportApiProductVariable(
-        ImportApiProduct, ImportShopProductVariableMixin):
-    isVariable = ImportShopProductVariableMixin.isVariable
+class ImportWooApiProductVariable(
+        ImportWooApiProduct, ImportShopProductVariableMixin):
+    is_variable = ImportShopProductVariableMixin.is_variable
     product_type = ImportShopProductVariableMixin.product_type
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('ImportApiProductVariable')
-        ImportApiProduct.__init__(self, *args, **kwargs)
+            self.register_message('ImportWooApiProductVariable')
+        ImportWooApiProduct.__init__(self, *args, **kwargs)
         ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
 
 
-class ImportApiProductVariation(
-        ImportApiProduct, ImportShopProductVariationMixin):
-    isVariation = ImportShopProductVariationMixin.isVariation
+class ImportWooApiProductVariation(
+        ImportWooApiProduct, ImportShopProductVariationMixin):
+    is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
 
 
-class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
-    isCategory = ImportShopCategoryMixin.isCategory
+class ImportWooApiCategory(ImportWooApiObject, ImportShopCategoryMixin):
+    is_category = ImportShopCategoryMixin.is_category
+    identifier = ImportWooApiObject.identifier
+
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('ImportApiCategory')
-        ImportApiObject.__init__(self, *args, **kwargs)
+            self.register_message('ImportWooApiCategory')
+        ImportWooApiObject.__init__(self, *args, **kwargs)
         ImportShopCategoryMixin.__init__(self, *args, **kwargs)
 
     @property
@@ -106,31 +123,25 @@ class ImportApiCategory(ImportApiObject, ImportShopCategoryMixin):
     def index(self):
         return self.title
 
-    @property
-    def identifier(self):
-        return "|".join([
-            'r:%s' % str(self.rowcount),
-            'w:%s' % str(self.get(self.wpidKey)),
-            self.title,
-        ])
-
-
-class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
-                     CsvParseShopMixin, CsvParseWooMixin):
-    objectContainer = ImportApiObject
-    productContainer = ImportApiProduct
-    simpleContainer = ImportApiProductSimple
-    variableContainer = ImportApiProductVariable
-    variationContainer = ImportApiProductVariation
-    categoryContainer = ImportApiCategory
+class ApiParseWoo(
+    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin
+):
+    object_container = ImportWooApiObject
+    product_container = ImportWooApiProduct
+    simple_container = ImportWooApiProductSimple
+    variable_container = ImportWooApiProductVariable
+    variation_container = ImportWooApiProductVariation
+    category_container = ImportWooApiCategory
     category_indexer = Registrar.get_object_rowcount
-    productIndexer = CsvParseShopMixin.productIndexer
-    variationIndexer = CsvParseWooMixin.get_title
+    product_indexer = CsvParseShopMixin.product_indexer
+    variation_indexer = CsvParseWooMixin.get_title
+    coldata_class = ColDataWoo
+    col_data_target = 'wp-api'
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
-            self.register_message('CsvParseWooApi')
-        super(CsvParseWooApi, self).__init__(*args, **kwargs)
+            self.register_message('ApiParseWoo')
+        super(ApiParseWoo, self).__init__(*args, **kwargs)
         # self.category_indexer = CsvParseGenMixin.get_name_sum
         # if hasattr(CsvParseWooMixin, '__init__'):
         #     CsvParseGenMixin.__init__(self, *args, **kwargs)
@@ -141,18 +152,18 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         CsvParseShopMixin.clear_transients(self)
         CsvParseWooMixin.clear_transients(self)
 
-        # super(CsvParseWooApi, self).clear_transients()
+        # super(ApiParseWoo, self).clear_transients()
         # CsvParseShopMixin.clear_transients(self)
 
     def register_object(self, object_data):
         # CsvParseGenTree.register_object(self, object_data)
         CsvParseBase.register_object(self, object_data)
-        # CsvParseTreeMixin.register_object(self, object_data)
+        CsvParseTreeMixin.register_object(self, object_data)
         CsvParseShopMixin.register_object(self, object_data)
         # CsvParseWooMixin.register_object(self, object_data)
 
     # def process_object(self, object_data):
-        # super(CsvParseWooApi, self).process_object(object_data)
+        # super(ApiParseWoo, self).process_object(object_data)
         # todo: this
 
     # def register_object(self, object_data):
@@ -160,7 +171,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
     #         self.register_message(' ')
     #     if self.DEBUG_API:
     #         self.register_message("registering object_data: %s" % str(object_data))
-    #     super(CsvParseWooApi, self).register_object(object_data)
+    #     super(ApiParseWoo, self).register_object(object_data)
 
     @classmethod
     def get_api_dimension_data(cls, dimensions):
@@ -204,9 +215,9 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             self.register_message("ANALYSE CATEGORY: %s" %
                                   repr(category_api_data))
         core_translation = OrderedDict()
-        for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
+        for col, col_data in self.ColDataWoo.get_wpapi_core_cols().items():
             try:
-                wp_api_key = col_data['wp-api']['key']
+                wp_api_key = col_data[self.col_data_target]['key']
             except BaseException:
                 wp_api_key = col
             core_translation[wp_api_key] = col
@@ -216,16 +227,6 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                                      for key, value in category_search_data.items()])
 
-        # if 'id' in category_api_data:
-        #     category_search_data[self.categoryContainer.wpidKey] = category_api_data['id']
-        # if 'name' in category_api_data:
-        #     category_search_data[self.categoryContainer.titleKey] = category_api_data['name']
-        #     category_search_data[self.categoryContainer.namesumKey] = category_api_data['name']
-        # elif 'title' in category_api_data:
-        #     category_search_data[self.categoryContainer.titleKey] = category_api_data['title']
-        #     category_search_data[self.categoryContainer.namesumKey] = category_api_data['title']
-        # if 'slug' in category_api_data:
-        #     category_search_data[self.categoryContainer.slugKey] = category_api_data['slug']
         if self.DEBUG_API:
             self.register_message("SEARCHING FOR CATEGORY: %s" %
                                   repr(category_search_data))
@@ -243,26 +244,11 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             kwargs = OrderedDict()
             kwargs['api_data'] = category_api_data
 
-            # default_data = OrderedDict(self.defaults.items())
-            #
-            # parser_data = self.get_parser_data(**kwargs)
-            #
-            # all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
-            #
-            # container = self.get_new_obj_container(all_data, **kwargs)
-            #
-            # cat_data = container(all_data, **kwargs)
-
-            # kwargs = OrderedDict(self.defaults.items())
-            # kwargs.update(category_search_data)
-            # catRowcount = getattr(self, 'rowcount')
-            # if 'id' in category_api_data:
-            #     catRowcount = category_api_data['id']
             parent_category_data = None
             if 'parent' in category_api_data:
                 parent_category_search_data = {}
                 parent_category_search_data[
-                    self.categoryContainer.wpidKey] = category_api_data['parent']
+                    self.category_container.wpid_key] = category_api_data['parent']
                 parent_category_data = self.find_category(
                     parent_category_search_data)
             if parent_category_data:
@@ -344,31 +330,34 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
         """
         Gets data ready for the parser, in this case from api_data
         """
-        parser_data = OrderedDict()
+
         api_data = kwargs.get('api_data', {})
-        # print "api_data before: %s" % str(api_data)
+        if cls.DEBUG_API:
+            cls.register_message("api_data before unsecape: %s" % api_data)
         api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                          for key, value in api_data.items()])
-        # print "api_data after:  %s" % str(api_data)
+        if cls.DEBUG_API:
+            cls.register_message("api_data after unescape: %s" % api_data)
+
         parser_data = OrderedDict()
         core_translation = OrderedDict()
-        for col, col_data in ColDataWoo.get_wpapi_core_cols().items():
+        for col, col_data in cls.ColDataWoo.get_wpapi_core_cols().items():
             try:
-                wp_api_key = col_data['wp-api']['key']
-            except BaseException:
-                wp_api_key = col
-            core_translation[wp_api_key] = col
+                translated_key = col_data[cls.col_data_target]['key']
+            except KeyError:
+                translated_key = col
+            core_translation[translated_key] = col
         parser_data.update(**cls.translate_keys(api_data, core_translation))
 
         meta_translation = OrderedDict()
         if 'meta' in api_data:
             meta_data = api_data['meta']
-            for col, col_data in ColDataWoo.get_wpapi_meta_cols().items():
+            for col, col_data in cls.ColDataWoo.get_wpapi_meta_cols().items():
                 try:
-                    wp_api_key = col_data['wp-api']['key']
-                except BaseException:
-                    wp_api_key = col
-                meta_translation[wp_api_key] = col
+                    translated_key = col_data[cls.col_data_target]['key']
+                except KeyError:
+                    translated_key = col
+                meta_translation[translated_key] = col
             parser_data.update(
                 **cls.translate_keys(meta_data, meta_translation))
         if 'dimensions' in api_data:
@@ -378,61 +367,61 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
             parser_data.update(
                 **cls.get_api_stock_status_data(api_data['in_stock']))
         # if 'description' in api_data:
-        #     parser_data[cls.objectContainer.description_key] = api_data['description']
+        #     parser_data[cls.object_container.description_key] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
         # categories
         if 'title' in api_data:
-            parser_data[cls.objectContainer.titleKey] = api_data['title']
+            parser_data[cls.object_container.titleKey] = api_data['title']
 
         assert \
-            cls.objectContainer.description_key in parser_data, \
+            cls.object_container.description_key in parser_data, \
             "parser_data should have description: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
-        parser_data[cls.objectContainer.descsumKey] = parser_data[
-            cls.objectContainer.description_key]
+        parser_data[cls.object_container.descsum_key] = parser_data[
+            cls.object_container.description_key]
         assert \
-            cls.objectContainer.titleKey in parser_data, \
+            cls.object_container.titleKey in parser_data, \
             "parser_data should have title: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
         if api_data['type'] == 'category':
-            parser_data[cls.categoryContainer.namesumKey] = parser_data[
-                cls.objectContainer.titleKey]
+            parser_data[cls.category_container.namesum_key] = parser_data[
+                cls.object_container.titleKey]
             assert \
-                cls.objectContainer.slugKey in parser_data, \
+                cls.object_container.slugKey in parser_data, \
                 "parser_data should have slug: %s\n original: %s\ntranslations: %s, %s" \
                 % (parser_data, api_data, core_translation, meta_translation)
-            parser_data[cls.objectContainer.codesumKey] = parser_data[
-                cls.objectContainer.slugKey]
+            parser_data[cls.object_container.codesum_key] = parser_data[
+                cls.object_container.slugKey]
         else:
-            parser_data[cls.objectContainer.namesumKey] = parser_data[
-                cls.objectContainer.titleKey]
+            parser_data[cls.object_container.namesum_key] = parser_data[
+                cls.object_container.titleKey]
         assert \
-            cls.objectContainer.codesumKey in parser_data, \
+            cls.object_container.codesum_key in parser_data, \
             "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
         assert \
-            cls.objectContainer.namesumKey in parser_data, \
+            cls.object_container.namesum_key in parser_data, \
             "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
 
-        # title = parser_data.get(cls.objectContainer.titleKey, '')
+        # title = parser_data.get(cls.object_container.titleKey, '')
         # if not title and 'title' in api_data:
         #     title = api_data['title']
         # if not title and 'name' in api_data:
         #     title = api_data['name']
-        # parser_data[cls.objectContainer.titleKey] = title
-        # parser_data[cls.objectContainer.namesumKey] = title
+        # parser_data[cls.object_container.titleKey] = title
+        # parser_data[cls.object_container.namesum_key] = title
         #
-        # slug = parser_data.get(cls.objectContainer.slugKey,'')
+        # slug = parser_data.get(cls.object_container.slugKey,'')
         # if not slug and 'slug' in api_data:
         #     slug = api_data['slug']
-        # parser_data[cls.objectContainer.slugKey] = slug
+        # parser_data[cls.object_container.slugKey] = slug
         #
-        description = parser_data.get(cls.objectContainer.description_key, '')
+        description = parser_data.get(cls.object_container.description_key, '')
         if not description and 'description' in api_data:
             description = api_data['description']
-        parser_data[cls.objectContainer.description_key] = description
-        parser_data[cls.objectContainer.descsumKey] = description
+        parser_data[cls.object_container.description_key] = description
+        parser_data[cls.object_container.descsum_key] = description
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
@@ -447,7 +436,7 @@ class CsvParseWooApi(CsvParseBase, CsvParseTreeMixin,
     def get_new_obj_container(self, all_data, **kwargs):
         if self.DEBUG_MRO:
             self.register_message(' ')
-        container = super(CsvParseWooApi, self).get_new_obj_container(
+        container = super(ApiParseWoo, self).get_new_obj_container(
             all_data, **kwargs)
         api_data = kwargs.get('api_data', {})
         if self.DEBUG_API:

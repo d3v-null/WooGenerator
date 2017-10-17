@@ -10,8 +10,9 @@ from ..client.prod import ProdSyncClientWC, ProdSyncClientXero
 from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
+from ..parsing.api import ApiParseWoo
 from ..parsing.myo import CsvParseMyo
-from ..parsing.xero import CsvParseXero
+from ..parsing.xero import CsvParseXero, ApiParseXero
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from .core import SettingsNamespaceProto
 from ..utils import Registrar
@@ -99,6 +100,18 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.csv'
+        response = os.path.join(self.in_dir_full, response)
+        return response
+
+    @property
+    def slave_path(self):
+        """ The path which the master data is downloaded to and read from. """
+        if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
+            return getattr(self, 'slave_file')
+        response = '%s%s' % (self.file_prefix, 'slave')
+        if self.variant:
+            response = "-".join([response, self.variant])
+        response += "-" + self.import_name + '.json'
         response = os.path.join(self.in_dir_full, response)
         return response
 
@@ -350,6 +363,27 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def slave_parser_class(self):
+        response = ApiParseWoo
+        if self.schema_is_xero:
+            response = ApiParseXero
+        return response
+
+    @property
+    def slave_parser_args(self):
+        response = {
+            'cols': self.col_data_class.get_import_cols(),
+            'defaults': self.col_data_class.get_defaults(),
+            'source': self.slave_name,
+            'schema': self.schema,
+            'import_name': self.import_name,
+            'item_depth': self.item_depth,
+            'taxo_depth': self.taxo_depth,
+            'limit': self.slave_parse_limit,
+        }
+        return response
+
+    @property
     def slave_download_client_class(self):
         response = self.local_client_class
         if self['download_slave']:
@@ -362,21 +396,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_download_client_args(self):
         response = {}
-        if self.schema_is_woo:
-            response = {'connect_params': self.slave_wc_api_params}
-        elif self.schema_is_xero:
-            response = {'connect_params': self.slave_xero_api_params}
-        return response
-
-    @property
-    def api_product_parser_args(self):
-        response = {
-            'import_name': self.import_name,
-            'item_depth': self.item_depth,
-            'taxo_depth': self.taxo_depth,
-            'cols': ColDataWoo.get_import_cols(),
-            'defaults': ColDataWoo.get_defaults(),
-        }
+        if self['download_slave']:
+            if self.schema_is_woo:
+                response['connect_params'] = self.slave_wc_api_params
+            elif self.schema_is_xero:
+                response['connect_params'] = self.slave_xero_api_params
         return response
 
     @property

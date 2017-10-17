@@ -419,7 +419,7 @@ class ImportUser(ImportObject):
 
 class CsvParseUser(CsvParseBase):
 
-    objectContainer = ImportUser
+    object_container = ImportUser
 
     def __init__(self,
                  cols=None,
@@ -717,7 +717,7 @@ class CsvParseUser(CsvParseBase):
     #     return object_data
 
 
-class CsvParseUserApi(CsvParseUser):
+class ApiParseUser(CsvParseUser):
 
     @classmethod
     def get_parser_data(cls, **kwargs):

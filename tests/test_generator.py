@@ -8,11 +8,11 @@ from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.generator import populate_master_parsers
+from woogenerator.generator import populate_master_parsers, populate_slave_parsers
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.woo import WooProdList
-from woogenerator.parsing.xero import XeroProdList
+from woogenerator.parsing.xero import XeroProdList, ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 
@@ -24,6 +24,7 @@ from woogenerator.utils import Registrar, SanitationUtils
 class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
+
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
@@ -94,13 +95,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
         self.assertEqual(first_prod.product_type, "simple")
         self.assertEqual(first_prod.depth, 4)
-        self.assertTrue(first_prod.isItem)
-        self.assertTrue(first_prod.isProduct)
-        self.assertFalse(first_prod.isCategory)
-        self.assertFalse(first_prod.isRoot)
-        self.assertFalse(first_prod.isTaxo)
-        self.assertFalse(first_prod.isVariable)
-        self.assertFalse(first_prod.isVariation)
+        self.assertTrue(first_prod.is_item)
+        self.assertTrue(first_prod.is_product)
+        self.assertFalse(first_prod.is_category)
+        self.assertFalse(first_prod.is_root)
+        self.assertFalse(first_prod.is_taxo)
+        self.assertFalse(first_prod.is_variable)
+        self.assertFalse(first_prod.is_variation)
         for key, value in {
                 'DNR': u'59.97',
                 'DPR': u'57.47',
@@ -153,12 +154,24 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.download_master = False
         self.settings.init_settings(self.override_args)
         self.settings.schema = "XERO"
+        self.settings.slave_name = "Xero"
+        self.settings.do_categories = False
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_dummy_xero.csv"
         )
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
+        self.settings.slave_file = os.path.join(
+            TESTS_DATA_DIR, "xero_demo_data.json"
+        )
         if self.debug:
-            Registrar.DEBUG_SHOP = True
+            # Registrar.DEBUG_SHOP = True
+            # ApiParseXero.DEBUG_PARSER = True
+            # Registrar.DEBUG_ABSTRACT = True
+            # Registrar.DEBUG_GEN = True
+            # Registrar.DEBUG_TREE = True
+            # Registrar.DEBUG_TRACE = True
+            # ApiParseXero.DEBUG_API = True
+            ApiParseXero.product_resolver = Registrar.exception_resolver
 
     def test_populate_master_parsers(self):
         # if self.debug:
@@ -177,21 +190,51 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             print("prod list:\n%s" % prod_list.tabulate())
             item_list = ItemList(self.parsers.master.items.values())
             print("item list:\n%s" % item_list.tabulate())
+            print("prod_keys: %s" % self.parsers.master.products.keys())
 
         self.assertEqual(len(prod_list), 15)
         first_prod = prod_list[0]
         self.assertEqual(first_prod.codesum, "GB1-White")
         self.assertEqual(first_prod.parent.codesum, "GB")
-        self.assertTrue(first_prod.isProduct)
-        self.assertFalse(first_prod.isCategory)
-        self.assertFalse(first_prod.isRoot)
-        self.assertFalse(first_prod.isTaxo)
-        self.assertFalse(first_prod.isVariable)
-        self.assertFalse(first_prod.isVariation)
+        self.assertTrue(first_prod.is_product)
+        self.assertFalse(first_prod.is_category)
+        self.assertFalse(first_prod.is_root)
+        self.assertFalse(first_prod.is_taxo)
+        self.assertFalse(first_prod.is_variable)
+        self.assertFalse(first_prod.is_variation)
         for key, value in {
                 'RNR': u'5.60',
         }.items():
             self.assertEqual(first_prod[key], value)
+
+    def test_populate_slave_parsers(self):
+        # self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+
+        if self.debug:
+            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
+            print("slave items: %s" % len(self.parsers.slave.items.values()))
+            print("slave products: %s" % len(self.parsers.slave.products.values()))
+
+        self.assertEqual(len(self.parsers.slave.objects.values()), 10)
+        self.assertEqual(len(self.parsers.slave.items.values()), 10)
+
+        prod_list = XeroProdList(self.parsers.slave.products.values())
+        if self.debug:
+            print("prod list:\n%s" % prod_list.tabulate())
+            item_list = ItemList(self.parsers.slave.items.values())
+            print("item list:\n%s" % item_list.tabulate())
+            print("prod_keys: %s" % self.parsers.slave.products.keys())
+
+        self.assertEqual(len(prod_list), 10)
+        first_prod = prod_list[0]
+        self.assertEqual(first_prod.codesum, "DevD")
+        self.assertTrue(first_prod.is_product)
+        self.assertFalse(first_prod.is_category)
+        self.assertFalse(first_prod.is_root)
+        self.assertFalse(first_prod.is_taxo)
+        self.assertFalse(first_prod.is_variable)
+        self.assertFalse(first_prod.is_variation)
 
 if __name__ == '__main__':
     unittest.main()

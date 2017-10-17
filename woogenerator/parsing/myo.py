@@ -10,12 +10,12 @@ from .shop import ImportShopProductMixin, ShopProdList
 
 
 class CsvParseMyo(CsvParseGenTree):
-    productContainer = ImportShopProductMixin
+    product_container = ImportShopProductMixin
 
     @property
     def containers(self):
         return {
-            'Y': self.productContainer
+            'Y': self.product_container
         }
 
     extra_taxo_subs = OrderedDict([

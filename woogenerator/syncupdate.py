@@ -1442,8 +1442,8 @@ class SyncUpdateProdWoo(SyncUpdateProd):
 
         if col == 'catlist':
             if hasattr(self.old_s_object,
-                       'isVariation') and self.old_s_object.isVariation:
-                # print "excluded item because isVariation"
+                       'is_variation') and self.old_s_object.is_variation:
+                # print "excluded item because is_variation"
                 return updates
 
         if col in self.col_data.data:
@@ -1554,8 +1554,8 @@ class SyncUpdateCatWoo(SyncUpdate):
 
         if col == 'catlist':
             if hasattr(self.old_s_object,
-                       'isVariation') and self.old_s_object.isVariation:
-                # print "excluded item because isVariation"
+                       'is_variation') and self.old_s_object.is_variation:
+                # print "excluded item because is_variation"
                 return updates
 
         if col in self.col_data.data:

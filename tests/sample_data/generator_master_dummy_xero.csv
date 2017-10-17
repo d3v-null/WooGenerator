@@ -1,11 +1,11 @@
-                     ,CAT1              ,CAT2  ,NAME1                                    ,NAME2                   ,CODE0,CODE1  ,CODE2,CODE3,CODE4    ,XERO,D,E,V,RNR   
+                     ,CAT1              ,CAT2  ,NAME1                                    ,NAME2                   ,CODE0,CODE1  ,CODE2,CODE3,CODE4    ,XERO,D,E,V,RNR   ,Xero Description
 Products             ,                  
                      ,Sport Equipment   ,      
                      ,                  ,      ,Golf Balls                               ,                        ,     ,       ,     ,GB   ,         
-                     ,                  ,      ,                                         ,white single            ,     ,       ,     ,     ,1-White  ,Y   , , , ,5.60  
-                     ,                  ,      ,                                         ,white 3-pack            ,     ,       ,     ,     ,3-White  ,Y   , , , ,15.00 
-                     ,                  ,      ,                                         ,white 6-pack            ,     ,       ,     ,     ,6-White  ,Y   , , , ,24.99 
-                     ,                  ,      ,                                         ,white 9-pack            ,     ,       ,     ,     ,9-White  ,Y   , , , ,32.00 
+                     ,                  ,      ,                                         ,white single            ,     ,       ,     ,     ,1-White  ,Y   , , , ,5.60  ,Golf balls - white single. Please reorder with code GB1-White
+                     ,                  ,      ,                                         ,white 3-pack            ,     ,       ,     ,     ,3-White  ,Y   , , , ,15.00 ,Golf balls - white 3 pack. Please reorder with code GB3-White
+                     ,                  ,      ,                                         ,white 6-pack            ,     ,       ,     ,     ,6-White  ,Y   , , , ,24.99 ,Golf balls - white 6 pack. Please reorder with code GB6-White
+                     ,                  ,      ,                                         ,white 9-pack            ,     ,       ,     ,     ,9-White  ,Y   , , , ,32.00 ,Golf balls - white - 9 pack. Please reorder with code GB9-White
                      ,Apparel           ,      
                      ,                  ,Shirts,                                         
                      ,                  ,      ,T-Shirt                                  ,                        ,     ,       ,     ,TS   
@@ -21,8 +21,8 @@ Training & Consulting,
                      ,                  ,      ,Project Management                       ,                        ,     ,       ,     ,PM   
                      ,                  ,      ,                                         ,onsite daily rate       ,     ,       ,     ,     ,D        ,Y   , , , ,700.00
                      ,                  ,      ,Project management & implementation      ,                        ,     ,       ,     ,PM   
-                     ,                  ,      ,                                         ,branding                ,     ,       ,     ,     ,Br       ,Y   , , , ,250.00
-                     ,                  ,      ,                                         ,due dilligence          ,     ,       ,     ,     ,DD       ,Y   , , , ,105.00
+                     ,                  ,      ,                                         ,branding                ,     ,       ,     ,     ,Br       ,Y   , , , ,250.00,Project management & implementation - branding workshop with your team
+                     ,                  ,      ,                                         ,due dilligence          ,     ,       ,     ,     ,DD       ,Y   , , , ,105.00,Project management & implementation - website revamp workshop with your team
                      ,                  ,      ,                                         ,website                 ,     ,       ,     ,     ,We       ,Y   , , , ,300.00
                      ,Training          ,      ,                                         ,                        ,     ,Train  
                      ,                  ,      ,Half day training - Microsoft Office     ,                        ,     ,       ,     ,MS   ,         ,Y   , , , ,500.00

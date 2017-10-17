@@ -15,16 +15,17 @@ class ImportTreeRootableMixin(object):
 
 class ImportTreeObject(ImportObject):
     """ Implements the tree interface for tree objects """
-    isRoot = None
-    isItem = None
-    isTaxo = None
+    is_root = None
+    is_item = None
+    is_taxo = None
     _depth = None
-    verifyMetaKeys = []
+    verify_meta_keys = []
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.register_message('ImportTreeObject')
-        super(ImportTreeObject, self).__init__(*args, **kwargs)
+        # if self.DEBUG_TRACE:
+        #     import pudb; pudb.set_trace()
         # if self.DEBUG_PARSER:
         #     self.register_message('called with kwargs: %s' % pformat(kwargs))
 
@@ -32,7 +33,7 @@ class ImportTreeObject(ImportObject):
         # rowcount = kwargs.get('rowcount')
         try:
             parent = kwargs.pop('parent', None)
-            if not self.isRoot:
+            if not self.is_root:
                 assert parent is not None
         except (KeyError, AssertionError):
             raise UserWarning(
@@ -41,7 +42,7 @@ class ImportTreeObject(ImportObject):
 
         try:
             depth = kwargs.pop('depth', -1)
-            if not self.isRoot:
+            if not self.is_root:
                 assert depth is not None
                 assert depth >= 0
         except (AssertionError):
@@ -57,29 +58,29 @@ class ImportTreeObject(ImportObject):
         finally:
             self.meta = meta
 
-        #
+        ImportObject.__init__(self, *args, **kwargs)
 
         if self.DEBUG_PARSER:
             self.register_message(
                 'About to register child: %s' % str(self.items()))
 
         self.process_meta()
-        if not self.isRoot:
+        if not self.is_root:
             parent.register_child(self)
 
         self.child_register = OrderedDict()
-        self.child_indexer = Registrar.get_object_rowcount
+        self.child_indexer = self.get_object_rowcount
 
         self.verify_meta()
 
     # @property
-    # def verifyMetaKeys(self):
+    # def verify_meta_keys(self):
     #     return []
 
     #
     def verify_meta(self):
         # return
-        for key in self.verifyMetaKeys:
+        for key in self.verify_meta_keys:
             if self.DEBUG_PARSER:
                 self.register_message("CHECKING KEY: %s" % key)
             assert key in self.keys(), "key %s must be set" % str(key)
@@ -90,7 +91,7 @@ class ImportTreeObject(ImportObject):
         "gets all ancestors not including self or root"
         this = self.parent
         ancestors = []
-        while this and not this.isRoot:
+        while this and not this.is_root:
             ancestors.insert(0, this)
             this = this.parent
         return ancestors
@@ -144,13 +145,13 @@ class ImportTreeObject(ImportObject):
         # return cls(object_data, rowcount, row, depth, meta, parent)
     #
     # @property
-    # def isItem(self): return self.isItem
+    # def is_item(self): return self.is_item
     #
     # @property
-    # def isTaxo(self): return self.isTaxo
+    # def is_taxo(self): return self.is_taxo
     #
     # @property
-    # def isRoot(self): return self.isRoot
+    # def is_root(self): return self.is_root
 
     # @property
     # def meta(self): return self._meta
@@ -218,21 +219,21 @@ class ImportTreeObject(ImportObject):
     #     # "gets all ancestors not including self or root"
     #     # this = self.getParent()
     #     # ancestors = []
-    #     # while this and not this.isRoot:
+    #     # while this and not this.is_root:
     #     #     ancestors.insert(0, this)
     #     #     this = this.getParent()
     #     # return ancestors
 
     @property
     def taxo_ancestors(self):
-        return filter(lambda x: x.isTaxo, self.ancestors)
+        return filter(lambda x: x.is_taxo, self.ancestors)
 
     # def getTaxoAncestors(self):
     #     exc = DeprecationWarning("use .taxo_ancestors instead of .getTaxoAncestors()")
     #     self.register_error(exc)
     #     return self.taxo_ancestors
     #     # ancestors = self.getAncestors()
-    #     # return filter( lambda x: x.isTaxo, ancestors)
+    #     # return filter( lambda x: x.is_taxo, ancestors)
 
     def get_ancestor_key(self, key):
         # ancestors = self.getAncestors()
@@ -273,7 +274,7 @@ class ImportTreeObject(ImportObject):
 
 
 class ImportTreeRoot(ImportTreeObject):
-    isRoot = True
+    is_root = True
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -291,7 +292,7 @@ class ImportTreeRoot(ImportTreeObject):
 
 
 class ImportTreeItem(ImportTreeObject):
-    isItem = True
+    is_item = True
 
     @property
     def identifier_delimeter(self):
@@ -305,18 +306,18 @@ class ImportTreeItem(ImportTreeObject):
 
     @property
     def item_ancestors(self):
-        return filter(lambda x: x.isItem, self.ancestors)
+        return filter(lambda x: x.is_item, self.ancestors)
 
     # def getItemAncestors(self):
     #     exc = DeprecationWarning("use .item_ancestors instead of .getItemAncestors()")
     #     self.register_error(exc)
     #     return self.item_ancestors
     #     # ancestors = self.getAncestors()
-    #     # return filter( lambda x: x.isItem, ancestors)
+    #     # return filter( lambda x: x.is_item, ancestors)
 
 
 class ImportTreeTaxo(ImportTreeObject):
-    isTaxo = True
+    is_taxo = True
 
     @property
     def identifier_delimeter(self):
@@ -392,16 +393,68 @@ class ImportStack(list):
 
 
 class CsvParseTreeMixin(object):
-    rootContainer = ImportTreeRoot
+    """
+    Provide mixin for parsing tree-like data structures
+    """
+    root_container = ImportTreeRoot
+    object_container = ImportTreeObject
+    item_container = ImportTreeItem
+    taxo_container = ImportTreeTaxo
 
     def clear_transients(self):
-        self.root_data = self.rootContainer()
+        self.root_data = self.root_container()
+        self.items = OrderedDict()
+        self.taxos = OrderedDict()
+        self.stack = ImportStack()
 
+    def register_item(self, item_data):
+        assert isinstance(item_data, ImportTreeObject)
+        assert item_data.is_item
+        self.register_anything(
+            item_data,
+            self.items,
+            indexer=self.item_indexer,
+            singular=True,
+            register_name='items'
+        )
+
+    def register_taxo(self, taxo_data):
+        assert isinstance(taxo_data, ImportTreeObject)
+        assert taxo_data.is_taxo
+        self.register_anything(
+            taxo_data,
+            self.taxos,
+            indexer=self.taxo_indexer,
+            singular=True,
+            # resolver = self.passive_resolver,
+            register_name='taxos',
+        )
+
+    def register_object(self, object_data):
+        assert isinstance(object_data, ImportTreeObject)
+        if self.DEBUG_MRO:
+            self.register_message(' ')
+        if object_data.is_item:
+            self.register_item(object_data)
+        if object_data.is_taxo:
+            self.register_taxo(object_data)
+
+    def assign_parent(self, parent_data=None, item_data=None):
+        assert isinstance(item_data, ImportTreeObject)
+        if not parent_data:
+            parent_data = self.root_data
+        assert isinstance(parent_data, ImportTreeObject)
+        parent_data.register_child(item_data)
+        item_data.registerParent(parent_data)
+
+    def is_taxo_depth(self, depth):
+        return depth < self.taxo_depth and depth >= 0
+
+    def is_item_depth(self, depth):
+        return depth >= self.taxo_depth and depth < self.max_depth
 
 class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
-    objectContainer = ImportTreeObject
-    itemContainer = ImportTreeItem
-    taxoContainer = ImportTreeTaxo
+    object_container = CsvParseTreeMixin.object_container
 
     def __init__(self, cols, defaults, taxo_depth,
                  item_depth, meta_width, **kwargs):
@@ -413,7 +466,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         self.meta_width = meta_width
         self.item_indexer = self.get_object_rowcount
         self.taxo_indexer = self.get_object_rowcount
-        super(CsvParseTree, self).__init__(cols, defaults, **kwargs)
+        CsvParseBase.__init__(self, cols, defaults, **kwargs)
 
         # if self.DEBUG_TREE:
         #     print "TREE initializing: "
@@ -431,57 +484,24 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
             self.register_message('CsvParseTree')
         CsvParseBase.clear_transients(self)
         CsvParseTreeMixin.clear_transients(self)
-        self.items = OrderedDict()
-        self.taxos = OrderedDict()
-        self.stack = ImportStack()
-
-    #
-    def register_item(self, item_data):
-        assert isinstance(item_data, ImportTreeObject)
-        assert item_data.isItem
-        self.register_anything(
-            item_data,
-            self.items,
-            indexer=self.item_indexer,
-            singular=True,
-            register_name='items'
-        )
-
-    def register_taxo(self, taxo_data):
-        assert isinstance(taxo_data, ImportTreeObject)
-        assert taxo_data.isTaxo
-        self.register_anything(
-            taxo_data,
-            self.taxos,
-            indexer=self.taxo_indexer,
-            singular=True,
-            # resolver = self.passive_resolver,
-            register_name='taxos',
-        )
 
     def register_object(self, object_data):
         assert isinstance(object_data, ImportTreeObject)
-        super(CsvParseTree, self).register_object(object_data)
-        if self.DEBUG_MRO:
-            self.register_message(' ')
-        if object_data.isItem:
-            self.register_item(object_data)
-        if object_data.isTaxo:
-            self.register_taxo(object_data)
+        CsvParseBase.register_object(self, object_data)
+        CsvParseTreeMixin.register_object(self, object_data)
+        # super(CsvParseTree, self).register_object(object_data)
+        # if self.DEBUG_MRO:
+        #     self.register_message(' ')
+        # if object_data.is_item:
+        #     self.register_item(object_data)
+        # if object_data.is_taxo:
+        #     self.register_taxo(object_data)
 
     # def register_object(self, object_data):
     #     CsvParseBase.register_object(self, object_data)
     #     CsvParseTreeMixin.register_object(self, object_data)
 
         # self.register_message("ceated root: %s" % str(self.root_data))
-
-    def assign_parent(self, parent_data=None, item_data=None):
-        assert isinstance(item_data, ImportTreeObject)
-        if not parent_data:
-            parent_data = self.root_data
-        assert isinstance(parent_data, ImportTreeObject)
-        parent_data.register_child(item_data)
-        item_data.registerParent(parent_data)
 
     def depth(self, row):
         sanitized_row = [self.sanitize_cell(cell) for cell in row]
@@ -506,12 +526,6 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
                         "could not get meta[{}] | {}".format(i, exc))
         return meta
 
-    def is_taxo_depth(self, depth):
-        return depth < self.taxo_depth and depth >= 0
-
-    def is_item_depth(self, depth):
-        return depth >= self.taxo_depth and depth < self.max_depth
-
     def get_new_obj_container(self, all_data, **kwargs):
         container = super(CsvParseTree, self).get_new_obj_container(
             all_data, **kwargs)
@@ -520,12 +534,12 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         depth = kwargs['depth']
         assert depth is not None, "depth should be available to CsvParseTree.get_new_obj_container"
         if self.is_taxo_depth(depth):
-            container = self.taxoContainer
+            container = self.taxo_container
         else:
             assert \
                 self.is_item_depth(depth), \
                 "sanity check: depth should be either taxo or item: %s" % depth
-            container = self.itemContainer
+            container = self.item_container
         return container
 
     def get_kwargs(self, all_data, container, **kwargs):
@@ -668,7 +682,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
 
     def find_taxo(self, taxo_data):
         response = None
-        for key in [self.taxoContainer.rowcountKey]:
+        for key in [self.taxo_container.rowcountKey]:
             value = taxo_data.get(key)
             if value:
                 for taxo in self.taxos:

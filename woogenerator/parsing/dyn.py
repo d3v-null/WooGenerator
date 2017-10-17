@@ -244,9 +244,9 @@ class CsvParseDyn(CsvParseTree):
     Parser for dynamic pricing rules.
     """
 
-    itemContainer = ImportDynRuleLine
-    taxoContainer = ImportDynRule
-    objectContainer = ImportDynObject
+    item_container = ImportDynRuleLine
+    taxo_container = ImportDynRule
+    object_container = ImportDynObject
 
     def __init__(self, cols=None, defaults=None):
         if cols is None:

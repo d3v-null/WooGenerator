@@ -9,7 +9,7 @@ from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
-from woogenerator.parsing.api import CsvParseWooApi
+from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import TimeUtils
 
@@ -43,9 +43,9 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         # Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
-        CsvParseWooApi.do_images = False
-        CsvParseWooApi.do_specials = False
-        CsvParseWooApi.do_dyns = False
+        ApiParseWoo.do_images = False
+        ApiParseWoo.do_specials = False
+        ApiParseWoo.do_dyns = False
 
     def test_read(self):
         response = []
@@ -56,7 +56,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         self.assertTrue(response)
 
     def test_analyse_remote(self):
-        product_parser = CsvParseWooApi(
+        product_parser = ApiParseWoo(
             **self.settings.master_parser_args
         )
 

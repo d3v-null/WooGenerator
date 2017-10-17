@@ -53,7 +53,7 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     start_time = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.startTimeKey)
     end_time = DescriptorUtils.safe_key_property(ImportSpecialMixin.endTimeKey)
-    verifyMetaKeys = [
+    verify_meta_keys = [
         ImportSpecialMixin.startTimeKey,
         ImportSpecialMixin.endTimeKey,
         ImportSpecialMixin.groupIDKey
@@ -93,7 +93,7 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
 class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
     ruleCode = DescriptorUtils.safe_key_property(
         ImportSpecialMixin.ruleCodeKey)
-    verifyMetaKeys = [
+    verify_meta_keys = [
         ImportSpecialMixin.ruleCodeKey
     ]
 
@@ -123,9 +123,9 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
 
 class CsvParseSpecial(CsvParseTree):
 
-    itemContainer = ImportSpecialRule
-    taxoContainer = ImportSpecialGroup
-    objectContainer = ImportSpecialObject
+    item_container = ImportSpecialRule
+    taxo_container = ImportSpecialGroup
+    object_container = ImportSpecialObject
 
     def __init__(self, cols=None, defaults=None):
         if self.DEBUG_MRO:
@@ -174,7 +174,7 @@ class CsvParseSpecial(CsvParseTree):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
                 "registering rule group: %s", group_data.identifier)
-        assert group_data.isTaxo
+        assert group_data.is_taxo
         self.register_anything(
             group_data,
             self.rule_groups,
@@ -188,7 +188,7 @@ class CsvParseSpecial(CsvParseTree):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
                 "registering rule: %s", rule_data.identifier)
-        assert rule_data.isItem
+        assert rule_data.is_item
         self.register_anything(
             rule_data,
             self.rules,
