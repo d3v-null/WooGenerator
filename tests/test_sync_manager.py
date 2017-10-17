@@ -46,6 +46,17 @@ class AbstractSyncManagerTestCase(unittest.TestCase):
             Registrar.DEBUG_MESSAGE, Registrar.DEBUG_WARN
         ))
 
+    def print_matches_summary(self, matches):
+        print("matches.globals (%d):\n%s" % (
+            len(matches.globals), matches.globals.tabulate())
+        )
+        print("matches.masterless (%d):\n%s" % (
+            len(matches.masterless), matches.masterless.tabulate())
+        )
+        print("matches.slaveless (%d):\n%s" % (
+            len(matches.slaveless), matches.slaveless.tabulate())
+        )
+
     def print_updates_summary(self, updates):
         print("delta_master updates(%d):\n%s" % (
             len(updates.delta_master), map(str, updates.delta_master))

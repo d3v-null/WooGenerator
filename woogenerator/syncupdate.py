@@ -10,7 +10,7 @@ from copy import copy, deepcopy
 
 from tabulate import tabulate
 
-from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo
+from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero
 from .contact_objects import ContactAddress, FieldGroup
 from .matching import Match
 from .parsing.abstract import ImportObject
@@ -240,7 +240,9 @@ class SyncUpdate(Registrar):
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, m_value, s_value, response))
+                    col, m_value, s_value, response,
+                    similar_m_value, similar_s_value
+                ))
         return response
 
     def old_col_identical(self, col):
@@ -343,11 +345,18 @@ class SyncUpdate(Registrar):
                 ]
                 return any(failed_conditions)
 
-    def test_to_str(self, col, val1, val2, res):
+    def test_to_str(self, col, val1, val2, res, norm1=None, norm2=None):
+        left = repr(val1)
+        if norm1 is not None and norm1 != val1:
+            left += " (%s %s)" % (norm1, type(norm1))
+        right = repr(val2)
+        if norm2 is not None and norm2 != val2:
+            right += " (%s %s)" % (norm2, type(norm2))
+
         return u"testing col %s: %s | %s -> %s" % (
             unicode(col),
-            repr(val1),
-            repr(val2),
+            left,
+            right,
             SanitationUtils.bool_to_truish_string(res)
         )
 
@@ -1349,35 +1358,37 @@ class SyncUpdateProd(SyncUpdate):
         return self.get_new_subject_value('ID', self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
+        # import pudb; pudb.set_trace()
+        similar_m_value, similar_s_value = None, None
         response = super(SyncUpdateProd, self).values_similar(
-            col, m_value, s_value)
+            col, m_value, s_value
+        )
         if col in self.col_data.data:
             col_data = self.col_data.data[col]
-            if col_data.get('type'):
-                if col_data.get('type') == 'currency':
-                    m_price = SanitationUtils.similar_currency_comparison(
-                        m_value)
-                    s_price = SanitationUtils.similar_currency_comparison(
-                        s_value)
-                    if m_price == s_price:
-                        response = True
+            if col_data.get('type') and col_data.get('type') == 'currency':
+                similar_m_value = SanitationUtils.similar_currency_comparison(
+                    m_value)
+                similar_s_value = SanitationUtils.similar_currency_comparison(
+                    s_value)
+                if similar_m_value == similar_s_value:
+                    response = True
         elif not response:
             if col is 'descsum':
-                m_desc = SanitationUtils.similar_markup_comparison(m_value)
-                s_desc = SanitationUtils.similar_markup_comparison(s_value)
-                if m_desc == s_desc:
+                similar_m_value = SanitationUtils.similar_markup_comparison(m_value)
+                similar_s_value = SanitationUtils.similar_markup_comparison(s_value)
+                if similar_m_value == similar_s_value:
                     response = True
             elif col is 'CVC':
-                m_com = SanitationUtils.similar_comparison(m_value) or '0'
-                s_com = SanitationUtils.similar_comparison(s_value) or '0'
-                if m_com == s_com:
+                similar_m_value = SanitationUtils.similar_comparison(m_value) or '0'
+                similar_s_value = SanitationUtils.similar_comparison(s_value) or '0'
+                if similar_m_value == similar_s_value:
                     response = True
 
         if self.DEBUG_UPDATE:
             self.register_message(self.test_to_str(
-                col, m_value.__repr__(), s_value.__repr__(), response))
+                col, m_value, s_value, response, similar_m_value, similar_s_value
+            ))
         return response
-
 
 class SyncUpdateProdWoo(SyncUpdateProd):
     col_data = ColDataWoo
@@ -1462,10 +1473,21 @@ class SyncUpdateProdWoo(SyncUpdateProd):
                 self.register_message(u"col doesn't exist")
         return updates
 
+class SyncUpdateProdXero(SyncUpdateProd):
+    col_data = ColDataXero
+    s_meta_target = 'xero-api'
+
+    @property
+    def master_id(self):
+        return self.get_new_subject_value('rowcount', self.master_name)
+
+    @property
+    def slave_id(self):
+        return self.get_new_subject_value('item_id', self.slave_name)
+
 
 class SyncUpdateVarWoo(SyncUpdateProdWoo):
     pass
-
 
 class SyncUpdateCatWoo(SyncUpdate):
     col_data = ColDataWoo
@@ -1484,9 +1506,9 @@ class SyncUpdateCatWoo(SyncUpdate):
             col, m_value, s_value)
         if not response:
             if col is 'descsum':
-                m_desc = SanitationUtils.similar_markup_comparison(m_value)
-                s_desc = SanitationUtils.similar_markup_comparison(s_value)
-                if m_desc == s_desc:
+                similar_m_value = SanitationUtils.similar_markup_comparison(m_value)
+                similar_s_value = SanitationUtils.similar_markup_comparison(s_value)
+                if similar_m_value == similar_s_value:
                     response = True
 
         if self.DEBUG_UPDATE:

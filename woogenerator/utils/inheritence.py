@@ -13,7 +13,7 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
             class_sets = [set([type(instance)]) for instance in instances]
             while not set.intersection(*class_sets):
                 set_lengths = [len(class_set) for class_set in class_sets]
-                for i in enumerate(class_sets):
+                for i, _ in enumerate(class_sets):
                     additions = []
                     for _class in class_sets[i]:
                         additions.extend(_class.__bases__)

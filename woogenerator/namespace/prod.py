@@ -7,13 +7,14 @@ import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.prod import ProdSyncClientWC, ProdSyncClientXero
-from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
+from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero, ColDataBase
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.api import ApiParseWoo
 from ..parsing.myo import CsvParseMyo
 from ..parsing.xero import CsvParseXero, ApiParseXero
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
+from ..syncupdate import SyncUpdateProdWoo, SyncUpdateProdXero, SyncUpdateCatWoo, SyncUpdateProd
 from .core import SettingsNamespaceProto
 from ..utils import Registrar
 
@@ -83,6 +84,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def col_data_class(self):
         """ Class used to obtain column metadata. """
+        response = ColDataBase
         if self.schema_is_myo:
             return ColDataMyo
         elif self.schema_is_xero:
@@ -245,6 +247,22 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response += '-' + self.schema
         if self.get('img_cmd_dir'):
             response = os.path.join(self.img_cmd_dir, response)
+        return response
+
+    @property
+    def sync_cols_prod(self):
+        response = {}
+        if self.schema_is_woo:
+            response = self.col_data_class.get_wpapi_cols()
+        elif self.schema_is_xero:
+            response = self.col_data_class.get_xero_api_cols()
+        return response
+
+    @property
+    def sync_cols_cat(self):
+        response = {}
+        if self.schema_is_woo:
+            response = self.col_data_class.get_wpapi_category_cols()
         return response
 
     @property
@@ -416,6 +434,19 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'connect_params': self.slave_wc_api_params
         }
         return response
+
+    @property
+    def syncupdate_class_prod(self):
+        response = SyncUpdateProd
+        if self.schema_is_woo:
+            response = SyncUpdateProdWoo
+        if self.schema_is_xero:
+            response = SyncUpdateProdXero
+        return response
+
+    @property
+    def syncupdate_class_cat(self):
+        return SyncUpdateCatWoo
 
     @property
     def dirs(self):

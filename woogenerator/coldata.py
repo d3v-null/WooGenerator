@@ -164,11 +164,11 @@ class ColDataProd(ColDataBase):
             'product': True,
             'report': True
         }),
-        ('descsum', {
-            'label': 'Description',
-            'product': True,
-            'report': True,
-        }),
+        # ('descsum', {
+        #     'label': 'Description',
+        #     'product': True,
+        #     'report': True,
+        # }),
         # ('WNR', {
         #     'product': True,
         #     'report': True,
@@ -268,18 +268,21 @@ class ColDataMyo(ColDataProd):
             'import': True,
             'product': True,
             'pricing': True,
+            'type': 'currency',
         }),
         ('RNR', {
             'label': 'Price Level B, Qty Break 1',
             'import': True,
             'product': True,
             'pricing': True,
+            'type': 'currency',
         }),
         ('DNR', {
             'label': 'Price Level C, Qty Break 1',
             'import': True,
             'product': True,
             'pricing': True,
+            'type': 'currency',
         }),
         ('CVC', {
             'label': 'Custom Field 1',
@@ -371,18 +374,56 @@ class ColDataXero(ColDataProd):
             },
         }),
         ('RNR', {
-            'xero-api': None,
             'product': True,
             'report': True,
             'pricing': True,
-            'import': True
-        })
+            'import': True,
+            'type': 'currency',
+            'xero-api': {
+                'key': 'UnitPrice',
+                'parent': 'SalesDetails'
+            },
+            'sync': True
+        }),
+        ('stock', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'inventory': True,
+            'type': 'float',
+            'sync': True,
+            'xero-api': {
+                'key': 'QuantityOnHand'
+            }
+        }),
+        ('stock_status', {
+            'import': True,
+            'product': True,
+            'variation': True,
+            'inventory': True,
+            'sync': True,
+            'xero-api': None,
+        }),
+        ('manage_stock', {
+            'product': True,
+            'variation': True,
+            'inventory': True,
+            'xero-api': {
+                'key': 'IsTrackedAsInventory'
+            },
+            'sync': True,
+            'type': 'bool'
+        }),
     ])
 
     def __init__(self, data=None):
         if not data:
             data = self.data
         super(ColDataXero, self).__init__(data)
+
+    @classmethod
+    def get_xero_api_cols(cls):
+        return cls.get_export_cols('xero-api')
 
 class ColDataWoo(ColDataProd):
 

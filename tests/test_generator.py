@@ -8,7 +8,11 @@ from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.generator import populate_master_parsers, populate_slave_parsers
+from woogenerator.generator import (
+    populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
+    do_merge
+)
+from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.woo import WooProdList
@@ -17,8 +21,6 @@ from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 
 # import argparse
-
-
 
 
 class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
@@ -155,6 +157,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.init_settings(self.override_args)
         self.settings.schema = "XERO"
         self.settings.slave_name = "Xero"
+        self.settings.do_sync = True
         self.settings.do_categories = False
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_dummy_xero.csv"
@@ -171,6 +174,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             # Registrar.DEBUG_TREE = True
             # Registrar.DEBUG_TRACE = True
             # ApiParseXero.DEBUG_API = True
+            Registrar.DEBUG_UPDATE = True
             ApiParseXero.product_resolver = Registrar.exception_resolver
 
     def test_populate_master_parsers(self):
@@ -235,6 +239,68 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_taxo)
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
+
+    def test_do_match(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = MatchNamespace(index_fn=product_index_fn)
+        self.matches = do_match(self.parsers, self.matches, self.settings)
+
+        if self.debug:
+            self.print_matches_summary(self.matches)
+
+        self.assertEqual(len(self.matches.globals), 10)
+        self.assertEqual(len(self.matches.masterless), 0)
+        self.assertEqual(len(self.matches.slaveless), 5)
+
+    def test_do_merge(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = MatchNamespace(index_fn=product_index_fn)
+        self.matches = do_match(self.parsers, self.matches, self.settings)
+        self.updates = UpdateNamespace()
+        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+
+        if self.debug:
+            self.print_updates_summary(self.updates)
+
+        self.assertEqual(len(self.updates.delta_master), 0)
+        self.assertEqual(len(self.updates.delta_slave), 0)
+        self.assertEqual(len(self.updates.master), 0)
+        self.assertEqual(len(self.updates.masterless), 0)
+        self.assertEqual(len(self.updates.slaveless), 0)
+        self.assertEqual(len(self.updates.nonstatic_slave), 0)
+        self.assertEqual(len(self.updates.nonstatic_master), 0)
+        self.assertEqual(len(self.updates.problematic), 0)
+        self.assertEqual(len(self.updates.slave), 1)
+
+        sync_update = self.updates.slave[0]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            self.assertEqual(sync_update.master_id, 19)
+            self.assertEqual(sync_update.old_m_object.codesum, 'DevD')
+            self.assertEqual(
+                float(sync_update.old_m_object['RNR']),
+                610.0
+            )
+            self.assertEqual(
+                sync_update.slave_id,
+                u'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f'
+            )
+            self.assertEqual(sync_update.old_s_object.codesum, 'DevD')
+            self.assertEqual(
+                float(sync_update.old_s_object['RNR']),
+                650.0
+            )
+            self.assertEqual(
+                float(sync_update.new_s_object['RNR']),
+                610.0
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -346,6 +346,13 @@ class SanitationUtils(object):
         return str_out
 
     @classmethod
+    def remove_leading_quote(cls, string):
+        str_out = re.sub(r'^\'', '', string)
+        if Registrar.DEBUG_UTILS:
+            print "remove_leading_quote", repr(string), repr(str_out)
+        return str_out
+
+    @classmethod
     def remove_leading_percent_wspace(cls, string):
         str_out = re.sub(r'%\W*$', '', string)
         if Registrar.DEBUG_UTILS:
@@ -661,6 +668,7 @@ class SanitationUtils(object):
         return cls.compose(
             cls.coerce_float,
             cls.remove_leading_dollar_wspace,
+            # cls.remove_leading_quote,
             cls.coerce_unicode,
         )(string)
 

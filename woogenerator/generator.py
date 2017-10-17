@@ -20,7 +20,7 @@ from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .client.prod import CatSyncClientWC
-from .coldata import ColDataBase, ColDataWoo
+from .coldata import ColDataBase
 from .matching import CategoryMatcher, ProductMatcher, VariationMatcher
 from .metagator import MetaGator
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
@@ -369,7 +369,7 @@ def export_parsers(settings, parsers):
             if col in product_cols:
                 del product_cols[col]
 
-        attribute_cols = ColDataWoo.get_attribute_cols(
+        attribute_cols = settings.col_data_class.get_attribute_cols(
             parsers.master.attributes, parsers.master.vattributes)
         product_colnames = ColDataBase.get_col_names(
             SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
@@ -379,9 +379,9 @@ def export_parsers(settings, parsers):
 
         # variations
 
-        variation_cols = ColDataWoo.get_variation_cols()
+        variation_cols = settings.col_data_class.get_variation_cols()
 
-        attribute_meta_cols = ColDataWoo.get_attribute_meta_cols(
+        attribute_meta_cols = settings.col_data_class.get_attribute_meta_cols(
             parsers.master.vattributes)
         variation_col_names = ColDataBase.get_col_names(
             SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
@@ -392,7 +392,7 @@ def export_parsers(settings, parsers):
 
         if parsers.master.categories:
             # categories
-            category_cols = ColDataWoo.get_category_cols()
+            category_cols = settings.col_data_class.get_category_cols()
 
             category_list = WooCatList(parsers.master.categories.values())
             category_list.export_items(settings.cat_path,
@@ -521,7 +521,7 @@ def do_match(parsers, matches, settings):
     matches.category.invalid = []
     matches.category.prod = OrderedDict()
 
-    if not settings['do_sync']:
+    if not settings.do_sync:
         return matches
 
     product_matcher = ProductMatcher()
@@ -596,11 +596,13 @@ def do_match(parsers, matches, settings):
         if variation_matcher.duplicate_matches:
             matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
 
+    return matches
+
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
 
-    sync_cols = ColDataWoo.get_wpapi_category_cols()
+    sync_cols = settings.sync_cols_cat
 
     # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
@@ -609,7 +611,7 @@ def do_merge_categories(matches, parsers, updates, settings):
         for m_object in match.m_objects:
             # m_object = match.m_objects[0]
 
-            sync_update = SyncUpdateCatWoo(m_object, s_object)
+            sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
             sync_update.update(sync_cols)
 
@@ -664,7 +666,7 @@ def do_merge(matches, parsers, updates, settings):
 
     # Merge products
 
-    sync_cols = ColDataWoo.get_wpapi_cols()
+    sync_cols = settings.sync_cols_prod
     if Registrar.DEBUG_UPDATE:
         Registrar.register_message("sync_cols: %s" % repr(sync_cols))
 
@@ -679,7 +681,7 @@ def do_merge(matches, parsers, updates, settings):
         m_object = prod_match.m_object
         s_object = prod_match.s_object
 
-        sync_update = SyncUpdateProdWoo(m_object, s_object)
+        sync_update = settings.syncupdate_class_prod(m_object, s_object)
 
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not m_object.is_variation
@@ -763,7 +765,7 @@ def do_merge(matches, parsers, updates, settings):
             insort(updates.slave, sync_update)
 
     if settings['do_variations']:
-        var_sync_cols = ColDataWoo.get_wpapi_variable_cols()
+        var_sync_cols = settings.col_data_class.get_wpapi_variable_cols()
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("var_sync_cols: %s" %
                                        repr(var_sync_cols))
@@ -838,13 +840,14 @@ def do_merge(matches, parsers, updates, settings):
                     new_prod_count, m_object.identifier
                 )
             )
-            api_data = m_object.to_api_data(ColDataWoo, 'wp-api')
+            api_data = m_object.to_api_data(settings.col_data_class, 'wp-api')
             for key in ['id', 'slug']:
                 if key in api_data:
                     del api_data[key]
             # print "has api data: %s" % pformat(api_data)
             updates.slaveless.append(api_data)
 
+    return updates
 
 def do_report_categories(matches, updates, parsers, settings):
     Registrar.register_progress("Write Report")
@@ -967,9 +970,9 @@ def do_report(matches, updates, parsers, settings):
     with io.open(settings.rep_main_path, 'w+', encoding='utf8') as res_file:
         reporter = HtmlReporter()
 
-        # basic_cols = ColDataWoo.get_basic_cols()
-        # csv_colnames = ColDataWoo.get_col_names(
-        #     OrderedDict(basic_cols.items() + ColDataWoo.name_cols([
+        # basic_cols = settings.col_data_class.get_basic_cols()
+        # csv_colnames = settings.col_data_class.get_col_names(
+        #     OrderedDict(basic_cols.items() + settings.col_data_class.name_cols([
         #         # 'address_reason',
         #         # 'name_reason',
         #         # 'Edited Name',
@@ -993,10 +996,10 @@ def do_report(matches, updates, parsers, settings):
                 ]
             )
 
-            delta_cols = ColDataWoo.get_delta_cols()
+            delta_cols = settings.col_data_class.get_delta_cols()
 
             all_delta_cols = OrderedDict(
-                ColDataWoo.get_basic_cols().items() + ColDataWoo.name_cols(
+                settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
                     delta_cols.keys() + delta_cols.values()).items())
 
             if s_delta_list:
@@ -1015,7 +1018,7 @@ def do_report(matches, updates, parsers, settings):
             if s_delta_list:
                 s_delta_list.export_items(
                     settings['rep_delta_slave_csv_path'],
-                    ColDataWoo.get_col_names(all_delta_cols))
+                    settings.col_data_class.get_col_names(all_delta_cols))
 
         #
         report_matching = settings['do_sync']
@@ -1271,7 +1274,7 @@ def do_updates_categories(updates, parsers, results, settings):
                         continue
 
                 m_api_data = category.to_api_data(
-                    ColDataWoo, 'wp-api')
+                    settings.col_data_class, 'wp-api')
                 for key in ['id', 'slug', 'sku']:
                     if key in m_api_data:
                         del m_api_data[key]
@@ -1288,7 +1291,7 @@ def do_updates_categories(updates, parsers, results, settings):
                     parsers.slave.process_api_category(
                         response_api_data)
                     api_cat_translation = OrderedDict()
-                    for key, data in ColDataWoo.get_wpapi_category_cols(
+                    for key, data in settings.col_data_class.get_wpapi_category_cols(
                     ).items():
                         try:
                             wp_api_key = data['wp-api']['key']
