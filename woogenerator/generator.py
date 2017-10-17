@@ -33,7 +33,15 @@ from .parsing.special import CsvParseSpecial
 from .parsing.woo import WooCatList, WooProdList, WooVarList
 from .syncupdate import SyncUpdateCatWoo, SyncUpdateProdWoo, SyncUpdateVarWoo
 from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
-from .utils.reporter import HtmlReporter, ReporterNamespace
+from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
+                             do_category_matches_group, do_delta_group,
+                             do_duplicates_group, do_duplicates_summary_group,
+                             do_failures_group, do_main_summary_group,
+                             do_matches_group, do_matches_summary_group,
+                             do_post_summary_group, do_sanitizing_group,
+                             do_successes_group, do_sync_group,
+                             do_variation_matches_group,
+                             do_variation_sync_group)
 
 
 def timediff(settings):
@@ -456,7 +464,13 @@ def do_match_categories(parsers, matches, settings):
     matches.category.globals.add_matches(category_matcher.pure_matches)
     matches.category.masterless.add_matches(
         category_matcher.masterless_matches)
+    matches.deny_anomalous(
+        'category_matcher.masterless_matches', category_matcher.masterless_matches
+    )
     matches.category.slaveless.add_matches(category_matcher.slaveless_matches)
+    matches.deny_anomalous(
+        'category_matcher.slaveless_matches', category_matcher.slaveless_matches
+    )
 
     if Registrar.DEBUG_CATS:
         if category_matcher.pure_matches:
@@ -532,9 +546,21 @@ def do_match(parsers, matches, settings):
 
     matches.globals.add_matches(product_matcher.pure_matches)
     matches.masterless.add_matches(product_matcher.masterless_matches)
+    matches.deny_anomalous(
+        'product_matcher.masterless_matches', product_matcher.masterless_matches
+    )
     matches.slaveless.add_matches(product_matcher.slaveless_matches)
+    matches.deny_anomalous(
+        'product_matcher.slaveless_matches', product_matcher.slaveless_matches
+    )
 
-    if product_matcher.duplicate_matches:
+    try:
+        matches.deny_anomalous(
+            'product_matcher.duplicate_matches',
+            product_matcher.duplicate_matches,
+            True
+        )
+    except AssertionError as exc:
         exc = UserWarning(
             "products couldn't be synchronized because of ambiguous SKUs:%s"
             % '\n'.join(map(str, product_matcher.duplicate_matches)))
@@ -591,8 +617,16 @@ def do_match(parsers, matches, settings):
         matches.variation.globals.add_matches(variation_matcher.pure_matches)
         matches.variation.masterless.add_matches(
             variation_matcher.masterless_matches)
+        matches.variation.deny_anomalous(
+            'variation_matcher.masterless_matches',
+            variation_matcher.masterless_matches
+        )
         matches.variation.slaveless.add_matches(
             variation_matcher.slaveless_matches)
+        matches.variation.deny_anomalous(
+            'variation_matcher.slaveless_matches',
+            variation_matcher.slaveless_matches
+        )
         if variation_matcher.duplicate_matches:
             matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
 
@@ -849,126 +883,171 @@ def do_merge(matches, parsers, updates, settings):
 
     return updates
 
-def do_report_categories(matches, updates, parsers, settings):
+def do_report_categories(reporters, matches, updates, parsers, settings):
+    Registrar.register_progress("Write Categories Report")
+
+    do_cat_sync_gruop(reporters.cat, matches, updates, parsers, settings)
+
+    if reporters.cat:
+        reporters.cat.write_document_to_file('cat', settings.rep_cat_path)
+
+    # with io.open(settings.rep_cat_path, 'w+', encoding='utf8') as res_file:
+    #     reporter = HtmlReporter()
+    #
+    #     syncing_group = HtmlReporter.Group('cats',
+    #                                        'Category Syncing Results')
+    #
+    #     # TODO: change this to change this to updates.category.prod
+    #     # syncing_group.add_section(
+    #     #     HtmlReporter.Section(
+    #     #         ('matches.category.delete_slave'),
+    #     #         description="%s items will leave categories" %
+    #     #         settings.slave_name,
+    #     #         data=tabulate(
+    #     #             [
+    #     #                 [
+    #     #                     index,
+    #     #                     # parsers.slave.products[index],
+    #     #                     # parsers.slave.products[index].categories,
+    #     #                     # ", ".join(category.woo_cat_name \
+    #     #                     # for category in matches_.merge().m_objects),
+    #     #                     ", ".join([
+    #     #                         category_.woo_cat_name
+    #     #                         for category_ in matches_.merge().s_objects
+    #     #                     ])
+    #     #                 ] for index, matches_ in matches.category.delete_slave.items()
+    #     #             ],
+    #     #             tablefmt="html"),
+    #     #         length=len(matches.category.delete_slave)
+    #     #         # data = '<hr>'.join([
+    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+    #     #         #         for index, match in matches.category.delete_slave.items()
+    #     #         #     ]
+    #     #         # )
+    #     #     ))
+    #
+    #     # TODO: change this to change this to updates.category.prod
+    #     # matches.category.delete_slave_ns_data = tabulate(
+    #     #     [
+    #     #         [
+    #     #             index,
+    #     #             ", ".join([
+    #     #                 category_.woo_cat_name
+    #     #                 for category_ in matches_.merge().s_objects
+    #     #                 if not re.search('Specials', category_.woo_cat_name)
+    #     #             ])
+    #     #         ] for index, matches_ in matches.category.delete_slave.items()
+    #     #     ],
+    #     #     tablefmt="html"
+    #     # )
+    #     #
+    #     # syncing_group.add_section(
+    #     #     HtmlReporter.Section(
+    #     #         ('matches.category.delete_slave_not_specials'),
+    #     #         description="%s items will leave categories" %
+    #     #         settings.slave_name,
+    #     #         data=matches.category.delete_slave_ns_data,
+    #     #         length=len(matches.category.delete_slave)
+    #     #         # data = '<hr>'.join([
+    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+    #     #         #         for index, match in matches.category.delete_slave.items()
+    #     #         #     ]
+    #     #         # )
+    #     #     ))
+    #
+    #     # TODO: change this to updates.category.prod
+    #     # syncing_group.add_section(
+    #     #     HtmlReporter.Section(
+    #     #         ('matches.category.slaveless'),
+    #     #         description="%s items will join categories" %
+    #     #         settings.slave_name,
+    #     #         data=tabulate(
+    #     #             [
+    #     #                 [
+    #     #                     index,
+    #     #                     # parsers.slave.products[index],
+    #     #                     # parsers.slave.products[index].categories,
+    #     #                     ", ".join([
+    #     #                         category_.woo_cat_name
+    #     #                         for category_ in matches_.merge()
+    #     #                         .m_objects
+    #     #                     ]),
+    #     #                     # ", ".join(category_.woo_cat_name \
+    #     #                     # for category_ in matches_.merge().s_objects)
+    #     #                 ] for index, matches_ in matches.category.slaveless.items()
+    #     #             ],
+    #     #             tablefmt="html"),
+    #     #         length=len(matches.category.slaveless)
+    #     #         # data = '<hr>'.join([
+    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
+    #     #         #         for index, match in matches.category.delete_slave.items()
+    #     #         #     ]
+    #     #         # )
+    #     #     ))
+    #
+    #     reporter.add_group(syncing_group)
+    #
+    # if not reporter.groups:
+    #     empty_group = HtmlReporter.Group('empty', 'Nothing to report')
+    #     # empty_group.add_section(
+    #     #     HtmlReporter.Section(
+    #     #         ('empty'),
+    #     #         data = ''
+    #     #
+    #     #     )
+    #     # )
+    #     Registrar.register_message('nothing to report')
+    #     reporter.add_group(empty_group)
+    #
+    # res_file.write(reporter.get_document_unicode())
+
+
+def do_report(reporters, matches, updates, parsers, settings):
+    """ Write report of changes to be made. """
+
+    if not settings.get('do_report'):
+        return reporters
+
     Registrar.register_progress("Write Report")
 
-    with io.open(settings.rep_cat_path, 'w+', encoding='utf8') as res_file:
-        reporter = HtmlReporter()
+    do_main_summary_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    do_delta_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    do_sync_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    do_variation_sync_group(
+        reporters.main, matches, updates, parsers, settings
+    )
 
-        syncing_group = HtmlReporter.Group('cats',
-                                           'Category Syncing Results')
+    if reporters.main:
+        reporters.main.write_document_to_file('main', settings.rep_main_path)
 
-        # TODO: change this to change this to updates.category.prod
-        # syncing_group.add_section(
-        #     HtmlReporter.Section(
-        #         ('matches.category.delete_slave'),
-        #         description="%s items will leave categories" %
-        #         settings.slave_name,
-        #         data=tabulate(
-        #             [
-        #                 [
-        #                     index,
-        #                     # parsers.slave.products[index],
-        #                     # parsers.slave.products[index].categories,
-        #                     # ", ".join(category.woo_cat_name \
-        #                     # for category in matches_.merge().m_objects),
-        #                     ", ".join([
-        #                         category_.woo_cat_name
-        #                         for category_ in matches_.merge().s_objects
-        #                     ])
-        #                 ] for index, matches_ in matches.category.delete_slave.items()
-        #             ],
-        #             tablefmt="html"),
-        #         length=len(matches.category.delete_slave)
-        #         # data = '<hr>'.join([
-        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-        #         #         for index, match in matches.category.delete_slave.items()
-        #         #     ]
-        #         # )
-        #     ))
+    if settings.get('report_matching'):
+        Registrar.register_progress("Write Matching Report")
 
-        # TODO: change this to change this to updates.category.prod
-        # matches.category.delete_slave_ns_data = tabulate(
-        #     [
-        #         [
-        #             index,
-        #             ", ".join([
-        #                 category_.woo_cat_name
-        #                 for category_ in matches_.merge().s_objects
-        #                 if not re.search('Specials', category_.woo_cat_name)
-        #             ])
-        #         ] for index, matches_ in matches.category.delete_slave.items()
-        #     ],
-        #     tablefmt="html"
-        # )
-        #
-        # syncing_group.add_section(
-        #     HtmlReporter.Section(
-        #         ('matches.category.delete_slave_not_specials'),
-        #         description="%s items will leave categories" %
-        #         settings.slave_name,
-        #         data=matches.category.delete_slave_ns_data,
-        #         length=len(matches.category.delete_slave)
-        #         # data = '<hr>'.join([
-        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-        #         #         for index, match in matches.category.delete_slave.items()
-        #         #     ]
-        #         # )
-        #     ))
+        do_matches_summary_group(
+            reporters.match, matches, updates, parsers, settings
+        )
+        do_matches_group(
+            reporters.match, matches, updates, parsers, settings
+        )
+        do_variation_matches_group(
+            reporters.match, matches, updates, parsers, settings
+        )
+        do_category_matches_group(
+            reporters.match, matches, updates, parsers, settings
+        )
 
-        # TODO: change this to updates.category.prod
-        # syncing_group.add_section(
-        #     HtmlReporter.Section(
-        #         ('matches.category.slaveless'),
-        #         description="%s items will join categories" %
-        #         settings.slave_name,
-        #         data=tabulate(
-        #             [
-        #                 [
-        #                     index,
-        #                     # parsers.slave.products[index],
-        #                     # parsers.slave.products[index].categories,
-        #                     ", ".join([
-        #                         category_.woo_cat_name
-        #                         for category_ in matches_.merge()
-        #                         .m_objects
-        #                     ]),
-        #                     # ", ".join(category_.woo_cat_name \
-        #                     # for category_ in matches_.merge().s_objects)
-        #                 ] for index, matches_ in matches.category.slaveless.items()
-        #             ],
-        #             tablefmt="html"),
-        #         length=len(matches.category.slaveless)
-        #         # data = '<hr>'.join([
-        #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-        #         #         for index, match in matches.category.delete_slave.items()
-        #         #     ]
-        #         # )
-        #     ))
+        if reporters.match:
+            reporters.match.write_document_to_file(
+                'match', settings.rep_match_path)
 
-        reporter.add_group(syncing_group)
-
-    if not reporter.groups:
-        empty_group = HtmlReporter.Group('empty', 'Nothing to report')
-        # empty_group.add_section(
-        #     HtmlReporter.Section(
-        #         ('empty'),
-        #         data = ''
-        #
-        #     )
-        # )
-        Registrar.register_message('nothing to report')
-        reporter.add_group(empty_group)
-
-    res_file.write(reporter.get_document_unicode())
-
-
-def do_report(matches, updates, parsers, settings):
-
-    Registrar.register_progress("Write Report")
-
-    with io.open(settings.rep_main_path, 'w+', encoding='utf8') as res_file:
-        reporter = HtmlReporter()
+    # with io.open(settings.rep_main_path, 'w+', encoding='utf8') as res_file:
+    #     reporter = HtmlReporter()
 
         # basic_cols = settings.col_data_class.get_basic_cols()
         # csv_colnames = settings.col_data_class.get_col_names(
@@ -983,258 +1062,257 @@ def do_report(matches, updates, parsers, settings):
         # print repr(basic_colnames)
         # unicode_colnames = map(SanitationUtils.coerce_unicode, csv_colnames.values())
         # print repr(unicode_colnames)
-
-        if settings['do_sync'] and (updates.delta_slave):
-
-            delta_group = HtmlReporter.Group('deltas', 'Field Changes')
-
-            s_delta_list = ShopObjList(
-                [
-                    delta_sync_update.new_s_object
-                    for delta_sync_update in updates.delta_slave
-                    if delta_sync_update.new_s_object
-                ]
-            )
-
-            delta_cols = settings.col_data_class.get_delta_cols()
-
-            all_delta_cols = OrderedDict(
-                settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
-                    delta_cols.keys() + delta_cols.values()).items())
-
-            if s_delta_list:
-                delta_group.add_section(
-                    HtmlReporter.Section(
-                        's_deltas',
-                        title='%s Changes List' % settings.slave_name.title(),
-                        description='%s records that have changed important fields'
-                        % settings.slave_name,
-                        data=s_delta_list.tabulate(
-                            cols=all_delta_cols, tablefmt='html'),
-                        length=len(s_delta_list)))
-
-            reporter.add_group(delta_group)
-
-            if s_delta_list:
-                s_delta_list.export_items(
-                    settings['rep_delta_slave_csv_path'],
-                    settings.col_data_class.get_col_names(all_delta_cols))
+         # if settings['do_sync'] and (updates.delta_slave):
+        #
+        #     delta_group = HtmlReporter.Group('deltas', 'Field Changes')
+        #
+        #     s_delta_list = ShopObjList(
+        #         [
+        #             delta_sync_update.new_s_object
+        #             for delta_sync_update in updates.delta_slave
+        #             if delta_sync_update.new_s_object
+        #         ]
+        #     )
+        #
+        #     delta_cols = settings.col_data_class.get_delta_cols()
+        #
+        #     all_delta_cols = OrderedDict(
+        #         settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
+        #             delta_cols.keys() + delta_cols.values()).items())
+        #
+        #     if s_delta_list:
+        #         delta_group.add_section(
+        #             HtmlReporter.Section(
+        #                 's_deltas',
+        #                 title='%s Changes List' % settings.slave_name.title(),
+        #                 description='%s records that have changed important fields'
+        #                 % settings.slave_name,
+        #                 data=s_delta_list.tabulate(
+        #                     cols=all_delta_cols, tablefmt='html'),
+        #                 length=len(s_delta_list)))
+        #
+        #     reporter.add_group(delta_group)
+        #
+        #     if s_delta_list:
+        #         s_delta_list.export_items(
+        #             settings['rep_delta_slave_csv_path'],
+        #             settings.col_data_class.get_col_names(all_delta_cols))
 
         #
-        report_matching = settings['do_sync']
-        if report_matching:
+        # report_matching = settings['do_sync']
+        # if report_matching:
+        #
+        #     matching_group = HtmlReporter.Group('product_matching',
+        #                                         'Product Matching Results')
+        #     if matches.globals:
+        #         matching_group.add_section(
+        #             HtmlReporter.Section(
+        #                 'perfect_product_matches',
+        #                 **{
+        #                     'title':
+        #                     'Perfect Matches',
+        #                     'description':
+        #                     "%s records match well with %s" % (
+        #                         settings.slave_name, settings.master_name),
+        #                     'data':
+        #                     matches.globals.tabulate(tablefmt="html"),
+        #                     'length':
+        #                     len(matches.globals)
+        #                 }))
+        #     if matches.masterless:
+        #         matching_group.add_section(
+        #             HtmlReporter.Section(
+        #                 'matches.masterless',
+        #                 **{
+        #                     'title':
+        #                     'Masterless matches',
+        #                     'description':
+        #                     "matches are masterless",
+        #                     'data':
+        #                     matches.masterless.tabulate(
+        #                         tablefmt="html"),
+        #                     'length':
+        #                     len(matches.masterless)
+        #                 }))
+        #     if matches.slaveless:
+        #         matching_group.add_section(
+        #             HtmlReporter.Section(
+        #                 'matches.slaveless',
+        #                 **{
+        #                     'title':
+        #                     'Slaveless matches',
+        #                     'description':
+        #                     "matches are slaveless",
+        #                     'data':
+        #                     matches.slaveless.tabulate(
+        #                         tablefmt="html"),
+        #                     'length':
+        #                     len(matches.slaveless)
+        #                 }))
+        #     if matching_group.sections:
+        #         reporter.add_group(matching_group)
+        #
+        #     if settings['do_categories']:
+        #         matching_group = HtmlReporter.Group(
+        #             'category_matching', 'Category Matching Results')
+        #         if matches.category.globals:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'perfect_category_matches',
+        #                     **{
+        #                         'title':
+        #                         'Perfect Matches',
+        #                         'description':
+        #                         "%s records match well with %s" % (
+        #                             settings.slave_name, settings.master_name),
+        #                         'data':
+        #                         matches.category.globals.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.category.globals)
+        #                     }))
+        #         if matches.category.masterless:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'matches.category.masterless',
+        #                     **{
+        #                         'title':
+        #                         'Masterless matches',
+        #                         'description':
+        #                         "matches are masterless",
+        #                         'data':
+        #                         matches.category.masterless.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.category.masterless)
+        #                     }))
+        #         if matches.category.slaveless:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'matches.category.slaveless',
+        #                     **{
+        #                         'title':
+        #                         'Slaveless matches',
+        #                         'description':
+        #                         "matches are slaveless",
+        #                         'data':
+        #                         matches.category.slaveless.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.category.slaveless)
+        #                     }))
+        #         if matching_group.sections:
+        #             reporter.add_group(matching_group)
+        #
+        #     if settings['do_variations']:
+        #         matching_group = HtmlReporter.Group(
+        #             'variation_matching', 'Variation Matching Results')
+        #         if matches.variation.globals:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'perfect_variation_matches',
+        #                     **{
+        #                         'title':
+        #                         'Perfect Matches',
+        #                         'description':
+        #                         "%s records match well with %s" % (
+        #                             settings.slave_name, settings.master_name),
+        #                         'data':
+        #                         matches.variation.globals.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.variation.globals)
+        #                     }))
+        #         if matches.variation.masterless:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'matches.variation.masterless',
+        #                     **{
+        #                         'title':
+        #                         'Masterless matches',
+        #                         'description':
+        #                         "matches are masterless",
+        #                         'data':
+        #                         matches.variation.masterless.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.variation.masterless)
+        #                     }))
+        #         if matches.variation.slaveless:
+        #             matching_group.add_section(
+        #                 HtmlReporter.Section(
+        #                     'matches.variation.slaveless',
+        #                     **{
+        #                         'title':
+        #                         'Slaveless matches',
+        #                         'description':
+        #                         "matches are slaveless",
+        #                         'data':
+        #                         matches.variation.slaveless.tabulate(
+        #                             tablefmt="html"),
+        #                         'length':
+        #                         len(matches.variation.slaveless)
+        #                     }))
+        #         if matching_group.sections:
+        #             reporter.add_group(matching_group)
 
-            matching_group = HtmlReporter.Group('product_matching',
-                                                'Product Matching Results')
-            if matches.globals:
-                matching_group.add_section(
-                    HtmlReporter.Section(
-                        'perfect_product_matches',
-                        **{
-                            'title':
-                            'Perfect Matches',
-                            'description':
-                            "%s records match well with %s" % (
-                                settings.slave_name, settings.master_name),
-                            'data':
-                            matches.globals.tabulate(tablefmt="html"),
-                            'length':
-                            len(matches.globals)
-                        }))
-            if matches.masterless:
-                matching_group.add_section(
-                    HtmlReporter.Section(
-                        'matches.masterless',
-                        **{
-                            'title':
-                            'Masterless matches',
-                            'description':
-                            "matches are masterless",
-                            'data':
-                            matches.masterless.tabulate(
-                                tablefmt="html"),
-                            'length':
-                            len(matches.masterless)
-                        }))
-            if matches.slaveless:
-                matching_group.add_section(
-                    HtmlReporter.Section(
-                        'matches.slaveless',
-                        **{
-                            'title':
-                            'Slaveless matches',
-                            'description':
-                            "matches are slaveless",
-                            'data':
-                            matches.slaveless.tabulate(
-                                tablefmt="html"),
-                            'length':
-                            len(matches.slaveless)
-                        }))
-            if matching_group.sections:
-                reporter.add_group(matching_group)
+        # report_sync = settings['do_sync']
+        # if report_sync:
+        #     syncing_group = HtmlReporter.Group('prod_sync',
+        #                                        'Product Syncing Results')
+        #
+        #     syncing_group.add_section(
+        #         HtmlReporter.Section(
+        #             (SanitationUtils.make_safe_class(settings.slave_name) +
+        #              "_product_updates"),
+        #             description=settings.slave_name + " items will be updated",
+        #             data='<hr>'.join([
+        #                 update.tabulate(tablefmt="html")
+        #                 for update in updates.slave
+        #             ]),
+        #             length=len(updates.slave)))
+        #
+        #     syncing_group.add_section(
+        #         HtmlReporter.Section(
+        #             "updates.problematic",
+        #             description="items can't be merged because they are too dissimilar",
+        #             data='<hr>'.join([
+        #                 update.tabulate(tablefmt="html")
+        #                 for update in updates.problematic
+        #             ]),
+        #             length=len(updates.problematic)))
+        #
+        #     reporter.add_group(syncing_group)
+        #
+        #     if settings['do_variations']:
+        #         syncing_group = HtmlReporter.Group('variation_sync',
+        #                                            'Variation Syncing Results')
+        #
+        #         syncing_group.add_section(
+        #             HtmlReporter.Section(
+        #                 (SanitationUtils.make_safe_class(settings.slave_name) +
+        #                  "_variation_updates"),
+        #                 description=settings.slave_name +
+        #                 " items will be updated",
+        #                 data='<hr>'.join([
+        #                     update.tabulate(tablefmt="html")
+        #                     for update in updates.variation.slave
+        #                 ]),
+        #                 length=len(updates.variation.slave)))
+        #
+        #         syncing_group.add_section(
+        #             HtmlReporter.Section(
+        #                 "updates.variation.problematic",
+        #                 description="items can't be merged because they are too dissimilar",
+        #                 data='<hr>'.join([
+        #                     update.tabulate(tablefmt="html")
+        #                     for update in updates.variation.problematic
+        #                 ]),
+        #                 length=len(updates.variation.problematic)))
+        #
+        #         reporter.add_group(syncing_group)
 
-            if settings['do_categories']:
-                matching_group = HtmlReporter.Group(
-                    'category_matching', 'Category Matching Results')
-                if matches.category.globals:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'perfect_category_matches',
-                            **{
-                                'title':
-                                'Perfect Matches',
-                                'description':
-                                "%s records match well with %s" % (
-                                    settings.slave_name, settings.master_name),
-                                'data':
-                                matches.category.globals.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.category.globals)
-                            }))
-                if matches.category.masterless:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'matches.category.masterless',
-                            **{
-                                'title':
-                                'Masterless matches',
-                                'description':
-                                "matches are masterless",
-                                'data':
-                                matches.category.masterless.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.category.masterless)
-                            }))
-                if matches.category.slaveless:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'matches.category.slaveless',
-                            **{
-                                'title':
-                                'Slaveless matches',
-                                'description':
-                                "matches are slaveless",
-                                'data':
-                                matches.category.slaveless.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.category.slaveless)
-                            }))
-                if matching_group.sections:
-                    reporter.add_group(matching_group)
-
-            if settings['do_variations']:
-                matching_group = HtmlReporter.Group(
-                    'variation_matching', 'Variation Matching Results')
-                if matches.variation.globals:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'perfect_variation_matches',
-                            **{
-                                'title':
-                                'Perfect Matches',
-                                'description':
-                                "%s records match well with %s" % (
-                                    settings.slave_name, settings.master_name),
-                                'data':
-                                matches.variation.globals.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.variation.globals)
-                            }))
-                if matches.variation.masterless:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'matches.variation.masterless',
-                            **{
-                                'title':
-                                'Masterless matches',
-                                'description':
-                                "matches are masterless",
-                                'data':
-                                matches.variation.masterless.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.variation.masterless)
-                            }))
-                if matches.variation.slaveless:
-                    matching_group.add_section(
-                        HtmlReporter.Section(
-                            'matches.variation.slaveless',
-                            **{
-                                'title':
-                                'Slaveless matches',
-                                'description':
-                                "matches are slaveless",
-                                'data':
-                                matches.variation.slaveless.tabulate(
-                                    tablefmt="html"),
-                                'length':
-                                len(matches.variation.slaveless)
-                            }))
-                if matching_group.sections:
-                    reporter.add_group(matching_group)
-
-        report_sync = settings['do_sync']
-        if report_sync:
-            syncing_group = HtmlReporter.Group('prod_sync',
-                                               'Product Syncing Results')
-
-            syncing_group.add_section(
-                HtmlReporter.Section(
-                    (SanitationUtils.make_safe_class(settings.slave_name) +
-                     "_product_updates"),
-                    description=settings.slave_name + " items will be updated",
-                    data='<hr>'.join([
-                        update.tabulate(tablefmt="html")
-                        for update in updates.slave
-                    ]),
-                    length=len(updates.slave)))
-
-            syncing_group.add_section(
-                HtmlReporter.Section(
-                    "updates.problematic",
-                    description="items can't be merged because they are too dissimilar",
-                    data='<hr>'.join([
-                        update.tabulate(tablefmt="html")
-                        for update in updates.problematic
-                    ]),
-                    length=len(updates.problematic)))
-
-            reporter.add_group(syncing_group)
-
-            if settings['do_variations']:
-                syncing_group = HtmlReporter.Group('variation_sync',
-                                                   'Variation Syncing Results')
-
-                syncing_group.add_section(
-                    HtmlReporter.Section(
-                        (SanitationUtils.make_safe_class(settings.slave_name) +
-                         "_variation_updates"),
-                        description=settings.slave_name +
-                        " items will be updated",
-                        data='<hr>'.join([
-                            update.tabulate(tablefmt="html")
-                            for update in updates.variation.slave
-                        ]),
-                        length=len(updates.variation.slave)))
-
-                syncing_group.add_section(
-                    HtmlReporter.Section(
-                        "updates.variation.problematic",
-                        description="items can't be merged because they are too dissimilar",
-                        data='<hr>'.join([
-                            update.tabulate(tablefmt="html")
-                            for update in updates.variation.problematic
-                        ]),
-                        length=len(updates.variation.problematic)))
-
-                reporter.add_group(syncing_group)
-
-        res_file.write(reporter.get_document_unicode())
+        # res_file.write(reporter.get_document_unicode())
 
 
 def do_report_post(reporters, results, settings):
@@ -1408,7 +1486,9 @@ def main(override_args=None, settings=None):
 
         matches = do_match_categories(parsers, matches, settings)
         updates = do_merge_categories(matches, parsers, updates, settings)
-        reporters = do_report_categories(matches, updates, parsers, settings)
+        reporters = do_report_categories(
+            reporters, matches, updates, parsers, settings
+        )
         check_warnings()
 
         try:
@@ -1420,7 +1500,7 @@ def main(override_args=None, settings=None):
     matches = do_match(parsers, matches, settings)
     updates = do_merge(matches, parsers, updates, settings)
     check_warnings()
-    reporters = do_report(matches, updates, parsers, settings)
+    reporters = do_report(reporters, matches, updates, parsers, settings)
 
     if settings.report_and_quit:
         sys.exit(ExitStatus.success)

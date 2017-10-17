@@ -485,17 +485,20 @@ class ParserNamespace(argparse.Namespace):
         self.slave = getattr(self, 'slave', None)
         self.anomalous = {}
 
-    def deny_anomalous(self, parselist_type, anomalous_parselist):
+    def deny_anomalous(self, parselist_type, anomalous_parselist, error=False):
         """Add the parselist to the list of anomalous parse lists if it is not empty."""
         try:
-            assert not anomalous_parselist
-        except AssertionError:
-            # print "could not deny anomalous parse list", parselist_type, exc
+            assert not anomalous_parselist, \
+                "There should be no instances of %s parse lists" % parselist_type
+        except AssertionError, exc:
             self.anomalous[parselist_type] = anomalous_parselist
+            if error:
+                Registrar.register_error(exc)
+                raise exc
+            else:
+                Registrar.register_warning(exc)
 
 # TODO: move to matching
-
-
 class MatchNamespace(argparse.Namespace):
     """ Collect variables used in matching into a single namespace. """
 
@@ -508,14 +511,18 @@ class MatchNamespace(argparse.Namespace):
         self.duplicate = OrderedDict()
         self.conflict = OrderedDict()
 
-    def deny_anomalous(self, match_list_type, anomalous_match_list):
+    def deny_anomalous(self, match_list_type, anomalous_match_list, error=False):
         """Add the matchlist to the list of anomalous match lists if it is not empty."""
         try:
-            assert not anomalous_match_list
-        except AssertionError:
-            # print "could not deny anomalous match list", match_list_type,
-            # exc
+            assert not anomalous_match_list, \
+                "There should be no instances of %s match lists" % match_list_type
+        except AssertionError, exc:
             self.anomalous[match_list_type] = anomalous_match_list
+            if error:
+                Registrar.register_error(exc)
+                raise exc
+            else:
+                Registrar.register_warning(exc)
 
 
 class UpdateNamespace(argparse.Namespace):

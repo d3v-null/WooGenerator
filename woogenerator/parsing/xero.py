@@ -15,13 +15,21 @@ from .shop import (
 )
 from .api import ImportApiObjectMixin
 
+class XeroProdList(ShopProdList):
+
+    @property
+    def report_cols(self):
+        return CsvParseXero.coldata_class.get_product_cols()
+
 class ImportXeroMixin(object):
+    container = XeroProdList
     description_key = 'Xero Description'
     description = DescriptorUtils.safe_key_property(description_key)
 
 class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
     description_key = ImportXeroMixin.description_key
     description = ImportXeroMixin.description
+    container = ImportXeroMixin.container
     api_id_key = 'item_id'
     api_id = DescriptorUtils.safe_key_property(api_id_key)
 
@@ -30,10 +38,11 @@ class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
         ImportShopMixin.__init__(self, *args, **kwargs)
 
 class ImportXeroItem(ImportXeroObject, ImportGenItem):
-    pass
+    container = ImportXeroMixin.container
 
 class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
+    container = ImportXeroMixin.container
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
@@ -42,12 +51,14 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
 
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
     process_meta = ImportApiObjectMixin.process_meta
+    container = ImportXeroMixin.container
 
 class ImportXeroApiItem(ImportXeroApiObject, ImportGenItem):
-    pass
+    container = ImportXeroMixin.container
 
 class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
+    container = ImportXeroMixin.container
     name_delimeter = ' - '
 
     verify_meta_keys = [
@@ -114,12 +125,6 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
     def register_object(self, object_data):
         CsvParseGenTree.register_object(self, object_data)
         CsvParseShopMixin.register_object(self, object_data)
-
-class XeroProdList(ShopProdList):
-
-    @property
-    def report_cols(self):
-        return CsvParseXero.coldata_class.get_product_cols()
 
 class ApiParseXero(
     CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin

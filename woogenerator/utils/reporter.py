@@ -11,11 +11,11 @@ import tabulate
 import unicodecsv
 
 from ..duplicates import Duplicates
-from ..parsing.user import UsrObjList
 
 from .clock import TimeUtils
 from .core import Registrar, SanitationUtils
-
+from ..namespace.user import SettingsNamespaceUser
+from ..namespace.prod import SettingsNamespaceProd
 
 class ReporterNamespace(argparse.Namespace):
     """ Collect variables used in reporting into a single namespace. """
@@ -29,6 +29,10 @@ class ReporterNamespace(argparse.Namespace):
         self.san = RenderableReporter()
         self.match = RenderableReporter()
         self.post = RenderableReporter()
+        self.cat = RenderableReporter()
+
+    # def add_reporter(self, name, css=None):
+    #     setattr(self, name, RenderableReporter(css=css))
 
     @property
     def as_dict(self):
@@ -387,7 +391,6 @@ class RenderableReporter(AbstractReporter):
             response = self.format(self.get_data_fmt(fmt), data=response)
             return response
 
-
 def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
         response = u""
@@ -401,7 +404,7 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
             (reporter.Section.get_data_heading_fmt(
                 fmt), {'heading': 'Sections'}),
             (reporter.Section.get_descr_fmt(fmt), {
-                'strong': 'Usernamematcher.Duplicate_Matches',
+                'strong': 'username_matcher.Duplicate_Matches',
                 'description': (
                     " are instances where multiple records from a single database "
                     "were found to have the same username which is certainly an "
@@ -455,6 +458,7 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
 def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     group = reporter.Group('dup', 'Duplicate Results')
+    container = parsers.master.object_container.container
 
     dup_cols = OrderedDict(settings.basic_cols.items() + [
         # ('Create Date', {}),
@@ -610,7 +614,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
             return duplicate_delmieter.join([
                 duplicate_format % (
                     address,
-                    UsrObjList(objects).tabulate(
+                    container(objects).tabulate(
                         cols=dup_cols,
                         tablefmt=fmt,
                         highlight_rules=highlight_rules_all
@@ -632,7 +636,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
         '%s records have multiple CARD IDs in %s' % (
             settings.slave_name, settings.master_name
         ),
-        'usernameMatcher.duplicate_matches':
+        'username_matcher.duplicate_matches':
         '%s records have multiple USERNAMEs in %s' % (
             settings.slave_name, settings.master_name
         )
@@ -670,35 +674,41 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
-
 def do_main_summary_group(reporter, matches, updates, parsers, settings):
     def render_help_instructions(fmt=None):
         response = u""
-        for format_spec, format_kwargs in [
+        format_specs = [
             (reporter.Section.get_descr_fmt(fmt), {
                 'description': (
                     "This is a detailed report of all the changes that will be "
                     "made if this sync were to go ahead."
                 )
-            }),
-            (reporter.Section.get_data_heading_fmt(
-                fmt), {'heading': 'Field Changes'}),
-            (reporter.Section.get_descr_fmt(fmt), {
-                'description': (
-                    "These reports show all the changes that will happen to "
-                    "the most important fields (default: email and role). "
-                    "The role field shows the new value for role, and the Delta role "
-                    "field shows the previous value for role if the value will be "
-                    "changed by the update. Same for email: the email field shows the "
-                    "new value for email, and the delta email field shows the old value "
-                    "for email if it will be changed in the update."
-                    "These are the most important changes to check. You should look to "
-                    "make sure that the value in the the Email and Role field is correct "
-                    "and that the value in the delta email or delta role field is incorrect. "
-                    "If an email or role is changed to the wrong value, it could stop the "
-                    "customer from being able to log in or purchase items correctly."
-                )
-            }),
+            })
+        ]
+
+        if settings.master_pkey == 'MYOB Card ID':
+            format_specs += [
+                (reporter.Section.get_data_heading_fmt(
+                    fmt), {'heading': 'Field Changes'}),
+                (reporter.Section.get_descr_fmt(fmt), {
+                    'description': (
+                        "These reports show all the changes that will happen to "
+                        "the most important fields (default: email and role). "
+                        "The role field shows the new value for role, and the Delta role "
+                        "field shows the previous value for role if the value will be "
+                        "changed by the update. Same for email: the email field shows the "
+                        "new value for email, and the delta email field shows the old value "
+                        "for email if it will be changed in the update."
+                        "These are the most important changes to check. You should look to "
+                        "make sure that the value in the the Email and Role field is correct "
+                        "and that the value in the delta email or delta role field is incorrect. "
+                        "If an email or role is changed to the wrong value, it could stop the "
+                        "customer from being able to log in or purchase items correctly."
+                    )
+                }),
+            ]
+
+        format_specs += [
             (reporter.Section.get_data_heading_fmt(
                 fmt), {'heading': 'Syncing Results'}),
             (reporter.Section.get_descr_fmt(fmt), {
@@ -745,13 +755,15 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
                     "syncing"
                 )
             }),
-        ]:
+        ]
+
+        for format_spec, format_kwargs in format_specs:
             if 'description' in format_kwargs:
                 format_kwargs['description'] = format_kwargs['description'].format(
                     master_name=settings.master_name,
                     slave_name=settings.slave_name,
-                    master_pkey="MYOB Card ID",
-                    slave_pkey="WP ID"
+                    master_pkey=settings.master_pkey,
+                    slave_pkey=settings.slave_pkey
                 )
             response += reporter.format(format_spec, **format_kwargs)
         return response
@@ -786,11 +798,12 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
             'Edited Address',
             'Edited Alt Address',
         ]).items()))
+    container = parsers.master.object_container.container
 
     group = reporter.Group('sanitizing', 'Sanitizing Results')
 
     def render_bad_register(fmt, register, cols):
-        users = UsrObjList(register.values())
+        users = container(register.values())
         return users.tabulate(
             cols=address_cols,
             tablefmt=fmt
@@ -829,7 +842,7 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
                 )
             )
 
-        bad_users = UsrObjList(
+        bad_users = container(
             parser.bad_name.values() + parser.bad_address.values()
         )
         report_path = settings.get('rep_san_%s_csv_path' % source)
@@ -846,13 +859,22 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
 
     group = reporter.Group('deltas', 'Field Changes')
 
-    m_delta_list = UsrObjList(
-        filter(None, [update.new_m_object
-                      for update in updates.delta_master]))
+    container = parsers.master.object_container.container
 
-    s_delta_list = UsrObjList(
-        filter(None, [update.new_s_object
-                      for update in updates.delta_slave]))
+    delta_lists = OrderedDict()
+
+    for source in ['master', 'slave']:
+        source_delta_updates = getattr(updates, 'delta_%s' % source)
+        if source_delta_updates:
+            delta_lists[source] = container(
+                filter(None, [
+                    getattr(update, 'new_%s_object' % source[0])
+                    for update in source_delta_updates
+                ])
+            )
+
+    if not delta_lists:
+        return
 
     delta_cols = settings.col_data_class.get_delta_cols()
 
@@ -867,10 +889,7 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
             cols=all_delta_cols, tablefmt=fmt
         )
 
-    for source, delta_list in [
-        ('master', m_delta_list),
-        ('slave', s_delta_list)
-    ]:
+    for source, delta_list in delta_lists.items():
         if not delta_list:
             continue
 
@@ -941,8 +960,8 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
                 format_kwargs['description'] = format_kwargs['description'].format(
                     master_name=settings.master_name,
                     slave_name=settings.slave_name,
-                    master_pkey="MYOB Card ID",
-                    slave_pkey="WP ID"
+                    master_pkey=settings.master_pkey,
+                    slave_pkey=settings.slave_pkey
                 )
             response += reporter.format(format_spec, **format_kwargs)
         return response
@@ -958,12 +977,49 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+def render_perfect_matches(fmt, matchlist):
+    return matchlist.tabulate(tablefmt=fmt)
+
+def render_matchlist_data(fmt, match_list, matchlist_type):
+    if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+        data = match_list.merge().tabulate(tablefmt=fmt)
+    else:
+        data = match_list.tabulate(
+            tablefmt=fmt,
+        )
+    return data
+
+def render_parselist_data(fmt, parse_list, parselist_type, container):
+    usr_list = container()
+    for obj in parse_list.values():
+        usr_list.append(obj)
+    return usr_list.tabulate(tablefmt=fmt)
+
+match_list_instructions = {
+    'cardMatcher.masterless_matches':
+    '{slave_name} records do not have a corresponding CARD ID in {master_name} (deleted?)',
+    'username_matcher.slaveless_matches':
+    '{master_name} records have no USERNAMEs in {slave_name}',
+    'product_matcher.duplicate_matches':
+    '{master_name} records have ambiguous SKUs in {slave_name}',
+    'product_matcher.masterless_matches':
+    '{slave_name} records have no matching SKU in {master_name}',
+    'product_matcher.slaveless_matches':
+    '{master_name} records have no matching SKU in {slave_name}',
+    'variation_matcher.masterless_matches':
+    '{slave_name} variations have no match in {master_name}',
+    'variation_matcher.slaveless_matches':
+    '{master_name} variations have no match in {slave_name}',
+    'category_matcher.masterless_matches':
+    '{slave_name} categories have no match in {master_name}',
+    'category_matcher.slaveless_matches':
+    '{master_name} categories have no match in {slave_name}',
+}
 
 def do_matches_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('matching', 'Matching Results')
 
-    def render_perfect_matches(fmt):
-        return matches.globals.tabulate(tablefmt=fmt)
+    container = parsers.master.object_container.container
 
     group.add_section(
         reporter.Section(
@@ -971,36 +1027,23 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
             title='Perfect Matches',
             description="%s records match well with %s" % (
                 settings.slave_name, settings.master_name),
-            data=render_perfect_matches,
+            data=functools.partial(
+                render_perfect_matches,
+                matchlist=matches.globals,
+            ),
             length=len(matches.globals)
         )
     )
-
-    match_list_instructions = {
-        'cardMatcher.masterless_matches':
-        '%s records do not have a corresponding CARD ID in %s (deleted?)' % (
-            settings.slave_name, settings.master_name
-        ),
-        'usernameMatcher.slaveless_matches':
-        '%s records have no USERNAMEs in %s' % (
-            settings.master_name, settings.slave_name
-        ),
-    }
-
-    def render_matchlist_data(fmt, match_list, matchlist_type):
-        if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
-            data = match_list.merge().tabulate(tablefmt=fmt)
-        else:
-            data = match_list.tabulate(
-                tablefmt=fmt,
-            )
-        return data
 
     for matchlist_type, match_list in matches.anomalous.items():
         if not match_list:
             continue
         description = match_list_instructions.get(
             matchlist_type, matchlist_type)
+        description.format(
+            master_name=settings.master_name,
+            slave_name=settings.slave_name
+        )
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -1017,26 +1060,24 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
 
     parse_list_instructions = {
         "sa_parser.noemails":
-        "%s records have invalid emails" % settings.slave_name,
+        "{slave_name} records have invalid emails",
         "ma_parser.noemails":
-        "%s records have invalid emails" % settings.master_name,
+        "{master_name} records have invalid emails",
         "ma_parser.nocards":
-        "%s records have no cards" % settings.master_name,
+        "{master_name} records have no cards",
         "sa_parser.nousernames":
-        "%s records have no username" % settings.slave_name
+        "{slave_name} records have no username",
     }
-
-    def render_parselist_data(fmt, parse_list, parselist_type):
-        usr_list = UsrObjList()
-        for obj in parse_list.values():
-            usr_list.append(obj)
-        return usr_list.tabulate(tablefmt=fmt)
 
     for parselist_type, parse_list in parsers.anomalous.items():
         if not parse_list:
             continue
         description = parse_list_instructions.get(
             parselist_type, parselist_type)
+        description.format(
+            master_name=settings.master_name,
+            slave_name=settings.slave_name
+        )
         group.add_section(
             reporter.Section(
                 parselist_type,
@@ -1045,7 +1086,8 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
                 data=functools.partial(
                     render_parselist_data,
                     parselist_type=parselist_type,
-                    parse_list=parse_list
+                    parse_list=parse_list,
+                    container=container
                 ),
                 length=len(parse_list)
             )
@@ -1054,6 +1096,85 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
+def do_variation_matches_group(reporter, matches, updates, parsers, settings):
+    group = reporter.Group('variation_matching', 'Variation Matching Results')
+
+    group.add_section(
+        reporter.Section(
+            'perfect_variation_matches',
+            title='Perfect Variation Matches',
+            description="%s variations match well with %s" % (
+                settings.slave_name, settings.master_name),
+            data=functools.partial(
+                render_perfect_matches,
+                matchlist=matches.variation.globals,
+            ),
+            length=len(matches.variation.globals)
+        )
+    )
+
+    for matchlist_type, match_list in matches.anomalous.items():
+        if not match_list:
+            continue
+        description = match_list_instructions.get(
+            matchlist_type, matchlist_type)
+        description.format(
+            master_name=settings.master_name,
+            slave_name=settings.slave_name
+        )
+        group.add_section(
+            reporter.Section(
+                matchlist_type,
+                title=matchlist_type.title(),
+                description=description,
+                data=functools.partial(
+                    render_matchlist_data,
+                    matchlist_type=matchlist_type,
+                    match_list=match_list
+                ),
+                length=len(match_list)
+            )
+        )
+
+def do_category_matches_group(reporter, matches, updates, parsers, settings):
+    group = reporter.Group('category_matching', 'Category Matching Results')
+
+    group.add_section(
+        reporter.Section(
+            'perfect_category_matches',
+            title='Perfect Category Matches',
+            description="%s categorys match well with %s" % (
+                settings.slave_name, settings.master_name),
+            data=functools.partial(
+                render_perfect_matches,
+                matchlist=matches.category.globals,
+            ),
+            length=len(matches.category.globals)
+        )
+    )
+
+    for matchlist_type, match_list in matches.category.anomalous.items():
+        if not match_list:
+            continue
+        description = match_list_instructions.get(
+            matchlist_type, matchlist_type)
+        description.format(
+            master_name=settings.master_name,
+            slave_name=settings.slave_name
+        )
+        group.add_section(
+            reporter.Section(
+                matchlist_type,
+                title=matchlist_type.title(),
+                description=description,
+                data=functools.partial(
+                    render_matchlist_data,
+                    matchlist_type=matchlist_type,
+                    match_list=match_list
+                ),
+                length=len(match_list)
+            )
+        )
 
 def render_update_list(fmt, reporter, update_list):
     delimeter = reporter.Section.get_data_separator(fmt)
@@ -1068,24 +1189,29 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
     group = reporter.Group('sync', 'Syncing Results')
 
-    for attr, name, description in [
+    target_update_list_meta = []
+    if isinstance(settings, SettingsNamespaceUser):
+        target_update_list_meta += [
+            (
+                updates.master,
+                settings.master_name + "_updates",
+                settings.master_name + " items will be updated"
+            ),
+        ]
+    target_update_list_meta += [
         (
-            'master',
-            settings.master_name + "_updates",
-            settings.master_name + " items will be updated"
-        ),
-        (
-            'slave',
+            updates.slave,
             settings.slave_name + "_updates",
             settings.slave_name + " items will be updated"
         ),
         (
-            'problematic',
+            updates.problematic,
             "problematic_updates",
             "items can't be automatically merged because they are too dissimilar"
         )
-    ]:
-        target_update_list = getattr(updates, attr)
+    ]
+
+    for target_update_list, name, description in target_update_list_meta:
         group.add_section(
             reporter.Section(
                 name,
@@ -1101,6 +1227,70 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
 
     if group:
         reporter.add_group(group)
+
+def do_variation_sync_group(reporter, matches, updates, parsers, settings):
+    if not settings.do_sync or not settings.do_variations:
+        return
+
+    group = reporter.Group('variation_sync', 'Variation Syncing Results')
+
+    target_update_list_meta = [
+        (
+            updates.variation.slave,
+            settings.slave_name + "_variation_updates",
+            settings.slave_name + " variations will be updated"
+        ),
+        (
+            updates.variation.problematic,
+            "problematic_variation_updates",
+            "variations can't be merged because they are too dissimilar"
+        ),
+    ]
+
+    for target_update_list, name, description in target_update_list_meta:
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.partial(
+                    render_update_list,
+                    update_list=target_update_list,
+                    reporter=reporter
+                ),
+                length=len(target_update_list)
+            )
+        )
+
+    if group:
+        reporter.add_group(group)
+
+def do_cat_sync_gruop(reporter, matches, updates, parsers, settings):
+    if not settings.do_sync or not settings.do_categories:
+        return
+
+    group = reporter.Group('category_sync', 'Category Syncing Results')
+
+    target_update_list_meta = [
+        # TODO: Finish this
+    ]
+
+    for target_update_list, name, description in target_update_list_meta:
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.partial(
+                    render_update_list,
+                    update_list=target_update_list,
+                    reporter=reporter
+                ),
+                length=len(target_update_list)
+            )
+        )
+
+    if group:
+        reporter.add_group(group)
+
 
 
 def do_post_summary_group(reporter, results, settings):

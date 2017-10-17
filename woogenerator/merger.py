@@ -222,10 +222,10 @@ def do_match(parsers, settings):
     username_matcher.process_registers(parsers.slave.usernames,
                                        parsers.master.usernames)
 
-    matches.deny_anomalous('usernameMatcher.slaveless_matches',
-                           username_matcher.slaveless_matches)
-    matches.deny_anomalous('usernameMatcher.duplicate_matches',
-                           username_matcher.duplicate_matches)
+    matches.deny_anomalous(
+        'usernameMatcher.slaveless_matches', username_matcher.slaveless_matches)
+    matches.deny_anomalous(
+        'usernameMatcher.duplicate_matches', username_matcher.duplicate_matches)
 
     matches.duplicate['username'] = username_matcher.duplicate_matches
 
@@ -415,56 +415,57 @@ def do_report(matches, updates, parsers, settings):
     """Write report of changes to be made."""
     reporters = ReporterNamespace()
 
-    if settings.get('do_report'):
-        Registrar.register_progress("Write Main Report")
+    if not settings.get('do_report'):
+        return reporters
 
-        do_main_summary_group(
-            reporters.main, matches, updates, parsers, settings
+    Registrar.register_progress("Write Main Report")
+
+    do_main_summary_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    do_delta_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    do_sync_group(
+        reporters.main, matches, updates, parsers, settings
+    )
+    if reporters.main:
+        reporters.main.write_document_to_file('main', settings.rep_main_path)
+
+    if settings.get('report_sanitation'):
+        Registrar.register_progress("Write Sanitation Report")
+
+        do_sanitizing_group(
+            reporters.san, matches, updates, parsers, settings
         )
-        do_delta_group(
-            reporters.main, matches, updates, parsers, settings
+        if reporters.san:
+            reporters.san.write_document_to_file(
+                'san', settings.rep_san_path)
+
+    if settings.get('report_matching'):
+        Registrar.register_progress("Write Matching Report")
+
+        do_matches_summary_group(
+            reporters.match, matches, updates, parsers, settings
         )
-        do_sync_group(
-            reporters.main, matches, updates, parsers, settings
+        do_matches_group(
+            reporters.match, matches, updates, parsers, settings
+        ),
+        if reporters.match:
+            reporters.match.write_document_to_file(
+                'match', settings.rep_match_path)
+
+    if settings.get('report_duplicates'):
+        Registrar.register_progress("Write Duplicates Report")
+
+        do_duplicates_summary_group(
+            reporters.dup, matches, updates, parsers, settings),
+        do_duplicates_group(
+            reporters.dup, matches, updates, parsers, settings
         )
-        if reporters.main:
-            reporters.main.write_document_to_file(
-                'main', settings.rep_main_path)
-
-        if settings.get('report_sanitation'):
-            Registrar.register_progress("Write Sanitation Report")
-
-            do_sanitizing_group(
-                reporters.san, matches, updates, parsers, settings
-            )
-            if reporters.san:
-                reporters.san.write_document_to_file(
-                    'san', settings.rep_san_path)
-
-        if settings.get('report_matching'):
-            Registrar.register_progress("Write Matching Report")
-
-            do_matches_summary_group(
-                reporters.match, matches, updates, parsers, settings
-            )
-            do_matches_group(
-                reporters.match, matches, updates, parsers, settings
-            ),
-            if reporters.match:
-                reporters.match.write_document_to_file(
-                    'match', settings.rep_match_path)
-
-        if settings.get('report_duplicates'):
-            Registrar.register_progress("Write Duplicates Report")
-
-            do_duplicates_summary_group(
-                reporters.dup, matches, updates, parsers, settings),
-            do_duplicates_group(
-                reporters.dup, matches, updates, parsers, settings
-            )
-            if reporters.dup:
-                reporters.dup.write_document_to_file(
-                    'dup', settings.rep_dup_path)
+        if reporters.dup:
+            reporters.dup.write_document_to_file(
+                'dup', settings.rep_dup_path)
 
     return reporters
 

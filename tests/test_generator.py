@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import unittest
 from pprint import pformat
+import tempfile
 
 from tabulate import tabulate
 
@@ -10,7 +11,7 @@ from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.generator import (
     populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
-    do_merge
+    do_merge, do_report
 )
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -19,6 +20,7 @@ from woogenerator.parsing.woo import WooProdList
 from woogenerator.parsing.xero import XeroProdList, ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
+from woogenerator.utils.reporter import ReporterNamespace
 
 # import argparse
 
@@ -149,7 +151,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorXeroDummy, self).setUp()
@@ -300,6 +302,23 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    def test_do_report(self):
+        suffix='do_report'
+        temp_working_dir = tempfile.mkdtemp(suffix + '_working')
+        if self.debug:
+            print("working dir: %s" % temp_working_dir)
+        self.settings.local_work_dir = temp_working_dir
+        self.settings.init_dirs()
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        self.matches = MatchNamespace(index_fn=product_index_fn)
+        self.matches = do_match(self.parsers, self.matches, self.settings)
+        self.updates = UpdateNamespace()
+        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+        self.reporters = ReporterNamespace()
+        self.reporters = do_report(
+            self.reporters, self.matches, self.updates, self.parsers, self.settings
+        )
 
 
 if __name__ == '__main__':

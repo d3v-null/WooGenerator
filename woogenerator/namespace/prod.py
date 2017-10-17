@@ -488,3 +488,17 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         CsvParseWoo.do_images = self.do_images
         CsvParseWoo.do_dyns = self.do_dyns
         CsvParseWoo.do_specials = self.do_specials
+
+
+    @property
+    def master_pkey(self):
+        return "rowcount"
+
+    @property
+    def slave_pkey(self):
+        response = "Wordpress ID"
+        if self.schema_is_myo:
+            response = 'codesum'
+        if self.schema_is_xero:
+            response = 'item_id'
+        return response

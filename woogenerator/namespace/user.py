@@ -297,3 +297,11 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def init_settings(self, override_args=None):
         super(SettingsNamespaceUser, self).init_settings(override_args)
         FieldGroup.do_post = self.do_post
+
+    @property
+    def master_pkey(self):
+        return "MYOB Card ID"
+
+    @property
+    def slave_pkey(self):
+        return "Wordpress ID"
