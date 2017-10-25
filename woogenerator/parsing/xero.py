@@ -63,7 +63,7 @@ class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
 
     verify_meta_keys = [
         ImportXeroItem.codesum_key,
-        ImportXeroItem.namesum_key
+        # ImportXeroItem.namesum_key
     ]
 
 class ParseXeroMixin(object):
