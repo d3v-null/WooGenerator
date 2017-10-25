@@ -208,6 +208,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.out_dir_full, response)
 
     @property
+    def xero_path(self):
+        """ The path which the xero csv file is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'xero', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
     def rep_delta_slave_csv_path(self):
         """ The path which the delta slave csv report is stored. """
         response = "%s%s_%s-%s.csv" % (

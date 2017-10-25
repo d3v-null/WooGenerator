@@ -218,6 +218,9 @@ class ArgumentParserCommon(ArgumentParserProto):
         download_group.add_argument(
             '--schema',
             help='what schema to process the files as')
+        download_group.add_argument(
+            '--since-s',
+            help='filter out slave records edited before this date')
 
     def add_processing_options(self, processing_group):
         """ Add options pertaining to processing data. """
@@ -715,9 +718,6 @@ class ArgumentParserUser(ArgumentParserCommon):
         filter_group.add_argument(
             '--since-m',
             help='filter out master records edited before this date')
-        filter_group.add_argument(
-            '--since-s',
-            help='filter out slave records edited before this date')
 
     def add_processing_options(self, processing_group):
         super(ArgumentParserUser, self).add_processing_options(processing_group)

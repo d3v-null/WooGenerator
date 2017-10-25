@@ -61,6 +61,7 @@ class SyncClientXero(SyncClientAbstract):
         if since or search:
             filter_params = {}
             if since:
+                print("since passed as %s %s" % since, type(since))
                 filter_params['since'] = since
             endpoint_items = endpoint_obj.filter(**filter_params)
         else:

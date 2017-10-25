@@ -186,6 +186,11 @@ def populate_slave_parsers(parsers, settings):
 
         client.analyse_remote(parsers.slave, data_path=settings.slave_path)
 
+    if Registrar.DEBUG_CLIENT:
+        container = settings.slave_parser_class.product_container.container
+        prod_list = container(parsers.slave.products.values()[100:])
+        Registrar.register_message("Products: \n%s" % prod_list.tabulate())
+
     return parsers
 
 
@@ -362,16 +367,19 @@ def process_images(settings, parsers):
     # rsync.main([os.path.join(img_dst,'*'), wpai_dir])
 
 
-def export_parsers(settings, parsers):
-    """Export key information from the parsers to spreadsheets."""
-    Registrar.register_progress("Exporting info to spreadsheets")
+def export_master_parser(settings, parsers):
+    """Export key information from master parser to csv."""
+    Registrar.register_progress("Exporting Master info to disk")
 
     product_cols = settings.col_data_class.get_product_cols()
 
     if settings.schema_is_myo:
-        product_list = MYOProdList(parsers.master.products.values())
-        product_list.export_items(settings.myo_path,
-                                  ColDataBase.get_col_names(product_cols))
+        container = settings.master_parser_class.product_container
+        product_list = container(parsers.master.products.values())
+        product_list.export_items(
+            settings.myo_path,
+            settings.col_data_class.get_col_names(product_cols)
+        )
     elif settings.schema_is_woo:
         for col in settings['exclude_cols']:
             if col in product_cols:
@@ -437,6 +445,18 @@ def export_parsers(settings, parsers):
                 settings.flvu_path, variation_col_names
             )
 
+def export_slave_parser(settings, parsers):
+    """Export key information from slave parser to csv."""
+    Registrar.register_progress("Exporting Slave info to disk")
+
+    product_cols = settings.col_data_class.get_product_cols()
+
+    container = settings.slave_parser_class.product_container.container
+    product_list = container(parsers.slave.products.values())
+    product_list.export_items(
+        settings.xero_path,
+        settings.col_data_class.get_col_names(product_cols)
+    )
 
 def product_index_fn(product):
     """Return the codesum of the product."""
@@ -891,6 +911,8 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     if reporters.cat:
         reporters.cat.write_document_to_file('cat', settings.rep_cat_path)
 
+    return reporters
+
     # with io.open(settings.rep_cat_path, 'w+', encoding='utf8') as res_file:
     #     reporter = HtmlReporter()
     #
@@ -1046,274 +1068,7 @@ def do_report(reporters, matches, updates, parsers, settings):
             reporters.match.write_document_to_file(
                 'match', settings.rep_match_path)
 
-    # with io.open(settings.rep_main_path, 'w+', encoding='utf8') as res_file:
-    #     reporter = HtmlReporter()
-
-        # basic_cols = settings.col_data_class.get_basic_cols()
-        # csv_colnames = settings.col_data_class.get_col_names(
-        #     OrderedDict(basic_cols.items() + settings.col_data_class.name_cols([
-        #         # 'address_reason',
-        #         # 'name_reason',
-        #         # 'Edited Name',
-        #         # 'Edited Address',
-        #         # 'Edited Alt Address',
-        #     ]).items()))
-
-        # print repr(basic_colnames)
-        # unicode_colnames = map(SanitationUtils.coerce_unicode, csv_colnames.values())
-        # print repr(unicode_colnames)
-         # if settings['do_sync'] and (updates.delta_slave):
-        #
-        #     delta_group = HtmlReporter.Group('deltas', 'Field Changes')
-        #
-        #     s_delta_list = ShopObjList(
-        #         [
-        #             delta_sync_update.new_s_object
-        #             for delta_sync_update in updates.delta_slave
-        #             if delta_sync_update.new_s_object
-        #         ]
-        #     )
-        #
-        #     delta_cols = settings.col_data_class.get_delta_cols()
-        #
-        #     all_delta_cols = OrderedDict(
-        #         settings.col_data_class.get_basic_cols().items() + settings.col_data_class.name_cols(
-        #             delta_cols.keys() + delta_cols.values()).items())
-        #
-        #     if s_delta_list:
-        #         delta_group.add_section(
-        #             HtmlReporter.Section(
-        #                 's_deltas',
-        #                 title='%s Changes List' % settings.slave_name.title(),
-        #                 description='%s records that have changed important fields'
-        #                 % settings.slave_name,
-        #                 data=s_delta_list.tabulate(
-        #                     cols=all_delta_cols, tablefmt='html'),
-        #                 length=len(s_delta_list)))
-        #
-        #     reporter.add_group(delta_group)
-        #
-        #     if s_delta_list:
-        #         s_delta_list.export_items(
-        #             settings['rep_delta_slave_csv_path'],
-        #             settings.col_data_class.get_col_names(all_delta_cols))
-
-        #
-        # report_matching = settings['do_sync']
-        # if report_matching:
-        #
-        #     matching_group = HtmlReporter.Group('product_matching',
-        #                                         'Product Matching Results')
-        #     if matches.globals:
-        #         matching_group.add_section(
-        #             HtmlReporter.Section(
-        #                 'perfect_product_matches',
-        #                 **{
-        #                     'title':
-        #                     'Perfect Matches',
-        #                     'description':
-        #                     "%s records match well with %s" % (
-        #                         settings.slave_name, settings.master_name),
-        #                     'data':
-        #                     matches.globals.tabulate(tablefmt="html"),
-        #                     'length':
-        #                     len(matches.globals)
-        #                 }))
-        #     if matches.masterless:
-        #         matching_group.add_section(
-        #             HtmlReporter.Section(
-        #                 'matches.masterless',
-        #                 **{
-        #                     'title':
-        #                     'Masterless matches',
-        #                     'description':
-        #                     "matches are masterless",
-        #                     'data':
-        #                     matches.masterless.tabulate(
-        #                         tablefmt="html"),
-        #                     'length':
-        #                     len(matches.masterless)
-        #                 }))
-        #     if matches.slaveless:
-        #         matching_group.add_section(
-        #             HtmlReporter.Section(
-        #                 'matches.slaveless',
-        #                 **{
-        #                     'title':
-        #                     'Slaveless matches',
-        #                     'description':
-        #                     "matches are slaveless",
-        #                     'data':
-        #                     matches.slaveless.tabulate(
-        #                         tablefmt="html"),
-        #                     'length':
-        #                     len(matches.slaveless)
-        #                 }))
-        #     if matching_group.sections:
-        #         reporter.add_group(matching_group)
-        #
-        #     if settings['do_categories']:
-        #         matching_group = HtmlReporter.Group(
-        #             'category_matching', 'Category Matching Results')
-        #         if matches.category.globals:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'perfect_category_matches',
-        #                     **{
-        #                         'title':
-        #                         'Perfect Matches',
-        #                         'description':
-        #                         "%s records match well with %s" % (
-        #                             settings.slave_name, settings.master_name),
-        #                         'data':
-        #                         matches.category.globals.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.category.globals)
-        #                     }))
-        #         if matches.category.masterless:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'matches.category.masterless',
-        #                     **{
-        #                         'title':
-        #                         'Masterless matches',
-        #                         'description':
-        #                         "matches are masterless",
-        #                         'data':
-        #                         matches.category.masterless.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.category.masterless)
-        #                     }))
-        #         if matches.category.slaveless:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'matches.category.slaveless',
-        #                     **{
-        #                         'title':
-        #                         'Slaveless matches',
-        #                         'description':
-        #                         "matches are slaveless",
-        #                         'data':
-        #                         matches.category.slaveless.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.category.slaveless)
-        #                     }))
-        #         if matching_group.sections:
-        #             reporter.add_group(matching_group)
-        #
-        #     if settings['do_variations']:
-        #         matching_group = HtmlReporter.Group(
-        #             'variation_matching', 'Variation Matching Results')
-        #         if matches.variation.globals:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'perfect_variation_matches',
-        #                     **{
-        #                         'title':
-        #                         'Perfect Matches',
-        #                         'description':
-        #                         "%s records match well with %s" % (
-        #                             settings.slave_name, settings.master_name),
-        #                         'data':
-        #                         matches.variation.globals.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.variation.globals)
-        #                     }))
-        #         if matches.variation.masterless:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'matches.variation.masterless',
-        #                     **{
-        #                         'title':
-        #                         'Masterless matches',
-        #                         'description':
-        #                         "matches are masterless",
-        #                         'data':
-        #                         matches.variation.masterless.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.variation.masterless)
-        #                     }))
-        #         if matches.variation.slaveless:
-        #             matching_group.add_section(
-        #                 HtmlReporter.Section(
-        #                     'matches.variation.slaveless',
-        #                     **{
-        #                         'title':
-        #                         'Slaveless matches',
-        #                         'description':
-        #                         "matches are slaveless",
-        #                         'data':
-        #                         matches.variation.slaveless.tabulate(
-        #                             tablefmt="html"),
-        #                         'length':
-        #                         len(matches.variation.slaveless)
-        #                     }))
-        #         if matching_group.sections:
-        #             reporter.add_group(matching_group)
-
-        # report_sync = settings['do_sync']
-        # if report_sync:
-        #     syncing_group = HtmlReporter.Group('prod_sync',
-        #                                        'Product Syncing Results')
-        #
-        #     syncing_group.add_section(
-        #         HtmlReporter.Section(
-        #             (SanitationUtils.make_safe_class(settings.slave_name) +
-        #              "_product_updates"),
-        #             description=settings.slave_name + " items will be updated",
-        #             data='<hr>'.join([
-        #                 update.tabulate(tablefmt="html")
-        #                 for update in updates.slave
-        #             ]),
-        #             length=len(updates.slave)))
-        #
-        #     syncing_group.add_section(
-        #         HtmlReporter.Section(
-        #             "updates.problematic",
-        #             description="items can't be merged because they are too dissimilar",
-        #             data='<hr>'.join([
-        #                 update.tabulate(tablefmt="html")
-        #                 for update in updates.problematic
-        #             ]),
-        #             length=len(updates.problematic)))
-        #
-        #     reporter.add_group(syncing_group)
-        #
-        #     if settings['do_variations']:
-        #         syncing_group = HtmlReporter.Group('variation_sync',
-        #                                            'Variation Syncing Results')
-        #
-        #         syncing_group.add_section(
-        #             HtmlReporter.Section(
-        #                 (SanitationUtils.make_safe_class(settings.slave_name) +
-        #                  "_variation_updates"),
-        #                 description=settings.slave_name +
-        #                 " items will be updated",
-        #                 data='<hr>'.join([
-        #                     update.tabulate(tablefmt="html")
-        #                     for update in updates.variation.slave
-        #                 ]),
-        #                 length=len(updates.variation.slave)))
-        #
-        #         syncing_group.add_section(
-        #             HtmlReporter.Section(
-        #                 "updates.variation.problematic",
-        #                 description="items can't be merged because they are too dissimilar",
-        #                 data='<hr>'.join([
-        #                     update.tabulate(tablefmt="html")
-        #                     for update in updates.variation.problematic
-        #                 ]),
-        #                 length=len(updates.variation.problematic)))
-        #
-        #         reporter.add_group(syncing_group)
-
-        # res_file.write(reporter.get_document_unicode())
-
+    return reporters
 
 def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
@@ -1473,9 +1228,13 @@ def main(override_args=None, settings=None):
     if settings.schema_is_woo and settings.do_images:
         process_images(settings, parsers)
 
-    export_parsers(settings, parsers)
+    export_master_parser(settings, parsers)
+
+    import pudb; pudb.set_trace(paused=False)
 
     parsers = populate_slave_parsers(parsers, settings)
+
+    export_slave_parser(settings, parsers)
 
     matches = MatchNamespace(index_fn=product_index_fn)
     updates = UpdateNamespace()
@@ -1499,7 +1258,7 @@ def main(override_args=None, settings=None):
 
     matches = do_match(parsers, matches, settings)
     updates = do_merge(matches, parsers, updates, settings)
-    check_warnings()
+    # check_warnings()
     reporters = do_report(reporters, matches, updates, parsers, settings)
 
     if settings.report_and_quit:
@@ -1555,6 +1314,11 @@ def catch_main(override_args=None):
         str(sys.executable), str(file_path), override_args_repr)
 
     settings = SettingsNamespaceProd()
+
+    # TODO: Delete these lines
+    main(settings=settings, override_args=override_args)
+    exit()
+
 
     status = 0
     try:

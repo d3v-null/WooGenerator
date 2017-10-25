@@ -334,7 +334,7 @@ class ColDataXero(ColDataProd):
                 'key': 'ItemID'
             },
             # 'report': True,
-            # 'product': True,
+            'product': True,
             'sync': 'slave_override',
         }),
         ('codesum', {
@@ -342,7 +342,7 @@ class ColDataXero(ColDataProd):
                 'key': 'Code'
             },
             # 'report': True,
-            # 'product': True,
+            'product': True,
         }),
         ('Xero Description', {
             'xero-api': {
@@ -398,7 +398,7 @@ class ColDataXero(ColDataProd):
         }),
         ('stock_status', {
             'import': True,
-            'product': True,
+            # 'product': True,
             'variation': True,
             'inventory': True,
             'sync': True,
