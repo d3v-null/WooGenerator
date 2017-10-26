@@ -163,7 +163,11 @@ class ApiParseXero(
     def get_api_accounting_details_data(cls, field, details):
         response = {}
         if field == 'SalesDetails' and 'UnitPrice' in details:
-            response['RNR'] = details['UnitPrice']
+            unit_price_sales_key = cls.coldata_class.unit_price_sales_field(
+                cls.col_data_target
+            )
+            response[unit_price_sales_key] = details['UnitPrice']
+        return response
         return response
 
     @classmethod

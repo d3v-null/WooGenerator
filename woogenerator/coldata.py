@@ -335,13 +335,18 @@ class ColDataXero(ColDataProd):
             },
             # 'report': True,
             'product': True,
-            'sync': 'slave_override',
+            'basic': True,
+            'label': 'Xero ItemID',
+            # 'sync': 'slave_override',
+            'sync': False,
         }),
         ('codesum', {
             'xero-api': {
                 'key': 'Code'
             },
             # 'report': True,
+            'basic': True,
+            'label': 'SKU',
             'product': True,
         }),
         ('Xero Description', {
@@ -355,8 +360,11 @@ class ColDataXero(ColDataProd):
             'xero-api': {
                 'key': 'Name'
             },
+            'basic': True,
+            'label': 'Product Name',
             'report': True,
             'product': True,
+            'sync': True,
         }),
         ('is_sold', {
             'xero-api': {
@@ -373,7 +381,7 @@ class ColDataXero(ColDataProd):
                 'key': 'SalesDetails'
             },
         }),
-        ('RNR', {
+        ('WNR', {
             'product': True,
             'report': True,
             'pricing': True,
@@ -383,7 +391,9 @@ class ColDataXero(ColDataProd):
                 'key': 'UnitPrice',
                 'parent': 'SalesDetails'
             },
-            'sync': True
+            'sync': 'master_override',
+            'delta': True,
+
         }),
         ('stock', {
             'import': True,
@@ -403,6 +413,7 @@ class ColDataXero(ColDataProd):
             'inventory': True,
             'sync': True,
             'xero-api': None,
+            # 'delta': True,
         }),
         ('manage_stock', {
             'product': True,
@@ -415,6 +426,13 @@ class ColDataXero(ColDataProd):
             'type': 'bool'
         }),
     ])
+
+    @classmethod
+    def unit_price_sales_field(cls, data_target):
+        for key, coldata in cls.data.items():
+            keydata = ((coldata.get(data_target) or {}).get('key') or {})
+            if keydata == 'UnitPrice':
+                return key
 
     def __init__(self, data=None):
         if not data:
