@@ -686,27 +686,24 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
             })
         ]
 
-        if settings.master_pkey == 'MYOB Card ID':
-            format_specs += [
-                (reporter.Section.get_data_heading_fmt(
-                    fmt), {'heading': 'Field Changes'}),
-                (reporter.Section.get_descr_fmt(fmt), {
-                    'description': (
-                        "These reports show all the changes that will happen to "
-                        "the most important fields (default: email and role). "
-                        "The role field shows the new value for role, and the Delta role "
-                        "field shows the previous value for role if the value will be "
-                        "changed by the update. Same for email: the email field shows the "
-                        "new value for email, and the delta email field shows the old value "
-                        "for email if it will be changed in the update."
-                        "These are the most important changes to check. You should look to "
-                        "make sure that the value in the the Email and Role field is correct "
-                        "and that the value in the delta email or delta role field is incorrect. "
-                        "If an email or role is changed to the wrong value, it could stop the "
-                        "customer from being able to log in or purchase items correctly."
-                    )
-                }),
-            ]
+        format_specs += [
+            (reporter.Section.get_data_heading_fmt(
+                fmt), {'heading': 'Field Changes'}),
+            (reporter.Section.get_descr_fmt(fmt), {
+                'description': (
+                    "These reports show all the changes that will happen to "
+                    "the most important fields. Each important field is "
+                    "represented by two colums, '<field>' and 'Delta <field>'."
+                    "Each Delta field shows the value that this field had "
+                    "held previously, and the field without the delta prefix "
+                    "shows the new value for the field."
+                    "These are the most important changes to check. "
+                    "You should look to make sure that the value in the the "
+                    "field without the delta is correct and that the value in "
+                    "the delta field is incorrect. "
+                )
+            }),
+        ]
 
         format_specs += [
             (reporter.Section.get_data_heading_fmt(
@@ -884,9 +881,11 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
             delta_cols.keys() + delta_cols.values()
         ).items())
 
+    delta_col_names = settings.col_data_class.get_col_names(all_delta_cols)
+
     def render_delta_list(fmt, delta_list):
         return delta_list.tabulate(
-            cols=all_delta_cols, tablefmt=fmt
+            cols=delta_col_names, tablefmt=fmt
         )
 
     for source, delta_list in delta_lists.items():
@@ -912,7 +911,7 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
 
         delta_list.export_items(
             csv_path,
-            settings.col_data_class.get_col_names(all_delta_cols))
+            delta_col_names)
         reporter.add_csv_file(
             'delta_%s' % source,
             csv_path

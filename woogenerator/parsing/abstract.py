@@ -101,8 +101,13 @@ class ObjList(list, Registrar):
                 "cols should be a dict, found %s instead: %s" % (
                     type(cols), repr(cols))
             header = [self.objList_type]
-            for col in cols.keys():
-                header += [col]
+            for key, val in cols.items():
+                col_header = key
+                if isinstance(val, dict) and 'label' in val:
+                    col_header = val['label']
+                elif isinstance(val, basestring):
+                    col_header = val
+                header += [col_header]
             table = []
             for obj in objs:
                 row = [obj.identifier]

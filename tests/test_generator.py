@@ -168,6 +168,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.slave_file = os.path.join(
             TESTS_DATA_DIR, "xero_demo_data.json"
         )
+        self.settings.report_matching = True
         if self.debug:
             # Registrar.DEBUG_SHOP = True
             # ApiParseXero.DEBUG_PARSER = True

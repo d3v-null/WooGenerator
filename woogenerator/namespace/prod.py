@@ -86,12 +86,12 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ Class used to obtain column metadata. """
         response = ColDataBase
         if self.schema_is_myo:
-            return ColDataMyo
+            response = ColDataMyo
         elif self.schema_is_xero:
-            return ColDataXero
+            response = ColDataXero
         elif self.schema_is_woo:
-            return ColDataWoo
-        return ColDataBase
+            response = ColDataWoo
+        return response
 
     @property
     def master_path(self):
@@ -205,7 +205,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'myob', self.import_name
         )
-        return os.path.join(self.out_dir_full, response)
+        return os.path.join(self.in_dir_full, response)
 
     @property
     def xero_path(self):
@@ -213,7 +213,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'xero', self.import_name
         )
-        return os.path.join(self.out_dir_full, response)
+        return os.path.join(self.in_dir_full, response)
 
     @property
     def rep_delta_slave_csv_path(self):
