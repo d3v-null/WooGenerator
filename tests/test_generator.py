@@ -151,7 +151,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorXeroDummy, self).setUp()
@@ -210,7 +210,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
         for key, value in {
-                'RNR': u'5.60',
+                'WNR': u'5.60',
         }.items():
             self.assertEqual(first_prod[key], value)
 
@@ -268,23 +268,23 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             self.print_updates_summary(self.updates)
 
         self.assertEqual(len(self.updates.delta_master), 0)
-        self.assertEqual(len(self.updates.delta_slave), 0)
+        self.assertEqual(len(self.updates.delta_slave), 1)
         self.assertEqual(len(self.updates.master), 0)
         self.assertEqual(len(self.updates.masterless), 0)
         self.assertEqual(len(self.updates.slaveless), 0)
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.problematic), 0)
-        self.assertEqual(len(self.updates.slave), 1)
+        self.assertEqual(len(self.updates.slave), 3)
 
-        sync_update = self.updates.slave[0]
+        sync_update = self.updates.delta_slave[0]
         if self.debug:
             self.print_update(sync_update)
         try:
             self.assertEqual(sync_update.master_id, 19)
             self.assertEqual(sync_update.old_m_object.codesum, 'DevD')
             self.assertEqual(
-                float(sync_update.old_m_object['RNR']),
+                float(sync_update.old_m_object['WNR']),
                 610.0
             )
             self.assertEqual(
@@ -293,11 +293,11 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             )
             self.assertEqual(sync_update.old_s_object.codesum, 'DevD')
             self.assertEqual(
-                float(sync_update.old_s_object['RNR']),
+                float(sync_update.old_s_object['WNR']),
                 650.0
             )
             self.assertEqual(
-                float(sync_update.new_s_object['RNR']),
+                float(sync_update.new_s_object['WNR']),
                 610.0
             )
         except AssertionError as exc:
