@@ -168,6 +168,16 @@ class ApiParseXero(
             )
             response[unit_price_sales_key] = details['UnitPrice']
         return response
+
+    @classmethod
+    def get_stock_status_data(cls, quantity, inventory):
+        response = {}
+        if inventory:
+            precision = 100
+            if int(float(quantity) * precision) / precision == 0:
+                response['stock_status'] = 'outofstock'
+            else:
+                response['stock_status'] = 'instock'
         return response
 
     @classmethod
@@ -213,6 +223,14 @@ class ApiParseXero(
                 **cls.get_api_accounting_details_data(
                     'PurchaseDetails',
                     api_data['PurchaseDetails']
+                )
+            )
+
+        if 'QuantityOnHand' in api_data and 'IsTrackedAsInventory':
+            parser_data.update(
+                **cls.get_stock_status_data(
+                    api_data['QuantityOnHand'],
+                    api_data['IsTrackedAsInventory']
                 )
             )
 
