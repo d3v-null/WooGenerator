@@ -193,7 +193,6 @@ class ApiParseXero(
         Gets data ready for the parser, in this case from api_data
         """
 
-        parser_data = OrderedDict()
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
             cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
@@ -201,6 +200,9 @@ class ApiParseXero(
                          for key, value in api_data.items()])
         if cls.DEBUG_API:
             cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
+
+        parser_data = OrderedDict()
+        parser_data['api_data'] = api_data
 
         translation = OrderedDict()
         for col, col_data in cls.coldata_class.data.items():
@@ -243,8 +245,6 @@ class ApiParseXero(
 
         if cls.DEBUG_API:
             cls.register_message("returning parser_data: %s" % parser_data)
-
-        parser_data['api_data'] = api_data
 
         return parser_data
 

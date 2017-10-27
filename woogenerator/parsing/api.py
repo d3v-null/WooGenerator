@@ -453,6 +453,8 @@ class ApiParseWoo(
             cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
 
         parser_data = OrderedDict()
+        parser_data['api_data'] = api_data
+
         core_translation = OrderedDict()
         for col, col_data in cls.coldata_class.get_wpapi_core_cols().items():
             try:
@@ -535,8 +537,6 @@ class ApiParseWoo(
             description = api_data['description']
         parser_data[cls.object_container.description_key] = description
         parser_data[cls.object_container.descsum_key] = description
-
-        parser_data['api_data'] = api_data
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
