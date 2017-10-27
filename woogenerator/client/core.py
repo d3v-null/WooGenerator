@@ -18,6 +18,7 @@ from urlparse import urlparse
 import httplib2
 import oauth2client
 import requests
+from requests.exceptions import ReadTimeout
 from apiclient import discovery
 from oauth2client import client, tools
 from simplejson import JSONDecodeError
@@ -444,7 +445,7 @@ class SyncClientRest(SyncClientAbstract):
             # get API response
             try:
                 self.prev_response = self.service.get(self.next_endpoint)
-            except requests.ReadTimeout as exc:
+            except ReadTimeout as exc:
                 # instead of processing this endoint, do the page product by
                 # product
                 if self.limit > 1:
