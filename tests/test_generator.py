@@ -77,8 +77,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     def test_init_settings(self):
 
-        self.assertEqual(self.settings.master_name, "GDrive")
-        self.assertEqual(self.settings.slave_name, "WooCommerce")
+        self.assertEqual(self.settings.master_name, "gdrive-test")
+        self.assertEqual(self.settings.slave_name, "woocommerce-test")
         self.assertEqual(self.settings.merge_mode, "sync")
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)

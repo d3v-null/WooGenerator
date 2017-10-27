@@ -1,7 +1,7 @@
 #Generator file info
 
-master-name: GDrive
-slave-name: WooCommerce
+master-name: gdrive-test
+slave-name: woocommerce-test
 
 taxo-depth: 3
 item-depth: 2
@@ -32,6 +32,7 @@ wp-pass: gZ*gZk#v0t5$j#NQ@9
 wp-callback: http://127.0.0.1:18080/wptest
 wp-api-version: wp/v2
 
-wc-api-key: ck_b13285e31ed659227f2fdc1db856d1d3d0b06c21
-wc-api-secret: cs_3038b86805335faa887c6605364bcd1df9e57254
+wc-api-key: ck_e1dd4a9c85f49b9685f7964a154eecb29af39d5a
+wc-api-secret: cs_8ef3e5d21f8a0c28cd7bc4643e92111a0326b6b1
 store-url: http://localhost:18080/wptest/
+creds_store: wp-api-creds-test
