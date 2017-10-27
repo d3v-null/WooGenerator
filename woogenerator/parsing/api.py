@@ -206,6 +206,26 @@ class ApiParseMixin(object):
             for decoded_obj in decoded[:limit]:
                 self.analyse_api_obj(decoded_obj)
 
+    def analyse_api_obj(self, api_data):
+        """
+        Analyse an object from the wp api.
+        """
+        kwargs = {
+            'api_data': api_data
+        }
+        object_data = self.new_object(rowcount=self.rowcount, **kwargs)
+        if self.DEBUG_API:
+            self.register_message("CONSTRUCTED: %s" % object_data.identifier)
+        self.process_object(object_data)
+        if self.DEBUG_API:
+            self.register_message("PROCESSED: %s" % object_data.identifier)
+        self.register_object(object_data)
+        if self.DEBUG_API:
+            self.register_message("REGISTERED: %s" % object_data.identifier)
+        self.rowcount += 1
+
+        return object_data
+
 class ApiParseWoo(
     CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin, ApiParseMixin
 ):
@@ -557,30 +577,7 @@ class ApiParseWoo(
         Analyse an object from the api.
         """
 
-        # TODO: merge with ApiParseXero.analyse_api_obj in ApiParseMixin
-
-        if self.DEBUG_API:
-            self.register_message("API DATA CATEGORIES: %s" %
-                                  repr(api_data.get('categories')))
-
-        if not api_data.get('categories'):
-            if self.DEBUG_API:
-                self.register_message(
-                    "NO CATEGORIES FOUND IN API DATA: %s" % repr(api_data))
-        kwargs = {
-            'api_data': api_data
-        }
-        object_data = self.new_object(rowcount=self.rowcount, **kwargs)
-        if self.DEBUG_API:
-            self.register_message("CONSTRUCTED: %s" % object_data.identifier)
-        self.process_object(object_data)
-        if self.DEBUG_API:
-            self.register_message("PROCESSED: %s" % object_data.identifier)
-        self.register_object(object_data)
-        if self.DEBUG_API:
-            self.register_message("REGISTERED: %s" % object_data.identifier)
-        # self.register_message("mro: {}".format(container.mro()))
-        self.rowcount += 1
+        object_data = super(ApiParseWoo, self).analyse_api_obj(api_data)
 
         if 'categories' in api_data:
             for category in api_data['categories']:

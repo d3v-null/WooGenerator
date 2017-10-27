@@ -741,10 +741,6 @@ class CsvParseBase(Registrar):
                 translated[translation] = object_data[col]
         return translated
 
-    def analyse_api_obj(self, api_data):
-        # TODO: Why is this here and not lower in class tree?
-        raise NotImplementedError()
-
     def get_obj_list(self):
         """
         Return the objects parsed by this instance in their preferred container.

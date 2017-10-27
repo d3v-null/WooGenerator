@@ -260,22 +260,3 @@ class ApiParseXero(
         # if self.DEBUG_API:
         #     self.register_message('api_data: %s' % str(api_data))
         return self.product_container
-
-    def analyse_api_obj(self, api_data):
-        """
-        Analyse an object from the wp api.
-        """
-        kwargs = {
-            'api_data': api_data
-        }
-        object_data = self.new_object(rowcount=self.rowcount, **kwargs)
-        if self.DEBUG_API:
-            self.register_message("CONSTRUCTED: %s" % object_data.identifier)
-        self.process_object(object_data)
-        if self.DEBUG_API:
-            self.register_message("PROCESSED: %s" % object_data.identifier)
-        self.register_object(object_data)
-        if self.DEBUG_API:
-            self.register_message("REGISTERED: %s" % object_data.identifier)
-        # self.register_message("mro: {}".format(container.mro()))
-        self.rowcount += 1
