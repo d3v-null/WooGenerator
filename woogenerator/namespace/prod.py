@@ -110,7 +110,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
-        response = '%s%s' % (self.file_prefix, 'slave_categories')
+        response = '%s%s' % (self.file_prefix, 'slave')
         if self.schema_is_woo:
             response += '_woo_api'
         if self.schema_is_xero:
