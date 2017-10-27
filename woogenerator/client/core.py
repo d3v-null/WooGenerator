@@ -617,7 +617,7 @@ class SyncClientRest(SyncClientAbstract):
 
             for page_item in page_items:
 
-                parser.analyse_wp_api_obj(page_item)
+                parser.analyse_api_obj(page_item)
                 result_count += 1
                 if limit and result_count > limit:
                     if Registrar.DEBUG_API:

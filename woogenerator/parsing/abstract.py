@@ -741,7 +741,7 @@ class CsvParseBase(Registrar):
                 translated[translation] = object_data[col]
         return translated
 
-    def analyse_wp_api_obj(self, api_data):
+    def analyse_api_obj(self, api_data):
         # TODO: Why is this here and not lower in class tree?
         raise NotImplementedError()
 

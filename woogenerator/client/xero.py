@@ -70,7 +70,7 @@ class SyncClientXero(SyncClientAbstract):
         result_count = 0
         endpoint_items = endpoint_obj.all()
         for endpoint_item in endpoint_items[self.offset:]:
-            parser.analyse_xero_api_obj(endpoint_item)
+            parser.analyse_api_obj(endpoint_item)
             result_count += 1
             if limit and result_count > limit:
                 if Registrar.DEBUG_API:

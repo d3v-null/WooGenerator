@@ -204,7 +204,7 @@ class ApiParseMixin(object):
             return
         if isinstance(decoded, list):
             for decoded_obj in decoded[:limit]:
-                self.analyse_xero_api_obj(decoded_obj)
+                self.analyse_api_obj(decoded_obj)
 
 class ApiParseWoo(
     CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin, ApiParseMixin
@@ -552,12 +552,12 @@ class ApiParseWoo(
             self.register_message("container: {}".format(container.__name__))
         return container
 
-    def analyse_wp_api_obj(self, api_data):
+    def analyse_api_obj(self, api_data):
         """
-        Analyse an object from the wp api.
+        Analyse an object from the api.
         """
 
-        # TODO: merge with ApiParseXero.analyse_xero_api_obj in ApiParseMixin
+        # TODO: merge with ApiParseXero.analyse_api_obj in ApiParseMixin
 
         if self.DEBUG_API:
             self.register_message("API DATA CATEGORIES: %s" %

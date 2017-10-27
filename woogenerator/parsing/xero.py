@@ -261,7 +261,7 @@ class ApiParseXero(
         #     self.register_message('api_data: %s' % str(api_data))
         return self.product_container
 
-    def analyse_xero_api_obj(self, api_data):
+    def analyse_api_obj(self, api_data):
         """
         Analyse an object from the wp api.
         """

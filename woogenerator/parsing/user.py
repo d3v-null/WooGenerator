@@ -778,7 +778,7 @@ class ApiParseUser(CsvParseUser):
                 "parser_data: {}".format(pformat(parser_data)))
         return parser_data
 
-    def analyse_wp_api_obj(self, api_data):
+    def analyse_api_obj(self, api_data):
         kwargs = {'api_data': api_data}
         object_data = self.new_object(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
