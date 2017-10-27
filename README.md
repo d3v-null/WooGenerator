@@ -207,8 +207,22 @@ If you're syncing products between GDrive and MYOB:
 
 If you're syncing products between GDrive and Xero:
 
-`python -m woogenerator.generator --schema=Xero --help`
+`python -m woogenerator.generator --schema=XERO --help`
 
 If you're syncing users:
 
 `python -m woogenerator.merger --help`
+
+Example: Generate product csv import file from Google Drive tree format spreadsheet
+----
+
+```bash
+python -m woogenerator.generator --schema=CA --local-work-dir 'tests/sample_data' --skip-download-master --master-file 'tests/sample_data/generator_master_dummy.csv' --local-test-config 'generator_config_test.yaml'  --master-dialect-suggestion 'SublieCsvTable' --do-categories -v
+```
+```
+...
+source/generator.py:397.export_master_parser>source/abstract.py:173.export_items ~ WROTE FILE: ./output/prod_flattened-2017-10-26_23-29-02.csv
+source/generator.py:418.export_master_parser>source/abstract.py:173.export_items ~ WROTE FILE: ./output/prod_categories-2017-10-26_23-29-02.csv
+source/generator.py:440.export_master_parser>source/abstract.py:173.export_items ~ WROTE FILE: ./output/prod_flattened-updated-2017-10-26_23-29-02.csv
+...
+```

@@ -628,6 +628,8 @@ class CsvParseBase(Registrar):
         if self.DEBUG_PARSER:
             self.register_message("Completed analysis")
 
+        return self.objects
+
     def analyse_stream(self, byte_file_obj, **kwargs):
         """
         Analyse a stream of bytes and interpret as csv file.

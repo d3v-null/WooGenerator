@@ -16,7 +16,8 @@ from woogenerator.generator import (
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
-from woogenerator.parsing.woo import WooProdList
+from woogenerator.parsing.woo import WooProdList, CsvParseWoo
+from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.xero import XeroProdList, ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
@@ -29,10 +30,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
+    # debug = True
+
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
+        self.settings.download_slave = False
+        self.settings.init_settings(self.override_args)
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_dummy.csv"
         )
@@ -40,7 +45,35 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
         self.settings.do_specials = True
+        self.settings.do_sync = True
+        self.settings.do_categories = True
+        self.settings.report_matching = True
+        self.settings.schema = "CA"
         self.settings.init_settings(self.override_args)
+
+        # TODO: this
+        # self.settings.slave_file = os.path.join(
+        #     TESTS_DATA_DIR, "xero_demo_data.json"
+        # )
+        if self.debug:
+            # Registrar.DEBUG_SHOP = True
+            # ApiParseXero.DEBUG_PARSER = True
+            # Registrar.DEBUG_ABSTRACT = True
+            # Registrar.DEBUG_GEN = True
+            # Registrar.DEBUG_TREE = True
+            # Registrar.DEBUG_TRACE = True
+            # ApiParseXero.DEBUG_API = True
+            # Registrar.DEBUG_UPDATE = True
+            # Registrar.DEBUG_ERROR = True
+            # Registrar.DEBUG_WARN = True
+            # Registrar.DEBUG_MESSAGE = True
+            # Registrar.DEBUG_SPECIAL = True
+            # Registrar.DEBUG_PARSER = True
+            # Registrar.DEBUG_WOO = True
+            ApiParseWoo.product_resolver = Registrar.exception_resolver
+            CsvParseWoo.product_resolver = Registrar.exception_resolver
+
+
 
     def test_init_settings(self):
 
@@ -95,7 +128,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_prod = prod_list[0]
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
-        self.assertEqual(first_prod.specials,
+        first_prod_specials = first_prod.specials
+        self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
         self.assertEqual(first_prod.product_type, "simple")
         self.assertEqual(first_prod.depth, 4)
@@ -130,28 +164,37 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
         spec_list = SpecialGruopList(self.parsers.special.rule_groups.values())
-        if Registrar.DEBUG_MESSAGE:
-            Registrar.register_message(
-                SanitationUtils.coerce_bytes(
-                    spec_list.tabulate(tablefmt='simple')))
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                    spec_list.tabulate(tablefmt='simple')
+            ))
         first_group = spec_list[0]
-        if Registrar.DEBUG_MESSAGE:
-            Registrar.register_message(
-                "first group:\n%s\npformat@dict:\n%s\npformat@dir:\n%s\n" %
+        if self.debug:
+            print("first group:\n%s\npformat@dict:\n%s\npformat@dir:\n%s\n" %
                 (SanitationUtils.coerce_bytes(
                     tabulate(first_group.children, tablefmt='simple')),
-                 pformat(dict(first_group)), pformat(dir(first_group))))
+                 pformat(dict(first_group)), pformat(dir(first_group)))
+            )
 
     def test_populate_slave_parsers(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         # TODO: finish this
-        # self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        return
+        if self.debug:
+            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
+            print("slave items: %s" % len(self.parsers.slave.items.values()))
+            print("slave products: %s" % len(self.parsers.slave.products.values()))
+
+
+
+    def test_do_match(self):
+        pass
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorXeroDummy, self).setUp()

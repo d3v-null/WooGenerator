@@ -434,6 +434,7 @@ class ArgumentParserCommon(ArgumentParserProto):
             '--override-progress',
             help='override progress of saved state')
 
+        self.add_suppressed_argument('--master-dialect-suggestion')
         self.add_suppressed_argument('--web-dir')
         self.add_suppressed_argument('--web-address')
         self.add_suppressed_argument('--web-browser')
@@ -604,6 +605,10 @@ class ArgumentParserProd(ArgumentParserCommon):
         specials_group.add_argument(
             '--current-special',
             help='prefix of current special code')
+        specials_group.add_argument(
+            '--specials-file',
+            help='location of specials file'
+        )
 
         group = self.add_mutually_exclusive_group()
         group.add_argument(

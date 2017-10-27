@@ -748,8 +748,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         self.register_category(extra_layer)
                 else:
                     if self.DEBUG_WOO:
+                        identifier = extra_layer.identifier if extra_layer \
+                        else 'None'
                         self.register_message(
-                            "did not find sibling: %s" % extra_layer.identifier)
+                            "did not find sibling: %s" % identifier)
 
                     extra_layer = self.new_object(
                         extra_rowcount,
@@ -1283,15 +1285,17 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_warning(exc, object_data)
                     break
 
-    def analyse_stream(self, byte_file_obj, **kwargs):
-        objects = super(CsvParseWoo, self).analyse_stream(
-            byte_file_obj,
+    def analyse_rows(self, unicode_rows, **kwargs):
+        objects = super(CsvParseWoo, self).analyse_rows(
+            unicode_rows,
             **kwargs
         )
 
         # post processing
-        # for item_data in self.taxos.values() + self.items.values():
-        # print 'POST analysing product', item_data.codesum, item_data.namesum
+
+        if self.DEBUG_WOO:
+            self.register_message("post_processing %d objects" % len(objects))
+
 
         for index, object_data in self.objects.items():
             # print '%s POST' % object_data.get_identifier()

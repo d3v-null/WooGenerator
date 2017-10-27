@@ -20,13 +20,13 @@ schema: CA
 
 add-special-categories: false
 do-report: true
-do-images: false
+skip-images: true
 do-delete-images: false
 do-resize-images: false
 skip-download-master: true
 
-wp-api-key: v4dw5kZxoSzD
-wp-api-secret: ojVHZREfWqeOm3z9TpabJdxFCLaTizyCZpXhl3Ec2loSC3gp
+wp-api-key: tYG1tAoqjBEM
+wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
 wp-user: wptest
 wp-pass: gZ*gZk#v0t5$j#NQ@9
 wp-callback: http://127.0.0.1:18080/wptest

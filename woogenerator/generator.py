@@ -70,10 +70,12 @@ def check_warnings():
 def populate_master_parsers(parsers, settings):
     """Create and populates the various parsers."""
     things_to_check = [
-        'master_parser_args'
+        'master_parser_args', 'master_parser_class'
     ]
-    if settings['download_master']:
-        things_to_check.extend(['g_drive_params'])
+
+    Registrar.register_message('schema: %s, woo_schemas: %s' % (
+        settings.schema, settings.woo_schemas
+    ))
 
     for thing in things_to_check:
         Registrar.register_message(
@@ -90,6 +92,7 @@ def populate_master_parsers(parsers, settings):
             settings.master_download_client_args)
 
     with settings.master_download_client_class(**settings.master_download_client_args) as client:
+
         if settings.schema_is_woo:
             if settings.do_dyns:
                 Registrar.register_message("analysing dprc rules")
@@ -171,7 +174,7 @@ def populate_slave_parsers(parsers, settings):
 
     if settings.schema_is_woo and not settings['download_slave']:
         #TODO: implement local woo slave
-        return
+        return parsers
 
     slave_client_class = settings.slave_download_client_class
     slave_client_args = settings.slave_download_client_args
@@ -475,6 +478,9 @@ def do_match_categories(parsers, matches, settings):
             (len(parsers.master.categories),
              len(parsers.slave.categories)))
 
+    if not( parsers.master.categories and parsers.slave.categories ):
+        return matches
+
     category_matcher = CategoryMatcher()
     category_matcher.clear()
     category_matcher.process_registers(
@@ -660,6 +666,9 @@ def do_merge_categories(matches, parsers, updates, settings):
 
     # print "SYNC COLS: %s" % pformat(sync_cols.items())
 
+    if not hasattr(matches, 'category'):
+        return updates
+
     for match in enumerate(matches.category.valid):
         s_object = match.s_object
         for m_object in match.m_objects:
@@ -709,6 +718,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             sync_update = SyncUpdateCatWoo(m_object)
             updates.category.slaveless.append(sync_update)
 
+    return updates
 
 def do_merge(matches, parsers, updates, settings):
     """For a given list of matches, return a description of updates required to merge them."""
@@ -1078,6 +1088,9 @@ def do_report_post(reporters, results, settings):
 def do_updates_categories(updates, parsers, results, settings):
     """Perform a list of updates."""
 
+    if not hasattr(updates, 'categories'):
+        return
+
     if settings['auto_create_new']:
         # create categories that do not yet exist on slave
         if Registrar.DEBUG_CATS:
@@ -1228,13 +1241,15 @@ def main(override_args=None, settings=None):
     if settings.schema_is_woo and settings.do_images:
         process_images(settings, parsers)
 
-    export_master_parser(settings, parsers)
+    if parsers.master.objects:
+        export_master_parser(settings, parsers)
 
     import pudb; pudb.set_trace(paused=False)
 
     parsers = populate_slave_parsers(parsers, settings)
 
-    export_slave_parser(settings, parsers)
+    if parsers.slave.objects:
+        export_slave_parser(settings, parsers)
 
     matches = MatchNamespace(index_fn=product_index_fn)
     updates = UpdateNamespace()

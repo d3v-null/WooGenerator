@@ -173,7 +173,7 @@ class CsvParseSpecial(CsvParseTree):
     def register_rule_group(self, group_data):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
-                "registering rule group: %s", group_data.identifier)
+                "registering rule group:\n%s" % group_data.identifier)
         assert group_data.is_taxo
         self.register_anything(
             group_data,
@@ -187,7 +187,7 @@ class CsvParseSpecial(CsvParseTree):
     def register_rule(self, rule_data):
         if Registrar.DEBUG_SPECIAL:
             Registrar.register_message(
-                "registering rule: %s", rule_data.identifier)
+                "registering rule:\n%s" % rule_data.identifier)
         assert rule_data.is_item
         self.register_anything(
             rule_data,

@@ -1272,7 +1272,8 @@ class ColDataWoo(ColDataProd):
             'wp-api': None,
             'xero-api': {
                 'key': 'isSold'
-            }
+            },
+            'default':'',
         }),
         ('is_purchased', {
             'import': True,
@@ -1281,7 +1282,8 @@ class ColDataWoo(ColDataProd):
             'wp-api': None,
             'xero-api': {
                 'key': 'isPurchased'
-            }
+            },
+            'default': '',
         }),
 
     ])
