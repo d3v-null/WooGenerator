@@ -676,7 +676,7 @@ class CategoryMatcher(AbstractMatcher):
     @staticmethod
     def category_index_fn(product_object):
         """ the category index function for the class """
-        return product_object.woo_cat_name
+        return product_object.cat_name
 
     def __init__(self):
         super(CategoryMatcher, self).__init__(self.category_index_fn)

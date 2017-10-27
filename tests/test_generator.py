@@ -18,7 +18,7 @@ from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.woo import WooProdList, CsvParseWoo
 from woogenerator.parsing.api import ApiParseWoo
-from woogenerator.parsing.xero import XeroProdList, ApiParseXero
+from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
@@ -224,8 +224,6 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             ApiParseXero.product_resolver = Registrar.exception_resolver
 
     def test_populate_master_parsers(self):
-        # if self.debug:
-        #     import pudb; pudb.set_trace()
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         if self.debug:
             print("master objects: %s" % len(self.parsers.master.objects.values()))
@@ -235,7 +233,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.parsers.master.objects.values()), 29)
         self.assertEqual(len(self.parsers.master.items.values()), 20)
 
-        prod_list = XeroProdList(self.parsers.master.products.values())
+        prod_container = self.parsers.master.product_container.container
+        prod_list = prod_container(self.parsers.master.products.values())
         if self.debug:
             print("prod list:\n%s" % prod_list.tabulate())
             item_list = ItemList(self.parsers.master.items.values())
@@ -269,7 +268,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.parsers.slave.objects.values()), 10)
         self.assertEqual(len(self.parsers.slave.items.values()), 10)
 
-        prod_list = XeroProdList(self.parsers.slave.products.values())
+        prod_container = self.parsers.slave.product_container.container
+        prod_list = prod_container(self.parsers.slave.products.values())
         if self.debug:
             print("prod list:\n%s" % prod_list.tabulate())
             item_list = ItemList(self.parsers.slave.items.values())

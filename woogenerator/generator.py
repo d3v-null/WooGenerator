@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import io
+import json
 import os
 import shutil
 import sys
@@ -42,7 +43,7 @@ from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_successes_group, do_sync_group,
                              do_variation_matches_group,
                              do_variation_sync_group)
-
+from .parsing.api import ApiParseWoo
 
 def timediff(settings):
     """Return time elapsed since start."""
@@ -189,11 +190,21 @@ def populate_slave_parsers(parsers, settings):
 
         Registrar.register_progress("analysing API data")
 
-        client.analyse_remote(parsers.slave, data_path=settings.slave_path)
+        # Registrar.DEBUG_ABSTRACT = True
+        # Registrar.DEBUG_API = True
+        # Registrar.DEBUG_GEN = True
+        # Registrar.DEBUG_TREE = True
+        # Registrar.DEBUG_WOO = True
+        # Registrar.DEBUG_TRACE = True
+        # ApiParseWoo.product_resolver = Registrar.exception_resolver
+        client.analyse_remote(
+            parsers.slave,
+            data_path=settings.slave_path
+        )
 
     if Registrar.DEBUG_CLIENT:
         container = settings.slave_parser_class.product_container.container
-        prod_list = container(parsers.slave.products.values()[100:])
+        prod_list = container(parsers.slave.products.values())
         Registrar.register_message("Products: \n%s" % prod_list.tabulate())
 
     return parsers
@@ -377,91 +388,105 @@ def export_master_parser(settings, parsers):
     Registrar.register_progress("Exporting Master info to disk")
 
     product_cols = settings.col_data_class.get_product_cols()
+    product_colnames = settings.col_data_class.get_col_names(product_cols)
 
-    if settings.schema_is_myo:
-        container = settings.master_parser_class.product_container
-        product_list = container(parsers.master.products.values())
-        product_list.export_items(
-            settings.myo_path,
-            settings.col_data_class.get_col_names(product_cols)
-        )
-    elif settings.schema_is_woo:
-        for col in settings['exclude_cols']:
-            if col in product_cols:
-                del product_cols[col]
+    for col in settings['exclude_cols']:
+        if col in product_cols:
+            del product_cols[col]
 
+    if settings.schema_is_woo:
         attribute_cols = settings.col_data_class.get_attribute_cols(
             parsers.master.attributes, parsers.master.vattributes)
-        product_colnames = ColDataBase.get_col_names(
+        product_colnames = settings.col_data_class.get_col_names(
             SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
-        product_list = WooProdList(parsers.master.products.values())
-        product_list.export_items(settings.fla_path, product_colnames)
+    if Registrar.DEBUG_GEN:
+        Registrar.register_message("master parser class is %s" % settings.master_parser_class)
 
+    container = settings.master_parser_class.product_container.container
+
+    if Registrar.DEBUG_GEN:
+        Registrar.register_message("export container is %s" % container.__name__)
+
+    product_list = container(parsers.master.products.values())
+    product_list.export_items(settings.fla_path, product_colnames)
+
+    if settings.schema_is_woo:
         # variations
-
+        variation_container = settings.master_parser_class.variation_container.container
         variation_cols = settings.col_data_class.get_variation_cols()
-
         attribute_meta_cols = settings.col_data_class.get_attribute_meta_cols(
             parsers.master.vattributes)
-        variation_col_names = ColDataBase.get_col_names(
+        variation_col_names = settings.col_data_class.get_col_names(
             SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
+        if settings.do_variations and parsers.master.variations:
 
-        if parsers.master.variations:
-            variation_list = WooVarList(parsers.master.variations.values())
+            variation_list = variation_container(parsers.master.variations.values())
             variation_list.export_items(settings.flv_path, variation_col_names)
 
-        if parsers.master.categories:
-            # categories
-            category_cols = settings.col_data_class.get_category_cols()
+            updated_variations = parsers.master.updated_variations.values()
 
-            category_list = WooCatList(parsers.master.categories.values())
-            category_list.export_items(settings.cat_path,
-                                       ColDataBase.get_col_names(category_cols))
+            if updated_variations:
+                updated_variations_list = variation_container(updated_variations)
+                updated_variations_list.export_items(
+                    settings.flvu_path, variation_col_names
+                )
+
+        # categories
+        if settings.do_categories and parsers.master.categories:
+            category_cols = settings.col_data_class.get_category_cols()
+            category_col_names = settings.col_data_class.get_col_names(category_cols)
+            category_container = settings.master_parser_class.category_container.container
+            category_list = category_container(parsers.master.categories.values())
+            category_list.export_items(settings.cat_path, category_col_names)
 
         # specials
-        if settings.do_specials:
-            if settings.current_special_id:
-                special_products = parsers.master.onspecial_products.values()
-                if special_products:
-                    special_product_list = WooProdList(special_products)
-                    special_product_list.export_items(
-                        settings.fls_path, product_colnames
-                    )
-                special_variations = parsers.master.onspecial_variations.values()
-                if special_variations:
-                    sp_variation_list = WooVarList(special_variations)
-                    sp_variation_list.export_items(
-                        settings.flvs_path, variation_col_names
-                    )
+        if settings.do_specials and settings.current_special_id:
+            special_products = parsers.master.onspecial_products.values()
+            if special_products:
+                special_product_list = container(special_products)
+                special_product_list.export_items(
+                    settings.fls_path, product_colnames
+                )
+            special_variations = parsers.master.onspecial_variations.values()
+            if special_variations:
+                sp_variation_list = variation_container(special_variations)
+                sp_variation_list.export_items(
+                    settings.flvs_path, variation_col_names
+                )
 
         updated_products = parsers.master.updated_products.values()
         if updated_products:
-            updated_product_list = WooProdList(updated_products)
+            updated_product_list = container(updated_products)
             updated_product_list.export_items(
                 settings.flu_path, product_colnames
             )
 
-        updated_variations = parsers.master.updated_variations.values()
-
-        if updated_variations:
-            updated_variations_list = WooVarList(updated_variations)
-            updated_variations_list.export_items(
-                settings.flvu_path, variation_col_names
-            )
-
-def export_slave_parser(settings, parsers):
+def cache_api_data(settings, parsers):
     """Export key information from slave parser to csv."""
+    if not settings.download_slave:
+        return
+
     Registrar.register_progress("Exporting Slave info to disk")
 
-    product_cols = settings.col_data_class.get_product_cols()
+    Registrar.register_message("slave parser class is %s" % settings.slave_parser_class)
 
     container = settings.slave_parser_class.product_container.container
+
+    Registrar.register_message("export container is %s" % container.__name__)
+
+    Registrar.register_message("there are %d parser items" % len(parsers.slave.items))
+
     product_list = container(parsers.slave.products.values())
-    product_list.export_items(
-        settings.xero_path,
-        settings.col_data_class.get_col_names(product_cols)
-    )
+
+    Registrar.register_message("there are %d products" % len(product_list))
+
+    product_list.export_api_data(settings.slave_path)
+
+    if settings.do_categories and parsers.slave.categories:
+        category_container = settings.slave_parser_class.category_container.container
+        category_list = category_container(parsers.slave.categories.values())
+        category_list.export_api_data(settings.slave_cat_path)
 
 def product_index_fn(product):
     """Return the codesum of the product."""
@@ -943,10 +968,10 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     #                     index,
     #     #                     # parsers.slave.products[index],
     #     #                     # parsers.slave.products[index].categories,
-    #     #                     # ", ".join(category.woo_cat_name \
+    #     #                     # ", ".join(category.cat_name \
     #     #                     # for category in matches_.merge().m_objects),
     #     #                     ", ".join([
-    #     #                         category_.woo_cat_name
+    #     #                         category_.cat_name
     #     #                         for category_ in matches_.merge().s_objects
     #     #                     ])
     #     #                 ] for index, matches_ in matches.category.delete_slave.items()
@@ -966,9 +991,9 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     #         [
     #     #             index,
     #     #             ", ".join([
-    #     #                 category_.woo_cat_name
+    #     #                 category_.cat_name
     #     #                 for category_ in matches_.merge().s_objects
-    #     #                 if not re.search('Specials', category_.woo_cat_name)
+    #     #                 if not re.search('Specials', category_.cat_name)
     #     #             ])
     #     #         ] for index, matches_ in matches.category.delete_slave.items()
     #     #     ],
@@ -1002,11 +1027,11 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     #                     # parsers.slave.products[index],
     #     #                     # parsers.slave.products[index].categories,
     #     #                     ", ".join([
-    #     #                         category_.woo_cat_name
+    #     #                         category_.cat_name
     #     #                         for category_ in matches_.merge()
     #     #                         .m_objects
     #     #                     ]),
-    #     #                     # ", ".join(category_.woo_cat_name \
+    #     #                     # ", ".join(category_.cat_name \
     #     #                     # for category_ in matches_.merge().s_objects)
     #     #                 ] for index, matches_ in matches.category.slaveless.items()
     #     #             ],
@@ -1126,7 +1151,7 @@ def do_updates_categories(updates, parsers, results, settings):
                 for key in ['id', 'slug', 'sku']:
                     if key in m_api_data:
                         del m_api_data[key]
-                m_api_data['name'] = category.woo_cat_name
+                m_api_data['name'] = category.cat_name
                 # print "uploading category: %s" % m_api_data
                 # pprint(m_api_data)
                 if settings['update_slave']:
@@ -1246,12 +1271,10 @@ def main(override_args=None, settings=None):
     if parsers.master.objects:
         export_master_parser(settings, parsers)
 
-    import pudb; pudb.set_trace(paused=False)
-
     parsers = populate_slave_parsers(parsers, settings)
 
     if parsers.slave.objects:
-        export_slave_parser(settings, parsers)
+        cache_api_data(settings, parsers)
 
     matches = MatchNamespace(index_fn=product_index_fn)
     updates = UpdateNamespace()

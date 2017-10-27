@@ -104,7 +104,12 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
 
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
-    verify_meta_keys = ImportWooObject.verify_meta_keys + ImportGenItem.verify_meta_keys
+
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooObject.verify_meta_keys,
+        ImportGenItem.verify_meta_keys
+    )
+    is_item = ImportGenItem.is_item
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -125,6 +130,7 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
 
 class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
+    container = WooProdList
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
@@ -217,7 +223,7 @@ class ImportWooProductVariation(
         ImportWooProduct, ImportShopProductVariationMixin):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
-
+    container = WooVarList
 
 class ImportWooProductComposite(ImportWooProduct):
     product_type = 'composite'
@@ -232,7 +238,11 @@ class ImportWooProductBundled(ImportWooProduct):
 
 
 class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
-    verify_meta_keys = ImportWooObject.verify_meta_keys + ImportGenTaxo.verify_meta_keys
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooObject.verify_meta_keys,
+        ImportGenTaxo.verify_meta_keys
+    )
+    is_taxo = ImportGenTaxo.is_taxo
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -254,6 +264,7 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
 class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category
     is_product = ImportShopCategoryMixin.is_product
+    container = WooCatList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -277,7 +288,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
         return None
 
     @property
-    def woo_cat_name(self):
+    def cat_name(self):
         cat_layers = self.namesum.split(' > ')
         return cat_layers[-1]
 
@@ -287,21 +298,21 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
 
     @property
     def identifier(self):
-        identifier = super(ImportWooCategory, self).identifier
+        # identifier = super(ImportWooCategory, self).identifier
         return "|".join([
             self.codesum,
             'r:%s' % str(self.rowcount),
             'w:%s' % str(self.get(self.wpid_key)),
-            self.woo_cat_name,
+            self.cat_name,
         ])
 
     @property
     def title(self):
-        return self.woo_cat_name
+        return self.cat_name
     #
     # def __getitem__(self, key):
     #     if key == self.titleKey:
-    #         return self.woo_cat_name
+    #         return self.cat_name
     #     else:
     #         return super(ImportWooCategory, self).__getitem__(key)
 
@@ -309,15 +320,27 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
 class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """
     object_container = ImportWooObject
+    item_container = ImportWooItem
+    product_container = ImportWooProduct
+    simple_container = ImportWooProductSimple
+    variable_container = ImportWooProductVariable
+    variation_container = ImportWooProductVariation
+    composite_container = ImportWooProductComposite
+    grouped_container = ImportWooProductGrouped
+    bundled_container = ImportWooProductBundled
+    # Under woo, all taxos are categories
+    taxo_container = ImportWooCategory
+    category_container = ImportWooCategory
+    category_indexer = Registrar.get_object_rowcount
 
     def find_category(self, search_data):
         response = None
         matching_category_sets = []
         for search_key in [
-            self.object_container.wpid_key,
-            self.object_container.slugKey,
-            self.object_container.titleKey,
-            self.object_container.namesum_key,
+            self.category_container.wpid_key,
+            self.category_container.slugKey,
+            self.category_container.titleKey,
+            self.category_container.namesum_key,
         ]:
             value = search_data.get(search_key)
             if value:
@@ -367,18 +390,18 @@ class CsvParseWooMixin(object):
 
 
 class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
-    object_container = ImportWooObject
-    item_container = ImportWooItem
-    product_container = ImportWooProduct
-    taxo_container = ImportWooCategory
-    simple_container = ImportWooProductSimple
-    variable_container = ImportWooProductVariable
-    variation_container = ImportWooProductVariation
-    category_container = ImportWooCategory
-    composite_container = ImportWooProductComposite
-    grouped_container = ImportWooProductGrouped
-    bundled_container = ImportWooProductBundled
-    category_indexer = Registrar.get_object_rowcount
+    object_container = CsvParseWooMixin.object_container
+    item_container = CsvParseWooMixin.item_container
+    product_container = CsvParseWooMixin.product_container
+    simple_container = CsvParseWooMixin.simple_container
+    variable_container = CsvParseWooMixin.variable_container
+    variation_container = CsvParseWooMixin.variation_container
+    category_container = CsvParseWooMixin.category_container
+    composite_container = CsvParseWooMixin.composite_container
+    grouped_container = CsvParseWooMixin.grouped_container
+    bundled_container = CsvParseWooMixin.bundled_container
+    taxo_container = CsvParseWooMixin.taxo_container
+    category_indexer = CsvParseWooMixin.category_indexer
 
     do_specials = True
     do_dyns = True

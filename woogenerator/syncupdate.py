@@ -1358,7 +1358,6 @@ class SyncUpdateProd(SyncUpdate):
         return self.get_new_subject_value('ID', self.slave_name)
 
     def values_similar(self, col, m_value, s_value):
-        # import pudb; pudb.set_trace()
         similar_m_value, similar_s_value = None, None
         response = super(SyncUpdateProd, self).values_similar(
             col, m_value, s_value

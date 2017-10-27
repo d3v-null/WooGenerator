@@ -452,7 +452,7 @@ class CsvParseShopMixin(object):
     def register_category(self, cat_data):
         assert\
             issubclass(type(cat_data), ImportShopCategoryMixin), \
-            "cat_data should be ImportShopCategoryMixin not %s" % str(
+            "cat_data should subclass ImportShopCategoryMixin not %s" % str(
                 type(cat_data))
         self.register_anything(
             cat_data,
@@ -465,7 +465,7 @@ class CsvParseShopMixin(object):
         self.register_anything(
             cat_data,
             self.categories_name,
-            indexer=cat_data.woo_cat_name,
+            indexer=cat_data.cat_name,
             singular=False
         )
 

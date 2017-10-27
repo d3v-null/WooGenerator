@@ -233,7 +233,6 @@ class TestProdSyncClientXero(TestProdSyncClient):
     def test_read(self):
         self.settings.download_slave = True
         self.settings.schema = 'XERO'
-        # if self.debug: import pudb; pudb.set_trace()
         slave_client_args = self.settings.slave_download_client_args
         slave_client_class = self.settings.slave_download_client_class
         if self.debug:

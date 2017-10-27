@@ -1,21 +1,49 @@
 """
 Introduce woo api structure to shop classes.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
+import io
+import json
 from collections import OrderedDict
 from pprint import pformat
 
 from ..coldata import ColDataWoo
-from ..utils import Registrar, SanitationUtils, SeqUtils
+from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
-from .gen import ImportGenObject
+from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
 from .tree import CsvParseTreeMixin
-from .woo import CsvParseWooMixin, ImportWooMixin
+from .woo import CsvParseWooMixin, ImportWooMixin, WooCatList, WooProdList
+
+
+class ApiProdListMixin(object):
+    def export_api_data(self, file_path, encoding='utf-8'):
+        """
+        Export the items in the object list to a json file in the given file path.
+        """
+
+        assert file_path, "needs a filepath"
+        assert self.objects, "meeds items"
+        with open(file_path, 'wb') as out_file:
+            for item in self.objects:
+                try:
+                    data = item['api_data']
+                except KeyError:
+                    raise UserWarning("could not get api_data from item")
+                data = json.dumps(data)
+                data = data.encode(encoding)
+                print(data, file=out_file)
+        self.register_message("WROTE FILE: %s" % file_path)
+
+class WooApiProdList(WooProdList, ApiProdListMixin):
+    pass
+
+class WooApiCatList(WooCatList, ApiProdListMixin):
+    pass
 
 class ImportApiObjectMixin(object):
 
@@ -25,14 +53,14 @@ class ImportApiObjectMixin(object):
 
     @property
     def index(self):
-        return self.api_id
+        return self.get(self.api_id_key)
 
     @property
     def identifier(self):
         # identifier = super(ImportWooApiObject, self).identifier
         return "|".join([
             'r:%s' % str(self.rowcount),
-            'a:%s' % str(self.get(self.api_id)),
+            'a:%s' % str(self.get(self.api_id_key)),
             self.codesum,
             self.title,
         ])
@@ -43,7 +71,8 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     process_meta = ImportApiObjectMixin.process_meta
     index = ImportApiObjectMixin.index
     identifier = ImportApiObjectMixin.identifier
-    api_id = ImportWooMixin.wpid_key
+    api_id_key = ImportWooMixin.wpid_key
+    api_id = DescriptorUtils.safe_key_property(api_id_key)
     verify_meta_keys = SeqUtils.combine_lists(
         ImportGenObject.verify_meta_keys,
         ImportWooMixin.verify_meta_keys
@@ -69,9 +98,16 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     #     assert self.codesum_key in self, "codesum should be set in %s. data: %s " % (
     #         self, self.items())
 
+class ImportWooApiItem(ImportWooApiObject, ImportGenItem):
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooApiObject.verify_meta_keys,
+        ImportGenItem.verify_meta_keys
+    )
+    is_item = ImportGenItem.is_item
 
-class ImportWooApiProduct(ImportWooApiObject, ImportShopProductMixin):
+class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
+    container = WooApiProdList
 
     verify_meta_keys = SeqUtils.subtrace_two_lists(
         ImportWooApiObject.verify_meta_keys,
@@ -108,11 +144,19 @@ class ImportWooApiProductVariation(
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
 
+class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
+    is_taxo = ImportGenTaxo.is_taxo
 
-class ImportWooApiCategory(ImportWooApiObject, ImportShopCategoryMixin):
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooApiObject.verify_meta_keys,
+        ImportGenTaxo.verify_meta_keys
+    )
+
+
+class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category
     identifier = ImportWooApiObject.identifier
-
+    container = WooApiCatList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -121,7 +165,7 @@ class ImportWooApiCategory(ImportWooApiObject, ImportShopCategoryMixin):
         ImportShopCategoryMixin.__init__(self, *args, **kwargs)
 
     @property
-    def woo_cat_name(self):
+    def cat_name(self):
         return self.title
 
     @property
@@ -137,7 +181,9 @@ class ApiParseWoo(
     variable_container = ImportWooApiProductVariable
     variation_container = ImportWooApiProductVariation
     category_container = ImportWooApiCategory
-    category_indexer = Registrar.get_object_rowcount
+    category_indexer = CsvParseBase.get_object_rowcount
+    item_indexer = CsvParseBase.get_object_rowcount
+    taxo_indexer = CsvParseBase.get_object_rowcount
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
     coldata_class = ColDataWoo
@@ -232,9 +278,14 @@ class ApiParseWoo(
         category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                                      for key, value in category_search_data.items()])
 
+        if 'itemsum' in category_search_data:
+            category_search_data['taxosum'] = category_search_data['itemsum']
+            del category_search_data['itemsum']
+
         if self.DEBUG_API:
             self.register_message("SEARCHING FOR CATEGORY: %s" %
                                   repr(category_search_data))
+
         cat_data = self.find_category(category_search_data)
         if not cat_data:
             if self.DEBUG_API:
@@ -404,10 +455,10 @@ class ApiParseWoo(
             cls.object_container.codesum_key in parser_data, \
             "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
-        assert \
-            cls.object_container.namesum_key in parser_data, \
-            "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
-            % (parser_data, api_data, core_translation, meta_translation)
+        # assert \
+        #     cls.object_container.namesum_key in parser_data, \
+        #     "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
+        #     % (parser_data, api_data, core_translation, meta_translation)
 
         # title = parser_data.get(cls.object_container.titleKey, '')
         # if not title and 'title' in api_data:
@@ -427,6 +478,8 @@ class ApiParseWoo(
             description = api_data['description']
         parser_data[cls.object_container.description_key] = description
         parser_data[cls.object_container.descsum_key] = description
+
+        parser_data['api_data'] = api_data
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
@@ -469,6 +522,7 @@ class ApiParseWoo(
         if self.DEBUG_API:
             self.register_message("API DATA CATEGORIES: %s" %
                                   repr(api_data.get('categories')))
+
         if not api_data.get('categories'):
             if self.DEBUG_API:
                 self.register_message(

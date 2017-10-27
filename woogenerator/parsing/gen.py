@@ -26,7 +26,6 @@ class ImportGenMixin(object):
     descsum = DescriptorUtils.safe_key_property(descsum_key)
 
     verify_meta_keys = [
-        namesum_key,
         codesum_key,
         descsum_key,
     ]
@@ -41,10 +40,10 @@ class ImportGenMixin(object):
         index = self.codesum
         super_obj = super(ImportGenMixin, self)
         if hasattr(super_obj, 'index'):
-            index = '|'.join([
+            index = '|'.join(SeqUtils.filter_unique_true([
                 super_obj.index,
                 index
-            ])
+            ]))
         return index
 
     def __str__(self):
@@ -199,6 +198,11 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
 class ImportGenItem(ImportGenObject, ImportTreeItem):
     "Class for items in generator heirarchy"
 
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportGenObject.verify_meta_keys,
+        [ImportGenObject.namesum_key]
+    )
+
     @property
     def name_ancestors(self):
         return self.item_ancestors
@@ -222,6 +226,11 @@ class ImportGenTaxo(ImportGenObject, ImportTreeTaxo):
 
     namesum_key = 'taxosum'
     namesum = DescriptorUtils.safe_key_property(namesum_key)
+
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportGenObject.verify_meta_keys,
+        [namesum_key]
+    )
 
     name_delimeter = ' > '
 

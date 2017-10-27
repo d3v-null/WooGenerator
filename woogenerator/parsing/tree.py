@@ -24,8 +24,6 @@ class ImportTreeObject(ImportObject):
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.register_message('ImportTreeObject')
-        # if self.DEBUG_TRACE:
-        #     import pudb; pudb.set_trace()
         # if self.DEBUG_PARSER:
         #     self.register_message('called with kwargs: %s' % pformat(kwargs))
 
@@ -83,7 +81,10 @@ class ImportTreeObject(ImportObject):
         for key in self.verify_meta_keys:
             if self.DEBUG_PARSER:
                 self.register_message("CHECKING KEY: %s" % key)
-            assert key in self.keys(), "key %s must be set" % str(key)
+            assert key in self.keys(), \
+            "tree_verify_meta: key %s must be set in %s object" % (
+                str(key), type(self)
+            )
 
     #
     @property
@@ -455,6 +456,8 @@ class CsvParseTreeMixin(object):
 
 class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     object_container = CsvParseTreeMixin.object_container
+    item_indexer = CsvParseBase.get_object_rowcount
+    taxo_indexer = CsvParseBase.get_object_rowcount
 
     def __init__(self, cols, defaults, taxo_depth,
                  item_depth, meta_width, **kwargs):
@@ -464,8 +467,6 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         self.item_depth = item_depth
         # self.max_depth  = taxo_depth + item_depth
         self.meta_width = meta_width
-        self.item_indexer = self.get_object_rowcount
-        self.taxo_indexer = self.get_object_rowcount
         CsvParseBase.__init__(self, cols, defaults, **kwargs)
 
         # if self.DEBUG_TREE:

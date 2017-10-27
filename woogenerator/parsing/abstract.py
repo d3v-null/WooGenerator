@@ -33,12 +33,15 @@ class ObjList(list, Registrar):
     supported_type = object
 
     def __init__(self, objects=None, indexer=None):
-        super(ObjList, self).__init__()
+        list.__init__(self)
         Registrar.__init__(self)
         if self.DEBUG_MRO:
             self.register_message('ObjList')
-        self.indexer = indexer if indexer else (lambda x: x.index)
-        self.supported_type = ImportObject
+        if indexer is None:
+            indexer = (lambda x: getattr(x, 'index'))
+        self.indexer = indexer
+        if self.supported_type == object:
+            self.supported_type = ImportObject
         # self._obj_list_type = 'objects'
         # self._objects = []
         self.indices = []

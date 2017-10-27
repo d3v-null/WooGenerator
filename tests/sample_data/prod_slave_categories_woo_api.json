@@ -1,0 +1,9 @@
+{"count": 48, "slug": "product-a", "description": "", "parent": 0, "image": "", "display": "default", "type": "category", "id": 315, "name": "Product A"}
+{"count": 48, "slug": "product-a-company-a-product-a", "description": "", "parent": 315, "image": "", "display": "default", "type": "category", "id": 316, "name": "Company A Product A"}
+{"count": 15, "slug": "product-a-company-a-product-a-range-a", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 317, "name": "Range A"}
+{"count": 9, "slug": "product-a-company-a-product-a-range-b", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 321, "name": "Range B"}
+{"count": 12, "slug": "product-a-company-a-product-a-range-c", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 322, "name": "Range C"}
+{"count": 12, "slug": "product-a-company-a-product-a-range-f", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 323, "name": "Range F"}
+{"count": 16, "slug": "product-a-company-a-product-a-1-litre-company-a-product-a-items", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 318, "name": "1 Litre Company A Product A Items"}
+{"count": 16, "slug": "product-a-company-a-product-a-100ml-company-a-product-a-samples", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 320, "name": "100ml Company A Product A Samples"}
+{"count": 16, "slug": "product-a-company-a-product-a-500ml-company-a-product-a-items", "description": "", "parent": 316, "image": "", "display": "default", "type": "category", "id": 319, "name": "500ml Company A Product A Items"}

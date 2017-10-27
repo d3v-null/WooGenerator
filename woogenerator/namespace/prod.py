@@ -110,7 +110,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ The path which the master data is downloaded to and read from. """
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
-        response = '%s%s' % (self.file_prefix, 'slave')
+        response = '%s%s' % (self.file_prefix, 'slave_categories')
+        if self.schema_is_woo:
+            response += '_woo_api'
+        if self.schema_is_xero:
+            response += '_xero_api'
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -144,8 +148,28 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.in_dir_full, response)
 
     @property
+    def myo_path(self):
+        """ The path which the master myob csv data is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'myob', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
+    def xero_path(self):
+        """ The path which the flattened master xero csv data is stored. """
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'master_xero', self.import_name
+        )
+        return os.path.join(self.out_dir_full, response)
+
+    @property
     def fla_path(self):
-        """ The path which the flattened csv file is stored. """
+        """ The path which the flattened master csv data is stored. """
+        if self.schema_is_myo:
+            return self.myo_path
+        if self.schema_is_xero:
+            return self.xero_path
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'flattened', self.import_name
         )
@@ -153,7 +177,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def flv_path(self):
-        """ The path which the flattened variation csv file is stored. """
+        """ The path which the flattened master variation csv data is stored. """
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'flattened-variations', self.import_name
         )
@@ -161,7 +185,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def flu_path(self):
-        """ The path which the flattened updated csv file is stored. """
+        """ The path which the flattened master updated csv data is stored. """
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'flattened-updated', self.import_name
         )
@@ -169,7 +193,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def flvu_path(self):
-        """ The path which the flattened updated variations csv file is stored. """
+        """ The path which the flattened master updated variations csv data is stored. """
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'flattened-variations-updated', self.import_name
         )
@@ -177,7 +201,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def fls_path(self):
-        """ The path which the flattened specials csv file is stored. """
+        """ The path which the flattened master specials csv data is stored. """
         response = "%s%s-%s-%s.csv" % (
             self.file_prefix, 'flattened', self.current_special_id, self.import_name
         )
@@ -185,7 +209,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def flvs_path(self):
-        """ The path which the flattened specials variations csv file is stored. """
+        """ The path which the flattened master specials variations csv data is stored. """
         response = "%s%s-%s-%s.csv" % (
             self.file_prefix, 'flattened-variations', self.current_special_id, self.import_name
         )
@@ -193,26 +217,25 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def cat_path(self):
-        """ The path which the categories csv file is stored. """
+        """ The path which the flattened master categories csv data is stored. """
         response = "%s%s-%s.csv" % (
             self.file_prefix, 'categories', self.import_name
         )
         return os.path.join(self.out_dir_full, response)
 
     @property
-    def myo_path(self):
-        """ The path which the myob csv file is stored. """
-        response = "%s%s-%s.csv" % (
-            self.file_prefix, 'myob', self.import_name
-        )
-        return os.path.join(self.in_dir_full, response)
-
-    @property
-    def xero_path(self):
-        """ The path which the xero csv file is stored. """
-        response = "%s%s-%s.csv" % (
-            self.file_prefix, 'xero', self.import_name
-        )
+    def slave_cat_path(self):
+        """ The path which the slave woo api category json data is cached. """
+        if hasattr(self, 'slave_cat_file') and getattr(self, 'slave_cat_file'):
+            return getattr(self, 'slave_cat_file')
+        response = '%s%s' % (self.file_prefix, 'slave')
+        if self.schema_is_woo:
+            response += '_woo_api'
+        if self.schema_is_xero:
+            response += '_xero_api'
+        if self.variant:
+            response = "-".join([response, self.variant])
+        response += "-" + self.import_name + '.json'
         return os.path.join(self.in_dir_full, response)
 
     @property

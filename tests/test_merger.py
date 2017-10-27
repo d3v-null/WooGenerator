@@ -687,7 +687,6 @@ class TestMergerSafe(TestMergerAbstract):
         self.assertFalse(self.updates.problematic)
         # self.print_update(sync_update)
         # try:
-        #     # import pudb; pudb.set_trace()
         #     self.assertEqual(sync_update.old_m_object.MYOBID, 'C031472')
         #     self.assertEqual(sync_update.old_m_object.role.direct_brand, 'VuTan Wholesale')
         #     self.assertEqual(sync_update.old_m_object.role.role, 'WN')

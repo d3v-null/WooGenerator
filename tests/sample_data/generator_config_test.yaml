@@ -34,5 +34,6 @@ wp-api-version: wp/v2
 
 wc-api-key: ck_e1dd4a9c85f49b9685f7964a154eecb29af39d5a
 wc-api-secret: cs_8ef3e5d21f8a0c28cd7bc4643e92111a0326b6b1
+wc-api-version: v2
 store-url: http://localhost:18080/wptest/
 creds_store: wp-api-creds-test

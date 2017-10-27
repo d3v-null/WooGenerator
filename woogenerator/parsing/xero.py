@@ -14,16 +14,15 @@ from .myo import CsvParseMyo
 from .shop import (
     ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin, ShopProdList, CsvParseShopMixin
 )
-from .api import ImportApiObjectMixin
+from .api import ImportApiObjectMixin, ApiProdListMixin
 
-class XeroProdList(ShopProdList):
-
+class XeroApiProdList(ShopProdList, ApiProdListMixin):
     @property
     def report_cols(self):
         return CsvParseXero.coldata_class.get_product_cols()
 
 class ImportXeroMixin(object):
-    container = XeroProdList
+    container = XeroApiProdList
     description_key = 'Xero Description'
     description = DescriptorUtils.safe_key_property(description_key)
 
@@ -40,6 +39,11 @@ class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
 
 class ImportXeroItem(ImportXeroObject, ImportGenItem):
     container = ImportXeroMixin.container
+    is_item = ImportGenItem.is_item
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportXeroObject.verify_meta_keys,
+        ImportGenItem.verify_meta_keys
+    )
 
 class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
@@ -53,6 +57,7 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
     process_meta = ImportApiObjectMixin.process_meta
     container = ImportXeroMixin.container
+    is_item = ImportGenItem.is_item
 
 class ImportXeroApiItem(ImportXeroApiObject, ImportGenItem):
     container = ImportXeroMixin.container
@@ -237,6 +242,8 @@ class ApiParseXero(
 
         if cls.DEBUG_API:
             cls.register_message("returning parser_data: %s" % parser_data)
+
+        parser_data['api_data'] = api_data
 
         return parser_data
 

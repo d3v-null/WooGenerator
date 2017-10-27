@@ -490,7 +490,8 @@ class ColDataWoo(ColDataProd):
         ('slug', {
             'category': True,
             'wp-api': {
-                'key': 'slug'
+                'key': 'slug',
+                'meta': False,
             },
             'sync': 'slave_override'
         }),
@@ -548,7 +549,7 @@ class ColDataWoo(ColDataProd):
         }),
         ('taxosum', {
             'label': 'category_title',
-            'category': True,
+            'category': True
         }),
         ('catlist', {
             'product': True,
