@@ -710,7 +710,8 @@ class ColDataWoo(ColDataProd):
                 'meta': True
             },
             'wp-api': {
-                'key': 'regular_price'
+                'key': '_regular_price',
+                'meta': True
             },
             'report': True,
             'static': True,
@@ -725,7 +726,10 @@ class ColDataWoo(ColDataProd):
                 'key': '_sale_price',
                 'meta': True
             },
-            'wp-api': True,
+            'wp-api': {
+                'key': '_sale_price',
+                'meta': True
+            },
             'report': True,
             'type': 'currency',
         }),
@@ -740,7 +744,8 @@ class ColDataWoo(ColDataProd):
                 'meta': True
             },
             'wp-api': {
-                'key': 'regular_price'
+                'key': 'regular_price',
+                'meta': True
             },
         }),
         ('sale_price_dates_to', {
@@ -750,6 +755,10 @@ class ColDataWoo(ColDataProd):
             'variation': True,
             'pricing': True,
             'wp': {
+                'key': '_sale_price_dates_to',
+                'meta': True
+            },
+            'wp-api': {
                 'key': '_sale_price_dates_to',
                 'meta': True
             },

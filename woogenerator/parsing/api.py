@@ -469,7 +469,12 @@ class ApiParseWoo(
             meta_data = api_data['meta']
             for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
                 try:
-                    translated_key = col_data[cls.col_data_target]['key']
+                    translated_target_data = col_data.get(cls.col_data_target, {})
+                    assert isinstance(translated_target_data, dict), \
+                    "translated_target_data for col %s in %s should be dict not %s" % (
+                        col, cls.coldata_class, type(translated_target_data)
+                    )
+                    translated_key = translated_target_data['key']
                 except KeyError:
                     translated_key = col
                 meta_translation[translated_key] = col

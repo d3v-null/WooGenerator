@@ -30,7 +30,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -60,12 +60,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # TODO: this
         if self.debug:
             # Registrar.DEBUG_SHOP = True
-            # ApiParseXero.DEBUG_PARSER = True
+            # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_GEN = True
             # Registrar.DEBUG_TREE = True
             # Registrar.DEBUG_TRACE = True
-            # ApiParseXero.DEBUG_API = True
             # Registrar.DEBUG_UPDATE = True
             # Registrar.DEBUG_ERROR = True
             # Registrar.DEBUG_WARN = True
@@ -75,8 +74,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             # Registrar.DEBUG_WOO = True
             ApiParseWoo.product_resolver = Registrar.exception_resolver
             CsvParseWoo.product_resolver = Registrar.exception_resolver
-
-
 
     def test_init_settings(self):
 
@@ -213,14 +210,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'length': u'40',
                 'weight': u'0.12',
                 'width': u'40',
-                # TODO: get custom meta working
-                # 'price': u'',
-                # 'DNR': u'59.97',
-                # 'DPR': u'57.47',
-                # 'RNR': u'',
-                # 'RPR': u'',
-                # 'WNR': u'99.95',
-                # 'WPR': u'84.96',
+                'DNR': u'8.45',
+                'DPR': u'7.75',
+                'WNR': u'12.95',
+                'WPR': u'11.00',
         }.items():
             self.assertEqual(first_prod[key], value)
 
