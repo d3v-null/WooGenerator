@@ -12,7 +12,7 @@ class ProdSyncClientWC(SyncClientWC):
     # def __init__(self, *args, **kwargs):
     #     super(ProdSyncClientWC, self).__init__(*args, **kwargs)
 
-    def analyse_remote_categories(self, parser):
+    def analyse_remote_categories(self, parser, **kwargs):
         taxo_api_iterator = self.ApiIterator(
             self.service, '/products/categories')
         categories = []

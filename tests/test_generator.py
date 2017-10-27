@@ -44,6 +44,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.specials_file = os.path.join(
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
+        self.settings.slave_file = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_woo_api_dummy.json"
+        )
+        self.settings.slave_cat_file = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy.json"
+        )
         self.settings.do_specials = True
         self.settings.do_sync = True
         self.settings.do_categories = True
@@ -52,9 +58,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.init_settings(self.override_args)
 
         # TODO: this
-        # self.settings.slave_file = os.path.join(
-        #     TESTS_DATA_DIR, "xero_demo_data.json"
-        # )
         if self.debug:
             # Registrar.DEBUG_SHOP = True
             # ApiParseXero.DEBUG_PARSER = True
@@ -178,14 +181,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     def test_populate_slave_parsers(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
         # TODO: finish this
-        return
         if self.debug:
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
             print("slave items: %s" % len(self.parsers.slave.items.values()))
             print("slave products: %s" % len(self.parsers.slave.products.values()))
-
-
 
     def test_do_match(self):
         pass

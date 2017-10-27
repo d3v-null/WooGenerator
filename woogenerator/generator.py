@@ -173,10 +173,6 @@ def populate_slave_parsers(parsers, settings):
 
     parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
 
-    if settings.schema_is_woo and not settings['download_slave']:
-        #TODO: implement local woo slave
-        return parsers
-
     slave_client_class = settings.slave_download_client_class
     slave_client_args = settings.slave_download_client_args
 
@@ -186,7 +182,10 @@ def populate_slave_parsers(parsers, settings):
         if settings.schema_is_woo and settings['do_categories']:
             Registrar.register_progress("analysing API category data")
 
-            client.analyse_remote_categories(parsers.slave)
+            client.analyse_remote_categories(
+                parsers.slave,
+                data_path=settings.slave_cat_path
+            )
 
         Registrar.register_progress("analysing API data")
 
@@ -468,19 +467,8 @@ def cache_api_data(settings, parsers):
         return
 
     Registrar.register_progress("Exporting Slave info to disk")
-
-    Registrar.register_message("slave parser class is %s" % settings.slave_parser_class)
-
     container = settings.slave_parser_class.product_container.container
-
-    Registrar.register_message("export container is %s" % container.__name__)
-
-    Registrar.register_message("there are %d parser items" % len(parsers.slave.items))
-
     product_list = container(parsers.slave.products.values())
-
-    Registrar.register_message("there are %d products" % len(product_list))
-
     product_list.export_api_data(settings.slave_path)
 
     if settings.do_categories and parsers.slave.categories:

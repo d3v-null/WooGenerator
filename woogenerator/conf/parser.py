@@ -641,6 +641,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--myo-schemas', nargs='+')
         self.add_suppressed_argument('--xero-schemas', nargs='+')
         self.add_suppressed_argument('--woo-schemas', nargs='+')
+        self.add_suppressed_argument('--slave-cat-file')
 
     def add_client_options(self, client_group):
         super(ArgumentParserProd, self).add_client_options(client_group)

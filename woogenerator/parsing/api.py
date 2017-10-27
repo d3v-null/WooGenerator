@@ -29,14 +29,15 @@ class ApiProdListMixin(object):
         assert file_path, "needs a filepath"
         assert self.objects, "meeds items"
         with open(file_path, 'wb') as out_file:
+            data = []
             for item in self.objects:
                 try:
-                    data = item['api_data']
+                    data.append(dict(item['api_data']))
                 except KeyError:
                     raise UserWarning("could not get api_data from item")
-                data = json.dumps(data)
-                data = data.encode(encoding)
-                print(data, file=out_file)
+            data = json.dumps(data)
+            data = data.encode(encoding)
+            print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
 
 class WooApiProdList(WooProdList, ApiProdListMixin):
@@ -172,8 +173,41 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     def index(self):
         return self.title
 
+class ApiParseMixin(object):
+    def analyse_stream(self, byte_file_obj, **kwargs):
+        limit, encoding, stream_name = \
+            (kwargs.get('limit'), kwargs.get('encoding'), kwargs.get('stream_name'))
+
+        if encoding is None:
+            encoding = "utf8"
+
+        if stream_name is None:
+            if hasattr(byte_file_obj, 'name'):
+                stream_name = byte_file_obj.name
+            else:
+                stream_name = 'stream'
+
+        if self.DEBUG_PARSER:
+            self.register_message(
+                "Analysing stream: {}, encoding: {}, type: {}".format(
+                    stream_name, encoding, type(byte_file_obj))
+            )
+
+        # I can't imagine this having any problems
+        byte_sample = SanitationUtils.coerce_bytes(byte_file_obj.read(1000))
+        byte_file_obj.seek(0)
+        if self.DEBUG_PARSER:
+            self.register_message("Byte sample: %s" % repr(byte_sample))
+
+        decoded = json.loads(byte_file_obj.read(), encoding=encoding)
+        if not decoded:
+            return
+        if isinstance(decoded, list):
+            for decoded_obj in decoded[:limit]:
+                self.analyse_xero_api_obj(decoded_obj)
+
 class ApiParseWoo(
-    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin
+    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin, ApiParseMixin
 ):
     object_container = ImportWooApiObject
     product_container = ImportWooApiProduct
@@ -188,6 +222,7 @@ class ApiParseWoo(
     variation_indexer = CsvParseWooMixin.get_title
     coldata_class = ColDataWoo
     col_data_target = 'wp-api'
+    analyse_stream = ApiParseMixin.analyse_stream
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -387,6 +422,8 @@ class ApiParseWoo(
         Gets data ready for the parser, in this case from api_data
         """
 
+        # TODO: merge with ApiParseXero.get_parser_data in ApiParseMixin
+
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
             cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
@@ -519,6 +556,9 @@ class ApiParseWoo(
         """
         Analyse an object from the wp api.
         """
+
+        # TODO: merge with ApiParseXero.analyse_xero_api_obj in ApiParseMixin
+
         if self.DEBUG_API:
             self.register_message("API DATA CATEGORIES: %s" %
                                   repr(api_data.get('categories')))

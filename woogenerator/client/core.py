@@ -9,6 +9,7 @@ import codecs
 import os
 import re
 import time
+import json
 from collections import Iterable
 from contextlib import closing
 from StringIO import StringIO
@@ -190,6 +191,18 @@ class SyncClientLocal(SyncClientAbstract):
         # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
         # return parser.analyse_stream(out_file, limit=limit,
         # encoding=out_encoding)
+
+    def analyse_remote_categories(self, parser, **kwargs):
+        data_path = kwargs.pop('data_path', None)
+        encoding = kwargs.pop('encoding', None)
+
+        with open(data_path, 'rbU') as data_file:
+            decoded = json.loads(data_file.read(), encoding=encoding)
+            if not decoded:
+                return
+
+            if isinstance(decoded, list):
+                parser.process_api_categories(decoded)
 
 
 class SyncClientLocalStream(SyncClientLocal):

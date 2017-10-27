@@ -14,7 +14,7 @@ from .myo import CsvParseMyo
 from .shop import (
     ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin, ShopProdList, CsvParseShopMixin
 )
-from .api import ImportApiObjectMixin, ApiProdListMixin
+from .api import ImportApiObjectMixin, ApiProdListMixin, ApiParseMixin
 
 class XeroApiProdList(ShopProdList, ApiProdListMixin):
     @property
@@ -133,7 +133,7 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
         CsvParseShopMixin.register_object(self, object_data)
 
 class ApiParseXero(
-    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin
+    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin, ApiParseMixin
 ):
     """
     Provide Xero API data parsing functionality
@@ -144,6 +144,7 @@ class ApiParseXero(
     coldata_class = ParseXeroMixin.coldata_class
     col_data_target = 'xero-api'
     item_indexer = ParseXeroMixin.get_xero_id
+    analyse_stream = ApiParseMixin.analyse_stream
 
     def __init__(self, cols=None, defaults=None, **kwargs):
         if defaults is None:
@@ -278,39 +279,3 @@ class ApiParseXero(
             self.register_message("REGISTERED: %s" % object_data.identifier)
         # self.register_message("mro: {}".format(container.mro()))
         self.rowcount += 1
-
-    def analyse_stream(self, byte_file_obj, **kwargs):
-        limit, encoding, stream_name = \
-            (kwargs.get('limit'), kwargs.get('encoding'), kwargs.get('stream_name'))
-
-        if hasattr(self, 'rowcount') and self.rowcount > 1:
-            raise UserWarning(
-                'rowcount should be 0. Make sure clear_transients is being called on ancestors'
-            )
-        if encoding is None:
-            encoding = "utf8"
-
-        if stream_name is None:
-            if hasattr(byte_file_obj, 'name'):
-                stream_name = byte_file_obj.name
-            else:
-                stream_name = 'stream'
-
-        if self.DEBUG_PARSER:
-            self.register_message(
-                "Analysing stream: {}, encoding: {}, type: {}".format(
-                    stream_name, encoding, type(byte_file_obj))
-            )
-
-        # I can't imagine this having any problems
-        byte_sample = SanitationUtils.coerce_bytes(byte_file_obj.read(1000))
-        byte_file_obj.seek(0)
-        if self.DEBUG_PARSER:
-            self.register_message("Byte sample: %s" % repr(byte_sample))
-
-        decoded = json.loads(byte_file_obj.read(), encoding=encoding)
-        if not decoded:
-            return
-        if isinstance(decoded, list):
-            for decoded_obj in decoded[:limit]:
-                self.analyse_xero_api_obj(decoded_obj)
