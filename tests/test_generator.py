@@ -126,7 +126,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.parsers.master.objects.values()), 163)
         self.assertEqual(len(self.parsers.master.items.values()), 144)
 
-        prod_list = WooProdList(self.parsers.master.products.values())
+        prod_container = self.parsers.master.product_container.container
+        prod_list = prod_container(self.parsers.master.products.values())
         self.assertEqual(len(prod_list), 48)
         first_prod = prod_list[0]
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
@@ -187,6 +188,43 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
             print("slave items: %s" % len(self.parsers.slave.items.values()))
             print("slave products: %s" % len(self.parsers.slave.products.values()))
+            print("slave categories: %s" % len(self.parsers.slave.categories.values()))
+
+        self.assertEqual(len(self.parsers.slave.products), 48)
+        prod_container = self.parsers.slave.product_container.container
+        prod_list = prod_container(self.parsers.slave.products.values())
+        first_prod = prod_list[0]
+        if self.debug:
+            print("first_prod.dict %s" % pformat(dict(first_prod)))
+
+        self.assertEqual(first_prod.codesum, "ACARF-CRS")
+        # TODO: Implement category tree in slave
+        # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
+        self.assertEqual(first_prod.product_type, "simple")
+        self.assertTrue(first_prod.is_item)
+        self.assertTrue(first_prod.is_product)
+        self.assertFalse(first_prod.is_category)
+        self.assertFalse(first_prod.is_root)
+        self.assertFalse(first_prod.is_taxo)
+        self.assertFalse(first_prod.is_variable)
+        self.assertFalse(first_prod.is_variation)
+        for key, value in {
+                'height': u'120',
+                'length': u'40',
+                'weight': u'0.12',
+                'width': u'40',
+                # TODO: get custom meta working
+                # 'price': u'',
+                # 'DNR': u'59.97',
+                # 'DPR': u'57.47',
+                # 'RNR': u'',
+                # 'RPR': u'',
+                # 'WNR': u'99.95',
+                # 'WPR': u'84.96',
+        }.items():
+            self.assertEqual(first_prod[key], value)
+
+
 
     def test_do_match(self):
         pass
