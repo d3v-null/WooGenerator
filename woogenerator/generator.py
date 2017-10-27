@@ -183,6 +183,8 @@ def populate_slave_parsers(parsers, settings):
     with slave_client_class(**slave_client_args) as client:
         # try:
         if settings.schema_is_woo and settings['do_categories']:
+            Registrar.register_progress("analysing API category data")
+
             client.analyse_remote_categories(parsers.slave)
 
         Registrar.register_progress("analysing API data")
