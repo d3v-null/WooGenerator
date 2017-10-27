@@ -955,7 +955,7 @@ class SeqUtils(object):
     @classmethod
     def combine_two_lists(cls, list_a, list_b):
         """
-            Combines lists a and b uniquely, attempting to preserve order
+        Combine lists a and b uniquely, attempting to preserve order.
         """
         if not list_a:
             return list_b if list_b else []
@@ -968,7 +968,22 @@ class SeqUtils(object):
         return response
 
     @classmethod
+    def subtrace_two_lists(cls, list_a, list_b):
+        """
+        Return elements in list_a that are not in list_b.
+        Attempt to preserve order
+        """
+        response = []
+        for element in list_a:
+            if element not in list_b:
+                response.append(element)
+        return response
+
+    @classmethod
     def combine_lists(cls, *args):
+        """
+        Combine all argument lists uniquely, attempt to preserve order
+        """
         response = []
         for arg in args:
             response = cls.combine_two_lists(response, arg)
@@ -977,8 +992,8 @@ class SeqUtils(object):
     @classmethod
     def combine_two_ordered_dicts(cls, dict_a, dict_b):
         """
-            Combines OrderedDict a with b by starting with A and overwriting with items from b.
-            Attempts to preserve order
+        Combine OrderedDict a with b by starting with A and overwriting with items from b.
+        Attempt to preserve order
         """
         if not dict_a:
             return dict_b if dict_b else OrderedDict()
@@ -991,6 +1006,10 @@ class SeqUtils(object):
 
     @classmethod
     def combine_ordered_dicts(cls, *args):
+        """
+        Combine all dict arguments overwriting former with items from latter.
+        Attempt to preserve order
+        """
         response = OrderedDict()
         for arg in args:
             response = cls.combine_two_ordered_dicts(response, arg)

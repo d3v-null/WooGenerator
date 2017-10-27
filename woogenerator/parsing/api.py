@@ -73,6 +73,11 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
 class ImportWooApiProduct(ImportWooApiObject, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
 
+    verify_meta_keys = SeqUtils.subtrace_two_lists(
+        ImportWooApiObject.verify_meta_keys,
+        ['slug']
+    )
+
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
             self.register_message('ImportWooApiProduct')
