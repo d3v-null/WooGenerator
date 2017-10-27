@@ -215,7 +215,7 @@ class ApiParseWoo(
             self.register_message("ANALYSE CATEGORY: %s" %
                                   repr(category_api_data))
         core_translation = OrderedDict()
-        for col, col_data in self.ColDataWoo.get_wpapi_core_cols().items():
+        for col, col_data in self.coldata_class.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data[self.col_data_target]['key']
             except BaseException:
@@ -333,15 +333,15 @@ class ApiParseWoo(
 
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
-            cls.register_message("api_data before unsecape: %s" % api_data)
+            cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
         api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                          for key, value in api_data.items()])
         if cls.DEBUG_API:
-            cls.register_message("api_data after unescape: %s" % api_data)
+            cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
 
         parser_data = OrderedDict()
         core_translation = OrderedDict()
-        for col, col_data in cls.ColDataWoo.get_wpapi_core_cols().items():
+        for col, col_data in cls.coldata_class.get_wpapi_core_cols().items():
             try:
                 translated_key = col_data[cls.col_data_target]['key']
             except KeyError:
@@ -352,7 +352,7 @@ class ApiParseWoo(
         meta_translation = OrderedDict()
         if 'meta' in api_data:
             meta_data = api_data['meta']
-            for col, col_data in cls.ColDataWoo.get_wpapi_meta_cols().items():
+            for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
                 try:
                     translated_key = col_data[cls.col_data_target]['key']
                 except KeyError:

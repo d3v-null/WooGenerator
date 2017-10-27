@@ -4,6 +4,7 @@ Introduce woo structure to shop classes.
 from __future__ import absolute_import
 
 import re
+from pprint import pformat
 from collections import OrderedDict
 
 from ..coldata import ColDataWoo

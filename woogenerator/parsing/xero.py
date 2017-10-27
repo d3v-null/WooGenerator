@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import time
 from collections import OrderedDict
 import json
+from pprint import pformat
 
 from ..coldata import ColDataXero
 from ..utils import SeqUtils, DescriptorUtils, SanitationUtils
@@ -189,11 +190,11 @@ class ApiParseXero(
         parser_data = OrderedDict()
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
-            cls.register_message("api_data before unsecape: %s" % api_data)
+            cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
         api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                          for key, value in api_data.items()])
         if cls.DEBUG_API:
-            cls.register_message("api_data after unescape: %s" % api_data)
+            cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
 
         translation = OrderedDict()
         for col, col_data in cls.coldata_class.data.items():
