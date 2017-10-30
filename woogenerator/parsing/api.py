@@ -20,7 +20,7 @@ from .tree import CsvParseTreeMixin
 from .woo import CsvParseWooMixin, ImportWooMixin, WooCatList, WooProdList
 
 
-class ApiProdListMixin(object):
+class ApiListMixin(object):
     def export_api_data(self, file_path, encoding='utf-8'):
         """
         Export the items in the object list to a json file in the given file path.
@@ -116,7 +116,7 @@ class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
         ImportWooApiObject.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
-class WooApiProdList(WooProdList, ApiProdListMixin):
+class WooApiProdList(WooProdList, ApiListMixin):
     supported_type = ImportWooApiProduct
 
 ImportWooApiProduct.container = WooApiProdList
@@ -169,7 +169,7 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     def index(self):
         return self.title
 
-class WooApiCatList(WooCatList, ApiProdListMixin):
+class WooApiCatList(WooCatList, ApiListMixin):
     supported_type = ImportWooApiCategory
 
 ImportWooApiCategory.container = WooApiCatList

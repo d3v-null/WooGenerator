@@ -14,7 +14,7 @@ from .myo import CsvParseMyo
 from .shop import (
     ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin, ShopProdList, CsvParseShopMixin
 )
-from .api import ImportApiObjectMixin, ApiProdListMixin, ApiParseMixin
+from .api import ImportApiObjectMixin, ApiListMixin, ApiParseMixin
 
 class ImportXeroMixin(object):
     description_key = 'Xero Description'
@@ -61,7 +61,7 @@ class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
         # ImportXeroItem.namesum_key
     ]
 
-class XeroApiProdList(ShopProdList, ApiProdListMixin):
+class XeroApiProdList(ShopProdList, ApiListMixin):
     supported_type = ImportXeroApiProduct
 
     @property
