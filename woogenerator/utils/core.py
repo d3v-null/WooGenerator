@@ -89,6 +89,7 @@ class SanitationUtils(object):
         allowedPhonePunctuation + [r'\d', r' '])
     clearStartRegex = r"(?<!%s)" % nondelimeterRegex
     clearFinishRegex = r"(?!%s)" % nondelimeterRegex
+    currency_precision = 2
 
     @classmethod
     def wrap_clear_regex(cls, regex):
@@ -666,6 +667,7 @@ class SanitationUtils(object):
     @classmethod
     def similar_currency_comparison(cls, string):
         return cls.compose(
+            cls.round_currency,
             cls.coerce_float,
             cls.remove_leading_dollar_wspace,
             # cls.remove_leading_quote,
@@ -696,6 +698,10 @@ class SanitationUtils(object):
         # if Registrar.DEBUG_GEN:
         #     print " | str_o: ",str_out
         return str_out
+
+    @classmethod
+    def round_currency(cls, price):
+        return round(price, cls.currency_precision)
 
     @classmethod
     def html_unescape(cls, string):

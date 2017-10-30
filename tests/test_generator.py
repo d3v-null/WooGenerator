@@ -30,7 +30,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -316,6 +316,58 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object['HTML Description'],
                 master_desc
             )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+    def test_do_match(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        if self.settings.do_categories:
+            self.matches = do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            self.updates = do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+        self.matches = do_match(self.parsers, self.matches, self.settings)
+
+        if self.debug:
+            self.matches.globals.tabulate()
+            self.print_matches_summary(self.matches)
+
+        self.assertEqual(len(self.matches.globals), 48)
+        if self.debug:
+            for index, matches in self.matches.category.prod.items():
+                print("prod_matches: %s" % index)
+                self.print_matches_summary(matches)
+        prod_cat_match = self.matches.category.prod['ACARF-CRS | 1961']
+        self.assertEqual(len(prod_cat_match.globals), 3)
+        self.assertEqual(len(prod_cat_match.slaveless), 1)
+
+    def test_do_merge(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        if self.settings.do_categories:
+            self.matches = do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            self.updates = do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+        self.matches = do_match(self.parsers, self.matches, self.settings)
+        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+
+        if self.debug:
+            self.print_updates_summary(self.updates)
+        self.assertEqual(len(self.updates.slave), 1)
+        sync_update = self.updates.slave[0]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            self.assertEquals(sync_update.old_m_object['catlist'], [320, 323, 315, 316])
+            self.assertEquals(sync_update.old_s_object['catlist'], [320, 315, 316])
+            self.assertEquals(sync_update.new_s_object['catlist'], [320, 323, 315, 316])
+
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 

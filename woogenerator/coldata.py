@@ -604,7 +604,8 @@ class ColDataWoo(ColDataProd):
             'wp-api': {
                 'key': 'description'
             },
-            'sync': True
+            'sync': True,
+            'type': 'html'
         }),
         ('imgsum', {
             'label': 'Images',
@@ -1181,6 +1182,7 @@ class ColDataWoo(ColDataProd):
                 'key': 'commissionable_value',
                 'meta': True
             },
+            'type': 'coefficient'
         }),
         ('weight', {
             'import': True,
@@ -1291,7 +1293,8 @@ class ColDataWoo(ColDataProd):
                 'key': 'status'
             },
             'sync': True,
-            'default': 'publish'
+            'default': 'publish',
+            'invincible': True
         }),
         ('is_sold', {
             'import': True,

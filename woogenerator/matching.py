@@ -185,8 +185,8 @@ class Match(object):
     @property
     def singular_index(self):
         return " | ".join([
-            self.m_object.index,
-            self.s_object.index
+            str(self.m_object.index),
+            str(self.s_object.index)
         ])
 
     def containerize(self):  # pylint: disable=too-many-branches

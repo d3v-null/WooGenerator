@@ -100,10 +100,11 @@ class AbstractSyncManagerTestCase(unittest.TestCase):
     def print_update(self, update):
         print(
             (
-                "%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
+                "%s%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
                 ":\n%s\npasses:\n%s\nreflections:\n%s"
             ) % (
                 update,
+                str(type(update)),
                 update.old_m_object,
                 pformat(dict(update.old_m_object)),
                 update.old_s_object,

@@ -260,7 +260,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
 
     def process_meta(self):
         ImportGenTaxo.process_meta(self)
-        self[self.title_key] = self.fullname
+        self.title = self.fullname
 
     @property
     def cat_name(self):
@@ -280,10 +280,10 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
             'w:%s' % str(self.get(self.wpid_key)),
             self.cat_name,
         ])
-
-    @property
-    def title(self):
-        return self.cat_name
+    #
+    # @property
+    # def title(self):
+    #     return self.cat_name
     #
     # def __getitem__(self, key):
     #     if key == self.title_key:
@@ -455,11 +455,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             'current_special_groups', None)
         # print "settings current_special_groups: %s" % self.current_special_groups
         # self.specialGroups = kwargs.pop('specialGroups', {})
-        if not kwargs.get('meta_width'):
+        if kwargs.get('meta_width') is None:
             kwargs['meta_width'] = 2
-        if not kwargs.get('item_depth'):
+        if kwargs.get('item_depth') is None:
             kwargs['item_depth'] = 2
-        if not kwargs.get('taxo_depth'):
+        if kwargs.get('taxo_depth') is None:
             kwargs['taxo_depth'] = 2
 
         super(CsvParseWoo, self).__init__(cols, defaults, **kwargs)

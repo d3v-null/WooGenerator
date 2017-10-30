@@ -619,27 +619,25 @@ def do_match(parsers, matches, settings):
                                            prod_match.tabulate())
             m_object = prod_match.m_object
             s_object = prod_match.s_object
-            match_index = prod_match.get_singular_index
+            match_index = prod_match.singular_index
 
             category_matcher.clear()
             category_matcher.process_registers(
                 s_object.categories, m_object.categories
             )
 
-            product_category_matches = MatchNamespace(
+            matches.category.prod[match_index] = MatchNamespace(
                 index_fn=category_index_fn)
 
-            product_category_matches.globals.add_matches(
+            matches.category.prod[match_index].globals.add_matches(
                 category_matcher.pure_matches
             )
-            product_category_matches.masterless.add_matches(
+            matches.category.prod[match_index].masterless.add_matches(
                 category_matcher.masterless_matches
             )
-            product_category_matches.slaveless.add_matches(
+            matches.category.prod[match_index].slaveless.add_matches(
                 category_matcher.slaveless_matches
             )
-
-            matches.category.prod[match_index] = product_category_matches
 
             if Registrar.DEBUG_CATS:
                 Registrar.register_message(
@@ -740,7 +738,8 @@ def do_merge_categories(matches, parsers, updates, settings):
 def do_merge(matches, parsers, updates, settings):
     """For a given list of matches, return a description of updates required to merge them."""
 
-    updates.variation = UpdateNamespace()
+    if settings.do_variations:
+        updates.variation = UpdateNamespace()
 
     if not settings['do_sync']:
         return updates
@@ -802,6 +801,14 @@ def do_merge(matches, parsers, updates, settings):
 
             sync_update.old_m_object['catlist'] = list(master_categories)
             sync_update.old_s_object['catlist'] = list(slave_categories)
+            update_params['new_value'] = sync_update.old_m_object['catlist']
+            update_params['old_value'] = sync_update.old_s_object['catlist']
+            # update_params['new_value'] = [
+            #     dict(id=category_id) for category_id in master_categories
+            # ]
+            # update_params['old_value'] = [
+            #     dict(id=category_id) for category_id in master_categories
+            # ]
 
             match_index = prod_match.singular_index
             product_category_matches = matches.category.prod.get(match_index)

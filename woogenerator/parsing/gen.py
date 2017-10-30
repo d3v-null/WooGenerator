@@ -177,6 +177,9 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
             self.register_message(u"descsum: {}".format(descsum))
         self.descsum = descsum
 
+        if not self.description and self.descsum:
+            self.description = self.descsum
+
         name = self.change_name(self.fullname)
         if self.DEBUG_GEN:
             self.register_message(u"name: {}".format(name))

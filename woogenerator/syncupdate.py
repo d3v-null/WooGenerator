@@ -523,9 +523,14 @@ class SyncUpdate(Registrar):
             raise Exception("unknown subject: %s" % subject)
 
     def snapshot_hash(self, thing):
+        try:
+            hash_ = hash(thing)
+        except TypeError:
+            hash_ = hash(str(thing))
+
         return "%s - %s" % (
             id(thing),
-            hash(thing)
+            hash_
         )
 
     def set_loser_value(self, **update_params):
@@ -1371,13 +1376,12 @@ class SyncUpdateProd(SyncUpdate):
                     s_value)
                 if similar_m_value == similar_s_value:
                     response = True
-        elif not response:
-            if col is 'descsum':
+            elif col_data.get('type') and col_data.get('type') == 'html':
                 similar_m_value = SanitationUtils.similar_markup_comparison(m_value)
                 similar_s_value = SanitationUtils.similar_markup_comparison(s_value)
                 if similar_m_value == similar_s_value:
                     response = True
-            elif col is 'CVC':
+            elif col_data.get('type') and col_data.get('type') == 'coefficient':
                 similar_m_value = SanitationUtils.similar_comparison(m_value) or '0'
                 similar_s_value = SanitationUtils.similar_comparison(s_value) or '0'
                 if similar_m_value == similar_s_value:
