@@ -293,6 +293,32 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         if self.debug:
             self.print_updates_summary(self.updates.category)
+        self.assertEqual(len(self.updates.category.master), 9)
+        sync_update = self.updates.category.master[1]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            master_desc = (
+                "Company A have developed a range of unique blends in 16 "
+                "shades to suit all use cases. All Company A's products "
+                "are created using the finest naturally derived botanical "
+                "and certified organic ingredients."
+            )
+            self.assertEqual(
+                sync_update.old_m_object['HTML Description'],
+                master_desc
+            )
+            self.assertEqual(
+                sync_update.old_s_object['HTML Description'],
+                "Company A have developed stuff"
+            )
+            self.assertEqual(
+                sync_update.new_s_object['HTML Description'],
+                master_desc
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
 
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):

@@ -490,7 +490,7 @@ class ColDataWoo(ColDataProd):
             'tag': 'SKU',
             'product': True,
             'variation': True,
-            'category': True,
+            'category': False,
             'report': True,
             'sync': True,
             'wp': {
@@ -604,6 +604,7 @@ class ColDataWoo(ColDataProd):
             'wp-api': {
                 'key': 'description'
             },
+            'sync': True
         }),
         ('imgsum', {
             'label': 'Images',
