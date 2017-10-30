@@ -11,7 +11,7 @@ from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.generator import (
     populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
-    do_merge, do_report
+    do_merge, do_report, do_match_categories, do_merge_categories
 )
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -164,6 +164,24 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
         # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
+        cat_container = self.parsers.master.category_container.container
+        cat_list = cat_container(self.parsers.master.categories.values())
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                cat_list.tabulate(tablefmt='simple')
+            ))
+        self.assertEqual(len(cat_list), 9)
+        first_cat = cat_list[0]
+        if self.debug:
+            print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
+        self.assertEqual(first_cat.codesum, 'A')
+        self.assertEqual(first_cat.title, 'Product A')
+        self.assertEqual(first_cat.depth, 0)
+        second_cat = cat_list[1]
+        self.assertEqual(second_cat.codesum, 'ACA')
+        self.assertEqual(second_cat.depth, 1)
+        self.assertEqual(second_cat.parent.codesum, 'A')
+
         spec_list = SpecialGruopList(self.parsers.special.rule_groups.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
@@ -217,10 +235,65 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         }.items():
             self.assertEqual(first_prod[key], value)
 
+        cat_container = self.parsers.slave.category_container.container
+        cat_list = cat_container(self.parsers.slave.categories.values())
+        if self.debug:
+            print("cat_container is %s" % cat_container)
+            print(SanitationUtils.coerce_bytes(
+                cat_list.tabulate(tablefmt='simple')
+            ))
+        self.assertEqual(len(cat_list), 9)
+        first_cat = cat_list[0]
+        if self.debug:
+            print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
+        self.assertEqual(first_cat.slug, 'product-a')
+        self.assertEqual(first_cat.title, 'Product A')
+        self.assertEqual(first_cat.api_id, 315)
 
+    def test_do_match_categories(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        if self.settings.do_categories:
+            self.matches = do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
 
-    def test_do_match(self):
-        pass
+        if self.debug:
+            self.matches.category.globals.tabulate()
+            self.print_matches_summary(self.matches.category)
+
+        self.assertEqual(len(self.matches.category.globals), 9)
+        first_match = self.matches.category.globals[2]
+        first_master = first_match.m_object
+        first_slave = first_match.s_object
+        if self.debug:
+            print('pformat@dict@first_master:\n%s' % pformat(dict(first_master)))
+            print('pformat@dict@first_slave:\n%s' % pformat(dict(first_slave)))
+            master_keys = set(dict(first_master).keys())
+            slave_keys = set(dict(first_slave).keys())
+            intersect_keys = master_keys.intersection(slave_keys)
+            print("intersect_keys:\n")
+            for key in intersect_keys:
+                print("%20s | %50s | %50s" % (
+                    str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
+                ))
+        for match in self.matches.category.globals:
+            self.assertEqual(match.m_object.title, match.s_object.title)
+
+    def test_do_merge_categories(self):
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        if self.settings.do_categories:
+            self.matches = do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            self.updates = do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+
+        if self.debug:
+            self.print_updates_summary(self.updates.category)
+
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd

@@ -151,6 +151,9 @@ class ColDataBase(object):
     def delta_col(cls, col):
         return 'Delta ' + col
 
+    @classmethod
+    def get_category_cols(cls):
+        return cls.get_export_cols('category')
 
 class ColDataProd(ColDataBase):
     data = OrderedDict([
@@ -250,6 +253,20 @@ class ColDataProd(ColDataBase):
     @classmethod
     def get_inventory_cols(cls):
         return cls.get_export_cols('inventory')
+
+
+class ColDataCat(ColDataBase):
+    data = OrderedDict([
+        ('title', {
+            'label': 'Category Name',
+            'category': True
+        }),
+        ('taxosum', {
+            'label': 'Full Category Name',
+            'category': True
+        }),
+    ])
+
 
 class ColDataMyo(ColDataProd):
 
@@ -1306,10 +1323,6 @@ class ColDataWoo(ColDataProd):
     @classmethod
     def get_variation_cols(cls):
         return cls.get_export_cols('variation')
-
-    @classmethod
-    def get_category_cols(cls):
-        return cls.get_export_cols('category')
 
     @classmethod
     def get_wp_cols(cls):

@@ -507,6 +507,8 @@ class MatchNamespace(argparse.Namespace):
         self.globals = MatchList(index_fn=index_fn)
         self.masterless = MatchList(index_fn=index_fn)
         self.slaveless = MatchList(index_fn=index_fn)
+        self.valid = MatchList(index_fn=index_fn)
+        self.invalid = MatchList(index_fn=index_fn)
         self.anomalous = OrderedDict()
         self.duplicate = OrderedDict()
         self.conflict = OrderedDict()

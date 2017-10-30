@@ -485,7 +485,6 @@ def category_index_fn(category):
     """Return the title of the category."""
     return category.title
 
-
 def do_match_categories(parsers, matches, settings):
     if Registrar.DEBUG_CATS:
         Registrar.register_message(
@@ -495,6 +494,8 @@ def do_match_categories(parsers, matches, settings):
 
     if not( parsers.master.categories and parsers.slave.categories ):
         return matches
+
+    matches.category = MatchNamespace(index_fn=category_index_fn)
 
     category_matcher = CategoryMatcher()
     category_matcher.clear()
@@ -563,6 +564,8 @@ def do_match_categories(parsers, matches, settings):
     #     for key, category in parsers.slave.categories.items():
     #         print "%5s | %50s" % (key, category.title[:50])
 
+    return matches
+
 
 def do_match(parsers, matches, settings):
     """For every item in slave, find its counterpart in master."""
@@ -571,10 +574,8 @@ def do_match(parsers, matches, settings):
 
     matches.variation = MatchNamespace(index_fn=product_index_fn)
 
-    matches.category = MatchNamespace(index_fn=category_index_fn)
-    matches.category.valid = []
-    matches.category.invalid = []
-    matches.category.prod = OrderedDict()
+    if settings['do_categories']:
+        matches.category.prod = OrderedDict()
 
     if not settings.do_sync:
         return matches
@@ -609,6 +610,7 @@ def do_match(parsers, matches, settings):
         raise exc
 
     if settings['do_categories']:
+
         category_matcher = CategoryMatcher()
 
         for _, prod_match in enumerate(matches.globals):
@@ -684,7 +686,7 @@ def do_merge_categories(matches, parsers, updates, settings):
     if not hasattr(matches, 'category'):
         return updates
 
-    for match in enumerate(matches.category.valid):
+    for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
             # m_object = match.m_objects[0]
@@ -1082,12 +1084,14 @@ def do_report(reporters, matches, updates, parsers, settings):
         do_matches_group(
             reporters.match, matches, updates, parsers, settings
         )
-        do_variation_matches_group(
-            reporters.match, matches, updates, parsers, settings
-        )
-        do_category_matches_group(
-            reporters.match, matches, updates, parsers, settings
-        )
+        if settings.do_variations:
+            do_variation_matches_group(
+                reporters.match, matches, updates, parsers, settings
+            )
+        if settings.do_categories:
+            do_category_matches_group(
+                reporters.match, matches, updates, parsers, settings
+            )
 
         if reporters.match:
             reporters.match.write_document_to_file(
