@@ -23,14 +23,14 @@ class ImportWooMixin(object):
 
     wpid_key = 'ID'
     wpid = DescriptorUtils.safe_key_property(wpid_key)
-    titleKey = 'title'
-    title = DescriptorUtils.safe_key_property(titleKey)
-    slugKey = 'slug'
-    slug = DescriptorUtils.safe_key_property(slugKey)
+    title_key = 'title'
+    title = DescriptorUtils.safe_key_property(title_key)
+    slug_key = 'slug'
+    slug = DescriptorUtils.safe_key_property(slug_key)
     verify_meta_keys = [
         wpid_key,
-        titleKey,
-        slugKey
+        title_key,
+        slug_key
     ]
 
     def __init__(self, *args, **kwargs):
@@ -88,7 +88,6 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
-
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
 
@@ -209,6 +208,9 @@ class ImportWooProductBundled(ImportWooProduct):
 
 
 class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
+    namesum_key = ImportGenTaxo.namesum_key
+    namesum = DescriptorUtils.safe_key_property(namesum_key)
+
     verify_meta_keys = SeqUtils.combine_lists(
         ImportWooObject.verify_meta_keys,
         ImportGenTaxo.verify_meta_keys
@@ -256,6 +258,10 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
                         return result
         return None
 
+    def process_meta(self):
+        ImportGenTaxo.process_meta(self)
+        self[self.title_key] = self.fullname
+
     @property
     def cat_name(self):
         cat_layers = self.namesum.split(' > ')
@@ -280,7 +286,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
         return self.cat_name
     #
     # def __getitem__(self, key):
-    #     if key == self.titleKey:
+    #     if key == self.title_key:
     #         return self.cat_name
     #     else:
     #         return super(ImportWooCategory, self).__getitem__(key)
@@ -312,8 +318,8 @@ class CsvParseWooMixin(object):
         matching_category_sets = []
         for search_key in [
             self.category_container.wpid_key,
-            self.category_container.slugKey,
-            self.category_container.titleKey,
+            self.category_container.slug_key,
+            self.category_container.title_key,
             self.category_container.namesum_key,
         ]:
             value = search_data.get(search_key)
@@ -347,8 +353,8 @@ class CsvParseWooMixin(object):
             Registrar.register_message(' ')
         defaults = {
             self.object_container.wpid_key: '',
-            self.object_container.slugKey: '',
-            self.object_container.titleKey: ''
+            self.object_container.slug_key: '',
+            self.object_container.title_key: ''
         }
         # super_data = super(CsvParseWooMixin, self).get_parser_data(**kwargs)
         # defaults.update(super_data)
@@ -1183,7 +1189,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         if not name:
             category_name = self.specialsCategory
             search_data = {
-                self.object_container.titleKey: category_name
+                self.object_container.title_key: category_name
             }
             result = self.find_category(search_data)
             if not result:
@@ -1205,7 +1211,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         else:
             category_name = name
             search_data = {
-                self.object_container.titleKey: category_name
+                self.object_container.title_key: category_name
             }
             result = self.find_category(search_data)
             if not result:

@@ -171,6 +171,7 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
 
 class WooApiCatList(WooCatList, ApiListMixin):
     supported_type = ImportWooApiCategory
+    report_cols = ColDataWoo.get_category_cols()
 
 ImportWooApiCategory.container = WooApiCatList
 
@@ -492,7 +493,7 @@ class ApiParseWoo(
         # Stupid hack because 'name' is 'title' in products, but 'name' in
         # categories
         if 'title' in api_data:
-            parser_data[cls.object_container.titleKey] = api_data['title']
+            parser_data[cls.object_container.title_key] = api_data['title']
 
         assert \
             cls.object_container.description_key in parser_data, \
@@ -501,21 +502,21 @@ class ApiParseWoo(
         parser_data[cls.object_container.descsum_key] = parser_data[
             cls.object_container.description_key]
         assert \
-            cls.object_container.titleKey in parser_data, \
+            cls.object_container.title_key in parser_data, \
             "parser_data should have title: %s\n original: %s\ntranslations: %s, %s" \
             % (parser_data, api_data, core_translation, meta_translation)
         if api_data['type'] == 'category':
             parser_data[cls.category_container.namesum_key] = parser_data[
-                cls.object_container.titleKey]
+                cls.object_container.title_key]
             assert \
-                cls.object_container.slugKey in parser_data, \
+                cls.object_container.slug_key in parser_data, \
                 "parser_data should have slug: %s\n original: %s\ntranslations: %s, %s" \
                 % (parser_data, api_data, core_translation, meta_translation)
             parser_data[cls.object_container.codesum_key] = parser_data[
-                cls.object_container.slugKey]
+                cls.object_container.slug_key]
         else:
             parser_data[cls.object_container.namesum_key] = parser_data[
-                cls.object_container.titleKey]
+                cls.object_container.title_key]
         assert \
             cls.object_container.codesum_key in parser_data, \
             "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
@@ -525,18 +526,18 @@ class ApiParseWoo(
         #     "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
         #     % (parser_data, api_data, core_translation, meta_translation)
 
-        # title = parser_data.get(cls.object_container.titleKey, '')
+        # title = parser_data.get(cls.object_container.title_key, '')
         # if not title and 'title' in api_data:
         #     title = api_data['title']
         # if not title and 'name' in api_data:
         #     title = api_data['name']
-        # parser_data[cls.object_container.titleKey] = title
+        # parser_data[cls.object_container.title_key] = title
         # parser_data[cls.object_container.namesum_key] = title
         #
-        # slug = parser_data.get(cls.object_container.slugKey,'')
+        # slug = parser_data.get(cls.object_container.slug_key,'')
         # if not slug and 'slug' in api_data:
         #     slug = api_data['slug']
-        # parser_data[cls.object_container.slugKey] = slug
+        # parser_data[cls.object_container.slug_key] = slug
         #
         description = parser_data.get(cls.object_container.description_key, '')
         if not description and 'description' in api_data:
@@ -552,6 +553,9 @@ class ApiParseWoo(
     def get_kwargs(self, all_data, container, **kwargs):
         if 'parent' not in kwargs:
             kwargs['parent'] = self.root_data
+
+        if 'depth' not in kwargs:
+            kwargs['depth'] = kwargs['parent'].depth + 1
         return kwargs
 
     def get_new_obj_container(self, all_data, **kwargs):

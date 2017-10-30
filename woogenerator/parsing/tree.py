@@ -71,10 +71,6 @@ class ImportTreeObject(ImportObject):
 
         self.verify_meta()
 
-    # @property
-    # def verify_meta_keys(self):
-    #     return []
-
     #
     def verify_meta(self):
         # return
@@ -100,19 +96,7 @@ class ImportTreeObject(ImportObject):
     #
     def register_child(self, child_data):
         assert child_data, "child_data must be valid"
-        # self.register_message("Registering child %s of %s with siblings: %s"\
-        #     % (
-        #         child_data.identifier,
-        #         self.identifier,
-        #         str(self.children)
-        #     ))
-        # for child in self.children:
-        #     assert child.fullname != child_data.fullname, "child %s of %s not unique to %s" \
-        #                                             % (
-        #                                                 child_data.identifier,
-        #                                                 self.identifier,
-        #                                                 self.children
-        #                                             )
+
         self.register_anything(
             child_data,
             self.child_register,
@@ -135,31 +119,6 @@ class ImportTreeObject(ImportObject):
         else:
             return []
 
-    #
-    # @classmethod
-    # def fromImportObject(cls, object_data, depth, meta, parent):
-    #     exc = DeprecationWarning()
-    #     self.register_error(exc)
-        # assert isinstance(object_data, ImportObject)
-        # row = object_data.row
-        # rowcount = object_data.rowcount
-        # return cls(object_data, rowcount, row, depth, meta, parent)
-    #
-    # @property
-    # def is_item(self): return self.is_item
-    #
-    # @property
-    # def is_taxo(self): return self.is_taxo
-    #
-    # @property
-    # def is_root(self): return self.is_root
-
-    # @property
-    # def meta(self): return self._meta
-
-    # @property
-    # def parent(self): return self._parent
-
     def get_copy_args(self):
         args = super(ImportTreeObject, self).get_copy_args()
         args.update(
@@ -169,16 +128,12 @@ class ImportTreeObject(ImportObject):
         )
         return args
 
-    def process_meta(self): pass
+    def process_meta(self):
+        pass
 
     @property
     def inheritence_ancestors(self):
         return self.ancestors
-
-    # def get_inheritance_ancestors(self):
-    #     exc = DeprecationWarning("use .inheritence_ancestors insetad of .get_inheritance_ancestors()")
-    #     self.register_error(exc)
-    #     return self.inheritence_ancestors
 
     def inherit_key(self, key):
         if not self.get(key):
@@ -203,38 +158,9 @@ class ImportTreeObject(ImportObject):
         # delim = super(ImportTreeObject, self).identifier_delimeter
         return "=" * self.depth
 
-    # def get_identifier_delimeter(self):
-    #     exc = DeprecationWarning("Use .identifier_delimeter instead of .get_identifier_delimeter()")
-    #     self.register_error(exc)
-    #     return self.identifier_delimeter
-
-    # def getParent(self):
-    #     exc = DeprecationWarning("Use .parent instead of .getParent()")
-    #     self.register_error(exc)
-    #     return self.parent
-    #
-    # def getAncestors(self):
-    #     exc = DeprecationWarning("use .ancestors instead of .getAncestors()")
-    #     self.register_error(exc)
-    #     return self.ancestors
-    #     # "gets all ancestors not including self or root"
-    #     # this = self.getParent()
-    #     # ancestors = []
-    #     # while this and not this.is_root:
-    #     #     ancestors.insert(0, this)
-    #     #     this = this.getParent()
-    #     # return ancestors
-
     @property
     def taxo_ancestors(self):
         return filter(lambda x: x.is_taxo, self.ancestors)
-
-    # def getTaxoAncestors(self):
-    #     exc = DeprecationWarning("use .taxo_ancestors instead of .getTaxoAncestors()")
-    #     self.register_error(exc)
-    #     return self.taxo_ancestors
-    #     # ancestors = self.getAncestors()
-    #     # return filter( lambda x: x.is_taxo, ancestors)
 
     def get_ancestor_key(self, key):
         # ancestors = self.getAncestors()
@@ -250,29 +176,6 @@ class ImportTreeObject(ImportObject):
             value for value in ancestor_values if value]
         if filtered_ancestor_values[0]:
             return filtered_ancestor_values[0]
-    #
-    # def get_children(self):
-    #     exc = DeprecationWarning("use .children instead of .get_children()")
-    #     self.register_error(exc)
-    #     return self.children
-    #
-    # def getSiblings(self):
-    #     exc = DeprecationWarning("use .siblings instead of .getSiblings()")
-    #     self.register_error(exc)
-    #     return self.siblings
-
-# do we need these?
-    #
-    # def getDepth(self):
-    #     exc = DeprecationWarning("use .depth instead of .getDepth()")
-    #     self.register_error(exc)
-    #     return self.depth
-    #
-    # def getMeta(self):
-    #     exc = DeprecationWarning("use .meta instead of .getMeta()")
-    #     self.register_error(exc)
-    #     return self.meta
-
 
 class ImportTreeRoot(ImportTreeObject):
     is_root = True
@@ -299,22 +202,9 @@ class ImportTreeItem(ImportTreeObject):
     def identifier_delimeter(self):
         return super(ImportTreeItem, self).identifier_delimeter + '>'
 
-    # def get_identifier_delimeter(self):
-    #     exc = DeprecationWarning("use .identifier_delimeter instead of .get_identifier_delimeter()")
-    #     self.register_error(exc)
-    #     return self.identifier_delimeter
-        # return super(ImportTreeItem, self).get_identifier_delimeter() + '>'
-
     @property
     def item_ancestors(self):
         return filter(lambda x: x.is_item, self.ancestors)
-
-    # def getItemAncestors(self):
-    #     exc = DeprecationWarning("use .item_ancestors instead of .getItemAncestors()")
-    #     self.register_error(exc)
-    #     return self.item_ancestors
-    #     # ancestors = self.getAncestors()
-    #     # return filter( lambda x: x.is_item, ancestors)
 
 
 class ImportTreeTaxo(ImportTreeObject):
@@ -685,7 +575,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
 
     def find_taxo(self, taxo_data):
         response = None
-        for key in [self.taxo_container.rowcountKey]:
+        for key in [self.taxo_container.rowcount_key]:
             value = taxo_data.get(key)
             if value:
                 for taxo in self.taxos:

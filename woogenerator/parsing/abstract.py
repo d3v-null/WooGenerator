@@ -28,8 +28,8 @@ class ImportObject(OrderedDict, Registrar):
     A container for a parsed object.
     """
 
-    rowcountKey = 'rowcount'
-    rowKey = '_row'
+    rowcount_key = 'rowcount'
+    row_key = '_row'
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_ABSTRACT:
@@ -56,9 +56,9 @@ class ImportObject(OrderedDict, Registrar):
                 'Abstract init: \n -> DATA: %s\n -> KWARGS: %s' %
                 (pformat(data), pformat(kwargs)))
 
-        rowcount = kwargs.pop(self.rowcountKey, None)
+        rowcount = kwargs.pop(self.rowcount_key, None)
         if rowcount is not None:
-            data[self.rowcountKey] = rowcount
+            data[self.rowcount_key] = rowcount
         row = kwargs.pop('row', None)
 
         OrderedDict.__init__(self, data)
@@ -83,7 +83,7 @@ class ImportObject(OrderedDict, Registrar):
     # TODO: refactor to get rid of row property, rename _row to row
     @property
     def rowcount(self):
-        return self.get(self.rowcountKey, 0)
+        return self.get(self.rowcount_key, 0)
 
     @property
     def index(self):

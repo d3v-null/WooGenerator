@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import bisect
 from collections import OrderedDict
 
-from ..coldata import ColDataProd
+from ..coldata import ColDataProd, ColDataCat
 from ..utils import Registrar, SanitationUtils
 from .abstract import ObjList
 from .gen import CsvParseGenMixin
@@ -87,40 +87,40 @@ class ImportShopMixin(object):
         self.register_error(exc)
         return self.images
 
-    def to_api_data(self, col_data, api):
+    def to_api_data(self, col_data, target_api):
         api_data = OrderedDict()
         if self.is_category:
-            for col, col_data in col_data.get_wpapi_category_cols(api).items():
+            for col, col_data in col_data.get_wpapi_category_cols(target_api).items():
                 if col in self:
                     try:
-                        wp_api_key = col_data[api]['key']
+                        target_api_key = col_data[target_api]['key']
                     except BaseException:
-                        wp_api_key = col
-                    api_data[wp_api_key] = self[col]
+                        target_api_key = col
+                    api_data[target_api_key] = self[col]
             if self.parent and self.parent.wpid:
                 api_data['parent'] = self.parent.wpid
         else:
             assert self.is_product
-            for col, col_data in col_data.get_wpapi_core_cols(api).items():
+            for col, col_data in col_data.get_wpapi_core_cols(target_api).items():
                 if col in self:
                     try:
-                        wp_api_key = col_data[api]['key']
+                        target_api_key = col_data[target_api]['key']
                     except BaseException:
-                        wp_api_key = col
-                    api_data[wp_api_key] = self[col]
-            for col, col_data in col_data.get_wpapi_meta_cols(api).items():
+                        target_api_key = col
+                    api_data[target_api_key] = self[col]
+            for col, col_data in col_data.get_wpapi_meta_cols(target_api).items():
                 if col in self:
                     try:
-                        wp_api_key = col_data[api]['key']
+                        target_api_key = col_data[target_api]['key']
                     except BaseException:
-                        wp_api_key = col
+                        target_api_key = col
                     if 'meta' not in api_data:
                         api_data['meta'] = {}
-                    api_data['meta'][wp_api_key] = self[col]
+                    api_data['meta'][target_api_key] = self[col]
             if self.is_variable:
                 variations = []
                 for variation in self.variations.values():
-                    variation_data = variation.to_api_data(col_data, api)
+                    variation_data = variation.to_api_data(col_data, target_api)
                     variations.append(variation_data)
                 api_data['variations'] = variations
         return api_data
@@ -265,7 +265,7 @@ class ImportShopCategoryMixin(object):
         return self.members
 
 class ShopCatList(TaxoList):
-    report_cols = ColDataProd.get_report_cols()
+    report_cols = ColDataCat.get_category_cols()
     supported_type = ImportShopCategoryMixin
 
 ImportShopCategoryMixin.container = ShopCatList
@@ -541,7 +541,7 @@ class CsvParseShopMixin(object):
             response += " | ".join([
                 "%-5s" % ((child.depth) * ' ' + '*'),
                 "%-16s" % str(child.get(self.object_container.codesum_key))[:16],
-                "%50s" % str(child.get(self.object_container.titleKey))[:50],
+                "%50s" % str(child.get(self.object_container.title_key))[:50],
                 "r:%5s" % str(child.rowcount)[:10],
                 "w:%5s" % str(child.get(self.object_container.wpid_key))[:10],
                 "%1s" % "R" if registered else " "
