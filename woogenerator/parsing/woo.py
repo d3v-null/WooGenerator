@@ -14,22 +14,9 @@ from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
-                   ImportShopProductVariationMixin, ShopObjList)
+                   ImportShopProductVariationMixin, ShopObjList, ShopProdList, ShopCatList)
 from .special import ImportSpecialGroup
 from .tree import ImportTreeItem, ItemList, TaxoList
-
-
-class WooProdList(ItemList):
-    report_cols = ColDataWoo.get_product_cols()
-
-
-class WooCatList(TaxoList):
-    report_cols = ColDataWoo.get_category_cols()
-
-
-class WooVarList(ItemList):
-    report_cols = ColDataWoo.get_variation_cols()
-
 
 class ImportWooMixin(object):
     """ all things common to Woo import classes """
@@ -130,7 +117,6 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
 
 class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
-    container = WooProdList
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
@@ -164,27 +150,11 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         if not self.title:
             self.title = self.namesum
 
-    def get_name_delimeter(self):
-        exc = DeprecationWarning(
-            "use .name_delimeter insetad of .get_name_delimeter()")
-        self.register_error(exc)
-        return self.name_delimeter
-
     @property
     def inheritence_ancestors(self):
         return SeqUtils.filter_unique_true(
             self.categories.values() + super(ImportWooProduct, self).inheritence_ancestors
         )
-
-    def get_inheritance_ancestors(self):
-        exc = DeprecationWarning(
-            "use .inheritence_ancestors insetad of .get_inheritance_ancestors()")
-        self.register_error(exc)
-        return self.inheritence_ancestors
-        # return SeqUtils.filter_unique_true(
-        #     self.get_categories().values() + \
-        #         super(ImportWooProduct, self).get_inheritance_ancestors()
-        # )
 
     @property
     def extra_special_category(self):
@@ -193,15 +163,11 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             map(lambda x: x.fullname, ancestors_self))
         return "Specials > " + names[0] + " Specials"
 
-    def get_extra_special_category(self):
-        exc = DeprecationWarning(
-            "use .extra_special_category insetad of .get_extra_special_category()")
-        self.register_error(exc)
-        return self.extra_special_category
-        # ancestors_self = self.getTaxoAncestors() + [self]
-        # names = SeqUtils.filter_unique_true(map(lambda x: x.fullname, ancestors_self))
-        # return "Specials > " + names[0] + " Specials"
+class WooProdList(ShopProdList):
+    report_cols = ColDataWoo.get_product_cols()
+    supported_type = ImportWooProduct
 
+ImportWooProduct.container = WooProdList
 
 class ImportWooProductSimple(ImportWooProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
@@ -223,7 +189,12 @@ class ImportWooProductVariation(
         ImportWooProduct, ImportShopProductVariationMixin):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
-    container = WooVarList
+
+class WooVarList(ShopProdList):
+    report_cols = ColDataWoo.get_variation_cols()
+    supported_type = ImportWooProductVariation
+
+ImportWooProductVariation.container = WooVarList
 
 class ImportWooProductComposite(ImportWooProduct):
     product_type = 'composite'
@@ -260,11 +231,9 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
     #     # superverify_meta_keys += ImportGenTaxo.verify_meta_keys
     #     return superverify_meta_keys
 
-
 class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category
     is_product = ImportShopCategoryMixin.is_product
-    container = WooCatList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -316,6 +285,11 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     #     else:
     #         return super(ImportWooCategory, self).__getitem__(key)
 
+class WooCatList(ShopCatList):
+    report_cols = ColDataWoo.get_category_cols()
+    supported_type = ImportWooCategory
+
+ImportWooCategory.container = WooCatList
 
 class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """

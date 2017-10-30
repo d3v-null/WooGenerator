@@ -336,11 +336,13 @@ class ItemList(ObjList):
     supported_type = ImportTreeItem
     objList_type = 'items'
 
+ImportTreeItem.container = ItemList
 
 class TaxoList(ObjList):
     supported_type = ImportTreeTaxo
     objList_type = 'taxos'
 
+ImportTreeTaxo.container = TaxoList
 
 class ImportStack(list):
 

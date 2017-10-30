@@ -10,89 +10,7 @@ from ..coldata import ColDataProd
 from ..utils import Registrar, SanitationUtils
 from .abstract import ObjList
 from .gen import CsvParseGenMixin
-from .tree import ItemList
-
-
-class ShopProdList(ItemList):
-    "Container for shop products"
-    objList_type = 'products'
-    report_cols = ColDataProd.get_report_cols()
-
-    def append(self, object_data):
-        assert issubclass(object_data.__class__, ImportShopMixin), \
-            "object must be subclass of ImportShopMixin not %s : %s" % (
-                SanitationUtils.coerce_unicode(object_data.__class__),
-                SanitationUtils.coerce_unicode(object_data)
-        )
-        return super(ShopProdList, self).append(object_data)
-
-
-class ShopCatList(ItemList):
-    report_cols = ColDataProd.get_report_cols()
-
-
-class ShopObjList(ObjList):
-
-    def __init__(self, file_name=None, objects=None, indexer=None):
-        self.file_name = file_name
-        self.is_valid = True
-        if not self.file_name:
-            self.is_valid = False
-        self.products = ShopProdList()
-        self.categories = ShopCatList()
-        self._objects = ObjList()
-        super(ShopObjList, self).__init__(objects, indexer=indexer)
-
-    @property
-    def objects(self):
-        return self.products + self.categories + self._objects
-
-    @property
-    def name(self):
-        exc = DeprecationWarning(".name deprecated")
-        self.register_error(exc)
-        raise exc
-
-    @property
-    def title(self):
-        return self.get_key('fullnamesum')
-
-    @property
-    def description(self):
-        description = self.get_key('HTML Description')
-        if not description:
-            description = self.get_key('descsum')
-        if not description:
-            description = self.name
-        return description
-
-    # @property
-    # def is_valid(self):
-    #     return self._isValid
-    #
-    # @property
-    # def file_name(self):
-    #     return self._fileName
-
-    def append(self, object_data):
-        assert isinstance(object_data, ImportShopMixin)
-        if object_data.is_category:
-            container = self.categories
-        elif object_data.is_product:
-            container = self.products
-        else:
-            container = self._objects
-
-        if object_data not in container:
-            bisect.insort(container, object_data)
-
-    def invalidate(self, reason=""):
-        if self.DEBUG_IMG:
-            if not reason:
-                reason = "IMG INVALID"
-            self.register_error(reason, self.file_name)
-        self.is_valid = False
-
+from .tree import ItemList, TaxoList
 
 class ImportShopMixin(object):
     "Base class for shop objects (products, categories)"
@@ -207,9 +125,7 @@ class ImportShopMixin(object):
                 api_data['variations'] = variations
         return api_data
 
-
 class ImportShopProductMixin(object):
-    container = ShopProdList
     # category_indexer = Registrar.get_object_index
     category_indexer = Registrar.get_object_rowcount
     # category_indexer = CsvParseGenMixin.get_full_name_sum
@@ -257,16 +173,29 @@ class ImportShopProductMixin(object):
         return self.type_name
         # return self.product_type
 
+class ShopProdList(ItemList):
+    "Container for shop products"
+    objList_type = 'products'
+    report_cols = ColDataProd.get_report_cols()
+    supported_type = ImportShopProductMixin
 
-class ImportShopProductSimpleMixin(object):
+    def append(self, object_data):
+        assert issubclass(object_data.__class__, ImportShopMixin), \
+            "object must be subclass of ImportShopMixin not %s : %s" % (
+                SanitationUtils.coerce_unicode(object_data.__class__),
+                SanitationUtils.coerce_unicode(object_data)
+        )
+        return super(ShopProdList, self).append(object_data)
+
+ImportShopProductMixin.container = ShopProdList
+
+class ImportShopProductSimpleMixin(ImportShopProductMixin):
     product_type = 'simple'
-    container = ImportShopProductMixin.container
 
 
-class ImportShopProductVariableMixin(object):
+class ImportShopProductVariableMixin(ImportShopProductMixin):
     product_type = 'variable'
     is_variable = True
-    container = ImportShopProductMixin.container
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
@@ -291,10 +220,9 @@ class ImportShopProductVariableMixin(object):
         return self.variations
 
 
-class ImportShopProductVariationMixin(object):
+class ImportShopProductVariationMixin(ImportShopProductMixin):
     product_type = 'variable-instance'
     is_variation = True
-    container = ImportShopProductMixin.container
 
     def register_parent_product(self, parent_data):
         assert issubclass(type(parent_data), ImportShopProductVariableMixin)
@@ -313,7 +241,6 @@ class ImportShopProductVariationMixin(object):
 class ImportShopCategoryMixin(object):
     is_category = True
     is_product = False
-    container = ShopCatList
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
@@ -336,6 +263,75 @@ class ImportShopCategoryMixin(object):
         exc = DeprecationWarning("use .members instead of .get_members()")
         self.register_error(exc)
         return self.members
+
+class ShopCatList(TaxoList):
+    report_cols = ColDataProd.get_report_cols()
+    supported_type = ImportShopCategoryMixin
+
+ImportShopCategoryMixin.container = ShopCatList
+
+class ShopObjList(ObjList):
+    supported_type = ImportShopMixin
+
+    def __init__(self, file_name=None, objects=None, indexer=None):
+        self.file_name = file_name
+        self.is_valid = True
+        if not self.file_name:
+            self.is_valid = False
+        self.products = ShopProdList()
+        self.categories = ShopCatList()
+        self._objects = ObjList()
+        super(ShopObjList, self).__init__(objects, indexer=indexer)
+
+    @property
+    def objects(self):
+        return self.products + self.categories + self._objects
+
+    @property
+    def name(self):
+        exc = DeprecationWarning(".name deprecated")
+        self.register_error(exc)
+        raise exc
+
+    @property
+    def title(self):
+        return self.get_key('fullnamesum')
+
+    @property
+    def description(self):
+        description = self.get_key('HTML Description')
+        if not description:
+            description = self.get_key('descsum')
+        if not description:
+            description = self.name
+        return description
+
+    # @property
+    # def is_valid(self):
+    #     return self._isValid
+    #
+    # @property
+    # def file_name(self):
+    #     return self._fileName
+
+    def append(self, object_data):
+        assert isinstance(object_data, ImportShopMixin)
+        if object_data.is_category:
+            container = self.categories
+        elif object_data.is_product:
+            container = self.products
+        else:
+            container = self._objects
+
+        if object_data not in container:
+            bisect.insort(container, object_data)
+
+    def invalidate(self, reason=""):
+        if self.DEBUG_IMG:
+            if not reason:
+                reason = "IMG INVALID"
+            self.register_error(reason, self.file_name)
+        self.is_valid = False
 
     # @property
     # def identifier_delimeter(self):

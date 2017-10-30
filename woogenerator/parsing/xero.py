@@ -16,20 +16,13 @@ from .shop import (
 )
 from .api import ImportApiObjectMixin, ApiProdListMixin, ApiParseMixin
 
-class XeroApiProdList(ShopProdList, ApiProdListMixin):
-    @property
-    def report_cols(self):
-        return CsvParseXero.coldata_class.get_product_cols()
-
 class ImportXeroMixin(object):
-    container = XeroApiProdList
     description_key = 'Xero Description'
     description = DescriptorUtils.safe_key_property(description_key)
 
 class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
     description_key = ImportXeroMixin.description_key
     description = ImportXeroMixin.description
-    container = ImportXeroMixin.container
     api_id_key = 'item_id'
     api_id = DescriptorUtils.safe_key_property(api_id_key)
 
@@ -38,7 +31,6 @@ class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
         ImportShopMixin.__init__(self, *args, **kwargs)
 
 class ImportXeroItem(ImportXeroObject, ImportGenItem):
-    container = ImportXeroMixin.container
     is_item = ImportGenItem.is_item
     verify_meta_keys = SeqUtils.combine_lists(
         ImportXeroObject.verify_meta_keys,
@@ -47,7 +39,6 @@ class ImportXeroItem(ImportXeroObject, ImportGenItem):
 
 class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
-    container = ImportXeroMixin.container
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
@@ -56,21 +47,28 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
 
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
     process_meta = ImportApiObjectMixin.process_meta
-    container = ImportXeroMixin.container
     is_item = ImportGenItem.is_item
 
 class ImportXeroApiItem(ImportXeroApiObject, ImportGenItem):
-    container = ImportXeroMixin.container
+    pass
 
 class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
-    container = ImportXeroMixin.container
     name_delimeter = ' - '
 
     verify_meta_keys = [
         ImportXeroItem.codesum_key,
         # ImportXeroItem.namesum_key
     ]
+
+class XeroApiProdList(ShopProdList, ApiProdListMixin):
+    supported_type = ImportXeroApiProduct
+
+    @property
+    def report_cols(self):
+        return CsvParseXero.coldata_class.get_product_cols()
+
+ImportXeroApiProduct.container = XeroApiProdList
 
 class ParseXeroMixin(object):
     """

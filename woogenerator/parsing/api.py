@@ -40,12 +40,6 @@ class ApiProdListMixin(object):
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
 
-class WooApiProdList(WooProdList, ApiProdListMixin):
-    pass
-
-class WooApiCatList(WooCatList, ApiProdListMixin):
-    pass
-
 class ImportApiObjectMixin(object):
 
     def process_meta(self):
@@ -108,7 +102,6 @@ class ImportWooApiItem(ImportWooApiObject, ImportGenItem):
 
 class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
-    container = WooApiProdList
 
     verify_meta_keys = SeqUtils.subtrace_two_lists(
         ImportWooApiObject.verify_meta_keys,
@@ -123,6 +116,10 @@ class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
         ImportWooApiObject.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
+class WooApiProdList(WooProdList, ApiProdListMixin):
+    supported_type = ImportWooApiProduct
+
+ImportWooApiProduct.container = WooApiProdList
 
 class ImportWooApiProductSimple(ImportWooApiProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
@@ -157,7 +154,6 @@ class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
 class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category
     identifier = ImportWooApiObject.identifier
-    container = WooApiCatList
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -172,6 +168,11 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     @property
     def index(self):
         return self.title
+
+class WooApiCatList(WooCatList, ApiProdListMixin):
+    supported_type = ImportWooApiCategory
+
+ImportWooApiCategory.container = WooApiCatList
 
 class ApiParseMixin(object):
     def analyse_stream(self, byte_file_obj, **kwargs):

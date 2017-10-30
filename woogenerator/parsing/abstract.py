@@ -23,6 +23,160 @@ from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
 
 BLANK_CELL = ''
 
+class ImportObject(OrderedDict, Registrar):
+    """
+    A container for a parsed object.
+    """
+
+    rowcountKey = 'rowcount'
+    rowKey = '_row'
+
+    def __init__(self, *args, **kwargs):
+        if self.DEBUG_ABSTRACT:
+            self.register_message("args = %s\nkwargs = %s\n" % (
+                pformat(args), pformat(kwargs.items())
+            ))
+
+        if self.DEBUG_MRO:
+            self.register_message('ImportObject')
+        data = args[0]
+        try:
+            assert \
+                isinstance(data, dict), \
+                "expected data to be a dict, instead found: %s" % type(data)
+        except AssertionError as exc:
+            try:
+                data = OrderedDict(data)
+            except Exception:
+                raise exc
+
+        # Registrar.__init__(self)
+        if self.DEBUG_PARSER:
+            self.register_message(
+                'Abstract init: \n -> DATA: %s\n -> KWARGS: %s' %
+                (pformat(data), pformat(kwargs)))
+
+        rowcount = kwargs.pop(self.rowcountKey, None)
+        if rowcount is not None:
+            data[self.rowcountKey] = rowcount
+        row = kwargs.pop('row', None)
+
+        OrderedDict.__init__(self, data)
+        if row is not None:
+            self._row = row
+        else:
+            if '_row' not in self.keys():
+                self['_row'] = []
+        Registrar.__init__(self, *args, **kwargs)
+
+    def __hash__(self):
+        return hash(self.index)
+
+    def to_dict(self):
+        return OrderedDict(self)
+
+    # TODO: refactor to get rid of row property, rename _row to row
+    @property
+    def row(self):
+        return self._row
+
+    # TODO: refactor to get rid of row property, rename _row to row
+    @property
+    def rowcount(self):
+        return self.get(self.rowcountKey, 0)
+
+    @property
+    def index(self):
+        """
+        Return a unique identifier to differentiate this from others within import.
+        """
+
+        return self.rowcount
+
+    @property
+    def identifier_delimeter(self):
+        """
+        Return the delimeter used in creating the identifier for this instance.
+
+        Override in subclasses.
+        """
+
+        return ""
+
+    @property
+    def type_name(self):
+        """
+        Return the name of the type of this instance for creating an identifier.
+        """
+
+        return type(self).__name__
+
+    @property
+    def identifier(self):
+        """
+        Return a unique identifier to distinguish this from others outside import.
+        """
+
+        index = self.index
+        if self.DEBUG_ABSTRACT:
+            self.register_message("index: %s" % repr(index))
+        type_name = self.type_name
+        if self.DEBUG_ABSTRACT:
+            self.register_message("type_name %s" % repr(type_name))
+        identifier_delimeter = self.identifier_delimeter
+        if self.DEBUG_ABSTRACT:
+            self.register_message("identifier_delimeter %s" %
+                                  repr(identifier_delimeter))
+        return self.string_anything(index, "<%s>" % type_name,
+                                    identifier_delimeter)
+
+    def get_copy_args(self):
+        """
+        Return the arguments provided to the copy method.
+
+        Override in subclasses.
+        """
+        return {'rowcount': self.rowcount, 'row': self.row[:]}
+
+    def containerize(self):
+        """ Put self in preferred container. """
+        return self.container([self])
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, copy_dict):
+        self.__dict__.update(copy_dict)
+
+    def __recuce__(self):
+        items = copy(OrderedDict(self.items()))
+        return (self.__class__, (items, ))
+
+    def __copy__(self):
+        items = copy(OrderedDict(self.items()))
+        return self.__class__(items, **self.get_copy_args())
+
+    def __deepcopy__(self, memodict=None):
+        if not hasattr(Registrar, 'deepcopyprefix'):
+            Registrar.deepcopyprefix = '>'
+        Registrar.deepcopyprefix = '=' + Registrar.deepcopyprefix
+        items = deepcopy(self.items())
+        Registrar.deepcopyprefix = Registrar.deepcopyprefix[1:]
+        return self.__class__(
+            deepcopy(OrderedDict(items)), **self.get_copy_args())
+
+    def __str__(self):
+        return "%10s <%s>" % (self.identifier, self.type_name)
+
+    def __repr__(self, *_):
+        return self.__str__()
+
+    def __cmp__(self, other):
+        if other is None:
+            return -1
+        if not isinstance(other, ImportObject):
+            return -1
+        return cmp(self.rowcount, other.rowcount)
 
 class ObjList(list, Registrar):
     """
@@ -30,7 +184,7 @@ class ObjList(list, Registrar):
     """
 
     objList_type = 'objects'
-    supported_type = object
+    supported_type = ImportObject
 
     def __init__(self, objects=None, indexer=None):
         list.__init__(self)
@@ -40,8 +194,6 @@ class ObjList(list, Registrar):
         if indexer is None:
             indexer = (lambda x: getattr(x, 'index'))
         self.indexer = indexer
-        if self.supported_type == object:
-            self.supported_type = ImportObject
         # self._obj_list_type = 'objects'
         # self._objects = []
         self.indices = []
@@ -194,163 +346,7 @@ class ObjList(list, Registrar):
 
         return cls.report_cols
 
-
-class ImportObject(OrderedDict, Registrar):
-    """
-    A container for a parsed object.
-    """
-
-    container = ObjList
-    rowcountKey = 'rowcount'
-    rowKey = '_row'
-
-    def __init__(self, *args, **kwargs):
-        if self.DEBUG_ABSTRACT:
-            self.register_message("args = %s\nkwargs = %s\n" % (
-                pformat(args), pformat(kwargs.items())
-            ))
-
-        if self.DEBUG_MRO:
-            self.register_message('ImportObject')
-        data = args[0]
-        try:
-            assert \
-                isinstance(data, dict), \
-                "expected data to be a dict, instead found: %s" % type(data)
-        except AssertionError as exc:
-            try:
-                data = OrderedDict(data)
-            except Exception:
-                raise exc
-
-        # Registrar.__init__(self)
-        if self.DEBUG_PARSER:
-            self.register_message(
-                'Abstract init: \n -> DATA: %s\n -> KWARGS: %s' %
-                (pformat(data), pformat(kwargs)))
-
-        rowcount = kwargs.pop(self.rowcountKey, None)
-        if rowcount is not None:
-            data[self.rowcountKey] = rowcount
-        row = kwargs.pop('row', None)
-
-        OrderedDict.__init__(self, data)
-        if row is not None:
-            self._row = row
-        else:
-            if '_row' not in self.keys():
-                self['_row'] = []
-        Registrar.__init__(self, *args, **kwargs)
-
-    def __hash__(self):
-        return hash(self.index)
-
-    def to_dict(self):
-        return OrderedDict(self)
-
-    # TODO: refactor to get rid of row property, rename _row to row
-    @property
-    def row(self):
-        return self._row
-
-    # TODO: refactor to get rid of row property, rename _row to row
-    @property
-    def rowcount(self):
-        return self.get(self.rowcountKey, 0)
-
-    @property
-    def index(self):
-        """
-        Return a unique identifier to differentiate this from others within import.
-        """
-
-        return self.rowcount
-
-    @property
-    def identifier_delimeter(self):
-        """
-        Return the delimeter used in creating the identifier for this instance.
-
-        Override in subclasses.
-        """
-
-        return ""
-
-    @property
-    def type_name(self):
-        """
-        Return the name of the type of this instance for creating an identifier.
-        """
-
-        return type(self).__name__
-
-    @property
-    def identifier(self):
-        """
-        Return a unique identifier to distinguish this from others outside import.
-        """
-
-        index = self.index
-        if self.DEBUG_ABSTRACT:
-            self.register_message("index: %s" % repr(index))
-        type_name = self.type_name
-        if self.DEBUG_ABSTRACT:
-            self.register_message("type_name %s" % repr(type_name))
-        identifier_delimeter = self.identifier_delimeter
-        if self.DEBUG_ABSTRACT:
-            self.register_message("identifier_delimeter %s" %
-                                  repr(identifier_delimeter))
-        return self.string_anything(index, "<%s>" % type_name,
-                                    identifier_delimeter)
-
-    def get_copy_args(self):
-        """
-        Return the arguments provided to the copy method.
-
-        Override in subclasses.
-        """
-        return {'rowcount': self.rowcount, 'row': self.row[:]}
-
-    def containerize(self):
-        """ Put self in preferred container. """
-        return self.container([self])
-
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, copy_dict):
-        self.__dict__.update(copy_dict)
-
-    def __recuce__(self):
-        items = copy(OrderedDict(self.items()))
-        return (self.__class__, (items, ))
-
-    def __copy__(self):
-        items = copy(OrderedDict(self.items()))
-        return self.__class__(items, **self.get_copy_args())
-
-    def __deepcopy__(self, memodict=None):
-        if not hasattr(Registrar, 'deepcopyprefix'):
-            Registrar.deepcopyprefix = '>'
-        Registrar.deepcopyprefix = '=' + Registrar.deepcopyprefix
-        items = deepcopy(self.items())
-        Registrar.deepcopyprefix = Registrar.deepcopyprefix[1:]
-        return self.__class__(
-            deepcopy(OrderedDict(items)), **self.get_copy_args())
-
-    def __str__(self):
-        return "%10s <%s>" % (self.identifier, self.type_name)
-
-    def __repr__(self, *_):
-        return self.__str__()
-
-    def __cmp__(self, other):
-        if other is None:
-            return -1
-        if not isinstance(other, ImportObject):
-            return -1
-        return cmp(self.rowcount, other.rowcount)
-
+ImportObject.container = ObjList
 
 class CsvParseBase(Registrar):
     """
