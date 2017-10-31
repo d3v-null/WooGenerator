@@ -30,7 +30,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -59,10 +59,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         else:
             self.settings.slave_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_woo_api_dummy.json"
+                TESTS_DATA_DIR, "prod_slave_woo_api_dummy_wp-json.json"
             )
             self.settings.slave_cat_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy.json"
+                TESTS_DATA_DIR, "prod_slave_cat_woo_api_dummy_wp-json.json"
             )
 
         # TODO: this

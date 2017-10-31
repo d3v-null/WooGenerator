@@ -222,6 +222,7 @@ class ApiParseMixin(object):
         """
         Analyse an object from the wp api.
         """
+
         kwargs = {
             'api_data': api_data
         }
@@ -254,6 +255,8 @@ class ApiParseWoo(
     variation_indexer = CsvParseWooMixin.get_title
     coldata_class = ColDataWoo
     col_data_target = 'wp-api'
+    meta_get_key = 'meta_data'
+    meta_listed = True
     analyse_stream = ApiParseMixin.analyse_stream
 
     def __init__(self, *args, **kwargs):
@@ -308,6 +311,15 @@ class ApiParseWoo(
         else:
             stock_status = 'outofstock'
         new_data['stock_status'] = stock_status
+        return new_data
+
+    @classmethod
+    def get_api_manage_stock_data(cls, manage_stock):
+        new_data = OrderedDict()
+        if manage_stock:
+            new_data['manage_stock'] = 'yes'
+        else:
+            new_data['manage_stock'] = 'no'
         return new_data
 
     def process_api_category(self, category_api_data, object_data=None):
@@ -449,6 +461,23 @@ class ApiParseWoo(
                     self.register_attribute(object_data, attr, val, var)
 
     @classmethod
+    def delistify(cls, data):
+        """
+        Coerce data in the format [{'id':id, 'key':key, 'value':value}] to a dict.
+        """
+        response = {}
+        for list_item in data:
+            response[list_item['key']] = list_item['value']
+        return response
+
+    @classmethod
+    def get_api_target_key(cls, key):
+        return cls.coldata_class.data\
+        .get(key, {})\
+        .get(cls.col_data_target, {})\
+        .get('key', key)
+
+    @classmethod
     def get_parser_data(cls, **kwargs):
         """
         Gets data ready for the parser, in this case from api_data
@@ -477,8 +506,10 @@ class ApiParseWoo(
         parser_data.update(**cls.translate_keys(api_data, core_translation))
 
         meta_translation = OrderedDict()
-        if 'meta' in api_data:
-            meta_data = api_data['meta']
+        if cls.meta_get_key in api_data:
+            meta_data = api_data[cls.meta_get_key]
+            if cls.meta_listed:
+                meta_data = cls.delistify(meta_data)
             for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
                 try:
                     translated_target_data = col_data.get(cls.col_data_target, {})
@@ -495,9 +526,16 @@ class ApiParseWoo(
         if 'dimensions' in api_data:
             parser_data.update(
                 **cls.get_api_dimension_data(api_data['dimensions']))
-        if 'in_stock' in api_data:
+        in_stock_key = cls.get_api_target_key('in_stock')
+        if in_stock_key and in_stock_key in api_data:
             parser_data.update(
-                **cls.get_api_stock_status_data(api_data['in_stock']))
+                **cls.get_api_stock_status_data(api_data[in_stock_key])
+            )
+        manage_stock_key = cls.get_api_target_key('manage_stock')
+        if manage_stock_key and manage_stock_key in api_data:
+            parser_data.update(
+                **cls.get_api_manage_stock_data(api_data[manage_stock_key])
+            )
         # if 'description' in api_data:
         #     parser_data[cls.object_container.description_key] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
@@ -615,6 +653,9 @@ class ApiParseWoo(
 
 class ApiParseWooLegacy(ApiParseWoo):
     category_container = ImportWooApiCategoryLegacy
+    col_data_target = 'wc-api'
+    meta_get_key = 'meta'
+    meta_listed = False
 
     def analyse_api_obj(self, api_data):
         """

@@ -668,6 +668,7 @@ class SyncClientRest(SyncClientAbstract):
         if not endpoint:
             endpoint = self.endpoint_plural
         endpoint_queries = {}
+        endpoint_queries = SanitationUtils.findall_url_params(endpoint)
         if self.limit is not None:
             endpoint_queries[self.pagination_limit_key] = self.limit
         if self.offset is not None:

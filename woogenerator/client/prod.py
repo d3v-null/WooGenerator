@@ -10,13 +10,13 @@ class ProdSyncClientMixin(object):
     endpoint_singular = 'product'
 
     def analyse_remote_categories(self, parser, **kwargs):
-        taxo_api_iterator = self.ApiIterator(
-            self.service, '/products/categories')
+        taxo_api_iterator = self.get_iterator('products/categories')
         categories = []
         for page in taxo_api_iterator:
-            if 'product_categories' in page:
-                for page_item in page.get('product_categories'):
-                    categories.append(page_item)
+            if self.page_nesting:
+                page = page['product_categories']
+            for page_item in page:
+                categories.append(page_item)
         parser.process_api_categories(categories)
         if self.DEBUG_API:
             self.register_message("Analysed categories:")

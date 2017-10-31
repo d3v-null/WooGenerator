@@ -115,6 +115,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response += '_woo_api'
         if self.schema_is_xero:
             response += '_xero_api'
+        if self.get('wc_api_namespace'):
+            response += '_' + self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -234,7 +236,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.schema_is_xero:
             response += '_xero_api'
         if self.get('wc_api_namespace'):
-            response += self.get('wc_api_namespace')
+            response += '_' + self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
