@@ -15,6 +15,7 @@ from contextlib import closing
 from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
+from pprint import pformat
 
 import httplib2
 import oauth2client
@@ -106,9 +107,9 @@ class ClientAbstract(Registrar):
             service_name = getattr(self.service_builder, '__name__')
         if self.DEBUG_API:
             self.register_message(
-                "building service (%s) with positional: %s and keyword: %s" %
-                (str(service_name), str(positional_args),
-                 str(self.connect_params)))
+                "building service (%s) with args:\n%s\nand kwargs:\n%s" %
+                (str(service_name), pformat(positional_args),
+                 pformat(self.connect_params)))
         self.service = self.service_builder(
             *positional_args,
             **self.connect_params
@@ -359,14 +360,14 @@ class SyncClientRest(SyncClientAbstract):
     service_name = 'REST'
     version = None
     endpoint_singular = ''
-    mandatory_params = ['api_key', 'api_secret', 'url']
+    mandatory_params = ['consumer_key', 'consumer_secret', 'url']
     default_version = 'wp/v2'
     default_namespace = 'wp-json'
     page_nesting = True
     search_param = None
     key_translation = {
-        'api_key': 'consumer_key',
-        'api_secret': 'consumer_secret'
+        # 'api_key': 'consumer_key',
+        # 'api_secret': 'consumer_secret'
     }
 
     class ApiIterator(Iterable):
@@ -549,8 +550,8 @@ class SyncClientRest(SyncClientAbstract):
             superconnect_params['api'] = self.default_namespace
         if 'version' not in superconnect_params:
             superconnect_params['version'] = self.default_version
-        if superconnect_params['api'] == 'wp-json':
-            superconnect_params['oauth1a_3leg'] = True
+        # if superconnect_params['api'] == 'wp-json':
+        #     superconnect_params['oauth1a_3leg'] = True
 
         super(SyncClientRest, self).__init__(superconnect_params, **kwargs)
         #
@@ -638,7 +639,7 @@ class SyncClientRest(SyncClientAbstract):
             service_endpoint += '?%s' % endpoint_parsed.query
         data = dict([(key, value) for key, value in data.items()])
         # print "service version: %s, data:%s" % (self.service.version, data)
-        if re.match('wc/v[2-9]', self.service.version):
+        if self.page_nesting:
             data = {self.endpoint_singular: data}
         if Registrar.DEBUG_API:
             Registrar.register_message("updating %s: %s" %
@@ -709,8 +710,11 @@ class SyncClientWC(SyncClientRest):
     """
     Client for the WC Rest API
     """
-    default_version = 'v3'
-    default_namespace = 'wc-api'
+    default_version = 'wc/v2'
+    default_namespace = 'wp-json'
+    page_nesting = False
+    # default_version = 'v3'
+    # default_namespace = 'wc-api'
 
 
 class SyncClientWP(SyncClientRest):
@@ -718,7 +722,7 @@ class SyncClientWP(SyncClientRest):
     Client for the WP REST API
     """
     mandatory_params = [
-        'api_key', 'api_secret', 'url', 'wp_user', 'wp_pass', 'callback'
+        'consumer_key', 'consumer_secret', 'url', 'wp_user', 'wp_pass', 'callback'
     ]
     page_nesting = False
     search_param = 'search'

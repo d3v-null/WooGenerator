@@ -144,28 +144,35 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def slave_wp_api_params(self):
         response = {
-            'api_key': self.get('wp_api_key'),
-            'api_secret': self.get('wp_api_secret'),
+            'consumer_key': self.get('wp_api_key'),
+            'consumer_secret': self.get('wp_api_secret'),
             'url': self.get('store_url'),
             'wp_user': self.get('wp_user'),
             'wp_pass': self.get('wp_pass'),
             'callback': self.get('wp_callback')
         }
+        if self.get('wp_api_namespace'):
+            response['api'] = self.get('wp_api_namespace')
         if self.get('wp_api_version'):
-            response['api_version'] = self.get('wp_api_version')
+            response['version'] = self.get('wp_api_version')
+        if self.get('wp_creds_store'):
+            response['creds_store'] = self.get('wp_creds_store')
         return response
 
     @property
     def slave_wc_api_params(self):
         response = {
-            'api_key': self.get('wc_api_key'),
-            'api_secret': self.get('wc_api_secret'),
+            'consumer_key': self.get('wc_api_key'),
+            'consumer_secret': self.get('wc_api_secret'),
             'url': self.get('store_url'),
-            'callback': self.get('wp_callback')
-            # TODO: rename wp_callback to api_callback
+            'callback': self.get('wc_callback')
         }
+        if self.get('wc_api'):
+            response['api'] = self.get('wc_api')
         if self.get('wc_api_version'):
-            response['api_version'] = self.get('wc_api_version')
+            response['version'] = self.get('wc_api_version')
+        if self.get('wp_creds_store'):
+            response['creds_store'] = self.get('wp_creds_store')
         return response
 
     @property

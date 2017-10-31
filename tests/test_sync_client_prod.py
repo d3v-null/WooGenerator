@@ -1,6 +1,7 @@
 import random
 import unittest
 from collections import OrderedDict
+from pprint import pformat
 
 from tests.test_sync_client import AbstractSyncClientTestCase
 
@@ -11,7 +12,7 @@ from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
-from woogenerator.utils import TimeUtils
+from woogenerator.utils import TimeUtils, Registrar
 
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
@@ -27,11 +28,15 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
     # config_file = "conf_prod.yaml"
     # local_work_dir = "~/Documents/woogenerator"
 
-@unittest.skip("Destructive tests not mocked yet")
 # TODO: mock these tests
 class TestProdSyncClientDestructive(TestProdSyncClient):
+    debug = True
+
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
+
+        self.settings.download_slave = True
+        self.settings.download_master = True
 
         # Registrar.DEBUG_SHOP = True
         # Registrar.DEBUG_MRO = True
@@ -40,7 +45,8 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         # Registrar.DEBUG_GEN = True
         # Registrar.DEBUG_ABSTRACT = True
         # Registrar.DEBUG_WOO = True
-        # Registrar.DEBUG_API = True
+        if self.debug:
+            Registrar.DEBUG_API = True
         # Registrar.DEBUG_PARSER = True
         # Registrar.DEBUG_UTILS = True
         ApiParseWoo.do_images = False
@@ -49,18 +55,26 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
 
     def test_read(self):
         response = []
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
+
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
             response = client.get_iterator()
         # print tabulate(list(response)[:10], headers='keys')
 
         self.assertTrue(response)
 
     def test_analyse_remote(self):
-        product_parser = ApiParseWoo(
-            **self.settings.master_parser_args
+        product_parser_class = self.settings.slave_parser_class
+        product_parser = product_parser_class(
+            **self.settings.slave_parser_args
         )
 
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
             client.analyse_remote(product_parser, limit=20)
 
         prod_list = ShopProdList(product_parser.products.values())
@@ -80,18 +94,55 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         # print SanitationUtils.coerce_bytes(tabulate(attr_list, headers='keys',
         # tablefmt="simple"))
 
-    def test_upload_changes(self):
-        pkey = 99
-        updates = {
-            'regular_price': u'37.00'
-        }
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.upload_changes(pkey, updates)
-            self.assertTrue(response)
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_changes", response.json()
+    def get_first_prod(self, client):
+        endpoint_plural = 'products'
+        prods_page = client.get_iterator('%s?per_page=1' % endpoint_plural).next()
+        if client.page_nesting:
+            prods_page = prods_page[endpoint_plural]
+        return prods_page[0]
 
+    def test_upload_changes(self):
+        target_key = 'regular_price'
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
+            first_prod = self.get_first_prod(client)
+            if self.debug:
+                print("first prod:\n%s" % pformat(first_prod))
+            first_pkey = first_prod['id']
+            try:
+                first_price = first_prod[target_key]
+            except ValueError:
+                first_price = 0
+            print("first_price:%s" % first_price)
+
+            new_price = first_price
+            while new_price == first_price:
+                new_price = random.randint(10, 20)
+            updates = {
+                target_key: str(new_price)
+            }
+            if self.debug:
+                print("updates:\n%s" % pformat(updates))
+            response = client.upload_changes(first_pkey, updates)
+            self.assertTrue(response)
+            if self.debug:
+                print("first response:\n%s" % pformat(response.text))
+            self.assertTrue(hasattr(response, 'json'))
+            response = response.json()
+            self.assertEqual(response[target_key], str(new_price))
+            updates = {
+                target_key: first_price
+            }
+            response = client.upload_changes(first_pkey, updates)
+            if self.debug:
+                print("second response:\n%s" % pformat(response.text))
+            self.assertTrue(hasattr(response, 'json'))
+            response = response.json()
+            self.assertEqual(response[target_key], str(first_price))
+
+    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_meta(self):
         pkey = 99
         updates = OrderedDict([
@@ -108,6 +159,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             #     print "test_upload_changes_meta", response.json()
             self.assertEqual(wn_regular_price, '37.00')
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_delete_meta(self):
         pkey = 99
         updates = OrderedDict([
@@ -125,6 +177,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertEqual(wn_regular_price, '')
             # self.assertNotIn('lc_wn_regular_price', response.json()['product']['meta'])
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_variation(self):
         pkey = 41
         updates = OrderedDict([
@@ -138,6 +191,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             description = response.json()['product']['weight']
             self.assertEqual(description, '11.0')
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_var_meta(self):
         pkey = 23
         expected_result = str(random.randint(1, 100))
@@ -158,6 +212,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 'lc_dn_regular_price']
             self.assertEqual(wn_regular_price, expected_result)
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_delete_var_meta(self):
         pkey = 41
         updates = OrderedDict([
@@ -174,6 +229,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 'meta'].get('lc_wn_regular_price')
             self.assertFalse(wn_regular_price)
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_get_single_page(self):
         with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
             response = client.service.get('products?page=9')
@@ -182,6 +238,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             # if hasattr(response, 'json'):
             #     print "test_upload_changes_empty", response.json()
 
+    @unittest.skip("Destructive tests not mocked yet")
     def test_cat_sync_client(self):
         with CatSyncClientWC(self.settings.slave_wc_api_params) as client:
             for page in client.get_iterator():

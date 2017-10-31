@@ -23,17 +23,20 @@ do-report: true
 skip-images: true
 do-delete-images: false
 do-resize-images: false
-skip-download-master: true
 
 wp-api-key: tYG1tAoqjBEM
 wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
 wp-user: wptest
 wp-pass: gZ*gZk#v0t5$j#NQ@9
 wp-callback: http://127.0.0.1:18080/wptest
+wp-api-namespace: wp-json
 wp-api-version: wp/v2
+wp-creds-store: ~/.credentials/wp-api-creds-test-local.json
 
 wc-api-key: ck_e1dd4a9c85f49b9685f7964a154eecb29af39d5a
 wc-api-secret: cs_8ef3e5d21f8a0c28cd7bc4643e92111a0326b6b1
-wc-api-version: v2
+wc-api-namespace: wp-json
+wc-api-version: wc/v2
+wc-callback: http://127.0.0.1/oauth1_callback
 store-url: http://localhost:18080/wptest/
-creds_store: wp-api-creds-test
+wc-creds-store: ~/.credentials/wc-api-creds-test-local.json
