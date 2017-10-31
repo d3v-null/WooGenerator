@@ -6,11 +6,11 @@ import os
 import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
-from ..client.prod import ProdSyncClientWC, ProdSyncClientXero
+from ..client.prod import ProdSyncClientWC, ProdSyncClientWCLegacy, ProdSyncClientXero
 from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero, ColDataBase
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
-from ..parsing.api import ApiParseWoo
+from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
 from ..parsing.myo import CsvParseMyo
 from ..parsing.xero import CsvParseXero, ApiParseXero
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
@@ -233,6 +233,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response += '_woo_api'
         if self.schema_is_xero:
             response += '_xero_api'
+        if self.get('wc_api_namespace'):
+            response += self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -413,9 +415,12 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_parser_class(self):
-        response = ApiParseWoo
         if self.schema_is_xero:
             response = ApiParseXero
+        elif self.wc_api_is_legacy:
+            response = ApiParseWooLegacy
+        else:
+            response = ApiParseWoo
         return response
 
     @property
@@ -437,7 +442,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.local_client_class
         if self['download_slave']:
             if self.schema_is_woo:
-                response = ProdSyncClientWC
+                if self.wc_api_is_legacy:
+                    response = ProdSyncClientWCLegacy
+                else:
+                    response = ProdSyncClientWC
             elif self.schema_is_xero:
                 response = ProdSyncClientXero
         return response
@@ -456,7 +464,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def slave_upload_client_class(self):
         response = self.local_client_class
         if self['update_slave']:
-            response = ProdSyncClientWC
+            if self.wc_api_is_legacy:
+                response = ProdSyncClientWCLegacy
+            else:
+                response = ProdSyncClientWC
         return response
 
     @property

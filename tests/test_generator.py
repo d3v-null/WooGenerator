@@ -44,18 +44,26 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.specials_file = os.path.join(
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
-        self.settings.slave_file = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_woo_api_dummy.json"
-        )
-        self.settings.slave_cat_file = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy.json"
-        )
         self.settings.do_specials = True
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.report_matching = True
         self.settings.schema = "CA"
         self.settings.init_settings(self.override_args)
+        if self.settings.wc_api_is_legacy:
+            self.settings.slave_file = os.path.join(
+                TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
+            )
+            self.settings.slave_cat_file = os.path.join(
+                TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy_legacy.json"
+            )
+        else:
+            self.settings.slave_file = os.path.join(
+                TESTS_DATA_DIR, "prod_slave_woo_api_dummy.json"
+            )
+            self.settings.slave_cat_file = os.path.join(
+                TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy.json"
+            )
 
         # TODO: this
         if self.debug:

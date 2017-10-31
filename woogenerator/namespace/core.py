@@ -67,6 +67,10 @@ class SettingsNamespaceProto(argparse.Namespace):
         except KeyError:
             return default
 
+    @property
+    def wc_api_is_legacy(self):
+        return self.get('wc_api_namespace') == 'wc-api'
+
     def join_work_path(self, path):
         """ Join a given path relative to the local-work-dir in this namespace. """
         response = path
@@ -167,8 +171,8 @@ class SettingsNamespaceProto(argparse.Namespace):
             'url': self.get('store_url'),
             'callback': self.get('wc_callback')
         }
-        if self.get('wc_api'):
-            response['api'] = self.get('wc_api')
+        if self.get('wc_api_namespace'):
+            response['api'] = self.get('wc_api_namespace')
         if self.get('wc_api_version'):
             response['version'] = self.get('wc_api_version')
         if self.get('wp_creds_store'):

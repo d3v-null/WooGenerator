@@ -175,6 +175,16 @@ class WooApiCatList(WooCatList, ApiListMixin):
 
 ImportWooApiCategory.container = WooApiCatList
 
+class ImportWooApiCategoryLegacy(ImportWooApiCategory):
+    verify_meta_keys = SeqUtils.subtrace_two_lists(
+        ImportWooApiCategory.verify_meta_keys,
+        [
+            ImportWooApiCategory.api_id_key,
+            ImportWooApiCategory.slug_key
+        ]
+    )
+
+
 class ApiParseMixin(object):
     def analyse_stream(self, byte_file_obj, **kwargs):
         limit, encoding, stream_name = \
@@ -587,7 +597,31 @@ class ApiParseWoo(
         Analyse an object from the api.
         """
 
-        object_data = super(ApiParseWoo, self).analyse_api_obj(api_data)
+        object_data = ApiParseMixin.analyse_api_obj(self, api_data)
+
+        if 'categories' in api_data:
+            for category in api_data['categories']:
+                self.process_api_category(category, object_data)
+                # self.rowcount += 1
+
+        if 'variations' in api_data:
+            for variation in api_data['variations']:
+                self.analyse_wp_api_variation(object_data, variation)
+                # self.rowcount += 1
+
+        if 'attributes' in api_data:
+            self.process_api_attributes(
+                object_data, api_data['attributes'], False)
+
+class ApiParseWooLegacy(ApiParseWoo):
+    category_container = ImportWooApiCategoryLegacy
+
+    def analyse_api_obj(self, api_data):
+        """
+        Analyse an object from the api.
+        """
+
+        object_data = ApiParseMixin.analyse_api_obj(self, api_data)
 
         if 'categories' in api_data:
             for category in api_data['categories']:

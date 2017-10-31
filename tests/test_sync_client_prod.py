@@ -2,7 +2,9 @@ import random
 import unittest
 from collections import OrderedDict
 from pprint import pformat
+import logging
 
+from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
@@ -12,7 +14,7 @@ from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
-from woogenerator.utils import TimeUtils, Registrar
+from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
@@ -30,7 +32,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
 
 # TODO: mock these tests
 class TestProdSyncClientDestructive(TestProdSyncClient):
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
@@ -38,17 +40,18 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         self.settings.download_slave = True
         self.settings.download_master = True
 
-        # Registrar.DEBUG_SHOP = True
-        # Registrar.DEBUG_MRO = True
-        # Registrar.DEBUG_TREE = True
-        # Registrar.DEBUG_PARSER = True
-        # Registrar.DEBUG_GEN = True
-        # Registrar.DEBUG_ABSTRACT = True
-        # Registrar.DEBUG_WOO = True
         if self.debug:
+            logging.basicConfig(level=logging.DEBUG)
             Registrar.DEBUG_API = True
-        # Registrar.DEBUG_PARSER = True
-        # Registrar.DEBUG_UTILS = True
+            # Registrar.DEBUG_SHOP = True
+            # Registrar.DEBUG_MRO = True
+            # Registrar.DEBUG_TREE = True
+            # Registrar.DEBUG_PARSER = True
+            # Registrar.DEBUG_GEN = True
+            # Registrar.DEBUG_ABSTRACT = True
+            # Registrar.DEBUG_WOO = True
+            # Registrar.DEBUG_PARSER = True
+            # Registrar.DEBUG_UTILS = True
         ApiParseWoo.do_images = False
         ApiParseWoo.do_specials = False
         ApiParseWoo.do_dyns = False
@@ -79,103 +82,186 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
 
         prod_list = ShopProdList(product_parser.products.values())
         self.assertTrue(prod_list)
-        # print
-        # SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple'))
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                prod_list.tabulate(tablefmt='simple')
+            ))
         var_list = ShopProdList(product_parser.variations.values())
-        self.assertTrue(var_list)
-        # print
-        # SanitationUtils.coerce_bytes(var_list.tabulate(tablefmt='simple'))
+        # This is no longer necessarily true
+        # self.assertTrue(var_list)
+        if self.debug:
+             print(SanitationUtils.coerce_bytes(
+                 var_list.tabulate(tablefmt='simple')
+             ))
         cat_list = ShopCatList(product_parser.categories.values())
         self.assertTrue(cat_list)
-        # print
-        # SanitationUtils.coerce_bytes(cat_list.tabulate(tablefmt='simple'))
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                cat_list.tabulate(tablefmt='simple')
+            ))
         attr_list = product_parser.attributes.items()
         self.assertTrue(attr_list)
-        # print SanitationUtils.coerce_bytes(tabulate(attr_list, headers='keys',
-        # tablefmt="simple"))
-
-    def get_first_prod(self, client):
-        endpoint_plural = 'products'
-        prods_page = client.get_iterator('%s?per_page=1' % endpoint_plural).next()
-        if client.page_nesting:
-            prods_page = prods_page[endpoint_plural]
-        return prods_page[0]
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                tabulate(attr_list, headers='keys', tablefmt="simple")
+            ))
 
     def test_upload_changes(self):
-        target_key = 'regular_price'
+        target_key = 'weight'
+        # target_key = 'regular_price' # this interferes with lasercommerce
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_prod = self.get_first_prod(client)
+            first_item = client.get_first_endpoint_item()
             if self.debug:
-                print("first prod:\n%s" % pformat(first_prod))
-            first_pkey = first_prod['id']
+                print("first prod:\n%s" % pformat(first_item))
+            first_pkey = client.get_item_core(first_item, 'id')
             try:
-                first_price = first_prod[target_key]
+                first_value = float(first_item[target_key])
             except ValueError:
-                first_price = 0
-            print("first_price:%s" % first_price)
+                first_value = 0.0
+            if self.debug:
+                print("first_value:%s" % first_value)
 
-            new_price = first_price
-            while new_price == first_price:
-                new_price = random.randint(10, 20)
-            updates = {
-                target_key: str(new_price)
-            }
+            new_value = first_value
+            while new_value == first_value:
+                new_value = float(random.randint(10, 20))
+            if self.debug:
+                print("new_value:%s" % new_value)
+
+            updates = client.set_item_core({}, target_key, str(new_value))
             if self.debug:
                 print("updates:\n%s" % pformat(updates))
             response = client.upload_changes(first_pkey, updates)
-            self.assertTrue(response)
             if self.debug:
                 print("first response:\n%s" % pformat(response.text))
+            self.assertTrue(response)
             self.assertTrue(hasattr(response, 'json'))
-            response = response.json()
-            self.assertEqual(response[target_key], str(new_price))
-            updates = {
-                target_key: first_price
-            }
+            response_price = client.get_data_core(response.json(), target_key)
+            self.assertEqual(response_price, str(new_value))
+            updates = client.set_item_core({}, target_key, str(first_value))
+
             response = client.upload_changes(first_pkey, updates)
             if self.debug:
                 print("second response:\n%s" % pformat(response.text))
             self.assertTrue(hasattr(response, 'json'))
-            response = response.json()
-            self.assertEqual(response[target_key], str(first_price))
+            response_price = client.get_data_core(response.json(), target_key)
+            self.assertEqual(response_price, str(first_value))
 
-    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_meta(self):
-        pkey = 99
-        updates = OrderedDict([
-            ('custom_meta', OrderedDict([
-                ('lc_wn_regular_price', u'37.00')
-            ]))
-        ])
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.upload_changes(pkey, updates)
-            wn_regular_price = response.json()['product']['meta'][
-                'lc_wn_regular_price']
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_changes_meta", response.json()
-            self.assertEqual(wn_regular_price, '37.00')
+        target_key = 'lc_wn_regular_price'
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
 
-    @unittest.skip("Destructive tests not mocked yet")
+        with product_client_class(**product_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            if self.debug:
+                print("first prod:\n%s" % pformat(first_item))
+            first_pkey = client.get_item_core(first_item, 'id')
+            try:
+                first_value = float(client.get_item_meta(first_item, target_key))
+            except ValueError:
+                first_value = 0.0
+            if self.debug:
+                print("first_value:%s" % first_value)
+
+            new_value = first_value
+            while new_value == first_value:
+                new_value = float(random.randint(10, 20))
+            if self.debug:
+                print("new_value:%s" % new_value)
+
+            updates = client.set_item_meta({}, {target_key: str(new_value)})
+            if self.debug:
+                print("updates:\n%s" % pformat(updates))
+
+            response = client.upload_changes(first_pkey, updates)
+            if self.debug:
+                print("first response:\n%s" % pformat(response.text))
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+            response_price = client.get_data_meta(response.json(), target_key)
+            self.assertEqual(response_price, str(new_value))
+
+            updates = client.set_item_meta({}, {target_key: str(first_value)})
+            response = client.upload_changes(first_pkey, updates)
+            if self.debug:
+                print("second response:\n%s" % response.text)
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+            response_price = client.get_data_meta(response.json(), target_key)
+            self.assertEqual(response_price, str(first_value))
+
     def test_upload_delete_meta(self):
-        pkey = 99
-        updates = OrderedDict([
-            ('custom_meta', OrderedDict([
-                ('lc_wn_regular_price', u'')
-            ]))
-        ])
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.upload_changes(pkey, updates)
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_delete_meta", response.json()
-            wn_regular_price = response.json()['product'][
-                'meta'].get('lc_wn_regular_price')
-            self.assertEqual(wn_regular_price, '')
-            # self.assertNotIn('lc_wn_regular_price', response.json()['product']['meta'])
+        target_key = 'lc_wn_regular_price'
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            if self.debug:
+                print("first prod:\n%s" % pformat(first_item))
+            first_pkey = client.get_item_core(first_item, 'id')
+            try:
+                first_value = float(client.get_item_meta(first_item, target_key))
+            except ValueError:
+                first_value = 0.0
+            if self.debug:
+                print("first_value:%s" % first_value)
+
+            new_value = first_value
+            while new_value == first_value:
+                new_value = random.randint(10, 20)
+            if self.debug:
+                print("new_value:%s" % new_value)
+
+            updates = client.delete_item_meta({}, target_key)
+
+            if self.debug:
+                print("updates:\n%s" % pformat(updates))
+
+            response = client.upload_changes(first_pkey, updates)
+            if self.debug:
+                print("first response:\n%s" % pformat(response.text))
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+            response_price = client.get_data_meta(response.json(), target_key)
+            self.assertEqual(response_price, '')
+
+            updates = client.set_item_meta({}, {target_key: str(first_value)})
+            response = client.upload_changes(first_pkey, updates)
+            if self.debug:
+                print("second response: %s" % response.text)
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+            response_price = client.get_data_meta(response.json(), target_key)
+            self.assertEqual(response_price, str(first_value))
+
+    def test_upload_create_delete(self):
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            if self.debug:
+                print("first prod:\n%s" % pformat(first_item))
+            first_item = client.strip_item_readonly(first_item)
+            first_sku = client.get_item_core(first_item, 'sku')
+            new_sku = "%s-%02x" % (first_sku, random.randrange(0,255))
+            first_item = client.set_item_core(first_item, 'sku', new_sku)
+            response = client.create_item(first_item)
+            self.assertTrue(response)
+            if self.debug:
+                print("response: %s" % response.text)
+            self.assertTrue(hasattr(response, 'json'))
+            created_id = client.get_data_core(response.json(), 'id')
+            response = client.delete_item(created_id)
+            if self.debug:
+                print("response: %s" % response.text)
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+
 
     @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_variation(self):
@@ -256,7 +342,6 @@ class TestProdSyncClientConstructors(TestProdSyncClient):
     def test_make_usr_s_up_client(self):
         self.settings.update_slave = True
         slave_client_args = self.settings.slave_upload_client_args
-        # self.assertTrue(slave_client_args['connect_params']['api_key'])
         slave_client_class = self.settings.slave_upload_client_class
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
@@ -275,7 +360,6 @@ class TestProdSyncClientConstructors(TestProdSyncClient):
     def test_make_usr_s_down_client(self):
         self.settings.download_slave = True
         slave_client_args = self.settings.slave_download_client_args
-        self.assertTrue(slave_client_args['connect_params']['api_key'])
         slave_client_class = self.settings.slave_download_client_class
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)

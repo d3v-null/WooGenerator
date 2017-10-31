@@ -35,6 +35,8 @@ class AbstractSyncClientTestCase(unittest.TestCase):
             self.settings.quiet = True
 
         self.settings.init_settings(self.override_args)
+        if not self.debug:
+            Registrar.DEBUG_PROGRESS = False
 
 @unittest.skip('Tests not mocked yet')
 class TestSyncClient(AbstractSyncClientTestCase):

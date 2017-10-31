@@ -6,23 +6,25 @@ Boilerplate for unifying interfaces for disparate API clients.
 from __future__ import absolute_import
 
 import codecs
+import functools
+import json
 import os
 import re
 import time
-import json
 from collections import Iterable
 from contextlib import closing
+from copy import copy
+from pprint import pformat
 from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
-from pprint import pformat
 
 import httplib2
 import oauth2client
 import requests
-from requests.exceptions import ReadTimeout
 from apiclient import discovery
 from oauth2client import client, tools
+from requests.exceptions import ReadTimeout
 from simplejson import JSONDecodeError
 
 from wordpress import API
@@ -363,8 +365,19 @@ class SyncClientRest(SyncClientAbstract):
     mandatory_params = ['consumer_key', 'consumer_secret', 'url']
     default_version = 'wp/v2'
     default_namespace = 'wp-json'
+    meta_get_key = 'meta'
+    meta_set_key = 'custom_meta'
+    pagination_limit_key = 'filter[limit]'
+    pagination_number_key = 'page'
+    pagination_offset_key = 'filter[offset]'
+    total_pages_key = 'X-WP-TotalPages'
+    total_items_key = 'X-WP-Total'
     page_nesting = True
     search_param = None
+    meta_listed = False
+    readonly_keys = {
+        'core': ['id']
+    }
     key_translation = {
         # 'api_key': 'consumer_key',
         # 'api_secret': 'consumer_secret'
@@ -373,27 +386,32 @@ class SyncClientRest(SyncClientAbstract):
     class ApiIterator(Iterable):
         """ An iterator for traversing items in the API. """
 
-        def __init__(self, service, endpoint):
+        def __init__(self, service, endpoint, **kwargs):
             assert isinstance(service, WPAPIService)
             self.service = service
             self.next_endpoint = endpoint
             self.prev_response = None
             self.total_pages = None
             self.total_items = None
+            self.pagination_limit_key = kwargs.get('pagination_limit_key')
+            self.pagination_number_key = kwargs.get('pagination_number_key')
+            self.pagination_offset_key = kwargs.get('pagination_offset_key')
+            self.total_pages_key = kwargs.get('total_pages_key')
+            self.total_items_key = kwargs.get('total_items_key')
             # self.progress_counter = None
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
             # print "endpoint_queries:", endpoint_queries
             self.next_page = None
-            if 'page' in endpoint_queries:
-                self.next_page = int(endpoint_queries['page'])
+            if self.pagination_number_key in endpoint_queries:
+                self.next_page = int(endpoint_queries[self.pagination_number_key])
             self.limit = 10
-            if 'fliter[limit]' in endpoint_queries:
-                self.limit = int(endpoint_queries['filter[limit]'])
+            if self.pagination_limit_key in endpoint_queries:
+                self.limit = int(endpoint_queries[self.pagination_limit_key])
             # print "slave limit set to to ", self.limit
             self.offset = None
-            if 'filter[offset]' in endpoint_queries:
-                self.offset = int(endpoint_queries['filter[offset]'])
+            if self.pagination_offset_key in endpoint_queries:
+                self.offset = int(endpoint_queries[self.pagination_offset_key])
             # print "slave offset set to to ", self.offset
 
             # def get_url_param(self, url, param, default=None):
@@ -408,17 +426,10 @@ class SyncClientRest(SyncClientAbstract):
             if Registrar.DEBUG_API:
                 Registrar.register_message("headers: %s" % str(headers))
 
-            if self.service.namespace == 'wp-json':
-                total_pages_key = 'X-WP-TotalPages'
-                total_items_key = 'X-WP-Total'
-            else:
-                total_pages_key = 'X-WC-TotalPages'
-                total_items_key = 'X-WC-Total'
-
-            if total_items_key in headers:
-                self.total_pages = int(headers.get(total_pages_key, ''))
-            if total_pages_key in headers:
-                self.total_items = int(headers.get(total_items_key, ''))
+            if self.total_pages_key in headers:
+                self.total_pages = int(headers.get(self.total_pages_key, ''))
+            if self.total_items_key in headers:
+                self.total_items = int(headers.get(self.total_items_key, ''))
             prev_endpoint = self.next_endpoint
             self.next_endpoint = None
 
@@ -426,7 +437,11 @@ class SyncClientRest(SyncClientAbstract):
                 if rel == 'next' and link.get('url'):
                     next_response_url = link['url']
                     self.next_page = int(
-                        UrlUtils.get_query_singular(next_response_url, 'page'))
+                        UrlUtils.get_query_singular(
+                            next_response_url,
+                            self.pagination_number_key
+                        )
+                    )
                     if not self.next_page:
                         return
                     assert \
@@ -434,7 +449,10 @@ class SyncClientRest(SyncClientAbstract):
                         "next page (%s) should be lte total pages (%s)" \
                         % (str(self.next_page), str(self.total_pages))
                     self.next_endpoint = UrlUtils.set_query_singular(
-                        prev_endpoint, 'page', self.next_page)
+                        prev_endpoint,
+                        self.pagination_number_key,
+                        self.next_page
+                    )
 
                     # if Registrar.DEBUG_API:
                     #     Registrar.register_message('next_endpoint: %s' % str(self.next_endpoint))
@@ -469,27 +487,23 @@ class SyncClientRest(SyncClientAbstract):
                                                    self.next_endpoint)
 
                     self.next_endpoint = UrlUtils.set_query_singular(
-                        self.next_endpoint, 'filter[limit]', new_limit)
+                        self.next_endpoint,
+                        self.pagination_limit_key,
+                        new_limit
+                    )
                     self.next_endpoint = UrlUtils.del_query_singular(
-                        self.next_endpoint, 'page')
+                        self.next_endpoint,
+                        self.pagination_number_key
+                    )
                     if self.offset:
                         self.next_endpoint = UrlUtils.set_query_singular(
-                            self.next_endpoint, 'filter[offset]', self.offset)
+                            self.next_endpoint,
+                            self.pagination_offset_key,
+                            self.offset
+                        )
 
                     self.limit = new_limit
 
-                    # endpoint_queries = parse_qs(urlparse(self.next_endpoint).query)
-                    # endpoint_queries = dict([
-                    #     (key, value[0]) for key, value in endpoint_queries.items()
-                    # ])
-                    # endpoint_queries['filter[limit]'] = 1
-                    # if self.next_page:
-                    #     endpoint_queries['page'] = 10 * self.next_page
-                    # print "endpoint_queries: ", endpoint_queries
-                    # self.next_endpoint = UrlUtils.substitute_query(
-                    #     self.next_endpoint,
-                    #     urlencode(endpoint_queries)
-                    # )
                     if Registrar.DEBUG_API:
                         Registrar.register_message('new endpoint %s' %
                                                    self.next_endpoint)
@@ -554,20 +568,7 @@ class SyncClientRest(SyncClientAbstract):
         #     superconnect_params['oauth1a_3leg'] = True
 
         super(SyncClientRest, self).__init__(superconnect_params, **kwargs)
-        #
-        # self.service = WCAPI(
-        #     url=connect_params['url'],
-        #     consumer_key=connect_params['api_key'],
-        #     consumer_secret=connect_params['api_secret'],
-        #     timeout=60,
-        #     # wp_api=True, # Enable the WP REST API integration
-        #     # version="v3", # WooCommerce WP REST API version
-        #     # version="wc/v1"
-        # )
 
-    #
-
-    # since=None, limit=None, search=None):
     def analyse_remote(self, parser, **kwargs):
         limit = kwargs.get('limit', self.limit)
         since = kwargs.get('since', self.since)
@@ -652,9 +653,10 @@ class SyncClientRest(SyncClientAbstract):
             raise UserWarning("json should exist, instead response was %s" %
                               response.text)
         assert not isinstance(
-            response.json(),
-            int), "could not convert response to json: %s %s" % (
-                str(response), str(response.json()))
+            response.json(), int
+        ), "could not convert response to json: %s %s" % (
+            str(response), str(response.json())
+        )
         assert 'errors' not in response.json(
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
@@ -667,26 +669,32 @@ class SyncClientRest(SyncClientAbstract):
             endpoint = self.endpoint_plural
         endpoint_queries = {}
         if self.limit is not None:
-            endpoint_queries['filter[limit]'] = self.limit
+            endpoint_queries[self.pagination_limit_key] = self.limit
         if self.offset is not None:
-            endpoint_queries['filter[offset]'] = self.offset
+            endpoint_queries[self.pagination_offset_key] = self.offset
         if endpoint_queries:
             endpoint += "?" + urlencode(endpoint_queries)
-        return self.ApiIterator(self.service, endpoint)
+        return self.ApiIterator(
+            self.service,
+            endpoint,
+            pagination_limit_key=self.pagination_limit_key,
+            pagination_number_key=self.pagination_number_key,
+            pagination_offset_key=self.pagination_offset_key,
+            total_pages_key=self.total_pages_key,
+            total_items_key=self.total_items_key,
+        )
 
     def create_item(self, data):
         """
         Creates an item in the API
         """
         data = dict([(key, value) for key, value in data.items()])
-        assert 'name' in data, "name is required to create a category, instead provided with %s" \
-            % (str(data))
         if str(data.get('parent')) == str(-1):
             del data['parent']
         service_endpoint = self.endpoint_plural
         endpoint_singular = self.endpoint_singular
         endpoint_singular = re.sub('/', '_', endpoint_singular)
-        if not self.service.version.starts_with('wc/v'):
+        if self.page_nesting:
             data = {endpoint_singular: data}
         if Registrar.DEBUG_API:
             Registrar.register_message("creating %s: %s" %
@@ -702,19 +710,244 @@ class SyncClientRest(SyncClientAbstract):
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
 
-    # def __exit__(self, exit_type, value, traceback):
-    #     pass
+    def delete_item(self, pkey):
+        service_endpoint = "%s/%s" % (self.endpoint_plural, pkey)
+        if Registrar.DEBUG_API:
+            Registrar.register_message("deleting %s" % service_endpoint)
+        response = self.service.delete(service_endpoint)
+        assert response.status_code not in [400, 401], "API ERROR"
+        return response
 
+    def get_first_endpoint_item(self):
+        service_endpoint = '%s?%s=1' % (
+            self.endpoint_plural, self.pagination_limit_key
+        )
+        items_page = self.get_iterator(service_endpoint).next()
+        if self.page_nesting:
+            items_page = items_page[self.endpoint_plural]
+        return items_page[0]
+
+    @classmethod
+    def apply_to_data_item(cls, data, function, wrap_response=None):
+        if cls.page_nesting:
+            if data:
+                endpoint_singular, item = data.items()[0]
+            else:
+                endpoint_singular = cls.endpoint_singular
+                item = {}
+            item = function(item)
+            if wrap_response:
+                return {endpoint_singular: item}
+            return item
+        else:
+            return function(data)
+
+    @classmethod
+    def get_item_core(cls, item, key):
+        return item.get(key)
+
+    @classmethod
+    def get_data_core(cls, data, key):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(
+                cls.get_item_core,
+                key=key
+            )
+        )
+
+    @classmethod
+    def get_item_meta(cls, item, key):
+        if cls.meta_listed:
+            for meta in item[cls.meta_get_key]:
+                if meta['key'] == key:
+                    return meta['value']
+        else:
+            return item[cls.meta_get_key].get(key)
+
+    @classmethod
+    def get_data_meta(cls, data, key):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(
+                cls.get_item_meta,
+                key=key
+            )
+        )
+
+    @classmethod
+    def set_item_core(cls, item, key, value):
+        item[key] = value
+        return item
+
+    @classmethod
+    def set_data_core(cls, data, key, value):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(
+                cls.set_item_core,
+                key=key,
+                value=value
+            ),
+            wrap_response=True
+        )
+
+    @classmethod
+    def set_item_meta(cls, item, meta):
+        if cls.meta_listed:
+            if not cls.meta_set_key in item:
+                item[cls.meta_set_key] = []
+            for key, value in meta.items():
+                item[cls.meta_set_key].append(
+                    {'key':key, 'value':str(value)}
+                )
+        else:
+            if not cls.meta_set_key in item:
+                item[cls.meta_set_key] = {}
+            for key, value in meta.items():
+                item[cls.meta_set_key].update(**{key:value})
+        return item
+
+    @classmethod
+    def set_data_meta(cls, data, meta):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(
+                cls.set_item_meta,
+                meta=meta
+            ),
+            wrap_response=True
+        )
+
+    @classmethod
+    def delete_item_meta(cls, item, meta_key):
+        return cls.set_item_meta(item, {meta_key:''})
+
+    @classmethod
+    def delete_data_meta(cls, data, meta_key):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(
+                cls.set_item_meta,
+                meta_key=meta_key
+            ),
+            wrap_response=True
+        )
+
+    @classmethod
+    def strip_item_readonly(cls, item):
+        readonly_keys = copy(cls.readonly_keys)
+        if not readonly_keys:
+            return item
+        for key in readonly_keys.pop('core', []):
+            if key in item:
+                del(item[key])
+        for key, sub_keys in readonly_keys.items():
+            if isinstance(item[key], list):
+                new_list = []
+                for list_item in item[key]:
+                    for sub_key in sub_keys:
+                        if sub_key in list_item:
+                            del(list_item[sub_key])
+                    new_list.append(list_item)
+            else:
+                for sub_key in sub_keys:
+                    if sub_key in item[key]:
+                        del(item[key][sub_key])
+        return item
+
+    @classmethod
+    def strip_data_readonly(cls, data):
+        return cls.apply_to_data_item(
+            data,
+            functools.partial(cls.set_item_meta),
+            wrap_response=True
+        )
 
 class SyncClientWC(SyncClientRest):
     """
-    Client for the WC Rest API
+    Client for the WC wp-json Rest API
+    https://woocommerce.github.io/woocommerce-rest-api-docs
     """
     default_version = 'wc/v2'
     default_namespace = 'wp-json'
     page_nesting = False
-    # default_version = 'v3'
-    # default_namespace = 'wc-api'
+    meta_get_key = 'meta_data'
+    meta_set_key = 'meta_data'
+    pagination_limit_key = 'per_page'
+    pagination_offest_key = 'offset'
+    pagination_number_key = 'page'
+    search_param = 'name'
+    meta_listed = True
+    total_pages_key = 'x-wp-totalpages'
+    total_items_key = 'x-wp-total'
+    readonly_keys = {
+        'core': [
+            'id', 'permalink', 'date_created', 'date_created_gmt',
+             'date_modified', 'date_modified_gmt', 'price', 'price_html',
+             'on_sale', 'purchasable', 'total_sales', 'backorders_allowed',
+             'backordered', 'shipping_required', 'shipping_taxable',
+             'shipping_class_id', 'average_rating', 'rating_count', 'related_ids',
+             'variations'
+        ],
+        'downloads': ['id'],
+        'categories': ['name', 'slug'],
+        'tags': ['name', 'slug'],
+        'images': [
+            'date_created', 'date_created_gmt', 'date_modified',
+            'date_modified_gmt'
+        ],
+        meta_set_key: [
+            'id'
+        ]
+    }
+
+class SyncClientWCLegacy(SyncClientRest):
+    """
+    Client for the Legacy WC Rest API (deprecated since WC3.0)
+    https://woocommerce.github.io/woocommerce-rest-api-docs/v3.html
+    """
+    pagination_limit_key = 'filter[limit]'
+    pagination_number_key = 'page'
+    pagination_offset_key = 'filter[offset]'
+    meta_get_key = 'meta'
+    meta_set_key = 'custom_meta'
+    default_version = 'v3'
+    default_namespace = 'wc-api'
+    page_nesting = True
+    pagination_limit_key = 'filter[limit]'
+    pagination_number_key = 'page'
+    pagination_offset_key = 'filter[offset]'
+    search_param = 'filter[q]'
+    meta_listed = False
+    readonly_keys = {
+        'core': [
+            'id', 'permalink', 'created_at', 'updated_at', 'price', 'price_html',
+            'total_sales', 'backorders_allowed', 'taxable', 'backorders_allowed',
+            'backordered', 'purchasable', 'visible', 'on_sale',
+            'shipping_required', 'shipping_taxable', 'shipping_class_id',
+            'average_rating', 'rating_count', 'related_ids', 'featured_src',
+            'total_sales', 'parent'
+        ],
+        'dimensions': ['unit'],
+        'images': [
+            'created_at', 'updated_at'
+        ],
+        'downloads': ['id'],
+        'categories': ['name', 'slug'],
+        'tags': ['name', 'slug'],
+        'meta': [
+            'id'
+        ],
+        'variations': [
+            'id', 'created_at', 'updated_at', 'permalink', 'price', 'taxable',
+            'back-ordered', 'purchasable', 'visible', 'on_sale', 'shipping_class_id'
+        ]
+    }
+    total_pages_key = 'X-WC-TotalPages'
+    total_items_key = 'X-WC-Total'
+
+
 
 
 class SyncClientWP(SyncClientRest):
