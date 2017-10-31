@@ -30,7 +30,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()

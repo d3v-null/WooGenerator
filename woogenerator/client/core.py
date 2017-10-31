@@ -398,25 +398,18 @@ class SyncClientRest(SyncClientAbstract):
             self.pagination_offset_key = kwargs.get('pagination_offset_key')
             self.total_pages_key = kwargs.get('total_pages_key')
             self.total_items_key = kwargs.get('total_items_key')
-            # self.progress_counter = None
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
-            # print "endpoint_queries:", endpoint_queries
+
             self.next_page = None
             if self.pagination_number_key in endpoint_queries:
                 self.next_page = int(endpoint_queries[self.pagination_number_key])
             self.limit = 10
             if self.pagination_limit_key in endpoint_queries:
                 self.limit = int(endpoint_queries[self.pagination_limit_key])
-            # print "slave limit set to to ", self.limit
             self.offset = None
             if self.pagination_offset_key in endpoint_queries:
                 self.offset = int(endpoint_queries[self.pagination_offset_key])
-            # print "slave offset set to to ", self.offset
-
-            # def get_url_param(self, url, param, default=None):
-            #     url_params = parse_qs(urlparse(url).query)
-            #     return url_params.get(param, [default])[0]
 
         def process_headers(self, response):
             """
@@ -667,14 +660,17 @@ class SyncClientRest(SyncClientAbstract):
         """
         if not endpoint:
             endpoint = self.endpoint_plural
-        endpoint_queries = {}
-        endpoint_queries = SanitationUtils.findall_url_params(endpoint)
-        if self.limit is not None:
+
+        endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
+        if self.pagination_limit_key not in endpoint_queries \
+        and self.limit is not None:
             endpoint_queries[self.pagination_limit_key] = self.limit
-        if self.offset is not None:
+
+        if self.pagination_offset_key not in endpoint_queries \
+        and self.offset is not None:
             endpoint_queries[self.pagination_offset_key] = self.offset
         if endpoint_queries:
-            endpoint += "?" + urlencode(endpoint_queries)
+            endpoint = UrlUtils.substitute_query(endpoint, urlencode(endpoint_queries))
         return self.ApiIterator(
             self.service,
             endpoint,
