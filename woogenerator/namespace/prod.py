@@ -6,17 +6,22 @@ import os
 import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
-from ..client.prod import ProdSyncClientWC, ProdSyncClientWCLegacy, ProdSyncClientXero
-from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero, ColDataBase
+from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
+                           ProdSyncClientWC, ProdSyncClientWCLegacy,
+                           ProdSyncClientXero)
+from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
 from ..parsing.myo import CsvParseMyo
-from ..parsing.xero import CsvParseXero, ApiParseXero
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
-from ..syncupdate import SyncUpdateProdWoo, SyncUpdateProdXero, SyncUpdateCatWoo, SyncUpdateProd
-from .core import SettingsNamespaceProto
+from ..parsing.xero import ApiParseXero, CsvParseXero
+from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateProd, SyncUpdateProdWoo,
+                          SyncUpdateProdXero)
 from ..utils import Registrar
+from .core import SettingsNamespaceProto
+
+CatSyncClientWC
 
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
@@ -478,6 +483,20 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'connect_params': self.slave_wc_api_params
         }
         return response
+
+    @property
+    def slave_cat_upload_client_class(self):
+        if self.wc_api_is_legacy:
+            return CatSyncClientWCLegacy
+        else:
+            return CatSyncClientWC
+
+    @property
+    def slave_cat_upload_client_args(self):
+        return {
+            'connect_params': self.slave_wc_api_params
+        }
+
 
     @property
     def syncupdate_class_prod(self):

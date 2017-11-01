@@ -177,15 +177,22 @@ def populate_slave_parsers(parsers, settings):
     slave_client_args = settings.slave_download_client_args
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
-    with slave_client_class(**slave_client_args) as client:
-        # try:
-        if settings.schema_is_woo and settings['do_categories']:
-            Registrar.register_progress("analysing API category data")
 
+    if settings.schema_is_woo and settings['do_categories']:
+        Registrar.register_progress("analysing API category data")
+
+        cat_upload_client_class = settings.slave_cat_upload_client_class
+        cat_upload_client_args = settings.slave_cat_upload_client_args
+
+        with cat_upload_client_class(**cat_upload_client_args) as client:
             client.analyse_remote_categories(
                 parsers.slave,
                 data_path=settings.slave_cat_path
             )
+
+
+    with slave_client_class(**slave_client_args) as client:
+        # try:
 
         Registrar.register_progress("analysing API data")
 
@@ -1127,7 +1134,10 @@ def do_updates_categories(updates, parsers, results, settings):
         if Registrar.DEBUG_CATS:
             Registrar.DEBUG_API = True
 
-        with CatSyncClientWC(settings['slave_wp_api_params']) as client:
+        upload_client_class = settings.slave_cat_upload_client_class
+        upload_client_args = settings.slave_cat_upload_client_args
+
+        with upload_client_class(**upload_client_args) as client:
             if Registrar.DEBUG_CATS:
                 Registrar.register_message("created cat client")
             new_categories = [

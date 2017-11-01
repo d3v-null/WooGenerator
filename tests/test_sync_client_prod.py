@@ -316,15 +316,6 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertFalse(wn_regular_price)
 
     @unittest.skip("Destructive tests not mocked yet")
-    def test_get_single_page(self):
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.service.get('products?page=9')
-            self.assertTrue(response)
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_changes_empty", response.json()
-
-    @unittest.skip("Destructive tests not mocked yet")
     def test_cat_sync_client(self):
         with CatSyncClientWC(self.settings.slave_wc_api_params) as client:
             for page in client.get_iterator():
