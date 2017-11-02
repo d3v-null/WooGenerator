@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import itertools
 from collections import OrderedDict
+from jsonpath_rw import jsonpath
 
 from .utils import SeqUtils
 
@@ -30,23 +31,248 @@ schema = [
 ]
 """
 """
+Get rid of stuff like slave_override, since it should be able to work both ways.
+get rid of attributes like category, product, variation, that's covered by class now.
+"""
+"""
 YAML Import and export of schema
 data is not read from file until it is accessed?
 """
 """
-Proposal: clearer target names
-    wp-api
-    wp-api-v1
-    wp-api-v2
-    wc-legacy-api
-    wc-legacy-api-v1
-    wc-legacy-api-v2
-    wc-legacy-api-v3
-    wc-wp-api
-    wc-wp-api-v1
-    wc-wp-api-v2
-    xero-api
+Proposal: clearer target names with defined resolution order
+    api
+        wp-api
+            wp-api-v1
+            wp-api-v2
+        wc-api
+            wc-legacy-api
+                wc-legacy-api-v1
+                wc-legacy-api-v2
+                wc-legacy-api-v3
+            wc-wp-api
+                wc-wp-api-v1
+                wc-wp-api-v2
+        xero-api
+    csv
 """
+
+class ColDataAbstract(object):
+    targets = {
+        'api': {
+            'wp-api': {
+                'wp-api-v1': {},
+                'wp-api-v2': {}
+            },
+            'wc-api': {
+                'wc-legacy-api': {
+                    'wc-legacy-api-v1': {},
+                    'wc-legacy-api-v2': {},
+                    'wc-legacy-api-v3': {},
+                },
+                'wc-wp-api': {
+                    'wc-wp-api-v1': {},
+                    'wc-wp-api-v2': {}
+                }
+            },
+            'xero-api': {},
+            'infusion-api': {},
+        },
+        'csv': {
+            'woo-csv': {},
+            'act-csv': {},
+            'myo-csv': {},
+        },
+        'sql': {
+            'wp-sql': {}
+        },
+        'report': {
+            'report-full': {}
+        }
+    }
+    data = {
+        'id': {
+            'write': False,
+            'unique': True,
+            'xero-api': {
+                'path': None,
+            },
+            'sql': {
+                'meta': False,
+            },
+            'wp-sql': {
+                'path': 'ID',
+            },
+            'act-csv': {
+                'path': 'Wordpress ID',
+            }
+        }
+    }
+
+    @classmethod
+    def get_target_ancestors(cls, targets=None, target=None):
+        ancestors = []
+        if (targets and target):
+            for this, children in targets.items():
+                child_target_ancestors = cls.get_target_ancestors(children, target)
+                if this == target or child_target_ancestors:
+                    ancestors.append(this)
+                if child_target_ancestors:
+                    ancestors.extend(child_target_ancestors)
+        return ancestors
+
+    @classmethod
+    def prepare_finder(cls, properties, ancestors=None, handles=None):
+        # import pudb; pudb.set_trace()
+        if handles is None:
+            handles = ['*']
+        handle_finder = jsonpath.Fields(*handles)
+        finder = handle_finder.child(jsonpath.Fields(*properties))
+        if ancestors:
+            finder = jsonpath.Union(
+                finder,
+                handle_finder\
+                .child(jsonpath.Fields(*ancestors))\
+                .child(jsonpath.Fields(*properties))
+            )
+        return finder
+
+    @classmethod
+    def get_property_default(cls, property_=None, handle=None):
+
+        if property_:
+            return {
+                'path': handle,
+                'write': True,
+                'read': True,
+                'type': 'string'
+            }.get(property_)
+
+    @classmethod
+    def get_handle_property(cls, handle, property_, target=None):
+        """
+        Return the value of a handle's property in the context of target.
+        """
+        target_ancestors = cls.get_target_ancestors(cls.targets, target)
+        finder = cls.prepare_finder([property_], target_ancestors, [handle])
+        results = [match.value for match in finder.find(cls.data)]
+        if results:
+            return results[-1]
+        else:
+            return cls.get_property_default(property_, handle)
+
+    @classmethod
+    def get_handles_property(cls, property_, target=None):
+        """
+        Return a mapping of handles to the value of property_ wherever it is explicitly declared
+        in the context of target
+        """
+        target_ancestors = cls.get_target_ancestors(cls.targets, target)
+        finder = cls.prepare_finder([property_], target_ancestors, )
+        results = OrderedDict()
+        for result in finder.find(cls.data):
+            value = result.value
+            handle_old = str(result.full_path).split('.')[0]
+            # TODO: there is probably a better way of getting the root of this path
+            handle = result.full_path
+            while hasattr(handle, 'left'):
+                handle = handle.left
+            handle = handle.fields[0]
+            assert handle == handle_old
+            results[handle] = value
+        return results
+
+    @classmethod
+    def get_path_translation(cls, from_target, to_target=None):
+        """
+        Return a list of tuples of path specs for translating between different targets.
+        """
+        if not (from_target or to_target) or from_target == to_target:
+            return None
+
+        from_paths = cls.get_handles_property('path', from_target)
+        to_paths = cls.get_handles_property('path', to_target)
+        translation = {}
+        for handle in cls.data.keys():
+            from_path = from_paths.get(handle, handle)
+            to_path = to_paths.get(handle, handle)
+            if from_path and to_path:
+                translation[from_path] = to_path
+        return translation
+
+class ColDataMedia(ColDataAbstract):
+    data = dict(ColDataAbstract.data.items() + {
+        'date_gmt': {
+            'type': 'iso8601_gmt',
+            'write': False
+        },
+        'modified_gmt': {
+            'type': 'iso8601_gmt',
+            'write': False
+        },
+        'slug':{
+            'unique': True,
+        },
+        'title': {
+            'type': 'object'
+        },
+        'meta': {
+            'type': 'object',
+            'wp-api-v1': {
+                'path': {
+                    'attachment_meta'
+                }
+            }
+        },
+        'source_url': {
+            'write': False,
+            'type': 'uri',
+            'wp-api-v1': {
+                'path':'source'
+            }
+        },
+        'alt_text': {},
+        'caption': {
+            'type': 'object'
+        },
+        'description': {
+            'type': 'object'
+        },
+        'media_type': {
+            'write': False,
+            'wp-api-v1': {
+                'path': 'is_image',
+                'type': 'bool'
+            }
+        },
+        'mime_type': {
+            'write': False
+        },
+        'media_details': {
+            'write': False,
+            'type': 'object',
+            'wp-api-v1': {
+                'path': 'attachment_meta.image_meta'
+            }
+        },
+        'attach_link': {
+            'write': False,
+            'type': 'uri',
+            'wp-api': {
+                'path': 'link'
+            }
+        },
+        'attach_post_id': {
+            'wp-api': {
+                'path': 'post'
+            }
+        },
+        'attach_post_type':{
+            'write': False,
+            'wp-api': {
+                'path':'type'
+            }
+        },
+    }.items())
 
 class ColDataBase(object):
     data = OrderedDict()

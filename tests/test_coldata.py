@@ -1,23 +1,124 @@
 from collections import OrderedDict
 import unittest
 from unittest import TestCase
+import logging
 
 from context import woogenerator
-from woogenerator.coldata import ColDataUser, ColDataWoo
+from woogenerator.coldata import ColDataUser, ColDataWoo, ColDataAbstract, ColDataMedia
 from woogenerator.utils import Registrar
 from pprint import pformat
 
-
-class testColDataUser(TestCase):
+class TestColData(unittest.TestCase):
+    col_data_class = ColDataAbstract
 
     def setUp(self):
+        if self.debug:
+            pass
+        else:
+            logging.basicConfig(level=logging.DEBUG)
+            Registrar.DEBUG_ERROR = False
+            Registrar.DEBUG_WARN = False
+            Registrar.DEBUG_MESSAGE = False
+
+class TestColDataAbstract(TestColData):
+    def test_get_target_ancestors(self):
+        self.assertEqual(
+            self.col_data_class.get_target_ancestors(
+                self.col_data_class.targets,
+                'wc-legacy-api-v2'
+            ),
+            ['api', 'wc-api', 'wc-legacy-api', 'wc-legacy-api-v2']
+        )
+
+    def test_get_property(self):
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'path'),
+            'id'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'path', 'xero-api'),
+            None
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'path', 'sql'),
+            'id'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'path', 'wp-sql'),
+            'ID'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'path', 'wp-api'),
+            'id'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write'),
+            False
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write', 'xero-api'),
+            False
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write', 'sql'),
+            False
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write', 'wp-sql'),
+            False
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write', 'wp-api'),
+            False
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('id', 'write', 'wp-csv'),
+            False
+        )
+
+class TestColDataImg(TestColData):
+    col_data_class = ColDataMedia
+    debug = True
+
+    def test_get_property(self):
+        self.assertEqual(
+            self.col_data_class.get_handle_property('source_url', 'path'),
+            'source_url'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('source_url', 'path', 'wp-api-v1'),
+            'source'
+        )
+        self.assertEqual(
+            self.col_data_class.get_handle_property('source_url', 'path', 'wp-api-v2'),
+            'source_url'
+        )
+
+    def test_get_handles(self):
+        handles_property_v2 = self.col_data_class.get_handles_property('path', 'wp-api-v2')
+        if self.debug:
+            print("handles_property_v2: %s" % pformat(handles_property_v2))
+        self.assertEquals(
+            handles_property_v2,
+            OrderedDict([('attach_post_id', 'post'), ('attach_post_type', 'type'), ('attach_link', 'link')])
+        )
+
+
+    def test_get_path_translation(self):
+        path_translation = self.col_data_class.get_path_translation('wp-api-v2')
+        if self.debug:
+            print("path_translation: %s" % pformat(path_translation))
+
+
+
+class testColDataUser(TestColData):
+    col_data_class = ColDataUser
+    def setUp(self):
+        super(testColDataUser, self).setUp()
         self.maxDiff = None
-        Registrar.DEBUG_ERROR = False
-        Registrar.DEBUG_WARN = False
-        Registrar.DEBUG_MESSAGE = False
 
     def test_getImportCols(self):
-        importCols = ColDataUser.get_import_cols()
+        importCols = self.col_data_class.get_import_cols()
         for key in [
             'MYOB Card ID',
             'E-mail',
@@ -71,7 +172,7 @@ class testColDataUser(TestCase):
             self.assertIn(key, importCols)
 
     def test_getActTrackedCols(self):
-        actTrackedCols = ColDataUser.get_act_tracked_cols()
+        actTrackedCols = self.col_data_class.get_act_tracked_cols()
         self.assertItemsEqual(
             actTrackedCols,
             OrderedDict([
@@ -93,7 +194,7 @@ class testColDataUser(TestCase):
              ]))
 
     def test_getDeltaCols(self):
-        DeltaCols = ColDataUser.get_delta_cols()
+        DeltaCols = self.col_data_class.get_delta_cols()
         self.assertItemsEqual(DeltaCols, OrderedDict(
             [
                 ('E-mail', 'Delta E-mail'),
@@ -101,7 +202,7 @@ class testColDataUser(TestCase):
             ]))
 
     def test_getAllWpDbCols(self):
-        dbCols = ColDataUser.get_all_wpdb_cols()
+        dbCols = self.col_data_class.get_all_wpdb_cols()
         # print "dbCols %s" % pformat(dbCols.items())
         self.assertItemsEqual(dbCols, OrderedDict([
             ('myob_card_id', 'MYOB Card ID'),

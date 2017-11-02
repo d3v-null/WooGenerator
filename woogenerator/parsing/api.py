@@ -322,6 +322,10 @@ class ApiParseWoo(
             new_data['manage_stock'] = 'no'
         return new_data
 
+    def process_api_image(self, img_api_data):
+        pass
+
+
     def process_api_category(self, category_api_data, object_data=None):
         """
         Create category if not exist or find if exist, then assign object_data to category
