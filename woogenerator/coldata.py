@@ -29,6 +29,7 @@ schema = [
 """
 """
 YAML Import and export of schema
+data is not read from file until it is accessed?
 """
 """
 Proposal: clearer target names

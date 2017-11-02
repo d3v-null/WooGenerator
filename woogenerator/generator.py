@@ -178,11 +178,22 @@ def populate_slave_parsers(parsers, settings):
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
+    if settings.schema_is_woo and settings['do_images']:
+        Registrar.register_progress("analysing API image data")
+        img_upload_client_class = settings.slave_img_sync_client_class
+        img_upload_client_args = settings.slave_img_sync_client_args
+
+        with img_upload_client_class(**img_upload_client_args) as client:
+            client.analyse_remote_imgs(
+                parsers.slave,
+                data_path=settings.slave_img_path
+            )
+
     if settings.schema_is_woo and settings['do_categories']:
         Registrar.register_progress("analysing API category data")
 
-        cat_upload_client_class = settings.slave_cat_upload_client_class
-        cat_upload_client_args = settings.slave_cat_upload_client_args
+        cat_upload_client_class = settings.slave_cat_sync_client_class
+        cat_upload_client_args = settings.slave_cat_sync_client_args
 
         with cat_upload_client_class(**cat_upload_client_args) as client:
             client.analyse_remote_categories(
@@ -1134,8 +1145,8 @@ def do_updates_categories(updates, parsers, results, settings):
         if Registrar.DEBUG_CATS:
             Registrar.DEBUG_API = True
 
-        upload_client_class = settings.slave_cat_upload_client_class
-        upload_client_args = settings.slave_cat_upload_client_args
+        upload_client_class = settings.slave_cat_sync_client_class
+        upload_client_args = settings.slave_cat_sync_client_args
 
         with upload_client_class(**upload_client_args) as client:
             if Registrar.DEBUG_CATS:

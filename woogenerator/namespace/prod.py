@@ -9,6 +9,7 @@ from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
                            ProdSyncClientXero)
+from ..client.img import ImgSyncClientWP
 from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
@@ -238,8 +239,19 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = '%s%s' % (self.file_prefix, 'slave_cat')
         if self.schema_is_woo:
             response += '_woo_api'
-        if self.schema_is_xero:
-            response += '_xero_api'
+        if self.get('wc_api_namespace'):
+            response += '_' + self.get('wc_api_namespace')
+        if self.variant:
+            response = "-".join([response, self.variant])
+        response += "-" + self.import_name + '.json'
+        return os.path.join(self.in_dir_full, response)
+
+    @property
+    def slave_img_path(self):
+        """ The path which the slave wp api image json data is cached. """
+        if hasattr(self, 'slave_img_file') and getattr(self, 'slave_img_file'):
+            return getattr(self, 'slave_img_file')
+        response = '%s%s' % (self.file_prefix, 'slave_img')
         if self.get('wc_api_namespace'):
             response += '_' + self.get('wc_api_namespace')
         if self.variant:
@@ -485,16 +497,26 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_cat_upload_client_class(self):
+    def slave_cat_sync_client_class(self):
         if self.wc_api_is_legacy:
             return CatSyncClientWCLegacy
         else:
             return CatSyncClientWC
 
     @property
-    def slave_cat_upload_client_args(self):
+    def slave_cat_sync_client_args(self):
         return {
             'connect_params': self.slave_wc_api_params
+        }
+
+    @property
+    def slave_img_sync_client_class(self):
+        return ImgSyncClientWP
+
+    @property
+    def slave_img_sync_client_args(self):
+        return {
+            'connect_params': self.slave_wp_api_params
         }
 
 

@@ -10,7 +10,7 @@ from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
-from woogenerator.client.img import ImgSyncClient
+from woogenerator.client.img import ImgSyncClientWP
 from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -324,7 +324,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 # print page
 
 class TestImgSyncClient(TestProdSyncClient):
-    debug = True
+    # debug = True
 
     def test_upload_image_delete(self):
         if self.debug:
@@ -336,7 +336,7 @@ class TestImgSyncClient(TestProdSyncClient):
 
         if self.debug:
             print('client_params:\n%s' % pformat(client_params))
-        with ImgSyncClient(**client_params) as client:
+        with ImgSyncClientWP(**client_params) as client:
             img_path = os.path.join(TESTS_DATA_DIR, 'sample_img.jpg')
             response = client.upload_image(img_path)
             if self.debug:
