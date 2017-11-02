@@ -3,12 +3,14 @@ import unittest
 from collections import OrderedDict
 from pprint import pformat
 import logging
+import os
 
 from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.client.img import ImgSyncClient
 from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -262,7 +264,6 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertTrue(response)
             self.assertTrue(hasattr(response, 'json'))
 
-
     @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_variation(self):
         pkey = 41
@@ -321,6 +322,29 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             for page in client.get_iterator():
                 self.assertTrue(page)
                 # print page
+
+class TestImgSyncClient(TestProdSyncClient):
+    debug = True
+
+    def test_upload_image_delete(self):
+        if self.debug:
+            Registrar.DEBUG_API = True
+            logging.basicConfig(level=logging.DEBUG)
+        client_params = {
+            'connect_params':self.settings.slave_wp_api_params
+        }
+
+        if self.debug:
+            print('client_params:\n%s' % pformat(client_params))
+        with ImgSyncClient(**client_params) as client:
+            img_path = os.path.join(TESTS_DATA_DIR, 'sample_img.jpg')
+            response = client.upload_image(img_path)
+            if self.debug:
+                print("response: %s" % pformat(response.json()))
+            img_id = client.get_data_core(response.json(), 'id')
+            client.delete_item(img_id)
+
+
 
 class TestProdSyncClientConstructors(TestProdSyncClient):
     # def test_make_usr_m_up_client(self):

@@ -681,22 +681,26 @@ class SyncClientRest(SyncClientAbstract):
             total_items_key=self.total_items_key,
         )
 
-    def create_item(self, data):
+    def create_item(self, data, **kwargs):
         """
         Creates an item in the API
         """
-        data = dict([(key, value) for key, value in data.items()])
-        if str(data.get('parent')) == str(-1):
-            del data['parent']
+        if hasattr(data, 'items'):
+            data = dict([(key, value) for key, value in data.items()])
+        if isinstance(data, dict):
+            if str(data.get('parent')) == str(-1):
+                del data['parent']
         service_endpoint = self.endpoint_plural
         endpoint_singular = self.endpoint_singular
         endpoint_singular = re.sub('/', '_', endpoint_singular)
         if self.page_nesting:
             data = {endpoint_singular: data}
         if Registrar.DEBUG_API:
-            Registrar.register_message("creating %s: %s" %
-                                       (service_endpoint, data))
-        response = self.service.post(service_endpoint, data)
+            Registrar.register_message("creating %s: %s" % (
+                service_endpoint,
+                pformat(data)[:1000]
+            ))
+        response = self.service.post(service_endpoint, data, **kwargs)
         assert response.status_code not in [400, 401], "API ERROR"
         assert response.json(), "json should exist"
         assert not isinstance(
@@ -707,8 +711,11 @@ class SyncClientRest(SyncClientAbstract):
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
 
-    def delete_item(self, pkey):
+    def delete_item(self, pkey, **kwargs):
         service_endpoint = "%s/%s" % (self.endpoint_plural, pkey)
+        force = kwargs.pop('force', False)
+        if force:
+            service_endpoint += "?force=true"
         if Registrar.DEBUG_API:
             Registrar.register_message("deleting %s" % service_endpoint)
         response = self.service.delete(service_endpoint)

@@ -8,6 +8,45 @@ from collections import OrderedDict
 
 from .utils import SeqUtils
 
+# TODO:
+"""
+Proposal: coldata format needs to be unified:
+schema = [
+    (handle, {          # internal handle for column
+        label=...,      # (optional) external label for column, defaults to handle
+        type=...,       # (optional) internal storage type if not string
+        default=...,    # (optional) default internal value
+        target={        # for each target format
+            label=...,  # (optional) external label when expressed in target format if different from global label
+            type=...,   # (optional) type when expressed in target format if different from global type
+            path=...,   # (optional) location of value in target format
+            edit=False, # (optional) if column is editable in this format, defaults to True
+            read=False, # (optional) if column is readable in this format, defaults to True
+        }
+
+    })
+]
+"""
+"""
+YAML Import and export of schema
+"""
+"""
+Proposal: clearer target names
+    wp-api
+    wp-api-v1
+    wp-api-v2
+    wc-legacy-api
+    wc-legacy-api-v1
+    wc-legacy-api-v2
+    wc-legacy-api-v3
+    wc-wp-api
+    wc-wp-api-v1
+    wc-wp-api-v2
+    xero-api
+"""
+
+
+
 
 class ColDataBase(object):
     data = OrderedDict()

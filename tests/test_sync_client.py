@@ -1,4 +1,5 @@
 import unittest
+import logging
 
 from context import TESTS_DATA_DIR, get_testdata, woogenerator
 from woogenerator.client.core import SyncClientGDrive
@@ -30,9 +31,11 @@ class AbstractSyncClientTestCase(unittest.TestCase):
         if self.debug:
             self.settings.verbosity = 3
             self.settings.quiet = False
+            logging.basicConfig(level=logging.DEBUG)
         else:
             self.settings.verbosity = 0
             self.settings.quiet = True
+            logging.basicConfig(level=logging.WARN)
 
         self.settings.init_settings(self.override_args)
         if not self.debug:
