@@ -4,9 +4,11 @@ Utility for keeping track of column metadata for translating between databases.
 
 from __future__ import absolute_import
 
+import itertools
 from collections import OrderedDict
 
 from .utils import SeqUtils
+
 
 # TODO:
 """
@@ -45,9 +47,6 @@ Proposal: clearer target names
     wc-wp-api-v2
     xero-api
 """
-
-
-
 
 class ColDataBase(object):
     data = OrderedDict()
@@ -881,486 +880,43 @@ class ColDataWoo(ColDataProd):
                 'meta': True
             },
         }),
-        ('RNR', {
-            'label': 'meta:lc_rn_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rn_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rn_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rn_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('RNS', {
-            'label': 'meta:lc_rn_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rn_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rn_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rn_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('RNF', {
-            'label': 'meta:lc_rn_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rn_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rn_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rn_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('RNT', {
-            'label': 'meta:lc_rn_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rn_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rn_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rn_sale_price_dates_to',
-                'meta': True
-            },
-        }),
-        ('RPR', {
-            'label': 'meta:lc_rp_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rp_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rp_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rp_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('RPS', {
-            'label': 'meta:lc_rp_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rp_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rp_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rp_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('RPF', {
-            'label': 'meta:lc_rp_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rp_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rp_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rp_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('RPT', {
-            'label': 'meta:lc_rp_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_rp_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_rp_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_rp_sale_price_dates_to',
-                'meta': True
-            },
-        }),
-        ('WNR', {
-            'label': 'meta:lc_wn_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wn_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wn_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wn_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('WNS', {
-            'label': 'meta:lc_wn_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wn_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wn_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wn_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('WNF', {
-            'label': 'meta:lc_wn_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wn_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wn_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wn_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('WNT', {
-            'label': 'meta:lc_wn_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wn_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wn_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wn_sale_price_dates_to',
-                'meta': True
-            },
-        }),
-        ('WPR', {
-            'label': 'meta:lc_wp_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wp_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wp_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wp_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('WPS', {
-            'label': 'meta:lc_wp_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wp_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wp_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wp_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('WPF', {
-            'label': 'meta:lc_wp_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wp_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wp_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wp_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('WPT', {
-            'label': 'meta:lc_wp_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_wp_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_wp_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_wp_sale_price_dates_to',
-                'meta': True
-            },
-        }),
-        ('DNR', {
-            'label': 'meta:lc_dn_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dn_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dn_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dn_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('DNS', {
-            'label': 'meta:lc_dn_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dn_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dn_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dn_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('DNF', {
-            'label': 'meta:lc_dn_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dn_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dn_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dn_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('DNT', {
-            'label': 'meta:lc_dn_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dn_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dn_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dn_sale_price_dates_to',
-                'meta': True
-            },
-        }),
-        ('DPR', {
-            'label': 'meta:lc_dp_regular_price',
-            'sync': True,
-            'import': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dp_regular_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dp_regular_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dp_regular_price',
-                'meta': True
-            },
-            'static': True,
-            'type': 'currency',
-        }),
-        ('DPS', {
-            'label': 'meta:lc_dp_sale_price',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dp_sale_price',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dp_sale_price',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dp_sale_price',
-                'meta': True
-            },
-            'type': 'currency',
-        }),
-        ('DPF', {
-            'label': 'meta:lc_dp_sale_price_dates_from',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dp_sale_price_dates_from',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dp_sale_price_dates_from',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dp_sale_price_dates_from',
-                'meta': True
-            },
-        }),
-        ('DPT', {
-            'label': 'meta:lc_dp_sale_price_dates_to',
-            'sync': True,
-            'product': True,
-            'variation': True,
-            'pricing': True,
-            'wp': {
-                'key': 'lc_dp_sale_price_dates_to',
-                'meta': True
-            },
-            'wp-api': {
-                'key': 'lc_dp_sale_price_dates_to',
-                'meta': True
-            },
-            'wc-api': {
-                'key': 'lc_dp_sale_price_dates_to',
-                'meta': True
-            },
-        }),
+    ] +
+    [
+        (
+            ''.join([tier.upper(), field_slug.upper()]),
+            {
+                'label': 'meta:lc_%s_%s' % (tier, field),
+                'sync': True,
+                'import': import_,
+                'product': True,
+                'variation': True,
+                'pricing': True,
+                'wp': {
+                    'key': 'lc_%s_%s' % (tier, field),
+                    'meta': True
+                },
+                'wp-api': {
+                    'key': 'lc_%s_%s' % (tier, field),
+                    'meta': True
+                },
+                'wc-api': {
+                    'key': 'lc_%s_%s' % (tier, field),
+                    'meta': True
+                },
+                'static': static,
+                'type': type_,
+            }
+        ) for (tier, (field_slug, field, import_, type_, static)) in itertools.product(
+            ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
+            [
+                ('r', 'regular_price', True, 'currency', True),
+                ('s', 'sale_price', False, 'currency', False),
+                ('f', 'sale_price_dates_from', False, 'timestamp', False),
+                ('t', 'sale_price_dates_to', False, 'timestamp', False)
+            ]
+        )
+    ] +
+    [
         ('CVC', {
             'label': 'meta:commissionable_value',
             'sync': True,
@@ -1538,8 +1094,8 @@ class ColDataWoo(ColDataProd):
             },
             'default': '',
         }),
-
     ])
+
 
     def __init__(self, data=None):
         if not data:
