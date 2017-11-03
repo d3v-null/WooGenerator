@@ -210,16 +210,18 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def fls_path(self):
         """ The path which the flattened master specials csv data is stored. """
-        response = "%s%s-%s-%s.csv" % (
-            self.file_prefix, 'flattened', self.current_special_id, self.import_name
+        # don't need import name
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened', self.current_special_id
         )
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flvs_path(self):
         """ The path which the flattened master specials variations csv data is stored. """
-        response = "%s%s-%s-%s.csv" % (
-            self.file_prefix, 'flattened-variations', self.current_special_id, self.import_name
+        # don't need import name
+        response = "%s%s-%s.csv" % (
+            self.file_prefix, 'flattened-variations', self.current_special_id
         )
         return os.path.join(self.out_dir_full, response)
 
