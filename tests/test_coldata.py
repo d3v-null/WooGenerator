@@ -81,7 +81,7 @@ class TestColDataAbstract(TestColData):
 
 class TestColDataImg(TestColData):
     col_data_class = ColDataMedia
-    debug = True
+    # debug = True
 
     def test_get_property(self):
         self.assertEqual(
@@ -106,8 +106,14 @@ class TestColDataImg(TestColData):
             print("handles_property_v2: %s" % pformat(handles_property_v2))
         self.assertEquals(
             handles_property_v2,
-            OrderedDict([('attach_post_id', 'post'),
-                         ('attach_post_type', 'type'), ('attach_link', 'link')])
+            OrderedDict([
+                ('caption', 'caption.rendered'),
+                ('title', 'title.rendered'),
+                ('image_meta', 'attachment_meta.media_details'),
+                ('width', 'media_details.width'),
+                ('upload_path', 'media_details.file'),
+                ('height', 'media_details.height')
+            ])
         )
 
     def test_get_path_translation(self):
@@ -120,21 +126,19 @@ class TestColDataImg(TestColData):
             path_translation,
             {
                 'alt_text': 'alt_text',
-                'caption': 'caption',
-                'date_gmt': 'date_gmt',
-                'description': 'description',
-                'id': 'id',
-                'link': 'attach_link',
-                'media_details': 'media_details',
-                'media_type': 'media_type',
-                'meta': 'meta',
-                'mime_type': 'mime_type',
-                'modified_gmt': 'modified_gmt',
-                'post': 'attach_post_id',
-                'slug': 'slug',
-                'source_url': 'source_url',
-                'title': 'title',
-                'type': 'attach_post_type'
+                 'attachment_meta.media_details': 'image_meta',
+                 'caption.rendered': 'caption',
+                 'date_gmt': 'date_gmt',
+                 'description': 'description',
+                 'id': 'id',
+                 'media_details.file': 'upload_path',
+                 'media_details.height': 'height',
+                 'media_details.width': 'width',
+                 'mime_type': 'mime_type',
+                 'modified_gmt': 'modified_gmt',
+                 'slug': 'slug',
+                 'source_url': 'source_url',
+                 'title.rendered': 'title'
             }
         )
 

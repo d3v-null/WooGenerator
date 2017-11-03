@@ -324,7 +324,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 # print page
 
 class TestImgSyncClient(TestProdSyncClient):
-    debug = True
+    # debug = True
 
     def test_get_first_img(self):
         img_client_class = self.settings.slave_img_sync_client_class
