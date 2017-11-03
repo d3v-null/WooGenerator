@@ -66,26 +66,11 @@ class ImportShopMixin(object):
 
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
-    def get_attributes(self):
-        exc = DeprecationWarning(
-            "use .attributes instead of .get_attributes()")
-        self.register_error(exc)
-        return self.attributes
-
     def register_image(self, image):
         assert isinstance(image, (str, unicode))
         this_images = self.images
         if image not in this_images:
             this_images.append(image)
-            # parent = self.getParent()
-            # parentImages = parent.get_images()
-            # if not parentImages:
-            #     parent.register_image(image)
-
-    def get_images(self):
-        exc = DeprecationWarning("use .images instead of .get_images()")
-        self.register_error(exc)
-        return self.images
 
     def to_api_data(self, col_data, target_api):
         api_data = OrderedDict()
@@ -172,6 +157,9 @@ class ImportShopProductMixin(object):
         self.register_error(exc)
         return self.type_name
         # return self.product_type
+
+class ImportShopImgMixin(object):
+    pass
 
 class ShopProdList(ItemList):
     "Container for shop products"
