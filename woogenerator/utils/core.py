@@ -18,6 +18,7 @@ from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
 
 import unicodecsv
+from jsonpath_ng import jsonpath
 from kitchen.text import converters
 from phpserialize import dumps, loads
 
@@ -1058,6 +1059,105 @@ class SeqUtils(object):
         except StopIteration:
             return True
         return all(first == rest for rest in iterator)
+
+class JSONPathUtils(object):
+    class NonSingularPathError(UserWarning):
+        pass
+
+    @classmethod
+    def blank_get_field_datum(cls, path, datum, field):
+        """
+        Emulate jsonpath.Fields.get_field_datum but create the field in path
+        if it does not exist.
+        """
+        try:
+            field_value = datum.value[field]
+        except (TypeError, KeyError, AttributeError):
+            # differs from jsonpath.Fields.get_field_datum here:
+            datum.value[field] = {}
+            field_value = datum.value[field]
+        return jsonpath.DatumInContext(
+            value=field_value,
+            path=jsonpath.Fields(field),
+            context=datum
+        )
+
+    @classmethod
+    def blank_reified_fields(cls, path, datum):
+        """
+        Emulate jsonpath.Fields.reified_fields but throw an exception if the
+        path is nonsingular.
+        """
+        if '*' not in path.fields:
+            return path.fields
+        else:
+            # differs from jsonpath.Fields.reified_fields here:
+            raise cls.NonSingularPathError("'*' in path not supported")
+
+    @classmethod
+    def blank_find(cls, path, datum):
+        """
+        Emulate jsonpath.JSONPath.reified_fields but throw an exception if the
+        path is nonsingular.
+        """
+        if isinstance(path, jsonpath.Child):
+            return [
+                submatch
+                for subdata in cls.blank_find(path.left, datum)
+                for submatch in cls.blank_find(path.right, subdata)
+            ]
+        if isinstance(path, jsonpath.Fields):
+            datum  = jsonpath.DatumInContext.wrap(datum)
+
+            return [
+                field_datum
+                for field_datum in [
+                    cls.blank_get_field_datum(path, datum, field)
+                    for field in cls.blank_reified_fields(path, datum)
+                ]
+                if field_datum is not None
+            ]
+
+    @classmethod
+    def blank_update(cls, path, data, val):
+        """
+        Emulate JSONPath.update but create a path for the data if it doesn't
+        exist and throw an exception if the path is nonsingular.
+        Assume path looks somthing like this:
+        c -- c -- f
+          \- f \- f
+        """
+
+        if isinstance(path, jsonpath.Child):
+            for datum in cls.blank_find(path.left, data):
+                cls.blank_update(path.right, datum.value, val)
+            return data
+
+        if isinstance(path, jsonpath.Fields):
+            for field in cls.blank_reified_fields(path, data):
+                if field in data and hasattr(val, '__call__'):
+                    val(data[field], data, field)
+                    continue
+                data[field] = val
+            return data
+
+        if isinstance(path, jsonpath.JSONPath):
+            raise cls.NonSingularPathError(
+                "path is not made of singular jsonpath objects"
+            )
+
+        # descendants = []
+        # path_traverse = updater
+        # while path_traverse:
+        #     leaf = path_traverse
+        #     if isinstance(path_traverse, jsonpath.Child):
+        #         leaf = path_traverse.right
+        #     if isinstance(leaf, jsonpath.Fields):
+        #         descendants.append(leaf.fields[0])
+        #     path_traverse = path_traverse.getattr('left', None)
+
+
+
 
 
 class DebugUtils(object):

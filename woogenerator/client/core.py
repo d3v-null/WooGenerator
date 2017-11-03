@@ -723,9 +723,9 @@ class SyncClientRest(SyncClientAbstract):
         return response
 
     def get_first_endpoint_item(self):
-        service_endpoint = '%s?%s=1' % (
-            self.endpoint_plural, self.pagination_limit_key
-        )
+        service_endpoint = self.endpoint_plural
+        if self.pagination_limit_key:
+            service_endpoint += '?%s=1' % self.pagination_limit_key
         items_page = self.get_iterator(service_endpoint).next()
         if self.page_nesting:
             items_page = items_page[self.endpoint_plural]

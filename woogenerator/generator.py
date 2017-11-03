@@ -180,10 +180,10 @@ def populate_slave_parsers(parsers, settings):
 
     if settings.schema_is_woo and settings['do_images']:
         Registrar.register_progress("analysing API image data")
-        img_upload_client_class = settings.slave_img_sync_client_class
-        img_upload_client_args = settings.slave_img_sync_client_args
+        img_client_class = settings.slave_img_sync_client_class
+        img_client_args = settings.slave_img_sync_client_args
 
-        with img_upload_client_class(**img_upload_client_args) as client:
+        with img_client_class(**img_client_args) as client:
             client.analyse_remote_imgs(
                 parsers.slave,
                 data_path=settings.slave_img_path

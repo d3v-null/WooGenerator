@@ -324,24 +324,36 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 # print page
 
 class TestImgSyncClient(TestProdSyncClient):
-    # debug = True
+    debug = True
+
+    def test_get_first_img(self):
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
+
+        with img_client_class(**img_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            self.assertTrue(first_item)
+            if self.debug:
+                print("fist_img:\n%s" % pformat(first_item))
+
 
     def test_upload_image_delete(self):
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
-        client_params = {
-            'connect_params':self.settings.slave_wp_api_params
-        }
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
 
-        if self.debug:
-            print('client_params:\n%s' % pformat(client_params))
-        with ImgSyncClientWP(**client_params) as client:
+        with img_client_class(**img_client_args) as client:
             img_path = os.path.join(TESTS_DATA_DIR, 'sample_img.jpg')
             response = client.upload_image(img_path)
             if self.debug:
                 print("response: %s" % pformat(response.json()))
-            img_id = client.get_data_core(response.json(), 'id')
+            id_key = 'id'
+            if self.settings.wp_api_version == 'wp/v1':
+                id_key = 'ID'
+            self.assertIn(id_key, response.json())
+            img_id = client.get_data_core(response.json(), id_key)
             client.delete_item(img_id)
 
 

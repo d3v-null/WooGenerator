@@ -6,9 +6,10 @@ from __future__ import absolute_import
 
 import itertools
 from collections import OrderedDict
-from jsonpath_rw import jsonpath
+import jsonpath_ng
+from jsonpath_ng import jsonpath
 
-from .utils import SeqUtils
+from .utils import SeqUtils, JSONPathUtils
 
 
 # TODO:
@@ -38,25 +39,15 @@ get rid of attributes like category, product, variation, that's covered by class
 YAML Import and export of schema
 data is not read from file until it is accessed?
 """
-"""
-Proposal: clearer target names with defined resolution order
-    api
-        wp-api
-            wp-api-v1
-            wp-api-v2
-        wc-api
-            wc-legacy-api
-                wc-legacy-api-v1
-                wc-legacy-api-v2
-                wc-legacy-api-v3
-            wc-wp-api
-                wc-wp-api-v1
-                wc-wp-api-v2
-        xero-api
-    csv
-"""
 
 class ColDataAbstract(object):
+    """
+    Store information about how to translate between disparate target schemas.
+     - Each target represents a different data format
+     - Each handle is a piece of data within that format
+     - The properties of a handle show how to coerce data of that handle between formats
+    """
+
     targets = {
         'api': {
             'wp-api': {
@@ -96,6 +87,9 @@ class ColDataAbstract(object):
             'xero-api': {
                 'path': None,
             },
+            'wp-api-v1': {
+                'path': 'ID'
+            },
             'sql': {
                 'meta': False,
             },
@@ -110,6 +104,9 @@ class ColDataAbstract(object):
 
     @classmethod
     def get_target_ancestors(cls, targets=None, target=None):
+        """
+        Given a target, the the ancestors of that target in the target resolution heirarchy
+        """
         ancestors = []
         if (targets and target):
             for this, children in targets.items():
@@ -122,7 +119,10 @@ class ColDataAbstract(object):
 
     @classmethod
     def prepare_finder(cls, properties, ancestors=None, handles=None):
-        # import pudb; pudb.set_trace()
+        """
+        Prepare a jsonpath finder object for finding the given property of `handles`
+        given a list of target ancestors.
+        """
         if handles is None:
             handles = ['*']
         handle_finder = jsonpath.Fields(*handles)
@@ -138,7 +138,9 @@ class ColDataAbstract(object):
 
     @classmethod
     def get_property_default(cls, property_=None, handle=None):
-
+        """
+        Return the default value of a handle's property.
+        """
         if property_:
             return {
                 'path': handle,
@@ -163,21 +165,18 @@ class ColDataAbstract(object):
     @classmethod
     def get_handles_property(cls, property_, target=None):
         """
-        Return a mapping of handles to the value of property_ wherever it is explicitly declared
-        in the context of target
+        Return a mapping of handles to the value of property_ wherever it is
+        explicitly declared in the context of target
         """
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
         finder = cls.prepare_finder([property_], target_ancestors, )
         results = OrderedDict()
         for result in finder.find(cls.data):
             value = result.value
-            handle_old = str(result.full_path).split('.')[0]
-            # TODO: there is probably a better way of getting the root of this path
             handle = result.full_path
             while hasattr(handle, 'left'):
                 handle = handle.left
             handle = handle.fields[0]
-            assert handle == handle_old
             results[handle] = value
         return results
 
@@ -199,7 +198,32 @@ class ColDataAbstract(object):
                 translation[from_path] = to_path
         return translation
 
+    @classmethod
+    def do_path_translation(cls, datum, from_target, to_target=None):
+        """
+        Translate an object with from_target struction into to_target structure.
+        Does not translate data formats.
+        """
+        translation = cls.get_path_translation(from_target, to_target)
+        if not translation:
+            return datum
+        new_datum = {}
+        for from_path, to_path in translation.items():
+            getter = jsonpath_ng.parse(from_path)
+            results = getter.find(datum)
+            if not results:
+                continue
+            result_value = results[0].value
+
+            updater = jsonpath_ng.parse(to_path)
+            new_datum = JSONPathUtils.blank_update(updater, new_datum, result_value)
+        return new_datum
+
 class ColDataMedia(ColDataAbstract):
+    """
+    - wp-api-v2: http://v2.wp-api.org/reference/media/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
+    """
     data = dict(ColDataAbstract.data.items() + {
         'date_gmt': {
             'type': 'iso8601_gmt',
@@ -213,16 +237,29 @@ class ColDataMedia(ColDataAbstract):
             'unique': True,
         },
         'title': {
-            'type': 'object'
+            'wp-api-v2':{
+                'path': 'title.rendered'
+            },
         },
-        'meta': {
-            'type': 'object',
-            'wp-api-v1': {
-                'path': {
-                    'attachment_meta'
-                }
-            }
-        },
+        # 'author_id': {
+        #     'wp-api-v1': {
+        #         'path': 'author.ID'
+        #     },
+        #     'wp-api-v2': {
+        #         'path': 'author'
+        #     }
+        # },
+        # 'meta': {
+        #     'type': 'object',
+        #     'wp-api-v2': {
+        #         'type': 'object_list'
+        #     }
+        #     'wp-api-v1': {
+        #         'path': 'attachment_meta'
+        #     }
+        # },
+        # 'comment_status': {
+        # },
         'source_url': {
             'write': False,
             'type': 'uri',
@@ -230,48 +267,95 @@ class ColDataMedia(ColDataAbstract):
                 'path':'source'
             }
         },
-        'alt_text': {},
-        'caption': {
-            'type': 'object'
-        },
-        'description': {
-            'type': 'object'
-        },
-        'media_type': {
-            'write': False,
+        'alt_text': {
             'wp-api-v1': {
-                'path': 'is_image',
-                'type': 'bool'
+                'path': None
             }
         },
-        'mime_type': {
-            'write': False
+        'caption': {
+            'wp-api-v1': {
+                'path': None
+            },
+            'wp-api-v2': {
+                'path': 'caption.rendered'
+            }
         },
-        'media_details': {
+        'description': {
+            'type': 'object',
+            'wp-api-v1': {
+                'path': None
+            }
+        },
+        # 'media_type': {
+        #     'type': 'media_type',
+        #     'write': False,
+        #     'wp-api-v1': {
+        #         'path': 'is_image',
+        #         'type': 'bool'
+        #     }
+        # },
+        'mime_type': {
+            'write': False,
+            'wp-api-v1': {
+                'path': 'attachment_meta.sizes.thumbnail.mime-type',
+                'write': False
+            }
+        },
+        'image_meta': {
             'write': False,
             'type': 'object',
             'wp-api-v1': {
                 'path': 'attachment_meta.image_meta'
+            },
+            'wp-api-v2': {
+                'path': 'attachment_meta.media_details'
             }
         },
-        'attach_link': {
-            'write': False,
-            'type': 'uri',
-            'wp-api': {
-                'path': 'link'
+        'width': {
+            'wp-api-v1':{
+                'path': 'attachment_meta.width'
+            },
+            'wp-api-v2':{
+                'path': 'media_details.width'
             }
         },
-        'attach_post_id': {
-            'wp-api': {
-                'path': 'post'
+        'height': {
+            'wp-api-v1':{
+                'path': 'attachment_meta.height'
+            },
+            'wp-api-v2':{
+                'path': 'media_details.height'
             }
         },
-        'attach_post_type':{
-            'write': False,
-            'wp-api': {
-                'path':'type'
+        'upload_path': {
+            'wp-api-v1': {
+                'path': 'attachment_meta.file'
+            },
+            'wp-api-v2': {
+                'path': 'media_details.file'
             }
-        },
+        }
+        # 'attach_link': {
+        #     'write': False,
+        #     'type': 'uri',
+        #     'wp-api': {
+        #         'path': 'link'
+        #     }
+        # },
+        # 'attach_post_id': {
+        #     'wp-api': {
+        #         'path': 'post'
+        #     },
+        #     'wp-api-v1': {
+        #         'path': None
+        #     }
+        # },
+        # 'post_type':{
+        #     'write': False,
+        #     'wp-api': {
+        #         'path':'type'
+        #     }
+        # },
     }.items())
 
 class ColDataBase(object):

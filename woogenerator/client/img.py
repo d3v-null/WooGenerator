@@ -6,6 +6,7 @@ from .core import SyncClientWP
 class ImgSyncClientWP(SyncClientWP):
     endpoint_singular = 'media'
     endpoint_plural = 'media'
+    pagination_limit_key = None
 
     def __init__(self, connect_params, **kwargs):
         connect_params['user_auth'] = True
