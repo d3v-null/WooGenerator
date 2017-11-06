@@ -81,7 +81,7 @@ class TestColDataAbstract(TestColData):
 
 class TestColDataImg(TestColData):
     col_data_class = ColDataMedia
-    debug = False
+    debug = True
 
     def test_get_property(self):
         self.assertEqual(
@@ -102,18 +102,18 @@ class TestColDataImg(TestColData):
     def test_get_handles(self):
         handles_property_v2 = self.col_data_class.get_handles_property(
             'path', 'wp-api-v2')
-        if self.debug:
-            print("handles_property_v2: %s" % pformat(handles_property_v2))
+        # if self.debug:
+        print("handles_property_v2: %s" % pformat(handles_property_v2))
         self.assertEquals(
-            handles_property_v2,
-            OrderedDict([
+            set(handles_property_v2.items()),
+            set(OrderedDict([
                 ('caption', 'caption.rendered'),
                 ('title', 'title.rendered'),
                 ('image_meta', 'attachment_meta.media_details'),
                 ('width', 'media_details.width'),
                 ('file_path', 'media_details.file'),
                 ('height', 'media_details.height')
-            ])
+            ]).items())
         )
 
     def test_get_path_translation(self):
@@ -180,7 +180,7 @@ class TestColDataImg(TestColData):
                "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-180x180.jpg 180w, "
                "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-600x600.jpg 600w, "
                "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg 1200w\" "
-               "sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n",)
+               "sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n"),
            "is_image" : True,
            "author" : {
               "URL" : "",
@@ -542,61 +542,63 @@ class testColDataUser(TestColData):
     def test_getAllWpDbCols(self):
         dbCols = self.col_data_class.get_all_wpdb_cols()
         # print "dbCols %s" % pformat(dbCols.items())
-        self.assertItemsEqual(dbCols, OrderedDict([
-            ('myob_card_id', 'MYOB Card ID'),
-            # ('act_role', 'Role'),
-            ('nickname', 'Contact'),
-            ('first_name', 'First Name'),
-            ('last_name', 'Surname'),
-            ('middle_name', 'Middle Name'),
-            ('name_suffix', 'Name Suffix'),
-            ('name_prefix', 'Name Prefix'),
-            ('name_notes', 'Memo'),
-            ('spouse', 'Spouse'),
-            # ('salutation', 'Salutation'),
-            ('billing_company', 'Company'),
-            ('mobile_number', 'Mobile Phone'),
-            ('billing_phone', 'Phone'),
-            ('fax_number', 'Fax'),
-            # ('pref_mob', 'Mobile Phone Preferred'),
-            # ('pref_tel', 'Phone Preferred'),
-            ('billing_address_1', 'Address 1'),
-            ('billing_address_2', 'Address 2'),
-            ('billing_city', 'City'),
-            ('billing_postcode', 'Postcode'),
-            ('billing_state', 'State'),
-            ('billing_country', 'Country'),
-            ('shipping_address_1', 'Home Address 1'),
-            ('shipping_address_2', 'Home Address 2'),
-            ('shipping_city', 'Home City'),
-            ('shipping_postcode', 'Home Postcode'),
-            ('shipping_country', 'Home Country'),
-            ('shipping_state', 'Home State'),
-            ('myob_customer_card_id', 'MYOB Customer Card ID'),
-            ('client_grade', 'Client Grade'),
-            # ('direct_brand', 'Direct Brand'),
-            ('agent', 'Agent'),
-            ('abn', 'ABN'),
-            ('business_type', 'Business Type'),
-            ('how_hear_about', 'Lead Source'),
-            ('referred_by', 'Referred By'),
-            ('tans_per_wk', 'Tans Per Week'),
-            ('personal_email', 'Personal E-mail'),
-            ('edited_in_act', 'Edited in Act'),
-            ('act_last_sale', 'Last Sale'),
-            ('facebook', 'Facebook Username'),
-            ('twitter', 'Twitter Username'),
-            ('gplus', 'GooglePlus Username'),
-            ('instagram', 'Instagram Username'),
-            ('mailing_list', 'Added to mailing list'),
-            ('user_email', 'E-mail'),
-            ('user_login', 'Wordpress Username'),
-            ('ID', 'Wordpress ID'),
-            # ('display_name', 'Contact'),
-            ('user_url', 'Web Site'),
-            ('user_registered', 'Wordpress Start Date'),
-            ('pref_method', 'Pref Method')
-        ]))
+        for key in [
+            'myob_card_id',
+            # 'act_role',
+            'nickname',
+            'first_name',
+            'last_name',
+            'middle_name',
+            'name_suffix',
+            'name_prefix',
+            'name_notes',
+            'spouse',
+            # 'salutation',
+            'billing_company',
+            'mobile_number',
+            'billing_phone',
+            'fax_number',
+            # 'pref_mob',
+            # 'pref_tel',
+            'billing_address_1',
+            'billing_address_2',
+            'billing_city',
+            'billing_postcode',
+            'billing_state',
+            'billing_country',
+            'shipping_address_1',
+            'shipping_address_2',
+            'shipping_city',
+            'shipping_postcode',
+            'shipping_country',
+            'shipping_state',
+            'myob_customer_card_id',
+            'client_grade',
+            # 'direct_brand',
+            'agent',
+            'abn',
+            'business_type',
+            'how_hear_about',
+            'referred_by',
+            'tans_per_wk',
+            'personal_email',
+            'edited_in_act',
+            'act_last_sale',
+            'facebook',
+            'twitter',
+            'gplus',
+            'instagram',
+            'mailing_list',
+            'user_email',
+            'user_login',
+            'ID',
+            # 'display_name',
+            'user_url',
+            'user_registered',
+            'pref_method',
+        ]:
+            assert key in dbCols.keys()
+
 
     def test_getWPAPICols(self):
         api_cols = ColDataWoo.get_wpapi_cols()
