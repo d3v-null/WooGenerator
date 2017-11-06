@@ -39,7 +39,7 @@ from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_duplicates_group, do_duplicates_summary_group,
                              do_failures_group, do_main_summary_group,
                              do_matches_group, do_matches_summary_group,
-                             do_post_summary_group, do_sanitizing_group,
+                             do_post_summary_group,
                              do_successes_group, do_sync_group,
                              do_variation_matches_group,
                              do_variation_sync_group)

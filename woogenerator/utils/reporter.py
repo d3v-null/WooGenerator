@@ -776,8 +776,7 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
-
-def do_sanitizing_group(reporter, matches, updates, parsers, settings):
+def do_sanitizing_group(reporter, parsers, settings):
     address_cols = OrderedDict(settings.basic_cols.items() + [
         ('address_reason', {}),
         ('Edited Address', {}),
@@ -787,15 +786,24 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
         ('name_reason', {}),
         ('Edited Name', {}),
     ])
+    role_cols = OrderedDict(settings.basic_cols.items() + [
+        ('role_reason', {}),
+    ])
     csv_colnames = settings.col_data_class.get_col_names(
         OrderedDict(settings.basic_cols.items() + settings.col_data_class.name_cols([
             'address_reason',
             'name_reason',
+            'role_reason',
             'Edited Name',
             'Edited Address',
             'Edited Alt Address',
         ]).items()))
-    container = parsers.master.object_container.container
+    if parsers.master:
+        container = parsers.master.object_container.container
+    elif parsers.slave:
+        container = parsers.slave.object_container.container
+    else:
+        return
 
     group = reporter.Group('sanitizing', 'Sanitizing Results')
 
@@ -808,6 +816,8 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
 
     for source in ['master', 'slave']:
         parser = getattr(parsers, source)
+        if not parser:
+            continue
 
         if not (parser.bad_name or parser.bad_address):
             continue
@@ -822,6 +832,11 @@ def do_sanitizing_group(reporter, matches, updates, parsers, settings):
                 'bad_name',
                 name_cols,
                 '%s records that have badly formatted names'
+            ),
+            (
+                'bad_role',
+                role_cols,
+                '%s records that have anomlaous roles'
             )
         ]:
             register = getattr(parser, attr)

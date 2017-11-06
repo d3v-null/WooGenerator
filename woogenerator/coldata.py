@@ -1565,6 +1565,39 @@ class ColDataUser(ColDataBase):
             'default': '',
             # 'tracked':True,
         }),
+        ('ACT Role',{
+            'wp': {
+                'meta': True,
+                'key': 'act_role'
+            },
+            'wp-api': {
+                'meta': True,
+                'key': 'act_role'
+            },
+            'wc-api': {
+                'meta': True,
+                'key': 'act_role'
+            },
+            'act': {
+                'key': 'Role'
+            },
+            'import': True,
+        }),
+        ('WP Roles',{
+            'wp': {
+                'meta': True,
+                'key': 'tt6164_capabilities',
+            },
+            'wp-api': {
+                'meta': False,
+                'key': 'roles'
+            },
+            'wc-api': {
+                'meta': False,
+                'key': 'roles'
+            },
+            'import': True,
+        }),
         # ('Role Info', {
         #     'aliases': [
         #         'Role',
@@ -1587,7 +1620,8 @@ class ColDataUser(ColDataBase):
         #     'wp-api': {
         #         'meta': True,
         #         'key': 'act_role'
-        #     },     'wc-api': {
+        #     },
+        #     'wc-api': {
         #         'meta': True,
         #         'key': 'act_role'
         #     },

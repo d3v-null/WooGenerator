@@ -148,10 +148,22 @@ def populate_slave_parsers(parsers, settings):
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
     slave_items = parsers.slave.get_obj_list()
+    col_names = settings.col_data_class.get_wp_import_col_names()
+    exclude_cols = settings.get('exclude_cols')
+    if exclude_cols:
+        for col in exclude_cols:
+            if col in col_names:
+                del col_names[col]
+    include_cols = settings.get('include_cols')
+    if include_cols:
+        for col in include_cols:
+            if col not in col_names:
+                col_names[col] = col
+
     if slave_items:
         slave_items.export_items(
             settings.slave_path,
-            settings.col_data_class.get_wp_import_col_names()
+            col_names
         )
 
 
@@ -435,9 +447,7 @@ def do_report(matches, updates, parsers, settings):
     if settings.get('report_sanitation'):
         Registrar.register_progress("Write Sanitation Report")
 
-        do_sanitizing_group(
-            reporters.san, matches, updates, parsers, settings
-        )
+        do_sanitizing_group(reporters.san, parsers, settings)
         if reporters.san:
             reporters.san.write_document_to_file(
                 'san', settings.rep_san_path)
