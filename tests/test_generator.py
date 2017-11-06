@@ -47,9 +47,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_specials = True
         self.settings.do_sync = True
         self.settings.do_categories = True
+        self.settings.do_images = True
         self.settings.report_matching = True
         self.settings.schema = "CA"
-        self.settings.init_settings(self.override_args)
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -94,36 +94,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.settings.master_download_client_args["dialect_suggestion"],
             "SublimeCsvTable")
         self.assertEqual(self.settings.spec_gid, None)
-        # print("MPA: %s" % self.settings.master_parser_args)
-        # self.settings.master_parser_args = {
-        #     'taxo_depth': 3,
-        #     'cols': [
-        #         'WNR', 'RNR', 'DNR', 'weight', 'length', 'width', 'height',
-        #         'HTML Description', 'PA', 'VA', 'D', 'E', 'DYNCAT', 'DYNPROD',
-        #         'VISIBILITY', 'SCHEDULE', 'RPR', 'WPR', 'DPR', 'CVC', 'stock',
-        #         'stock_status', 'Images', 'Updated', 'post_status'
-        #     ],
-        #     'defaults': {
-        #         'SCHEDULE': '',
-        #         'post_status': 'publish',
-        #         'manage_stock': 'no',
-        #         'catalog_visibility': 'visible',
-        #         'Images': '',
-        #         'CVC': 0
-        #     },
-        #     'import_name':'2017-07-21_09-14-23',
-        #     'item_depth':2,
-        #     'schema':'CA'
-        # }
-
 
     def test_populate_master_parsers(self):
-        # self.test_init_settings()
-        # self.settings.product_parser_args = {
-        #     'import_name': self.settings.import_name,
-        #     'item_depth': self.settings.item_depth,
-        #     'taxo_depth': self.settings.taxo_depth,
-        # }
 
         self.parsers = populate_master_parsers(self.parsers, self.settings)
 
@@ -135,6 +107,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         prod_list = prod_container(self.parsers.master.products.values())
         self.assertEqual(len(prod_list), 48)
         first_prod = prod_list[0]
+        if self.debug:
+            print("pformat@dict@first_prod:\n%s" % pformat(dict(first_prod)))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
         first_prod_specials = first_prod.specials

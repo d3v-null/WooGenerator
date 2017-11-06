@@ -169,7 +169,18 @@ class TestColDataImg(TestColData):
            "menu_order" : 0,
            "parent" : None,
            "status" : "inherit",
-           "content" : "<p class=\"attachment\"><a href='http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg'><img width=\"300\" height=\"300\" src=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg\" class=\"attachment-medium size-medium\" alt=\"alt_text_1983\" srcset=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg 300w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-150x150.jpg 150w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-768x768.jpg 768w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-1024x1024.jpg 1024w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-180x180.jpg 180w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-600x600.jpg 600w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg 1200w\" sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n",
+           "content" : (
+               "<p class=\"attachment\"><a href='http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg'>"
+               "<img width=\"300\" height=\"300\" src=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg\" "
+               "class=\"attachment-medium size-medium\" alt=\"alt_text_1983\" srcset="
+               "\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg 300w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-150x150.jpg 150w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-768x768.jpg 768w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-1024x1024.jpg 1024w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-180x180.jpg 180w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-600x600.jpg 600w, "
+               "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg 1200w\" "
+               "sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n",)
            "is_image" : True,
            "author" : {
               "URL" : "",
@@ -395,7 +406,19 @@ class TestColDataImg(TestColData):
               }
            },
            "description" : {
-              "rendered" : "<p class=\"attachment\"><a href='http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg'><img width=\"300\" height=\"300\" src=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg\" class=\"attachment-medium size-medium\" alt=\"alt_text_1983\" srcset=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg 300w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-150x150.jpg 150w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-768x768.jpg 768w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-1024x1024.jpg 1024w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-180x180.jpg 180w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-600x600.jpg 600w, http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg 1200w\" sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n"
+              "rendered" : (
+                  "<p class=\"attachment\">"
+                  "<a href='http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg'>"
+                  "<img width=\"300\" height=\"300\" src=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg\" "
+                  "class=\"attachment-medium size-medium\" alt=\"alt_text_1983\" "
+                  "srcset=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-300x300.jpg 300w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-150x150.jpg 150w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-768x768.jpg 768w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-1024x1024.jpg 1024w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-180x180.jpg 180w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips-600x600.jpg 600w, "
+                  "http://localhost:18080/wptest/wp-content/uploads/2017/11/Doorway-TechnoTan-Tanning-Tips.jpg 1200w\" "
+                  "sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n<p>description_1983</p>\n")
            },
            "date" : "2017-11-01T00:08:08",
            "template" : "",
