@@ -327,7 +327,7 @@ class ColDataMedia(ColDataAbstract):
                 'path': 'media_details.height'
             }
         },
-        'upload_path': {
+        'file_path': {
             'wp-api-v1': {
                 'path': 'attachment_meta.file'
             },

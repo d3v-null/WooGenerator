@@ -111,7 +111,7 @@ class TestColDataImg(TestColData):
                 ('title', 'title.rendered'),
                 ('image_meta', 'attachment_meta.media_details'),
                 ('width', 'media_details.width'),
-                ('upload_path', 'media_details.file'),
+                ('file_path', 'media_details.file'),
                 ('height', 'media_details.height')
             ])
         )
@@ -131,7 +131,7 @@ class TestColDataImg(TestColData):
                  'date_gmt': 'date_gmt',
                  'description': 'description',
                  'id': 'id',
-                 'media_details.file': 'upload_path',
+                 'media_details.file': 'file_path',
                  'media_details.height': 'height',
                  'media_details.width': 'width',
                  'mime_type': 'mime_type',
