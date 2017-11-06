@@ -5,6 +5,7 @@ inconsistent with their wordpress roles.
 
 import sys
 from collections import OrderedDict
+from pprint import pformat
 
 import phpserialize
 
@@ -13,23 +14,9 @@ from .merger import (export_slave_parser, populate_filter_settings,
 from .namespace.core import ParserNamespace, ResultsNamespace
 from .namespace.user import SettingsNamespaceUser
 from .utils import Registrar, SanitationUtils
-from .utils.reporter import ReporterNamespace, do_sanitizing_group
-
-
-def do_report(parsers, settings):
-    reporters = ReporterNamespace()
-
-    if settings.get('report_sanitation'):
-        Registrar.register_progress("Write Sanitation Report")
-
-        do_sanitizing_group(reporters.san, parsers, settings)
-        if reporters.san:
-            reporters.san.write_document_to_file(
-                'san', settings.rep_san_path)
-
-    return reporters
 
 def process_role_anomalies(parsers, settings):
+    new_roles = []
     parsers.slave.bad_role = OrderedDict()
     for user in parsers.slave.objects.values():
         role_reason = None
@@ -51,12 +38,18 @@ def process_role_anomalies(parsers, settings):
 
         if role_reason:
             print(
-                'user %100s, %50s has bad role: %s' % (
-                    user.index,
+                'user %10s, %50s has bad role: %s' % (
+                    user.wpid,
                     user.get('E-mail'),
                     role_reason,
                 )
             )
+            if role_reason.startswith('roles don') and act_role in ['WN']:
+                new_wp_role = phpserialize.dumps(dict([
+                    ('wn', True)
+                ]))
+                new_roles.append((user.wpid, new_wp_role))
+
             parsers.slave.register_anything(
                 user,
                 parsers.slave.bad_role,
@@ -64,8 +57,29 @@ def process_role_anomalies(parsers, settings):
                 singular=True,
                 register_name='badrole'
             )
-    return parsers
+    return new_roles
 
+def make_sql(new_roles):
+    wp_ids = [
+        wpid for wpid, _ in new_roles
+    ]
+    print(
+        """
+DELETE
+FROM
+    tt6164_usermeta
+WHERE
+    `meta_key` = 'tt6164_capabilities'
+    AND `user_id` IN ("""
+        + ', '.join(wp_ids)
+        + ");"
+    )
+    for wpid, new_role in new_roles:
+        print(
+            "INSERT INTO tt6164_usermeta (`user_id`, `meta_key`, `meta_value`) VALUES ("
+            + ", ".join([wpid, "'tt6164_capabilities'", "'%s'" % new_role])
+            + ");"
+        )
 
 
 def main(override_args=None, settings=None):
@@ -120,22 +134,17 @@ def main(override_args=None, settings=None):
         )
     )
 
-    parsers = process_role_anomalies(parsers, settings)
+    new_roles = process_role_anomalies(parsers, settings)
 
-    reporters = do_report(parsers, settings)
+    print(pformat(new_roles))
 
-
-    Registrar.register_message(
-        "Sanitation summary: \n%s" % reporters.san.get_summary_text()
-    )
-
-    return reporters, None
+    make_sql(new_roles)
 
 
 def catch_main(override_args=None):
     settings = SettingsNamespaceUser()
     try:
-        reporters, results = main(
+        main(
             settings=settings, override_args=override_args
         )
     except BaseException:
