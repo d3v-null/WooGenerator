@@ -141,22 +141,9 @@ class ImportShopProductMixin(object):
         self.register_category(cat_data)
         cat_data.register_member(self)
 
-    def get_categories(self):
-        exc = DeprecationWarning(
-            "use .categories instead of .get_categories()")
-        self.register_error(exc)
-        return self.categories
-
     @property
     def type_name(self):
         return self.product_type
-
-    def get_type_name(self):
-        exc = DeprecationWarning(
-            "use .extra_special_category insetad of .get_extra_special_category()")
-        self.register_error(exc)
-        return self.type_name
-        # return self.product_type
 
 class ImportShopImgMixin(object):
     pass
@@ -247,11 +234,6 @@ class ImportShopCategoryMixin(object):
             register_name='product categories'
         )
 
-    def get_members(self, item_data):
-        exc = DeprecationWarning("use .members instead of .get_members()")
-        self.register_error(exc)
-        return self.members
-
 class ShopCatList(TaxoList):
     report_cols = ColDataCat.get_category_cols()
     supported_type = ImportShopCategoryMixin
@@ -294,14 +276,6 @@ class ShopObjList(ObjList):
             description = self.name
         return description
 
-    # @property
-    # def is_valid(self):
-    #     return self._isValid
-    #
-    # @property
-    # def file_name(self):
-    #     return self._fileName
-
     def append(self, object_data):
         assert isinstance(object_data, ImportShopMixin)
         if object_data.is_category:
@@ -320,12 +294,6 @@ class ShopObjList(ObjList):
                 reason = "IMG INVALID"
             self.register_error(reason, self.file_name)
         self.is_valid = False
-
-    # @property
-    # def identifier_delimeter(self):
-    #     delim = super(ImportShopCategoryMixin, self).identifier_delimeter
-    #     return '|'.join([d for d in [delim, self.namesum] ])
-
 
 class CsvParseShopMixin(object):
     """

@@ -378,15 +378,6 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
         super_data.update(CsvParseTree.get_parser_data(self, **kwargs))
         return super_data
 
-    # def clear_transients(self):
-    #     super(CsvParseGenTree, self).clear_transients()
-        # CSVParse_Shop.clear_transients(self)
-
-    # def register_item(self, item_data):
-    #     super(CsvParseGenTree, self).register_item(item_data)
-    #     if item_data.is_product:
-    #         self.register_product(item_data)
-
     def change_item(self, item):
         return SanitationUtils.shorten(self.item_regex, self.item_subs, item)
 

@@ -178,7 +178,7 @@ def populate_slave_parsers(parsers, settings):
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
-    if settings.schema_is_woo and settings['do_images']:
+    if settings.schema_is_woo and settings['do_images'] and settings['download_slave']:
         Registrar.register_progress("analysing API image data")
         img_client_class = settings.slave_img_sync_client_class
         img_client_args = settings.slave_img_sync_client_args
@@ -244,9 +244,9 @@ def process_images(settings, parsers):
         parsers.master.images[img_name].invalidate(error)
 
     ls_raw = {}
-    for dir in settings.img_raw_dirs:
-        if dir:
-            ls_raw[dir] = os.listdir(dir)
+    for dir_ in settings.img_raw_dirs:
+        if dir_:
+            ls_raw[dir_] = os.listdir(dir_)
 
     def get_raw_image(img_name):
         """
@@ -478,6 +478,8 @@ def export_master_parser(settings, parsers):
             updated_product_list.export_items(
                 settings.flu_path, product_colnames
             )
+
+    Registrar.register_progress("CSV Files have been created.")
 
 def cache_api_data(settings, parsers):
     """Export key information from slave parser to csv."""

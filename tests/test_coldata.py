@@ -81,7 +81,7 @@ class TestColDataAbstract(TestColData):
 
 class TestColDataImg(TestColData):
     col_data_class = ColDataMedia
-    # debug = True
+    debug = False
 
     def test_get_property(self):
         self.assertEqual(
