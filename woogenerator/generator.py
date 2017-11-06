@@ -1377,31 +1377,28 @@ def catch_main(override_args=None):
 
     settings = SettingsNamespaceProd()
 
-    # TODO: Delete these lines
-    main(settings=settings, override_args=override_args)
-    exit()
-
-
     status = 0
     try:
         main(settings=settings, override_args=override_args)
-    except (ReadTimeout, ConnectionError, ConnectTimeout, ServerNotFoundError):
-        status = 69  # service unavailable
-    except IOError:
-        status = 74
-        print "cwd: %s" % os.getcwd()
-    except UserWarning:
-        status = 65
     except SystemExit:
         status = ExitStatus.failure
-    except BaseException:
+    except KeyboardInterrupt:
+        pass
+    except BaseException as exc:
         status = 1
-    finally:
+        if isinstance(exc, UserWarning):
+            status = 65
+        elif isinstance(exc, IOError):
+            status = 74
+            print( "cwd: %s" % os.getcwd() )
+        elif exc.__class__ in ["ReadTimeout", "ConnectionError", "ConnectTimeout", "ServerNotFoundError"]:
+            status = 69  # service unavailable
+
         if status:
             Registrar.register_error(traceback.format_exc())
             if Registrar.DEBUG_TRACE:
-                import pudb
-                pudb.set_trace()
+                _, _, traceback_ = sys.exc_info()
+                import pdb; pdb.post_mortem(traceback_)
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():

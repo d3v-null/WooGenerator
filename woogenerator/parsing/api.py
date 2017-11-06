@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 
 import io
 import json
+import datetime
 from collections import OrderedDict
 from pprint import pformat
 
@@ -21,6 +22,12 @@ from .woo import CsvParseWooMixin, ImportWooMixin, WooCatList, WooProdList
 
 
 class ApiListMixin(object):
+    @staticmethod
+    def json_serial(obj):
+        if isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        raise TypeError ("Type %s not serializable" % type(obj))
+
     def export_api_data(self, file_path, encoding='utf-8'):
         """
         Export the items in the object list to a json file in the given file path.
@@ -35,7 +42,7 @@ class ApiListMixin(object):
                     data.append(dict(item['api_data']))
                 except KeyError:
                     raise UserWarning("could not get api_data from item")
-            data = json.dumps(data)
+            data = json.dumps(data, default=ApiListMixin.json_serial)
             data = data.encode(encoding)
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
