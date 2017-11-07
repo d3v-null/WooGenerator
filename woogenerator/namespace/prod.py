@@ -555,6 +555,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def add_special_categories(self):
+        if self.get('skip_special_categories'):
+            return not self.skip_special_categories
         return self.do_specials and self.do_categories
 
     def init_settings(self, override_args=None):

@@ -846,7 +846,9 @@ def do_merge(matches, parsers, updates, settings):
                     master_categories != slave_categories, \
                     (
                         "if change_match_list exists, then master_categories "
-                         "should not equal slave_categories.\n"
+                         "should not equal slave_categories. "
+                         "This might mean that you have not enabled "
+                         "auto_create_new categories.\n"
                          "master_categories: %s\n"
                          "slave_categories: %s\n"
                          "change_match_list: \n%s"

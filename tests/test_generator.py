@@ -44,7 +44,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
         self.settings.do_specials = True
-        self.settings.specials_mode = 'all_future'
+        # self.settings.specials_mode = 'all_future'
+        self.settings.specials_mode = 'auto_next'
+        # TODO: make this work with create special categories
+        self.settings.skip_special_categories = True
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.do_images = True
@@ -94,6 +97,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.master_name, "gdrive-test")
         self.assertEqual(self.settings.slave_name, "woocommerce-test")
         self.assertEqual(self.settings.merge_mode, "sync")
+        self.assertEqual(self.settings.specials_mode, "auto_next")
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
         self.assertEqual(
@@ -331,7 +335,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 self.print_matches_summary(matches)
         prod_cat_match = self.matches.category.prod['ACARF-CRS | 1961']
         self.assertEqual(len(prod_cat_match.globals), 3)
-        self.assertEqual(len(prod_cat_match.slaveless), 3)
+        if self.settings.specials_mode == "all_future":
+            self.assertEqual(len(prod_cat_match.slaveless), 3)
+        elif self.settings.specials_mode == "auto_next":
+            self.assertEqual(len(prod_cat_match.slaveless), 1)
 
     def test_do_merge(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
