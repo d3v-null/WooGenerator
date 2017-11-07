@@ -13,7 +13,7 @@ from .gen import CsvParseGenMixin
 from .tree import ItemList, TaxoList
 
 class ImportShopMixin(object):
-    "Base class for shop objects (products, categories)"
+    "Base mixin class for shop objects (products, categories, images)"
     is_product = None
     is_category = None
     is_variable = None
@@ -32,7 +32,7 @@ class ImportShopMixin(object):
                 'is_variation' if self.is_variation else '!is_variation'
             ))
         self.attributes = OrderedDict()
-        self.images = []
+        self.images = OrderedDict()
 
     # @classmethod
     # def get_new_obj_container(cls):
@@ -66,11 +66,17 @@ class ImportShopMixin(object):
 
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
-    def register_image(self, image):
-        assert isinstance(image, (str, unicode))
-        this_images = self.images
-        if image not in this_images:
-            this_images.append(image)
+    def register_image(self, img_data):
+        # TODO: rewrite this
+        assert isinstance(img_data, ImportShopImgMixin)
+        if img_data.file_name not in self.images:
+            self.register_anything(
+                img_data,
+                self.images,
+                indexer=img_data.file_name,
+                singular=True
+            )
+        img_data.register_attachment(self)
 
     def to_api_data(self, col_data, target_api):
         api_data = OrderedDict()
@@ -146,7 +152,31 @@ class ImportShopProductMixin(object):
         return self.product_type
 
 class ImportShopImgMixin(object):
-    pass
+    verify_meta_keys = [
+        'file_path'
+    ]
+
+    def __init__(self, *args, **kwargs):
+        self.attachments = ShopObjList()
+        self.is_valid = True
+
+    @property
+    def file_name(self):
+        return self['file_path']
+
+    @property
+    def index(self):
+        return self.file_name
+
+    def register_attachment(self, attach_data):
+        self.attachments.append(attach_data)
+
+    def invalidate(self, reason=""):
+        if self.DEBUG_IMG:
+            if not reason:
+                reason = "IMG INVALID"
+            self.register_error(reason, self.file_name)
+        self.is_valid = False
 
 class ShopProdList(ItemList):
     "Container for shop products"
@@ -243,11 +273,8 @@ ImportShopCategoryMixin.container = ShopCatList
 class ShopObjList(ObjList):
     supported_type = ImportShopMixin
 
-    def __init__(self, file_name=None, objects=None, indexer=None):
-        self.file_name = file_name
+    def __init__(self, objects=None, indexer=None):
         self.is_valid = True
-        if not self.file_name:
-            self.is_valid = False
         self.products = ShopProdList()
         self.categories = ShopCatList()
         self._objects = ObjList()
@@ -256,12 +283,6 @@ class ShopObjList(ObjList):
     @property
     def objects(self):
         return self.products + self.categories + self._objects
-
-    @property
-    def name(self):
-        exc = DeprecationWarning(".name deprecated")
-        self.register_error(exc)
-        raise exc
 
     @property
     def title(self):
@@ -288,13 +309,6 @@ class ShopObjList(ObjList):
         if object_data not in container:
             bisect.insort(container, object_data)
 
-    def invalidate(self, reason=""):
-        if self.DEBUG_IMG:
-            if not reason:
-                reason = "IMG INVALID"
-            self.register_error(reason, self.file_name)
-        self.is_valid = False
-
 class CsvParseShopMixin(object):
     """
     Mixin class provides shop interface for Parser classes
@@ -309,6 +323,7 @@ class CsvParseShopMixin(object):
     category_indexer = CsvParseGenMixin.get_code_sum
     variation_indexer = CsvParseGenMixin.get_code_sum
     product_resolver = Registrar.resolve_conflict
+    image_resolver = Registrar.resolve_conflict
     do_images = True
 
     # products = None
@@ -338,12 +353,22 @@ class CsvParseShopMixin(object):
         if Registrar.DEBUG_MRO:
             Registrar.register_message(' ')
         # super(CsvParseShopMixin,self).clear_transients()
+
+        # TODO: what if products, categories, variations, images were weakrefs?
+
         self.products = OrderedDict()
+        # self.products = weakref.WeakValueDictionary()
         self.categories = OrderedDict()
+        # self.categories = weakref.WeakValueDictionary()
         self.attributes = OrderedDict()
         self.vattributes = OrderedDict()
         self.variations = OrderedDict()
+        # self.variations = weakref.WeakValueDictionary()
+
+        # Images now stores image objects instead of products
         self.images = OrderedDict()
+        # self.images = weakref.WeakValueDictionary()
+
         self.categories_name = OrderedDict()
 
     def register_product(self, prod_data):
@@ -360,13 +385,25 @@ class CsvParseShopMixin(object):
             register_name='products'
         )
 
-    def register_image(self, image, object_data):
-        assert isinstance(image, (str, unicode))
-        assert image is not ""
-        if image not in self.images.keys():
-            self.images[image] = ShopObjList(image)
-        self.images[image].append(object_data)
-        object_data.register_image(image)
+    def register_attachment(self, img_data, object_data=None):
+        if object_data:
+            object_data.register_image(img_data)
+
+    def register_image(self, img_data):
+        # TODO: rewrite
+
+        assert isinstance(img_data, ImportShopImgMixin)
+        file_name = img_data.file_name
+        assert isinstance(file_name, basestring)
+        assert file_name is not ""
+        self.register_anything(
+            img_data,
+            self.images,
+            indexer=file_name,
+            singular=False,
+            resolver=self.image_resolver,
+            register_name='images'
+        )
 
     def get_products(self):
         exc = DeprecationWarning("Use .products instead of .get_products()")
@@ -467,8 +504,10 @@ class CsvParseShopMixin(object):
             assert attr[
                 0] is not ' ', 'Attribute must not start with whitespace or '
         except AssertionError as exc:
-            self.register_error("could not register attribute: {}".format(exc))
-            # raise exc
+            warn = UserWarning("could not register attribute: {}".format(exc))
+            self.register_error(warn)
+            if self.strict:
+                self.raise_exception(warn)
         else:
             object_data.register_attribute(attr, val, var)
             self.register_anything(

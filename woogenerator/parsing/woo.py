@@ -3,20 +3,23 @@ Introduce woo structure to shop classes.
 """
 from __future__ import absolute_import
 
+from copy import copy
 import re
-from pprint import pformat
 from collections import OrderedDict
+from pprint import pformat
 
-from ..coldata import ColDataWoo
+from ..coldata import ColDataWoo, ColDataMedia
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
-                   ImportShopProductVariationMixin, ShopObjList, ShopProdList, ShopCatList)
+                   ImportShopProductVariationMixin, ShopCatList, ShopObjList,
+                   ShopProdList, ImportShopImgMixin)
 from .special import ImportSpecialGroup
-from .tree import ImportTreeItem, ItemList, TaxoList
+from .tree import ImportTreeItem, ItemList, TaxoList, ImportTreeObject
+
 
 class ImportWooMixin(object):
     """ all things common to Woo import classes """
@@ -88,6 +91,10 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
+
+class WooListMixin(object):
+    coldata_class = ColDataWoo
+    supported_type = ImportWooObject
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
 
@@ -162,9 +169,13 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             map(lambda x: x.fullname, ancestors_self))
         return "Specials > " + names[0] + " Specials"
 
-class WooProdList(ShopProdList):
-    report_cols = ColDataWoo.get_product_cols()
+class WooProdList(ShopProdList, WooListMixin):
+    coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooProduct
+
+    @property
+    def report_cols(self):
+        return self.coldata_class.get_product_cols()
 
 ImportWooProduct.container = WooProdList
 
@@ -189,9 +200,13 @@ class ImportWooProductVariation(
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
 
-class WooVarList(ShopProdList):
-    report_cols = ColDataWoo.get_variation_cols()
+class WooVarList(ShopProdList, WooListMixin):
     supported_type = ImportWooProductVariation
+    coldata_class = WooListMixin.coldata_class
+
+    @property
+    def report_cols(self):
+        return self.coldata_class.get_variation_cols
 
 ImportWooProductVariation.container = WooVarList
 
@@ -291,11 +306,20 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     #     else:
     #         return super(ImportWooCategory, self).__getitem__(key)
 
-class WooCatList(ShopCatList):
-    report_cols = ColDataWoo.get_category_cols()
+class WooCatList(ShopCatList, WooListMixin):
+    coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooCategory
+    report_cols = coldata_class.get_category_cols()
 
 ImportWooCategory.container = WooCatList
+
+class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
+    verify_meta_keys = ImportShopImgMixin.verify_meta_keys
+    index = ImportShopImgMixin.index
+
+    def __init__(self, *args, **kwargs):
+        ImportTreeObject.__init__(self, *args, **kwargs)
+        ImportShopImgMixin.__init__(self, *args, **kwargs)
 
 class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """
@@ -309,9 +333,11 @@ class CsvParseWooMixin(object):
     grouped_container = ImportWooProductGrouped
     bundled_container = ImportWooProductBundled
     # Under woo, all taxos are categories
+    coldata_class = ColDataWoo
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
+    image_container = ImportWooImg
 
     def find_category(self, search_data):
         response = None
@@ -381,7 +407,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     grouped_container = CsvParseWooMixin.grouped_container
     bundled_container = CsvParseWooMixin.bundled_container
     taxo_container = CsvParseWooMixin.taxo_container
+    image_container = CsvParseWooMixin.image_container
     category_indexer = CsvParseWooMixin.category_indexer
+    coldata_class = CsvParseWooMixin.coldata_class
+    coldata_img_class = ColDataMedia
 
     do_specials = True
     do_dyns = True
@@ -397,6 +426,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             'C': self.composite_container,
             'G': self.grouped_container,
             'B': self.bundled_container,
+            'M': self.image_container,
         }
 
     def __init__(self, cols, defaults, **kwargs):
@@ -514,9 +544,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         try:
             all_data = args[0]
         except IndexError:
-            exc = UserWarning("all_data not specified")
-            self.register_error(exc)
-            raise exc
+            warn = UserWarning("all_data not specified")
+            self.register_error(warn)
+            self.raise_exception(warn)
 
         if issubclass(container, ImportTreeItem) \
                 and self.schema in all_data:
@@ -602,11 +632,78 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             singular=True
         )
 
+    def find_image(self, img_search_data):
+        # TODO: do this based off api.find_category
+        pass
+
+    @property
+    def img_defaults(self):
+        return self.coldata_img_class.get_defaults()
+
+    def new_img_object(self, **kwargs):
+        """
+        Create a new img instance from provided args.
+        """
+        default_data = OrderedDict(self.img_defaults.items())
+        parser_data = kwargs.get('row_data', {})
+        all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
+        container = self.image_container
+        img_data = container(all_data, **kwargs)
+        return img_data
+
+    def process_image(self, img_raw_data, object_data=None, **kwargs):
+        # TODO: do this based off api.process_api_category
+        if self.DEBUG_IMG:
+            img_path = img_raw_data.get('file_path', '')
+            if object_data:
+                identifier = object_data.identifier
+                self.register_message(
+                    "%s attached to %s"
+                    % (identifier, img_path)
+                )
+            else:
+                self.register_message(
+                    "creating image %s" % (img_path)
+                )
+            self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
+
+        img_data = self.find_image(img_raw_data)
+        if not img_data:
+            if self.DEBUG_IMG:
+                self.register_message("IMG NOT FOUND")
+            img_data = copy(img_raw_data)
+            img_data[self.schema] = 'M'
+            kwargs['row_data'] = img_data
+            kwargs['parent'] = self.root_data
+            try:
+                img_data = self.new_img_object(
+                    rowcount=self.rowcount,
+                    **kwargs
+                )
+            except UserWarning as exc:
+                warn = UserWarning("could not create image: %s" % exc)
+                self.register_error(
+                    warn
+                )
+                if self.strict:
+                    self.raise_exception(warn)
+            self.register_image(img_data)
+
+        else:
+            if self.DEBUG_IMG:
+                self.register_message("FOUND IMG: %s" % repr(img_data))
+
+        self.register_attachment(img_data, object_data)
+
     def process_images(self, object_data):
-        imglist = filter(None, SanitationUtils.find_all_images(
+        img_paths = filter(None, SanitationUtils.find_all_images(
             object_data.get('Images', '')))
-        for image in imglist:
-            self.register_image(image, object_data)
+        for image in img_paths:
+            # TODO: create image object and register if not exist
+            img_data = {
+                'file_path': image
+            }
+            self.process_image(img_data, object_data)
         this_images = object_data.images
         if object_data.is_item:
             ancestors = object_data.item_ancestors
@@ -614,10 +711,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             ancestors = []
         for ancestor in ancestors:
             ancestor_images = ancestor.images
+            # TODO: create image object and register if not exist
             if len(this_images) and not len(ancestor_images):
-                self.register_image(this_images[0], ancestor)
+                self.process_image(this_images.values()[0], ancestor)
             elif not len(this_images) and len(ancestor_images):
-                self.register_image(ancestor_images[0], object_data)
+                self.process_image(ancestor_images.values()[0], object_data)
 
     def process_categories(self, object_data):
         if object_data.is_product:
@@ -970,16 +1068,15 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
     def post_process_images(self, object_data):
         # self.register_message(object_data.index)
-        object_data['imgsum'] = '|'.join(filter(
-            None,
-            object_data.images
-        ))
+        object_data['imgsum'] = '|'.join(object_data.images.keys())
 
         if self.do_images and object_data.is_product and not object_data.is_variation:
             try:
                 assert object_data['imgsum'], "All Products should have images"
             except AssertionError as exc:
                 self.register_warning(exc, object_data)
+                if self.strict:
+                    self.raise_exception(exc)
 
         if self.DEBUG_WOO:
             self.register_message("imgsum of %s is %s" %

@@ -18,12 +18,6 @@ xero-schemas:
 
 schema: CA
 
-add-special-categories: false
-do-report: true
-skip-images: true
-do-delete-images: false
-do-resize-images: false
-
 wp-api-key: tYG1tAoqjBEM
 wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
 wp-user: wptest

@@ -88,7 +88,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def col_data_class(self):
+    def coldata_class(self):
         """ Class used to obtain column metadata. """
         response = ColDataBase
         if self.schema_is_myo:
@@ -307,16 +307,16 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def sync_cols_prod(self):
         response = {}
         if self.schema_is_woo:
-            response = self.col_data_class.get_wpapi_cols()
+            response = self.coldata_class.get_wpapi_cols()
         elif self.schema_is_xero:
-            response = self.col_data_class.get_xero_api_cols()
+            response = self.coldata_class.get_xero_api_cols()
         return response
 
     @property
     def sync_cols_cat(self):
         response = {}
         if self.schema_is_woo:
-            response = self.col_data_class.get_wpapi_category_cols()
+            response = self.coldata_class.get_wpapi_category_cols()
         return response
 
     @property
@@ -360,8 +360,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
         response = {
             'import_name': self.import_name,
-            'cols': self.col_data_class.get_import_cols(),
-            'defaults': self.col_data_class.get_defaults(),
+            'cols': self.coldata_class.get_import_cols(),
+            'defaults': self.coldata_class.get_defaults(),
             'schema': self.schema,
         }
         for key, settings_key in [
@@ -447,8 +447,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_parser_args(self):
         response = {
-            'cols': self.col_data_class.get_import_cols(),
-            'defaults': self.col_data_class.get_defaults(),
+            'cols': self.coldata_class.get_import_cols(),
+            'defaults': self.coldata_class.get_defaults(),
             'source': self.slave_name,
             'schema': self.schema,
             'import_name': self.import_name,

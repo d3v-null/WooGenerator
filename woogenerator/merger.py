@@ -148,7 +148,7 @@ def populate_slave_parsers(parsers, settings):
 def export_slave_parser(parsers, settings):
     """Export slave parser to disk."""
     slave_items = parsers.slave.get_obj_list()
-    col_names = settings.col_data_class.get_wp_import_col_names()
+    col_names = settings.coldata_class.get_wp_import_col_names()
     exclude_cols = settings.get('exclude_cols')
     if exclude_cols:
         for col in exclude_cols:
@@ -212,7 +212,7 @@ def export_master_parser(parsers, settings):
     if master_items:
         master_items.export_items(
             os.path.join(settings.in_dir_full, settings.m_x_name),
-            settings.col_data_class.get_act_import_col_names()
+            settings.coldata_class.get_act_import_col_names()
         )
 
 
@@ -331,7 +331,7 @@ def do_merge(matches, parsers, settings):
     if not settings.do_sync:
         return updates
 
-    sync_cols = settings.col_data_class.get_sync_cols()
+    sync_cols = settings.coldata_class.get_sync_cols()
 
     if settings['reflect_only']:
         for data in sync_cols.values():

@@ -196,13 +196,13 @@ class SettingsNamespaceProto(argparse.Namespace):
         return SyncClientNull
 
     @property
-    def col_data_class(self):
+    def coldata_class(self):
         """ Class used to obtain column metadata. """
         return ColDataBase
 
     @property
     def basic_cols(self):
-        return self.col_data_class.get_basic_cols()
+        return self.coldata_class.get_basic_cols()
 
     @property
     def email_client(self):
@@ -536,6 +536,14 @@ class MatchNamespace(argparse.Namespace):
                 raise exc
             else:
                 Registrar.register_warning(exc)
+
+    def tabulate(self, tablefmt=None):
+        response = ''
+        for attr_key, attr_val in self.__dict__.items():
+            if attr_val and hasattr(attr_val, 'tabulate'):
+                response += "matchlist %s:\n%s\n" % (attr_key, attr_val.tabulate(tablefmt=tablefmt))
+        return response
+
 
 
 class UpdateNamespace(argparse.Namespace):

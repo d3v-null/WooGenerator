@@ -34,8 +34,9 @@ class ImportTreeObject(ImportObject):
             if not self.is_root:
                 assert parent is not None
         except (KeyError, AssertionError):
-            raise UserWarning(
+            warn = UserWarning(
                 "No parent specified, try specifying root as parent")
+            self.raise_exception(warn)
         self.parent = parent
 
         try:
@@ -296,8 +297,11 @@ class CsvParseTreeMixin(object):
 
     def clear_transients(self):
         self.root_data = self.root_container()
+        # TODO: what if items, taxos were weakrefs?
         self.items = OrderedDict()
+        # self.items = weakref.WeakValueDictionary()
         self.taxos = OrderedDict()
+        # self.taxos = weakref.WeakValueDictionary()
         self.stack = ImportStack()
 
     def register_item(self, item_data):
@@ -415,8 +419,10 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
                 try:
                     meta[i] = sanitized_row[this_depth + i * self.max_depth]
                 except IndexError as exc:
-                    self.register_error(
-                        "could not get meta[{}] | {}".format(i, exc))
+                    warn = UserWarning("could not get meta[{}] | {}".format(i, exc))
+                    self.register_error(warn)
+                    if self.strict:
+                        self.raise_exception(warn)
         return meta
 
     def get_new_obj_container(self, all_data, **kwargs):
@@ -536,7 +542,8 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         try:
             assert this_depth >= 0, "stack should not be broken"
         except AssertionError as exc:
-            raise UserWarning(str(exc))
+            warn = UserWarning(str(exc))
+            self.raise_exception(warn)
         del self.stack[this_depth:]
         for depth in range(len(self.stack), this_depth):
             layer = self.new_object(rowcount, row=row, depth=depth)

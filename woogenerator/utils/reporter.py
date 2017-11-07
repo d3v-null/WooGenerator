@@ -789,8 +789,8 @@ def do_sanitizing_group(reporter, parsers, settings):
     role_cols = OrderedDict(settings.basic_cols.items() + [
         ('role_reason', {}),
     ])
-    csv_colnames = settings.col_data_class.get_col_names(
-        OrderedDict(settings.basic_cols.items() + settings.col_data_class.name_cols([
+    csv_colnames = settings.coldata_class.get_col_names(
+        OrderedDict(settings.basic_cols.items() + settings.coldata_class.name_cols([
             'address_reason',
             'name_reason',
             'role_reason',
@@ -888,15 +888,15 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
     if not delta_lists:
         return
 
-    delta_cols = settings.col_data_class.get_delta_cols()
+    delta_cols = settings.coldata_class.get_delta_cols()
 
     all_delta_cols = OrderedDict(
         settings.basic_cols.items()
-        + settings.col_data_class.name_cols(
+        + settings.coldata_class.name_cols(
             delta_cols.keys() + delta_cols.values()
         ).items())
 
-    delta_col_names = settings.col_data_class.get_col_names(all_delta_cols)
+    delta_col_names = settings.coldata_class.get_col_names(all_delta_cols)
 
     def render_delta_list(fmt, delta_list):
         return delta_list.tabulate(

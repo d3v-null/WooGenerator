@@ -48,7 +48,7 @@ class ImportObject(OrderedDict, Registrar):
             try:
                 data = OrderedDict(data)
             except Exception:
-                raise exc
+                self.raise_exception(exc)
 
         # Registrar.__init__(self)
         if self.DEBUG_PARSER:
@@ -62,11 +62,9 @@ class ImportObject(OrderedDict, Registrar):
         row = kwargs.pop('row', None)
 
         OrderedDict.__init__(self, data)
-        if row is not None:
-            self._row = row
-        else:
-            if '_row' not in self.keys():
-                self['_row'] = []
+        self._row = row
+        if '_row' not in self.keys():
+            self['_row'] = []
         Registrar.__init__(self, *args, **kwargs)
 
     def __hash__(self):
@@ -136,7 +134,12 @@ class ImportObject(OrderedDict, Registrar):
 
         Override in subclasses.
         """
-        return {'rowcount': self.rowcount, 'row': self.row[:]}
+        copy_args = {}
+        if self.rowcount is not None:
+            copy_args['rowcount'] = self.rowcount
+        if self.row is not None:
+            copy_args['row'] = self.row[:]
+        return copy_args
 
     def containerize(self):
         """ Put self in preferred container. """
@@ -412,7 +415,9 @@ class CsvParseBase(Registrar):
                     'Could not find index of %s -> %s in %s' %
                     (repr(col), repr(sanitized_col), repr(sanitized_row)))
         if not self.indices:
-            raise UserWarning("could not find any indices")
+            warn = UserWarning("could not find any indices")
+            self.raise_exception(warn)
+
 
     def retrieve_col_from_row(self, col, row):
         # if self.DEBUG_PARSER: print "retrieve_col_from_row | col: ", col
@@ -456,6 +461,8 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_MRO:
             self.register_message(' ')
+        if 'row_data' in kwargs:
+            return kwargs['row_data']
         row = kwargs.get('row', [])
         row_data = OrderedDict()
         for col in self.cols:
@@ -555,8 +562,9 @@ class CsvParseBase(Registrar):
                 for row in unicode_rows:
                     rows.append(row)
             except Exception as exc:
-                raise Exception("could not append row %d, %s: \n\t%s" %
+                warn = Exception("could not append row %d, %s: \n\t%s" %
                                 (len(rows), str(exc), repr(rows[-1:])))
+                self.raise_exception(warn)
             rowlen = len(rows)
             self.progress_counter = ProgressCounter(rowlen)
             unicode_rows = rows
@@ -592,11 +600,16 @@ class CsvParseBase(Registrar):
                 self.analyse_header(unicode_row)
                 continue
             try:
+                # if Registrar.DEBUG_TRACE and 'Xero' in str(self.__class__):
+                #     import pudb; pudb.set_trace()
                 object_data = self.new_object(self.rowcount, row=unicode_row)
             except UserWarning as exc:
+                warn = UserWarning("could not process new object: {}". format(exc))
                 self.register_warning(
-                    "could not create new object: {}".format(exc),
+                    warn,
                     "%s:%d" % (file_name, self.rowcount))
+                if self.strict:
+                    self.raise_exception(warn)
                 continue
             else:
                 if self.DEBUG_PARSER:
@@ -608,9 +621,13 @@ class CsvParseBase(Registrar):
                     self.register_message("%s PROCESSED" %
                                           object_data.identifier)
             except UserWarning as exc:
+                warn = UserWarning("could not process new object: {}".format(exc))
                 self.register_error(
-                    "could not process new object: {}".format(exc),
-                    object_data)
+                    warn,
+                    object_data
+                )
+                if self.strict:
+                    self.raise_exception(warn)
                 continue
             try:
                 self.register_object(object_data)
@@ -660,9 +677,10 @@ class CsvParseBase(Registrar):
              kwargs.get('encoding'), kwargs.get('stream_name'))
 
         if hasattr(self, 'rowcount') and self.rowcount > 1:
-            raise UserWarning(
+            warn = UserWarning(
                 'rowcount should be 0. Make sure clear_transients is being called on ancestors'
             )
+            self.raise_exception(warn)
         if encoding is None:
             encoding = "utf8"
 

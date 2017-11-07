@@ -1227,6 +1227,7 @@ class Registrar(object):
     DEBUG_WOO = False
     master_name = None
     slave_name = None
+    strict = False
 
     @classmethod
     def conflict_resolver(cls, *_):
@@ -1289,11 +1290,13 @@ class Registrar(object):
 
     @classmethod
     def register_anything(cls, thing, register, indexer=None, resolver=None,
-                          singular=True, unique=True, register_name=''):
+                          singular=True, unique=True, register_name='', container=None):
         if resolver is None:
             resolver = cls.conflict_resolver
         if indexer is None:
             indexer = cls.object_indexer
+        if container is None:
+            container = list
         index = None
         try:
             if callable(indexer):
@@ -1321,7 +1324,7 @@ class Registrar(object):
                     resolver(thing, register[index], index, register_name)
             else:
                 if index not in register:
-                    register[index] = []
+                    register[index] = container()
                 if not unique or thing not in register[index]:
                     register[index].append(thing)
         # print "registered", thing
@@ -1402,6 +1405,14 @@ class Registrar(object):
         for key, messages in items.items():
             for message in messages:
                 cls.print_anything(key, message, '|')
+
+    @classmethod
+    def raise_exception(cls, exc):
+        if cls.DEBUG_TRACE:
+            _, _, traceback_ = sys.exc_info()
+            import pdb; pdb.post_mortem(traceback_)
+        raise exc
+
 
 
 class ValidationUtils(object):

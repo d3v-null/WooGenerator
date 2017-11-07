@@ -57,7 +57,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
             self.slave_name, self.file_suffix, self.import_name)
 
     @property
-    def col_data_class(self):
+    def coldata_class(self):
         """ Class used to obtain column metadata. """
         return ColDataUser
 
@@ -90,8 +90,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     def master_parser_args(self):
         """ Arguments used to create the master parser. """
         response = {
-            'cols': self.col_data_class.get_act_import_cols(),
-            'defaults': self.col_data_class.get_defaults(),
+            'cols': self.coldata_class.get_act_import_cols(),
+            'defaults': self.coldata_class.get_defaults(),
             'contact_schema': 'act',
             'source': self.master_name,
             # 'schema':self.schema
@@ -136,7 +136,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def act_fields(self):
-        return ";".join(self.col_data_class.get_act_import_cols())
+        return ";".join(self.coldata_class.get_act_import_cols())
 
     @property
     def master_db_params(self):
@@ -216,8 +216,8 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
     @property
     def slave_parser_args(self):
         response = {
-            'cols': self.col_data_class.get_wp_import_cols(),
-            'defaults': self.col_data_class.get_defaults(),
+            'cols': self.coldata_class.get_wp_import_cols(),
+            'defaults': self.coldata_class.get_defaults(),
             'source': self.slave_name,
             'schema': self.schema
         }

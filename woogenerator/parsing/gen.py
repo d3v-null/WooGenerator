@@ -306,7 +306,6 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
             ('fullname', ''),
             ('description', ''),
             ('HTML Description', ''),
-            ('imglist', [])
         ])
         extra_taxo_subs = OrderedDict([
             ('', ''),

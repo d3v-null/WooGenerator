@@ -37,7 +37,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
         self.settings.download_master = False
         self.settings.download_slave = False
-        self.settings.init_settings(self.override_args)
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_dummy.csv"
         )
@@ -45,11 +44,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
         self.settings.do_specials = True
+        self.settings.specials_mode = 'all_future'
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.do_images = True
         self.settings.report_matching = True
         self.settings.schema = "CA"
+        self.settings.init_settings(self.override_args)
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -67,24 +68,29 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         # TODO: this
         if self.debug:
-            # Registrar.DEBUG_SHOP = True
-            # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_ABSTRACT = True
-            # Registrar.DEBUG_GEN = True
+            # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_TREE = True
+            # Registrar.DEBUG_GEN = True
+            # Registrar.DEBUG_SHOP = True
+            # Registrar.DEBUG_WOO = True
             # Registrar.DEBUG_TRACE = True
             # Registrar.DEBUG_UPDATE = True
-            # Registrar.DEBUG_ERROR = True
-            # Registrar.DEBUG_WARN = True
-            # Registrar.DEBUG_MESSAGE = True
+            Registrar.DEBUG_ERROR = True
+            Registrar.DEBUG_WARN = True
+            Registrar.DEBUG_MESSAGE = True
             # Registrar.DEBUG_SPECIAL = True
-            # Registrar.DEBUG_PARSER = True
-            # Registrar.DEBUG_WOO = True
+            Registrar.strict = True
             ApiParseWoo.product_resolver = Registrar.exception_resolver
             CsvParseWoo.product_resolver = Registrar.exception_resolver
 
     def test_init_settings(self):
-
+        self.assertTrue(self.settings.do_specials)
+        self.assertTrue(self.settings.do_sync)
+        self.assertTrue(self.settings.do_categories)
+        self.assertTrue(self.settings.do_images)
+        self.assertFalse(self.settings.download_master)
+        self.assertFalse(self.settings.download_slave)
         self.assertEqual(self.settings.master_name, "gdrive-test")
         self.assertEqual(self.settings.slave_name, "woocommerce-test")
         self.assertEqual(self.settings.merge_mode, "sync")
@@ -96,7 +102,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.spec_gid, None)
 
     def test_populate_master_parsers(self):
-
         self.parsers = populate_master_parsers(self.parsers, self.settings)
 
         #number of objects:
@@ -114,7 +119,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_prod_specials = first_prod.specials
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
-        self.assertEqual(first_prod.product_type, "simple")
+        self.assertEqual(first_prod.images.keys(), ["ACARA-CAL.png"])
         self.assertEqual(first_prod.depth, 4)
         self.assertTrue(first_prod.is_item)
         self.assertTrue(first_prod.is_product)
@@ -137,6 +142,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'width': u'85'
         }.items():
             self.assertEqual(first_prod[key], value)
+        # import pudb; pudb.set_trace()
         # print("pformat:\n%s" % pformat(dict(first_prod)))
         # print("dir:")
         # print(pformat(dir(first_prod)))
@@ -148,11 +154,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         cat_container = self.parsers.master.category_container.container
         cat_list = cat_container(self.parsers.master.categories.values())
+
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 cat_list.tabulate(tablefmt='simple')
             ))
-        self.assertEqual(len(cat_list), 9)
+        self.assertEqual(len(cat_list), 11)
         first_cat = cat_list[0]
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
@@ -324,7 +331,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 self.print_matches_summary(matches)
         prod_cat_match = self.matches.category.prod['ACARF-CRS | 1961']
         self.assertEqual(len(prod_cat_match.globals), 3)
-        self.assertEqual(len(prod_cat_match.slaveless), 1)
+        self.assertEqual(len(prod_cat_match.slaveless), 3)
 
     def test_do_merge(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
@@ -364,11 +371,12 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     def setUp(self):
         super(TestGeneratorXeroDummy, self).setUp()
         self.settings.download_master = False
+        self.settings.do_categories = False
+        self.settings.do_specials = False
         self.settings.init_settings(self.override_args)
         self.settings.schema = "XERO"
         self.settings.slave_name = "Xero"
         self.settings.do_sync = True
-        self.settings.do_categories = False
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_dummy_xero.csv"
         )
@@ -379,7 +387,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.report_matching = True
         if self.debug:
             # Registrar.DEBUG_SHOP = True
-            # ApiParseXero.DEBUG_PARSER = True
+            # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_GEN = True
             # Registrar.DEBUG_TREE = True
@@ -388,8 +396,17 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             Registrar.DEBUG_UPDATE = True
             ApiParseXero.product_resolver = Registrar.exception_resolver
 
+    def test_init_settings(self):
+        self.assertFalse(self.settings.download_master)
+        self.assertFalse(self.settings.do_specials)
+        self.assertTrue(self.settings.do_sync)
+        self.assertFalse(self.settings.do_categories)
+        self.assertTrue(self.settings.do_sync)
+
     def test_populate_master_parsers(self):
+        Registrar.DEBUG_TRACE = True
         self.parsers = populate_master_parsers(self.parsers, self.settings)
+        Registrar.DEBUG_TRACE = False
         if self.debug:
             print("master objects: %s" % len(self.parsers.master.objects.values()))
             print("master items: %s" % len(self.parsers.master.items.values()))
@@ -458,6 +475,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.matches = do_match(self.parsers, self.matches, self.settings)
 
         if self.debug:
+            print('match summary')
             self.print_matches_summary(self.matches)
 
         self.assertEqual(len(self.matches.globals), 10)

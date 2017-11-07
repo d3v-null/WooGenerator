@@ -219,6 +219,11 @@ class ColDataAbstract(object):
             new_datum = JSONPathUtils.blank_update(updater, new_datum, result_value)
         return new_datum
 
+    @classmethod
+    def get_defaults(cls):
+        return cls.get_handles_property('defaults')
+
+
 class ColDataMedia(ColDataAbstract):
     """
     - wp-api-v2: http://v2.wp-api.org/reference/media/

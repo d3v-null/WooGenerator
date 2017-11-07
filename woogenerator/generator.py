@@ -278,44 +278,50 @@ def process_images(settings, parsers):
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))
 
-    for img, data in parsers.master.images.items():
-        if not data.products:
+    # for img_path, obj_list in parsers.master.images.items():
+    for img_path, attachments in parsers.master.attachments.items():
+        if not attachments.products:
             continue
             # we only care about product images atm
         if Registrar.DEBUG_IMG:
-            if data.categories:
+            if attachments.categories:
                 Registrar.register_message(
-                    "Associated Taxos: " + str([(taxo.rowcount, taxo.codesum)
-                                                for taxo in data.categories]),
-                    img)
+                    "Associated Taxos: %s" % str([
+                        (taxo.rowcount, taxo.codesum) for taxo in attachments.categories
+                    ]),
+                    img_path
+                )
 
-            if data.products:
-                Registrar.register_message("Associated Products: " + str([
-                    (item.rowcount, item.codesum) for item in data.products
-                ]), img)
+            if attachments.products:
+                Registrar.register_message(
+                    "Associated Products: %s" % str([
+                        (item.rowcount, item.codesum) for item in attachments.products
+                    ]),
+                    img_path
+                )
 
         try:
-            img_raw_path = get_raw_image(img)
+            img_raw_path = get_raw_image(img_path)
         except IOError as exc:
             invalid_image(
-                img, UserWarning("could not get raw image: %s " % repr(exc)))
+                img_path, UserWarning("could not get raw image: %s " % repr(exc)))
             continue
 
-        name, _ = os.path.splitext(img)
+        name, _ = os.path.splitext(img_path)
         if not name:
-            invalid_image(img, UserWarning("could not extract name"))
+            invalid_image(img_path, UserWarning("could not extract name"))
             continue
 
         try:
-            title, description = data.title, data.description
+            title, description = attachments.title, attachments.description
         except AttributeError as exc:
-            invalid_image(img,
+            invalid_image(img_path,
                           "could not get title or description: " + str(exc))
             continue
 
         if Registrar.DEBUG_IMG:
             Registrar.register_message("title: %s | description: %s" %
-                                       (title, description), img)
+                                       (title, description), img_path)
 
         # ------
         # REMETA
@@ -325,7 +331,7 @@ def process_images(settings, parsers):
             if settings.do_remeta_images:
                 metagator = MetaGator(img_raw_path)
         except Exception as exc:
-            invalid_image(img, "error creating metagator: " + str(exc))
+            invalid_image(img_path, "error creating metagator: " + str(exc))
             continue
 
         try:
@@ -335,7 +341,7 @@ def process_images(settings, parsers):
                     'description': description
                 })
         except Exception as exc:
-            invalid_image(img, "error updating meta: " + str(exc))
+            invalid_image(img_path, "error updating meta: " + str(exc))
             Registrar.register_error(traceback.format_exc())
 
         # ------
@@ -344,10 +350,10 @@ def process_images(settings, parsers):
 
         if settings.do_resize_images:
             if not os.path.isfile(img_raw_path):
-                invalid_image(img, "SOURCE FILE NOT FOUND: %s" % img_raw_path)
+                invalid_image(img_path, "SOURCE FILE NOT FOUND: %s" % img_raw_path)
                 continue
 
-            img_dst_path = os.path.join(settings.img_dst, img)
+            img_dst_path = os.path.join(settings.img_dst, img_path)
             if os.path.isfile(img_dst_path):
                 img_src_mod = max(
                     os.path.getmtime(img_raw_path),
@@ -357,11 +363,11 @@ def process_images(settings, parsers):
                 if img_dst_mod > img_src_mod:
                     if Registrar.DEBUG_IMG:
                         Registrar.register_message(
-                            img, "DESTINATION FILE NEWER: %s" % img_dst_path)
+                            img_path, "DESTINATION FILE NEWER: %s" % img_dst_path)
                     continue
 
             if Registrar.DEBUG_IMG:
-                Registrar.register_message("resizing: %s" % img)
+                Registrar.register_message("resizing: %s" % img_path)
 
             shutil.copy(img_raw_path, img_dst_path)
 
@@ -371,7 +377,7 @@ def process_images(settings, parsers):
                 if Registrar.DEBUG_IMG:
                     Registrar.register_message(
                         "old dest img meta: %s" %
-                        imgmeta.read_meta(), img)
+                        imgmeta.read_meta(), img_path)
 
                 image = Image.open(img_dst_path)
                 image.thumbnail(settings.thumbsize)
@@ -383,11 +389,11 @@ def process_images(settings, parsers):
                     if Registrar.DEBUG_IMG:
                         Registrar.register_message(
                             "new dest img meta: %s" % imgmeta.read_meta(),
-                            img
+                            img_path
                         )
 
             except IOError as exc:
-                invalid_image(img, "could not resize: " + str(exc))
+                invalid_image(img_path, "could not resize: " + str(exc))
                 continue
 
     # # ------
@@ -404,17 +410,17 @@ def export_master_parser(settings, parsers):
     """Export key information from master parser to csv."""
     Registrar.register_progress("Exporting Master info to disk")
 
-    product_cols = settings.col_data_class.get_product_cols()
-    product_colnames = settings.col_data_class.get_col_names(product_cols)
+    product_cols = settings.coldata_class.get_product_cols()
+    product_colnames = settings.coldata_class.get_col_names(product_cols)
 
     for col in settings['exclude_cols']:
         if col in product_cols:
             del product_cols[col]
 
     if settings.schema_is_woo:
-        attribute_cols = settings.col_data_class.get_attribute_cols(
+        attribute_cols = settings.coldata_class.get_attribute_cols(
             parsers.master.attributes, parsers.master.vattributes)
-        product_colnames = settings.col_data_class.get_col_names(
+        product_colnames = settings.coldata_class.get_col_names(
             SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
     if Registrar.DEBUG_GEN:
@@ -431,10 +437,10 @@ def export_master_parser(settings, parsers):
     if settings.schema_is_woo:
         # variations
         variation_container = settings.master_parser_class.variation_container.container
-        variation_cols = settings.col_data_class.get_variation_cols()
-        attribute_meta_cols = settings.col_data_class.get_attribute_meta_cols(
+        variation_cols = settings.coldata_class.get_variation_cols()
+        attribute_meta_cols = settings.coldata_class.get_attribute_meta_cols(
             parsers.master.vattributes)
-        variation_col_names = settings.col_data_class.get_col_names(
+        variation_col_names = settings.coldata_class.get_col_names(
             SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
         if settings.do_variations and parsers.master.variations:
 
@@ -451,8 +457,8 @@ def export_master_parser(settings, parsers):
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            category_cols = settings.col_data_class.get_category_cols()
-            category_col_names = settings.col_data_class.get_col_names(category_cols)
+            category_cols = settings.coldata_class.get_category_cols()
+            category_col_names = settings.coldata_class.get_col_names(category_cols)
             category_container = settings.master_parser_class.category_container.container
             category_list = category_container(parsers.master.categories.values())
             category_list.export_items(settings.cat_path, category_col_names)
@@ -832,14 +838,23 @@ def do_merge(matches, parsers, updates, settings):
 
             match_index = prod_match.singular_index
             product_category_matches = matches.category.prod.get(match_index)
-
-            if matches.category.prod[match_index].slaveless \
-                    or matches.category.prod[match_index].masterless:
+            if product_category_matches and any([
+                product_category_matches.slaveless,
+                product_category_matches.masterless
+            ]):
                 assert \
                     master_categories != slave_categories, \
-                    ("if change_match_list exists, then master_categories "
-                     "should not equal slave_categories.\nchange_match_list: \n%s") % \
-                    "\n".join(map(pformat, product_category_matches))
+                    (
+                        "if change_match_list exists, then master_categories "
+                         "should not equal slave_categories.\n"
+                         "master_categories: %s\n"
+                         "slave_categories: %s\n"
+                         "change_match_list: \n%s"
+                    ) % (
+                        master_categories,
+                        slave_categories,
+                        product_category_matches.tabulate()
+                    )
                 update_params['reason'] = 'updating'
 
                 sync_update.loser_update(**update_params)
@@ -873,7 +888,7 @@ def do_merge(matches, parsers, updates, settings):
             insort(updates.slave, sync_update)
 
     if settings['do_variations']:
-        var_sync_cols = settings.col_data_class.get_wpapi_variable_cols()
+        var_sync_cols = settings.coldata_class.get_wpapi_variable_cols()
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("var_sync_cols: %s" %
                                        repr(var_sync_cols))
@@ -948,7 +963,7 @@ def do_merge(matches, parsers, updates, settings):
                     new_prod_count, m_object.identifier
                 )
             )
-            api_data = m_object.to_api_data(settings.col_data_class, 'wp-api')
+            api_data = m_object.to_api_data(settings.coldata_class, 'wp-api')
             for key in ['id', 'slug']:
                 if key in api_data:
                     del api_data[key]
@@ -1169,7 +1184,7 @@ def do_updates_categories(updates, parsers, results, settings):
                         continue
 
                 m_api_data = category.to_api_data(
-                    settings.col_data_class, 'wp-api')
+                    settings.coldata_class, 'wp-api')
                 for key in ['id', 'slug', 'sku']:
                     if key in m_api_data:
                         del m_api_data[key]
@@ -1186,7 +1201,7 @@ def do_updates_categories(updates, parsers, results, settings):
                     parsers.slave.process_api_category(
                         response_api_data)
                     api_cat_translation = OrderedDict()
-                    for key, data in settings.col_data_class.get_wpapi_category_cols(
+                    for key, data in settings.coldata_class.get_wpapi_category_cols(
                     ).items():
                         try:
                             wp_api_key = data['wp-api']['key']
@@ -1396,9 +1411,7 @@ def catch_main(override_args=None):
 
         if status:
             Registrar.register_error(traceback.format_exc())
-            if Registrar.DEBUG_TRACE:
-                _, _, traceback_ = sys.exc_info()
-                import pdb; pdb.post_mortem(traceback_)
+            Registrar.raise_exception(exc)
 
     with io.open(settings.log_path, 'w+', encoding='utf8') as log_file:
         for source, messages in Registrar.get_message_items(1).items():

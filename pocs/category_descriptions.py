@@ -124,13 +124,13 @@ Tanbience
     return settings
 
 def populate_master_parsers(settings):
-    col_data_class = ColDataWoo
+    coldata_class = ColDataWoo
 
     settings.product_parser_args.update(**{
         'cols':
-        col_data_class.get_import_cols(),
+        coldata_class.get_import_cols(),
         'defaults':
-        col_data_class.get_defaults(),
+        coldata_class.get_defaults(),
     })
 
     product_parser_class = CsvParseTT

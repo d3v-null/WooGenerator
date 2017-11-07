@@ -329,9 +329,15 @@ class ApiParseWoo(
             new_data['manage_stock'] = 'no'
         return new_data
 
-    def process_api_image(self, img_api_data):
-        pass
+    def process_api_image(self, img_api_data, object_data=None, **kwargs):
+        # TODO: do this based off process_api_category
 
+        img_raw_data = self.coldata_class.do_path_translation(
+            img_api_data, self.col_data_target
+        )
+        kwargs['api_data'] = img_api_data
+
+        super(ApiParseWoo, self).process_api_img(img_raw_data, object_data, **kwargs)
 
     def process_api_category(self, category_api_data, object_data=None):
         """
@@ -350,10 +356,7 @@ class ApiParseWoo(
                 self.register_message(
                     "creating category %s" % (category_title)
                 )
-
-        #
-        if self.DEBUG_API:
-            self.register_message("ANALYSE CATEGORY: %s" %
+            self.register_message("PROCESS CATEGORY: %s" %
                                   repr(category_api_data))
         core_translation = OrderedDict()
         for col, col_data in self.coldata_class.get_wpapi_core_cols().items():
