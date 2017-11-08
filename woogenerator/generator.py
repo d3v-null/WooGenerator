@@ -212,7 +212,7 @@ def populate_slave_parsers(parsers, settings):
         # Registrar.DEBUG_GEN = True
         # Registrar.DEBUG_TREE = True
         # Registrar.DEBUG_WOO = True
-        # Registrar.DEBUG_TRACE = True
+        Registrar.DEBUG_TRACE = True
         # ApiParseWoo.product_resolver = Registrar.exception_resolver
         client.analyse_remote(
             parsers.slave,

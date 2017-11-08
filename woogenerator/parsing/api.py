@@ -9,7 +9,7 @@ import json
 from collections import OrderedDict
 from pprint import pformat
 
-from ..coldata import ColDataWoo
+from ..coldata import ColDataWoo, ColDataSubMedia
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
@@ -274,7 +274,8 @@ class ApiParseWoo(
     variation_indexer = CsvParseWooMixin.get_title
     image_container = ImportWooApiImg
     coldata_class = ColDataWoo
-    col_data_target = 'wp-api'
+    coldata_sub_img_class = ColDataSubMedia
+    col_data_target = 'wc-wp-api'
     meta_get_key = 'meta_data'
     meta_listed = True
     analyse_stream = ApiParseMixin.analyse_stream
@@ -346,7 +347,7 @@ class ApiParseWoo(
         # TODO: do this based off process_api_category
 
         img_raw_data = self.coldata_img_class.do_path_translation(
-            img_api_data, self.col_data_target
+            img_api_data, self.coldata_img_target
         )
         img_raw_data['api_data'] = img_api_data
         if not img_raw_data.get('file_path'):
@@ -358,9 +359,29 @@ class ApiParseWoo(
             self.register_warning(
                 warn
             )
+            raise warn
             return
 
         super(ApiParseWoo, self).process_image(img_raw_data, object_data, **kwargs)
+
+    def process_api_sub_image(self, sub_img_api_data, object_data, **kwargs):
+        sub_img_raw_data = self.coldata_sub_img_class.do_path_translation(
+            sub_img_api_data, self.col_data_target
+        )
+        if sub_img_raw_data.get('id') == 0:
+            # drop the Placeholder image
+            return
+        sub_img_search_data = OrderedDict()
+        for key, value in sub_img_raw_data.items():
+            if key in ['source_url', 'id', 'slug']:
+                sub_img_search_data[key] = value
+
+        super(ApiParseWoo, self).process_image(sub_img_search_data, object_data, **kwargs)
+
+    def process_api_sub_images(self, api_img_list, object_data, **kwargs):
+        for sub_img_api_data in api_img_list:
+            self.process_api_sub_image(sub_img_api_data, object_data, **kwargs)
+
 
     def process_api_category(self, category_api_data, object_data=None):
         """
@@ -521,8 +542,6 @@ class ApiParseWoo(
         """
 
         # TODO: merge with ApiParseXero.get_parser_data in ApiParseMixin
-
-        # import pudb; pudb.set_trace()
 
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
@@ -690,9 +709,14 @@ class ApiParseWoo(
             self.process_api_attributes(
                 object_data, api_data['attributes'], False)
 
+        if 'images' in api_data:
+            self.process_api_sub_images(
+                api_data['images'], object_data
+            )
+
 class ApiParseWooLegacy(ApiParseWoo):
     category_container = ImportWooApiCategoryLegacy
-    col_data_target = 'wc-api'
+    col_data_target = 'wc-legacy-api'
     meta_get_key = 'meta'
     meta_listed = False
 

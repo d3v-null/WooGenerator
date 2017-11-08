@@ -231,6 +231,7 @@ class ColDataAbstract(object):
 
 class ColDataMedia(ColDataAbstract):
     """
+    Metadata for Media items
     - wp-api-v2: http://v2.wp-api.org/reference/media/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
     """
@@ -255,25 +256,6 @@ class ColDataMedia(ColDataAbstract):
             },
             'report': True,
         },
-        # 'author_id': {
-        #     'wp-api-v1': {
-        #         'path': 'author.ID'
-        #     },
-        #     'wp-api-v2': {
-        #         'path': 'author'
-        #     }
-        # },
-        # 'meta': {
-        #     'type': 'object',
-        #     'wp-api-v2': {
-        #         'type': 'object_list'
-        #     }
-        #     'wp-api-v1': {
-        #         'path': 'attachment_meta'
-        #     }
-        # },
-        # 'comment_status': {
-        # },
         'source_url': {
             'write': False,
             'type': 'uri',
@@ -304,14 +286,6 @@ class ColDataMedia(ColDataAbstract):
                 'write': False
             },
         },
-        # 'media_type': {
-        #     'type': 'media_type',
-        #     'write': False,
-        #     'wp-api-v1': {
-        #         'path': 'is_image',
-        #         'type': 'bool'
-        #     }
-        # },
         'mime_type': {
             'write': False,
             'wp-api-v1': {
@@ -357,27 +331,55 @@ class ColDataMedia(ColDataAbstract):
             },
             'report': True
         }
-        # 'attach_link': {
-        #     'write': False,
-        #     'type': 'uri',
-        #     'wp-api': {
-        #         'path': 'link'
-        #     }
-        # },
-        # 'attach_post_id': {
-        #     'wp-api': {
-        #         'path': 'post'
-        #     },
-        #     'wp-api-v1': {
-        #         'path': None
-        #     }
-        # },
-        # 'post_type':{
-        #     'write': False,
-        #     'wp-api': {
-        #         'path':'type'
-        #     }
-        # },
+    }.items())
+
+class ColDataSubMedia(ColDataAbstract):
+    """
+    Metadata for Media sub items; media items that appear within items in the API
+    - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
+    - wc-wp-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/wp-api-v1.html#product-image-properties
+    - wc-legacy-api-v3: http://woocommerce.github.io/woocommerce-rest-api-docs/v3.html#images-properties
+    - wc-legacy-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/v2.html#images-properties
+    - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
+    """
+    data = OrderedDict(ColDataAbstract.data.items() + {
+        'date_gmt': {
+            'type': 'iso8601_gmt',
+            'wc-wp-api': {
+                'path': 'date_created_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'created_at'
+            },
+            'write': False
+        },
+        'modified_gmt': {
+            'type': 'iso8601_gmt',
+            'write': False,
+            'wc-wp-api': {
+                'path': 'date_modified_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'modified_at'
+            }
+        },
+        'title': {
+            'wc-wp-api':{
+                'path': 'name',
+            },
+        },
+        'source_url': {
+            'write': False,
+            'type': 'uri',
+            'wc-wp-api': {
+                'path':'src'
+            }
+        },
+        'alt_text': {
+            'wc-wp-api': {
+                'path': 'alt'
+            }
+        }
     }.items())
 
 # class ColDataProd(ColDataAbstract):
@@ -460,7 +462,7 @@ class ColDataBase(object):
         return cls.get_export_cols('report')
 
     @classmethod
-    def get_wpapi_cols(cls, api='wp-api'):
+    def get_wpapi_cols(cls, api='wc-wp-api'):
         return cls.get_export_cols(api)
 
     @classmethod
@@ -474,7 +476,7 @@ class ColDataBase(object):
         return cols
 
     @classmethod
-    def get_wpapi_core_cols(cls, api='wp-api'):
+    def get_wpapi_core_cols(cls, api='wc-wp-api'):
         export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
         for col, data in export_cols.items():
@@ -486,7 +488,7 @@ class ColDataBase(object):
         return api_cols
 
     @classmethod
-    def get_wpapi_meta_cols(cls, api='wp-api'):
+    def get_wpapi_meta_cols(cls, api='wc-wp-api'):
         # export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
         for col, data in cls.data.items():
@@ -504,7 +506,7 @@ class ColDataBase(object):
         return api_cols
 
     @classmethod
-    def get_wpapi_category_cols(cls, api='wp-api'):
+    def get_wpapi_category_cols(cls, api='wc-wp-api'):
         export_cols = cls.get_export_cols(api)
         api_category_cols = OrderedDict()
         for col, data in export_cols.items():
@@ -513,7 +515,7 @@ class ColDataBase(object):
         return api_category_cols
 
     @classmethod
-    def get_wpapi_import_cols(cls, api='wp-api'):
+    def get_wpapi_import_cols(cls, api='wc-wp-api'):
         export_cols = cls.get_export_cols('import')
         api_import_cols = OrderedDict()
         for col, data in export_cols.items():
@@ -550,7 +552,6 @@ class ColDataProd(ColDataBase):
         # ('descsum', {
         #     'label': 'Description',
         #     'product': True,
-        #     'report': True,
         # }),
         # ('WNR', {
         #     'product': True,
@@ -576,7 +577,7 @@ class ColDataProd(ColDataBase):
         #         'key': '_weight',
         #         'meta': True
         #     },
-        #     'wp-api': True,
+        #     'wc-wp-api': True,
         #     'sync': True,
         #     'report': True
         # }),
@@ -850,12 +851,12 @@ class ColDataWoo(ColDataProd):
                 'key': 'ID',
                 'meta': False
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'id',
                 'meta': False,
                 'read_only': True
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'id',
                 'meta': False,
                 'read_only': True
@@ -868,10 +869,10 @@ class ColDataWoo(ColDataProd):
         }),
         ('parent_id', {
             'category': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'parent'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'parent'
             }
         }),
@@ -887,10 +888,10 @@ class ColDataWoo(ColDataProd):
                 'key': '_sku',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'sku'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'sku'
             },
             'xero-api': {
@@ -899,11 +900,11 @@ class ColDataWoo(ColDataProd):
         }),
         ('slug', {
             'category': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'slug',
                 'meta': False,
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'slug',
                 'meta': False,
             },
@@ -911,7 +912,7 @@ class ColDataWoo(ColDataProd):
         }),
         ('display', {
             'category': True,
-            'wp-api': True,
+            'wc-wp-api': True,
         }),
         ('itemsum', {
             'tag': 'Title',
@@ -925,11 +926,11 @@ class ColDataWoo(ColDataProd):
                 'key': 'post_title',
                 'meta': False
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'title',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'title',
                 'meta': False
             },
@@ -939,11 +940,11 @@ class ColDataWoo(ColDataProd):
         }),
         ('title', {
             'category': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'name',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'name',
                 'meta': False
             },
@@ -971,10 +972,10 @@ class ColDataWoo(ColDataProd):
         }),
         ('catlist', {
             'product': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'categories'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'categories'
             },
             # 'sync':'not_variable'
@@ -984,10 +985,10 @@ class ColDataWoo(ColDataProd):
         ('prod_type', {
             'label': 'tax:product_type',
             'product': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'type'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'type'
             }
         }),
@@ -1008,11 +1009,11 @@ class ColDataWoo(ColDataProd):
         ('HTML Description', {
             'import': True,
             'category': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'description',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'description',
                 'meta': False
             },
@@ -1030,10 +1031,10 @@ class ColDataWoo(ColDataProd):
             'product': True,
             'category': True,
             'variation': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'menu_order'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'menu_order'
             },
             # 'sync':True
@@ -1050,11 +1051,11 @@ class ColDataWoo(ColDataProd):
             'product': True,
             'variation': True,
             'shipping': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'wootan_danger',
                 'meta': True
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'wootan_danger',
                 'meta': True
             },
@@ -1081,7 +1082,7 @@ class ColDataWoo(ColDataProd):
         ('catalog_visibility', {
             'product': True,
             'default': 'visible',
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'catalog_visibility',
                 'meta': False
             }
@@ -1152,11 +1153,11 @@ class ColDataWoo(ColDataProd):
                 'key': '_regular_price',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'regular_price',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': '_regular_price',
                 'meta': True
             },
@@ -1173,11 +1174,11 @@ class ColDataWoo(ColDataProd):
                 'key': '_sale_price',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'sale_price',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': '_sale_price',
                 'meta': True
             },
@@ -1194,11 +1195,11 @@ class ColDataWoo(ColDataProd):
                 'key': '_sale_price_dates_from',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'date_on_sale_from_gmt',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': '_sale_price_dates_from',
                 'meta': True
             },
@@ -1213,11 +1214,11 @@ class ColDataWoo(ColDataProd):
                 'key': '_sale_price_dates_to',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'date_on_sale_to_gmt',
                 'meta': False
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': '_sale_price_dates_to',
                 'meta': True
             },
@@ -1237,11 +1238,11 @@ class ColDataWoo(ColDataProd):
                     'key': 'lc_%s_%s' % (tier, field),
                     'meta': True
                 },
-                'wp-api': {
+                'wc-wp-api': {
                     'key': 'lc_%s_%s' % (tier, field),
                     'meta': True
                 },
-                'wc-api': {
+                'wc-legacy-api': {
                     'key': 'lc_%s_%s' % (tier, field),
                     'meta': True
                 },
@@ -1271,11 +1272,11 @@ class ColDataWoo(ColDataProd):
                 'key': 'commissionable_value',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'commissionable_value',
                 'meta': True
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'commissionable_value',
                 'meta': True
             },
@@ -1290,10 +1291,10 @@ class ColDataWoo(ColDataProd):
                 'key': '_weight',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'weight'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'weight'
             },
             'sync': True
@@ -1341,10 +1342,10 @@ class ColDataWoo(ColDataProd):
                 'meta': True
             },
             'sync': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'stock_quantity'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'stock_quantity'
             }
         }),
@@ -1357,11 +1358,11 @@ class ColDataWoo(ColDataProd):
                 'key': '_stock_status',
                 'meta': True
             },
-            # 'wp-api': {
+            # 'wc-wp-api': {
             #     'key': 'in_stock',
             #     'meta': False
             # },
-            # 'wc-api': {
+            # 'wc-legacy-api': {
             #     'key': 'in_stock',
             #     'meta': False
             # },
@@ -1375,10 +1376,10 @@ class ColDataWoo(ColDataProd):
                 'key': '_manage_stock',
                 'meta': True
             },
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'manage_stock'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'managing_stock'
             },
             'sync': True,
@@ -1395,10 +1396,10 @@ class ColDataWoo(ColDataProd):
         ('Updated', {
             'import': True,
             'product': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'updated_at'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'updated_at'
             }
         }),
@@ -1406,10 +1407,10 @@ class ColDataWoo(ColDataProd):
             'import': True,
             'product': True,
             'variation': True,
-            'wp-api': {
+            'wc-wp-api': {
                 'key': 'status'
             },
-            'wc-api': {
+            'wc-legacy-api': {
                 'key': 'status'
             },
             'sync': True,
@@ -1420,7 +1421,7 @@ class ColDataWoo(ColDataProd):
             'import': True,
             'product': True,
             'variation': True,
-            'wp-api': None,
+            'wc-wp-api': None,
             'xero-api': {
                 'key': 'isSold'
             },
@@ -1430,7 +1431,7 @@ class ColDataWoo(ColDataProd):
             'import': True,
             'product': True,
             'variation': True,
-            'wp-api': None,
+            'wc-wp-api': None,
             'xero-api': {
                 'key': 'isPurchased'
             },

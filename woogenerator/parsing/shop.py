@@ -154,6 +154,7 @@ class ImportShopProductMixin(object):
 
 class ImportShopImgMixin(object):
     file_path_key = 'file_path'
+    source_url_key = 'source_url'
 
     verify_meta_keys = [
         file_path_key

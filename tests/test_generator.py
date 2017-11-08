@@ -33,7 +33,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -135,6 +135,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_prod = prod_list[0]
         if self.debug:
             print("pformat@dict@first_prod:\n%s" % pformat(dict(first_prod)))
+            print("first_prod.categories: %s" % pformat(first_prod.categories))
+            print("first_prod.images: %s" % pformat(first_prod.images))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
         first_prod_specials = first_prod.specials
@@ -161,6 +163,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'price': u'',
                 'weight': u'1.08',
                 'width': u'85'
+                # TODO: the rest of the meta keys
         }.items():
             self.assertEqual(first_prod[key], value)
         # import pudb; pudb.set_trace()
@@ -248,13 +251,32 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'DPR': u'7.75',
                 'WNR': u'12.95',
                 'WPR': u'11.00',
+                'WNF': u'1465837200',
+                'WNT': u'32519314800',
         }.items():
             self.assertEqual(first_prod[key], value)
+
+        # Remember the test data is deliberately modified to remove one of the categories
+        self.assertEquals(
+            first_prod.categories.keys(),
+            [
+                '100ml Company A Product A Samples',
+                'Company A Product A',
+                'Product A'
+            ]
+        )
+
+        self.assertEquals(
+            first_prod.images.keys(),
+            [
+                'ACARF-CRS.png',
+                # TODO: the rest of these
+            ]
+        )
 
         cat_container = self.parsers.slave.category_container.container
         cat_list = cat_container(self.parsers.slave.categories.values())
         if self.debug:
-            print("cat_container is %s" % cat_container)
             print(SanitationUtils.coerce_bytes(
                 cat_list.tabulate(tablefmt='simple')
             ))
@@ -265,6 +287,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
+
+        img_container = self.parsers.slave.image_container.container
+        img_list = img_container(self.parsers.slave.images.values())
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                img_list.tabulate(tablefmt='simple')
+            ))
 
     def print_images_summary(self, images):
         img_cols = ColDataMedia.get_report_cols()

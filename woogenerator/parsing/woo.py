@@ -348,6 +348,7 @@ class CsvParseWooMixin(object):
     composite_container = ImportWooProductComposite
     grouped_container = ImportWooProductGrouped
     bundled_container = ImportWooProductBundled
+    coldata_img_target = 'wp-api'
     # Under woo, all taxos are categories
     coldata_class = ColDataWoo
     coldata_cat_class = ColDataWoo
@@ -369,10 +370,11 @@ class CsvParseWooMixin(object):
 
     def find_image(self, search_data):
         search_keys = [
-            self.image_container.wpid_key,
+            # self.image_container.wpid_key,
             self.image_container.slug_key,
-            self.image_container.title_key,
-            self.image_container.file_path_key
+            # self.image_container.title_key,
+            self.image_container.file_path_key,
+            self.image_container.source_url_key
         ]
         registry = self.images
         return self.find_object(search_data, registry, search_keys)
