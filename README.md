@@ -217,7 +217,7 @@ Example: Generate product csv import file from Google Drive tree format spreadsh
 ----
 
 ```bash
-python -m woogenerator.generator --schema=CA --local-work-dir 'tests/sample_data' --skip-download-master --master-file 'tests/sample_data/generator_master_dummy.csv' --local-test-config 'generator_config_test.yaml'  --master-dialect-suggestion 'SublieCsvTable' --do-categories -v
+python -m woogenerator.generator --local-work-dir 'tests/sample_data' --skip-download-master --master-file 'tests/sample_data/generator_master_dummy.csv' --local-test-config 'generator_config_test.yaml'  --master-dialect-suggestion 'SublieCsvTable' --download-slave --do-categories --do-images -v
 ```
 ```
 ...

@@ -364,7 +364,7 @@ class CsvParseShopMixin(object):
     category_indexer = CsvParseGenMixin.get_code_sum
     variation_indexer = CsvParseGenMixin.get_code_sum
     product_resolver = Registrar.resolve_conflict
-    image_resolver = Registrar.resolve_conflict
+    image_resolver = Registrar.passive_resolver
     do_images = True
 
     # products = None
@@ -575,7 +575,7 @@ class CsvParseShopMixin(object):
         response = ''
         # print "stringing cat %s" % repr(cat_data)
         for child in cat_data.children:
-            if child.is_root or not child.is_category:
+            if child.is_root or not getattr(child, 'is_category'):
                 continue
             registered = self.category_indexer(child) in self.categories.keys()
             response += " | ".join([

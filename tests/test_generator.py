@@ -33,7 +33,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -74,6 +74,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.settings.slave_cat_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_cat_woo_api_dummy_wp-json.json"
+            )
+            self.settings.slave_img_file = os.path.join(
+                TESTS_DATA_DIR, "prod_slave_img_woo_api_dummy_wp-json.json"
             )
 
         # TODO: this
@@ -269,7 +272,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         print(tabulate(img_table))
 
     # @unittest.skip("takes too long")
-    def test_dummy_process_images(self):
+    def test_dummy_process_images_master(self):
         suffix='generator_dummy_process_images'
         temp_img_dir = tempfile.mkdtemp(suffix + '_img')
         if self.debug:
@@ -306,6 +309,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     self.assertTrue(img_data['height'] <= self.settings.thumbsize_y)
 
         self.assertTrue(resized_images)
+
+    def test_dummy_images_slave(self):
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
+
+        if self.debug:
+            self.print_images_summary(self.parsers.slave.images.values())
 
     def test_dummy_do_match_categories(self):
         populate_master_parsers(self.parsers, self.settings)

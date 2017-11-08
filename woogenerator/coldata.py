@@ -247,8 +247,11 @@ class ColDataMedia(ColDataAbstract):
             'unique': True,
         },
         'title': {
-            'wp-api-v2':{
-                'path': 'title.rendered'
+            'wp-api':{
+                'path': 'title.rendered',
+            },
+            'wp-api-v1': {
+                'path': 'title'
             },
             'report': True,
         },
@@ -287,14 +290,18 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': None
             },
-            'wp-api-v2': {
-                'path': 'caption.rendered'
+            'wp-api': {
+                'path': 'caption.rendered',
             }
         },
         'description': {
             'type': 'object',
             'wp-api-v1': {
                 'path': None
+            },
+            'wp-api': {
+                'path': 'description.rendered',
+                'write': False
             },
             'report': True,
         },
@@ -320,7 +327,7 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': 'attachment_meta.image_meta'
             },
-            'wp-api-v2': {
+            'wp-api': {
                 'path': 'attachment_meta.media_details'
             }
         },
@@ -328,7 +335,7 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1':{
                 'path': 'attachment_meta.width'
             },
-            'wp-api-v2':{
+            'wp-api':{
                 'path': 'media_details.width'
             },
             'report': True,
@@ -337,7 +344,7 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1':{
                 'path': 'attachment_meta.height'
             },
-            'wp-api-v2':{
+            'wp-api':{
                 'path': 'media_details.height'
             },
             'report': True,
@@ -346,7 +353,7 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': 'attachment_meta.file'
             },
-            'wp-api-v2': {
+            'wp-api': {
                 'path': 'media_details.file'
             },
             'report': True

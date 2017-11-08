@@ -322,6 +322,11 @@ def cache_api_data(settings, parsers):
         category_list = category_container(parsers.slave.categories.values())
         category_list.export_api_data(settings.slave_cat_path)
 
+    if settings.do_images and parsers.slave.images:
+        image_container = settings.slave_parser_class.image_container.container
+        image_list = image_container(parsers.slave.images.values())
+        image_list.export_api_data(settings.slave_img_path)
+
 def product_index_fn(product):
     """Return the codesum of the product."""
     return product.codesum

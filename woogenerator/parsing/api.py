@@ -3,9 +3,9 @@ Introduce woo api structure to shop classes.
 """
 from __future__ import absolute_import, print_function
 
+import datetime
 import io
 import json
-import datetime
 from collections import OrderedDict
 from pprint import pformat
 
@@ -18,7 +18,8 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
 from .tree import CsvParseTreeMixin
-from .woo import CsvParseWooMixin, ImportWooMixin, WooCatList, WooProdList
+from .woo import (CsvParseWooMixin, ImportWooImg, ImportWooMixin,
+                  WooCatList, WooImgList, WooProdList)
 
 
 class ApiListMixin(object):
@@ -191,6 +192,17 @@ class ImportWooApiCategoryLegacy(ImportWooApiCategory):
         ]
     )
 
+ImportWooApiCategoryLegacy.container = WooApiCatList
+
+class ImportWooApiImg(ImportWooImg):
+    pass
+
+class WooApiImgList(WooImgList, ApiListMixin):
+    supported_type = ImportWooApiImg
+
+ImportWooApiImg.container = WooApiImgList
+
+
 
 class ApiParseMixin(object):
     def analyse_stream(self, byte_file_obj, **kwargs):
@@ -260,6 +272,7 @@ class ApiParseWoo(
     taxo_indexer = CsvParseBase.get_object_rowcount
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
+    image_container = ImportWooApiImg
     coldata_class = ColDataWoo
     col_data_target = 'wp-api'
     meta_get_key = 'meta_data'
@@ -332,12 +345,22 @@ class ApiParseWoo(
     def process_api_image(self, img_api_data, object_data=None, **kwargs):
         # TODO: do this based off process_api_category
 
-        img_raw_data = self.coldata_class.do_path_translation(
+        img_raw_data = self.coldata_img_class.do_path_translation(
             img_api_data, self.col_data_target
         )
-        kwargs['api_data'] = img_api_data
+        img_raw_data['api_data'] = img_api_data
+        if not img_raw_data.get('file_path'):
+            warn = UserWarning(
+                "could not process api img %s: no file path in API object" % (
+                    img_raw_data
+                )
+            )
+            self.register_warning(
+                warn
+            )
+            return
 
-        super(ApiParseWoo, self).process_api_img(img_raw_data, object_data, **kwargs)
+        super(ApiParseWoo, self).process_image(img_raw_data, object_data, **kwargs)
 
     def process_api_category(self, category_api_data, object_data=None):
         """
@@ -359,7 +382,7 @@ class ApiParseWoo(
             self.register_message("PROCESS CATEGORY: %s" %
                                   repr(category_api_data))
         core_translation = OrderedDict()
-        for col, col_data in self.coldata_class.get_wpapi_core_cols().items():
+        for col, col_data in self.coldata_cat_class.get_wpapi_core_cols().items():
             try:
                 wp_api_key = col_data[self.col_data_target]['key']
             except BaseException:

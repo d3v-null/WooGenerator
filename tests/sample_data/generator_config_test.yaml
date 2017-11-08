@@ -18,6 +18,9 @@ xero-schemas:
 
 schema: CA
 
+local_work_dir: tests/sample_data
+master_dialect_suggestion: 'SublimeCsvTable'
+
 wp-api-key: tYG1tAoqjBEM
 wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
 wp-user: wptest

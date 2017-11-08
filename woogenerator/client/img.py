@@ -27,7 +27,15 @@ class ImgSyncClientWP(SyncClientWP):
         return self.create_item(data, headers=headers)
 
     def analyse_remote_imgs(self, parser, **kwargs):
-        pass
+        img_api_iterator = self.get_iterator(self.endpoint_plural)
+        for page in img_api_iterator:
+            if self.page_nesting:
+                page = page['media']
+            for page_item in page:
+                parser.process_api_image(page_item)
+        if self.DEBUG_API:
+            self.register_message("Analysed images:")
+            self.register_message(parser.to_str_tree())
 
     def delete_item(self, img_id):
         return super(ImgSyncClientWP, self).delete_item(img_id, force=True)

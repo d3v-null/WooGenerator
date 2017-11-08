@@ -18,6 +18,7 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductVariationMixin, ShopCatList, ShopObjList,
                    ShopProdList, ImportShopImgMixin)
 from .special import ImportSpecialGroup
+from .abstract import ObjList
 from .tree import ImportTreeItem, ItemList, TaxoList, ImportTreeObject
 
 
@@ -94,6 +95,8 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
 
 class WooListMixin(object):
     coldata_class = ColDataWoo
+    coldata_cat_class = ColDataWoo
+    coldata_img_class = ColDataMedia
     supported_type = ImportWooObject
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
@@ -307,7 +310,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
     #         return super(ImportWooCategory, self).__getitem__(key)
 
 class WooCatList(ShopCatList, WooListMixin):
-    coldata_class = WooListMixin.coldata_class
+    coldata_class = WooListMixin.coldata_cat_class
     supported_type = ImportWooCategory
     report_cols = coldata_class.get_category_cols()
 
@@ -316,6 +319,8 @@ ImportWooCategory.container = WooCatList
 class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
     verify_meta_keys = ImportShopImgMixin.verify_meta_keys
     index = ImportShopImgMixin.index
+    is_product = False
+    is_category = False
 
     wpid_key = 'id'
     slug_key = 'slug'
@@ -324,6 +329,13 @@ class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
     def __init__(self, *args, **kwargs):
         ImportTreeObject.__init__(self, *args, **kwargs)
         ImportShopImgMixin.__init__(self, *args, **kwargs)
+
+class WooImgList(ObjList, WooListMixin):
+    coldata_class = WooListMixin.coldata_img_class
+    supported_type = ImportWooImg
+    report_cols = coldata_class.get_report_cols()
+
+ImportWooImg.container = WooImgList
 
 class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """
@@ -338,6 +350,8 @@ class CsvParseWooMixin(object):
     bundled_container = ImportWooProductBundled
     # Under woo, all taxos are categories
     coldata_class = ColDataWoo
+    coldata_cat_class = ColDataWoo
+    coldata_img_class = ColDataMedia
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
@@ -382,6 +396,63 @@ class CsvParseWooMixin(object):
         # self.register_message("PARSER DATA: %s" % repr(defaults))
         return defaults
 
+    @property
+    def img_defaults(self):
+        return self.coldata_img_class.get_defaults()
+
+    def new_img_object(self, **kwargs):
+        """
+        Create a new img instance from provided args.
+        """
+        default_data = OrderedDict(self.img_defaults.items())
+        parser_data = kwargs.get('row_data', {})
+        all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
+        container = self.image_container
+        img_data = container(all_data, **kwargs)
+        return img_data
+
+    def process_image(self, img_raw_data, object_data=None, **kwargs):
+        if self.DEBUG_IMG:
+            img_path = img_raw_data.get('file_path', '')
+            if object_data:
+                identifier = object_data.identifier
+                self.register_message(
+                    "%s attached to %s"
+                    % (identifier, img_path)
+                )
+            else:
+                self.register_message(
+                    "creating image %s" % (img_path)
+                )
+            self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
+
+        img_data = self.find_image(img_raw_data)
+        if not img_data:
+            if self.DEBUG_IMG:
+                self.register_message("SEARCH IMG NOT FOUND")
+            img_data = copy(img_raw_data)
+            kwargs['row_data'] = img_data
+            kwargs['parent'] = self.root_data
+            try:
+                img_data = self.new_img_object(
+                    rowcount=self.rowcount,
+                    **kwargs
+                )
+            except UserWarning as exc:
+                warn = UserWarning("could not create image: %s" % exc)
+                self.register_error(
+                    warn
+                )
+                if self.strict:
+                    self.raise_exception(warn)
+            self.register_image(img_data)
+
+        else:
+            if self.DEBUG_IMG:
+                self.register_message("FOUND IMG: %s" % repr(img_data))
+
+        self.register_attachment(img_data, object_data)
+
     def get_wpid(self, object_data):
         return object_data.wpid
 
@@ -404,7 +475,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     image_container = CsvParseWooMixin.image_container
     category_indexer = CsvParseWooMixin.category_indexer
     coldata_class = CsvParseWooMixin.coldata_class
-    coldata_img_class = ColDataMedia
+    coldata_cat_class = CsvParseWooMixin.coldata_cat_class
+    coldata_img_class = CsvParseWooMixin.coldata_img_class
 
     do_specials = True
     do_dyns = True
@@ -625,65 +697,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             register_name='onspecial_variations',
             singular=True
         )
-
-    @property
-    def img_defaults(self):
-        return self.coldata_img_class.get_defaults()
-
-    def new_img_object(self, **kwargs):
-        """
-        Create a new img instance from provided args.
-        """
-        default_data = OrderedDict(self.img_defaults.items())
-        parser_data = kwargs.get('row_data', {})
-        all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
-        container = self.image_container
-        img_data = container(all_data, **kwargs)
-        return img_data
-
-    def process_image(self, img_raw_data, object_data=None, **kwargs):
-        # TODO: do this based off api.process_api_category
-        if self.DEBUG_IMG:
-            img_path = img_raw_data.get('file_path', '')
-            if object_data:
-                identifier = object_data.identifier
-                self.register_message(
-                    "%s attached to %s"
-                    % (identifier, img_path)
-                )
-            else:
-                self.register_message(
-                    "creating image %s" % (img_path)
-                )
-            self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
-
-        img_data = self.find_image(img_raw_data)
-        if not img_data:
-            if self.DEBUG_IMG:
-                self.register_message("SEARCH IMG NOT FOUND")
-            img_data = copy(img_raw_data)
-            img_data[self.schema] = 'M'
-            kwargs['row_data'] = img_data
-            kwargs['parent'] = self.root_data
-            try:
-                img_data = self.new_img_object(
-                    rowcount=self.rowcount,
-                    **kwargs
-                )
-            except UserWarning as exc:
-                warn = UserWarning("could not create image: %s" % exc)
-                self.register_error(
-                    warn
-                )
-                if self.strict:
-                    self.raise_exception(warn)
-            self.register_image(img_data)
-
-        else:
-            if self.DEBUG_IMG:
-                self.register_message("FOUND IMG: %s" % repr(img_data))
-
-        self.register_attachment(img_data, object_data)
 
     def process_images(self, object_data):
         img_paths = filter(None, SanitationUtils.find_all_images(
