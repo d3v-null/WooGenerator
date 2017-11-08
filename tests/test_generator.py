@@ -1,30 +1,32 @@
 from __future__ import print_function
 
 import os
+import shutil
+import tempfile
 import unittest
 from pprint import pformat
-import tempfile
-import shutil
 
 from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.generator import (
-    populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
-    do_merge, do_report, do_match_categories, do_merge_categories
-)
+from woogenerator.coldata import ColDataMedia, ColDataWoo
+from woogenerator.generator import (do_match, do_match_categories,
+                                    do_match_images, do_merge,
+                                    do_merge_categories, do_report,
+                                    populate_master_parsers,
+                                    populate_slave_parsers)
 from woogenerator.images import process_images
+from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
-from woogenerator.parsing.special import SpecialGruopList
-from woogenerator.parsing.woo import WooProdList, CsvParseWoo
 from woogenerator.parsing.api import ApiParseWoo
-from woogenerator.parsing.xero import ApiParseXero
+from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.tree import ItemList
+from woogenerator.parsing.woo import CsvParseWoo, WooProdList
+from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
-from woogenerator.coldata import ColDataMedia, ColDataWoo
 
 # import argparse
 
@@ -374,11 +376,42 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     [attachment.index for attachment in img_data.attachments.objects]
                 )
 
+    def test_dummy_do_match_images(self):
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+
+        if self.debug:
+            self.matches.image.globals.tabulate()
+            self.print_matches_summary(self.matches.image)
+
+        self.assertEqual(len(self.matches.image.globals), 41)
+        first_match = self.matches.image.globals[0]
+        first_master = first_match.m_object
+        first_slave = first_match.s_object
+        if self.debug:
+            print('pformat@dict@first_master:\n%s' % pformat(dict(first_master)))
+            print('pformat@dict@first_slave:\n%s' % pformat(dict(first_slave)))
+            master_keys = set(dict(first_master).keys())
+            slave_keys = set(dict(first_slave).keys())
+            intersect_keys = master_keys.intersection(slave_keys)
+            print("intersect_keys:\n")
+            for key in intersect_keys:
+                print("%20s | %50s | %50s" % (
+                    str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
+                ))
+        for match in self.matches.image.globals:
+            self.assertEqual(match.m_object.file_name, match.s_object.file_name)
+
     def test_dummy_do_match_categories(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
-            self.matches = do_match_categories(
+            do_match_categories(
                 self.parsers, self.matches, self.settings
             )
 
@@ -535,6 +568,9 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             TESTS_DATA_DIR, "xero_demo_data.json"
         )
         self.settings.report_matching = True
+        self.matches = MatchNamespace(
+            index_fn=ProductMatcher.product_index_fn
+        )
         if self.debug:
             # Registrar.DEBUG_SHOP = True
             # Registrar.DEBUG_PARSER = True
@@ -639,7 +675,6 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     def test_xero_do_match(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        self.matches = MatchNamespace(index_fn=product_index_fn)
         do_match(self.parsers, self.matches, self.settings)
 
         if self.debug:
@@ -653,7 +688,6 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     def test_xero_do_merge(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        self.matches = MatchNamespace(index_fn=product_index_fn)
         do_match(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
         do_merge(self.matches, self.parsers, self.updates, self.settings)
@@ -706,7 +740,6 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.init_dirs()
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        self.matches = MatchNamespace(index_fn=product_index_fn)
         do_match(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
         do_merge(self.matches, self.parsers, self.updates, self.settings)

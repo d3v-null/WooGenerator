@@ -221,12 +221,22 @@ class ColDataAbstract(object):
         return new_datum
 
     @classmethod
-    def get_defaults(cls):
-        return cls.get_handles_property('defaults')
+    def get_defaults(cls, target=None):
+        return cls.get_handles_property('defaults', target)
 
     @classmethod
-    def get_report_cols(cls):
-        return cls.get_handles_property('report')
+    def get_report_cols(cls, target=None):
+        return cls.get_handles_property('report', target)
+
+    @classmethod
+    def get_sync_cols(cls, target=None):
+        path_cols = cls.get_handles_property('path', target)
+        write_cols = cls.get_handles_property('write', target)
+        import pudb; pudb.set_trace()
+        for key in set(path_cols.keys()).union(write_cols.keys()):
+            path = path_cols.get(key, None)
+            write = path_cols.get(key, None)
+
 
 
 class ColDataMedia(ColDataAbstract):

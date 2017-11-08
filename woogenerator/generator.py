@@ -22,7 +22,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .client.prod import CatSyncClientWC
 from .coldata import ColDataBase
-from .matching import CategoryMatcher, ProductMatcher, VariationMatcher
+from .matching import CategoryMatcher, ProductMatcher, VariationMatcher, ImageMatcher
 from .images import process_images
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
@@ -327,17 +327,6 @@ def cache_api_data(settings, parsers):
         image_list = image_container(parsers.slave.images.values())
         image_list.export_api_data(settings.slave_img_path)
 
-def product_index_fn(product):
-    """Return the codesum of the product."""
-    return product.codesum
-
-def category_index_fn(category):
-    """Return the title of the category."""
-    return category.title
-
-def img_index_fn(image):
-    return image.file_name
-
 def do_match_images(parsers, matches, settings):
     if Registrar.DEBUG_IMG:
         Registrar.register_message(
@@ -345,7 +334,54 @@ def do_match_images(parsers, matches, settings):
             (len(parsers.master.images),
              len(parsers.slave.images)))
 
-    # matches.images = MatchNamespace(index_fn=c)
+    matches.image = MatchNamespace(
+        index_fn=ImageMatcher.image_index_fn
+    )
+
+    image_matcher = ImageMatcher()
+    image_matcher.clear()
+    slave_imgs_attachments = OrderedDict([
+        (index, image) for index, image in parsers.slave.images.items()
+        if image.attachments.has_product_categories
+    ])
+    master_imgs_attachments = OrderedDict([
+        (index, image) for index, image in parsers.master.images.items()
+        if image.attachments.has_product_categories
+    ])
+    image_matcher.process_registers(
+        slave_imgs_attachments, master_imgs_attachments
+    )
+
+    matches.image.globals.add_matches(image_matcher.pure_matches)
+    matches.image.masterless.add_matches(image_matcher.masterless_matches)
+    matches.image.slaveless.add_matches(image_matcher.slaveless_matches)
+
+    if Registrar.DEBUG_IMG:
+        if image_matcher.pure_matches:
+            Registrar.register_message("All Image matches:\n%s" % (
+                '\n'.join(map(str, image_matcher.matches))))
+
+    matches.image.valid += image_matcher.pure_matches
+
+    if image_matcher.duplicate_matches:
+        matches.image.duplicate['title'] = image_matcher.duplicate_matches
+
+        for match in image_matcher.duplicate_matches:
+            master_filenames = [img.file_name for img in match.m_objects]
+            if all(master_filenames) \
+                    and SeqUtils.check_equal(master_filenames) \
+                    and not len(match.s_objects) > 1:
+                matches.image.valid.append(match)
+            else:
+                matches.image.invalid.append(match)
+        if matches.image.invalid:
+            exc = UserWarning(
+                "images couldn't be synchronized because of ambiguous filenames:\n%s"
+                % '\n'.join(map(str, matches.image.invalid)))
+            Registrar.register_error(exc)
+            raise exc
+
+    return matches
 
 def do_match_categories(parsers, matches, settings):
     if Registrar.DEBUG_CATS:
@@ -357,7 +393,9 @@ def do_match_categories(parsers, matches, settings):
     if not( parsers.master.categories and parsers.slave.categories ):
         return matches
 
-    matches.category = MatchNamespace(index_fn=category_index_fn)
+    matches.category = MatchNamespace(
+        index_fn=CategoryMatcher.category_index_fn
+    )
 
     category_matcher = CategoryMatcher()
     category_matcher.clear()
@@ -368,13 +406,13 @@ def do_match_categories(parsers, matches, settings):
     matches.category.globals.add_matches(category_matcher.pure_matches)
     matches.category.masterless.add_matches(
         category_matcher.masterless_matches)
-    matches.deny_anomalous(
-        'category_matcher.masterless_matches', category_matcher.masterless_matches
-    )
+    # matches.deny_anomalous(
+    #     'category_matcher.masterless_matches', category_matcher.masterless_matches
+    # )
     matches.category.slaveless.add_matches(category_matcher.slaveless_matches)
-    matches.deny_anomalous(
-        'category_matcher.slaveless_matches', category_matcher.slaveless_matches
-    )
+    # matches.deny_anomalous(
+    #     'category_matcher.slaveless_matches', category_matcher.slaveless_matches
+    # )
 
     if Registrar.DEBUG_CATS:
         if category_matcher.pure_matches:
@@ -434,7 +472,9 @@ def do_match(parsers, matches, settings):
 
     Registrar.register_progress("Attempting matching")
 
-    matches.variation = MatchNamespace(index_fn=product_index_fn)
+    matches.variation = MatchNamespace(
+        index_fn=ProductMatcher.product_index_fn
+    )
 
     if settings['do_categories']:
         matches.category.prod = OrderedDict()
@@ -489,7 +529,7 @@ def do_match(parsers, matches, settings):
             )
 
             matches.category.prod[match_index] = MatchNamespace(
-                index_fn=category_index_fn)
+                index_fn=CategoryMatcher.category_index_fn)
 
             matches.category.prod[match_index].globals.add_matches(
                 category_matcher.pure_matches
@@ -535,6 +575,11 @@ def do_match(parsers, matches, settings):
 
     return matches
 
+
+def do_merge_images(matches, parsers, updates, settings):
+    updates.image = UpdateNamespace()
+
+    sync_cols = settings.sync_cols_img
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
@@ -1136,7 +1181,7 @@ def main(override_args=None, settings=None):
     ########################################
 
     parsers = ParserNamespace()
-    parsers = populate_master_parsers(parsers, settings)
+    populate_master_parsers(parsers, settings)
 
     check_warnings()
 
@@ -1146,21 +1191,27 @@ def main(override_args=None, settings=None):
     if parsers.master.objects:
         export_master_parser(settings, parsers)
 
-    parsers = populate_slave_parsers(parsers, settings)
+    populate_slave_parsers(parsers, settings)
 
     if parsers.slave.objects:
         cache_api_data(settings, parsers)
 
-    matches = MatchNamespace(index_fn=product_index_fn)
+    matches = MatchNamespace(
+        index_fn=ProductMatcher.product_index_fn
+    )
     updates = UpdateNamespace()
     reporters = ReporterNamespace()
     results = ResultsNamespace()
 
-    if settings['do_categories']:
+    if settings.do_images:
+        do_match_images(parsers, matches, settings)
+        do_merge_images(matches, parsers, updates, settings)
 
-        matches = do_match_categories(parsers, matches, settings)
-        updates = do_merge_categories(matches, parsers, updates, settings)
-        reporters = do_report_categories(
+    if settings.do_categories:
+
+        do_match_categories(parsers, matches, settings)
+        do_merge_categories(matches, parsers, updates, settings)
+        do_report_categories(
             reporters, matches, updates, parsers, settings
         )
         check_warnings()
@@ -1171,10 +1222,10 @@ def main(override_args=None, settings=None):
         except (SystemExit, KeyboardInterrupt):
             return reporters, results
 
-    matches = do_match(parsers, matches, settings)
-    updates = do_merge(matches, parsers, updates, settings)
+    do_match(parsers, matches, settings)
+    do_merge(matches, parsers, updates, settings)
     # check_warnings()
-    reporters = do_report(reporters, matches, updates, parsers, settings)
+    do_report(reporters, matches, updates, parsers, settings)
 
     if settings.report_and_quit:
         sys.exit(ExitStatus.success)

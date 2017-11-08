@@ -674,12 +674,29 @@ class CategoryMatcher(AbstractMatcher):
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
 
     @staticmethod
-    def category_index_fn(product_object):
-        """ the category index function for the class """
-        return product_object.cat_name
+    def category_index_fn(category_object):
+        """ Return the name of the category. """
+        return category_object.cat_name
 
     def __init__(self):
         super(CategoryMatcher, self).__init__(self.category_index_fn)
+        self.process_registers = self.process_registers_singular
+        # self.retrieveObjects = self.retrieveObjectsSingular
+
+class ImageMatcher(AbstractMatcher):
+    """
+    Matcher class for categories
+    """
+    process_registers = AbstractMatcher.process_registers_singular
+    # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+
+    @staticmethod
+    def image_index_fn(img_object):
+        """ Return the basename of the image file. """
+        return img_object.file_name
+
+    def __init__(self):
+        super(ImageMatcher, self).__init__(self.image_index_fn)
         self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
 

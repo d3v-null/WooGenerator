@@ -10,7 +10,7 @@ from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
                            ProdSyncClientXero)
 from ..client.img import ImgSyncClientWP
-from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero
+from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero, ColDataMedia
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
@@ -107,6 +107,16 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         elif self.schema_is_woo:
             response = ColDataWoo
         return response
+
+    @property
+    def coldata_img_class():
+        return ColDataMedia
+
+    @property
+    def coldata_cat_class():
+        return ColDataWoo
+
+
 
     @property
     def master_path(self):
@@ -320,10 +330,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def sync_cols_img(self):
+        return self.coldata_img_class.get_sync_cols(self.coldata_img_target)
+
+    @property
     def sync_cols_cat(self):
         response = {}
         if self.schema_is_woo:
-            response = self.coldata_class.get_wpapi_category_cols()
+            response = self.coldata_cat_class.get_wpapi_category_cols()
         return response
 
     @property
