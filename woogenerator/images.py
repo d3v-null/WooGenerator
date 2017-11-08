@@ -192,6 +192,9 @@ def get_raw_image(settings, img_name):
     raise IOError("no image named %s found" % str(img_name))
 
 def remeta_image(settings, parsers, img_data):
+    if Registrar.DEBUG_IMG:
+        Registrar.register_message("img_data_id: %s" % id(img_data))
+
     try:
         metagator = MetaGator(get_raw_image(settings, img_data.file_name))
     except Exception as exc:
@@ -211,10 +214,10 @@ def remeta_image(settings, parsers, img_data):
             'description': description
         })
 
-        img_data.update[img_data.title_key] = title
-        img_data.update['alt_text'] = title
-        img_data.update['caption'] = description
-        img_data.update['description'] = description
+        img_data[img_data.title_key] = title
+        img_data['alt_text'] = title
+        img_data['caption'] = description
+        img_data['description'] = description
     except Exception as exc:
         invalid_image(
             parsers, settings, img_data.file_name, "error updating meta: " + str(exc)
@@ -224,6 +227,9 @@ def remeta_image(settings, parsers, img_data):
     return img_data
 
 def resize_image(settings, parsers, img_data):
+    if Registrar.DEBUG_IMG:
+        Registrar.register_message("img_data_id: %s" % id(img_data))
+
     img_raw_path = get_raw_image(settings, img_data.file_name)
     if not os.path.isfile(img_raw_path):
         invalid_image(
@@ -313,8 +319,8 @@ def process_images(settings, parsers):
                 os.remove(os.path.join(settings.img_dst, fname))
 
     # for img_filename, obj_list in parsers.master.images.items():
-    for img_path, img_data in parsers.master.images.items():
-        img_filename = os.path.basename(img_path)
+    for img_data in parsers.master.images.values():
+        img_filename = os.path.basename(img_data.file_name)
         if not img_data.attachments.products:
             continue
             # we only care about product images atm
@@ -403,3 +409,5 @@ def process_images(settings, parsers):
         if settings.do_resize_images:
             if not resize_image(settings, parsers, img_data):
                 continue
+
+    return parsers

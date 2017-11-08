@@ -303,25 +303,29 @@ class ShopObjList(ObjList):
 
     def append(self, object_data):
         assert isinstance(object_data, ImportShopMixin)
-        container = None
         if object_data.is_category:
             container = self.categories
         elif object_data.is_product:
             container = self.products
         else:
             container = self._objects
+            # warn = UserWarning("shopObjList appended non-product, non-category: %s" % object_data)
+            # self.register_warning(warn)
+            # raise warn
 
-        if container:
-            bisect.insort(container, object_data)
+        bisect.insort(container, object_data)
 
     def extend(self, iterable):
         for thing in iterable:
             self.append(thing)
 
     def __iter__(self):
-        yield self.categories.__iter__()
-        yield self.products.__iter__()
-        yield self._objects.__iter__()
+        for thing in self.categories:
+            yield thing
+        for thing in self.products:
+            yield thing
+        for thing in self._objects:
+            yield thing
 
     def __reversed__(self, *args, **kwargs):
         return list(self.__iter__).__reversed__(*args, **kwargs)
@@ -423,8 +427,14 @@ class CsvParseShopMixin(object):
         )
 
     def register_attachment(self, img_data, object_data=None):
+        if self.DEBUG_IMG:
+            self.register_message("attaching %s to %s" % (img_data, object_data))
         if object_data:
             object_data.register_image(img_data)
+            if self.DEBUG_IMG:
+                self.register_message("object_data.images: %s" % (object_data.images.keys()))
+                self.register_message("img_data.attachments: %s" % list(img_data.attachments.__iter__()))
+
 
     def register_image(self, img_data):
         assert isinstance(img_data, ImportShopImgMixin)

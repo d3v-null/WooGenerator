@@ -234,7 +234,7 @@ class ColDataMedia(ColDataAbstract):
     - wp-api-v2: http://v2.wp-api.org/reference/media/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
     """
-    data = dict(ColDataAbstract.data.items() + {
+    data = OrderedDict(ColDataAbstract.data.items() + {
         'date_gmt': {
             'type': 'iso8601_gmt',
             'write': False

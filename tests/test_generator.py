@@ -12,8 +12,9 @@ from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.generator import (
     populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
-    do_merge, do_report, do_match_categories, do_merge_categories, process_images
+    do_merge, do_report, do_match_categories, do_merge_categories
 )
+from woogenerator.images import process_images
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.special import SpecialGruopList
@@ -88,7 +89,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
             Registrar.DEBUG_MESSAGE = True
-            Registrar.DEBUG_IMG = True
+            # Registrar.DEBUG_IMG = True
             # Registrar.DEBUG_SPECIAL = True
             # Registrar.strict = True
             ApiParseWoo.product_resolver = Registrar.exception_resolver
@@ -119,7 +120,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.spec_gid, None)
 
     def test_dummy_populate_master_parsers(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
 
         #number of objects:
         self.assertEqual(len(self.parsers.master.objects.values()), 163)
@@ -205,8 +206,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
 
     def test_dummy_populate_slave_parsers(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         # TODO: finish this
         if self.debug:
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
@@ -267,7 +268,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         ]
         print(tabulate(img_table))
 
-    @unittest.skip("takes too long")
+    # @unittest.skip("takes too long")
     def test_dummy_process_images(self):
         suffix='generator_dummy_process_images'
         temp_img_dir = tempfile.mkdtemp(suffix + '_img')
@@ -286,8 +287,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             temp_img_dir, "imgs_cmp"
         )
 
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         process_images(self.settings, self.parsers)
 
         if self.debug:
@@ -296,14 +297,19 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # test resizing
         prod_container = self.parsers.master.product_container.container
         prod_list = prod_container(self.parsers.master.products.values())
+        resized_images = 0
         for prod in prod_list:
-            for image in prod.images.values():
-                self.assertTrue(image['width'] <= self.settings.thumbsize_x)
-                self.assertTrue(image['height'] <= self.settings.thumbsize_y)
+            for img_data in prod.images.values():
+                if self.settings.img_cmp_dir in img_data.get('file_path', ''):
+                    resized_images += 1
+                    self.assertTrue(img_data['width'] <= self.settings.thumbsize_x)
+                    self.assertTrue(img_data['height'] <= self.settings.thumbsize_y)
+
+        self.assertTrue(resized_images)
 
     def test_dummy_do_match_categories(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
             self.matches = do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -332,13 +338,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(match.m_object.title, match.s_object.title)
 
     def test_dummy_do_merge_categories(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
-            self.matches = do_match_categories(
+            do_match_categories(
                 self.parsers, self.matches, self.settings
             )
-            self.updates = do_merge_categories(
+            do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
 
@@ -371,16 +377,16 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_dummy_do_match(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
-            self.matches = do_match_categories(
+            do_match_categories(
                 self.parsers, self.matches, self.settings
             )
-            self.updates = do_merge_categories(
+            do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        self.matches = do_match(self.parsers, self.matches, self.settings)
+        do_match(self.parsers, self.matches, self.settings)
 
         if self.debug:
             self.matches.globals.tabulate()
@@ -399,8 +405,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(len(prod_cat_match.slaveless), 1)
 
     def test_dummy_do_merge(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
             self.matches = do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -408,8 +414,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.updates = do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        self.matches = do_match(self.parsers, self.matches, self.settings)
-        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+        do_match(self.parsers, self.matches, self.settings)
+        do_merge(self.matches, self.parsers, self.updates, self.settings)
 
         if self.debug:
             self.print_updates_summary(self.updates)
@@ -488,7 +494,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             del(registrar_vars['messages'])
             print(pformat(registrar_vars.items()))
         Registrar.DEBUG_TRACE = True
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
         Registrar.DEBUG_TRACE = False
         if self.debug:
             print("master objects: %s" % len(self.parsers.master.objects.values()))
@@ -523,7 +529,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
 
     def test_xero_populate_slave_parsers(self):
         # self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
 
         if self.debug:
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
@@ -552,10 +558,10 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_variation)
 
     def test_xero_do_match(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         self.matches = MatchNamespace(index_fn=product_index_fn)
-        self.matches = do_match(self.parsers, self.matches, self.settings)
+        do_match(self.parsers, self.matches, self.settings)
 
         if self.debug:
             print('match summary')
@@ -566,12 +572,12 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.matches.slaveless), 5)
 
     def test_xero_do_merge(self):
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         self.matches = MatchNamespace(index_fn=product_index_fn)
-        self.matches = do_match(self.parsers, self.matches, self.settings)
+        do_match(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
-        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+        do_merge(self.matches, self.parsers, self.updates, self.settings)
 
         if self.debug:
             self.print_updates_summary(self.updates)
@@ -619,14 +625,14 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             print("working dir: %s" % temp_working_dir)
         self.settings.local_work_dir = temp_working_dir
         self.settings.init_dirs()
-        self.parsers = populate_master_parsers(self.parsers, self.settings)
-        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        populate_master_parsers(self.parsers, self.settings)
+        populate_slave_parsers(self.parsers, self.settings)
         self.matches = MatchNamespace(index_fn=product_index_fn)
-        self.matches = do_match(self.parsers, self.matches, self.settings)
+        do_match(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
-        self.updates = do_merge(self.matches, self.parsers, self.updates, self.settings)
+        do_merge(self.matches, self.parsers, self.updates, self.settings)
         self.reporters = ReporterNamespace()
-        self.reporters = do_report(
+        do_report(
             self.reporters, self.matches, self.updates, self.parsers, self.settings
         )
 

@@ -694,18 +694,18 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 'file_path': image
             }
             self.process_image(img_data, object_data)
-        this_images = object_data.images
+        this_images = object_data.images.values()
         if object_data.is_item:
             ancestors = object_data.item_ancestors
         else:
             ancestors = []
         for ancestor in ancestors:
-            ancestor_images = ancestor.images
+            ancestor_images = ancestor.images.values()
             # TODO: create image object and register if not exist
             if len(this_images) and not len(ancestor_images):
-                self.process_image(this_images.values()[0], ancestor)
+                self.process_image(this_images[0], ancestor)
             elif not len(this_images) and len(ancestor_images):
-                self.process_image(ancestor_images.values()[0], object_data)
+                self.process_image(ancestor_images[0], object_data)
 
     def process_categories(self, object_data):
         if object_data.is_product:
