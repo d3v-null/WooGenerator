@@ -166,8 +166,10 @@ class ImportShopImgMixin(object):
 
     @property
     def file_name(self):
-        return os.path.basename(self[self.file_path_key])
-
+        if self[self.file_path_key]:
+            return os.path.basename(self[self.file_path_key])
+        elif self[self.source_url_key]:
+            return os.path.basename(self[self.source_url_key])
 
     @property
     def index(self):

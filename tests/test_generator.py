@@ -33,7 +33,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
+    debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -198,15 +198,20 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         else:
             self.assertEqual(len(cat_list), 9)
         first_cat = cat_list[0]
+        second_cat = cat_list[1]
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
+            print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
+            print("first_cat.images: %s" % pformat(first_cat.images))
+            print("second_cat.images: %s" % pformat(second_cat.images))
+
         self.assertEqual(first_cat.codesum, 'A')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.depth, 0)
-        second_cat = cat_list[1]
         self.assertEqual(second_cat.codesum, 'ACA')
         self.assertEqual(second_cat.depth, 1)
         self.assertEqual(second_cat.parent.codesum, 'A')
+        self.assertEqual(second_cat.images.keys(), ["ACA.jpg"])
 
         spec_list = SpecialGruopList(self.parsers.special.rule_groups.values())
         if self.debug:
@@ -291,11 +296,17 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ))
         self.assertEqual(len(cat_list), 9)
         first_cat = cat_list[0]
+        second_cat = cat_list[1]
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
+            print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
+            print("first_cat.images: %s" % pformat(first_cat.images))
+            print("second_cat.images: %s" % pformat(second_cat.images))
+
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
+        self.assertEqual(second_cat.images.keys(), ["ACA.jpg"])
 
         img_container = self.parsers.slave.image_container.container
         img_list = img_container(self.parsers.slave.images.values())

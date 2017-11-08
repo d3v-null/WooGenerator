@@ -331,10 +331,21 @@ def product_index_fn(product):
     """Return the codesum of the product."""
     return product.codesum
 
-
 def category_index_fn(category):
     """Return the title of the category."""
     return category.title
+
+def img_index_fn(image):
+    return image.file_name
+
+def do_match_images(parsers, matches, settings):
+    if Registrar.DEBUG_IMG:
+        Registrar.register_message(
+            "matching %d master images with %d slave images" %
+            (len(parsers.master.images),
+             len(parsers.slave.images)))
+
+    # matches.images = MatchNamespace(index_fn=c)
 
 def do_match_categories(parsers, matches, settings):
     if Registrar.DEBUG_CATS:

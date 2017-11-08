@@ -470,6 +470,12 @@ class ApiParseWoo(
                 self.register_message("FOUND CATEGORY: %s" % repr(cat_data))
 
         self.join_category(cat_data, object_data)
+
+        if 'image' in category_api_data:
+            self.process_api_sub_image(
+                category_api_data['image'], cat_data
+            )
+
         # if self.DEBUG_API:
         #     index = self.category_indexer(cat_data)
         #     self.register_message(repr(self.category_indexer))

@@ -321,9 +321,9 @@ def process_images(settings, parsers):
     # for img_filename, obj_list in parsers.master.images.items():
     for img_data in parsers.master.images.values():
         img_filename = os.path.basename(img_data.file_name)
-        if not img_data.attachments.products:
+        if not img_data.attachments.products or img_data.attachments.categories:
             continue
-            # we only care about product images atm
+            # we only care about product / category images atm
         if Registrar.DEBUG_IMG:
             if img_data.attachments.categories:
                 Registrar.register_message(
