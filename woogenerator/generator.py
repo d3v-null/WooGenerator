@@ -178,7 +178,7 @@ def populate_slave_parsers(parsers, settings):
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
-    if settings.schema_is_woo and settings['do_images'] and settings['download_slave']:
+    if settings.schema_is_woo and settings['do_images']:
         Registrar.register_progress("analysing API image data")
         img_client_class = settings.slave_img_sync_client_class
         img_client_args = settings.slave_img_sync_client_args

@@ -303,7 +303,6 @@ class ColDataMedia(ColDataAbstract):
                 'path': 'description.rendered',
                 'write': False
             },
-            'report': True,
         },
         # 'media_type': {
         #     'type': 'media_type',
@@ -380,6 +379,15 @@ class ColDataMedia(ColDataAbstract):
         #     }
         # },
     }.items())
+
+# class ColDataProd(ColDataAbstract):
+#     """
+#     - wc-wp-api-v2:
+#     - wc-wp-api-v1
+#     - wp-api-v2: http://v2.wp-api.org/reference/posts/
+#     - wp-api-v1: http://wp-api.org/index-deprecated.html#posts
+#     """
+
 
 class ColDataBase(object):
     data = OrderedDict()
@@ -1087,6 +1095,7 @@ class ColDataWoo(ColDataProd):
         }),
         ('spsum', {
             'tag': 'active_specials',
+            'label': 'meta:active_specials',
             'product': True,
             'variation': True,
             'pricing': True,

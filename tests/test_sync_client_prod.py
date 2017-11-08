@@ -32,10 +32,6 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
     # config_file = "conf_prod.yaml"
     # local_work_dir = "~/Documents/woogenerator"
 
-# TODO: mock these tests
-class TestProdSyncClientDestructive(TestProdSyncClient):
-    # debug = True
-
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
 
@@ -57,6 +53,10 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         ApiParseWoo.do_images = False
         ApiParseWoo.do_specials = False
         ApiParseWoo.do_dyns = False
+
+# TODO: mock these tests
+class TestProdSyncClientDestructive(TestProdSyncClient):
+    # debug = True
 
     def test_read(self):
         response = []

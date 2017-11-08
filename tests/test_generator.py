@@ -24,7 +24,7 @@ from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
-from woogenerator.coldata import ColDataMedia
+from woogenerator.coldata import ColDataMedia, ColDataWoo
 
 # import argparse
 
@@ -33,7 +33,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -47,8 +47,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
         )
         self.settings.do_specials = True
-        # self.settings.specials_mode = 'all_future'
-        self.settings.specials_mode = 'auto_next'
+        self.settings.specials_mode = 'all_future'
+        # self.settings.specials_mode = 'auto_next'
         # TODO: make this work with create special categories
         self.settings.skip_special_categories = True
         self.settings.do_sync = True
@@ -112,7 +112,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.master_name, "gdrive-test")
         self.assertEqual(self.settings.slave_name, "woocommerce-test")
         self.assertEqual(self.settings.merge_mode, "sync")
-        self.assertEqual(self.settings.specials_mode, "auto_next")
+        self.assertEqual(self.settings.specials_mode, "all_future")
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
         self.assertEqual(self.settings.thumbsize_x, 1024)
@@ -224,10 +224,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_prod = prod_list[0]
         if self.debug:
             print("first_prod.dict %s" % pformat(dict(first_prod)))
+            print("first_prod.categories: %s" % pformat(first_prod.categories))
+            print("first_prod.images: %s" % pformat(first_prod.images))
 
         self.assertEqual(first_prod.codesum, "ACARF-CRS")
         # TODO: Implement category tree in slave
         # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
+
         self.assertEqual(first_prod.product_type, "simple")
         self.assertTrue(first_prod.is_item)
         self.assertTrue(first_prod.is_product)
@@ -316,6 +319,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         if self.debug:
             self.print_images_summary(self.parsers.slave.images.values())
+            for img_data in self.parsers.slave.images.values():
+                print(
+                    img_data.file_name,
+                    [attachment.index for attachment in img_data.attachments.objects]
+                )
 
     def test_dummy_do_match_categories(self):
         populate_master_parsers(self.parsers, self.settings)
@@ -407,21 +415,32 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             for index, matches in self.matches.category.prod.items():
                 print("prod_matches: %s" % index)
                 self.print_matches_summary(matches)
-        prod_cat_match = self.matches.category.prod['ACARF-CRS | 1961']
+        prod_cat_match = self.matches.category.prod['ACARF-CRS | 24863']
         self.assertEqual(len(prod_cat_match.globals), 3)
         if self.settings.add_special_categories:
             self.assertEqual(len(prod_cat_match.slaveless), 3)
         else:
             self.assertEqual(len(prod_cat_match.slaveless), 1)
 
-    def test_dummy_do_merge(self):
+    def test_dummy_do_merge_products(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
+        if self.debug:
+            report_cols = ColDataWoo.get_report_cols()
+            report_cols['WNR'] = 'WNR'
+            report_cols['WNF'] = 'WNF'
+            report_cols['WNT'] = 'WNT'
+            report_cols['WNS'] = 'WNS'
+            report_cols['catlist'] = 'catlist'
+            master_container = self.parsers.master.product_container.container
+            master_products = master_container(self.parsers.master.products.values())
+            slave_container = self.parsers.slave.product_container.container
+            slave_products = slave_container(self.parsers.slave.products.values())
+            print("matser_products:\n", master_products.tabulate(cols=report_cols))
+            print("slave_products:\n", slave_products.tabulate(cols=report_cols))
         if self.settings.do_categories:
-            self.matches = do_match_categories(
-                self.parsers, self.matches, self.settings
-            )
-            self.updates = do_merge_categories(
+            do_match_categories(self.parsers, self.matches, self.settings)
+            do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
         do_match(self.parsers, self.matches, self.settings)
@@ -429,10 +448,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         if self.debug:
             self.print_updates_summary(self.updates)
-        self.assertEqual(len(self.updates.slave), 1)
+        self.assertTrue(self.updates.slave)
         sync_update = self.updates.slave[0]
         if self.debug:
             self.print_update(sync_update)
+        self.assertEqual(len(self.updates.slave), 1)
         try:
             self.assertEquals(sync_update.old_m_object['catlist'], [320, 323, 315, 316])
             self.assertEquals(sync_update.old_s_object['catlist'], [320, 315, 316])

@@ -522,6 +522,8 @@ class ApiParseWoo(
 
         # TODO: merge with ApiParseXero.get_parser_data in ApiParseMixin
 
+        # import pudb; pudb.set_trace()
+
         api_data = kwargs.get('api_data', {})
         if cls.DEBUG_API:
             cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))

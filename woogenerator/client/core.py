@@ -167,7 +167,9 @@ class SyncClientLocal(SyncClientAbstract):
     def __init__(self, **kwargs):
         self.dialect_suggestion = kwargs.pop('dialect_suggestion', None)
         self.encoding = kwargs.pop('encoding', None)
-        super(SyncClientLocal, self).__init__(None, **kwargs)
+        commect_params = kwargs.pop('connect_params', {})
+        connect_params = None
+        super(SyncClientLocal, self).__init__(connect_params, **kwargs)
 
     def attempt_connect(self):
         pass
@@ -202,10 +204,25 @@ class SyncClientLocal(SyncClientAbstract):
         with open(data_path, 'rbU') as data_file:
             decoded = json.loads(data_file.read(), encoding=encoding)
             if not decoded:
-                return
+                warn = UserWarning("could not analyse_remote_categories, json not decoded")
+                self.register_warning(warn)
 
             if isinstance(decoded, list):
                 parser.process_api_categories(decoded)
+
+    def analyse_remote_imgs(self, parser, **kwargs):
+        data_path = kwargs.pop('data_path', None)
+        encoding = kwargs.pop('encoding', None)
+
+        with open(data_path, 'rbU') as data_file:
+            decoded = json.loads(data_file.read(), encoding=encoding)
+            if not decoded:
+                warn = UserWarning("could not analyse_remote_imgs, json not decoded")
+                self.register_warning(warn)
+
+            if isinstance(decoded, list):
+                for decoded_item in decoded:
+                    parser.process_api_image(decoded_item)
 
 
 class SyncClientLocalStream(SyncClientLocal):

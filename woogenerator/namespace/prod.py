@@ -128,10 +128,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = '%s%s' % (self.file_prefix, 'slave')
         if self.schema_is_woo:
             response += '_woo_api'
+            if self.get('wc_api_namespace'):
+                response += '_' + self.get('wc_api_namespace')
         if self.schema_is_xero:
             response += '_xero_api'
-        if self.get('wc_api_namespace'):
-            response += '_' + self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -250,8 +250,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = '%s%s' % (self.file_prefix, 'slave_cat')
         if self.schema_is_woo:
             response += '_woo_api'
-        if self.get('wc_api_namespace'):
-            response += '_' + self.get('wc_api_namespace')
+            if self.get('wc_api_namespace'):
+                response += '_' + self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -263,8 +263,6 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if hasattr(self, 'slave_img_file') and getattr(self, 'slave_img_file'):
             return getattr(self, 'slave_img_file')
         response = '%s%s' % (self.file_prefix, 'slave_img')
-        if self.get('wc_api_namespace'):
-            response += '_' + self.get('wc_api_namespace')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
@@ -509,10 +507,13 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_cat_sync_client_class(self):
-        if self.wc_api_is_legacy:
-            return CatSyncClientWCLegacy
-        else:
-            return CatSyncClientWC
+        response = self.local_client_class
+        if self.download_slave:
+            if self.wc_api_is_legacy:
+                response = CatSyncClientWCLegacy
+            else:
+                response = CatSyncClientWC
+        return response
 
     @property
     def slave_cat_sync_client_args(self):
@@ -522,7 +523,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_img_sync_client_class(self):
-        return ImgSyncClientWP
+        response = self.local_client_class
+        if self.download_slave:
+            response = ImgSyncClientWP
+        return response
 
     @property
     def slave_img_sync_client_args(self):

@@ -557,6 +557,7 @@ class CsvParseBase(Registrar):
         # all_data = SeqUtils.combine_ordered_dicts(parser_data, default_data)
         all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
         mandatory_data = self.get_mandatory_data(**kwargs)
+        # TODO: is this in the wrong order?
         all_data = SeqUtils.combine_ordered_dicts(all_data, mandatory_data)
         if self.DEBUG_PARSER:
             self.register_message("all_data: {}".format(all_data))

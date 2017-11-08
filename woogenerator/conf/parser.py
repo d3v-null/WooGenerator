@@ -65,6 +65,10 @@ class ArgumentParserProto(configargparse.ArgumentParser):
             action='store_false',
             dest='testmode')
         self.add_argument(
+            '--import-name',
+            help='a name to identify this run of the importer'
+        )
+        self.add_argument(
             '--local-work-dir',
             help='specify the directory containing all important dirs'
         )
@@ -606,6 +610,11 @@ class ArgumentParserProd(ArgumentParserCommon):
             help='Select which mode to process the specials in',
             choices=['override', 'auto_next', 'all_future'],
             default='override')
+        specials_group.add_argument(
+            '--skip-special-categories',
+            help="don't create new special category groups",
+            action='store_true'
+        )
         specials_group.add_argument(
             '--current-special',
             help='prefix of current special code')

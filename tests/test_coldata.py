@@ -112,7 +112,8 @@ class TestColDataImg(TestColData):
                 ('image_meta', 'attachment_meta.media_details'),
                 ('width', 'media_details.width'),
                 ('file_path', 'media_details.file'),
-                ('height', 'media_details.height')
+                ('height', 'media_details.height'),
+                ('description', 'description.rendered')
             ]).items())
         )
 
@@ -126,19 +127,19 @@ class TestColDataImg(TestColData):
             path_translation,
             {
                 'alt_text': 'alt_text',
-                 'attachment_meta.media_details': 'image_meta',
-                 'caption.rendered': 'caption',
-                 'date_gmt': 'date_gmt',
-                 'description': 'description',
-                 'id': 'id',
-                 'media_details.file': 'file_path',
-                 'media_details.height': 'height',
-                 'media_details.width': 'width',
-                 'mime_type': 'mime_type',
-                 'modified_gmt': 'modified_gmt',
-                 'slug': 'slug',
-                 'source_url': 'source_url',
-                 'title.rendered': 'title'
+                'attachment_meta.media_details': 'image_meta',
+                'caption.rendered': 'caption',
+                'date_gmt': 'date_gmt',
+                'description.rendered': 'description',
+                'id': 'id',
+                'media_details.file': 'file_path',
+                'media_details.height': 'height',
+                'media_details.width': 'width',
+                'mime_type': 'mime_type',
+                'modified_gmt': 'modified_gmt',
+                'slug': 'slug',
+                'source_url': 'source_url',
+                'title.rendered': 'title'
             }
         )
 
