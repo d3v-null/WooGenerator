@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from context import TESTS_DATA_DIR, woogenerator
-from woogenerator.metagator import MetaGator
+from woogenerator.images import MetaGator
 from woogenerator.utils import Registrar, TimeUtils
 
 

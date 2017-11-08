@@ -4,6 +4,7 @@ import os
 import unittest
 from pprint import pformat
 import tempfile
+import shutil
 
 from tabulate import tabulate
 
@@ -11,7 +12,7 @@ from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.generator import (
     populate_master_parsers, populate_slave_parsers, do_match, product_index_fn,
-    do_merge, do_report, do_match_categories, do_merge_categories
+    do_merge, do_report, do_match_categories, do_merge_categories, process_images
 )
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -22,6 +23,7 @@ from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.parsing.tree import ItemList
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
+from woogenerator.coldata import ColDataMedia
 
 # import argparse
 
@@ -51,9 +53,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.do_images = True
+        self.settings.do_resize_images = True
+        self.settings.do_remeta_images = True
         self.settings.report_matching = True
         self.settings.schema = "CA"
         self.settings.init_settings(self.override_args)
+        self.settings.thumbsize_x = 1024
+        self.settings.thumbsize_y = 768
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -82,16 +88,21 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
             Registrar.DEBUG_MESSAGE = True
+            Registrar.DEBUG_IMG = True
             # Registrar.DEBUG_SPECIAL = True
-            Registrar.strict = True
+            # Registrar.strict = True
             ApiParseWoo.product_resolver = Registrar.exception_resolver
             CsvParseWoo.product_resolver = Registrar.exception_resolver
+        else:
+            Registrar.strict = False
 
-    def test_init_settings(self):
+    def test_dummy_init_settings(self):
         self.assertTrue(self.settings.do_specials)
         self.assertTrue(self.settings.do_sync)
         self.assertTrue(self.settings.do_categories)
         self.assertTrue(self.settings.do_images)
+        self.assertTrue(self.settings.do_resize_images)
+        self.assertTrue(self.settings.do_remeta_images)
         self.assertFalse(self.settings.download_master)
         self.assertFalse(self.settings.download_slave)
         self.assertEqual(self.settings.master_name, "gdrive-test")
@@ -100,12 +111,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.specials_mode, "auto_next")
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
+        self.assertEqual(self.settings.thumbsize_x, 1024)
+        self.assertEqual(self.settings.thumbsize_y, 768)
         self.assertEqual(
             self.settings.master_download_client_args["dialect_suggestion"],
             "SublimeCsvTable")
         self.assertEqual(self.settings.spec_gid, None)
 
-    def test_populate_master_parsers(self):
+    def test_dummy_populate_master_parsers(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
 
         #number of objects:
@@ -163,7 +176,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print(SanitationUtils.coerce_bytes(
                 cat_list.tabulate(tablefmt='simple')
             ))
-        self.assertEqual(len(cat_list), 11)
+        if self.settings.add_special_categories:
+            self.assertEqual(len(cat_list), 11)
+        else:
+            self.assertEqual(len(cat_list), 9)
         first_cat = cat_list[0]
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
@@ -188,7 +204,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                  pformat(dict(first_group)), pformat(dir(first_group)))
             )
 
-    def test_populate_slave_parsers(self):
+    def test_dummy_populate_slave_parsers(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         # TODO: finish this
@@ -243,7 +259,49 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
 
-    def test_do_match_categories(self):
+    def print_images_summary(self, images):
+        img_cols = ColDataMedia.get_report_cols()
+        img_table = [img_cols.keys()] + [
+            [img_data.get(key) for key in img_cols.keys()]
+            for img_data in images
+        ]
+        print(tabulate(img_table))
+
+    @unittest.skip("takes too long")
+    def test_dummy_process_images(self):
+        suffix='generator_dummy_process_images'
+        temp_img_dir = tempfile.mkdtemp(suffix + '_img')
+        if self.debug:
+            print("working dir: %s" % temp_img_dir)
+        self.settings.img_raw_dir = os.path.join(
+            temp_img_dir, "imgs_raw"
+        )
+        shutil.copytree(
+            os.path.join(
+                TESTS_DATA_DIR, 'imgs_raw'
+            ),
+            self.settings.img_raw_dir
+        )
+        self.settings.img_cmp_dir = os.path.join(
+            temp_img_dir, "imgs_cmp"
+        )
+
+        self.parsers = populate_master_parsers(self.parsers, self.settings)
+        self.parsers = populate_slave_parsers(self.parsers, self.settings)
+        process_images(self.settings, self.parsers)
+
+        if self.debug:
+            self.print_images_summary(self.parsers.master.images.values())
+
+        # test resizing
+        prod_container = self.parsers.master.product_container.container
+        prod_list = prod_container(self.parsers.master.products.values())
+        for prod in prod_list:
+            for image in prod.images.values():
+                self.assertTrue(image['width'] <= self.settings.thumbsize_x)
+                self.assertTrue(image['height'] <= self.settings.thumbsize_y)
+
+    def test_dummy_do_match_categories(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
@@ -273,7 +331,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
-    def test_do_merge_categories(self):
+    def test_dummy_do_merge_categories(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
@@ -312,7 +370,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def test_do_match(self):
+    def test_dummy_do_match(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
@@ -335,12 +393,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 self.print_matches_summary(matches)
         prod_cat_match = self.matches.category.prod['ACARF-CRS | 1961']
         self.assertEqual(len(prod_cat_match.globals), 3)
-        if self.settings.specials_mode == "all_future":
+        if self.settings.add_special_categories:
             self.assertEqual(len(prod_cat_match.slaveless), 3)
-        elif self.settings.specials_mode == "auto_next":
+        else:
             self.assertEqual(len(prod_cat_match.slaveless), 1)
 
-    def test_do_merge(self):
+    def test_dummy_do_merge(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         if self.settings.do_categories:
@@ -400,17 +458,35 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             # Registrar.DEBUG_TREE = True
             # Registrar.DEBUG_TRACE = True
             # ApiParseXero.DEBUG_API = True
-            Registrar.DEBUG_UPDATE = True
+            # Registrar.strict = True
             ApiParseXero.product_resolver = Registrar.exception_resolver
+        else:
+            Registrar.strict = False
 
-    def test_init_settings(self):
+    def test_xero_init_settings(self):
         self.assertFalse(self.settings.download_master)
         self.assertFalse(self.settings.do_specials)
         self.assertTrue(self.settings.do_sync)
         self.assertFalse(self.settings.do_categories)
-        self.assertTrue(self.settings.do_sync)
+        self.assertFalse(self.settings.do_delete_images)
+        self.assertFalse(self.settings.do_dyns)
+        self.assertFalse(self.settings.do_images)
+        self.assertFalse(self.settings.do_mail)
+        self.assertFalse(self.settings.do_post)
+        self.assertFalse(self.settings.do_problematic)
+        self.assertFalse(self.settings.do_remeta_images)
+        self.assertFalse(self.settings.do_resize_images)
+        self.assertFalse(self.settings.do_variations)
+        self.assertFalse(self.settings.do_specials)
+        self.assertTrue(self.settings.do_report)
 
-    def test_populate_master_parsers(self):
+    def test_xero_populate_master_parsers(self):
+        if self.debug:
+            # print(pformat(vars(self.settings)))
+            registrar_vars = dict(vars(Registrar).items())
+            print(pformat(registrar_vars.items()))
+            del(registrar_vars['messages'])
+            print(pformat(registrar_vars.items()))
         Registrar.DEBUG_TRACE = True
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         Registrar.DEBUG_TRACE = False
@@ -445,7 +521,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         }.items():
             self.assertEqual(first_prod[key], value)
 
-    def test_populate_slave_parsers(self):
+    def test_xero_populate_slave_parsers(self):
         # self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
 
@@ -475,7 +551,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
 
-    def test_do_match(self):
+    def test_xero_do_match(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         self.matches = MatchNamespace(index_fn=product_index_fn)
@@ -489,7 +565,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.matches.masterless), 0)
         self.assertEqual(len(self.matches.slaveless), 5)
 
-    def test_do_merge(self):
+    def test_xero_do_merge(self):
         self.parsers = populate_master_parsers(self.parsers, self.settings)
         self.parsers = populate_slave_parsers(self.parsers, self.settings)
         self.matches = MatchNamespace(index_fn=product_index_fn)
@@ -536,8 +612,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def test_do_report(self):
-        suffix='do_report'
+    def test_xero_do_report(self):
+        suffix='geenrator_xero_do_report'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         if self.debug:
             print("working dir: %s" % temp_working_dir)
