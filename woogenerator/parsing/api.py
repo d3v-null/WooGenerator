@@ -373,10 +373,15 @@ class ApiParseWoo(
             return
         sub_img_search_data = OrderedDict()
         for key, value in sub_img_raw_data.items():
-            if key in ['source_url', 'id', 'slug']:
+            if key in ['source_url', 'slug']:
                 sub_img_search_data[key] = value
-
-        super(ApiParseWoo, self).process_image(sub_img_search_data, object_data, **kwargs)
+        try:
+            super(ApiParseWoo, self).process_image(sub_img_search_data, object_data, **kwargs)
+        except Exception as exc:
+            warn = UserWarning("could not find api sub image, %s\nobject:\n%s\nsub_img:\n%s" % (
+                exc, object_data, sub_img_api_data
+            ))
+            self.register_error(warn)
 
     def process_api_sub_images(self, api_img_list, object_data, **kwargs):
         for sub_img_api_data in api_img_list:

@@ -33,7 +33,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -176,6 +176,16 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
         # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
+        self.assertEquals(
+            [cat.title for cat in first_prod.categories.values()],
+            [
+                u'Product A',
+                u'Company A Product A',
+                u'Range A',
+                u'1 Litre Company A Product A Items',
+            ]
+        )
+
         cat_container = self.parsers.master.category_container.container
         cat_list = cat_container(self.parsers.master.categories.values())
 
@@ -269,8 +279,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEquals(
             first_prod.images.keys(),
             [
-                'ACARF-CRS.png',
-                # TODO: the rest of these
+                'ACARF-CRS.png'
             ]
         )
 
