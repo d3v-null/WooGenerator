@@ -416,13 +416,13 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         sanitized_row = map(self.sanitize_cell, row)
         if sanitized_row:
             for i in range(self.meta_width):
+                row_index = this_depth + i * self.max_depth
                 try:
-                    meta[i] = sanitized_row[this_depth + i * self.max_depth]
+                    meta[i] = sanitized_row[row_index]
                 except IndexError as exc:
+                    meta[i] = ""
                     warn = UserWarning("could not get meta[{}] | {}".format(i, exc))
                     self.register_error(warn)
-                    if self.strict:
-                        self.raise_exception(warn)
         return meta
 
     def get_new_obj_container(self, all_data, **kwargs):

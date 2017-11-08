@@ -452,6 +452,35 @@ class CsvParseBase(Registrar):
 
         return cell
 
+    @classmethod
+    def find_object(cls, search_data, registry, search_keys):
+        """
+        Search for an object within a registry on search_keys.
+        """
+        response = None
+        matching_sets = []
+        for search_key in search_keys:
+            value = search_data.get(search_key)
+            if value:
+                if Registrar.DEBUG_API:
+                    Registrar.register_message(
+                        "checking search key %s" % search_key)
+                matching_objects = set()
+                for object_key, object_ in registry.items():
+                    if object_.get(search_key) == value:
+                        matching_objects.add(object_key)
+                matching_sets.append(matching_objects)
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "matching_sets: %s" % matching_sets)
+        if matching_sets:
+            matches = set.intersection(*matching_sets)
+            if matches:
+                assert len(matches) == 1, "should only have one match: %s " % [
+                    registry.get(match) for match in matches]
+                response = registry.get(list(matches)[0])
+        return response
+
     def get_parser_data(self, **kwargs):
         """
         Get data for the parser generalized from get_row_data.

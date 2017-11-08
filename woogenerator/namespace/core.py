@@ -425,10 +425,11 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         proto_argparser = self.argparser_class.proto_argparser()
 
-        Registrar.register_message(
-            "proto_parser: \n%s" %
-            pformat(proto_argparser.get_actions())
-        )
+        if Registrar.DEBUG_MESSAGE:
+            Registrar.register_message(
+                "proto_parser: \n%s" %
+                pformat(proto_argparser.get_actions())
+            )
 
         parser_override = {'namespace': self}
         if override_args is not None:
@@ -481,10 +482,11 @@ class SettingsNamespaceProto(argparse.Namespace):
         SyncUpdate.set_globals(self.merge_mode, self.last_sync)
         TimeUtils.set_wp_srv_offset(self.wp_srv_offset)
 
-        Registrar.register_message(
-            "meta settings:\n%s" %
-            meta_settings.tabulate(ignore_keys=['called_with_args'])
-        )
+        if Registrar.DEBUG_MESSAGE:
+            Registrar.register_message(
+                "meta settings:\n%s" %
+                meta_settings.tabulate(ignore_keys=['called_with_args'])
+            )
 
 
 class ParserNamespace(argparse.Namespace):

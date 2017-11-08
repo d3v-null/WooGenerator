@@ -88,6 +88,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def img_raw_dir_contents(self):
+        if not '_img_raw_dir_contents' in self:
+            self._img_raw_dir_contents = {}
+            for dir_ in self.img_raw_dirs:
+                if dir_ and os.path.isdir(dir_):
+                    self._img_raw_dir_contents[dir_] = os.listdir(dir_)
+        return self._img_raw_dir_contents
+
+    @property
     def coldata_class(self):
         """ Class used to obtain column metadata. """
         response = ColDataBase
@@ -299,8 +308,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = 'images'
         if self.schema:
             response += '-' + self.schema
-        if self.get('img_cmd_dir'):
-            response = os.path.join(self.img_cmd_dir, response)
+        if self.get('img_cmp_dir'):
+            response = os.path.join(self.img_cmp_dir, response)
         return response
 
     @property

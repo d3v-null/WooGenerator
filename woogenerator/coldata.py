@@ -98,7 +98,8 @@ class ColDataAbstract(object):
             },
             'act-csv': {
                 'path': 'Wordpress ID',
-            }
+            },
+            'report': True
         }
     }
 
@@ -223,6 +224,10 @@ class ColDataAbstract(object):
     def get_defaults(cls):
         return cls.get_handles_property('defaults')
 
+    @classmethod
+    def get_report_cols(cls):
+        return cls.get_handles_property('report')
+
 
 class ColDataMedia(ColDataAbstract):
     """
@@ -245,6 +250,7 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v2':{
                 'path': 'title.rendered'
             },
+            'report': True,
         },
         # 'author_id': {
         #     'wp-api-v1': {
@@ -289,7 +295,8 @@ class ColDataMedia(ColDataAbstract):
             'type': 'object',
             'wp-api-v1': {
                 'path': None
-            }
+            },
+            'report': True,
         },
         # 'media_type': {
         #     'type': 'media_type',
@@ -304,7 +311,8 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': 'attachment_meta.sizes.thumbnail.mime-type',
                 'write': False
-            }
+            },
+            'report': True,
         },
         'image_meta': {
             'write': False,
@@ -322,7 +330,8 @@ class ColDataMedia(ColDataAbstract):
             },
             'wp-api-v2':{
                 'path': 'media_details.width'
-            }
+            },
+            'report': True,
         },
         'height': {
             'wp-api-v1':{
@@ -330,7 +339,8 @@ class ColDataMedia(ColDataAbstract):
             },
             'wp-api-v2':{
                 'path': 'media_details.height'
-            }
+            },
+            'report': True,
         },
         'file_path': {
             'wp-api-v1': {
@@ -338,7 +348,8 @@ class ColDataMedia(ColDataAbstract):
             },
             'wp-api-v2': {
                 'path': 'media_details.file'
-            }
+            },
+            'report': True
         }
         # 'attach_link': {
         #     'write': False,

@@ -317,6 +317,10 @@ class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
     verify_meta_keys = ImportShopImgMixin.verify_meta_keys
     index = ImportShopImgMixin.index
 
+    wpid_key = 'id'
+    slug_key = 'slug'
+    title_key = 'title'
+
     def __init__(self, *args, **kwargs):
         ImportTreeObject.__init__(self, *args, **kwargs)
         ImportShopImgMixin.__init__(self, *args, **kwargs)
@@ -340,34 +344,24 @@ class CsvParseWooMixin(object):
     image_container = ImportWooImg
 
     def find_category(self, search_data):
-        response = None
-        matching_category_sets = []
-        for search_key in [
+        search_keys = [
             self.category_container.wpid_key,
             self.category_container.slug_key,
             self.category_container.title_key,
             self.category_container.namesum_key,
-        ]:
-            value = search_data.get(search_key)
-            if value:
-                if Registrar.DEBUG_API:
-                    Registrar.register_message(
-                        "checking search key %s" % search_key)
-                matching_categories = set()
-                for category_key, category in self.categories.items():
-                    if category.get(search_key) == value:
-                        matching_categories.add(category_key)
-                matching_category_sets.append(matching_categories)
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "matching_category_sets: %s" % matching_category_sets)
-        if matching_category_sets:
-            matches = set.intersection(*matching_category_sets)
-            if matches:
-                assert len(matches) == 1, "should only have one match: %s " % [
-                    self.categories.get(match) for match in matches]
-                response = self.categories.get(list(matches)[0])
-        return response
+        ]
+        registry = self.categories
+        return self.find_object(search_data, registry, search_keys)
+
+    def find_image(self, search_data):
+        search_keys = [
+            self.image_container.wpid_key,
+            self.image_container.slug_key,
+            self.image_container.title_key,
+            self.image_container.file_path_key
+        ]
+        registry = self.images
+        return self.find_object(search_data, registry, search_keys)
 
     @classmethod
     def get_title(cls, object_data):
@@ -632,10 +626,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             singular=True
         )
 
-    def find_image(self, img_search_data):
-        # TODO: do this based off api.find_category
-        pass
-
     @property
     def img_defaults(self):
         return self.coldata_img_class.get_defaults()
@@ -670,7 +660,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         img_data = self.find_image(img_raw_data)
         if not img_data:
             if self.DEBUG_IMG:
-                self.register_message("IMG NOT FOUND")
+                self.register_message("SEARCH IMG NOT FOUND")
             img_data = copy(img_raw_data)
             img_data[self.schema] = 'M'
             kwargs['row_data'] = img_data

@@ -4,6 +4,7 @@ Introduce the shop products and categories interfaces to CSV Parser classes.
 from __future__ import absolute_import
 
 import bisect
+import os
 from collections import OrderedDict
 
 from ..coldata import ColDataProd, ColDataCat
@@ -67,16 +68,16 @@ class ImportShopMixin(object):
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
     def register_image(self, img_data):
-        # TODO: rewrite this
         assert isinstance(img_data, ImportShopImgMixin)
-        if img_data.file_name not in self.images:
+        file_name = img_data.file_name
+        if file_name not in self.images:
             self.register_anything(
                 img_data,
                 self.images,
-                indexer=img_data.file_name,
+                indexer=file_name,
                 singular=True
             )
-        img_data.register_attachment(self)
+        self.images[file_name].register_attachment(self)
 
     def to_api_data(self, col_data, target_api):
         api_data = OrderedDict()
@@ -152,8 +153,10 @@ class ImportShopProductMixin(object):
         return self.product_type
 
 class ImportShopImgMixin(object):
+    file_path_key = 'file_path'
+
     verify_meta_keys = [
-        'file_path'
+        file_path_key
     ]
 
     def __init__(self, *args, **kwargs):
@@ -162,7 +165,8 @@ class ImportShopImgMixin(object):
 
     @property
     def file_name(self):
-        return self['file_path']
+        return os.path.basename(self[self.file_path_key])
+
 
     @property
     def index(self):
@@ -299,6 +303,7 @@ class ShopObjList(ObjList):
 
     def append(self, object_data):
         assert isinstance(object_data, ImportShopMixin)
+        container = None
         if object_data.is_category:
             container = self.categories
         elif object_data.is_product:
@@ -306,8 +311,40 @@ class ShopObjList(ObjList):
         else:
             container = self._objects
 
-        if object_data not in container:
+        if container:
             bisect.insort(container, object_data)
+
+    def extend(self, iterable):
+        for thing in iterable:
+            self.append(thing)
+
+    def __iter__(self):
+        yield self.categories.__iter__()
+        yield self.products.__iter__()
+        yield self._objects.__iter__()
+
+    def __reversed__(self, *args, **kwargs):
+        return list(self.__iter__).__reversed__(*args, **kwargs)
+
+    def __sizeof__(self, *args, **kwargs):
+        return list(self.__iter__).__sizeof__(*args, **kwargs)
+
+    def count(self, *args, **kwargs):
+        return list(self.__iter__).count(*args, **kwargs)
+
+    def index(self, *args, **kwargs):
+        return list(self.__iter__).index(*args, **kwargs)
+
+    def insert(self, index, thing):
+        return self.append(thing)
+
+    def remove(self, value):
+        if value in self.categories:
+            return self.categories.remove(value)
+        if value in self.products:
+            return self.products.remove(value)
+        if value in self._objects:
+            return self._objects.remove(value)
 
 class CsvParseShopMixin(object):
     """
@@ -390,8 +427,6 @@ class CsvParseShopMixin(object):
             object_data.register_image(img_data)
 
     def register_image(self, img_data):
-        # TODO: rewrite
-
         assert isinstance(img_data, ImportShopImgMixin)
         file_name = img_data.file_name
         assert isinstance(file_name, basestring)
@@ -400,7 +435,7 @@ class CsvParseShopMixin(object):
             img_data,
             self.images,
             indexer=file_name,
-            singular=False,
+            singular=True,
             resolver=self.image_resolver,
             register_name='images'
         )
