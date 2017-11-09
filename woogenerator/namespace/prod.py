@@ -22,9 +22,6 @@ from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateProd, SyncUpdateProdWoo,
 from ..utils import Registrar
 from .core import SettingsNamespaceProto
 
-CatSyncClientWC
-
-
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
 
@@ -109,14 +106,12 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def coldata_img_class():
+    def coldata_img_class(self):
         return ColDataMedia
 
     @property
-    def coldata_cat_class():
+    def coldata_cat_class(self):
         return ColDataWoo
-
-
 
     @property
     def master_path(self):

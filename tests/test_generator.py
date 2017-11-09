@@ -28,14 +28,12 @@ from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
 
-# import argparse
-
 
 class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    debug = True
+    # debug = True
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
@@ -228,6 +226,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                  pformat(dict(first_group)), pformat(dir(first_group)))
             )
 
+        if self.debug:
+            print("parser tree:\n%s" % self.parsers.master.to_str_tree())
+
     def test_dummy_populate_slave_parsers(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
@@ -316,6 +317,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print(SanitationUtils.coerce_bytes(
                 img_list.tabulate(tablefmt='simple')
             ))
+
+        if self.debug:
+            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
 
     def print_images_summary(self, images):
         img_cols = ColDataMedia.get_report_cols()
