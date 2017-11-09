@@ -373,7 +373,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     def init_registrar(self):
         # print "self.verbosity = %s" % self.verbosity
-        # print "self.quiet = %s" % self.quiet
+        # print "self.quiet = %s" % self.quietu
         if self.verbosity > 0:
             Registrar.DEBUG_PROGRESS = True
             Registrar.DEBUG_ERROR = True

@@ -36,4 +36,6 @@ class AbstractWooGeneratorTestCase(unittest.TestCase):
             self.settings.verbosity = 0
             self.settings.quiet = True
             logging.basicConfig(level=logging.WARN)
+            Registrar.DEBUG_MESSAGE = False
             Registrar.DEBUG_PROGRESS = False
+            Registrar.DEBUG_TRACE = False

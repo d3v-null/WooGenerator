@@ -17,7 +17,7 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
-from .tree import CsvParseTreeMixin
+from .tree import CsvParseTreeMixin, ImportTreeRoot
 from .woo import (CsvParseWooMixin, ImportWooImg, ImportWooMixin,
                   WooCatList, WooImgList, WooProdList)
 
@@ -48,7 +48,9 @@ class ApiListMixin(object):
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
 
+
 class ImportApiObjectMixin(object):
+    child_indexer = Registrar.get_object_index
 
     def process_meta(self):
         # API Objects don't process meta
@@ -68,8 +70,12 @@ class ImportApiObjectMixin(object):
             self.title,
         ])
 
-class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin):
 
+class ImportApiRoot(ImportTreeRoot):
+    child_indexer = ImportApiObjectMixin.child_indexer
+
+class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin):
+    child_indexer = ImportApiObjectMixin.child_indexer
     category_indexer = CsvParseWooMixin.get_title
     process_meta = ImportApiObjectMixin.process_meta
     index = ImportApiObjectMixin.index
@@ -205,6 +211,7 @@ ImportWooApiImg.container = WooApiImgList
 
 
 class ApiParseMixin(object):
+    root_container = ImportApiRoot
     def analyse_stream(self, byte_file_obj, **kwargs):
         limit, encoding, stream_name = \
             (kwargs.get('limit'), kwargs.get('encoding'), kwargs.get('stream_name'))
@@ -237,14 +244,13 @@ class ApiParseMixin(object):
             for decoded_obj in decoded[:limit]:
                 self.analyse_api_obj(decoded_obj)
 
-    def analyse_api_obj(self, api_data):
+    def analyse_api_obj(self, api_data, **kwargs):
         """
         Analyse an object from the wp api.
         """
 
-        kwargs = {
-            'api_data': api_data
-        }
+        kwargs['api_data'] = api_data
+
         object_data = self.new_object(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
             self.register_message("CONSTRUCTED: %s" % object_data.identifier)
@@ -261,6 +267,7 @@ class ApiParseMixin(object):
 class ApiParseWoo(
     CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin, ApiParseMixin
 ):
+    root_container = ApiParseMixin.root_container
     object_container = ImportWooApiObject
     product_container = ImportWooApiProduct
     simple_container = ImportWooApiProductSimple
@@ -709,6 +716,18 @@ class ApiParseWoo(
         if 'categories' in api_data:
             for category in api_data['categories']:
                 self.process_api_category(category, object_data)
+            # pick a category as a parent
+            category_depths = OrderedDict()
+            for category in object_data.categories.values():
+                depth = category.depth
+                if depth not in category_depths:
+                    category_depths[depth] = []
+                category_depths[depth].append(category)
+            if category_depths:
+                deepest_category = list(reversed(sorted(category_depths.items())))[0][1][0]
+                deepest_category.register_child(object_data)
+                object_data.parent = deepest_category
+
                 # self.rowcount += 1
 
         if 'variations' in api_data:

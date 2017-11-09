@@ -470,7 +470,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--debug-address', action='store_true')
         self.add_suppressed_argument('--debug-name', action='store_true')
         self.add_suppressed_argument('--debug-duplicates', action='store_true')
-        self.add_suppressed_argument('--debug-trace', action='store_true')
+        self.add_suppressed_argument('--debug-trace', action='store_true', default=False)
         self.add_suppressed_argument('--debug-usr', action='store_true')
 
 

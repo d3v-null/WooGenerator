@@ -1522,10 +1522,6 @@ class TestRoleGroupPost(TestFieldGroupPost, TestRoleGroupCommon):
                     )
                 )
 
-            if (direct_brand, role, expected_brand, expected_role) \
-            == ("", "", "Pending", "RN"):
-                Registrar.DEBUG_TRACE = True
-
             rgrp = RoleGroup(role=role, direct_brand=direct_brand)
             result_brand, result_role = rgrp.direct_brand, rgrp.role
 

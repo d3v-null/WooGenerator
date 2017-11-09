@@ -90,7 +90,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             # Registrar.DEBUG_GEN = True
             # Registrar.DEBUG_SHOP = True
             # Registrar.DEBUG_WOO = True
-            # Registrar.DEBUG_TRACE = True
+            Registrar.DEBUG_TRACE = True
             # Registrar.DEBUG_UPDATE = True
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
@@ -616,9 +616,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             print(pformat(registrar_vars.items()))
             del(registrar_vars['messages'])
             print(pformat(registrar_vars.items()))
-        Registrar.DEBUG_TRACE = True
         populate_master_parsers(self.parsers, self.settings)
-        Registrar.DEBUG_TRACE = False
         if self.debug:
             print("master objects: %s" % len(self.parsers.master.objects.values()))
             print("master items: %s" % len(self.parsers.master.items.values()))

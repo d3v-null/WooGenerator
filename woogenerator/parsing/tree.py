@@ -20,6 +20,7 @@ class ImportTreeObject(ImportObject):
     is_taxo = None
     _depth = None
     verify_meta_keys = []
+    child_indexer = Registrar.get_object_rowcount
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -68,7 +69,6 @@ class ImportTreeObject(ImportObject):
             parent.register_child(self)
 
         self.child_register = OrderedDict()
-        self.child_indexer = self.get_object_rowcount
 
         self.verify_meta()
 
@@ -97,7 +97,6 @@ class ImportTreeObject(ImportObject):
     #
     def register_child(self, child_data):
         assert child_data, "child_data must be valid"
-
         self.register_anything(
             child_data,
             self.child_register,
@@ -185,7 +184,7 @@ class ImportTreeRoot(ImportTreeObject):
         if self.DEBUG_MRO:
             self.register_message('ImportTreeRoot')
         data = OrderedDict()
-        super(ImportTreeRoot, self).__init__(data, rowcount=-1, row=[])
+        ImportTreeObject.__init__(self, data, rowcount=-1, row=[])
 
     @property
     def title(self):

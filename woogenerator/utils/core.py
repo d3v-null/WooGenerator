@@ -1241,7 +1241,10 @@ class Registrar(object):
 
     @classmethod
     def get_object_rowcount(cls, object_data):
-        return object_data.rowcount
+        if hasattr(object_data, 'rowcount'):
+            return object_data.rowcount
+        else:
+            raise UserWarning('object does not have rowcount')
 
     @classmethod
     def get_object_index(cls, object_data):
