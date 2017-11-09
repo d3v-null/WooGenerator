@@ -129,7 +129,7 @@ class ColDataAbstract(object):
         Prepare a jsonpath finder object for finding the given property of `handles`
         given a list of target ancestors.
         """
-        Registrar.increment_stack_count('prepare_finder')
+        # Registrar.increment_stack_count('prepare_finder')
         if handles is None:
             handles = ['*']
         handle_finder = jsonpath.Fields(*handles)

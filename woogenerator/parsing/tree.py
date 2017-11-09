@@ -3,6 +3,7 @@ Classes that add the concept of heirarchy to the CSVParse classes and correspond
 """
 from __future__ import absolute_import
 
+import weakref
 from collections import OrderedDict
 
 from ..utils import Registrar

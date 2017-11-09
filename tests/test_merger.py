@@ -105,7 +105,7 @@ class TestMergerSafe(TestMergerAbstract):
     def test_populate_master_parsers(self):
         self.settings.master_parse_limit = 4
 
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
 
@@ -168,7 +168,7 @@ class TestMergerSafe(TestMergerAbstract):
     def test_populate_master_parsers_time(self):
         """check master time is parsed correctly (skip tests if not local)"""
         self.settings.master_parse_limit = 4
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
         usr_list = self.parsers.master.get_obj_list()
@@ -185,7 +185,7 @@ class TestMergerSafe(TestMergerAbstract):
 
 
     def test_populate_slave_parsers(self):
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
 
@@ -242,7 +242,7 @@ class TestMergerSafe(TestMergerAbstract):
         'Tests calibrated for AEST'
     )
     def test_populate_slave_parsers_time(self):
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         usr_list = self.parsers.slave.get_obj_list()
@@ -256,10 +256,10 @@ class TestMergerSafe(TestMergerAbstract):
         self.assertEqual(first_usr.last_modtime, 1479060113.0)
 
     def test_do_match(self):
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -283,10 +283,10 @@ class TestMergerSafe(TestMergerAbstract):
         "Tests assume role not being synced"
     )
     def test_do_merge_basic_no_role(self):
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -397,10 +397,10 @@ class TestMergerSafe(TestMergerAbstract):
         "tests assume role being synced"
     )
     def test_do_merge_basic_with_role(self):
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -566,10 +566,10 @@ class TestMergerSafe(TestMergerAbstract):
             )
             setattr(self.settings, '%s_file' % source, new_filename)
 
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -614,10 +614,10 @@ class TestMergerSafe(TestMergerAbstract):
                 suffix
             )
             setattr(self.settings, '%s_file' % source, new_filename)
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -669,10 +669,10 @@ class TestMergerSafe(TestMergerAbstract):
     def test_do_merge_false_pos(self):
         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_false_positive.csv")
         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_false_positive.csv")
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -710,10 +710,10 @@ class TestMergerSafe(TestMergerAbstract):
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         self.settings.init_dirs()
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -733,10 +733,10 @@ class TestMergerSafe(TestMergerAbstract):
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
         self.settings.local_work_dir = temp_working_dir
         self.settings.init_dirs()
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -771,10 +771,10 @@ class TestMergerSafe(TestMergerAbstract):
         self.settings.update_master = True
         self.settings.update_slave = True
         self.settings.do_mail = False
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -813,10 +813,10 @@ class TestMergerSafe(TestMergerAbstract):
         self.settings.update_master = True
         self.settings.update_slave = True
         self.settings.do_mail = False
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         self.matches = do_match(
@@ -870,10 +870,10 @@ class TestMergerSafe(TestMergerAbstract):
             self.settings.filter_items.get('ignore_cards'),
             self.settings.ignore_cards.split(',')
         )
-        self.parsers = populate_master_parsers(
+        populate_master_parsers(
             self.parsers, self.settings
         )
-        self.parsers = populate_slave_parsers(
+        populate_slave_parsers(
             self.parsers, self.settings
         )
         # m_usr_list = self.parsers.master.get_obj_list()

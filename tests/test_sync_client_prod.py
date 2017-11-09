@@ -1,16 +1,17 @@
+import logging
+import os
 import random
 import unittest
 from collections import OrderedDict
 from pprint import pformat
-import logging
-import os
 
+import pytest
 from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
-from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.client.img import ImgSyncClientWP
+from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
 from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -55,6 +56,7 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
         ApiParseWoo.do_dyns = False
 
 # TODO: mock these tests
+@pytest.mark.local
 class TestProdSyncClientDestructive(TestProdSyncClient):
     # debug = True
 
@@ -323,6 +325,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 self.assertTrue(page)
                 # print page
 
+@pytest.mark.local
 class TestImgSyncClient(TestProdSyncClient):
     # debug = True
 
@@ -357,7 +360,7 @@ class TestImgSyncClient(TestProdSyncClient):
             client.delete_item(img_id)
 
 
-
+@pytest.mark.local
 class TestProdSyncClientConstructors(TestProdSyncClient):
     # def test_make_usr_m_up_client(self):
     #     self.settings.update_master = True
@@ -391,6 +394,7 @@ class TestProdSyncClientConstructors(TestProdSyncClient):
         with slave_client_class(**slave_client_args) as slave_client:
             self.assertTrue(slave_client)
 
+@pytest.mark.local
 class TestProdSyncClientXero(TestProdSyncClient):
     # debug = True
 

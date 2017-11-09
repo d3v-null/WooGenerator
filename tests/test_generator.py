@@ -113,6 +113,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     def populate_slave_parsers(self):
         if self.parsers.slave:
             return
+        if self.debug:
             print("regenerating slave")
         populate_slave_parsers(self.parsers, self.settings)
 
@@ -347,7 +348,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         ]
         print(tabulate(img_table))
 
-    # @unittest.skip("takes too long")
+    @unittest.skip("takes too long")
     @pytest.mark.slow
     def test_dummy_process_images_master(self):
         suffix='generator_dummy_process_images'
@@ -387,6 +388,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         self.assertTrue(resized_images)
 
+    @pytest.mark.last
     def test_dummy_images_slave(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -399,6 +401,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     [attachment.index for attachment in img_data.attachments.objects]
                 )
 
+    @pytest.mark.last
     def test_dummy_do_match_images(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -430,6 +433,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         for match in self.matches.image.globals:
             self.assertEqual(match.m_object.file_name, match.s_object.file_name)
 
+    @pytest.mark.last
     def test_dummy_do_match_categories(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -460,6 +464,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
+    @pytest.mark.last
     def test_dummy_do_merge_categories(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -499,6 +504,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @pytest.mark.last
     def test_dummy_do_match(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -527,6 +533,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         else:
             self.assertEqual(len(prod_cat_match.slaveless), 1)
 
+    @pytest.mark.last
     def test_dummy_do_merge_products(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()

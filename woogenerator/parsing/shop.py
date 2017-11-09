@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import bisect
 import os
+import weakref
 from collections import OrderedDict
 
 from ..coldata import ColDataProd, ColDataCat

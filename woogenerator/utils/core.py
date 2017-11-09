@@ -6,6 +6,7 @@ import cgi
 import functools
 import inspect
 import itertools
+import json
 import math
 import os
 import random
@@ -872,13 +873,15 @@ class SanitationUtils(object):
     @classmethod
     def decode_json(cls, json_str, **kwargs):
         assert isinstance(json_str, (str, unicode))
-        attrs = cjson.decode(json_str, **kwargs)
+        # attrs = cjson.decode(json_str, **kwargs)
+        attrs = json.loads(json_str, **kwargs)
         return attrs
 
     @classmethod
     def encode_json(cls, obj, **kwargs):
         assert isinstance(obj, (dict, list))
-        json_str = cjson.encode(obj, **kwargs)
+        json_str = json.dumps(obj, **kwargs)
+        # json_str = cjson.encode(obj, **kwargs)
         return json_str
 
     @classmethod
@@ -1518,14 +1521,17 @@ class ProgressCounter(object):
             percentage = 0
             if self.total > 0:
                 percentage = 100 * count / self.total
-            line = "(%3d%%) %10d of %10d items processed" % (
+            line = "(%3d%%) %10d of %10d items processed, elapsed" % (
                 percentage, count, self.total)
             if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print
                 ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
                 # line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
-                line += " | remaining: %3d seconds" % int(time_remaining)
+                line += " | remaining: %3d seconds, %3d elapsed" % (
+                    int(time_remaining),
+                    int(time_elapsed)
+                )
             if self.print_count > 0:
                 line = "\r%s\r" % line
             sys.stdout.write(line)
