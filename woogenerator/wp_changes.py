@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import argparse
 import io
-import json
+import cjson
 import os
 import re
 import time
@@ -115,7 +115,7 @@ def main(settings):
         """
         try:
             sanitizer = SanitationUtils.coerce_unicode
-            map_obj = json.loads(map_json)
+            map_obj = SanitationUtils.decode_json(map_json)
             map_obj = OrderedDict(
                 [((map_key, [sanitizer(map_value)])
                   if not isinstance(map_value, list) else

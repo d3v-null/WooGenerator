@@ -5,11 +5,13 @@ Utility for keeping track of column metadata for translating between databases.
 from __future__ import absolute_import
 
 import itertools
+import traceback
 from collections import OrderedDict
+
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import SeqUtils, JSONPathUtils
+from .utils import JSONPathUtils, SeqUtils, Registrar
 
 
 # TODO:
@@ -103,6 +105,9 @@ class ColDataAbstract(object):
         }
     }
 
+    handle_cache = OrderedDict()
+    handles_cache = OrderedDict()
+
     @classmethod
     def get_target_ancestors(cls, targets=None, target=None):
         """
@@ -124,6 +129,7 @@ class ColDataAbstract(object):
         Prepare a jsonpath finder object for finding the given property of `handles`
         given a list of target ancestors.
         """
+        Registrar.increment_stack_count('prepare_finder')
         if handles is None:
             handles = ['*']
         handle_finder = jsonpath.Fields(*handles)
@@ -153,22 +159,30 @@ class ColDataAbstract(object):
     @classmethod
     def get_handle_property(cls, handle, property_, target=None):
         """
-        Return the value of a handle's property in the context of target.
+        Return the value of a handle's property in the context of target. Cache for performace.
         """
+        cache_key = (cls.__name__, property_, target)
+        if cache_key in cls.handle_cache:
+            return cls.handle_cache[cache_key]
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
         finder = cls.prepare_finder([property_], target_ancestors, [handle])
         results = [match.value for match in finder.find(cls.data)]
         if results:
-            return results[-1]
+            response = results[-1]
         else:
-            return cls.get_property_default(property_, handle)
+            response = cls.get_property_default(property_, handle)
+        cls.handle_cache[cache_key] = response
+        return response
 
     @classmethod
     def get_handles_property(cls, property_, target=None):
         """
         Return a mapping of handles to the value of property_ wherever it is
-        explicitly declared in the context of target
+        explicitly declared in the context of target. Cache for performance.
         """
+        cache_key = (cls.__name__, property_, target)
+        if cache_key in cls.handles_cache:
+            return cls.handles_cache[cache_key]
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
         finder = cls.prepare_finder([property_], target_ancestors, )
         results = OrderedDict()
@@ -179,6 +193,7 @@ class ColDataAbstract(object):
                 handle = handle.left
             handle = handle.fields[0]
             results[handle] = value
+        cls.handles_cache[cache_key] = results
         return results
 
     @classmethod

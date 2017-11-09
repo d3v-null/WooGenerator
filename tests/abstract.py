@@ -20,7 +20,6 @@ class AbstractWooGeneratorTestCase(unittest.TestCase):
     override_args = ''
     debug = False
 
-
     def setUp(self):
         self.import_name = TimeUtils.get_ms_timestamp()
 

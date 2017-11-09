@@ -19,9 +19,14 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
 
     def setUp(self):
         super(AbstractSyncManagerTestCase, self).setUp()
-        self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
+
+    @property
+    def parsers(self):
+        if not hasattr(self, '_parsers'):
+            self._parsers = ParserNamespace()
+        return self._parsers
 
     def print_debug_config(self):
         print("debug: %s, verbosity: %s, quiet: %s, Reg.DEBUG_MESSAGE: %s, Reg.DEBUG_WARN: %s" % (

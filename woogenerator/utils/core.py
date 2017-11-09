@@ -6,21 +6,23 @@ import cgi
 import functools
 import inspect
 import itertools
-import json
 import math
 import os
 import random
 import re
 import sys
 import time
-from collections import OrderedDict
+import traceback
+from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
 
+import cjson
 import unicodecsv
-from jsonpath_ng import jsonpath
 from kitchen.text import converters
 from phpserialize import dumps, loads
+
+from jsonpath_ng import jsonpath
 
 DEFAULT_ENCODING = 'utf8'
 
@@ -868,15 +870,15 @@ class SanitationUtils(object):
             return "FALSE"
 
     @classmethod
-    def decode_json(cls, json_str):
+    def decode_json(cls, json_str, **kwargs):
         assert isinstance(json_str, (str, unicode))
-        attrs = json.loads(json_str)
+        attrs = cjson.decode(json_str, **kwargs)
         return attrs
 
     @classmethod
-    def encode_json(cls, obj):
+    def encode_json(cls, obj, **kwargs):
         assert isinstance(obj, (dict, list))
-        json_str = json.dumps(obj, encoding="utf8", ensure_ascii=False)
+        json_str = cjson.encode(obj, **kwargs)
         return json_str
 
     @classmethod
@@ -1196,6 +1198,7 @@ class Registrar(object):
     messages = OrderedDict()
     errors = OrderedDict()
     warnings = OrderedDict()
+    stack_counts = OrderedDict()
     object_indexer = id
     DEBUG_ERROR = True
     DEBUG_WARN = True
@@ -1416,7 +1419,26 @@ class Registrar(object):
             import pdb; pdb.post_mortem(traceback_)
         raise exc
 
+    @classmethod
+    def increment_stack_count(cls, name=''):
+        if not name in cls.stack_counts:
+            cls.stack_counts[name] = Counter()
+        stack = ' -> '.join([
+            line.strip().split('\n')[0] for line in list(reversed(traceback.format_stack()))[3:7]
+        ])
+        cls.stack_counts[name].update({stack:1})
 
+    @classmethod
+    def display_stack_counts(cls):
+        response = ''
+        for stack_name, stack_counts in cls.stack_counts.items():
+            response += (" -> %s\n" % stack_name)
+            for caller, count in sorted(
+                stack_counts.items(),
+                cmp=(lambda x, y: int(y[1]).__cmp__(int(x[1])))
+            ):
+                response += ("  -> (%3d) %s\n" % (count, caller))
+        return response
 
 class ValidationUtils(object):
 

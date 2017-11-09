@@ -400,7 +400,9 @@ class CsvParseWooMixin(object):
 
     @property
     def img_defaults(self):
-        return self.coldata_img_class.get_defaults()
+        if not hasattr(self, '_coldata_img_class_defaults'):
+            self._coldata_img_class_defaults = self.coldata_img_class.get_defaults()
+        return self._coldata_img_class_defaults
 
     def new_img_object(self, **kwargs):
         """

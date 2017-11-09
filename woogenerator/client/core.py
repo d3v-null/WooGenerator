@@ -7,7 +7,7 @@ from __future__ import absolute_import
 
 import codecs
 import functools
-import json
+import cjson
 import os
 import re
 import time
@@ -199,10 +199,10 @@ class SyncClientLocal(SyncClientAbstract):
 
     def analyse_remote_categories(self, parser, **kwargs):
         data_path = kwargs.pop('data_path', None)
-        encoding = kwargs.pop('encoding', None)
+        # encoding = kwargs.pop('encoding', None)
 
         with open(data_path, 'rbU') as data_file:
-            decoded = json.loads(data_file.read(), encoding=encoding)
+            decoded = SanitationUtils.decode_json(data_file.read())
             if not decoded:
                 warn = UserWarning("could not analyse_remote_categories, json not decoded")
                 self.register_warning(warn)
@@ -212,10 +212,10 @@ class SyncClientLocal(SyncClientAbstract):
 
     def analyse_remote_imgs(self, parser, **kwargs):
         data_path = kwargs.pop('data_path', None)
-        encoding = kwargs.pop('encoding', None)
+        # encoding = kwargs.pop('encoding', None)
 
         with open(data_path, 'rbU') as data_file:
-            decoded = json.loads(data_file.read(), encoding=encoding)
+            decoded = SanitationUtils.decode_json(data_file.read())
             if not decoded:
                 warn = UserWarning("could not analyse_remote_imgs, json not decoded")
                 self.register_warning(warn)

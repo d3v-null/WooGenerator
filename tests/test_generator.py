@@ -103,6 +103,19 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         else:
             Registrar.strict = False
 
+    def populate_master_parsers(self):
+        if self.parsers.master:
+            return
+        if self.debug:
+            print("regenerating master")
+        populate_master_parsers(self.parsers, self.settings)
+
+    def populate_slave_parsers(self):
+        if self.parsers.slave:
+            return
+            print("regenerating slave")
+        populate_slave_parsers(self.parsers, self.settings)
+
     def test_dummy_init_settings(self):
         self.assertTrue(self.settings.do_specials)
         self.assertTrue(self.settings.do_sync)
@@ -126,7 +139,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.spec_gid, None)
 
     def test_dummy_populate_master_parsers(self):
-        populate_master_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
 
         #number of objects:
         self.assertEqual(len(self.parsers.master.objects.values()), 163)
@@ -233,8 +246,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("parser tree:\n%s" % self.parsers.master.to_str_tree())
 
     def test_dummy_populate_slave_parsers(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         # TODO: finish this
         if self.debug:
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
@@ -323,6 +336,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         if self.debug:
             print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
+            print("Registrar.stack_counts:")
+            print(Registrar.display_stack_counts())
 
     def print_images_summary(self, images):
         img_cols = ColDataMedia.get_report_cols()
@@ -352,8 +367,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             temp_img_dir, "imgs_cmp"
         )
 
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         process_images(self.settings, self.parsers)
 
         if self.debug:
@@ -373,8 +388,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertTrue(resized_images)
 
     def test_dummy_images_slave(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
 
         if self.debug:
             self.print_images_summary(self.parsers.slave.images.values())
@@ -385,8 +400,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 )
 
     def test_dummy_do_match_images(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
             do_match_images(
@@ -416,8 +431,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(match.m_object.file_name, match.s_object.file_name)
 
     def test_dummy_do_match_categories(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -446,8 +461,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(match.m_object.title, match.s_object.title)
 
     def test_dummy_do_merge_categories(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -485,8 +500,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_dummy_do_match(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -513,8 +528,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(len(prod_cat_match.slaveless), 1)
 
     def test_dummy_do_merge_products(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
         if self.debug:
             report_cols = ColDataWoo.get_report_cols()
             report_cols['WNR'] = 'WNR'

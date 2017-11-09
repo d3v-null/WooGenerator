@@ -5,7 +5,7 @@ from __future__ import absolute_import, print_function
 
 import datetime
 import io
-import json
+import cjson
 from collections import OrderedDict
 from pprint import pformat
 
@@ -43,7 +43,7 @@ class ApiListMixin(object):
                     data.append(dict(item['api_data']))
                 except KeyError:
                     raise UserWarning("could not get api_data from item")
-            data = json.dumps(data, default=ApiListMixin.json_serial)
+            data = SanitationUtils.encode_json(data, default=ApiListMixin.json_serial)
             data = data.encode(encoding)
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
@@ -237,7 +237,7 @@ class ApiParseMixin(object):
         if self.DEBUG_PARSER:
             self.register_message("Byte sample: %s" % repr(byte_sample))
 
-        decoded = json.loads(byte_file_obj.read(), encoding=encoding)
+        decoded = SanitationUtils.decode_json(byte_file_obj.read())
         if not decoded:
             return
         if isinstance(decoded, list):
