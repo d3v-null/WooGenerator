@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import os
 import shutil
 import traceback
+import time
+from datetime import datetime
 
 
 import piexif
@@ -191,12 +193,18 @@ def get_raw_image(settings, img_name):
             return os.path.join(path, img_name)
     raise IOError("no image named %s found" % str(img_name))
 
-def remeta_image(settings, parsers, img_data):
+def process_image_meta(settings, parsers, img_data):
     if Registrar.DEBUG_IMG:
         Registrar.register_message("img_data_id: %s" % id(img_data))
 
     try:
         metagator = MetaGator(get_raw_image(settings, img_data.file_name))
+        current_meta = metagator.read_meta()
+        img_data[img_data.title_key] = current_meta.get('title')
+        img_data['alt_text'] = current_meta.get('title')
+        img_data['caption'] = current_meta.get('description')
+        img_data['description'] = current_meta.get('description')
+
     except Exception as exc:
         invalid_image(
             parsers,
@@ -208,16 +216,16 @@ def remeta_image(settings, parsers, img_data):
 
     try:
         title, description = img_data.attachments.title, img_data.attachments.description
+        if settings.do_remeta_images:
+            metagator.update_meta({
+                'title': title,
+                'description': description
+            })
 
-        metagator.update_meta({
-            'title': title,
-            'description': description
-        })
-
-        img_data[img_data.title_key] = title
-        img_data['alt_text'] = title
-        img_data['caption'] = description
-        img_data['description'] = description
+            img_data[img_data.title_key] = title
+            img_data['alt_text'] = title
+            img_data['caption'] = description
+            img_data['description'] = description
     except Exception as exc:
         invalid_image(
             parsers, settings, img_data.file_name, "error updating meta: " + str(exc)
@@ -226,9 +234,12 @@ def remeta_image(settings, parsers, img_data):
         return
     return img_data
 
-def resize_image(settings, parsers, img_data):
+def process_image_size(settings, parsers, img_data):
     if Registrar.DEBUG_IMG:
         Registrar.register_message("img_data_id: %s" % id(img_data))
+
+    # import pudb; pudb.set_trace()
+
 
     img_raw_path = get_raw_image(settings, img_data.file_name)
     if not os.path.isfile(img_raw_path):
@@ -239,58 +250,42 @@ def resize_image(settings, parsers, img_data):
         )
         return
 
+    img_src_mod = max(
+        os.path.getmtime(img_raw_path), os.path.getctime(img_raw_path)
+    )
+    winning_time = img_src_mod
+
     img_dst_path = os.path.join(settings.img_dst, img_data.file_name)
+
     if os.path.isfile(img_dst_path):
-        img_src_mod = max(
-            os.path.getmtime(img_raw_path),
-            os.path.getctime(img_raw_path))
         img_dst_mod = os.path.getmtime(img_dst_path)
         # print "image mod (src, dst): ", img_src_mod, imgdstmod
         if img_dst_mod > img_src_mod:
-            if Registrar.DEBUG_IMG:
-                Registrar.register_message(
-                    img_data.file_name, "DESTINATION FILE NEWER: %s" % img_dst_path)
-            return
+            winning_time = img_dst_mod
+        elif settings.do_resize_images:
+            shutil.copy(img_raw_path, img_dst_path)
+
+    if settings.do_resize_images:
+        img_data[img_data.file_path_key] = img_dst_path
+
+    img_data['modified_gmt'] = datetime.fromtimestamp(winning_time).isoformat()
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("resizing: %s" % img_data.file_name)
 
-    shutil.copy(img_raw_path, img_dst_path)
-
-    # import pudb; pudb.set_trace()
-
-    img_data[img_data.file_path_key] = img_dst_path
+        # process_image_meta(settings, parser, img_data)
 
     try:
-        title, description = img_data.attachments.title, img_data.attachments.description
+        image = Image.open(img_data[img_data.file_path_key])
+        if settings.do_resize_images:
+            if image.size[0] > settings.thumbsize[0] \
+            or image.size[1] > settings.thumbsize[1]:
+                image.thumbnail(settings.thumbsize)
+                image.save(img_dst_path)
 
-        imgmeta = MetaGator(img_dst_path)
-        imgmeta.write_meta(title, description)
-        if Registrar.DEBUG_IMG:
-            Registrar.register_message(
-                "old dest img meta: %s" %
-                imgmeta.read_meta(), img_data.file_name)
+        img_data['width'] = image.size[0]
+        img_data['height'] = image.size[1]
 
-        img_data[img_data.title_key] = title
-        img_data['alt_text'] = title
-        img_data['caption'] = description
-        img_data['description'] = description
-
-        image = Image.open(img_dst_path)
-        image.thumbnail(settings.thumbsize)
-        image.save(img_dst_path)
-
-        img_data['width'] = settings.thumbsize[0]
-        img_data['height'] = settings.thumbsize[1]
-
-        if settings.do_remeta_images:
-            imgmeta = MetaGator(img_dst_path)
-            imgmeta.write_meta(title, description)
-            if Registrar.DEBUG_IMG:
-                Registrar.register_message(
-                    "new dest img meta: %s" % imgmeta.read_meta(),
-                    img_data.file_name
-                )
     except IOError as exc:
         invalid_image(
             parsers, settings, img_data.file_name, "could not resize: " + str(exc)
@@ -321,7 +316,7 @@ def process_images(settings, parsers):
     # for img_filename, obj_list in parsers.master.images.items():
     for img_data in parsers.master.images.values():
         img_filename = os.path.basename(img_data.file_name)
-        if not img_data.attachments.products or img_data.attachments.categories:
+        if not img_data.attachments.has_product_categories:
             continue
             # we only care about product / category images atm
         if Registrar.DEBUG_IMG:
@@ -398,16 +393,14 @@ def process_images(settings, parsers):
         # REMETA
         # ------
 
-        if settings.do_remeta_images:
-            if not remeta_image(settings, parsers, img_data):
-                continue
+        if not process_image_meta(settings, parsers, img_data):
+            continue
 
         # ------
         # RESIZE
         # ------
 
-        if settings.do_resize_images:
-            if not resize_image(settings, parsers, img_data):
-                continue
+        if not process_image_size(settings, parsers, img_data):
+            continue
 
     return parsers

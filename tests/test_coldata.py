@@ -1,15 +1,18 @@
-from collections import OrderedDict
-import unittest
-from unittest import TestCase
 import logging
+import unittest
+from collections import OrderedDict
+from pprint import pformat, pprint
+from unittest import TestCase
 
 from context import woogenerator
-from woogenerator.coldata import ColDataUser, ColDataWoo, ColDataAbstract, ColDataMedia
+from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataUser,
+                                  ColDataWoo)
 from woogenerator.utils import Registrar
-from pprint import pformat
+
+from .abstract import AbstractWooGeneratorTestCase
 
 
-class TestColData(unittest.TestCase):
+class TestColData(AbstractWooGeneratorTestCase):
     coldata_class = ColDataAbstract
 
     def setUp(self):
@@ -141,6 +144,15 @@ class TestColDataImg(TestColData):
                 'source_url': 'source_url',
                 'title.rendered': 'title'
             }
+        )
+
+    def test_get_sync_cols(self):
+        sync_cols = self.coldata_class.get_sync_cols('wp-api')
+        if self.debug:
+            pprint(sync_cols.items())
+        self.assertEquals(
+            sync_cols.keys(),
+            ['width', 'height', 'title', 'caption', 'file_path']
         )
 
     def test_do_path_translation(self):
@@ -290,33 +302,11 @@ class TestColDataImg(TestColData):
               "rendered" : "<p>caption_1983</p>\n"
            },
            "_links" : {
-              "about" : [
-                 {
-                    "href" : "http://localhost:18080/wptest/wp-json/wp/v2/types/attachment"
-                 }
-              ],
-              "self" : [
-                 {
-                    "href" : "http://localhost:18080/wptest/wp-json/wp/v2/media/1983"
-                 }
-              ],
-              "author" : [
-                 {
-                    "href" : "http://localhost:18080/wptest/wp-json/wp/v2/users/1",
-                    "embeddable" : True
-                 }
-              ],
-              "replies" : [
-                 {
-                    "href" : "http://localhost:18080/wptest/wp-json/wp/v2/comments?post=1983",
-                    "embeddable" : True
-                 }
-              ],
-              "collection" : [
-                 {
-                    "href" : "http://localhost:18080/wptest/wp-json/wp/v2/media"
-                 }
-              ]
+              "about" : [{"href" : "http://localhost:18080/wptest/wp-json/wp/v2/types/attachment"}],
+              "self" : [{"href" : "http://localhost:18080/wptest/wp-json/wp/v2/media/1983"}],
+              "author" : [{"href" : "http://localhost:18080/wptest/wp-json/wp/v2/users/1", "embeddable" : True}],
+              "replies" : [{"href" : "http://localhost:18080/wptest/wp-json/wp/v2/comments?post=1983", "embeddable" : True}],
+              "collection" : [{"href" : "http://localhost:18080/wptest/wp-json/wp/v2/media"}]
            },
            "status" : "inherit",
            "media_type" : "image",
@@ -448,6 +438,27 @@ class TestColDataImg(TestColData):
             print('key intersection:\n%s' % (sorted(key_intersection)))
         for key in key_intersection:
             self.assertEquals(translated_v1[key], translated_v2[key])
+
+    def test_normalization(self):
+        normalized = {
+            'title': u'foo > bar'
+        }
+        denormalized = {
+            'title': {
+                u'rendered': 'foo &gt; bar'
+            }
+        }
+
+        self.assertEquals(
+            self.coldata_class.normalize_data(denormalized, 'wp-api'),
+            normalized
+        )
+
+        self.assertEquals(
+            self.coldata_class.denormalize_data(normalized, 'wp-api'),
+            denormalized
+        )
+
 
 class testColDataUser(TestColData):
     coldata_class = ColDataUser
@@ -617,36 +628,36 @@ if __name__ == '__main__':
 #
 # def testColDataMyo():
 #     print "Testing ColDataMyo Class:"
-#     col_data = ColDataMyo()
-#     print col_data.get_import_cols()
-#     print col_data.get_defaults()
-#     print col_data.get_product_cols()
+#     coldata_class = ColDataMyo()
+#     print coldata_class.get_import_cols()
+#     print coldata_class.get_defaults()
+#     print coldata_class.get_product_cols()
 #
 # def testColDataWoo():
 #     print "Testing ColDataWoo class:"
-#     col_data = ColDataWoo()
-#     print col_data.get_import_cols()
-#     print col_data.get_defaults()
-#     print col_data.get_product_cols()
+#     coldata_class = ColDataWoo()
+#     print coldata_class.get_import_cols()
+#     print coldata_class.get_defaults()
+#     print coldata_class.get_product_cols()
 #
 # def testColDataUser():
 #     print "Testing ColDataUser class:"
-#     col_data = ColDataUser()
-#     # print "importCols", col_data.get_import_cols()
-#     # print "userCols", col_data.get_user_cols().keys()
-#     # print "report_cols", col_data.get_report_cols().keys()
-#     # print "capitalCols", col_data.get_capital_cols().keys()
-#     # print "sync_cols", col_data.get_sync_cols().keys()
-#     print "actCols", col_data.get_act_cols().keys()
-#     # print "wpcols", col_data.get_wp_cols().keys()
-#     print "get_wp_tracked_cols", col_data.get_wp_tracked_cols()
-#     print "get_act_tracked_cols", col_data.get_act_tracked_cols()
-#     print "get_act_future_tracked_cols", col_data.get_act_future_tracked_cols()
+#     coldata_class = ColDataUser()
+#     # print "importCols", coldata_class.get_import_cols()
+#     # print "userCols", coldata_class.get_user_cols().keys()
+#     # print "report_cols", coldata_class.get_report_cols().keys()
+#     # print "capitalCols", coldata_class.get_capital_cols().keys()
+#     # print "sync_cols", coldata_class.get_sync_cols().keys()
+#     print "actCols", coldata_class.get_act_cols().keys()
+#     # print "wpcols", coldata_class.get_wp_cols().keys()
+#     print "get_wp_tracked_cols", coldata_class.get_wp_tracked_cols()
+#     print "get_act_tracked_cols", coldata_class.get_act_tracked_cols()
+#     print "get_act_future_tracked_cols", coldata_class.get_act_future_tracked_cols()
 #
 # def testTansyncDefaults():
-#     col_data = ColDataUser()
+#     coldata_class = ColDataUser()
 #     print '{'
-#     for col, data in col_data.get_tansync_defaults().items():
+#     for col, data in coldata_class.get_tansync_defaults().items():
 #         print '"%s": %s,' % (col, json.dumps(data))
 #     print '}'
 #

@@ -5,13 +5,13 @@ Utility for keeping track of column metadata for translating between databases.
 from __future__ import absolute_import
 
 import itertools
-import traceback
 from collections import OrderedDict
+from copy import copy
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import JSONPathUtils, SeqUtils, Registrar
+from .utils import JSONPathUtils, Registrar, SeqUtils, SanitationUtils
 
 
 # TODO:
@@ -163,7 +163,7 @@ class ColDataAbstract(object):
         """
         cache_key = (cls.__name__, property_, target)
         if cache_key in cls.handle_cache:
-            return cls.handle_cache[cache_key]
+            return copy(cls.handle_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
         finder = cls.prepare_finder([property_], target_ancestors, [handle])
         results = [match.value for match in finder.find(cls.data)]
@@ -182,7 +182,7 @@ class ColDataAbstract(object):
         """
         cache_key = (cls.__name__, property_, target)
         if cache_key in cls.handles_cache:
-            return cls.handles_cache[cache_key]
+            return copy(cls.handles_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
         finder = cls.prepare_finder([property_], target_ancestors, )
         results = OrderedDict()
@@ -201,7 +201,7 @@ class ColDataAbstract(object):
         """
         Return a list of tuples of path specs for translating between different targets.
         """
-        if not (from_target or to_target) or from_target == to_target:
+        if from_target == to_target:
             return None
 
         from_paths = cls.get_handles_property('path', from_target)
@@ -215,25 +215,55 @@ class ColDataAbstract(object):
         return translation
 
     @classmethod
-    def do_path_translation(cls, datum, from_target, to_target=None):
+    def do_path_translation(cls, data, from_target=None, to_target=None):
         """
         Translate an object with from_target struction into to_target structure.
         Does not translate data formats.
         """
         translation = cls.get_path_translation(from_target, to_target)
         if not translation:
-            return datum
-        new_datum = {}
+            return data
+        new_data = {}
         for from_path, to_path in translation.items():
             getter = jsonpath_ng.parse(from_path)
-            results = getter.find(datum)
+            results = getter.find(data)
             if not results:
                 continue
             result_value = results[0].value
 
             updater = jsonpath_ng.parse(to_path)
-            new_datum = JSONPathUtils.blank_update(updater, new_datum, result_value)
-        return new_datum
+            new_data = JSONPathUtils.blank_update(updater, new_data, result_value)
+        return new_data
+
+    @classmethod
+    def get_normalizer(cls, type_):
+        return {
+            'xml_escaped': SanitationUtils.xml_to_unicode
+        }.get(type_, SanitationUtils.coerce_unicode)
+
+    @classmethod
+    def get_denormalizer(cls, type_):
+        return {
+            'xml_escaped': SanitationUtils.coerce_xml
+        }.get(type_, SanitationUtils.identity)
+
+    @classmethod
+    def normalize_data(cls, data, target):
+        data = cls.do_path_translation(data, target)
+        types = cls.get_handles_property('type', target)
+        for handle in cls.data.keys():
+            if handle in data and types.get(handle):
+                data[handle] = cls.get_normalizer(types[handle])(data[handle])
+        return data
+
+    @classmethod
+    def denormalize_data(cls, data, target):
+        types = cls.get_handles_property('type', target)
+        for handle in cls.data.keys():
+            if handle in data and types.get(handle):
+                data[handle] = cls.get_denormalizer(types[handle])(data[handle])
+        data = cls.do_path_translation(data, None, target)
+        return data
 
     @classmethod
     def get_defaults(cls, target=None):
@@ -247,10 +277,14 @@ class ColDataAbstract(object):
     def get_sync_cols(cls, target=None):
         path_cols = cls.get_handles_property('path', target)
         write_cols = cls.get_handles_property('write', target)
-        import pudb; pudb.set_trace()
+        sync_cols = OrderedDict()
         for key in set(path_cols.keys()).union(write_cols.keys()):
             path = path_cols.get(key, None)
-            write = path_cols.get(key, None)
+            write = write_cols.get(key, None)
+            if path is None or write is False:
+                continue
+            sync_cols[key] = cls.data[key]
+        return sync_cols
 
 
 
@@ -267,7 +301,8 @@ class ColDataMedia(ColDataAbstract):
         },
         'modified_gmt': {
             'type': 'iso8601_gmt',
-            'write': False
+            'write': False,
+            'report': True,
         },
         'slug':{
             'unique': True,
@@ -275,6 +310,7 @@ class ColDataMedia(ColDataAbstract):
         'title': {
             'wp-api':{
                 'path': 'title.rendered',
+                'type': 'xml_escaped'
             },
             'wp-api-v1': {
                 'path': 'title'

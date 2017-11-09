@@ -10,7 +10,7 @@ from copy import copy, deepcopy
 
 from tabulate import tabulate
 
-from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero
+from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero, ColDataMedia
 from .contact_objects import ContactAddress, FieldGroup
 from .matching import Match
 from .parsing.abstract import ImportObject
@@ -1349,7 +1349,7 @@ class SyncUpdateUsrApi(SyncUpdateUsr):
 
 class SyncUpdateProd(SyncUpdate):
     col_data = ColDataProd
-    s_meta_target = 'wp-api'
+    s_meta_target = 'wc-wp-api'
 
     def __init__(self, *args, **kwargs):
         super(SyncUpdateProd, self).__init__(*args, **kwargs)
@@ -1492,9 +1492,21 @@ class SyncUpdateProdXero(SyncUpdateProd):
 class SyncUpdateVarWoo(SyncUpdateProdWoo):
     pass
 
+class SyncUpdateImgWoo(SyncUpdate):
+    col_data = ColDataMedia
+    s_meta_target = 'wp-api'
+
+    @property
+    def master_id(self):
+        return self.get_new_subject_value('rowcount', self.master_name)
+
+    @property
+    def slave_id(self):
+        return self.get_new_subject_value('ID', self.slave_name)
+
 class SyncUpdateCatWoo(SyncUpdate):
     col_data = ColDataWoo
-    s_meta_target = 'wp-api'
+    s_meta_target = 'wc-wp-api'
 
     @property
     def master_id(self):

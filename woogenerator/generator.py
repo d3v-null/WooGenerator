@@ -581,6 +581,24 @@ def do_merge_images(matches, parsers, updates, settings):
 
     sync_cols = settings.sync_cols_img
 
+    # TODO: make syncupate work with new style coldata
+
+    for col, data in sync_cols.items():
+        data['sync'] = True
+
+    if not hasattr(matches, 'image'):
+        return updates
+
+    for match in matches.image.valid:
+        s_object = match.s_object
+        m_object = match.m_object
+
+        sync_update = settings.syncupdate_class_img(m_object, s_object)
+
+        if Registrar.DEBUG_TRACE:
+            print(sync_update.tabulate())
+            import pudb; pudb.set_trace()
+
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
 

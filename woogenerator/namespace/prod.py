@@ -17,7 +17,7 @@ from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
 from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from ..parsing.xero import ApiParseXero, CsvParseXero
-from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateProd, SyncUpdateProdWoo,
+from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateImgWoo, SyncUpdateProd, SyncUpdateProdWoo,
                           SyncUpdateProdXero)
 from ..utils import Registrar
 from .core import SettingsNamespaceProto
@@ -108,6 +108,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def coldata_img_class(self):
         return ColDataMedia
+
+    @property
+    def coldata_img_target(self):
+        return 'wp-api'
 
     @property
     def coldata_cat_class(self):
@@ -556,6 +560,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def syncupdate_class_cat(self):
         return SyncUpdateCatWoo
+
+    @property
+    def syncupdate_class_img(self):
+        return SyncUpdateImgWoo
 
     @property
     def dirs(self):

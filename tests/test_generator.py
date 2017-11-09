@@ -13,7 +13,7 @@ from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.coldata import ColDataMedia, ColDataWoo
 from woogenerator.generator import (do_match, do_match_categories,
-                                    do_match_images, do_merge,
+                                    do_match_images, do_merge, do_merge_images,
                                     do_merge_categories, do_report,
                                     populate_master_parsers,
                                     populate_slave_parsers)
@@ -57,13 +57,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.do_images = True
-        self.settings.do_resize_images = True
-        self.settings.do_remeta_images = True
+        self.settings.do_resize_images = False
+        self.settings.do_remeta_images = False
         self.settings.report_matching = True
         self.settings.schema = "CA"
-        self.settings.init_settings(self.override_args)
-        self.settings.thumbsize_x = 1024
-        self.settings.thumbsize_y = 768
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -81,6 +78,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.settings.slave_img_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_img_woo_api_dummy_wp-json.json"
             )
+        self.settings.img_raw_dir = os.path.join(
+            TESTS_DATA_DIR, 'imgs_raw'
+        )
+        self.settings.init_settings(self.override_args)
 
         # TODO: this
         if self.debug:
@@ -122,8 +123,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertTrue(self.settings.do_sync)
         self.assertTrue(self.settings.do_categories)
         self.assertTrue(self.settings.do_images)
-        self.assertTrue(self.settings.do_resize_images)
-        self.assertTrue(self.settings.do_remeta_images)
+        self.assertFalse(self.settings.do_resize_images)
+        self.assertFalse(self.settings.do_remeta_images)
         self.assertFalse(self.settings.download_master)
         self.assertFalse(self.settings.download_slave)
         self.assertEqual(self.settings.master_name, "gdrive-test")
@@ -132,8 +133,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.specials_mode, "all_future")
         self.assertEqual(self.settings.schema, "CA")
         self.assertEqual(self.settings.download_master, False)
-        self.assertEqual(self.settings.thumbsize_x, 1024)
-        self.assertEqual(self.settings.thumbsize_y, 768)
         self.assertEqual(
             self.settings.master_download_client_args["dialect_suggestion"],
             "SublimeCsvTable")
@@ -351,6 +350,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     @unittest.skip("takes too long")
     @pytest.mark.slow
     def test_dummy_process_images_master(self):
+        self.settings.do_resize_images = True
+        self.settings.do_remeta_images = True
+        self.settings.thumbsize_x = 1024
+        self.settings.thumbsize_y = 768
         suffix='generator_dummy_process_images'
         temp_img_dir = tempfile.mkdtemp(suffix + '_img')
         if self.debug:
@@ -463,6 +466,55 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 ))
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
+
+    @pytest.mark.last
+    def test_dummy_do_merge_images(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = False
+        self.populate_master_parsers()
+        process_images(self.settings, self.parsers)
+        self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            # if self.debug:
+            #     import pudb; pudb.set_trace()
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+
+        if self.debug:
+            print("img sync cols: %s" % self.settings.sync_cols_img)
+            self.print_updates_summary(self.updates.image)
+            for update in self.updates.image.slave:
+                print(update.tabulate())
+        # self.assertEqual(len(self.updates.category.master), 9)
+        # sync_update = self.updates.category.master[1]
+        # if self.debug:
+        #     self.print_update(sync_update)
+        # try:
+        #     master_desc = (
+        #         "Company A have developed a range of unique blends in 16 "
+        #         "shades to suit all use cases. All Company A's products "
+        #         "are created using the finest naturally derived botanical "
+        #         "and certified organic ingredients."
+        #     )
+        #     self.assertEqual(
+        #         sync_update.old_m_object['HTML Description'],
+        #         master_desc
+        #     )
+        #     self.assertEqual(
+        #         sync_update.old_s_object['HTML Description'],
+        #         "Company A have developed stuff"
+        #     )
+        #     self.assertEqual(
+        #         sync_update.new_s_object['HTML Description'],
+        #         master_desc
+        #     )
+        # except AssertionError as exc:
+        #     self.fail_syncupdate_assertion(exc, sync_update)
 
     @pytest.mark.last
     def test_dummy_do_merge_categories(self):

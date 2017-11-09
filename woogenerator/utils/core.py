@@ -148,6 +148,10 @@ class SanitationUtils(object):
     # Functions for dealing with string encodings
 
     @classmethod
+    def identity(cls, thing):
+        return thing
+
+    @classmethod
     def assert_ascii(cls, string):
         for index, char in enumerate(string):
             assert ord(char) < 128, "char %s of string %s ... is not ascii" % (
@@ -181,9 +185,6 @@ class SanitationUtils(object):
             byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
         else:
             byte_return = converters.unicode_to_xml(u_str)
-        assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(
-                byte_return)
         return byte_return
 
     @classmethod
@@ -198,12 +199,7 @@ class SanitationUtils(object):
 
     @classmethod
     def xml_to_unicode(cls, utf8_str):
-        assert isinstance(utf8_str, str),\
-            "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.xml_to_unicode(utf8_str)
-        assert isinstance(byte_return, str),\
-            "something went wrong, should return str not %s" % type(
-                byte_return)
         return byte_return
 
     @classmethod

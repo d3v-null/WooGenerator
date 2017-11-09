@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 from copy import copy
 import re
+import os
 from collections import OrderedDict
 from pprint import pformat
 
@@ -369,6 +370,7 @@ class CsvParseWooMixin(object):
         return self.find_object(search_data, registry, search_keys)
 
     def find_image(self, search_data):
+        registry = self.images
         search_keys = [
             # self.image_container.wpid_key,
             self.image_container.slug_key,
@@ -376,7 +378,6 @@ class CsvParseWooMixin(object):
             self.image_container.file_path_key,
             self.image_container.source_url_key
         ]
-        registry = self.images
         return self.find_object(search_data, registry, search_keys)
 
     @classmethod
@@ -430,7 +431,12 @@ class CsvParseWooMixin(object):
                 )
             self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
 
-        img_data = self.find_image(img_raw_data)
+        img_data = None
+        if self.image_container.file_path_key in img_raw_data:
+            file_name = os.path.basename(img_raw_data[self.image_container.file_path_key])
+            img_data = self.images.get(file_name)
+        if not img_data:
+            img_data = self.find_image(img_raw_data)
         if not img_data:
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
