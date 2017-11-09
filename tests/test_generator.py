@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import pytest
 from pprint import pformat
 
 from tabulate import tabulate
@@ -27,6 +28,8 @@ from woogenerator.parsing.woo import CsvParseWoo, WooProdList
 from woogenerator.parsing.xero import ApiParseXero
 from woogenerator.utils import Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
+from .abstract import AbstractWooGeneratorTestCase
+
 
 
 class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
@@ -330,6 +333,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         print(tabulate(img_table))
 
     # @unittest.skip("takes too long")
+    @pytest.mark.slow
     def test_dummy_process_images_master(self):
         suffix='generator_dummy_process_images'
         temp_img_dir = tempfile.mkdtemp(suffix + '_img')
@@ -393,7 +397,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.matches.image.globals.tabulate()
             self.print_matches_summary(self.matches.image)
 
-        self.assertEqual(len(self.matches.image.globals), 41)
+        self.assertEqual(len(self.matches.image.globals), 45)
         first_match = self.matches.image.globals[0]
         first_master = first_match.m_object
         first_slave = first_match.s_object

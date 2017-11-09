@@ -307,7 +307,7 @@ class ShopObjList(ObjList):
     @property
     def has_product_categories(self):
         return self.products or any([
-            category.children for category in self.categories
+            category.members for category in self.categories
         ])
 
     def append(self, object_data):

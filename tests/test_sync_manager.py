@@ -13,29 +13,12 @@ from woogenerator.namespace.core import (
     MatchNamespace, ParserNamespace, SettingsNamespaceProto, UpdateNamespace
 )
 from woogenerator.utils import Registrar, TimeUtils
+from .abstract import AbstractWooGeneratorTestCase
 
-
-class AbstractSyncManagerTestCase(unittest.TestCase):
-    config_file = None
-    settings_namespace_class = SettingsNamespaceProto
-    local_work_dir = TESTS_DATA_DIR
-    override_args = ''
-    debug = False
+class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
 
     def setUp(self):
-        self.import_name = TimeUtils.get_ms_timestamp()
-
-        self.settings = self.settings_namespace_class()
-        self.settings.local_work_dir = self.local_work_dir
-        self.settings.local_live_config = None
-        self.settings.local_test_config = self.config_file
-        if self.debug:
-            self.settings.verbosity = 3
-            self.settings.quiet = False
-        else:
-            self.settings.verbosity = 0
-            self.settings.quiet = True
-
+        super(AbstractSyncManagerTestCase, self).setUp()
         self.parsers = ParserNamespace()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()

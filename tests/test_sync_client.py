@@ -11,31 +11,12 @@ from woogenerator.namespace.core import (
 )
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.utils import Registrar, TimeUtils
+from .abstract import AbstractWooGeneratorTestCase
 
-
-class AbstractSyncClientTestCase(unittest.TestCase):
-    config_file = None
-    settings_namespace_class = SettingsNamespaceProto
-    argument_parser_class = ArgumentParserCommon
-    local_work_dir = TESTS_DATA_DIR
-    override_args = ''
-    debug = False
+class AbstractSyncClientTestCase(AbstractWooGeneratorTestCase):
 
     def setUp(self):
-        self.import_name = TimeUtils.get_ms_timestamp()
-
-        self.settings = self.settings_namespace_class()
-        self.settings.local_work_dir = self.local_work_dir
-        self.settings.local_live_config = None
-        self.settings.local_test_config = self.config_file
-        if self.debug:
-            self.settings.verbosity = 3
-            self.settings.quiet = False
-            logging.basicConfig(level=logging.DEBUG)
-        else:
-            self.settings.verbosity = 0
-            self.settings.quiet = True
-            logging.basicConfig(level=logging.WARN)
+        super(AbstractSyncClientTestCase, self).setUp()
 
         self.settings.init_settings(self.override_args)
         if not self.debug:
