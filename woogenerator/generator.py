@@ -589,6 +589,9 @@ def do_merge_images(matches, parsers, updates, settings):
     if not hasattr(matches, 'image'):
         return updates
 
+    if Registrar.DEBUG_TRACE:
+        print(matches.image.tabulate())
+
     for match in matches.image.valid:
         s_object = match.s_object
         m_object = match.m_object

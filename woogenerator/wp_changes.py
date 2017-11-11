@@ -101,7 +101,7 @@ def main(settings):
 
         cursor = conn.cursor()
         cursor.execute(sql)
-        # headers = col_data.get_wp_cols().keys() + ['ID', 'user_id', 'updated']
+        # headers = col_data.get_wp_sql_cols().keys() + ['ID', 'user_id', 'updated']
         headers = [i[0] for i in cursor.description]
 
         # print headers

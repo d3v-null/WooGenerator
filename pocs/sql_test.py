@@ -52,7 +52,7 @@ with \
         db=db_name)
 
     wpCols = OrderedDict(filter(lambda k_v: not k_v[1].get(
-        'wp', {}).get('generated'), ColDataUser.get_wp_cols().items()))
+        'wp', {}).get('generated'), ColDataUser.get_wp_sql_cols().items()))
 
     assert all([
         'Wordpress ID' in wpCols.keys(),

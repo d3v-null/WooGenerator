@@ -100,7 +100,7 @@ if sql_run:
             passwd=db_pass,
             db=db_name)
 
-        wpCols = col_data.get_wp_cols()
+        wpCols = col_data.get_wp_sql_cols()
 
         assert all([
             'ID' in wpCols.keys(),
@@ -122,7 +122,7 @@ if sql_run:
         cursor.execute(
             sql
         )
-        # headers = col_data.get_wp_cols().keys() + ['ID', 'user_id', 'updated']
+        # headers = col_data.get_wp_sql_cols().keys() + ['ID', 'user_id', 'updated']
         headers = [i[0] for i in cursor.description]
         # print headers
         sqlRows = [headers] + list(cursor.fetchall())

@@ -16,17 +16,16 @@ def pytest_addoption(parser):
     parser.addoption("--run-local", action="store_true", default=False, help="run slow tests")
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-slow"):
-        # --runslow given in cli: do not skip slow tests
-        return
     skip_slow = pytest.mark.skip(reason="need --runslow option to run")
     skip_local = pytest.mark.skip(reason="need --runlocal option to tun")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
-    for item in items:
-        if "local" in item.keywords:
-            item.add_marker(skip_local)
+    if not config.getoption("--run-slow"):
+        for item in items:
+            if "slow" in item.keywords:
+                item.add_marker(skip_slow)
+    if not config.getoption('--run-local'):
+        for item in items:
+            if "local" in item.keywords:
+                item.add_marker(skip_local)
 
 @pytest.fixture(scope="class")
 def debug(request):

@@ -353,7 +353,7 @@ class ApiParseWoo(
     def process_api_image(self, img_api_data, object_data=None, **kwargs):
         # TODO: do this based off process_api_category
 
-        img_raw_data = self.coldata_img_class.normalize_data(
+        img_raw_data = self.coldata_img_class.translate_data_from(
             img_api_data, self.coldata_img_target
         )
         img_raw_data['api_data'] = img_api_data
@@ -372,7 +372,7 @@ class ApiParseWoo(
         super(ApiParseWoo, self).process_image(img_raw_data, object_data, **kwargs)
 
     def process_api_sub_image(self, sub_img_api_data, object_data, **kwargs):
-        sub_img_raw_data = self.coldata_sub_img_class.normalize_data(
+        sub_img_raw_data = self.coldata_sub_img_class.translate_data_from(
             sub_img_api_data, self.col_data_target
         )
         if sub_img_raw_data.get('id') == 0:

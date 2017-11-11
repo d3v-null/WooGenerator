@@ -7,11 +7,10 @@ from __future__ import absolute_import
 
 import codecs
 import functools
-import cjson
 import os
 import re
 import time
-from collections import Iterable
+from collections import Iterable, OrderedDict
 from contextlib import closing
 from copy import copy
 from pprint import pformat
@@ -19,17 +18,22 @@ from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
 
+import cjson
 import httplib2
 import oauth2client
+import paramiko
+import pymysql
 import requests
 from apiclient import discovery
 from oauth2client import client, tools
 from requests.exceptions import ReadTimeout
 from simplejson import JSONDecodeError
+from sshtunnel import SSHTunnelForwarder
 
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
+from ..coldata import ColDataWpPost
 from ..utils import ProgressCounter, Registrar, SanitationUtils
 
 
@@ -980,3 +984,131 @@ class SyncClientWP(SyncClientRest):
     ]
     page_nesting = False
     search_param = 'search'
+
+class LocalNullTunnel(object):
+    """ Pretend to be a SSHTunnelForwarder object for local mocking. """
+    def __init__(self, **kwargs):
+        self.local_bind_address = (
+            kwargs.get('remote_bind_host'), kwargs.get('remote_bind_port')
+        )
+
+    def start(self):
+        pass
+
+    def close(self):
+        pass
+
+class SyncClientSqlWP(SyncClientAbstract):
+    service_builder = SSHTunnelForwarder
+    coldata_class = ColDataWpPost
+
+    """docstring for UsrSyncClientSqlWP"""
+
+    def __init__(self, connect_params, db_params, **kwargs):
+        self.db_params = db_params
+        self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
+        self.since = kwargs.get('since')
+        super(SyncClientSqlWP, self).__init__(connect_params, **kwargs)
+        # self.fs_params = fs_params
+
+    def __enter__(self):
+        self.service.start()
+        return self
+
+    def __exit__(self, exit_type, value, traceback):
+        self.service.close()
+
+    def attempt_connect(self):
+        if self.connect_params.get('ssh_host'):
+            self.service = SSHTunnelForwarder(**self.connect_params)
+        else:
+            self.service = LocalNullTunnel(**self.connect_params)
+
+    def get_rows(self, _, **kwargs):
+        limit = kwargs.get('limit', self.limit)
+
+        self.assert_connect()
+
+        # srv_offset = self.db_params.pop('srv_offset','')
+        self.db_params['port'] = self.service.local_bind_address[-1]
+        cursor = pymysql.connect(**self.db_params).cursor()
+
+        wp_db_col_paths = self.coldata_class.get_path_translation('wp-sql')
+
+        wp_db_core_cols = OrderedDict()
+        wp_db_meta_cols = OrderedDict()
+
+        for db_path, handle in wp_db_col_paths.items():
+            path_tokens = db_path.split('.')
+
+            if path_tokens[0] == 'meta':
+                if path_tokens[1] != '*':
+                    wp_db_meta_cols[path_tokens[1]] = handle
+            elif len(path_tokens) == 1:
+                wp_db_core_cols[db_path] = handle
+
+        select_clause = ",\n\t\t".join(filter(
+            None,
+            [
+                "core.%s as `%s`" % (key, name)
+                for key, name in wp_db_core_cols.items()
+            ] + [
+                "MAX(CASE WHEN meta.meta_key = '%s' THEN meta.meta_value ELSE \"\" END) as `%s`" % (
+                    key, name
+                )
+                for key, name in wp_db_meta_cols.items()
+            ]
+        ))
+
+        sql_select = """
+    SELECT
+        {select_clause}
+    FROM
+        {tbl_core} core
+        LEFT JOIN {tbl_meta} meta
+        ON ( meta.`{meta_fkey}` = core.`{core_pkey}`)
+    GROUP BY
+        core.`{core_pkey}`""".format(
+            core_pkey='ID',
+            meta_fkey='post_id',
+            tbl_core=self.tbl_prefix + 'posts',
+            tbl_meta=self.tbl_prefix + 'postmeta',
+            select_clause=select_clause,
+        )
+
+
+        # print sql_select
+
+        sql_select_filter = """
+SELECT *
+FROM
+(
+    {sql_ud}
+) filtered
+{limit_clause};"""
+        sql_select_filter = sql_select_filter.format(
+            sql_ud=sql_select,
+            join_type="LEFT",
+            limit_clause="LIMIT %d" % limit if limit else ""
+        )
+
+        if Registrar.DEBUG_CLIENT:
+            Registrar.register_message(sql_select_filter)
+
+        cursor.execute(sql_select_filter)
+
+        headers = [SanitationUtils.coerce_unicode(
+            i[0]) for i in cursor.description]
+
+        results = [[SanitationUtils.coerce_unicode(
+            cell) for cell in row] for row in cursor]
+
+        return [headers] + results
+
+    def analyse_remote(self, parser, filter_items=None, **kwargs):
+
+        rows = self.get_rows(filter_items, **kwargs)
+        # print rows
+        if rows:
+            # print "there are %d results" % len(results)
+            parser.analyse_rows(rows)

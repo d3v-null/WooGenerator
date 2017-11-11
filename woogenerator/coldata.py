@@ -71,7 +71,8 @@ class ColDataAbstract(object):
             'infusion-api': {},
         },
         'csv': {
-            'woo-csv': {},
+            'gen_csv': {},
+            'wc-csv': {},
             'act-csv': {},
             'myo-csv': {},
         },
@@ -89,11 +90,11 @@ class ColDataAbstract(object):
             'xero-api': {
                 'path': None,
             },
+            'wp-api': {
+                'path': 'id'
+            },
             'wp-api-v1': {
                 'path': 'ID'
-            },
-            'sql': {
-                'meta': False,
             },
             'wp-sql': {
                 'path': 'ID',
@@ -249,7 +250,6 @@ class ColDataAbstract(object):
 
     @classmethod
     def normalize_data(cls, data, target):
-        data = cls.do_path_translation(data, target)
         types = cls.get_handles_property('type', target)
         for handle in cls.data.keys():
             if handle in data and types.get(handle):
@@ -262,8 +262,21 @@ class ColDataAbstract(object):
         for handle in cls.data.keys():
             if handle in data and types.get(handle):
                 data[handle] = cls.get_denormalizer(types[handle])(data[handle])
+        return data
+
+    @classmethod
+    def translate_data_from(cls, data, target):
+        data = cls.do_path_translation(data, target)
+        data = cls.normalize_data(data, target)
+        return data
+
+    @classmethod
+    def translate_data_to(cls, data, target):
+        data = cls.denormalize_data(data, target)
         data = cls.do_path_translation(data, None, target)
         return data
+
+
 
     @classmethod
     def get_defaults(cls, target=None):
@@ -286,26 +299,156 @@ class ColDataAbstract(object):
             sync_cols[key] = cls.data[key]
         return sync_cols
 
-
-
-class ColDataMedia(ColDataAbstract):
+class ColDataWpEntity(ColDataAbstract):
     """
-    Metadata for Media items
-    - wp-api-v2: http://v2.wp-api.org/reference/media/
-    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
+    Metadata for abstract WP objects
+    - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
+    - wp-api-v2: http://v2.wp-api.org/reference/posts/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
     """
     data = OrderedDict(ColDataAbstract.data.items() + {
-        'date_gmt': {
-            'type': 'iso8601_gmt',
-            'write': False
+        'permalink': {
+            'write': False,
+            'path': None,
+            'wp-api': {
+                'path': 'link'
+            },
+            'wc-api': {
+                'path': 'permalink'
+            }
+        },
+        'guid': {
+            'write': False,
+            'wp-api': {
+                'path': 'guid.rendered'
+            },
+        },
+        'created_gmt': {
+            'type': 'datetime',
+            'write': False,
+            'wp-api': {
+                'path': 'date_gmt',
+                'type': 'iso8601_gmt',
+            },
+            'wc-wp-api': {
+                'path': 'date_created_gmt',
+                'type': 'iso8601_gmt',
+            },
+            'wc-legacy-api': {
+                'path': 'created_at',
+                'type': 'iso8601_gmt',
+            },
+            'wp-sql':{
+                'type': 'wp_datetime_gmt',
+                'path': 'post_date_gmt'
+            }
+        },
+        'created_local': {
+            'type': 'datetime',
+            'write': False,
+            'wp-api': {
+                'path': 'date',
+                'type': 'iso8601_local',
+            },
+            'wc-wp-api': {
+                'path': 'date_created',
+                'type': 'iso8601_local',
+            },
+            'wc-legacy-api': {
+                'path': 'created_at',
+                'type': 'iso8601_local',
+            },
+            'wp-sql':{
+                'path': 'post_date',
+                'type': 'wp_datetime_local',
+            }
         },
         'modified_gmt': {
-            'type': 'iso8601_gmt',
+            'type': 'datetime',
             'write': False,
+            'wc-wp-api': {
+                'type': 'iso8601_gmt',
+                'path': 'date_modified',
+            },
+            'wc-legacy-api': {
+                'path': 'modified_at',
+                'type': 'iso8601_gmt',
+            },
+            'wp-sql': {
+                'path': 'post_modified_gmt',
+                'type': 'wp_datetime_gmt'
+            },
             'report': True,
+        },
+        'modified_local': {
+            'type': 'datetime',
+            'write': False,
+            'wc-wp-api': {
+                'path': 'date_modified',
+                'type': 'iso8601_local',
+            },
+            'wc-legacy-api': {
+                'path': 'modified_at',
+                'type': 'iso8601_local',
+            },
+            'wp-sql': {
+                'path': 'post_modified',
+                'type': 'wp_datetime_local'
+            },
+            'report': True,
+        },
+        'created_timezone': {
+            'write': False,
+            'wp-api': {
+                'path': None
+            },
+            'wp-api-v1': {
+                'type': 'olsen_zoneinfo',
+                'path': 'date_tz'
+            },
+            'wc-wp-api': {
+                'path': None
+            },
+            'wc-legacy-api': {
+                'path': None
+            },
+            'wp-sql': {
+                'path': None,
+            }
+        },
+        'modified_timezone': {
+            'write': False,
+            'wp-api': {
+                'path': None
+            },
+            'wp-api-v1': {
+                'type': 'olsen_zoneinfo',
+                'path': 'modified_tz'
+            },
+            'wc-wp-api': {
+                'path': None
+            },
+            'wc-legacy-api': {
+                'path': None
+            },
+            'wp-sql': {
+                'path': None,
+            }
         },
         'slug':{
             'unique': True,
+            'wp-api': {
+                'path': 'slug'
+            },
+            'wp-api-v1': {
+                'path': 'name'
+            },
+            'wc-legacy-api': {
+                'path': None
+            },
+            'wp-sql': {
+                'path': 'post_name'
+            }
         },
         'title': {
             'wp-api':{
@@ -315,8 +458,807 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': 'title'
             },
+            'wc-wp-api': {
+                'path': 'name'
+            },
+            'wp-sql': {
+                'path': 'post_title'
+            },
+            'xero-api': {
+                'path': 'Name'
+            },
+            'wc-csv': {
+                'path': 'post_title'
+            },
             'report': True,
         },
+        'status': {
+            'default': 'publish',
+            'options': [
+                'draft',
+                'pending',
+                'private',
+                'inherit',
+            ],
+            'wp-sql': {
+                'path': 'post_status'
+            },
+        },
+        'type': {
+            'write': False,
+            'default': 'post',
+            'wp-sql': {
+                'path': 'post_type'
+            },
+        },
+        'content': {
+            'wc-api': {
+                'path': 'description'
+            },
+            'wp-api':{
+                'path': 'content.rendered',
+                'type': 'wp_content_rendered',
+            },
+            'wp-api-v1': {
+                'path': 'content_raw'
+            },
+            'xero-api': {
+                'key': 'Description'
+            },
+            'wp-sql': {
+                'type': None,
+                'path': 'post_content'
+            },
+            'wc-csv': {
+                'path': 'post_content'
+            },
+            'gen-csv': {
+                'path': 'description'
+            },
+        },
+        'excerpt': {
+            'wc-api': {
+                'path': 'short_description',
+                'type': 'wp_content_rendered',
+            },
+            'wp-api': {
+                'path': 'excerpt.rendered',
+                'type': 'wp_content_rendered'
+            },
+            'wp-api-v1': {
+                'path': 'excerpt_raw'
+            },
+            'wp-sql': {
+                'type': None,
+                'path': 'post_excerpt'
+            }
+        },
+        'menu_order': {
+            'wp-api': {
+                'path': None
+            },
+            # 'wp-api-v1': {
+            #     'path': 'menu_order'
+            # },
+            # 'wp-sql': {
+            #     'path': 'menu_order'
+            # },
+            # 'wp-csv': {
+            #     'path': 'menu_order'
+            # },
+            'gen-csv': {
+                'path': 'rowcount'
+            },
+        },
+        'mime_type': {
+            'write': False,
+            'type': 'mime_type',
+            'wp-api-v1': {
+                'path': 'attachment_meta.sizes.thumbnail.mime-type',
+                'write': False
+            },
+            'wp-sql': {
+                'path': 'post_mime_type'
+            },
+            'report': True,
+        },
+        'parent_id': {
+            'wp-sql': {
+                'path': 'post_parent'
+            },
+            'wc-api': {
+                'path': 'parent_id'
+            },
+            'woo-csv': {
+                'path': 'post_parent'
+            }
+        },
+        'terms': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'terms',
+            },
+        },
+        'meta': {
+            'wp-api-v1': {
+                'path': 'post_meta'
+            },
+            'wc-api': {
+                'path': 'meta_data',
+                'type': 'listed_meta',
+            },
+            'wc-legacy-api': {
+                'path': 'custom_meta'
+            },
+            'wp-sql':{
+                'path': None,
+            }
+        },
+        'categories': {
+            'path': None,
+            'wc-api': {
+                'type': 'wc_wp_api_categories',
+                'path': 'categories'
+            },
+            'wp-api-v1': {
+                # note: in wp-api-v1 terms.category is an object if there is
+                # one category but a list if there are multiple
+                'type': 'wp_api_v1_category',
+                'path': 'terms.category'
+            },
+            'wc-csv': {
+                'path': 'tax:product_tag',
+                'type': 'heirarchical_pipe_array'
+            }
+        },
+        'category_ids': {
+            'path': None,
+            'wp-api': {
+                'path': 'categories'
+            },
+            'wp-api-v1': {
+                'path': 'terms.categories'
+            },
+            'wc-api': {
+                'path': 'categories[*].id'
+            }
+        },
+        'category_names': {
+            'path': None,
+            'wc-api': {
+                'write': False,
+                'path': 'categories[*].name'
+            },
+            'wc-legacy-api': {
+                'path': 'category_names'
+            },
+        },
+        'tags': {
+            'path': None,
+            'wp-api-v1': {
+                # note: in wp-api-v1 terms.category is an object if there is
+                # one category but a list if there are multiple
+                'type': 'wp_api_v1_term',
+                'path': 'terms.category'
+            },
+            'csv': {
+                'path': 'tags',
+                'type': 'pipe_array'
+            },
+            'wc-csv': {
+                'path': 'tax:product_tag',
+            }
+        },
+
+    }.items())
+
+class ColDataWpSubEntity(ColDataAbstract):
+    """
+    Metadata for abstract WP sub-entities
+    - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
+    """
+    data = OrderedDict(ColDataAbstract.data.items() + {
+        'created_gmt': {
+            'type': 'iso8601_gmt',
+            'wp-api': {
+                'path': 'date_gmt'
+            },
+            'wc-wp-api': {
+                'path': 'date_created_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'created_at'
+            },
+            'write': False
+        },
+        'modified_gmt': {
+            'type': 'iso8601_gmt',
+            'write': False,
+            'wc-wp-api': {
+                'path': 'date_modified_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'modified_at'
+            }
+        },
+        'title': {
+            'wc-wp-api':{
+                'path': 'name',
+            },
+        },
+    }.items())
+
+
+class ColDataWpPost(ColDataWpEntity):
+    data = OrderedDict(ColDataWpEntity.data.items() + {
+        'password': {
+            'wp-sql': {
+                'path': 'post_password'
+            }
+        },
+        'author': {
+            'path': None,
+            'wp-api-v1':{
+                'path': 'author'
+            },
+        },
+        'author_id': {
+            'type': int,
+            'wp-api': {
+                'path': 'author'
+            },
+            'wp-api-v1': {
+                'path': 'author.ID'
+            },
+            'wp-sql': {
+                'path': 'post_author'
+            }
+        },
+        'featured_media': {
+            'path': None,
+            'wp-api': {
+                'path': 'featured_media'
+            }
+        },
+        'comment_status': {
+            'options': ['open', 'closed']
+        },
+        'ping_status': {
+            'options': ['open', 'closed']
+        },
+        'comment_count': {
+            'path': None,
+            'type': int,
+            'wp-sql': {
+                'path': 'comment_count'
+            }
+        },
+        'format': {
+            'path': None,
+            'options': ['standard'],
+            'wp-api': {
+                'path': 'format'
+            }
+        },
+        'sticky': {
+            'path': None,
+            'wp-api': {
+                'path': 'sticky'
+            }
+        },
+        'template': {
+            'path': None,
+            'wp-api': {
+                'path': 'template'
+            }
+        },
+        'liveblog_likes': {
+            'type': int,
+            'path': None,
+            'wp-api': {
+                'path': 'liveblog_likes'
+            }
+        }
+    }.items())
+
+class ColDataProduct(ColDataWpEntity):
+    """
+    - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
+    - wc-wp-api-v1
+    - wc-legacy-api: http://woocommerce.github.io/woocommerce-rest-api-docs/v3.html#products
+    - wp-api-v2: http://v2.wp-api.org/reference/posts/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#posts
+    """
+
+    data = OrderedDict(ColDataWpEntity.data.items() + {
+        'product_type': {
+            'default': 'simple',
+            'wc-api': {
+                'path': 'type'
+            },
+            'wc-csv': {
+                'path': 'tax:product_type'
+            },
+            'options': [
+                'simple',
+                'grouped',
+                'external',
+                'variable',
+                'composite',
+                'bundle'
+            ]
+        },
+        'featured': {
+            'type': bool,
+            'default': False,
+            'wp-sql': {
+                'path': 'meta._featured',
+                'type': 'yesno'
+            },
+            'csv': {
+                'type': 'yesno'
+            }
+        },
+        'catalog_visibility': {
+            'default': 'visible',
+            'options': [
+                'visible',
+                'catalog',
+                'search',
+                'hidden'
+            ]
+        },
+        'sku': {
+            'xero-api': {
+                'path': 'Code'
+            },
+            'wc-csv': {
+                'path': 'SKU'
+            },
+            'gen-csv': {
+                'path': 'codesum'
+            },
+            'wp-sql': {
+                'path': 'meta._sku',
+            },
+        },
+        'price': {
+            'type': 'currency',
+            'write': False,
+            'wp-sql': {
+                'path': 'meta._price',
+            }
+        },
+        'regular_price': {
+            'type': 'currency',
+            'wp-sql': {
+                'path': 'meta._regular_price'
+            }
+        },
+        'sale_price': {
+            'type': 'currency',
+            'wp-sql': {
+                'path': 'meta._sale_price'
+            }
+        },
+        'sale_price_dates_from': {
+            'type': 'datetime',
+            'wc-api': {
+                'path': 'date_on_sale_from',
+                'type': 'iso8601_local',
+            },
+            'wc-legacy-api': {
+                'read': False,
+                'path': 'sale_price_dates_from',
+                'type': 'wp_date_local'
+            },
+            'wp-sql': {
+                'path': 'meta._sale_price_dates_from'
+            }
+        },
+        'sale_price_dates_from_gmt': {
+            'type': 'datetime',
+            'path': None,
+            'wc-api': {
+                'path': 'date_on_sale_from',
+                'type': 'iso8601_local',
+            },
+        },
+        'sale_price_dates_to': {
+            'type': 'datetime',
+            'wc-api': {
+                'path': 'date_on_sale_to',
+                'type': 'iso8601_local',
+            },
+            'wc-legacy-api': {
+                'read': False,
+                'path': 'sale_price_dates_to',
+                'type': 'wp_date_local'
+            },
+            'wp-sql': {
+                'path': 'meta._sale_price_dates_to'
+            }
+        },
+        'sale_price_dates_to_gmt': {
+            'type': 'datetime',
+            'path': None,
+            'wc-api': {
+                'path': 'date_on_sale_to',
+                'type': 'iso8601_local',
+            },
+        },
+        'price_html': {
+            'write': False,
+            'path': None,
+            'wc-api': {
+                'path': 'price_html'
+            }
+        },
+        'on_sale': {
+            'write': False,
+            'path': None,
+            'type': bool,
+            'wc-api': {
+                'path': 'on_sale'
+            }
+        },
+        'purchasable': {
+            'write': False,
+            'path': None,
+            'type': bool,
+            'wc-api': {
+                'path': 'on_sale'
+            }
+        },
+        'total_sales': {
+            'write': False,
+            'path': None,
+            'wc-api': {
+                'path': 'on_sale'
+            },
+            'wp-sql': {
+                'path': 'meta.total_sales'
+            },
+            'woo-csv': {
+                'path': 'meta:total_sales'
+            }
+        },
+        'virtual': {
+            'type': bool,
+            'wp-sql': {
+                'path': 'meta._virtual',
+                'type': 'yesno'
+            }
+        },
+        'downloadable': {
+            'type': bool,
+            'wp-sql': {
+                'path': 'meta._virtual',
+                'type': 'yesno'
+            }
+        },
+        'downloads': {
+            'path': None,
+            'wc-api': {
+                'path': 'downloads'
+            },
+            'wp-sql': {
+                'path': None
+            }
+        },
+        'download_limit': {
+            'type': int,
+            'wc-api': {
+                'path': 'download_limit',
+                'default': -1
+            },
+            'wp-sql': {
+                'path': 'meta._download_limit'
+            }
+        },
+        'download_expiry': {
+            'wc-api': {
+                'default': -1
+            },
+            'wp-sql': {
+                'path': 'meta._download_expiry'
+            }
+        },
+        'external_url': {
+            'wc-legacy-api': {
+                'path': 'product_url',
+            },
+            'wp-sql': {
+                'path': 'meta._product_url',
+            }
+        },
+        'button_text': {
+            'wp-sql': {
+                'path': 'meta._button_text'
+            }
+        },
+        'tax_status': {
+            'default': 'taxable',
+            'options': [
+                'taxable',
+                'shipping',
+                'none'
+            ]
+        },
+        'tax_class': {
+            'path': None,
+            'wc-api': {
+                'path': 'tax_class'
+            },
+            'wp-sql': {
+                'path': 'meta._tax_class'
+            },
+            'wc-csv': {
+                'path': 'tax_class'
+            }
+        },
+        'manage_stock': {
+            'type': bool,
+            'wp-sql': {
+                'path': 'meta._manage_stock',
+                'type': 'yesno',
+            }
+        },
+        'stock_quantity': {
+            'wc-api': {
+                'type': int,
+            },
+            'xero-api': {
+                'path': 'QuantityOnHand',
+                'type': float,
+            },
+            'wc-csv': {
+                'path': 'stock',
+                'type': int
+            },
+            'wp-sql': {
+                'path': 'meta._stock',
+                'type': int
+            }
+        },
+        'in_stock': {
+            'type': bool,
+            'wc-api': {
+                'path': 'in_stock',
+                'type': bool
+            },
+            'wp-sql': {
+                'path': 'meta._stock_status',
+                'type': 'stock_status'
+            },
+            'csv': {
+                'path': 'stock_status',
+                'type': 'stock_status',
+            }
+        },
+        'backorders': {
+            'options': [
+                'no', 'notify', 'yes'
+            ],
+            'default': 'no',
+            'wp-sql': {
+                'path': 'meta._backorders'
+            },
+        },
+        'backorders_allowed': {
+            'type': bool,
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'backorders_allowed'
+            }
+        },
+        'backordered': {
+            'type': bool,
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'backordered'
+            }
+        },
+        'sold_individually': {
+            'type': bool,
+            'wp-sql': {
+                'path': 'meta._sold_individually',
+                'type': 'yesno'
+            },
+            'csv': {
+                'type': 'yesno'
+            },
+            'woo-csv': {
+                'path': 'meta:_sold_individually',
+            },
+        },
+        'weight': {
+            'wp-sql': {
+                'path': 'meta._weight'
+            }
+        },
+        'length': {
+            'wc-api': {
+                'path': 'dimensions.length'
+            },
+            'wp-sql': {
+                'path': 'meta._length'
+            }
+        },
+        'width': {
+            'wc-api': {
+                'path': 'dimensions.width'
+            },
+            'wp-sql': {
+                'path': 'meta._width'
+            }
+        },
+        'height': {
+            'wc-api': {
+                'path': 'dimensions.height'
+            },
+            'wp-sql': {
+                'path': 'meta._height'
+            }
+        },
+        'shipping_required': {
+            'type': bool,
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'shipping_required'
+            }
+        },
+        'shipping_taxable': {
+            'type': bool,
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'shipping_taxable'
+            }
+        },
+        'shipping_class': {
+            'path': None,
+            'wc-api': {
+                'path': 'shipping_class'
+            },
+            'wc-csv': {
+                'path': 'tax:product_shipping_class'
+            }
+        },
+        'shipping_class_id': {
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'shipping_class_id'
+            },
+        },
+        'reviews_allowed': {
+            'path': None,
+            'type': bool,
+            'wc-api': {
+                'path': 'reviews_allowed'
+            }
+        },
+        'average_rating': {
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'average_rating'
+            }
+        },
+        'rating_count': {
+            'path': None,
+            'write': None,
+            'wc-api': {
+                'path': 'rating_count'
+            }
+        },
+        'related_ids': {
+            'path': None,
+            'write': False,
+            'wc-api': {
+                'path': 'related_ids'
+            }
+        },
+        'upsell_ids': {
+            'wp-sql': {
+                'path': 'meta.upsell_ids',
+                'type': 'php_array'
+            },
+            'csv': {
+                'type': 'pipe_array'
+            }
+        },
+        'purchase_note': {
+            'path': None,
+            'wc-api': {
+                'path': 'purchase_note'
+            },
+        },
+        'images': {
+            'path': None,
+            'wc-api': {
+                'path': 'images',
+                'type': 'wc_api_image_list'
+            },
+        },
+        'attributes': {
+            'path': None,
+            'wc-api': {
+                'path': 'attributes',
+                'type': 'wc_api_attribute_list'
+            }
+        },
+        'default_attributes': {
+            'path': None,
+            'wc-api': {
+                'path': 'default_attributes',
+                'type': 'wc_api_default_attribute_list'
+            }
+        },
+        'variation_ids': {
+            'path': None,
+            'variation': None,
+            'wc-api': {
+                'path': 'variations'
+            }
+        }
+
+    }.items())
+
+class ColDataProductMeridian(ColDataProduct):
+    data = OrderedDict(ColDataProduct.data.items() + {
+
+    }.items() +
+    [
+        (
+            'lc_%s_%s' % (tier, field),
+            {
+                'import': import_,
+                'variation': True,
+                'pricing': True,
+                'type': type_,
+                'wp-sql': {
+                    'path': 'meta.lc_%s_%s' % (tier, field),
+                },
+                'wc-wp-api': {
+                    'path': 'meta_data.lc_%s_%s' % (tier, field),
+                },
+                'wc-legacy-api': {
+                    'path': 'custom_meta.lc_%s_%s' % (tier, field),
+                },
+                'gen-csv': {
+                    'path': ''.join([tier.upper(), field_slug.upper()])
+                },
+                'wc-csv': {
+                    'meta:lc_%s_%s' % (tier, field),
+                },
+                'static': static,
+            }
+        ) for (tier, (field_slug, field, import_, type_, static)) in itertools.product(
+            ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
+            [
+                ('r', 'regular_price', True, 'currency', True),
+                ('s', 'sale_price', False, 'currency', False),
+                ('f', 'sale_price_dates_from', False, 'timestamp', False),
+                ('t', 'sale_price_dates_to', False, 'timestamp', False)
+            ]
+        )
+    ]
+    )
+
+
+class ColDataMedia(ColDataAbstract):
+    """
+    Metadata for Media items
+    - wp-api-v2: http://v2.wp-api.org/reference/media/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
+    """
+    data = OrderedDict(ColDataWpEntity.data.items() + {
         'source_url': {
             'write': False,
             'type': 'uri',
@@ -335,29 +1277,21 @@ class ColDataMedia(ColDataAbstract):
             },
             'wp-api': {
                 'path': 'caption.rendered',
+                'type': 'wp_content_rendered'
             }
         },
         'description': {
-            'type': 'object',
             'wp-api-v1': {
                 'path': None
             },
             'wp-api': {
                 'path': 'description.rendered',
+                'type': 'wp_content_rendered',
                 'write': False
             },
-        },
-        'mime_type': {
-            'write': False,
-            'wp-api-v1': {
-                'path': 'attachment_meta.sizes.thumbnail.mime-type',
-                'write': False
-            },
-            'report': True,
         },
         'image_meta': {
             'write': False,
-            'type': 'object',
             'wp-api-v1': {
                 'path': 'attachment_meta.image_meta'
             },
@@ -403,32 +1337,7 @@ class ColDataSubMedia(ColDataAbstract):
     - wc-legacy-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/v2.html#images-properties
     - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
     """
-    data = OrderedDict(ColDataAbstract.data.items() + {
-        'date_gmt': {
-            'type': 'iso8601_gmt',
-            'wc-wp-api': {
-                'path': 'date_created_gmt'
-            },
-            'wc-legacy-api': {
-                'path': 'created_at'
-            },
-            'write': False
-        },
-        'modified_gmt': {
-            'type': 'iso8601_gmt',
-            'write': False,
-            'wc-wp-api': {
-                'path': 'date_modified_gmt'
-            },
-            'wc-legacy-api': {
-                'path': 'modified_at'
-            }
-        },
-        'title': {
-            'wc-wp-api':{
-                'path': 'name',
-            },
-        },
+    data = OrderedDict(ColDataWpSubEntity.data.items() + {
         'source_url': {
             'write': False,
             'type': 'uri',
@@ -443,16 +1352,10 @@ class ColDataSubMedia(ColDataAbstract):
         }
     }.items())
 
-# class ColDataProd(ColDataAbstract):
-#     """
-#     - wc-wp-api-v2:
-#     - wc-wp-api-v1
-#     - wp-api-v2: http://v2.wp-api.org/reference/posts/
-#     - wp-api-v1: http://wp-api.org/index-deprecated.html#posts
-#     """
-
-
 class ColDataBase(object):
+    """
+    Deprecated style of storing col data
+    """
     data = OrderedDict()
 
     def __init__(self, data):
@@ -1511,7 +2414,7 @@ class ColDataWoo(ColDataProd):
         return cls.get_export_cols('variation')
 
     @classmethod
-    def get_wp_cols(cls):
+    def get_wp_sql_cols(cls):
         return cls.get_export_cols('wp')
 
     @classmethod
@@ -2920,7 +3823,7 @@ class ColDataUser(ColDataBase):
         return cls.get_export_cols('capitalized')
 
     @classmethod
-    def get_wp_cols(cls):
+    def get_wp_sql_cols(cls):
         return cls.get_export_cols('wp')
 
     @classmethod

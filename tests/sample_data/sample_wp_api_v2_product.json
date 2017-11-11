@@ -1,0 +1,71 @@
+{
+   "modified" : "2017-11-10T03:08:22",
+   "_links" : {
+      "self" : [
+         {
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/product/24863"
+         }
+      ],
+      "curies" : [
+         {
+            "href" : "https://api.w.org/{rel}",
+            "name" : "wp",
+            "templated" : true
+         }
+      ],
+      "wp:attachment" : [
+         {
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/media?parent=24863"
+         }
+      ],
+      "about" : [
+         {
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/types/product"
+         }
+      ],
+      "collection" : [
+         {
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/product"
+         }
+      ],
+      "wp:featuredmedia" : [
+         {
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/media/24864",
+            "embeddable" : true
+         }
+      ],
+      "replies" : [
+         {
+            "embeddable" : true,
+            "href" : "http://localhost:18080/wptest/wp-json/wp/v2/comments?post=24863"
+         }
+      ]
+   },
+   "date_gmt" : "2017-11-08T06:50:45",
+   "comment_status" : "open",
+   "date" : "2017-11-08T06:50:45",
+   "title" : {
+      "rendered" : "Range F &#8211; Style 14 &#8211; 100ml Sample"
+   },
+   "link" : "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/",
+   "modified_gmt" : "2017-11-10T03:08:22",
+   "template" : "",
+   "ping_status" : "closed",
+   "status" : "publish",
+   "featured_media" : 24864,
+   "slug" : "range-f-style-14-100ml-sample",
+   "id" : 24863,
+   "content" : {
+      "rendered" : "<p>Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A&#8217;s products are created using the finest naturally derived botanical and certified organic ingredients.</p>\n",
+      "protected" : false
+   },
+   "guid" : {
+      "rendered" : "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/"
+   },
+   "meta" : [],
+   "type" : "product",
+   "excerpt" : {
+      "protected" : false,
+      "rendered" : "<p>short description</p>\n"
+   }
+}

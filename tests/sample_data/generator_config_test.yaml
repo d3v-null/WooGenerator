@@ -29,6 +29,14 @@ wp-api-namespace: wp-json
 wp-api-version: wp/v2
 wp-creds-store: ~/.credentials/wp-api-creds-test-local.json
 
+remote-bind-port: 3306
+db-host: localhost
+db-user: wptest
+db-pass: dryad-agent-flinch
+db-name: wptest
+db-charset: utf8mb4
+tbl-prefix: wp_
+
 wc-api-key: ck_e1dd4a9c85f49b9685f7964a154eecb29af39d5a
 wc-api-secret: cs_8ef3e5d21f8a0c28cd7bc4643e92111a0326b6b1
 wc-callback: http://127.0.0.1/oauth1_callback

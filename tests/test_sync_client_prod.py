@@ -68,9 +68,26 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
 
         with product_client_class(**product_client_args) as client:
             response = client.get_iterator()
-        # print tabulate(list(response)[:10], headers='keys')
 
-        self.assertTrue(response)
+            if self.debug:
+                print tabulate(list(response)[:10], headers='keys')
+
+            self.assertTrue(response)
+
+    def test_get_first_item(self):
+        # self.settings.wc_api_namespace = 'wc-api'
+        # self.settings.wc_api_version = 'v3'
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            self.assertTrue(first_item)
+            if self.debug:
+                print("fist item:\n%s" % pformat(first_item))
+                first_item_json = SanitationUtils.encode_json(first_item)
+                print("fist item json:\n%s" % pformat(first_item_json))
+
 
     def test_analyse_remote(self):
         product_parser_class = self.settings.slave_parser_class
@@ -243,6 +260,30 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertEqual(response_price, str(first_value))
 
     def test_upload_create_delete(self):
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with product_client_class(**product_client_args) as client:
+            first_item = client.get_first_endpoint_item()
+            if self.debug:
+                print("first prod:\n%s" % pformat(first_item))
+            first_item = client.strip_item_readonly(first_item)
+            first_sku = client.get_item_core(first_item, 'sku')
+            new_sku = "%s-%02x" % (first_sku, random.randrange(0,255))
+            first_item = client.set_item_core(first_item, 'sku', new_sku)
+            response = client.create_item(first_item)
+            self.assertTrue(response)
+            if self.debug:
+                print("response: %s" % response.text)
+            self.assertTrue(hasattr(response, 'json'))
+            created_id = client.get_data_core(response.json(), 'id')
+            response = client.delete_item(created_id)
+            if self.debug:
+                print("response: %s" % response.text)
+            self.assertTrue(response)
+            self.assertTrue(hasattr(response, 'json'))
+
+    def test_upload_changes_product_images(self):
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 

@@ -1,0 +1,109 @@
+{
+  "sold_individually": false,
+  "purchase_note": "",
+  "weight": "0.12",
+  "regular_price": "10",
+  "variations": [],
+  "visible": true,
+  "updated_at": "2017-11-10T04:21:03Z",
+  "product_url": "",
+  "managing_stock": false,
+  "featured": false,
+  "images": [
+    {
+      "src": "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png",
+      "title": "Range F &#8211; Style 14 &#8211; 100ml Sample 1",
+      "created_at": "2017-11-08T06:50:45Z",
+      "updated_at": "2017-11-09T06:08:32Z",
+      "position": 0,
+      "alt": "Range F - Style 14 - 100ml Sample",
+      "id": 24864
+    }
+  ],
+  "related_ids": [
+    24773,
+    24808,
+    24782,
+    24778,
+    24771
+  ],
+  "menu_order": 93,
+  "id": 24863,
+  "sku": "ACARF-CRS",
+  "rating_count": 0,
+  "shipping_class_id": null,
+  "dimensions": {
+    "width": "40",
+    "length": "40",
+    "unit": "cm",
+    "height": "120"
+  },
+  "title": "Range F - Style 14 - 100ml Sample",
+  "shipping_taxable": true,
+  "reviews_allowed": true,
+  "download_limit": -1,
+  "tags": [],
+  "on_sale": true,
+  "virtual": false,
+  "average_rating": "0.00",
+  "price_html": "<del><span class=\"woocommerce-Price-amount amount\"><span class=\"woocommerce-Price-currencySymbol\">&#36;</span>10.00</span></del> <ins><span class=\"woocommerce-Price-amount amount\"><span class=\"woocommerce-Price-currencySymbol\">&#36;</span>5.00</span></ins>",
+  "downloadable": false,
+  "parent_id": 0,
+  "catalog_visibility": "visible",
+  "stock_quantity": null,
+  "sale_price": "5",
+  "type": "simple",
+  "downloads": [],
+  "grouped_products": [],
+  "status": "publish",
+  "description": "<p>Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.</p>\\n",
+  "parent": [],
+  "shipping_required": true,
+  "price": "5",
+  "button_text": "",
+  "shipping_class": "",
+  "purchaseable": true,
+  "in_stock": true,
+  "featured_src": "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png",
+  "taxable": true,
+  "categories": [
+    "100ml Company A Product A Samples",
+    "Company A Product A",
+    "Product A",
+    "Range F"
+  ],
+  "permalink": "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/",
+  "backordered": false,
+  "created_at": "2017-11-08T06:50:45Z",
+  "tax_class": "",
+  "total_sales": 0,
+  "upsell_ids": [],
+  "cross_sell_ids": [],
+  "download_expiry": -1,
+  "backorders_allowed": false,
+  "tax_status": "taxable",
+  "short_description": "<p>short description</p>\\n",
+  "attributes": [
+    {
+      "name": "brand",
+      "variation": false,
+      "slug": "brand",
+      "visible": true,
+      "position": 0,
+      "options": [
+        "Company A"
+      ]
+    },
+    {
+      "name": "colour",
+      "variation": false,
+      "slug": "colour",
+      "visible": true,
+      "position": 0,
+      "options": [
+        "Style 14"
+      ]
+    }
+  ],
+  "download_type": "standard"
+}

@@ -1,0 +1,343 @@
+{
+   "menu_order" : 93,
+   "terms" : {
+      "product_type" : [
+         {
+            "slug" : "simple",
+            "ID" : 2,
+            "count" : 48,
+            "parent" : null,
+            "link" : "http://localhost:18080/wptest/?taxonomy=product_type&term=simple",
+            "taxonomy" : "product_type",
+            "description" : "",
+            "meta" : {
+               "links" : {
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_type/terms",
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_type/terms/2"
+               }
+            },
+            "name" : "simple"
+         }
+      ],
+      "pa_colour" : [
+         {
+            "taxonomy" : "pa_colour",
+            "count" : 3,
+            "link" : "http://localhost:18080/wptest/colour/style-14/",
+            "parent" : null,
+            "meta" : {
+               "links" : {
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/pa_colour/terms",
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/pa_colour/terms/314"
+               }
+            },
+            "description" : "",
+            "name" : "Style 14",
+            "slug" : "style-14",
+            "ID" : 314
+         }
+      ],
+      "pa_brand" : [
+         {
+            "taxonomy" : "pa_brand",
+            "count" : 48,
+            "link" : "http://localhost:18080/wptest/brand/company-a/",
+            "parent" : null,
+            "meta" : {
+               "links" : {
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/pa_brand/terms/289",
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/pa_brand/terms"
+               }
+            },
+            "description" : "",
+            "name" : "Company A",
+            "slug" : "company-a",
+            "ID" : 289
+         }
+      ],
+      "product_cat" : [
+         {
+            "slug" : "product-a-company-a-product-a-100ml-company-a-product-a-samples",
+            "ID" : 320,
+            "taxonomy" : "product_cat",
+            "link" : "http://localhost:18080/wptest/product-category/product-a/product-a-company-a-product-a/product-a-company-a-product-a-100ml-company-a-product-a-samples/",
+            "parent" : {
+               "slug" : "product-a-company-a-product-a",
+               "ID" : 316,
+               "count" : 48,
+               "parent" : 315,
+               "link" : "http://localhost:18080/wptest/product-category/product-a/product-a-company-a-product-a/",
+               "taxonomy" : "product_cat",
+               "description" : "Company A have developed stuff",
+               "meta" : {
+                  "links" : {
+                     "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/316",
+                     "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms"
+                  }
+               },
+               "name" : "Company A Product A"
+            },
+            "count" : 16,
+            "name" : "100ml Company A Product A Samples",
+            "meta" : {
+               "links" : {
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/320",
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms"
+               }
+            },
+            "description" : ""
+         },
+         {
+            "slug" : "product-a-company-a-product-a",
+            "ID" : 316,
+            "taxonomy" : "product_cat",
+            "count" : 48,
+            "parent" : {
+               "ID" : 315,
+               "slug" : "product-a",
+               "description" : "",
+               "meta" : {
+                  "links" : {
+                     "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/315",
+                     "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms"
+                  }
+               },
+               "name" : "Product A",
+               "taxonomy" : "product_cat",
+               "count" : 48,
+               "link" : "http://localhost:18080/wptest/product-category/product-a/",
+               "parent" : null
+            },
+            "link" : "http://localhost:18080/wptest/product-category/product-a/product-a-company-a-product-a/",
+            "description" : "Company A have developed stuff",
+            "meta" : {
+               "links" : {
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/316",
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms"
+               }
+            },
+            "name" : "Company A Product A"
+         },
+         {
+            "slug" : "product-a",
+            "ID" : 315,
+            "parent" : null,
+            "link" : "http://localhost:18080/wptest/product-category/product-a/",
+            "count" : 48,
+            "taxonomy" : "product_cat",
+            "name" : "Product A",
+            "description" : "",
+            "meta" : {
+               "links" : {
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/315",
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms"
+               }
+            }
+         },
+         {
+            "ID" : 323,
+            "slug" : "product-a-company-a-product-a-range-f",
+            "meta" : {
+               "links" : {
+                  "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms",
+                  "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/323"
+               }
+            },
+            "description" : "",
+            "name" : "Range F",
+            "count" : 12,
+            "parent" : {
+               "link" : "http://localhost:18080/wptest/product-category/product-a/product-a-company-a-product-a/",
+               "parent" : 315,
+               "count" : 48,
+               "taxonomy" : "product_cat",
+               "name" : "Company A Product A",
+               "meta" : {
+                  "links" : {
+                     "collection" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms",
+                     "self" : "http://localhost:18080/wptest/wp-json/taxonomies/product_cat/terms/316"
+                  }
+               },
+               "description" : "Company A have developed stuff",
+               "slug" : "product-a-company-a-product-a",
+               "ID" : 316
+            },
+            "link" : "http://localhost:18080/wptest/product-category/product-a/product-a-company-a-product-a/product-a-company-a-product-a-range-f/",
+            "taxonomy" : "product_cat"
+         }
+      ]
+   },
+   "modified" : "2017-11-10T03:08:22",
+   "content" : "<p>Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A&#8217;s products are created using the finest naturally derived botanical and certified organic ingredients.</p>\n",
+   "author" : {
+      "avatar" : "http://1.gravatar.com/avatar/4ebb464288ec15bc8b7bfd41fcd4fd9c?s=96",
+      "URL" : "",
+      "ID" : 1,
+      "last_name" : "",
+      "slug" : "wptest",
+      "first_name" : "",
+      "description" : "",
+      "meta" : {
+         "links" : {
+            "archives" : "http://localhost:18080/wptest/wp-json/users/1/posts",
+            "self" : "http://localhost:18080/wptest/wp-json/users/1"
+         }
+      },
+      "name" : "wptest",
+      "nickname" : "wptest",
+      "username" : "wptest",
+      "registered" : "2017-07-04T11:29:15+00:00"
+   },
+   "type" : "product",
+   "ID" : 24863,
+   "modified_gmt" : "2017-11-10T03:08:22",
+   "parent" : null,
+   "ping_status" : "closed",
+   "status" : "publish",
+   "meta" : {
+      "links" : {
+         "self" : "http://localhost:18080/wptest/wp-json/posts/24863",
+         "collection" : "http://localhost:18080/wptest/wp-json/posts",
+         "version-history" : "http://localhost:18080/wptest/wp-json/posts/24863/revisions",
+         "replies" : "http://localhost:18080/wptest/wp-json/posts/24863/comments",
+         "author" : "http://localhost:18080/wptest/wp-json/users/1"
+      }
+   },
+   "featured_image" : {
+      "meta" : {
+         "links" : {
+            "self" : "http://localhost:18080/wptest/wp-json/media/24864",
+            "version-history" : "http://localhost:18080/wptest/wp-json/media/24864/revisions",
+            "collection" : "http://localhost:18080/wptest/wp-json/media",
+            "up" : "http://localhost:18080/wptest/wp-json/media/24863",
+            "author" : "http://localhost:18080/wptest/wp-json/users/1",
+            "replies" : "http://localhost:18080/wptest/wp-json/media/24864/comments"
+         }
+      },
+      "status" : "inherit",
+      "date" : "2017-11-08T06:50:45",
+      "modified_gmt" : "2017-11-09T06:08:32",
+      "parent" : 24863,
+      "ping_status" : "closed",
+      "content" : "<p class=\"attachment\"><a href='http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png'><img width=\"300\" height=\"300\" src=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-300x300.png\" class=\"attachment-medium size-medium\" alt=\"Range F - Style 14 - 100ml Sample\" srcset=\"http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-300x300.png 300w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-150x150.png 150w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-768x768.png 768w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-1024x1024.png 1024w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-180x180.png 180w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-600x600.png 600w, http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png 1200w\" sizes=\"(max-width: 300px) 100vw, 300px\" /></a></p>\n",
+      "author" : {
+         "username" : "wptest",
+         "registered" : "2017-07-04T11:29:15+00:00",
+         "nickname" : "wptest",
+         "name" : "wptest",
+         "description" : "",
+         "meta" : {
+            "links" : {
+               "archives" : "http://localhost:18080/wptest/wp-json/users/1/posts",
+               "self" : "http://localhost:18080/wptest/wp-json/users/1"
+            }
+         },
+         "first_name" : "",
+         "slug" : "wptest",
+         "last_name" : "",
+         "ID" : 1,
+         "URL" : "",
+         "avatar" : "http://1.gravatar.com/avatar/4ebb464288ec15bc8b7bfd41fcd4fd9c?s=96"
+      },
+      "type" : "attachment",
+      "ID" : 24864,
+      "menu_order" : 0,
+      "source" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png",
+      "terms" : [],
+      "modified" : "2017-11-09T06:08:32",
+      "format" : "standard",
+      "sticky" : false,
+      "guid" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png",
+      "excerpt" : null,
+      "link" : "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/range-f-style-14-100ml-sample-1/",
+      "date_tz" : "UTC",
+      "slug" : "range-f-style-14-100ml-sample-1",
+      "is_image" : true,
+      "comment_status" : "open",
+      "date_gmt" : "2017-11-08T06:50:45",
+      "modified_tz" : "UTC",
+      "title" : "Range F &#8211; Style 14 &#8211; 100ml Sample 1",
+      "attachment_meta" : {
+         "sizes" : {
+            "shop_single" : {
+               "mime-type" : "image/png",
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-600x600.png",
+               "file" : "ACARF-CRS-600x600.png",
+               "height" : 600,
+               "width" : 600
+            },
+            "shop_thumbnail" : {
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-180x180.png",
+               "mime-type" : "image/png",
+               "width" : 180,
+               "file" : "ACARF-CRS-180x180.png",
+               "height" : 180
+            },
+            "shop_catalog" : {
+               "file" : "ACARF-CRS-300x300.png",
+               "height" : 300,
+               "width" : 300,
+               "mime-type" : "image/png",
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-300x300.png"
+            },
+            "medium" : {
+               "height" : 300,
+               "file" : "ACARF-CRS-300x300.png",
+               "width" : 300,
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-300x300.png",
+               "mime-type" : "image/png"
+            },
+            "large" : {
+               "width" : 1024,
+               "height" : 1024,
+               "file" : "ACARF-CRS-1024x1024.png",
+               "mime-type" : "image/png",
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-1024x1024.png"
+            },
+            "thumbnail" : {
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-150x150.png",
+               "mime-type" : "image/png",
+               "width" : 150,
+               "file" : "ACARF-CRS-150x150.png",
+               "height" : 150
+            },
+            "medium_large" : {
+               "mime-type" : "image/png",
+               "url" : "http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS-768x768.png",
+               "width" : 768,
+               "file" : "ACARF-CRS-768x768.png",
+               "height" : 768
+            }
+         },
+         "image_meta" : {
+            "iso" : "0",
+            "credit" : "",
+            "caption" : "",
+            "aperture" : "0",
+            "focal_length" : "0",
+            "title" : "",
+            "created_timestamp" : "0",
+            "keywords" : [],
+            "shutter_speed" : "0",
+            "copyright" : "",
+            "orientation" : "0",
+            "camera" : ""
+         },
+         "width" : 1200,
+         "file" : "2017/11/ACARF-CRS.png",
+         "height" : 1200
+      }
+   },
+   "date" : "2017-11-08T06:50:45",
+   "slug" : "range-f-style-14-100ml-sample",
+   "comment_status" : "open",
+   "date_gmt" : "2017-11-08T06:50:45",
+   "modified_tz" : "UTC",
+   "title" : "Range F &#8211; Style 14 &#8211; 100ml Sample",
+   "date_tz" : "UTC",
+   "excerpt" : "<p>short description</p>\n",
+   "link" : "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/",
+   "format" : "standard",
+   "sticky" : false,
+   "guid" : "http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/"
+}

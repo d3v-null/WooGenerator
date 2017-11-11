@@ -13,7 +13,7 @@ from sshtunnel import SSHTunnelForwarder
 from ..coldata import ColDataUser
 from ..utils import (ProgressCounter, Registrar, SanitationUtils, TimeUtils,
                      UnicodeCsvDialectUtils)
-from .core import SyncClientAbstract, SyncClientWC, SyncClientWP
+from .core import SyncClientAbstract, SyncClientWC, SyncClientWP, SyncClientSqlWP
 
 
 class UsrSyncClientWC(SyncClientWC):
@@ -274,27 +274,9 @@ class UsrSyncClientSshAct(SyncClientAbstract):
         )
 
 
-class UsrSyncClientSqlWP(SyncClientAbstract):
-    service_builder = SSHTunnelForwarder
+class UsrSyncClientSqlWP(SyncClientSqlWP):
 
     """docstring for UsrSyncClientSqlWP"""
-
-    def __init__(self, connect_params, db_params, **kwargs):
-        self.db_params = db_params
-        self.tbl_prefix = self.db_params.pop('tbl_prefix', '')
-        self.since = kwargs.get('since')
-        super(UsrSyncClientSqlWP, self).__init__(connect_params, **kwargs)
-        # self.fs_params = fs_params
-
-    def __enter__(self):
-        self.service.start()
-        return self
-
-    def __exit__(self, exit_type, value, traceback):
-        self.service.close()
-
-    def attempt_connect(self):
-        self.service = SSHTunnelForwarder(**self.connect_params)
 
     def analyse_remote(self, parser, filter_items=None, **kwargs):
         since = kwargs.get('since', self.since)
@@ -383,7 +365,7 @@ class UsrSyncClientSqlWP(SyncClientAbstract):
             ]
         ))
 
-        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColDataUser.get_wp_cols().items()))
+        # wpCols = OrderedDict(filter( lambda (k, v): not v.get('wp',{}).get('generated'), ColDataUser.get_wp_sql_cols().items()))
 
         # assert all([
         #     'Wordpress ID' in wpCols.keys(),

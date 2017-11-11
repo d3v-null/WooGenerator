@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from context import woogenerator
 from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataUser,
-                                  ColDataWoo)
+                                  ColDataWoo, ColDataWpPost)
 from woogenerator.utils import Registrar
 
 from .abstract import AbstractWooGeneratorTestCase
@@ -107,8 +107,7 @@ class TestColDataImg(TestColData):
             'path', 'wp-api-v2')
         if self.debug:
             print("handles_property_v2: %s" % pformat(handles_property_v2))
-        self.assertEquals(
-            set(handles_property_v2.items()),
+        self.assertTrue(
             set(OrderedDict([
                 ('caption', 'caption.rendered'),
                 ('title', 'title.rendered'),
@@ -117,7 +116,9 @@ class TestColDataImg(TestColData):
                 ('file_path', 'media_details.file'),
                 ('height', 'media_details.height'),
                 ('description', 'description.rendered')
-            ]).items())
+            ]).keys()).issubset(
+                set(handles_property_v2.keys())
+            )
         )
 
     def test_get_path_translation(self):
@@ -126,33 +127,40 @@ class TestColDataImg(TestColData):
         if self.debug:
             print("path_translation: %s" % pformat(path_translation))
 
-        self.assertEquals(
-            path_translation,
-            {
-                'alt_text': 'alt_text',
-                'attachment_meta.media_details': 'image_meta',
-                'caption.rendered': 'caption',
-                'date_gmt': 'date_gmt',
-                'description.rendered': 'description',
-                'id': 'id',
-                'media_details.file': 'file_path',
-                'media_details.height': 'height',
-                'media_details.width': 'width',
-                'mime_type': 'mime_type',
-                'modified_gmt': 'modified_gmt',
-                'slug': 'slug',
-                'source_url': 'source_url',
-                'title.rendered': 'title'
-            }
+        expected_handles = set({
+            'alt_text': 'alt_text',
+            'attachment_meta.media_details': 'image_meta',
+            'caption.rendered': 'caption',
+            'created_gmt': 'created_gmt',
+            'description.rendered': 'description',
+            'id': 'id',
+            'media_details.file': 'file_path',
+            'media_details.height': 'height',
+            'media_details.width': 'width',
+            'mime_type': 'mime_type',
+            'modified_gmt': 'modified_gmt',
+            'slug': 'slug',
+            'source_url': 'source_url',
+            'title.rendered': 'title'
+        }.values())
+        actual_handles = set(path_translation.values())
+        if self.debug:
+            print("difference: %s" % actual_handles.difference(expected_handles))
+
+        self.assertTrue(
+            expected_handles.issubset(actual_handles)
         )
 
     def test_get_sync_cols(self):
         sync_cols = self.coldata_class.get_sync_cols('wp-api')
         if self.debug:
             pprint(sync_cols.items())
-        self.assertEquals(
-            sync_cols.keys(),
-            ['width', 'height', 'title', 'caption', 'file_path']
+        self.assertTrue(
+            set([
+                'width', 'height', 'title', 'caption', 'file_path'
+            ]).issubset(
+                set(sync_cols.keys())
+            )
         )
 
     def test_do_path_translation(self):
@@ -450,14 +458,24 @@ class TestColDataImg(TestColData):
         }
 
         self.assertEquals(
-            self.coldata_class.normalize_data(denormalized, 'wp-api'),
+            self.coldata_class.translate_data_from(denormalized, 'wp-api'),
             normalized
         )
 
         self.assertEquals(
-            self.coldata_class.denormalize_data(normalized, 'wp-api'),
+            self.coldata_class.translate_data_to(normalized, 'wp-api'),
             denormalized
         )
+
+
+class TestColDataWpPost(TestColData):
+    coldata_class = ColDataWpPost
+
+    def test_get_path_translation_post(self):
+        path_translation = self.coldata_class.get_path_translation(
+            'wp-sql')
+        if self.debug:
+            print("path_translation: %s" % pformat(path_translation))
 
 
 class testColDataUser(TestColData):
@@ -649,7 +667,7 @@ if __name__ == '__main__':
 #     # print "capitalCols", coldata_class.get_capital_cols().keys()
 #     # print "sync_cols", coldata_class.get_sync_cols().keys()
 #     print "actCols", coldata_class.get_act_cols().keys()
-#     # print "wpcols", coldata_class.get_wp_cols().keys()
+#     # print "wpcols", coldata_class.get_wp_sql_cols().keys()
 #     print "get_wp_tracked_cols", coldata_class.get_wp_tracked_cols()
 #     print "get_act_tracked_cols", coldata_class.get_act_tracked_cols()
 #     print "get_act_future_tracked_cols", coldata_class.get_act_future_tracked_cols()
