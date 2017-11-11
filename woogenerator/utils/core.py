@@ -490,8 +490,6 @@ class SanitationUtils(object):
         if not isinstance(string, basestring):
             return string
         str_out = re.sub(r"</?p[^>]*>", "", string)
-        if Registrar.DEBUG_UTILS:
-            print "strip_url_protocol", repr(string), repr(str_out)
         return str_out
 
     @classmethod
@@ -499,8 +497,13 @@ class SanitationUtils(object):
         if not isinstance(string, basestring):
             return string
         str_out = re.sub(r"</?\s*br\s*/?>", "", string)
-        if Registrar.DEBUG_UTILS:
-            print "strip_url_protocol", repr(string), repr(str_out)
+        return str_out
+
+    @classmethod
+    def replace_br_tags(cls, string):
+        if not isinstance(string, basestring):
+            return string
+        str_out = re.sub(r"</?\s*br\s*/?>", "\n", string)
         return str_out
 
     # @classmethod
@@ -679,6 +682,18 @@ class SanitationUtils(object):
         return cls.compose(
             cls.strip_all_whitespace,
             cls.strip_punctuation
+        )(string)
+
+    @classmethod
+    def normalize_wp_rendered_content(cls, string):
+        return cls.compose(
+            # cls.strip_leading_whitespace,
+            # cls.strip_tailing_whitespace,
+            cls.strip_tailing_newline,
+            cls.xml_to_unicode,
+            cls.strip_p_tags,
+            cls.replace_br_tags,
+            cls.coerce_unicode
         )(string)
 
     @classmethod

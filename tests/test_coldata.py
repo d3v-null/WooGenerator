@@ -109,13 +109,13 @@ class TestColDataImg(TestColData):
             print("handles_property_v2: %s" % pformat(handles_property_v2))
         self.assertTrue(
             set(OrderedDict([
-                ('caption', 'caption.rendered'),
+                ('excerpt', 'caption.rendered'),
                 ('title', 'title.rendered'),
                 ('image_meta', 'attachment_meta.media_details'),
                 ('width', 'media_details.width'),
                 ('file_path', 'media_details.file'),
                 ('height', 'media_details.height'),
-                ('description', 'description.rendered')
+                ('content', 'description.rendered')
             ]).keys()).issubset(
                 set(handles_property_v2.keys())
             )
@@ -127,25 +127,32 @@ class TestColDataImg(TestColData):
         if self.debug:
             print("path_translation: %s" % pformat(path_translation))
 
-        expected_handles = set({
-            'alt_text': 'alt_text',
-            'attachment_meta.media_details': 'image_meta',
-            'caption.rendered': 'caption',
-            'created_gmt': 'created_gmt',
-            'description.rendered': 'description',
-            'id': 'id',
-            'media_details.file': 'file_path',
-            'media_details.height': 'height',
-            'media_details.width': 'width',
-            'mime_type': 'mime_type',
-            'modified_gmt': 'modified_gmt',
-            'slug': 'slug',
-            'source_url': 'source_url',
-            'title.rendered': 'title'
-        }.values())
+        expected_handles = set([
+            'alt_text',
+            'content',
+            'created_gmt',
+            'created_local',
+            'excerpt',
+            'file_path',
+            'guid',
+            'height',
+            'id',
+            'image_meta',
+            'meta',
+            'mime_type',
+            'modified_gmt',
+            'modified_local',
+            'slug',
+            'source_url',
+            'status',
+            'title',
+            'type',
+            'width',
+        ])
         actual_handles = set(path_translation.values())
         if self.debug:
-            print("difference: %s" % actual_handles.difference(expected_handles))
+            print("actual handles: %s" % actual_handles)
+            print("difference: %s" % expected_handles.difference(actual_handles))
 
         self.assertTrue(
             expected_handles.issubset(actual_handles)
@@ -153,13 +160,16 @@ class TestColDataImg(TestColData):
 
     def test_get_sync_cols(self):
         sync_cols = self.coldata_class.get_sync_cols('wp-api')
+        expected_handles = set([
+            'width', 'height', 'title', 'excerpt', 'file_path'
+        ])
+        actual_handles = set(sync_cols.keys())
         if self.debug:
-            pprint(sync_cols.items())
+            print("sync_cols:\n%s" % pformat(sync_cols.items()))
+            print('difference:\n%s' % actual_handles.difference(expected_handles))
         self.assertTrue(
-            set([
-                'width', 'height', 'title', 'caption', 'file_path'
-            ]).issubset(
-                set(sync_cols.keys())
+            expected_handles.issubset(
+                actual_handles
             )
         )
 

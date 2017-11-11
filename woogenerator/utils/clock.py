@@ -18,12 +18,14 @@ class TimeUtils(object):
     _wpSrvOffset = 0
     actSrvOffset = 0
 
-    dateFormat = "%Y-%m-%d"
-    actDateFormat = "%d/%m/%Y"
-    wpTimeFormat = "%Y-%m-%d %H:%M:%S"
-    msTimeFormat = "%Y-%m-%d_%H-%M-%S"
-    actTimeFormat = "%d/%m/%Y %I:%M:%S %p"
-    gDriveTimeFormat = "%Y-%m-%d %H:%M:%S"
+    wp_date_format = "%Y-%m-%d"
+    act_date_format = "%d/%m/%Y"
+    iso8601_datetime_format = "%Y-%m-%dT%H:%M:%S"
+    wp_datetime_format = "%Y-%m-%d %H:%M:%S"
+    gdrive_datetime_format = wp_datetime_format
+    ms_datetime_format = "%Y-%m-%d_%H-%M-%S"
+    act_datetime_format = "%d/%m/%Y %I:%M:%S %p"
+
 
     @classmethod
     def set_override_time(cls, time_struct=None):
@@ -51,7 +53,15 @@ class TimeUtils(object):
             return time.time()
 
     @classmethod
-    def star_strp_mktime(cls, string, fmt=wpTimeFormat):
+    def star_strp_datetime(cls, string, fmt=wp_datetime_format):
+        return datetime.datetime.strptime(string, fmt)
+
+    @classmethod
+    def star_strf_datetime(cls, datetime_, fmt=wp_datetime_format):
+        return datetime_.strftime(fmt)
+
+    @classmethod
+    def star_strp_mktime(cls, string, fmt=wp_datetime_format):
         # type: (basestring, basestring) -> int
         """ take a time string and a format, returns number of seconds since epoch """
         if string:
@@ -81,7 +91,7 @@ class TimeUtils(object):
 
         response = None
         exceptions = []
-        for fmt in [cls.actTimeFormat, cls.actDateFormat]:
+        for fmt in [cls.act_datetime_format, cls.act_date_format]:
             try:
                 response = cls.star_strp_mktime(string, fmt)
             except ValueError as exc:
@@ -97,7 +107,7 @@ class TimeUtils(object):
 
         response = None
         exceptions = []
-        for fmt in [cls.wpTimeFormat, cls.dateFormat]:
+        for fmt in [cls.wp_datetime_format, cls.wp_date_format]:
             try:
                 response = cls.star_strp_mktime(string, fmt)
             except ValueError as exc:
@@ -110,13 +120,13 @@ class TimeUtils(object):
     def act_strp_mkdate(cls, string):
         """ take an act formatted date string (eg. "13/07/2015"),
         returns number of seconds since epoch """
-        return cls.star_strp_mktime(string, cls.actDateFormat)
+        return cls.star_strp_mktime(string, cls.act_date_format)
 
     @classmethod
     def g_drive_strp_mk_time(cls, string):
         """ take a gDrive formatted time string (eg. "2016-07-13 22:33:05"),
         returns number of seconds since epoch """
-        return cls.star_strp_mktime(string, cls.gDriveTimeFormat)
+        return cls.star_strp_mktime(string, cls.gdrive_datetime_format)
 
     @classmethod
     def wp_time_to_string(cls, secs, fmt=None):
@@ -132,7 +142,7 @@ class TimeUtils(object):
         """
 
         if not fmt:
-            fmt = cls.wpTimeFormat
+            fmt = cls.wp_datetime_format
         if secs:
             assert isinstance(secs, (Number, basestring)), \
                 "param must be a number or string not %s" % type(secs)
@@ -195,7 +205,7 @@ class TimeUtils(object):
         """
         if not time_struct:
             time_struct = cls.current_loctstruct()
-        return time.strftime(cls.dateFormat, time_struct)
+        return time.strftime(cls.wp_date_format, time_struct)
 
     @classmethod
     def get_ms_timestamp(cls, time_struct=None):
@@ -204,7 +214,7 @@ class TimeUtils(object):
         """
         if not time_struct:
             time_struct = cls.current_loctstruct()
-        return time.strftime(cls.msTimeFormat, time_struct)
+        return time.strftime(cls.ms_datetime_format, time_struct)
 
     @classmethod
     def get_system_timezone(cls):
@@ -217,4 +227,4 @@ class TimeUtils(object):
     # def get_timestamp(cls, time_struct=None):
     #     if not time_struct:
     #         time_struct = cls.current_loctstruct()
-    #     return time.strftime(cls.wpTimeFormat, time_struct)
+    #     return time.strftime(cls.wp_datetime_format, time_struct)

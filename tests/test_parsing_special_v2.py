@@ -57,7 +57,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
         special_parser.analyse_file(self.spec_path)
 
         TimeUtils.set_override_time(time.strptime(
-            "2018-01-01", TimeUtils.dateFormat))
+            "2018-01-01", TimeUtils.wp_date_format))
 
         eofy_special = special_parser.rule_groups.get('EOFY2016')
         # print "start time", eofy_special.start_time
@@ -85,7 +85,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
             override_groups, [special_parser.rule_groups.get('EOFY2016')])
 
         TimeUtils.set_override_time(time.strptime(
-            "2018-01-01", TimeUtils.dateFormat))
+            "2018-01-01", TimeUtils.wp_date_format))
 
         auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
@@ -93,7 +93,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
         self.assertEquals(auto_next_groups, [])
 
         TimeUtils.set_override_time(time.strptime(
-            "2016-08-11", TimeUtils.dateFormat))
+            "2016-08-11", TimeUtils.wp_date_format))
 
         auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
@@ -102,7 +102,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
             auto_next_groups, [special_parser.rule_groups.get('SP2016-08-12')])
 
         TimeUtils.set_override_time(time.strptime(
-            "2016-06-11", TimeUtils.dateFormat))
+            "2016-06-11", TimeUtils.wp_date_format))
 
         auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'
@@ -111,7 +111,7 @@ class TestCSVParseSpecialV2(unittest.TestCase):
             auto_next_groups, [special_parser.rule_groups.get('EOFY2016')])
 
         TimeUtils.set_override_time(time.strptime(
-            "2016-06-13", TimeUtils.dateFormat))
+            "2016-06-13", TimeUtils.wp_date_format))
 
         auto_next_groups = special_parser.determine_current_spec_grps(
             'auto_next'

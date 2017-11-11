@@ -14,7 +14,7 @@ class TestUtilsTime(unittest.TestCase):
 
         self.in_time_str = "2016-05-06 16:07:00"
         self.in_time_struct = time.strptime(
-            self.in_time_str, TimeUtils.wpTimeFormat)
+            self.in_time_str, TimeUtils.wp_datetime_format)
         self.in_time_secs = time.mktime(self.in_time_struct)
         self.srv_offset = -7200
         self.in_time_str_offset = "2016-05-06 14:07:00"
@@ -31,7 +31,7 @@ class TestUtilsTime(unittest.TestCase):
         ]
         self.override_time_struct = time.strptime(
             "2016-08-12",
-            TimeUtils.dateFormat
+            TimeUtils.wp_date_format
         )
         self.override_time_secs = time.mktime(self.override_time_struct)
 

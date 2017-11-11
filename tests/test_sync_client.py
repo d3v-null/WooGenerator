@@ -105,12 +105,12 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             first_values = rows[1]
             first_post = OrderedDict(zip(headers, first_values))
             if self.debug:
-                print('rows:\n%s' % pformat(first_post.items()))
+                print('sql rows:\n%s' % pformat(first_post.items()))
             wp_sql_first_post_normalized = self.coldata_class.normalize_data(
                 first_post, 'wp-sql'
             )
             if self.debug:
-                print('first_post normalized sql:\n%s' % pformat(
+                print('sql first_post normalized sql:\n%s' % pformat(
                     dict(wp_sql_first_post_normalized)
                 ))
 
@@ -121,23 +121,38 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
         with client_class(**client_args) as client:
             client.endpoint_singular = 'post'
             first_post = client.get_first_endpoint_item()
+            if self.debug:
+                print('api first_post raw:\n%s' % pformat(first_post))
             wp_api_first_post_normalized = self.coldata_class.translate_data_from(
                 first_post, 'wp-api-v2'
             )
             if self.debug:
-                print('first_post normalized api:\n%s' % pformat(
+                print('api first_post normalized api:\n%s' % pformat(
                     dict(wp_api_first_post_normalized)
                 ))
 
         keys_wp_sql = set(wp_sql_first_post_normalized.keys())
         keys_wp_api = set(wp_api_first_post_normalized.keys())
         keys_intersect = keys_wp_sql.intersection(keys_wp_api)
-        keys_difference = keys_wp_sql.difference(keys_wp_api)
+        keys_difference = keys_wp_sql.symmetric_difference(keys_wp_api)
         if self.debug:
             print('keys_intersect:\n%s' % pformat(keys_intersect))
             print('keys_difference:\n%s' % pformat(keys_difference))
 
+        self.assertTrue(
+            set([
+                'author_id', 'comment_status', 'content', 'created_gmt',
+                'created_local', 'excerpt', 'guid', 'id', 'modified_gmt',
+                'modified_local', 'ping_status', 'slug', 'status', 'title',
+                'type'
+            ]).issubset(keys_intersect)
+        )
 
+        for key in list(keys_intersect - set(['excerpt'])):
+            self.assertEqual(
+                wp_sql_first_post_normalized[key],
+                wp_api_first_post_normalized[key]
+            )
 
 
 @unittest.skip('Tests not mocked yet')
