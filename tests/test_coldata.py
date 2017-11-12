@@ -146,7 +146,7 @@ class TestColDataImg(TestColData):
             'source_url',
             'status',
             'title',
-            'type',
+            'post_type',
             'width',
         ])
         actual_handles = set(path_translation.values())
