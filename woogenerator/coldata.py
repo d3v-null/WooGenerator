@@ -127,14 +127,14 @@ class ColDataAbstract(object):
         return ancestors
 
     # @classmethod
-    # def find_in(cls, data, properties, ancestors=None, handle=None):
+    # def find_in(cls, data, property_, ancestors=None, handle=None):
     #     """
-    #     Find the `properties` of `handle` given `ancestors` using jmespath.
+    #     Find the `property` of `handle` given `ancestors` using jmespath.
     #     Return a mapping of `handle` to it's value of `property`.
     #     """
     #     # Registrar.increment_stack_count('find_in')
     #
-    #     target_filter_expression = '[?]'
+    #     target_filter_expression = '[?"%s" in keys(@)]'
     #
     #     if handles is None:
     #         handles = ['*']
