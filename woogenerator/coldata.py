@@ -126,11 +126,30 @@ class ColDataAbstract(object):
                     ancestors.extend(child_target_ancestors)
         return ancestors
 
+    # @classmethod
+    # def find_in(cls, data, properties, ancestors=None, handles=None):
+    #     """
+    #     Find the `properties` of `handles` given `ancestors` using jmespath.
+    #     Return a list of tuples of (`handle`, `property_value`)
+    #     """
+    #     # Registrar.increment_stack_count('find_in')
+    #     if handles is None:
+    #         handles = ['*']
+    #     handle_query = "(%s)" % "||".join(handles)
+    #     query = handle_query + ".(%s)" % "||".join(properties)
+    #     if ancestors:
+    #         query += " || "
+    #         + handle_query
+    #         + ".(%s)" % "||".join(handles)
+    #         + ".(%s)" % "||".join(properties)
+    #     return jmespath.search(handle_query, )
+    #
     @classmethod
     def find_in(cls, data, properties, ancestors=None, handles=None):
         """
         Prepare a jsonpath finder object for finding the given property of `handles`
         given a list of target ancestors.
+        Return a mapping of `handle` to `property_value`
         """
         # Registrar.increment_stack_count('find_in')
         if handles is None:
@@ -144,7 +163,16 @@ class ColDataAbstract(object):
                 .child(jsonpath.Fields(*ancestors))\
                 .child(jsonpath.Fields(*properties))
             )
-        return finder.find(data)
+        matches = finder.find(data)
+        results = OrderedDict()
+        for match in matches:
+            value = match.value
+            handle = match.full_path
+            while hasattr(handle, 'left'):
+                handle = handle.left
+            handle = handle.fields[0]
+            results[handle] = value
+        return results
 
     @classmethod
     def get_property_default(cls, property_=None, handle=None):
@@ -168,10 +196,9 @@ class ColDataAbstract(object):
         if cache_key in cls.handle_cache:
             return copy(cls.handle_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
-        matches = cls.find_in(cls.data, [property_], target_ancestors, [handle])
-        results = [match.value for match in matches]
+        results = cls.find_in(cls.data, [property_], target_ancestors, [handle])
         if results:
-            response = results[-1]
+            response = results.items()[-1][1]
         else:
             response = cls.get_property_default(property_, handle)
         cls.handle_cache[cache_key] = response
@@ -187,15 +214,7 @@ class ColDataAbstract(object):
         if cache_key in cls.handles_cache:
             return copy(cls.handles_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
-        matches = cls.find_in(cls.data, [property_], target_ancestors, )
-        results = OrderedDict()
-        for result in matches:
-            value = result.value
-            handle = result.full_path
-            while hasattr(handle, 'left'):
-                handle = handle.left
-            handle = handle.fields[0]
-            results[handle] = value
+        results = cls.find_in(cls.data, [property_], target_ancestors, )
         cls.handles_cache[cache_key] = results
         return results
 
