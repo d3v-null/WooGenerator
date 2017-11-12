@@ -127,9 +127,9 @@ class ColDataAbstract(object):
         return ancestors
 
     # @classmethod
-    # def find_in(cls, data, properties, ancestors=None, handle):
+    # def find_in(cls, data, properties, ancestors=None, handle=None):
     #     """
-    #     Find the `properties` of `handles` given `ancestors` using jmespath.
+    #     Find the `properties` of `handle` given `ancestors` using jmespath.
     #     Return a mapping of `handle` to it's value of `property`.
     #     """
     #     # Registrar.increment_stack_count('find_in')
@@ -148,7 +148,7 @@ class ColDataAbstract(object):
     #     return jmespath.search(handle_query, )
 
     @classmethod
-    def find_in(cls, data, properties, ancestors=None, handle=None):
+    def find_in(cls, data, property_, ancestors=None, handle=None):
         """
         Prepare a jsonpath finder object for finding the given property of `handles`
         given a list of target ancestors.
@@ -158,6 +158,7 @@ class ColDataAbstract(object):
         if handle is None:
             handle = '*'
         handles = [handle]
+        properties = [property_]
         handle_finder = jsonpath.Fields(*handles)
         finder = handle_finder.child(jsonpath.Fields(*properties))
         if ancestors:
@@ -200,7 +201,7 @@ class ColDataAbstract(object):
         if cache_key in cls.handle_cache:
             return copy(cls.handle_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
-        results = cls.find_in(cls.data, [property_], target_ancestors, handle)
+        results = cls.find_in(cls.data, property_, target_ancestors, handle)
         if results:
             response = results.items()[-1][1]
         else:
@@ -218,7 +219,7 @@ class ColDataAbstract(object):
         if cache_key in cls.handles_cache:
             return copy(cls.handles_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
-        results = cls.find_in(cls.data, [property_], target_ancestors, )
+        results = cls.find_in(cls.data, property_, target_ancestors, )
         cls.handles_cache[cache_key] = results
         return results
 
