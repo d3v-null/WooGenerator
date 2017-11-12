@@ -11,7 +11,7 @@ from woogenerator.client.core import (SyncClientGDrive, SyncClientSqlWP,
                                       SyncClientWP)
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
-from woogenerator.coldata import ColDataWpPost
+from woogenerator.coldata import ColDataWpPost, ColDataProductMeridian
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
@@ -91,11 +91,11 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
 class TestSyncClientAccordance(AbstractSyncClientTestCase):
     config_file = 'generator_config_test.yaml'
     settings_namespace_class = SettingsNamespaceUser
-    coldata_class = ColDataWpPost
 
     @pytest.mark.local
     def test_sql_vs_wp_api_post(self):
         self.settings.download_slave = True
+        self.coldata_class = ColDataWpPost
         client_class = SyncClientSqlWP
         client_args = self.settings.slave_download_client_args
 
@@ -123,6 +123,8 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             first_post = client.get_first_endpoint_item()
             if self.debug:
                 print('api first_post raw:\n%s' % pformat(first_post))
+                # import pudb; pudb.set_trace()
+                print('wp-api translation:\n%s' % pformat(self.coldata_class.get_path_translation('wp-api-v2')))
             wp_api_first_post_normalized = self.coldata_class.translate_data_from(
                 first_post, 'wp-api-v2'
             )
@@ -142,9 +144,9 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
         self.assertTrue(
             set([
                 'author_id', 'comment_status', 'content', 'created_gmt',
-                'created_local', 'excerpt', 'guid', 'id', 'modified_gmt',
-                'modified_local', 'ping_status', 'slug', 'status', 'title',
-                'type'
+                'created_local', 'excerpt', 'featured_media_id', 'guid', 'id',
+                'modified_gmt', 'modified_local', 'ping_status', 'post_type',
+                'slug', 'status', 'title'
             ]).issubset(keys_intersect)
         )
 
@@ -152,6 +154,69 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             self.assertEqual(
                 wp_sql_first_post_normalized[key],
                 wp_api_first_post_normalized[key]
+            )
+class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
+    config_file = 'generator_config_test.yaml'
+    settings_namespace_class = SettingsNamespaceUser
+
+    @pytest.mark.local
+    def test_sql_vs_wc_api_prod(self):
+        self.settings.download_slave = True
+        self.coldata_class = ColDataProductMeridian
+
+        client_class = ProdSyncClientWC
+        client_args = {
+            'connect_params': self.settings.slave_wc_api_params
+        }
+        with client_class(**client_args) as client:
+            first_prod = client.get_first_endpoint_item()
+            if self.debug:
+                print('api first_prod raw:\n%s' % pformat(first_prod))
+            wc_api_first_prod_normalized = self.coldata_class.translate_data_from(
+                first_prod, 'wp-api-v2'
+            )
+            if self.debug:
+                print('api first_prod normalized api:\n%s' % pformat(
+                    dict(wc_api_first_prod_normalized)
+                ))
+            wc_api_first_prod_id = first_prod['id']
+
+        client_class = SyncClientSqlWP
+        client_args = self.settings.slave_download_client_args
+
+        with client_class(**client_args) as client:
+            client.coldata_class = ColDataProductMeridian
+            rows = client.get_rows(None, limit=1, filter_pkey=wc_api_first_prod_id)
+            headers = rows[0]
+            first_values = rows[1]
+            first_prod = OrderedDict(zip(headers, first_values))
+            if self.debug:
+                print('sql rows:\n%s' % pformat(first_prod.items()))
+            wp_sql_first_prod_normalized = self.coldata_class.normalize_data(
+                first_prod, 'wp-sql'
+            )
+            if self.debug:
+                print('sql first_prod normalized sql:\n%s' % pformat(
+                    dict(wp_sql_first_prod_normalized)
+                ))
+
+        keys_wp_sql = set(wp_sql_first_prod_normalized.keys())
+        keys_wc_api = set(wc_api_first_prod_normalized.keys())
+        keys_intersect = keys_wp_sql.intersection(keys_wc_api)
+        keys_difference = keys_wp_sql.symmetric_difference(keys_wc_api)
+        if self.debug:
+            print('keys_intersect:\n%s' % pformat(keys_intersect))
+            print('keys_difference:\n%s' % pformat(keys_difference))
+
+        self.assertTrue(
+            set([
+            ]).issubset(keys_intersect)
+        )
+
+        for key in list(keys_intersect - set(['excerpt'])):
+            self.assertEqual(
+                wp_sql_first_prod_normalized[key],
+                wc_api_first_prod_normalized[key]
             )
 
 

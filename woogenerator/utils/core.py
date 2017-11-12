@@ -21,7 +21,7 @@ from urlparse import parse_qs, urlparse
 import cjson
 import unicodecsv
 from kitchen.text import converters
-from phpserialize import dumps, loads
+import phpserialize
 
 from jsonpath_ng import jsonpath
 
@@ -285,6 +285,36 @@ class SanitationUtils(object):
             "something went wrong, should return str not %s" % type(
                 int_return)
         return int_return
+
+    @classmethod
+    def yesno2bool(cls, string):
+        return string.lower().startswith('y')
+
+    @classmethod
+    def bool2yesno(cls, bool_):
+        return 'yes' if bool_ else 'no'
+
+    @classmethod
+    def stock_status2bool(cls, string):
+        return string.lower() == 'instock'
+
+    @classmethod
+    def bool2stock_status(cls, bool_):
+        return 'instock' if bool_ else 'outofstock'
+
+    @classmethod
+    def normalize_optional_int_minus_1(cls, thing):
+        if thing:
+            return int(thing)
+        else:
+            return -1
+
+    @classmethod
+    def normalize_optional_int_zero(cls, thing):
+        if thing:
+            return int(thing)
+        else:
+            return 0
 
     @classmethod
     def limit_string(cls, length):
@@ -1507,11 +1537,26 @@ class PHPUtils(object):
 
     @staticmethod
     def serialize(thing):
-        return dumps(thing)
+        if thing:
+            return phpserialize.dumps(thing)
 
     @staticmethod
     def unserialize(string):
-        return loads(string)
+        if string:
+            return phpserialize.loads(string)
+
+    @staticmethod
+    def serialize_list(list_):
+        if list_:
+            return phpserialize.dumps(list_)
+
+    @staticmethod
+    def unserialize_list(string):
+        if string:
+            response = phpserialize.loads(string)
+            if response:
+                return response
+            return []
 
 
 class ProgressCounter(object):

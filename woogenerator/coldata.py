@@ -6,13 +6,13 @@ from __future__ import absolute_import
 
 import itertools
 from collections import OrderedDict
-from copy import copy
+from copy import copy, deepcopy
 import functools
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import JSONPathUtils, Registrar, SeqUtils, SanitationUtils, TimeUtils
+from .utils import JSONPathUtils, Registrar, SeqUtils, SanitationUtils, TimeUtils, PHPUtils
 
 
 # TODO:
@@ -206,9 +206,12 @@ class ColDataAbstract(object):
         """
         if from_target == to_target:
             return None
-
-        from_paths = cls.get_handles_property('path', from_target)
-        to_paths = cls.get_handles_property('path', to_target)
+        from_paths = {}
+        if from_target:
+            from_paths = cls.get_handles_property('path', from_target)
+        to_paths = {}
+        if to_target:
+            to_paths = cls.get_handles_property('path', to_target)
         translation = {}
         for handle in cls.data.keys():
             from_path = from_paths.get(handle, handle)
@@ -253,6 +256,11 @@ class ColDataAbstract(object):
                 fmt=TimeUtils.wp_datetime_format
             ),
             'wp_content_rendered': SanitationUtils.normalize_wp_rendered_content,
+            'yesno': SanitationUtils.yesno2bool,
+            'stock_status': SanitationUtils.stock_status2bool,
+            'optional_int_minus_1': SanitationUtils.normalize_optional_int_minus_1,
+            'optional_int_zero': SanitationUtils.normalize_optional_int_zero,
+            'php_array': PHPUtils.unserialize_list,
         }.get(type_, SanitationUtils.coerce_unicode)
 
     @classmethod
@@ -266,7 +274,10 @@ class ColDataAbstract(object):
             'wp_datetime': functools.partial(
                 TimeUtils.star_strf_datetime,
                 fmt=TimeUtils.wp_datetime_format
-            )
+            ),
+            'yesno': SanitationUtils.bool2yesno,
+            'stock_status': SanitationUtils.bool2stock_status,
+            'php_array': PHPUtils.serialize_list,
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
@@ -513,12 +524,16 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_status'
             },
         },
-        'type': {
+        'post_type': {
             'write': False,
+            'path': None,
             'default': 'post',
             'wp-sql': {
                 'path': 'post_type'
             },
+            'wp-api': {
+                'path': 'type'
+            }
         },
         'content': {
             'wc-api': {
@@ -723,7 +738,8 @@ class ColDataWpSubEntity(ColDataAbstract):
 
 
 class ColDataWpPost(ColDataWpEntity):
-    data = OrderedDict(ColDataWpEntity.data.items() + {
+    data = deepcopy(ColDataWpEntity.data)
+    data = OrderedDict(data.items() + {
         'password': {
             'path': None,
             'wp-api': {
@@ -751,10 +767,14 @@ class ColDataWpPost(ColDataWpEntity):
                 'path': 'post_author'
             }
         },
-        'featured_media': {
+        'featured_media_id': {
             'path': None,
+            'type': 'optional_int_zero',
             'wp-api': {
                 'path': 'featured_media'
+            },
+            'wp-sql': {
+                'path': 'meta._thumbnail_id'
             }
         },
         'comment_status': {
@@ -768,7 +788,7 @@ class ColDataWpPost(ColDataWpEntity):
             'type': int,
             'wp-sql': {
                 'path': 'comment_count'
-            }
+            },
         },
         'format': {
             'path': None,
@@ -807,7 +827,15 @@ class ColDataProduct(ColDataWpEntity):
     - wp-api-v1: http://wp-api.org/index-deprecated.html#posts
     """
 
-    data = OrderedDict(ColDataWpEntity.data.items() + {
+    data = deepcopy(ColDataWpEntity.data)
+    data['post_type'].update({
+        'path': None,
+        'default': 'product',
+        'wp-api': {
+            'path': None,
+        }
+    })
+    data = OrderedDict(data.items() + {
         'product_type': {
             'default': 'simple',
             'wc-api': {
@@ -815,6 +843,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-csv': {
                 'path': 'tax:product_type'
+            },
+            'wp-sql': {
+                'path': None,
             },
             'options': [
                 'simple',
@@ -843,7 +874,10 @@ class ColDataProduct(ColDataWpEntity):
                 'catalog',
                 'search',
                 'hidden'
-            ]
+            ],
+            'wp-sql': {
+                'path': 'meta._visibility'
+            }
         },
         'sku': {
             'xero-api': {
@@ -890,7 +924,8 @@ class ColDataProduct(ColDataWpEntity):
                 'type': 'wp_date_local'
             },
             'wp-sql': {
-                'path': 'meta._sale_price_dates_from'
+                'path': 'meta._sale_price_dates_from',
+                'type': 'timestamp'
             }
         },
         'sale_price_dates_from_gmt': {
@@ -913,7 +948,8 @@ class ColDataProduct(ColDataWpEntity):
                 'type': 'wp_date_local'
             },
             'wp-sql': {
-                'path': 'meta._sale_price_dates_to'
+                'path': 'meta._sale_price_dates_to',
+                'type': 'timestamp'
             }
         },
         'sale_price_dates_to_gmt': {
@@ -984,19 +1020,16 @@ class ColDataProduct(ColDataWpEntity):
             }
         },
         'download_limit': {
-            'type': int,
+            'type': 'optional_int_minus_1',
             'wc-api': {
                 'path': 'download_limit',
-                'default': -1
             },
             'wp-sql': {
                 'path': 'meta._download_limit'
             }
         },
         'download_expiry': {
-            'wc-api': {
-                'default': -1
-            },
+            'type': 'optional_int_minus_1',
             'wp-sql': {
                 'path': 'meta._download_expiry'
             }
@@ -1020,7 +1053,10 @@ class ColDataProduct(ColDataWpEntity):
                 'taxable',
                 'shipping',
                 'none'
-            ]
+            ],
+            'wp-sql': {
+                'path': 'meta._tax_status'
+            },
         },
         'tax_class': {
             'path': None,
@@ -1042,20 +1078,16 @@ class ColDataProduct(ColDataWpEntity):
             }
         },
         'stock_quantity': {
-            'wc-api': {
-                'type': int,
-            },
+            'type': 'optional_int',
             'xero-api': {
                 'path': 'QuantityOnHand',
-                'type': float,
+                'type': 'optional_float',
             },
             'wc-csv': {
                 'path': 'stock',
-                'type': int
             },
             'wp-sql': {
                 'path': 'meta._stock',
-                'type': int
             }
         },
         'in_stock': {
@@ -1088,6 +1120,14 @@ class ColDataProduct(ColDataWpEntity):
             'write': False,
             'wc-api': {
                 'path': 'backorders_allowed'
+            },
+            'wp-sql': {
+                'path': 'meta._backorders',
+                'type': 'yesno'
+            },
+            'woo-csv': {
+                'path': 'backorders',
+                'type': 'yesno'
             }
         },
         'backordered': {
@@ -1201,8 +1241,39 @@ class ColDataProduct(ColDataWpEntity):
             }
         },
         'upsell_ids': {
+            'default': [],
             'wp-sql': {
-                'path': 'meta.upsell_ids',
+                'path': 'meta._upsell_ids',
+                'type': 'php_array'
+            },
+            'csv': {
+                'type': 'pipe_array'
+            }
+        },
+        'upsell_skus': {
+            'path': None,
+            'wp-sql': {
+                'path': 'meta._upsell_skus',
+                'type': 'php_array'
+            },
+            'csv': {
+                'type': 'pipe_array'
+            }
+        },
+        'cross_sell_ids': {
+            'default': [],
+            'wp-sql': {
+                'path': 'meta._crosssell_ids',
+                'type': 'php_array'
+            },
+            'csv': {
+                'type': 'pipe_array'
+            }
+        },
+        'crosssell_skus': {
+            'path': None,
+            'wp-sql': {
+                'path': 'meta._crosssell_skus',
                 'type': 'php_array'
             },
             'csv': {
@@ -1227,6 +1298,10 @@ class ColDataProduct(ColDataWpEntity):
             'wc-api': {
                 'path': 'attributes',
                 'type': 'wc_api_attribute_list'
+            },
+            'wp-sql': {
+                'path': 'meta._product_attributes',
+                'type': 'php_array'
             }
         },
         'default_attributes': {
@@ -1234,6 +1309,10 @@ class ColDataProduct(ColDataWpEntity):
             'wc-api': {
                 'path': 'default_attributes',
                 'type': 'wc_api_default_attribute_list'
+            },
+            'wp-sql': {
+                'path': 'meta._default_attributes',
+                'type': 'php_array'
             }
         },
         'variation_ids': {
@@ -1248,7 +1327,33 @@ class ColDataProduct(ColDataWpEntity):
 
 class ColDataProductMeridian(ColDataProduct):
     data = OrderedDict(ColDataProduct.data.items() + {
-
+        'wootan_danger': {
+            'wc-api': {
+                'path': 'meta_data.wootan_danger',
+                'type': 'danger'
+            },
+            'wp-sql': {
+                'path': 'meta.wootan_danger',
+                'type': 'danger'
+            },
+            'woo-csv': {
+                'path': 'meta:wootan_danger',
+                'type': 'danger'
+            },
+            'wc-csv': {
+                'path': 'D',
+                'type': 'danger'
+            }
+        },
+        'commissionable_value': {
+            'type': float,
+            'wc-api': {
+                'path': 'meta_data.commissionable_value'
+            },
+            'wp-sql': {
+                'path': 'meta.commissionable_value'
+            }
+        }
     }.items() +
     [
         (
@@ -1294,7 +1399,30 @@ class ColDataMedia(ColDataAbstract):
     - wp-api-v2: http://v2.wp-api.org/reference/media/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
     """
-    data = SeqUtils.combine_ordered_dicts(ColDataWpEntity.data, {
+    data = deepcopy(ColDataWpEntity.data)
+    data['content'].update({
+        'wp-api-v1': {
+            'path': None
+        },
+        'wp-api': {
+            'path': 'description.rendered',
+            'type': 'wp_content_rendered',
+            'write': False
+        }
+    })
+    data['excerpt'].update({
+        'gen-csv': {
+            'path': 'caption'
+        },
+        'wp-api-v1': {
+            'path': None
+        },
+        'wp-api': {
+            'path': 'caption.rendered',
+            'type': 'wp_content_rendered'
+        }
+    })
+    data = SeqUtils.combine_ordered_dicts(data, {
         'source_url': {
             'write': False,
             'type': 'uri',
@@ -1306,31 +1434,6 @@ class ColDataMedia(ColDataAbstract):
             'wp-api-v1': {
                 'path': None
             }
-        },
-        'excerpt': {
-            'gen-csv': {
-                'path': 'caption'
-            },
-            'wp-api-v1': {
-                'path': None
-            },
-            'wp-api': {
-                'path': 'caption.rendered',
-                'type': 'wp_content_rendered'
-            }
-        },
-        'content': {
-            'gen-csv': {
-                'path': 'description'
-            },
-            'wp-api-v1': {
-                'path': None
-            },
-            'wp-api': {
-                'path': 'description.rendered',
-                'type': 'wp_content_rendered',
-                'write': False
-            },
         },
         'image_meta': {
             'write': False,
@@ -4037,36 +4140,36 @@ class ColDataUser(ColDataBase):
                 new_data['sync_egress'] = 1
                 new_data['sync_ingress'] = 1
             new_data['sync_label'] = col
-
-        if data.get('visible'):
-            new_data['profile_display'] = 1
-        if data.get('mutable'):
-            new_data['profile_modify'] = 1
-        if data.get('contact'):
-            new_data['contact_method'] = 1
-
-        if new_data and data.get('wp'):
-            wp_data = data['wp']
-            if not wp_data.get('meta'):
-                new_data['core'] = 1
-            if not wp_data.get('generated'):
-                assert wp_data.get('key'), "column %s must have key" % col
-                key = wp_data['key']
-                export_cols[key] = new_data
-
-        if data.get('aliases'):
-            for alias in data['aliases']:
-                alias_data = cls.data.get(alias, {})
-                alias_data['sync'] = data.get('sync')
-                export_cols = cls.get_tansync_defaults_recursive(
-                    alias, export_cols, alias_data)
-
-        return export_cols
-
-    @classmethod
-    def get_tansync_defaults(cls):
-        export_cols = OrderedDict()
-        for col, data in cls.data.items():
-            export_cols = cls.get_tansync_defaults_recursive(
-                col, export_cols, data)
-        return export_cols
+#
+#         if data.get('visible'):
+#             new_data['profile_display'] = 1
+#         if data.get('mutable'):
+#             new_data['profile_modify'] = 1
+#         if data.get('contact'):
+#             new_data['contact_method'] = 1
+#
+#         if new_data and data.get('wp'):
+#             wp_data = data['wp']
+#             if not wp_data.get('meta'):
+#                 new_data['core'] = 1
+#             if not wp_data.get('generated'):
+#                 assert wp_data.get('key'), "column %s must have key" % col
+#                 key = wp_data['key']
+#                 export_cols[key] = new_data
+#
+#         if data.get('aliases'):
+#             for alias in data['aliases']:
+#                 alias_data = cls.data.get(alias, {})
+#                 alias_data['sync'] = data.get('sync')
+#                 export_cols = cls.get_tansync_defaults_recursive(
+#                     alias, export_cols, alias_data)
+#
+#         return export_cols
+#
+#     @classmethod
+#     def get_tansync_defaults(cls):
+#         export_cols = OrderedDict()
+#         for col, data in cls.data.items():
+#             export_cols = cls.get_tansync_defaults_recursive(
+#                 col, export_cols, data)
+#         return export_cols

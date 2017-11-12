@@ -1026,6 +1026,9 @@ class SyncClientSqlWP(SyncClientAbstract):
 
     def get_rows(self, _, **kwargs):
         limit = kwargs.get('limit', self.limit)
+        filter_pkey = kwargs.get('filter_pkey')
+
+        core_pkey = 'ID'
 
         self.assert_connect()
 
@@ -1069,15 +1072,22 @@ class SyncClientSqlWP(SyncClientAbstract):
         ON ( meta.`{meta_fkey}` = core.`{core_pkey}`)
     GROUP BY
         core.`{core_pkey}`""".format(
-            core_pkey='ID',
+            core_pkey=core_pkey,
             meta_fkey='post_id',
             tbl_core=self.tbl_prefix + 'posts',
             tbl_meta=self.tbl_prefix + 'postmeta',
             select_clause=select_clause,
         )
 
+        if Registrar.DEBUG_API:
+            Registrar.register_message('sql_select:\n%s' % sql_select)
 
-        # print sql_select
+        where_clause = ''
+        if filter_pkey is not None:
+            where_clause = "WHERE filtered.id = {filter_pkey}".format(
+                filter_pkey=filter_pkey
+            )
+
 
         sql_select_filter = """
 SELECT *
@@ -1085,10 +1095,12 @@ FROM
 (
     {sql_ud}
 ) filtered
+{where_clause}
 {limit_clause};"""
         sql_select_filter = sql_select_filter.format(
             sql_ud=sql_select,
             join_type="LEFT",
+            where_clause=where_clause,
             limit_clause="LIMIT %d" % limit if limit else ""
         )
 
