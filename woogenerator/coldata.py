@@ -127,12 +127,15 @@ class ColDataAbstract(object):
         return ancestors
 
     # @classmethod
-    # def find_in(cls, data, properties, ancestors=None, handles=None):
+    # def find_in(cls, data, properties, ancestors=None, handle):
     #     """
     #     Find the `properties` of `handles` given `ancestors` using jmespath.
-    #     Return a list of tuples of (`handle`, `property_value`)
+    #     Return a mapping of `handle` to it's value of `property`.
     #     """
     #     # Registrar.increment_stack_count('find_in')
+    #
+    #     target_filter_expression = '[?]'
+    #
     #     if handles is None:
     #         handles = ['*']
     #     handle_query = "(%s)" % "||".join(handles)
@@ -143,17 +146,18 @@ class ColDataAbstract(object):
     #         + ".(%s)" % "||".join(handles)
     #         + ".(%s)" % "||".join(properties)
     #     return jmespath.search(handle_query, )
-    #
+
     @classmethod
-    def find_in(cls, data, properties, ancestors=None, handles=None):
+    def find_in(cls, data, properties, ancestors=None, handle=None):
         """
         Prepare a jsonpath finder object for finding the given property of `handles`
         given a list of target ancestors.
         Return a mapping of `handle` to `property_value`
         """
         # Registrar.increment_stack_count('find_in')
-        if handles is None:
-            handles = ['*']
+        if handle is None:
+            handle = '*'
+        handles = [handle]
         handle_finder = jsonpath.Fields(*handles)
         finder = handle_finder.child(jsonpath.Fields(*properties))
         if ancestors:
@@ -196,7 +200,7 @@ class ColDataAbstract(object):
         if cache_key in cls.handle_cache:
             return copy(cls.handle_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
-        results = cls.find_in(cls.data, [property_], target_ancestors, [handle])
+        results = cls.find_in(cls.data, [property_], target_ancestors, handle)
         if results:
             response = results.items()[-1][1]
         else:
