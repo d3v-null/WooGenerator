@@ -172,8 +172,9 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             first_prod = client.get_first_endpoint_item()
             if self.debug:
                 print('api first_prod raw:\n%s' % pformat(first_prod))
+                import pudb; pudb.set_trace()
             wc_api_first_prod_normalized = self.coldata_class.translate_data_from(
-                first_prod, 'wp-api-v2'
+                first_prod, 'wc-wp-api-v2'
             )
             if self.debug:
                 print('api first_prod normalized api:\n%s' % pformat(

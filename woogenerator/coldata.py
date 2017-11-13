@@ -244,6 +244,68 @@ class ColDataAbstract(object):
                 translation[from_path] = to_path
         return translation
 
+    # @classmethod
+    # def delistify(cls, datum, key_key, value_key):
+    #     response = OrderedDict()
+    #     for data in datum:
+    #         key = data.get(key_key)
+    #         value = data.get(value_key)
+    #         if key and value:
+    #             response[key] = value
+    #     return response
+    #
+    # @classmethod
+    # def listify(cls, datum, key_key, value_key):
+    #     response = []
+    #     for key, value in datum.items():
+    #         response.append({key_key: key, value_key: value})
+    #     return response
+    #
+    # def translate_path_from(cls, data, target):
+    #     """
+    #     Translate `data` with `target` structure to core structure.
+    #     Delistify paths before translation if necessaty
+    #     """
+    #     translation = cls.get_path_translation(target, )
+    #     if not translation:
+    #         return data
+    #
+    #     delistifications = cls.get_handles_property('listed', target)
+    #
+    #     for handle, listed_structure in delistification.items():
+    #
+    #
+    #     for target_path, handle in translation.items():
+    #         if handle in delistifications
+    #             data[target_path] = cls.delistify(
+    #                 data[target_path],
+    #                 **delistifications.get(handle)
+    #             )
+    #     for target_path, handle in translation.items():
+    #
+    #
+    #
+    #     for handle, listed_structure in delistification.items():
+    #         to_key = translation.
+    #         data[handle] = cls.delistify(data[handle], **listed_structure)
+    #
+    #     response = data
+    #     if translation:
+    #         response = OrderedDict()
+    #         for from_path, to_path in translation.items():
+    #             getter = jsonpath_ng.parse(from_path)
+    #             results = getter.find(data)
+    #             if not results:
+    #                 continue
+    #             result_value = results[0].value
+    #
+    #             updater = jsonpath_ng.parse(to_path)
+    #             response = JSONPathUtils.blank_update(updater, response, result_value)
+    #     listification = cls.get_handles_property('listed', to_target)
+    #     for handle, listed_structure in listification.items():
+    #         response[handle] = cls.listify(data[handle], **listed_structure)
+    #     return response
+
     @classmethod
     def do_path_translation(cls, data, from_target=None, to_target=None):
         """
@@ -251,19 +313,26 @@ class ColDataAbstract(object):
         Does not translate data formats.
         """
         translation = cls.get_path_translation(from_target, to_target)
-        if not translation:
-            return data
-        new_data = {}
-        for from_path, to_path in translation.items():
-            getter = jsonpath_ng.parse(from_path)
-            results = getter.find(data)
-            if not results:
-                continue
-            result_value = results[0].value
+        # delistification = cls.get_handles_property('listed', from_target)
+        # for handle, listed_structure in delistification.items():
+        #     to_key = translation.
+        #     data[handle] = cls.delistify(data[handle], **listed_structure)
 
-            updater = jsonpath_ng.parse(to_path)
-            new_data = JSONPathUtils.blank_update(updater, new_data, result_value)
-        return new_data
+        response = data
+        if translation:
+            response = OrderedDict()
+            for from_path, to_path in translation.items():
+                getter = jsonpath_ng.parse(from_path)
+                results = getter.find(data)
+                if not results:
+                    continue
+                result_value = results[0].value
+                updater = jsonpath_ng.parse(to_path)
+                response = JSONPathUtils.blank_update(updater, response, result_value)
+        # listification = cls.get_handles_property('listed', to_target)
+        # for handle, listed_structure in listification.items():
+        #     response[handle] = cls.listify(data[handle], **listed_structure)
+        return response
 
     @classmethod
     def get_normalizer(cls, type_):
@@ -656,6 +725,7 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'wc-api': {
                 'path': 'meta_data',
+                'listed': ('key', 'value'),
                 'type': 'listed_meta',
             },
             'wc-legacy-api': {
