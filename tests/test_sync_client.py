@@ -154,6 +154,8 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
         for key in list(keys_intersect - set(['excerpt'])):
             if key == 'post_excerpt':
                 continue
+            if self.debug and key == 'parent_id':
+                import pudb; pudb.set_trace()
             self.assertEqual(
                 wp_sql_first_post_normalized[key],
                 wp_api_first_post_normalized[key]
@@ -228,6 +230,10 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             except AssertionError, exc:
                 if self.debug:
                     print("key %s failed assertion: %s" % (key, exc))
+
+    @pytest.mark.local
+    def test_wc_legacy_vs_wc_wp_api_prod(self):
+        pass
 
 
 @unittest.skip('Tests not mocked yet')

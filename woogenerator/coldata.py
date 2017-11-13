@@ -157,7 +157,7 @@ are present, then you can set the `structure` to `('mapping-dynamic', ('key'))` 
 ## listed-values
 If the handle value is represented as a list of singular values, where the
 values are taken from a sub-entity object, you can set the `structure` to
-`('listed-values', ('value', ))`  where `'value'` is the handle of the
+`('listed-values', 'value')`  where `'value'` is the handle of the
 data in the list.
 ## singluar
 If the handle value is represented as a singular sub-entity object, then you
@@ -339,23 +339,6 @@ class ColDataAbstract(object):
         return translation
 
     @classmethod
-    def delistify(cls, datum, key_key, value_key):
-        response = OrderedDict()
-        for data in datum:
-            key = data.get(key_key)
-            value = data.get(value_key)
-            if key and value:
-                response[key] = value
-        return response
-
-    @classmethod
-    def listify(cls, datum, key_key, value_key):
-        response = []
-        for key, value in datum.items():
-            response.append({key_key: key, value_key: value})
-        return response
-
-    @classmethod
     def path_exists(cls, data, path):
         if not path:
             return
@@ -366,15 +349,17 @@ class ColDataAbstract(object):
 
     @classmethod
     def get_from_path(cls, data, path):
+        """
+        Tries to get the path from data, throws exceptions
+        """
         # TODO: get defaults necessary here?
         if not path:
             return
         if re.match(cls.re_simple_path, path):
-            return data.get(path)
+            return data[path]
         getter = jsonpath_ng.parse(path)
         results = getter.find(data)
-        if results:
-            return results[0].value
+        return results[0].value
 
     @classmethod
     def update_in_path(cls, data, path, value):
@@ -397,13 +382,17 @@ class ColDataAbstract(object):
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
-                if not cls.path_exists(data, target_path):
+                if target_path is None:
                     continue
-                response = cls.update_in_path(
-                    response,
-                    handle,
-                    cls.get_from_path(data, target_path)
-                )
+                try:
+                    target_value = cls.get_from_path(data, target_path)
+                    response = cls.update_in_path(
+                        response,
+                        handle,
+                        deepcopy(target_value)
+                    )
+                except (IndexError, KeyError):
+                    pass
         return response
 
     @classmethod
@@ -417,42 +406,18 @@ class ColDataAbstract(object):
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
-                if not cls.path_exists(data, handle):
+                if target_path is None:
                     continue
-                response = cls.update_in_path(
-                    response,
-                    target_path,
-                    cls.get_from_path(data, handle)
-                )
+                try:
+                    target_value = cls.get_from_path(data, handle)
+                    response = cls.update_in_path(
+                        response,
+                        target_path,
+                        deepcopy(target_value)
+                    )
+                except (IndexError, KeyError):
+                    pass
         return response
-
-    # @classmethod
-    # def do_path_translation(cls, data, from_target=None, to_target=None):
-    #     """
-    #     Translate an object with from_target struction into to_target structure.
-    #     Does not translate data formats.
-    #     """
-    #     translation = cls.get_path_translation(from_target, to_target)
-    #     # delistification = cls.get_handles_property('listed', from_target)
-    #     # for handle, listed_structure in delistification.items():
-    #     #     to_key = translation.
-    #     #     data[handle] = cls.delistify(data[handle], **listed_structure)
-    #
-    #     response = data
-    #     if translation:
-    #         response = OrderedDict()
-    #         for from_path, to_path in translation.items():
-    #             getter = jsonpath_ng.parse(from_path)
-    #             results = getter.find(data)
-    #             if not results:
-    #                 continue
-    #             result_value = results[0].value
-    #             updater = jsonpath_ng.parse(to_path)
-    #             response = JSONPathUtils.blank_update(updater, response, result_value)
-    #     # listification = cls.get_handles_property('listed', to_target)
-    #     # for handle, listed_structure in listification.items():
-    #     #     response[handle] = cls.listify(data[handle], **listed_structure)
-    #     return response
 
     @classmethod
     def get_normalizer(cls, type_):
@@ -496,25 +461,65 @@ class ColDataAbstract(object):
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
-    def translate_types_from(cls, data, target):
-        data = deepcopy(data)
-        types = cls.get_handles_property('type', target)
+    def translate_types(cls, data, type_translation, path_translation):
         for handle in cls.data.keys():
-            if handle in data and types.get(handle):
-                data[handle] = cls.get_normalizer(types[handle])(data[handle])
+            if handle in type_translation and handle in path_translation:
+                target_path = path_translation.get(handle)
+                try:
+                    target_value = deepcopy(cls.get_from_path(
+                        data, target_path
+                    ))
+                except (IndexError, KeyError):
+                    continue
+                try:
+                    target_value = type_translation.get(handle)(target_value)
+                except (TypeError, ):
+                    continue
+                data = cls.update_in_path(
+                    data, target_path, target_value
+                )
         return data
 
     @classmethod
-    def translate_types_to(cls, data, target):
-        data = deepcopy(data)
-        types = cls.get_handles_property('type', target)
-        for handle in cls.data.keys():
-            if handle in data and types.get(handle):
-                data[handle] = cls.get_denormalizer(types[handle])(data[handle])
-        return data
+    def translate_types_from(cls, data, target, path_translation=None):
+        if path_translation is None:
+            path_translation = OrderedDict([
+                (handle, handle) \
+                for handle, target_path in cls.get_path_translation(target).items() \
+                if target_path is not None
+            ])
+        type_translation = OrderedDict([
+            (handle, cls.get_normalizer(type_)) \
+            for handle, type_ \
+            in cls.get_handles_property('type', target).items()
+        ])
+        return cls.translate_types(
+            data,
+            type_translation,
+            path_translation
+        )
+
+    @classmethod
+    def translate_types_to(cls, data, target, path_translation=None):
+        if path_translation is None:
+            path_translation = OrderedDict([
+                (handle, handle) \
+                for handle, target_path in cls.get_path_translation(target).items() \
+                if target_path is not None
+            ])
+        return cls.translate_types(
+            data,
+            OrderedDict([
+                (handle, cls.get_denormalizer(type_)) \
+                for handle, type_ \
+                in cls.get_handles_property('type', target).items()
+            ]),
+            path_translation
+        )
 
     @classmethod
     def translate_data_from(cls, data, target):
+        # TODO: move type translation above structure translation
         data = cls.translate_structure_from(data, target)
         data = cls.translate_types_from(data, target)
         return data
@@ -632,9 +637,8 @@ class ColDataSubMedia(ColDataWpSubEntity):
         }
     })
 
-class ColDataSubCategory(ColDataWpSubEntity):
-    data = deepcopy(ColDataWpSubEntity.data)
-    data = SeqUtils.combine_ordered_dicts(data, {
+class ColDataTermMixin(object):
+    data = {
         'term_id': {
             'write': False,
             'unique': True,
@@ -648,12 +652,16 @@ class ColDataSubCategory(ColDataWpSubEntity):
             'wp-api-v1': {
                 'path': 'ID'
             },
-            'wp-sql': {
-                'path': 'ID',
-            },
             'report': True
         },
         'title': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'name'
+            },
+            'wp-sql': {
+                'path': 'terms.name'
+            },
             'wc-wp-api':{
                 'path': 'name',
             },
@@ -667,69 +675,11 @@ class ColDataSubCategory(ColDataWpSubEntity):
             'wp-api-v1': {
                 'path': 'name'
             },
+            'wc-api': {
+                'path': 'slug'
+            },
             'wc-legacy-api': {
                 'path': None
-            },
-            'wp-sql': {
-                'path': 'post_name'
-            }
-        },
-    })
-
-class ColDataWpSubTag(ColDataWpSubEntity):
-    data = deepcopy(ColDataWpSubEntity.data)
-    data = SeqUtils.combine_ordered_dicts(data, {
-    })
-
-
-class ColDataWpSubMeta(ColDataWpSubEntity):
-    data = deepcopy(ColDataWpSubEntity.data)
-    data = SeqUtils.combine_ordered_dicts(data, {
-        'meta_id': {
-            'path': None,
-            'wc-api': {
-                'path': 'id'
-            },
-        },
-        'meta_key': {
-            'path': None,
-            'wc-api': {
-                'path': 'key'
-            }
-        },
-        'meta_value': {
-            'path': None,
-            'wc-api': {
-                'path': 'value'
-            }
-        }
-    }.items())
-
-class ColDataWpTerm(ColDataAbstract):
-    data = {
-        'term_id': {
-            'path': None,
-            'unique': True,
-            'wp-api-v1': {
-                'path': 'ID'
-            },
-            'wp-sql': {
-                'path': 'terms.term_id'
-            }
-        },
-        'title': {
-            'path': None,
-            'wp-api-v1': {
-                'path': 'name'
-            },
-            'wp-sql': {
-                'path': 'terms.name'
-            }
-        },
-        'slug': {
-            'path': None,
-            'wp-api-v1': {
-                'path': 'slug'
             },
             'wp-sql': {
                 'path': 'terms.slug'
@@ -794,9 +744,136 @@ class ColDataWpTerm(ColDataAbstract):
         }
     }
 
+class ColDataSubTerm(ColDataWpSubEntity, ColDataTermMixin):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        ColDataTermMixin.data
+    )
+    data['term_id'].update({
+        'wc-legacy-api': {
+            'path': None
+        }
+    })
 
-class ColDataWcTerm(ColDataWpTerm):
-    data = deepcopy(ColDataWpTerm.data)
+class ColDataSubCategory(ColDataSubTerm):
+    data = deepcopy(ColDataSubTerm.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+    })
+
+class ColDataSubTag(ColDataSubTerm):
+    data = deepcopy(ColDataSubTerm.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+    })
+
+class ColDataSubAttribute(ColDataSubTerm):
+    data = deepcopy(ColDataSubTerm.data)
+    data['slug'].update({
+        'wc-api': {
+            'path': None
+        }
+    })
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'position': {
+            'path': None,
+            'wc-api': {
+                'path': 'position'
+            }
+        },
+        'visible': {
+            'path': None,
+            'wc-api': {
+                'path': 'visible'
+            }
+        },
+        'variation': {
+            'path': None,
+            'wc-api': {
+                'path': 'variation'
+            }
+        },
+        'options': {
+            'path': None,
+            'wc-api': {
+                'path': 'options'
+            }
+        }
+    })
+
+class ColDataSubDefaultAttribute(ColDataSubTerm):
+    data = deepcopy(ColDataSubTerm.data)
+    data['slug'].update({
+        'wc-api': {
+            'path': None
+        }
+    })
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'option': {
+            'path': None,
+            'wc-api': {
+                'path': 'option'
+            }
+        }
+    })
+
+class ColDataWpSubMeta(ColDataWpSubEntity):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'meta_id': {
+            'path': None,
+            'wc-api': {
+                'path': 'id'
+            },
+        },
+        'meta_key': {
+            'path': None,
+            'wc-api': {
+                'path': 'key'
+            }
+        },
+        'meta_value': {
+            'path': None,
+            'wc-api': {
+                'path': 'value'
+            }
+        }
+    }.items())
+
+class ColDataSubDownload(ColDataWpSubEntity):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'download_id': {
+            'path': None,
+            'wc-api': {
+                'path': 'id'
+            },
+        },
+        'title': {
+            'path': None,
+            'wc-api': {
+                'path': 'name'
+            }
+        },
+        'file': {
+            'path': None,
+            'wc-api': {
+                'path': 'file'
+            }
+        }
+    })
+
+class ColDataTerm(ColDataAbstract, ColDataTermMixin):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        ColDataTermMixin.data
+    )
+    data = SeqUtils.combine_ordered_dicts(data, {
+    })
+
+
+class ColDataWcTerm(ColDataTerm):
+    data = deepcopy(ColDataTerm.data)
     data['count'].update(
         {
             'wc-api': {
@@ -817,7 +894,7 @@ class ColDataWcTerm(ColDataWpTerm):
 
 
 class ColDataWcProdCategory(ColDataWcTerm):
-    data = deepcopy(ColDataWpTerm.data)
+    data = deepcopy(ColDataTerm.data)
     data['count'].update(
         {
             'wp-sql': {
@@ -1143,7 +1220,6 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'excerpt_raw'
             },
             'wp-sql': {
-                'type': None,
                 'path': 'post_excerpt'
             }
         },
@@ -1201,7 +1277,7 @@ class ColDataWpEntity(ColDataAbstract):
         'terms': {
             # sub-entity
             'path': None,
-            'sub_data': ColDataWpTerm,
+            'sub_data': ColDataSubTerm,
             'wp-api-v1': {
                 'path': 'terms',
                 'structure': ('mapping-dynamic', 'taxonomy')
@@ -1278,11 +1354,17 @@ class ColDataWpEntity(ColDataAbstract):
         # },
         'tags': {
             # sub-entity
-            'sub_data': ColDataWpSubTag,
+            'sub_data': ColDataSubTag,
             'path': None,
             'wp-api-v1': {
                 'type': 'wp_api_v1_term',
                 'path': None,
+            },
+            'wc-api': {
+                'structure': ('listed-objects', )
+            },
+            'wc-legacy-api': {
+                'structure': ('listed-values', 'title')
             },
             'csv': {
                 'path': 'tags',
@@ -1594,6 +1676,7 @@ class ColDataProduct(ColDataWpEntity):
         },
         'downloads': {
             'path': None,
+            'sub_data': ColDataSubDownload,
             'wc-api': {
                 'path': 'downloads',
                 'sub_data': 'wc_wp_api_downloads'
@@ -1871,31 +1954,36 @@ class ColDataProduct(ColDataWpEntity):
         },
         'images': {
             'path': None,
+            'sub_data': ColDataSubMedia,
             'wc-api': {
                 'path': 'images',
-                'type': 'wc_api_image_list'
+                'structure': ('listed-objects', )
             },
         },
         'attributes': {
             'path': None,
+            'sub_data': ColDataSubAttribute,
             'wc-api': {
                 'path': 'attributes',
-                'type': 'wc_api_attribute_list'
+                'structure': ('listed-objects', )
             },
             'wp-sql': {
                 'path': 'meta._product_attributes',
-                'type': 'php_array'
+                'type': 'php_array',
+                'structure': ('listed-objects', )
             }
         },
         'default_attributes': {
             'path': None,
+            'sub_data': ColDataSubDefaultAttribute,
             'wc-api': {
                 'path': 'default_attributes',
                 'type': 'wc_api_default_attribute_list'
             },
             'wp-sql': {
                 'path': 'meta._default_attributes',
-                'type': 'php_array'
+                'type': 'php_array',
+                'structure': ('listed-objects', )
             }
         },
         'variation_ids': {
