@@ -106,7 +106,7 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             first_post = OrderedDict(zip(headers, first_values))
             if self.debug:
                 print('sql rows:\n%s' % pformat(first_post.items()))
-            wp_sql_first_post_normalized = self.coldata_class.normalize_data(
+            wp_sql_first_post_normalized = self.coldata_class.translate_types_from(
                 first_post, 'wp-sql'
             )
             if self.debug:
@@ -167,18 +167,18 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             'connect_params': self.settings.slave_wc_api_params
         }
         with client_class(**client_args) as client:
-            first_prod = client.get_first_endpoint_item()
+            wc_api_first_prod_raw = client.get_first_endpoint_item()
             if self.debug:
-                print('api first_prod raw:\n%s' % pformat(first_prod))
-                import pudb; pudb.set_trace()
+                print('api first_prod raw:\n%s' % pformat(wc_api_first_prod_raw))
+                # import pudb; pudb.set_trace()
             wc_api_first_prod_normalized = self.coldata_class.translate_data_from(
-                first_prod, 'wc-wp-api-v2'
+                wc_api_first_prod_raw, 'wc-wp-api-v2'
             )
             if self.debug:
                 print('api first_prod normalized api:\n%s' % pformat(
                     dict(wc_api_first_prod_normalized)
                 ))
-            wc_api_first_prod_id = first_prod['id']
+            wc_api_first_prod_id = wc_api_first_prod_raw['id']
 
         client_class = SyncClientSqlWP
         client_args = self.settings.slave_download_client_args
@@ -188,11 +188,11 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             rows = client.get_rows(None, limit=1, filter_pkey=wc_api_first_prod_id)
             headers = rows[0]
             first_values = rows[1]
-            first_prod = OrderedDict(zip(headers, first_values))
+            wp_sql_first_prod_raw = OrderedDict(zip(headers, first_values))
             if self.debug:
-                print('sql rows:\n%s' % pformat(first_prod.items()))
-            wp_sql_first_prod_normalized = self.coldata_class.normalize_data(
-                first_prod, 'wp-sql'
+                print('sql rows:\n%s' % pformat(wp_sql_first_prod_raw.items()))
+            wp_sql_first_prod_normalized = self.coldata_class.translate_types_from(
+                wp_sql_first_prod_raw, 'wp-sql'
             )
             if self.debug:
                 print('sql first_prod normalized sql:\n%s' % pformat(

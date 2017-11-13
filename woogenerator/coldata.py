@@ -260,23 +260,23 @@ class ColDataAbstract(object):
     #             translation[from_path] = to_path
     #     return translation
 
-    # @classmethod
-    # def delistify(cls, datum, key_key, value_key):
-    #     response = OrderedDict()
-    #     for data in datum:
-    #         key = data.get(key_key)
-    #         value = data.get(value_key)
-    #         if key and value:
-    #             response[key] = value
-    #     return response
-    #
-    # @classmethod
-    # def listify(cls, datum, key_key, value_key):
-    #     response = []
-    #     for key, value in datum.items():
-    #         response.append({key_key: key, value_key: value})
-    #     return response
-    #
+    @classmethod
+    def delistify(cls, datum, key_key, value_key):
+        response = OrderedDict()
+        for data in datum:
+            key = data.get(key_key)
+            value = data.get(value_key)
+            if key and value:
+                response[key] = value
+        return response
+
+    @classmethod
+    def listify(cls, datum, key_key, value_key):
+        response = []
+        for key, value in datum.items():
+            response.append({key_key: key, value_key: value})
+        return response
+
     # def translate_path_from(cls, data, target):
     #     """
     #     Translate `data` with `target` structure to core structure.
@@ -360,6 +360,7 @@ class ColDataAbstract(object):
         """
         Translate the structure of data from `target` to core.
         """
+        data = deepcopy(data)
         translation = cls.get_path_translation(target)
         response = data
         if translation:
@@ -376,6 +377,10 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_structure_to(cls, data, target):
+        """
+        Translate the structure of data from core to `target`.
+        """
+        data = deepcopy(data)
         translation = cls.get_path_translation(target)
         response = data
         if translation:
@@ -432,6 +437,7 @@ class ColDataAbstract(object):
                 TimeUtils.star_strp_datetime,
                 fmt=TimeUtils.wp_datetime_format
             ),
+            'timestamp': TimeUtils.timestamp2datetime,
             'wp_content_rendered': SanitationUtils.normalize_wp_rendered_content,
             'yesno': SanitationUtils.yesno2bool,
             'stock_status': SanitationUtils.stock_status2bool,
@@ -455,10 +461,12 @@ class ColDataAbstract(object):
             'yesno': SanitationUtils.bool2yesno,
             'stock_status': SanitationUtils.bool2stock_status,
             'php_array': PHPUtils.serialize_list,
+            'timestamp': TimeUtils.datetime2timestamp,
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
-    def normalize_data(cls, data, target):
+    def translate_types_from(cls, data, target):
+        data = deepcopy(data)
         types = cls.get_handles_property('type', target)
         for handle in cls.data.keys():
             if handle in data and types.get(handle):
@@ -466,7 +474,8 @@ class ColDataAbstract(object):
         return data
 
     @classmethod
-    def denormalize_data(cls, data, target):
+    def translate_types_to(cls, data, target):
+        data = deepcopy(data)
         types = cls.get_handles_property('type', target)
         for handle in cls.data.keys():
             if handle in data and types.get(handle):
@@ -476,12 +485,12 @@ class ColDataAbstract(object):
     @classmethod
     def translate_data_from(cls, data, target):
         data = cls.translate_structure_from(data, target)
-        data = cls.normalize_data(data, target)
+        data = cls.translate_types_from(data, target)
         return data
 
     @classmethod
     def translate_data_to(cls, data, target):
-        data = cls.denormalize_data(data, target)
+        data = cls.translate_types_to(data, target)
         data = cls.translate_structure_to(data, target)
         return data
 
@@ -712,7 +721,8 @@ class ColDataWpEntity(ColDataAbstract):
         },
         'content': {
             'wc-api': {
-                'path': 'description'
+                'path': 'description',
+                'type': 'wp_content_rendered',
             },
             'wp-api':{
                 'path': 'content.rendered',
@@ -753,6 +763,7 @@ class ColDataWpEntity(ColDataAbstract):
             }
         },
         'menu_order': {
+            'type': int,
             'wp-api': {
                 'path': None
             },
@@ -782,6 +793,7 @@ class ColDataWpEntity(ColDataAbstract):
             'report': True,
         },
         'parent_id': {
+            'type': int,
             'wp-sql': {
                 'path': 'post_parent'
             },

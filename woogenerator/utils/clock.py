@@ -61,6 +61,16 @@ class TimeUtils(object):
         return datetime_.strftime(fmt)
 
     @classmethod
+    def timestamp2datetime(cls, timestamp):
+        if timestamp:
+            return datetime.datetime.utcfromtimestamp(float(timestamp))
+
+    @classmethod
+    def datetime2timestamp(cls, datetime_):
+        if datetime_:
+            return time.mktime(datetime_.timetuple())
+
+    @classmethod
     def star_strp_mktime(cls, string, fmt=wp_datetime_format):
         # type: (basestring, basestring) -> int
         """ take a time string and a format, returns number of seconds since epoch """
