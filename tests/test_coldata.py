@@ -121,8 +121,8 @@ class TestColDataImg(TestColData):
             )
         )
 
-    def test_get_path_translation(self):
-        path_translation = self.coldata_class.get_path_translation(
+    def test_get_target_path_translation(self):
+        path_translation = self.coldata_class.get_target_path_translation(
             'wp-api-v2')
         if self.debug:
             print("path_translation: %s" % pformat(path_translation))
@@ -484,8 +484,8 @@ class TestColDataImg(TestColData):
 class TestColDataWpPost(TestColData):
     coldata_class = ColDataWpPost
 
-    def test_get_path_translation_post(self):
-        path_translation = self.coldata_class.get_path_translation(
+    def test_get_target_path_translation_post(self):
+        path_translation = self.coldata_class.get_target_path_translation(
             'wp-sql')
         if self.debug:
             print("path_translation: %s" % pformat(path_translation))

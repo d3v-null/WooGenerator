@@ -333,7 +333,7 @@ class ColDataAbstract(object):
         return exclusions
 
     @classmethod
-    def get_path_translation(cls, target):
+    def get_target_path_translation(cls, target):
         """
         Return a mapping of core paths to paths in `target` structure.
         """
@@ -345,6 +345,20 @@ class ColDataAbstract(object):
             target_path = target_paths.get(handle, handle)
             translation[handle] = target_path
         return translation
+
+    @classmethod
+    def get_core_path_translation(cls, target):
+        """
+        Return the indenty translation for core paths in target.
+        This does not change paths but excludes paths that do not exist in target.
+        """
+        exclusions = cls.get_property_exclusions('path', target)
+        path_translation = OrderedDict([
+            (handle, handle) \
+            for handle in cls.data.keys() \
+            if handle not in exclusions
+        ])
+        return path_translation
 
     @classmethod
     def path_exists(cls, data, path):
@@ -385,7 +399,7 @@ class ColDataAbstract(object):
         Translate the structure of data from `target` to core.
         """
         data = deepcopy(data)
-        translation = cls.get_path_translation(target)
+        translation = cls.get_target_path_translation(target)
         response = data
         if translation:
             response = OrderedDict()
@@ -409,7 +423,7 @@ class ColDataAbstract(object):
         Translate the structure of data from core to `target`.
         """
         data = deepcopy(data)
-        translation = cls.get_path_translation(target)
+        translation = cls.get_target_path_translation(target)
         response = data
         if translation:
             response = OrderedDict()
@@ -491,12 +505,7 @@ class ColDataAbstract(object):
     @classmethod
     def translate_types_from(cls, data, target, path_translation=None):
         if path_translation is None:
-            exclusions = cls.get_property_exclusions('path')
-            path_translation = OrderedDict([
-                (handle, handle) \
-                for handle in cls.data.keys() \
-                if handle not in exclusions
-            ])
+            path_translation = cls.get_core_path_translation(target)
         type_translation = OrderedDict([
             (handle, cls.get_normalizer(type_)) \
             for handle, type_ \
@@ -511,33 +520,37 @@ class ColDataAbstract(object):
     @classmethod
     def translate_types_to(cls, data, target, path_translation=None):
         if path_translation is None:
-            exclusions = cls.get_property_exclusions('path')
-            path_translation = OrderedDict([
-                (handle, handle) \
-                for handle in cls.data.keys() \
-                if handle not in exclusions
-            ])
+            path_translation = cls.get_core_path_translation(target)
+        type_translation = OrderedDict([
+            (handle, cls.get_denormalizer(type_)) \
+            for handle, type_ \
+            in cls.get_handles_property('type', target).items()
+        ])
         return cls.translate_types(
             data,
-            OrderedDict([
-                (handle, cls.get_denormalizer(type_)) \
-                for handle, type_ \
-                in cls.get_handles_property('type', target).items()
-            ]),
+            type_translation,
             path_translation
         )
 
     @classmethod
     def translate_data_from(cls, data, target):
         # TODO: move type translation above structure translation
-        data = cls.translate_paths_from(data, target)
-        data = cls.translate_types_from(data, target)
+        data = cls.translate_paths_from(
+            data, target
+        )
+        data = cls.translate_types_from(
+            data, target, cls.get_core_path_translation(target)
+        )
         return data
 
     @classmethod
     def translate_data_to(cls, data, target):
-        data = cls.translate_types_to(data, target)
-        data = cls.translate_paths_to(data, target)
+        data = cls.translate_types_to(
+            data, target, cls.get_target_path_translation(target)
+        )
+        data = cls.translate_paths_to(
+            data, target
+        )
         return data
 
     @classmethod

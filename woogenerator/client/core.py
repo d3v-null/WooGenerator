@@ -1036,7 +1036,7 @@ class SyncClientSqlWP(SyncClientAbstract):
         self.db_params['port'] = self.service.local_bind_address[-1]
         cursor = pymysql.connect(**self.db_params).cursor()
 
-        wp_db_col_paths = self.coldata_class.get_path_translation('wp-sql')
+        wp_db_col_paths = self.coldata_class.get_target_path_translation('wp-sql')
 
         wp_db_core_cols = OrderedDict()
         wp_db_meta_cols = OrderedDict()
