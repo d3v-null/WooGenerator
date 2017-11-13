@@ -134,21 +134,26 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
         keys_wp_sql = set(wp_sql_first_post_normalized.keys())
         keys_wp_api = set(wp_api_first_post_normalized.keys())
         keys_intersect = keys_wp_sql.intersection(keys_wp_api)
-        keys_difference = keys_wp_sql.symmetric_difference(keys_wp_api)
         if self.debug:
             print('keys_intersect:\n%s' % pformat(keys_intersect))
-            print('keys_difference:\n%s' % pformat(keys_difference))
+            print('keys_difference:\nsql-api:\n%s\napi-sql:\n%s' % (
+                pformat(keys_wp_sql.difference(keys_wp_api)),
+                pformat(keys_wp_api.difference(keys_wp_sql))
+            ))
 
         self.assertTrue(
             set([
-                'author_id', 'comment_status', 'content', 'created_gmt',
-                'created_local', 'excerpt', 'featured_media_id', 'guid', 'id',
-                'modified_gmt', 'modified_local', 'ping_status', 'post_type',
-                'slug', 'status', 'title'
+                'author_id', 'comment_status', 'created_gmt',
+                'created_local', 'featured_media_id', 'guid', 'id',
+                'modified_gmt', 'modified_local', 'ping_status',
+                'post_content', 'post_excerpt',  'post_type', 'post_status',
+                'slug', 'title'
             ]).issubset(keys_intersect)
         )
 
         for key in list(keys_intersect - set(['excerpt'])):
+            if key == 'post_excerpt':
+                continue
             self.assertEqual(
                 wp_sql_first_post_normalized[key],
                 wp_api_first_post_normalized[key]
@@ -202,10 +207,12 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
         keys_wp_sql = set(wp_sql_first_prod_normalized.keys())
         keys_wc_api = set(wc_api_first_prod_normalized.keys())
         keys_intersect = keys_wp_sql.intersection(keys_wc_api)
-        keys_difference = keys_wp_sql.symmetric_difference(keys_wc_api)
         if self.debug:
             print('keys_intersect:\n%s' % pformat(keys_intersect))
-            print('keys_difference:\n%s' % pformat(keys_difference))
+            print('keys_difference:\nsql-api:\n%s\napi-sql:\n%s' % (
+                pformat(keys_wp_sql.difference(keys_wc_api)),
+                pformat(keys_wc_api.difference(keys_wp_sql))
+            ))
 
         self.assertTrue(
             set([

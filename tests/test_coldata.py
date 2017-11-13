@@ -35,51 +35,51 @@ class TestColDataAbstract(TestColData):
             ['api', 'wc-api', 'wc-legacy-api', 'wc-legacy-api-v2']
         )
 
-    def test_get_property(self):
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'path'),
-            'id'
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'path', 'xero-api'),
-            None
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'path', 'sql'),
-            'id'
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'path', 'wp-sql'),
-            'ID'
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'path', 'wp-api'),
-            'id'
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write'),
-            False
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write', 'xero-api'),
-            False
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write', 'sql'),
-            False
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write', 'wp-sql'),
-            False
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write', 'wp-api'),
-            False
-        )
-        self.assertEqual(
-            self.coldata_class.get_handle_property('id', 'write', 'wp-csv'),
-            False
-        )
+    # def test_get_property(self):
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'path'),
+    #         'id'
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'path', 'xero-api'),
+    #         None
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'path', 'sql'),
+    #         'id'
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'path', 'wp-sql'),
+    #         'ID'
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'path', 'wp-api'),
+    #         'id'
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write'),
+    #         False
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write', 'xero-api'),
+    #         False
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write', 'sql'),
+    #         False
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write', 'wp-sql'),
+    #         False
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write', 'wp-api'),
+    #         False
+    #     )
+    #     self.assertEqual(
+    #         self.coldata_class.get_handle_property('id', 'write', 'wp-csv'),
+    #         False
+    #     )
 
 
 class TestColDataImg(TestColData):
@@ -109,13 +109,13 @@ class TestColDataImg(TestColData):
             print("handles_property_v2: %s" % pformat(handles_property_v2))
         self.assertTrue(
             set(OrderedDict([
-                ('excerpt', 'caption.rendered'),
+                ('post_excerpt', 'caption.rendered'),
                 ('title', 'title.rendered'),
                 ('image_meta', 'attachment_meta.media_details'),
                 ('width', 'media_details.width'),
                 ('file_path', 'media_details.file'),
                 ('height', 'media_details.height'),
-                ('content', 'description.rendered')
+                ('post_content', 'description.rendered')
             ]).keys()).issubset(
                 set(handles_property_v2.keys())
             )
@@ -129,10 +129,10 @@ class TestColDataImg(TestColData):
 
         expected_handles = set([
             'alt_text',
-            'content',
+            'post_content',
             'created_gmt',
             'created_local',
-            'excerpt',
+            'post_excerpt',
             'file_path',
             'guid',
             'height',
@@ -144,7 +144,7 @@ class TestColDataImg(TestColData):
             'modified_local',
             'slug',
             'source_url',
-            'status',
+            'post_status',
             'title',
             'post_type',
             'width',
@@ -152,7 +152,7 @@ class TestColDataImg(TestColData):
         actual_handles = set(path_translation.keys())
         if self.debug:
             print("actual handles: %s" % actual_handles)
-            print("difference: %s" % expected_handles.difference(actual_handles))
+            print("difference: %s" % expected_handles.symmetric_difference(actual_handles))
 
         self.assertTrue(
             expected_handles.issubset(actual_handles)
@@ -161,12 +161,15 @@ class TestColDataImg(TestColData):
     def test_get_sync_cols(self):
         sync_cols = self.coldata_class.get_sync_cols('wp-api')
         expected_handles = set([
-            'width', 'height', 'title', 'excerpt', 'file_path'
+            'width', 'height', 'title', 'post_excerpt', 'file_path'
         ])
         actual_handles = set(sync_cols.keys())
         if self.debug:
             print("sync_cols:\n%s" % pformat(sync_cols.items()))
-            print('difference:\n%s' % actual_handles.difference(expected_handles))
+            print('difference:\n%s\n%s' % (
+                actual_handles.difference(expected_handles),
+                expected_handles.difference(actual_handles)
+            ))
         self.assertTrue(
             expected_handles.issubset(
                 actual_handles
@@ -466,9 +469,6 @@ class TestColDataImg(TestColData):
                 u'rendered': 'foo &gt; bar'
             }
         }
-
-        if self.debug:
-            import pudb; pudb.set_trace()
 
         self.assertEquals(
             self.coldata_class.translate_data_from(denormalized, 'wp-api'),

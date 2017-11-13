@@ -44,6 +44,125 @@ get rid of attributes like category, product, variation, that's covered by class
 YAML Import and export of schema
 data is not read from file until it is accessed?
 """
+"""
+Sub-entities:
+Different APIs can represent the same attribute of an entity with very different
+structures.
+E.G. 1a: one api might represent metadata as a list of objects:
+{
+    ...
+    'meta': [
+        {
+            'id': 1,
+            'key': 'key1',
+            'value': 1
+        },
+        {
+            'id': 2,
+            'key', 'key2',
+            'value': 2
+        }
+    ]
+    ...
+}
+E.G. 1b: one api might represent the same entitiy's metadata as a mapping from keys to values
+{
+    ...
+    'meta_data': {
+        'key1': '1',
+        'key2': '2'
+    },
+    ....
+}
+
+E.G. 2a: one API might represent the images of an entity as a list of objects:
+{
+    ...
+    'categories': [
+        {
+            'id':0,
+            'name': 'Product Category 0'
+            'slug': 'product-category-0'
+        },
+        ...
+    ],
+    ...
+}
+
+E.G. 2b: another API might represent the categories of an entity as a list of category IDs
+{
+    ...
+    'categories': [
+        0, ...
+    ],
+    ...
+}
+
+E.G. 2c: another API might represent the categories of an entity as a mapping of
+slugs to objects
+{
+    ...
+    'categories': {
+        'product-category-0' : {
+            'id':0,
+            'name': 'Product Category 0'
+            'slug': 'product-category-0'
+        }
+    },
+    ...
+}
+
+E.G. 2d: Another API might represent the sub-entity in singular form:
+{
+    ...
+    'category': {
+        'id':0,
+        'name': 'Product Category 0'
+        'slug': 'product-category-0'
+    }
+}
+
+API Whisperer should be structure-agnostic and be able to translate between
+these different structures. To allow this, you can set the `sub_data` field to the class
+containing the metadata for the sub-entity object, this will recursively perform
+the same type-casting and path translation that API Whisperer does for entites,
+for that sub-entity and it's sub-entities.
+By default, API Whisperer will treat all handles that contain sub-entities as a
+singular object, but you can change this behaviour for different targets.
+Note: API Whisperer performs path translation and type-casting on sub-entities
+before performing path translation and type-casting on entities, which means that
+you access the properties of an entity's sub-entities from within the path
+specifications in the entity's metadata.
+## listed-objects
+If the handle value is represented in a given target context as a list of
+sub-entity objects (e.g. 1a), you can set the `structure` as `('listed-objects', )`.
+## mapping-values
+If the handle value is represented in a given target context as a mapping from keys
+to singular values where the values are taken from a sub-entity object (eg. 1b),
+then you can set the `structure` as `('mapping-values', ('key', 'value'))` where
+`'key'` and '`value`' are the handles of the key and value in the mapping respectively.
+## mapping-object
+If the handle value is represented in a given target context as a mapping from keys
+to singular sub-entity objects (e.g. 2c) then you can set the `structure` as
+`('mapping-object', ('key', ))` where `'key'` is the handle of the key in this mapping.
+## mapping-list
+If the handle value is represented as a mapping from keys to a list of sub-entity
+objects then you can set the `structure` to `('mapping-list', ('key'))` where
+`'key'` is the handle of the key in the mapping.
+## mapping-dynamic
+If the handle value is represented as a mapping from keys to either a list of sub-entity
+objects, or a singular sub-entity object depending on how many sub-entity objects
+are present, then you can set the `structure` to `('mapping-dynamic', ('key'))` where
+`'key'` is the handle of the key in the mapping.
+## listed-values
+If the handle value is represented as a list of singular values, where the
+values are taken from a sub-entity object, you can set the `structure` to
+`('listed-values', ('value', ))`  where `'value'` is the handle of the
+data in the list.
+## singluar
+If the handle value is represented as a singular sub-entity object, then you
+can set the `structure` to ('singular', )
+"""
 
 class ColDataAbstract(object):
     """
@@ -87,27 +206,6 @@ class ColDataAbstract(object):
         }
     }
     data = {
-        'id': {
-            'write': False,
-            'unique': True,
-            'type': int,
-            'xero-api': {
-                'path': None,
-            },
-            'wp-api': {
-                'path': 'id'
-            },
-            'wp-api-v1': {
-                'path': 'ID'
-            },
-            'wp-sql': {
-                'path': 'ID',
-            },
-            'act-csv': {
-                'path': 'Wordpress ID',
-            },
-            'report': True
-        }
     }
 
     handle_cache = OrderedDict()
@@ -448,14 +546,352 @@ class ColDataAbstract(object):
             sync_cols[key] = cls.data[key]
         return sync_cols
 
+
+class ColDataWpSubEntity(ColDataAbstract):
+    """
+    Metadata for abstract WP sub-entities
+    - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
+    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
+    """
+    data = deepcopy(ColDataAbstract.data)
+
+class ColDataSubMedia(ColDataWpSubEntity):
+    """
+    Metadata for Media sub items; media items that appear within items in the API
+    - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
+    - wc-wp-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/wp-api-v1.html#product-image-properties
+    - wc-legacy-api-v3: http://woocommerce.github.io/woocommerce-rest-api-docs/v3.html#images-properties
+    - wc-legacy-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/v2.html#images-properties
+    - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
+    """
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'id': {
+            'write': False,
+            'unique': True,
+            'type': int,
+            'wc-api': {
+                'path': 'id'
+            },
+            'wp-api': {
+                'path': 'id'
+            },
+            'wp-api-v1': {
+                'path': 'ID'
+            },
+            'wp-sql': {
+                'path': 'ID',
+            },
+            'report': True
+        },
+        'created_gmt': {
+            'type': 'iso8601',
+            'wp-api': {
+                'path': 'date_gmt'
+            },
+            'wc-wp-api': {
+                'path': 'date_created_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'created_at'
+            },
+            'write': False
+        },
+        'modified_gmt': {
+            'type': 'iso8601',
+            'write': False,
+            'wc-wp-api': {
+                'path': 'date_modified_gmt'
+            },
+            'wc-legacy-api': {
+                'path': 'modified_at'
+            }
+        },
+        'title': {
+            'wc-wp-api':{
+                'path': 'name',
+            },
+        },
+        'source_url': {
+            'write': False,
+            'type': 'uri',
+            'wc-wp-api': {
+                'path':'src'
+            }
+        },
+        'alt_text': {
+            'wc-wp-api': {
+                'path': 'alt'
+            }
+        },
+        'position': {
+            'path': None,
+            'wc-api': {
+                'path': 'postition'
+            }
+        }
+    })
+
+class ColDataSubCategory(ColDataWpSubEntity):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'term_id': {
+            'write': False,
+            'unique': True,
+            'type': int,
+            'wc-api': {
+                'path': 'id'
+            },
+            'wp-api': {
+                'path': 'id'
+            },
+            'wp-api-v1': {
+                'path': 'ID'
+            },
+            'wp-sql': {
+                'path': 'ID',
+            },
+            'report': True
+        },
+        'title': {
+            'wc-wp-api':{
+                'path': 'name',
+            },
+        },
+        'slug':{
+            'unique': True,
+            'path': None,
+            'wp-api': {
+                'path': 'slug'
+            },
+            'wp-api-v1': {
+                'path': 'name'
+            },
+            'wc-legacy-api': {
+                'path': None
+            },
+            'wp-sql': {
+                'path': 'post_name'
+            }
+        },
+    })
+
+class ColDataWpSubTag(ColDataWpSubEntity):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+    })
+
+
+class ColDataWpSubMeta(ColDataWpSubEntity):
+    data = deepcopy(ColDataWpSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'meta_id': {
+            'path': None,
+            'wc-api': {
+                'path': 'id'
+            },
+        },
+        'meta_key': {
+            'path': None,
+            'wc-api': {
+                'path': 'key'
+            }
+        },
+        'meta_value': {
+            'path': None,
+            'wc-api': {
+                'path': 'value'
+            }
+        }
+    }.items())
+
+class ColDataWpTerm(ColDataAbstract):
+    data = {
+        'term_id': {
+            'path': None,
+            'unique': True,
+            'wp-api-v1': {
+                'path': 'ID'
+            },
+            'wp-sql': {
+                'path': 'terms.term_id'
+            }
+        },
+        'title': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'name'
+            },
+            'wp-sql': {
+                'path': 'terms.name'
+            }
+        },
+        'slug': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'slug'
+            },
+            'wp-sql': {
+                'path': 'terms.slug'
+            }
+        },
+        'taxonomy': {
+            'path': None,
+            'default': 'category',
+            'wp-api-v1': {
+                'path': 'taxonomy'
+            },
+            'wp-sql': {
+                'path': 'term_taxonomy.taxonomy'
+            }
+        },
+        'count': {
+            'type': int,
+            'path': None,
+            'wp-api-v1': {
+                'path': 'count'
+            },
+            'wp-sql': {
+                'path': 'term_taxonomy.count'
+            }
+        },
+        'description': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'description'
+            },
+            'wp-sql': {
+                'path': 'term_taxonomy.description'
+            }
+        },
+        'term_parent': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'parent'
+            }
+        },
+        'term_parent_id': {
+            'path': None,
+            'type': int,
+            'wp-api-v1': {
+                'path': 'parent.ID'
+            },
+            'wp-sql': {
+                'path': 'term_taxonomy.parent'
+            }
+        },
+        'term_link': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'link'
+            }
+        },
+        'term_meta': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'meta'
+            }
+        }
+    }
+
+
+class ColDataWcTerm(ColDataWpTerm):
+    data = deepcopy(ColDataWpTerm.data)
+    data['count'].update(
+        {
+            'wc-api': {
+                'path': 'count'
+            }
+        }
+    )
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'menu_order': {
+            'wc-api': {
+                'path': 'menu_order'
+            },
+            'wp-sql': {
+                'path': 'term_meta.order'
+            }
+        }
+    })
+
+
+class ColDataWcProdCategory(ColDataWcTerm):
+    data = deepcopy(ColDataWpTerm.data)
+    data['count'].update(
+        {
+            'wp-sql': {
+                'path': 'term_meta.product_count_product_cat'
+            },
+        }
+    )
+    data['term_parent_id'].update(
+        {
+            'wc-api': {
+                'path': 'parent'
+            }
+        }
+    )
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'display': {
+            'path': None,
+            'options': [
+                'default', 'products', 'subcategories', 'both'
+            ],
+            'default': 'default',
+            'wc-api': {
+                'path': 'display',
+            }
+        },
+        'thumbnail_id': {
+            'path': None,
+            'wc-api': {
+                'path': 'image.id'
+            },
+            'wp-sql': {
+                'path': 'term_meta.thumbnail_id'
+            }
+        },
+        'image': {
+            'path': None,
+            'sub_data': ColDataSubMedia,
+            'wc-api': {
+                'structure': 'singular'
+            }
+        }
+    })
+
 class ColDataWpEntity(ColDataAbstract):
     """
-    Metadata for abstract WP objects
+    Metadata for abstract WP objects based off wp posts
     - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
     - wp-api-v2: http://v2.wp-api.org/reference/posts/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
     """
-    data = OrderedDict(ColDataAbstract.data.items() + {
+    data = deepcopy(ColDataAbstract.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        # TODO: rename to post_id?
+        'id': {
+            'write': False,
+            'unique': True,
+            'type': int,
+            'xero-api': {
+                'path': None,
+            },
+            'wp-api': {
+                'path': 'id'
+            },
+            'wp-api-v1': {
+                'path': 'ID'
+            },
+            'wp-sql': {
+                'path': 'ID',
+            },
+            'act-csv': {
+                'path': 'Wordpress ID',
+            },
+            'report': True
+        },
         'permalink': {
             'write': False,
             'path': None,
@@ -468,9 +904,13 @@ class ColDataWpEntity(ColDataAbstract):
         },
         'guid': {
             'write': False,
+            'path': None,
             'wp-api': {
                 'path': 'guid.rendered'
             },
+            'wp-sql': {
+                'path': 'guid'
+            }
         },
         'created_gmt': {
             'type': 'datetime',
@@ -555,6 +995,7 @@ class ColDataWpEntity(ColDataAbstract):
             'report': True,
         },
         'created_timezone': {
+            'path': None,
             'write': False,
             'wp-api': {
                 'path': None
@@ -575,6 +1016,7 @@ class ColDataWpEntity(ColDataAbstract):
         },
         'modified_timezone': {
             'write': False,
+            'path': None,
             'wp-api': {
                 'path': None
             },
@@ -594,11 +1036,15 @@ class ColDataWpEntity(ColDataAbstract):
         },
         'slug':{
             'unique': True,
+            'path': None,
             'wp-api': {
                 'path': 'slug'
             },
             'wp-api-v1': {
                 'path': 'name'
+            },
+            'wc-api': {
+                'path': None
             },
             'wc-legacy-api': {
                 'path': None
@@ -629,7 +1075,7 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'report': True,
         },
-        'status': {
+        'post_status': {
             'default': 'publish',
             'options': [
                 'draft',
@@ -639,6 +1085,12 @@ class ColDataWpEntity(ColDataAbstract):
             ],
             'wp-sql': {
                 'path': 'post_status'
+            },
+            'wc-api': {
+                'path': 'status'
+            },
+            'wp-api': {
+                'path': 'status'
             },
         },
         'post_type': {
@@ -652,7 +1104,7 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'type'
             }
         },
-        'content': {
+        'post_content': {
             'wc-api': {
                 'path': 'description',
                 'type': 'wp_content_rendered',
@@ -678,7 +1130,7 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'description'
             },
         },
-        'excerpt': {
+        'post_excerpt': {
             'wc-api': {
                 'path': 'short_description',
                 'type': 'wp_content_rendered',
@@ -716,6 +1168,9 @@ class ColDataWpEntity(ColDataAbstract):
         'mime_type': {
             'write': False,
             'type': 'mime_type',
+            'wc-api': {
+                'path': False,
+            },
             'wp-api-v1': {
                 'path': 'attachment_meta.sizes.thumbnail.mime-type',
                 'write': False
@@ -733,6 +1188,9 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-api': {
                 'path': None,
             },
+            'wp-api-v1': {
+                'path': 'parent.id'
+            },
             'wc-api': {
                 'path': 'parent_id'
             },
@@ -743,85 +1201,88 @@ class ColDataWpEntity(ColDataAbstract):
         'terms': {
             # sub-entity
             'path': None,
+            'sub_data': ColDataWpTerm,
             'wp-api-v1': {
                 'path': 'terms',
+                'structure': ('mapping-dynamic', 'taxonomy')
             },
         },
         'meta': {
             # sub-entity
+            'sub_data': ColDataWpSubMeta,
             'wp-api': {
-                'type': ('listed', ('key', ('id', 'value')))
             },
             'wp-api-v1': {
                 'path': 'post_meta',
-                'type': ('mapping', ('key', 'value'))
+                'structure': ('mapping-valuess', ('key', 'value'))
             },
             'wc-api': {
                 'path': 'meta_data',
-                'type': ('listed', ('key', ('id', 'value')))
+                'structure': ('listed-objects', )
             },
             'wc-legacy-api': {
                 'path': 'custom_meta',
-                'type': ('listed', ('key', ('id', 'value')))
+                'structure': ('listed-objects', )
             },
             'wp-sql':{
                 'path': None,
             },
             'gen-csv': {
-                'type': ('mapping', ('key', 'value'))
+                'structure': ('mapping-values', ('key', 'value'))
             }
         },
-        'categories': {
+        'post_categories': {
             # sub-entity
             'path': None,
+            'sub_data': ColDataSubCategory,
             'wc-api': {
-                'path': 'categories',
-                'type': ('listed', ('id', 'slug', 'name'))
-            },
-            'wp-api-v2': {
-                'path': None,
-            },
-            'wp-api-v1': {
-                # note: in wp-api-v1 terms.category is an object if there is
-                # one category but a list if there are multiple
-                'type': 'wp_api_v1_category',
-                'path': 'terms.category'
-            },
-            'wc-csv': {
-                'path': 'tax:product_tag',
-                'type': 'heirarchical_pipe_array'
-            }
-        },
-        'category_ids': {
-            'path': None,
-            'wp-api': {
-                'path': 'categories'
-            },
-            'wp-api-v1': {
-                'path': 'terms.categories'
-            },
-            'wc-api': {
-                'path': 'categories[*].id'
-            }
-        },
-        'category_names': {
-            'path': None,
-            'wc-api': {
-                'write': False,
-                'path': 'categories[*].name'
+                'path': None
             },
             'wc-legacy-api': {
-                'path': 'category_names'
+                'path': 'categories',
+                'structure': ('listed-values', 'name')
             },
-        },
-        'tags': {
-            # sub-entity
-            'path': None,
+            'wp-api': {
+                'path': 'categories',
+                'structure': ('listed-values', 'id'),
+            },
             'wp-api-v1': {
                 # note: in wp-api-v1 terms.category is an object if there is
                 # one category but a list if there are multiple
+                # since the data does not have a consistent format,
+                'type': 'wp_api_v1_category',
+                'path': None,
+            },
+        },
+        # 'category_ids': {
+        #     'path': None,
+        #     'wp-api': {
+        #         'path': 'categories'
+        #     },
+        #     'wp-api-v1': {
+        #         'path': 'terms.categories'
+        #     },
+        #     'wc-api': {
+        #         'path': 'categories[*].id'
+        #     }
+        # },
+        # 'category_names': {
+        #     'path': None,
+        #     'wc-api': {
+        #         'write': False,
+        #         'path': 'categories[*].name'
+        #     },
+        #     'wc-legacy-api': {
+        #         'path': 'categories'
+        #     },
+        # },
+        'tags': {
+            # sub-entity
+            'sub_data': ColDataWpSubTag,
+            'path': None,
+            'wp-api-v1': {
                 'type': 'wp_api_v1_term',
-                'path': 'terms.category'
+                'path': None,
             },
             'csv': {
                 'path': 'tags',
@@ -832,48 +1293,11 @@ class ColDataWpEntity(ColDataAbstract):
             }
         },
 
-    }.items())
-
-class ColDataWpSubEntity(ColDataAbstract):
-    """
-    Metadata for abstract WP sub-entities
-    - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
-    - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
-    """
-    data = OrderedDict(ColDataAbstract.data.items() + {
-        'created_gmt': {
-            'type': 'iso8601',
-            'wp-api': {
-                'path': 'date_gmt'
-            },
-            'wc-wp-api': {
-                'path': 'date_created_gmt'
-            },
-            'wc-legacy-api': {
-                'path': 'created_at'
-            },
-            'write': False
-        },
-        'modified_gmt': {
-            'type': 'iso8601',
-            'write': False,
-            'wc-wp-api': {
-                'path': 'date_modified_gmt'
-            },
-            'wc-legacy-api': {
-                'path': 'modified_at'
-            }
-        },
-        'title': {
-            'wc-wp-api':{
-                'path': 'name',
-            },
-        },
-    }.items())
+    })
 
 class ColDataWpPost(ColDataWpEntity):
     data = deepcopy(ColDataWpEntity.data)
-    data = OrderedDict(data.items() + {
+    data = SeqUtils.combine_ordered_dicts(data, {
         'password': {
             'path': None,
             'wp-api': {
@@ -953,7 +1377,7 @@ class ColDataWpPost(ColDataWpEntity):
                 'path': 'liveblog_likes'
             }
         }
-    }.items())
+    })
 
 class ColDataProduct(ColDataWpEntity):
     """
@@ -992,6 +1416,26 @@ class ColDataProduct(ColDataWpEntity):
                 'composite',
                 'bundle'
             ]
+        },
+        'product_categories': {
+            # sub-entity
+            'path': None,
+            'sub_data': ColDataSubCategory,
+            'wc-api': {
+                'path': 'categories',
+                'structure': ('listed', )
+            },
+            'wc-legacy-api': {
+                'path': 'categories',
+                'structure': ('listed', 'name')
+            },
+            'wp-api': {
+                'path': None,
+            },
+            'wc-csv': {
+                'path': 'tax:product_tag',
+                'type': 'heirarchical_pipe_array'
+            }
         },
         'featured': {
             'type': bool,
@@ -1152,7 +1596,7 @@ class ColDataProduct(ColDataWpEntity):
             'path': None,
             'wc-api': {
                 'path': 'downloads',
-                'sub_type': 'wc_wp_api_downloads'
+                'sub_data': 'wc_wp_api_downloads'
             },
             'wp-sql': {
                 'path': None
@@ -1464,7 +1908,20 @@ class ColDataProduct(ColDataWpEntity):
 
     }.items())
 
-class ColDataProductMeridian(ColDataProduct):
+class ColDataProductVariation(ColDataProduct):
+    data = deepcopy(ColDataProduct.data)
+    data['title'].update({
+        'wc-api': {
+            'path': None
+        }
+    })
+    data['parent_id'].update({
+        'wc-api': {
+            'path': None
+        }
+    })
+
+class ColDataMeridianEntityMixin(object):
     data = OrderedDict(ColDataProduct.data.items() + {
         'wootan_danger': {
             'wc-api': {
@@ -1493,8 +1950,7 @@ class ColDataProductMeridian(ColDataProduct):
                 'path': 'meta.commissionable_value'
             }
         }
-    }.items() +
-    [
+    }.items() + [
         (
             'lc_%s_%s' % (tier, field),
             {
@@ -1528,18 +1984,28 @@ class ColDataProductMeridian(ColDataProduct):
                 ('t', 'sale_price_dates_to', False, 'timestamp', False)
             ]
         )
-    ]
+    ])
+
+class ColDataProductMeridian(ColDataProduct, ColDataMeridianEntityMixin):
+    data = OrderedDict(
+        ColDataProduct.data.items()
+        + ColDataMeridianEntityMixin.data.items()
     )
 
+class ColDataProductVariationMeridian(ColDataProductVariation, ColDataMeridianEntityMixin):
+    data = OrderedDict(
+        ColDataProduct.data.items()
+        + ColDataMeridianEntityMixin.data.items()
+    )
 
-class ColDataMedia(ColDataAbstract):
+class ColDataMedia(ColDataWpEntity):
     """
     Metadata for Media items
     - wp-api-v2: http://v2.wp-api.org/reference/media/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
     """
     data = deepcopy(ColDataWpEntity.data)
-    data['content'].update({
+    data['post_content'].update({
         'wp-api-v1': {
             'path': None
         },
@@ -1549,7 +2015,7 @@ class ColDataMedia(ColDataAbstract):
             'write': False
         }
     })
-    data['excerpt'].update({
+    data['post_excerpt'].update({
         'gen-csv': {
             'path': 'caption'
         },
@@ -1559,6 +2025,15 @@ class ColDataMedia(ColDataAbstract):
         'wp-api': {
             'path': 'caption.rendered',
             'type': 'wp_content_rendered'
+        }
+    })
+    data['post_categories'].update({
+        'path': None,
+        'api': {
+            'path': None,
+        },
+        'csv': {
+            'path': None,
         }
     })
     data = SeqUtils.combine_ordered_dicts(data, {
@@ -1611,30 +2086,6 @@ class ColDataMedia(ColDataAbstract):
             'report': True
         }
     })
-
-class ColDataSubMedia(ColDataAbstract):
-    """
-    Metadata for Media sub items; media items that appear within items in the API
-    - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
-    - wc-wp-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/wp-api-v1.html#product-image-properties
-    - wc-legacy-api-v3: http://woocommerce.github.io/woocommerce-rest-api-docs/v3.html#images-properties
-    - wc-legacy-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/v2.html#images-properties
-    - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
-    """
-    data = OrderedDict(ColDataWpSubEntity.data.items() + {
-        'source_url': {
-            'write': False,
-            'type': 'uri',
-            'wc-wp-api': {
-                'path':'src'
-            }
-        },
-        'alt_text': {
-            'wc-wp-api': {
-                'path': 'alt'
-            }
-        }
-    }.items())
 
 class ColDataBase(object):
     """
