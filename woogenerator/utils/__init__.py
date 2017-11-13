@@ -13,7 +13,7 @@ sys.path.insert(0, PACKAGE_LOCATION)
 
 from .core import (SanitationUtils, DescriptorUtils, SeqUtils, DebugUtils,
                    Registrar, ValidationUtils, PHPUtils, ProgressCounter,
-                   UnicodeCsvDialectUtils, FileUtils, JSONPathUtils)
+                   UnicodeCsvDialectUtils, FileUtils, JSONPathUtils, MimeUtils)
 from .contact import NameUtils, AddressUtils
 from .clock import TimeUtils
 from .inheritence import InheritenceUtils, overrides

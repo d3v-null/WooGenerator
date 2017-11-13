@@ -14,7 +14,7 @@ import jsonpath_ng
 from jsonpath_ng import jsonpath
 
 from .utils import (JSONPathUtils, PHPUtils, Registrar, SanitationUtils,
-                    SeqUtils, TimeUtils)
+                    SeqUtils, TimeUtils, MimeUtils)
 
 
 # TODO:
@@ -386,7 +386,7 @@ class ColDataAbstract(object):
     @classmethod
     def update_in_path(cls, data, path, value):
         if not path:
-            return
+            return data
         if re.match(cls.re_simple_path, path):
             data[path] = value
             return data
@@ -462,6 +462,7 @@ class ColDataAbstract(object):
             'optional_int_minus_1': SanitationUtils.normalize_optional_int_minus_1,
             'optional_int_zero': SanitationUtils.normalize_optional_int_zero,
             'php_array': PHPUtils.unserialize_list,
+            'mime_type': MimeUtils.validate_mime_type,
         }.get(type_, SanitationUtils.coerce_unicode)
 
     @classmethod
@@ -535,11 +536,11 @@ class ColDataAbstract(object):
     @classmethod
     def translate_data_from(cls, data, target):
         # TODO: move type translation above structure translation
+        data = cls.translate_types_from(
+            data, target, cls.get_target_path_translation(target)
+        )
         data = cls.translate_paths_from(
             data, target
-        )
-        data = cls.translate_types_from(
-            data, target, cls.get_core_path_translation(target)
         )
         return data
 

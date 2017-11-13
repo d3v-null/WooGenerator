@@ -1558,6 +1558,457 @@ class PHPUtils(object):
                 return response
             return []
 
+class MimeUtils(object):
+    mime_data = {
+
+        # Image formats
+        'image/jpeg': {
+            'extensions': [
+                '.jpg', '.jpeg', '.jfif', '.jpe'
+            ]
+        },
+        'image/gif': {
+            'extensions': [
+                'gif'
+            ]
+        },
+        'image/png': {
+            'extensions': [
+                '.png', '.x-png'
+            ]
+        },
+        'image/bmp': {
+            'extensions': [
+                'bmp'
+            ]
+        },
+        'image/tiff': {
+            'extensions': [
+                'tif', 'tiff'
+            ]
+        },
+        'image/ico': {
+            'extensions': [
+                'ico'
+            ]
+        },
+        'image/jp2': {
+            'extensions': [
+                '.jp2', '.jpg2'
+            ]
+        },
+
+        # Video formats
+        'video/x-ms-asf': {
+            'extensions':[
+                'asf', 'asx'
+            ]
+        },
+        'video/x-ms-wmv': {
+            'extensions':[
+                'wmv'
+            ]
+        },
+        'video/x-ms-wmx': {
+            'extensions':[
+                'wmx'
+            ]
+        },
+        'video/x-ms-wm': {
+            'extensions':[
+                'wm'
+            ]
+        },
+        'video/avi': {
+            'extensions':[
+                'avi'
+            ]
+        },
+        'video/divx': {
+            'extensions':[
+                'divx'
+            ]
+        },
+        'video/x-flv': {
+            'extensions':[
+                'flv'
+            ]
+        },
+        'video/quicktime': {
+            'extensions':[
+                'mov', 'qt'
+            ]
+        },
+        'video/mpeg': {
+            'extensions':[
+                'mpeg', 'mpg', 'mpe'
+            ]
+        },
+        'video/mp4': {
+            'extensions':[
+                'mp4', 'm4v'
+            ]
+        },
+        'video/ogg': {
+            'extensions':[
+                'ogv'
+            ]
+        },
+        'video/webm': {
+            'extensions':[
+                'webm'
+            ]
+        },
+        'video/x-matroska': {
+            'extensions':[
+                'mkv'
+            ]
+        },
+
+        # Text formats
+        'text/plain': {
+            'extensions':[
+                'txt', 'asc', 'c', 'cc', 'h'
+            ]
+        },
+        'text/csv': {
+            'extensions':[
+                'csv'
+            ]
+        },
+        'text/tab-separated-values': {
+            'extensions':[
+                'tsv'
+            ]
+        },
+        'text/calendar': {
+            'extensions':[
+                'ics'
+            ]
+        },
+        'text/richtext': {
+            'extensions':[
+                'rtx'
+            ]
+        },
+        'text/css': {
+            'extensions':[
+                'css'
+            ]
+        },
+        'text/html': {
+            'extensions':[
+                'htm', 'html'
+            ]
+        },
+
+        # Audio formats
+        'audio/mpeg': {
+            'extensions':[
+                'mp3', 'm4a', 'm4b'
+            ]
+        },
+        'audio/x-realaudio': {
+            'extensions':[
+                'ra', 'ram'
+            ]
+        },
+        'audio/wav': {
+            'extensions':[
+                'wav'
+            ]
+        },
+        'audio/ogg': {
+            'extensions':[
+                'ogg', 'oga'
+            ]
+        },
+        'audio/midi': {
+            'extensions':[
+                'mid', 'midi'
+            ]
+        },
+        'audio/x-ms-wma': {
+            'extensions':[
+                'wma'
+            ]
+        },
+        'audio/x-ms-wax': {
+            'extensions':[
+                'wax'
+            ]
+        },
+        'audio/x-matroska': {
+            'extensions':[
+                'mka'
+            ]
+        },
+
+        # Misc application formats
+        'application/rtf': {
+            'extensions':[
+                'rtf'
+            ]
+        },
+        'application/javascript': {
+            'extensions':[
+                'js'
+            ]
+        },
+        'application/pdf': {
+            'extensions':[
+                'pdf'
+            ]
+        },
+        'application/x-shockwave-flash': {
+            'extensions':[
+                'swf'
+            ]
+        },
+        'application/java': {
+            'extensions':[
+                'class'
+            ]
+        },
+        'application/x-tar': {
+            'extensions':[
+                'tar'
+            ]
+        },
+        'application/zip': {
+            'extensions':[
+                'zip'
+            ]
+        },
+        'application/x-gzip': {
+            'extensions':[
+                'gz', 'gzip'
+            ]
+        },
+        'application/rar': {
+            'extensions':[
+                'rar'
+            ]
+        },
+        'application/x-7z-compressed': {
+            'extensions':[
+                '7z'
+            ]
+        },
+        'application/x-msdownload': {
+            'extensions':[
+                'exe'
+            ]
+        },
+
+        # MS Office formats
+        'application/msword': {
+            'extensions':[
+                'doc'
+            ]
+        },
+        'application/vnd.ms-powerpoint': {
+            'extensions':[
+                'pot', 'pps', 'ppt'
+            ]
+        },
+        'application/vnd.ms-write': {
+            'extensions':[
+                'wri'
+            ]
+        },
+        'application/vnd.ms-excel': {
+            'extensions':[
+                'xla', 'xls', 'xlt', 'xlw'
+            ]
+        },
+        'application/vnd.ms-access': {
+            'extensions':[
+                'mdb'
+            ]
+        },
+        'application/vnd.ms-project': {
+            'extensions':[
+                'mpp'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+            'extensions':[
+                'docx'
+            ]
+        },
+        'application/vnd.ms-word.document.macroEnabled.12': {
+            'extensions':[
+                'docm'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.template': {
+            'extensions':[
+                'dotx'
+            ]
+        },
+        'application/vnd.ms-word.template.macroEnabled.12': {
+            'extensions':[
+                'dotm'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+            'extensions':[
+                'xlsx'
+            ]
+        },
+        'application/vnd.ms-excel.sheet.macroEnabled.12': {
+            'extensions':[
+                'xlsm'
+            ]
+        },
+        'application/vnd.ms-excel.sheet.binary.macroEnabled.12': {
+            'extensions':[
+                'xlsb'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.template': {
+            'extensions':[
+                'xltx'
+            ]
+        },
+        'application/vnd.ms-excel.template.macroEnabled.12': {
+            'extensions':[
+                'xltm'
+            ]
+        },
+        'application/vnd.ms-excel.addin.macroEnabled.12': {
+            'extensions':[
+                'xlam'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
+            'extensions':[
+                'pptx'
+            ]
+        },
+        'application/vnd.ms-powerpoint.presentation.macroEnabled.12': {
+            'extensions':[
+                'pptm'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.presentationml.slideshow': {
+            'extensions':[
+                'ppsx'
+            ]
+        },
+        'application/vnd.ms-powerpoint.slideshow.macroEnabled.12': {
+            'extensions':[
+                'ppsm'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.presentationml.template': {
+            'extensions':[
+                'potx'
+            ]
+        },
+        'application/vnd.ms-powerpoint.template.macroEnabled.12': {
+            'extensions':[
+                'potm'
+            ]
+        },
+        'application/vnd.ms-powerpoint.addin.macroEnabled.12': {
+            'extensions':[
+                'ppam'
+            ]
+        },
+        'application/vnd.openxmlformats-officedocument.presentationml.slide': {
+            'extensions':[
+                'sldx'
+            ]
+        },
+        'application/vnd.ms-powerpoint.slide.macroEnabled.12': {
+            'extensions':[
+                'sldm'
+            ]
+        },
+        'application/onenote': {
+            'extensions':[
+                'onetoc', 'onetoc2', 'onetmp', 'onepkg'
+            ]
+        },
+
+        # OpenOffice formats
+        'application/vnd.oasis.opendocument.text': {
+            'extensions':[
+                'odt'
+            ]
+        },
+        'application/vnd.oasis.opendocument.presentation': {
+            'extensions':[
+                'odp'
+            ]
+        },
+        'application/vnd.oasis.opendocument.spreadsheet': {
+            'extensions':[
+                'ods'
+            ]
+        },
+        'application/vnd.oasis.opendocument.graphics': {
+            'extensions':[
+                'odg'
+            ]
+        },
+        'application/vnd.oasis.opendocument.chart': {
+            'extensions':[
+                'odc'
+            ]
+        },
+        'application/vnd.oasis.opendocument.database': {
+            'extensions':[
+                'odb'
+            ]
+        },
+        'application/vnd.oasis.opendocument.formula': {
+            'extensions':[
+                'odf'
+            ]
+        },
+
+        # WordPerfect formats
+        'application/wordperfect': {
+            'extensions':[
+                'wp', 'wpd'
+            ]
+        },
+
+        # iWork formats
+        'application/vnd.apple.keynote': {
+            'extensions':[
+                'key'
+            ]
+        },
+        'application/vnd.apple.numbers': {
+            'extensions':[
+                'numbers'
+            ]
+        },
+        'application/vnd.apple.pages': {
+            'extensions':[
+                    'pages'
+                ]
+        },
+    }
+
+    @classmethod
+    def validate_mime_type(cls, string):
+        if not string:
+            return
+        if string.lower() in cls.mime_data:
+            return string.lower()
+
+    @classmethod
+    def get_ext_mime_tyoe(cls, extension):
+        for mime_type, data in cls.mime_data:
+            extensions = data.get('extensions', [])
+            if extension.lower() in extensions:
+                return mime_type
+
 
 class ProgressCounter(object):
 
