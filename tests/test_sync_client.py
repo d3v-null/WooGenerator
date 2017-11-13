@@ -123,8 +123,6 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             first_post = client.get_first_endpoint_item()
             if self.debug:
                 print('api first_post raw:\n%s' % pformat(first_post))
-                # import pudb; pudb.set_trace()
-                print('wp-api translation:\n%s' % pformat(self.coldata_class.get_path_translation('wp-api-v2')))
             wp_api_first_post_normalized = self.coldata_class.translate_data_from(
                 first_post, 'wp-api-v2'
             )

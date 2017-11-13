@@ -149,7 +149,7 @@ class TestColDataImg(TestColData):
             'post_type',
             'width',
         ])
-        actual_handles = set(path_translation.values())
+        actual_handles = set(path_translation.keys())
         if self.debug:
             print("actual handles: %s" % actual_handles)
             print("difference: %s" % expected_handles.difference(actual_handles))
@@ -441,10 +441,10 @@ class TestColDataImg(TestColData):
         # for key in self.coldata_class.data.keys():
         #     if key not in ['media_details', 'media_type']:
         #         del(self.coldata_class.data[key])
-        translated_v2 = self.coldata_class.do_path_translation(
+        translated_v2 = self.coldata_class.translate_structure_from(
             api_data_v2, 'wp-api-v2'
         )
-        translated_v1 = self.coldata_class.do_path_translation(
+        translated_v1 = self.coldata_class.translate_structure_from(
             api_data_v1, 'wp-api-v1'
         )
         key_intersection = set(translated_v1.keys()).intersection(translated_v2.keys())
@@ -466,6 +466,9 @@ class TestColDataImg(TestColData):
                 u'rendered': 'foo &gt; bar'
             }
         }
+
+        if self.debug:
+            import pudb; pudb.set_trace()
 
         self.assertEquals(
             self.coldata_class.translate_data_from(denormalized, 'wp-api'),

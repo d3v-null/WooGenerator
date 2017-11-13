@@ -4,15 +4,17 @@ Utility for keeping track of column metadata for translating between databases.
 
 from __future__ import absolute_import
 
+import functools
 import itertools
+import re
 from collections import OrderedDict
 from copy import copy, deepcopy
-import functools
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import JSONPathUtils, Registrar, SeqUtils, SanitationUtils, TimeUtils, PHPUtils
+from .utils import (JSONPathUtils, PHPUtils, Registrar, SanitationUtils,
+                    SeqUtils, TimeUtils)
 
 
 # TODO:
@@ -224,25 +226,39 @@ class ColDataAbstract(object):
         return results
 
     @classmethod
-    def get_path_translation(cls, from_target, to_target=None):
+    def get_path_translation(cls, target):
         """
-        Return a list of tuples of path specs for translating between different targets.
+        Return a mapping of core paths to paths in `target` structure.
         """
-        if from_target == to_target:
-            return None
-        from_paths = {}
-        if from_target:
-            from_paths = cls.get_handles_property('path', from_target)
-        to_paths = {}
-        if to_target:
-            to_paths = cls.get_handles_property('path', to_target)
-        translation = {}
+        if target == None:
+            return
+        target_paths = cls.get_handles_property('path', target)
+        translation = OrderedDict()
         for handle in cls.data.keys():
-            from_path = from_paths.get(handle, handle)
-            to_path = to_paths.get(handle, handle)
-            if from_path and to_path:
-                translation[from_path] = to_path
+            target_path = target_paths.get(handle, handle)
+            translation[handle] = target_path
         return translation
+    #
+    # @classmethod
+    # def get_path_translation(cls, from_target, to_target=None):
+    #     """
+    #     Return a list of tuples of path specs for translating between different targets.
+    #     """
+    #     if from_target == to_target:
+    #         return None
+    #     from_paths = {}
+    #     if from_target:
+    #         from_paths = cls.get_handles_property('path', from_target)
+    #     to_paths = {}
+    #     if to_target:
+    #         to_paths = cls.get_handles_property('path', to_target)
+    #     translation = {}
+    #     for handle in cls.data.keys():
+    #         from_path = from_paths.get(handle, handle)
+    #         to_path = to_paths.get(handle, handle)
+    #         if from_path and to_path:
+    #             translation[from_path] = to_path
+    #     return translation
 
     # @classmethod
     # def delistify(cls, datum, key_key, value_key):
@@ -306,33 +322,101 @@ class ColDataAbstract(object):
     #         response[handle] = cls.listify(data[handle], **listed_structure)
     #     return response
 
-    @classmethod
-    def do_path_translation(cls, data, from_target=None, to_target=None):
-        """
-        Translate an object with from_target struction into to_target structure.
-        Does not translate data formats.
-        """
-        translation = cls.get_path_translation(from_target, to_target)
-        # delistification = cls.get_handles_property('listed', from_target)
-        # for handle, listed_structure in delistification.items():
-        #     to_key = translation.
-        #     data[handle] = cls.delistify(data[handle], **listed_structure)
+    re_simple_path = r'^[A-Za-z_]+$'
 
+    @classmethod
+    def path_exists(cls, data, path):
+        if not path:
+            return
+        if re.match(cls.re_simple_path, path):
+            return path in data
+        getter = jsonpath_ng.parse(path)
+        return getter.find(data)
+
+    @classmethod
+    def get_from_path(cls, data, path):
+        # TODO: get defaults necessary here?
+        if not path:
+            return
+        if re.match(cls.re_simple_path, path):
+            return data.get(path)
+        getter = jsonpath_ng.parse(path)
+        results = getter.find(data)
+        if results:
+            return results[0].value
+
+    @classmethod
+    def update_in_path(cls, data, path, value):
+        if not path:
+            return
+        if re.match(cls.re_simple_path, path):
+            data[path] = value
+            return data
+        updater = jsonpath_ng.parse(path)
+        return JSONPathUtils.blank_update(updater, data, value)
+
+    @classmethod
+    def translate_structure_from(cls, data, target):
+        """
+        Translate the structure of data from `target` to core.
+        """
+        translation = cls.get_path_translation(target)
         response = data
         if translation:
             response = OrderedDict()
-            for from_path, to_path in translation.items():
-                getter = jsonpath_ng.parse(from_path)
-                results = getter.find(data)
-                if not results:
+            for handle, target_path in translation.items():
+                if not cls.path_exists(data, target_path):
                     continue
-                result_value = results[0].value
-                updater = jsonpath_ng.parse(to_path)
-                response = JSONPathUtils.blank_update(updater, response, result_value)
-        # listification = cls.get_handles_property('listed', to_target)
-        # for handle, listed_structure in listification.items():
-        #     response[handle] = cls.listify(data[handle], **listed_structure)
+                response = cls.update_in_path(
+                    response,
+                    handle,
+                    cls.get_from_path(data, target_path)
+                )
         return response
+
+    @classmethod
+    def translate_structure_to(cls, data, target):
+        translation = cls.get_path_translation(target)
+        response = data
+        if translation:
+            response = OrderedDict()
+            for handle, target_path in translation.items():
+                if not cls.path_exists(data, handle):
+                    continue
+                response = cls.update_in_path(
+                    response,
+                    target_path,
+                    cls.get_from_path(data, handle)
+                )
+        return response
+
+    # @classmethod
+    # def do_path_translation(cls, data, from_target=None, to_target=None):
+    #     """
+    #     Translate an object with from_target struction into to_target structure.
+    #     Does not translate data formats.
+    #     """
+    #     translation = cls.get_path_translation(from_target, to_target)
+    #     # delistification = cls.get_handles_property('listed', from_target)
+    #     # for handle, listed_structure in delistification.items():
+    #     #     to_key = translation.
+    #     #     data[handle] = cls.delistify(data[handle], **listed_structure)
+    #
+    #     response = data
+    #     if translation:
+    #         response = OrderedDict()
+    #         for from_path, to_path in translation.items():
+    #             getter = jsonpath_ng.parse(from_path)
+    #             results = getter.find(data)
+    #             if not results:
+    #                 continue
+    #             result_value = results[0].value
+    #             updater = jsonpath_ng.parse(to_path)
+    #             response = JSONPathUtils.blank_update(updater, response, result_value)
+    #     # listification = cls.get_handles_property('listed', to_target)
+    #     # for handle, listed_structure in listification.items():
+    #     #     response[handle] = cls.listify(data[handle], **listed_structure)
+    #     return response
 
     @classmethod
     def get_normalizer(cls, type_):
@@ -391,17 +475,15 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_data_from(cls, data, target):
-        data = cls.do_path_translation(data, target)
+        data = cls.translate_structure_from(data, target)
         data = cls.normalize_data(data, target)
         return data
 
     @classmethod
     def translate_data_to(cls, data, target):
         data = cls.denormalize_data(data, target)
-        data = cls.do_path_translation(data, None, target)
+        data = cls.translate_structure_to(data, target)
         return data
-
-
 
     @classmethod
     def get_defaults(cls, target=None):

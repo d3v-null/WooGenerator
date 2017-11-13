@@ -1041,7 +1041,7 @@ class SyncClientSqlWP(SyncClientAbstract):
         wp_db_core_cols = OrderedDict()
         wp_db_meta_cols = OrderedDict()
 
-        for db_path, handle in wp_db_col_paths.items():
+        for handle, db_path in wp_db_col_paths.items():
             path_tokens = db_path.split('.')
 
             if path_tokens[0] == 'meta':
