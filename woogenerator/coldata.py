@@ -112,6 +112,7 @@ class ColDataAbstract(object):
 
     handle_cache = OrderedDict()
     handles_cache = OrderedDict()
+    re_simple_path = r'^[A-Za-z_]+$'
 
     @classmethod
     def get_target_ancestors(cls, targets=None, target=None):
@@ -238,27 +239,6 @@ class ColDataAbstract(object):
             target_path = target_paths.get(handle, handle)
             translation[handle] = target_path
         return translation
-    #
-    # @classmethod
-    # def get_path_translation(cls, from_target, to_target=None):
-    #     """
-    #     Return a list of tuples of path specs for translating between different targets.
-    #     """
-    #     if from_target == to_target:
-    #         return None
-    #     from_paths = {}
-    #     if from_target:
-    #         from_paths = cls.get_handles_property('path', from_target)
-    #     to_paths = {}
-    #     if to_target:
-    #         to_paths = cls.get_handles_property('path', to_target)
-    #     translation = {}
-    #     for handle in cls.data.keys():
-    #         from_path = from_paths.get(handle, handle)
-    #         to_path = to_paths.get(handle, handle)
-    #         if from_path and to_path:
-    #             translation[from_path] = to_path
-    #     return translation
 
     @classmethod
     def delistify(cls, datum, key_key, value_key):
@@ -276,53 +256,6 @@ class ColDataAbstract(object):
         for key, value in datum.items():
             response.append({key_key: key, value_key: value})
         return response
-
-    # def translate_path_from(cls, data, target):
-    #     """
-    #     Translate `data` with `target` structure to core structure.
-    #     Delistify paths before translation if necessaty
-    #     """
-    #     translation = cls.get_path_translation(target, )
-    #     if not translation:
-    #         return data
-    #
-    #     delistifications = cls.get_handles_property('listed', target)
-    #
-    #     for handle, listed_structure in delistification.items():
-    #
-    #
-    #     for target_path, handle in translation.items():
-    #         if handle in delistifications
-    #             data[target_path] = cls.delistify(
-    #                 data[target_path],
-    #                 **delistifications.get(handle)
-    #             )
-    #     for target_path, handle in translation.items():
-    #
-    #
-    #
-    #     for handle, listed_structure in delistification.items():
-    #         to_key = translation.
-    #         data[handle] = cls.delistify(data[handle], **listed_structure)
-    #
-    #     response = data
-    #     if translation:
-    #         response = OrderedDict()
-    #         for from_path, to_path in translation.items():
-    #             getter = jsonpath_ng.parse(from_path)
-    #             results = getter.find(data)
-    #             if not results:
-    #                 continue
-    #             result_value = results[0].value
-    #
-    #             updater = jsonpath_ng.parse(to_path)
-    #             response = JSONPathUtils.blank_update(updater, response, result_value)
-    #     listification = cls.get_handles_property('listed', to_target)
-    #     for handle, listed_structure in listification.items():
-    #         response[handle] = cls.listify(data[handle], **listed_structure)
-    #     return response
-
-    re_simple_path = r'^[A-Za-z_]+$'
 
     @classmethod
     def path_exists(cls, data, path):
@@ -808,32 +741,45 @@ class ColDataWpEntity(ColDataAbstract):
             }
         },
         'terms': {
+            # sub-entity
             'path': None,
             'wp-api-v1': {
                 'path': 'terms',
             },
         },
         'meta': {
+            # sub-entity
+            'wp-api': {
+                'type': ('listed', ('key', ('id', 'value')))
+            },
             'wp-api-v1': {
-                'path': 'post_meta'
+                'path': 'post_meta',
+                'type': ('mapping', ('key', 'value'))
             },
             'wc-api': {
                 'path': 'meta_data',
-                'listed': ('key', 'value'),
-                'type': 'listed_meta',
+                'type': ('listed', ('key', ('id', 'value')))
             },
             'wc-legacy-api': {
-                'path': 'custom_meta'
+                'path': 'custom_meta',
+                'type': ('listed', ('key', ('id', 'value')))
             },
             'wp-sql':{
                 'path': None,
+            },
+            'gen-csv': {
+                'type': ('mapping', ('key', 'value'))
             }
         },
         'categories': {
+            # sub-entity
             'path': None,
             'wc-api': {
-                'type': 'wc_wp_api_categories',
-                'path': 'categories'
+                'path': 'categories',
+                'type': ('listed', ('id', 'slug', 'name'))
+            },
+            'wp-api-v2': {
+                'path': None,
             },
             'wp-api-v1': {
                 # note: in wp-api-v1 terms.category is an object if there is
@@ -869,6 +815,7 @@ class ColDataWpEntity(ColDataAbstract):
             },
         },
         'tags': {
+            # sub-entity
             'path': None,
             'wp-api-v1': {
                 # note: in wp-api-v1 terms.category is an object if there is
@@ -924,7 +871,6 @@ class ColDataWpSubEntity(ColDataAbstract):
         },
     }.items())
 
-
 class ColDataWpPost(ColDataWpEntity):
     data = deepcopy(ColDataWpEntity.data)
     data = OrderedDict(data.items() + {
@@ -960,6 +906,9 @@ class ColDataWpPost(ColDataWpEntity):
             'type': 'optional_int_zero',
             'wp-api': {
                 'path': 'featured_media'
+            },
+            'wp-api-v1': {
+                'path': 'featured_image.ID'
             },
             'wp-sql': {
                 'path': 'meta._thumbnail_id'
@@ -1174,8 +1123,9 @@ class ColDataProduct(ColDataWpEntity):
         'total_sales': {
             'write': False,
             'path': None,
+            'type': int,
             'wc-api': {
-                'path': 'on_sale'
+                'path': 'total_sales'
             },
             'wp-sql': {
                 'path': 'meta.total_sales'
@@ -1201,7 +1151,8 @@ class ColDataProduct(ColDataWpEntity):
         'downloads': {
             'path': None,
             'wc-api': {
-                'path': 'downloads'
+                'path': 'downloads',
+                'sub_type': 'wc_wp_api_downloads'
             },
             'wp-sql': {
                 'path': None
