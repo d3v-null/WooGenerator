@@ -1563,435 +1563,269 @@ class MimeUtils(object):
 
         # Image formats
         'image/jpeg': {
-            'extensions': [
-                '.jpg', '.jpeg', '.jfif', '.jpe'
-            ]
+            'extensions': ['.jpg', '.jpeg', '.jfif', '.jpe']
         },
         'image/gif': {
-            'extensions': [
-                'gif'
-            ]
+            'extensions': ['gif']
         },
         'image/png': {
-            'extensions': [
-                '.png', '.x-png'
-            ]
+            'extensions': ['.png', '.x-png']
         },
         'image/bmp': {
-            'extensions': [
-                'bmp'
-            ]
+            'extensions': ['bmp']
         },
         'image/tiff': {
-            'extensions': [
-                'tif', 'tiff'
-            ]
+            'extensions': ['tif', 'tiff']
         },
         'image/ico': {
-            'extensions': [
-                'ico'
-            ]
+            'extensions': ['ico']
         },
         'image/jp2': {
-            'extensions': [
-                '.jp2', '.jpg2'
-            ]
+            'extensions': ['.jp2', '.jpg2']
         },
 
         # Video formats
         'video/x-ms-asf': {
-            'extensions':[
-                'asf', 'asx'
-            ]
+            'extensions': ['asf', 'asx']
         },
         'video/x-ms-wmv': {
-            'extensions':[
-                'wmv'
-            ]
+            'extensions': ['wmv']
         },
         'video/x-ms-wmx': {
-            'extensions':[
-                'wmx'
-            ]
+            'extensions': ['wmx']
         },
         'video/x-ms-wm': {
-            'extensions':[
-                'wm'
-            ]
+            'extensions': ['wm']
         },
         'video/avi': {
-            'extensions':[
-                'avi'
-            ]
+            'extensions': ['avi']
         },
         'video/divx': {
-            'extensions':[
-                'divx'
-            ]
+            'extensions': ['divx']
         },
         'video/x-flv': {
-            'extensions':[
-                'flv'
-            ]
+            'extensions': ['flv']
         },
         'video/quicktime': {
-            'extensions':[
-                'mov', 'qt'
-            ]
+            'extensions': ['mov', 'qt']
         },
         'video/mpeg': {
-            'extensions':[
-                'mpeg', 'mpg', 'mpe'
-            ]
+            'extensions': ['mpeg', 'mpg', 'mpe']
         },
         'video/mp4': {
-            'extensions':[
-                'mp4', 'm4v'
-            ]
+            'extensions': ['mp4', 'm4v']
         },
         'video/ogg': {
-            'extensions':[
-                'ogv'
-            ]
+            'extensions': ['ogv']
         },
         'video/webm': {
-            'extensions':[
-                'webm'
-            ]
+            'extensions': ['webm']
         },
         'video/x-matroska': {
-            'extensions':[
-                'mkv'
-            ]
+            'extensions': ['mkv']
         },
 
         # Text formats
         'text/plain': {
-            'extensions':[
-                'txt', 'asc', 'c', 'cc', 'h'
-            ]
+            'extensions': ['txt', 'asc', 'c', 'cc', 'h']
         },
         'text/csv': {
-            'extensions':[
-                'csv'
-            ]
+            'extensions': ['csv']
         },
         'text/tab-separated-values': {
-            'extensions':[
-                'tsv'
-            ]
+            'extensions': ['tsv']
         },
         'text/calendar': {
-            'extensions':[
-                'ics'
-            ]
+            'extensions': ['ics']
         },
         'text/richtext': {
-            'extensions':[
-                'rtx'
-            ]
+            'extensions': ['rtx']
         },
         'text/css': {
-            'extensions':[
-                'css'
-            ]
+            'extensions': ['css']
         },
         'text/html': {
-            'extensions':[
-                'htm', 'html'
-            ]
+            'extensions': ['htm', 'html']
         },
 
         # Audio formats
         'audio/mpeg': {
-            'extensions':[
-                'mp3', 'm4a', 'm4b'
-            ]
+            'extensions': ['mp3', 'm4a', 'm4b']
         },
         'audio/x-realaudio': {
-            'extensions':[
-                'ra', 'ram'
-            ]
+            'extensions': ['ra', 'ram']
         },
         'audio/wav': {
-            'extensions':[
-                'wav'
-            ]
+            'extensions': ['wav']
         },
         'audio/ogg': {
-            'extensions':[
-                'ogg', 'oga'
-            ]
+            'extensions': ['ogg', 'oga']
         },
         'audio/midi': {
-            'extensions':[
-                'mid', 'midi'
-            ]
+            'extensions': ['mid', 'midi']
         },
         'audio/x-ms-wma': {
-            'extensions':[
-                'wma'
-            ]
+            'extensions': ['wma']
         },
         'audio/x-ms-wax': {
-            'extensions':[
-                'wax'
-            ]
+            'extensions': ['wax']
         },
         'audio/x-matroska': {
-            'extensions':[
-                'mka'
-            ]
+            'extensions': ['mka']
         },
 
         # Misc application formats
         'application/rtf': {
-            'extensions':[
-                'rtf'
-            ]
+            'extensions': ['rtf']
         },
         'application/javascript': {
-            'extensions':[
-                'js'
-            ]
+            'extensions': ['js']
         },
         'application/pdf': {
-            'extensions':[
-                'pdf'
-            ]
+            'extensions': ['pdf']
         },
         'application/x-shockwave-flash': {
-            'extensions':[
-                'swf'
-            ]
+            'extensions': ['swf']
         },
         'application/java': {
-            'extensions':[
-                'class'
-            ]
+            'extensions': ['class']
         },
         'application/x-tar': {
-            'extensions':[
-                'tar'
-            ]
+            'extensions': ['tar']
         },
         'application/zip': {
-            'extensions':[
-                'zip'
-            ]
+            'extensions': ['zip']
         },
         'application/x-gzip': {
-            'extensions':[
-                'gz', 'gzip'
-            ]
+            'extensions': ['gz', 'gzip']
         },
         'application/rar': {
-            'extensions':[
-                'rar'
-            ]
+            'extensions': ['rar']
         },
         'application/x-7z-compressed': {
-            'extensions':[
-                '7z'
-            ]
+            'extensions': ['7z']
         },
         'application/x-msdownload': {
-            'extensions':[
-                'exe'
-            ]
+            'extensions': ['exe']
         },
 
         # MS Office formats
         'application/msword': {
-            'extensions':[
-                'doc'
-            ]
+            'extensions': ['doc']
         },
         'application/vnd.ms-powerpoint': {
-            'extensions':[
-                'pot', 'pps', 'ppt'
-            ]
+            'extensions': ['pot', 'pps', 'ppt']
         },
         'application/vnd.ms-write': {
-            'extensions':[
-                'wri'
-            ]
+            'extensions': ['wri']
         },
         'application/vnd.ms-excel': {
-            'extensions':[
-                'xla', 'xls', 'xlt', 'xlw'
-            ]
+            'extensions': ['xla', 'xls', 'xlt', 'xlw']
         },
         'application/vnd.ms-access': {
-            'extensions':[
-                'mdb'
-            ]
+            'extensions': ['mdb']
         },
         'application/vnd.ms-project': {
-            'extensions':[
-                'mpp'
-            ]
+            'extensions': ['mpp']
         },
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
-            'extensions':[
-                'docx'
-            ]
+            'extensions': ['docx']
         },
         'application/vnd.ms-word.document.macroEnabled.12': {
-            'extensions':[
-                'docm'
-            ]
+            'extensions': ['docm']
         },
         'application/vnd.openxmlformats-officedocument.wordprocessingml.template': {
-            'extensions':[
-                'dotx'
-            ]
+            'extensions': ['dotx']
         },
         'application/vnd.ms-word.template.macroEnabled.12': {
-            'extensions':[
-                'dotm'
-            ]
+            'extensions': ['dotm']
         },
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
-            'extensions':[
-                'xlsx'
-            ]
+            'extensions': ['xlsx']
         },
         'application/vnd.ms-excel.sheet.macroEnabled.12': {
-            'extensions':[
-                'xlsm'
-            ]
+            'extensions': ['xlsm']
         },
         'application/vnd.ms-excel.sheet.binary.macroEnabled.12': {
-            'extensions':[
-                'xlsb'
-            ]
+            'extensions': ['xlsb']
         },
         'application/vnd.openxmlformats-officedocument.spreadsheetml.template': {
-            'extensions':[
-                'xltx'
-            ]
+            'extensions': ['xltx']
         },
         'application/vnd.ms-excel.template.macroEnabled.12': {
-            'extensions':[
-                'xltm'
-            ]
+            'extensions': ['xltm']
         },
         'application/vnd.ms-excel.addin.macroEnabled.12': {
-            'extensions':[
-                'xlam'
-            ]
+            'extensions': ['xlam']
         },
         'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
-            'extensions':[
-                'pptx'
-            ]
+            'extensions': ['pptx']
         },
         'application/vnd.ms-powerpoint.presentation.macroEnabled.12': {
-            'extensions':[
-                'pptm'
-            ]
+            'extensions': ['pptm']
         },
         'application/vnd.openxmlformats-officedocument.presentationml.slideshow': {
-            'extensions':[
-                'ppsx'
-            ]
+            'extensions': ['ppsx']
         },
         'application/vnd.ms-powerpoint.slideshow.macroEnabled.12': {
-            'extensions':[
-                'ppsm'
-            ]
+            'extensions': ['ppsm']
         },
         'application/vnd.openxmlformats-officedocument.presentationml.template': {
-            'extensions':[
-                'potx'
-            ]
+            'extensions': ['potx']
         },
         'application/vnd.ms-powerpoint.template.macroEnabled.12': {
-            'extensions':[
-                'potm'
-            ]
+            'extensions': ['potm']
         },
         'application/vnd.ms-powerpoint.addin.macroEnabled.12': {
-            'extensions':[
-                'ppam'
-            ]
+            'extensions': ['ppam']
         },
         'application/vnd.openxmlformats-officedocument.presentationml.slide': {
-            'extensions':[
-                'sldx'
-            ]
+            'extensions': ['sldx']
         },
         'application/vnd.ms-powerpoint.slide.macroEnabled.12': {
-            'extensions':[
-                'sldm'
-            ]
+            'extensions': ['sldm']
         },
         'application/onenote': {
-            'extensions':[
-                'onetoc', 'onetoc2', 'onetmp', 'onepkg'
-            ]
+            'extensions': ['onetoc', 'onetoc2', 'onetmp', 'onepkg']
         },
 
         # OpenOffice formats
         'application/vnd.oasis.opendocument.text': {
-            'extensions':[
-                'odt'
-            ]
+            'extensions': ['odt']
         },
         'application/vnd.oasis.opendocument.presentation': {
-            'extensions':[
-                'odp'
-            ]
+            'extensions': ['odp']
         },
         'application/vnd.oasis.opendocument.spreadsheet': {
-            'extensions':[
-                'ods'
-            ]
+            'extensions': ['ods']
         },
         'application/vnd.oasis.opendocument.graphics': {
-            'extensions':[
-                'odg'
-            ]
+            'extensions': ['odg']
         },
         'application/vnd.oasis.opendocument.chart': {
-            'extensions':[
-                'odc'
-            ]
+            'extensions': ['odc']
         },
         'application/vnd.oasis.opendocument.database': {
-            'extensions':[
-                'odb'
-            ]
+            'extensions': ['odb']
         },
         'application/vnd.oasis.opendocument.formula': {
-            'extensions':[
-                'odf'
-            ]
+            'extensions': ['odf']
         },
 
         # WordPerfect formats
         'application/wordperfect': {
-            'extensions':[
-                'wp', 'wpd'
-            ]
+            'extensions': ['wp', 'wpd']
         },
 
         # iWork formats
         'application/vnd.apple.keynote': {
-            'extensions':[
-                'key'
-            ]
+            'extensions': ['key']
         },
         'application/vnd.apple.numbers': {
-            'extensions':[
-                'numbers'
-            ]
+            'extensions': ['numbers']
         },
         'application/vnd.apple.pages': {
-            'extensions':[
-                    'pages'
-                ]
+            'extensions': ['pages']
         },
     }
 
@@ -2003,7 +1837,7 @@ class MimeUtils(object):
             return string.lower()
 
     @classmethod
-    def get_ext_mime_tyoe(cls, extension):
+    def get_ext_mime_type(cls, extension):
         for mime_type, data in cls.mime_data:
             extensions = data.get('extensions', [])
             if extension.lower() in extensions:

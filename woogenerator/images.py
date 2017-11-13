@@ -35,11 +35,11 @@ class MetaGator(Registrar):
 
     @property
     def is_jpg(self):
-        return ImgUtils.get_mime_type(self.ext) in ['image/jpeg', 'image/jp2']
+        return MimeUtils.get_ext_mime_type(self.ext) in ['image/jpeg', 'image/jp2']
 
     @property
     def is_png(self):
-        return ImgUtils.get_mime_type(self.ext) in ['image/png']
+        return MimeUtils.get_ext_mime_type(self.ext) in ['image/png']
 
     def write_meta(self, title, description):
         title, description = map(
@@ -347,7 +347,7 @@ def process_images(settings, parsers):
             )
             continue
 
-        mime_type = ImgUtils.get_mime_type(ext)
+        mime_type = MimeUtils.get_ext_mime_type(ext)
         if not mime_type:
             invalid_image(
                 parsers,

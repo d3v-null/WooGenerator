@@ -442,6 +442,14 @@ class ColDataAbstract(object):
         return response
 
     @classmethod
+    def translate_structure_from(cls, data, target, path_translation=None):
+        return data
+
+    @classmethod
+    def translate_structure_to(cls, data, target, path_translation=None):
+        return data
+
+    @classmethod
     def get_normalizer(cls, type_):
         if type(type_) == type:
             return type_
@@ -481,10 +489,14 @@ class ColDataAbstract(object):
             'stock_status': SanitationUtils.bool2stock_status,
             'php_array': PHPUtils.serialize_list,
             'timestamp': TimeUtils.datetime2timestamp,
+            'mime_type': MimeUtils.validate_mime_type,
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
     def translate_types(cls, data, type_translation, path_translation):
+        """
+        Translate the data using functions
+        """
         for handle in cls.data.keys():
             if handle in type_translation and handle in path_translation:
                 target_path = path_translation.get(handle)
@@ -539,6 +551,9 @@ class ColDataAbstract(object):
         data = cls.translate_types_from(
             data, target, cls.get_target_path_translation(target)
         )
+        data = cls.translate_structure_from(
+            data, target, cls.get_target_path_translation(target)
+        )
         data = cls.translate_paths_from(
             data, target
         )
@@ -547,6 +562,9 @@ class ColDataAbstract(object):
     @classmethod
     def translate_data_to(cls, data, target):
         data = cls.translate_types_to(
+            data, target, cls.get_target_path_translation(target)
+        )
+        data = cls.translate_structure_to(
             data, target, cls.get_target_path_translation(target)
         )
         data = cls.translate_paths_to(
