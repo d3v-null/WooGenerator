@@ -444,10 +444,10 @@ class TestColDataImg(TestColData):
         # for key in self.coldata_class.data.keys():
         #     if key not in ['media_details', 'media_type']:
         #         del(self.coldata_class.data[key])
-        translated_v2 = self.coldata_class.translate_structure_from(
+        translated_v2 = self.coldata_class.translate_paths_from(
             api_data_v2, 'wp-api-v2'
         )
-        translated_v1 = self.coldata_class.translate_structure_from(
+        translated_v1 = self.coldata_class.translate_paths_from(
             api_data_v1, 'wp-api-v1'
         )
         key_intersection = set(translated_v1.keys()).intersection(translated_v2.keys())

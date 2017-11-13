@@ -325,6 +325,14 @@ class ColDataAbstract(object):
         return results
 
     @classmethod
+    def get_property_exclusions(cls, property_, target=None):
+        exclusions = []
+        for handle, value in cls.get_handles_property(property_).items():
+            if not value:
+                exclusions.append(value)
+        return exclusions
+
+    @classmethod
     def get_path_translation(cls, target):
         """
         Return a mapping of core paths to paths in `target` structure.
@@ -372,7 +380,7 @@ class ColDataAbstract(object):
         return JSONPathUtils.blank_update(updater, data, value)
 
     @classmethod
-    def translate_structure_from(cls, data, target):
+    def translate_paths_from(cls, data, target):
         """
         Translate the structure of data from `target` to core.
         """
@@ -396,7 +404,7 @@ class ColDataAbstract(object):
         return response
 
     @classmethod
-    def translate_structure_to(cls, data, target):
+    def translate_paths_to(cls, data, target):
         """
         Translate the structure of data from core to `target`.
         """
@@ -483,10 +491,11 @@ class ColDataAbstract(object):
     @classmethod
     def translate_types_from(cls, data, target, path_translation=None):
         if path_translation is None:
+            exclusions = cls.get_property_exclusions('path')
             path_translation = OrderedDict([
                 (handle, handle) \
-                for handle, target_path in cls.get_path_translation(target).items() \
-                if target_path is not None
+                for handle in cls.data.keys() \
+                if handle not in exclusions
             ])
         type_translation = OrderedDict([
             (handle, cls.get_normalizer(type_)) \
@@ -502,10 +511,11 @@ class ColDataAbstract(object):
     @classmethod
     def translate_types_to(cls, data, target, path_translation=None):
         if path_translation is None:
+            exclusions = cls.get_property_exclusions('path')
             path_translation = OrderedDict([
                 (handle, handle) \
-                for handle, target_path in cls.get_path_translation(target).items() \
-                if target_path is not None
+                for handle in cls.data.keys() \
+                if handle not in exclusions
             ])
         return cls.translate_types(
             data,
@@ -520,14 +530,14 @@ class ColDataAbstract(object):
     @classmethod
     def translate_data_from(cls, data, target):
         # TODO: move type translation above structure translation
-        data = cls.translate_structure_from(data, target)
+        data = cls.translate_paths_from(data, target)
         data = cls.translate_types_from(data, target)
         return data
 
     @classmethod
     def translate_data_to(cls, data, target):
         data = cls.translate_types_to(data, target)
-        data = cls.translate_structure_to(data, target)
+        data = cls.translate_paths_to(data, target)
         return data
 
     @classmethod
