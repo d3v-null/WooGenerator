@@ -738,6 +738,8 @@ class ColDataAbstract(object):
         """
         Perform a full translation of paths and types between target and core
         """
+        if not data:
+            return data
         # split target_path_translation on which handles have sub_data
         target_path_translation = cls.get_target_path_translation(target)
         core_path_translation = cls.get_core_path_translation(target)
@@ -773,11 +775,14 @@ class ColDataAbstract(object):
         """
         Perform a full translation of paths and types between core and target
         """
+
+        core_path_translation = cls.get_core_path_translation(target)
+
         data = cls.translate_types_to(
-            data, target, cls.get_target_path_translation(target)
+            data, target, core_path_translation
         )
         data = cls.translate_structure_to(
-            data, target, cls.get_target_path_translation(target)
+            data, target, core_path_translation
         )
         data = cls.translate_paths_to(
             data, target

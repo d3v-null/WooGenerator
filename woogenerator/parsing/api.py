@@ -479,9 +479,11 @@ class ApiParseWoo(
         self.join_category(cat_data, object_data)
 
         if 'image' in category_api_data:
-            self.process_api_sub_image(
-                category_api_data['image'], cat_data
-            )
+            api_sub_image_data = category_api_data['image']
+            if api_sub_image_data:
+                self.process_api_sub_image(
+                    api_sub_image_data, cat_data
+                )
 
         # if self.DEBUG_API:
         #     index = self.category_indexer(cat_data)

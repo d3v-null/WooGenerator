@@ -1851,7 +1851,7 @@ class MimeUtils(object):
 
     @classmethod
     def get_ext_mime_type(cls, extension):
-        for mime_type, data in cls.mime_data:
+        for mime_type, data in cls.mime_data.items():
             extensions = data.get('extensions', [])
             if extension.lower() in extensions:
                 return mime_type
