@@ -1,3 +1,4 @@
+ # -*- coding: utf-8 -
 """
 Utility for keeping track of column metadata for translating between databases.
 """
@@ -25,9 +26,11 @@ YAML Import and export of schema
 data is not read from file until it is accessed?
 """
 """
-# API Whisperer
+API Whisperer
+====
 
-Applies a D.R.Y. , object-oriented approach to translating between API data.
+Applies a D.R.Y. , object-oriented approach to translating between different
+representations data in disparate APIs.
 
 # Use cases
  - You wrote an API pareser that parses data from one api, but need to upgrade
@@ -37,13 +40,13 @@ Applies a D.R.Y. , object-oriented approach to translating between API data.
 # ColData Schema
 schema = {
     ...,
-    handle: {          # internal handle for column
+    handle: {            # internal handle for column
         label: ...,      # (optional) external label for reporting column, defaults to handle
         type: ...,       # (optional) internal storage type if not string
         path: ...,
         default: ...,    # (optional) default internal value
         sub_data: ...,   # (optional) see: Sub-Entities section
-        <target>: {        # for each target format, see: Target section
+        <target>: {      # for each target format, see: Target section
             label: ...,  # (optional) external label when reporting data in target format if different from global label
             type: ...,   # (optional) type when expressed in target format if different from global type
             path: ...,   # (optional) location of value in target format, defaults to handle
@@ -60,6 +63,8 @@ They can be used to specify the format of data in different APIs, or they can
 be the name of an internal format that you want your data in.
 The properties of a target can be inherited from a target's ancestors, allowing
 a way of specifying multiple similar targets without redundancy.
+The default / root target is `core` which represents the data as a mapping from
+handles to the core representation of the data
 
 # Sub-Entities
 Different APIs can represent the same attribute of an entity with very different
@@ -169,7 +174,8 @@ objects then you can set the `structure` to `('mapping-list', ('key'))` where
 If the handle value is represented as a mapping from keys to either a list of sub-entity
 objects, or a singular sub-entity object depending on how many sub-entity objects
 are present, then you can set the `structure` to `('mapping-dynamic', ('key'))` where
-`'key'` is the handle of the key in the mapping.
+`'key'` is the handle of the key in the mapping. (Yes, this actually happens in
+wp-api-v1 for post categories `¯\_(ツ)_/¯` )
 ## listed-values
 If the handle value is represented as a list of singular values, where the
 values are taken from a sub-entity object, you can set the `structure` to
@@ -376,14 +382,15 @@ class ColDataAbstract(object):
         ])
         return path_translation
 
-    @classmethod
-    def path_exists(cls, data, path):
-        if not path:
-            return
-        if re.match(cls.re_simple_path, path):
-            return path in data
-        getter = jsonpath_ng.parse(path)
-        return getter.find(data)
+    # @classmethod
+    # def path_exists(cls, data, path):
+    #     """ Deprecated, use get_from_path in try/catch block. """
+    #     if not path:
+    #         return
+    #     if re.match(cls.re_simple_path, path):
+    #         return path in data
+    #     getter = jsonpath_ng.parse(path)
+    #     return getter.find(data)
 
     @classmethod
     def get_from_path(cls, data, path):
@@ -410,9 +417,32 @@ class ColDataAbstract(object):
         return JSONPathUtils.blank_update(updater, data, value)
 
     @classmethod
+    def morph_data(cls, data, morph_functions, path_translation):
+        """
+        Translate the data using functions preserving paths.
+        """
+        for handle in cls.data.keys():
+            if handle in morph_functions and handle in path_translation:
+                target_path = path_translation.get(handle)
+                try:
+                    target_value = deepcopy(cls.get_from_path(
+                        data, target_path
+                    ))
+                except (IndexError, KeyError):
+                    continue
+                try:
+                    target_value = morph_functions.get(handle)(target_value)
+                except (TypeError, ):
+                    continue
+                data = cls.update_in_path(
+                    data, target_path, target_value
+                )
+        return data
+
+    @classmethod
     def translate_paths_from(cls, data, target):
         """
-        Translate the structure of data from `target` to core.
+        Translate the path structure of data from `target` to core.
         """
         translation = cls.get_target_path_translation(target)
         if translation:
@@ -435,7 +465,7 @@ class ColDataAbstract(object):
     @classmethod
     def translate_paths_to(cls, data, target):
         """
-        Translate the structure of data from core to `target`.
+        Translate the path structure of data from core to `target`.
         """
         translation = cls.get_target_path_translation(target)
         if translation:
@@ -457,18 +487,33 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_structure_from(cls, data, target, path_translation=None):
+        """
+        Translate the Sub-entity structures in data between `target` and core.
+        """
         target_sub_datum = cls.get_handles_property('sub_data', target)
-        target_structure = cls.get_handles_property('structure', target)
+        target_structures = cls.get_handles_property('structure', target)
+        for handle in cls.data.keys():
+            if handle in target_structures:
+                target_structure = target_structures.get('datum')
+                assert isinstance(target_structure, tuple), \
+                'target_structure should be a tuple not %s' % type(target_structure)
+                if target_structure[0] == 'singular':
+                    pass
         return data
 
     @classmethod
     def translate_structure_to(cls, data, target, path_translation=None):
-        target_sub_datum = cls.get_handles_property('sub_data', target)
-        target_structure = cls.get_handles_property('structure', target)
+        """
+        Translate the Sub-entity structures in data between core and `target`.
+        """
         return data
 
     @classmethod
     def get_normalizer(cls, type_):
+        """
+        Return the function to translate data between `type_` and the core
+        representation.
+        """
         if type(type_) == type:
             return type_
         return {
@@ -493,6 +538,10 @@ class ColDataAbstract(object):
 
     @classmethod
     def get_denormalizer(cls, type_):
+        """
+        Return the function to translate data between the core representation
+        and `type_`
+        """
         return {
             'xml_escaped': SanitationUtils.coerce_xml,
             'iso8601': functools.partial(
@@ -511,30 +560,11 @@ class ColDataAbstract(object):
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
-    def morph_data(cls, data, morph_functions, path_translation):
-        """
-        Translate the data using functions
-        """
-        for handle in cls.data.keys():
-            if handle in morph_functions and handle in path_translation:
-                target_path = path_translation.get(handle)
-                try:
-                    target_value = deepcopy(cls.get_from_path(
-                        data, target_path
-                    ))
-                except (IndexError, KeyError):
-                    continue
-                try:
-                    target_value = morph_functions.get(handle)(target_value)
-                except (TypeError, ):
-                    continue
-                data = cls.update_in_path(
-                    data, target_path, target_value
-                )
-        return data
-
-    @classmethod
     def translate_types_from(cls, data, target, path_translation=None):
+        """
+        Perform a translation of types between 'target' and core in the paths
+        provided by path_translation, preserving those paths.
+        """
         if path_translation is None:
             path_translation = cls.get_core_path_translation(target)
         morph_functions = OrderedDict([
@@ -550,6 +580,10 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_types_to(cls, data, target, path_translation=None):
+        """
+        Perform a translation of types between core and `target` in the paths
+        provided by path_translation, preserving those paths.
+        """
         if path_translation is None:
             path_translation = cls.get_core_path_translation(target)
         morph_functions = OrderedDict([
@@ -565,7 +599,9 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_data_from(cls, data, target):
-        # TODO: move type translation above structure translation
+        """
+        Perform a full translation of paths and types between target and core
+        """
         data = cls.translate_types_from(
             data, target, cls.get_target_path_translation(target)
         )
@@ -579,6 +615,9 @@ class ColDataAbstract(object):
 
     @classmethod
     def translate_data_to(cls, data, target):
+        """
+        Perform a full translation of paths and types between core and target
+        """
         data = cls.translate_types_to(
             data, target, cls.get_target_path_translation(target)
         )
