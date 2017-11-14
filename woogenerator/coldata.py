@@ -164,33 +164,6 @@ from a string like first_name and last_name from a fullname string.
 
 These are the possible structure specifications:
 
-## listed-objects
-If the handle value is represented in a given target context as a list of
-sub-entity objects (e.g. 1a), you can set the `structure` as `('listed-objects', )`.
-## mapping-values
-If the handle value is represented in a given target context as a mapping from keys
-to singular values where the values are taken from a sub-entity object (eg. 1b),
-then you can set the `structure` as `('mapping-values', ('key', 'value'))` where
-`'key'` and '`value`' are the handles of the key and value in the mapping respectively.
-## mapping-object
-If the handle value is represented in a given target context as a mapping from keys
-to singular sub-entity objects (e.g. 2c) then you can set the `structure` as
-`('mapping-object', ('key', ))` where `'key'` is the handle of the key in this mapping.
-## mapping-list
-If the handle value is represented as a mapping from keys to a list of sub-entity
-objects then you can set the `structure` to `('mapping-list', ('key'))` where
-`'key'` is the handle of the key in the mapping.
-## mapping-dynamic
-If the handle value is represented as a mapping from keys to either a list of sub-entity
-objects, or a singular sub-entity object depending on how many sub-entity objects
-are present, then you can set the `structure` to `('mapping-dynamic', ('key'))` where
-`'key'` is the handle of the key in the mapping. (Yes, this actually happens in
-wp-api-v1 for post categories `¯\_(ツ)_/¯` )
-## listed-values
-If the handle value is represented as a list of singular values, where the
-values are taken from a sub-entity object, you can set the `structure` to
-`('listed-values', 'value')`  where `'value'` is the handle of the
-data in the list.
 ## singluar-value
 If the handle value is represented as a singular value from a sub-entity object,
 then you can set the `structure` to `('singular-value', 'value')`, where `'value'`
@@ -198,6 +171,33 @@ is the handle of the
 ## singular-object
 If the handle value is represented as a singular sub-entity object, then you can
 set the structure to `('singular-object', )`
+## listed-values
+If the handle value is represented as a list of singular values, where the
+values are taken from a sub-entity object, you can set the `structure` to
+`('listed-values', 'value')`  where `'value'` is the handle of the
+data in the list.
+## listed-objects
+If the handle value is represented in a given target context as a list of
+sub-entity objects (e.g. 1a), you can set the `structure` as `('listed-objects', )`.
+## mapping-value
+If the handle value is represented in a given target context as a mapping from keys
+to a singular value where the value is are taken from a sub-entity object (eg. 1b),
+then you can set the `structure` as `('mapping-value', ('key', 'value'))` where
+`'key'` and '`value`' are the handles of the key and value in the mapping respectively.
+## mapping-object
+If the handle value is represented in a given target context as a mapping from keys
+to singular sub-entity objects (e.g. 2c) then you can set the `structure` as
+`('mapping-object', ('key', ))` where `'key'` is the handle of the key in this mapping.
+## mapping-list
+If the handle value is represented as a mapping from keys to a list of sub-entity
+objects then you can set the `structure` to `('mapping-list', ('key', ))` where
+`'key'` is the handle of the key in the mapping.
+## mapping-dynamic
+If the handle value is represented as a mapping from keys to either a list of sub-entity
+objects, or a singular sub-entity object depending on how many sub-entity objects
+are present, then you can set the `structure` to `('mapping-dynamic', ('key'))` where
+`'key'` is the handle of the key in the mapping. (Yes, this actually happens in
+wp-api-v1 for post categories `¯\_(ツ)_/¯` )
 
 API Whisperer can convert between singular structures, and it can convert
 between listed / mapped structures but does not handle converting between
@@ -505,6 +505,66 @@ class ColDataAbstract(object):
         return deepcopy(data)
 
     @classmethod
+    def deconstruct_sub_entity(cls, sub_data, target, target_structure=None):
+        if target_structure is None:
+            target_structure = cls.get_property_default('structure')
+        path_translation = cls.get_target_path_translation(target)
+        if target_structure[0] == 'singular-object':
+            return cls.translate_data_from(
+                sub_data,
+                target
+            )
+        elif target_structure[0] == 'singular-value':
+            target_value_handle = target_structure[1]
+            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
+            return cls.translate_data_from(
+                {target_value_handle: sub_data},
+                target
+            )
+        elif target_structure[0] == 'listed-values':
+            target_value_handle = target_structure[1]
+            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
+            return [
+                cls.translate_data_from(
+                    {target_value_handle: sub_value},
+                    target
+                ) for sub_value in sub_data
+            ]
+        elif target_structure[0] == 'listed-objects':
+            return [
+                cls.translate_data_from(
+                    sub_object,
+                    target
+                ) for sub_object in sub_data
+            ]
+        elif target_structure[0] == 'mapping-value':
+            target_key_handle = target_structure[1][0]
+            target_key_handle = path_translation.get(target_key_handle)
+            target_value_handle = target_structure[1][1]
+            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
+            return [
+                cls.translate_data_from(
+                    {
+                        target_key_handle: sub_key,
+                        target_value_handle: sub_value
+                    },
+                    target
+                ) for sub_key, sub_value in sub_data.items()
+            ]
+        elif target_structure[0] == 'mapping-object':
+            target_key_handle = target_structure[1][0]
+            target_key_handle = path_translation.get(target_key_handle)
+            return [
+                cls.translate_data_from(
+                    OrderedDict(
+                        sub_value.items()
+                        + [(target_key_handle, sub_key)]
+                    ),
+                    target
+                ) for sub_key, sub_value in sub_data.items()
+            ]
+
+    @classmethod
     def translate_structure_from(cls, data, target, path_translation=None):
         """
         Translate the Sub-entity structures in data between `target` and core.
@@ -513,6 +573,8 @@ class ColDataAbstract(object):
         target_structures = cls.get_handles_property('structure', target)
         morph_functions = OrderedDict()
         for handle in cls.data.keys():
+            if handle in ['attributes'] and target == 'wp-sql':
+                import pudb; pudb.set_trace()
             if handle in target_structures:
                 target_structure = target_structures.get(handle)
                 if target_structure is None:
@@ -522,23 +584,14 @@ class ColDataAbstract(object):
                 morph_function = None
                 target_sub_data_class = target_sub_data_classes.get(handle)
                 if target_sub_data_class:
-                    if target_structure[0] == 'singular-object':
-                        morph_function = functools.partial(
-                            target_sub_data_class.translate_data_from,
-                            target=target
-                        )
-                    elif target_structure[0] == 'singular-value':
-                        target_value_handle = target_structure[1]
-                        morph_function = (
-                            lambda sub_value: target_sub_data_class.translate_data_from(
-                                {target_value_handle: sub_value},
-                                target
-                            )
-                        )
+                    morph_function = functools.partial(
+                        target_sub_data_class.deconstruct_sub_entity,
+                        target=target,
+                        target_structure=target_structure
+                    )
                 if morph_function:
                     morph_functions[handle] = morph_function
-        cls.morph_data(data, morph_functions, path_translation)
-        return data
+        return cls.morph_data(data, morph_functions, path_translation)
 
     @classmethod
     def translate_structure_to(cls, data, target, path_translation=None):
@@ -798,7 +851,7 @@ class ColDataTermMixin(object):
                 'path': 'name'
             },
             'wp-sql': {
-                'path': 'terms.name'
+                'path': 'name'
             },
             'wc-wp-api':{
                 'path': 'name',
@@ -820,7 +873,7 @@ class ColDataTermMixin(object):
                 'path': None
             },
             'wp-sql': {
-                'path': 'terms.slug'
+                'path': 'slug'
             }
         },
         'taxonomy': {
@@ -830,7 +883,7 @@ class ColDataTermMixin(object):
                 'path': 'taxonomy'
             },
             'wp-sql': {
-                'path': 'term_taxonomy.taxonomy'
+                'path': 'taxonomy'
             }
         },
         'count': {
@@ -840,7 +893,7 @@ class ColDataTermMixin(object):
                 'path': 'count'
             },
             'wp-sql': {
-                'path': 'term_taxonomy.count'
+                'path': 'count'
             }
         },
         'description': {
@@ -849,7 +902,7 @@ class ColDataTermMixin(object):
                 'path': 'description'
             },
             'wp-sql': {
-                'path': 'term_taxonomy.description'
+                'path': 'description'
             }
         },
         'term_parent': {
@@ -865,7 +918,7 @@ class ColDataTermMixin(object):
                 'path': 'parent.ID'
             },
             'wp-sql': {
-                'path': 'term_taxonomy.parent'
+                'path': 'parent'
             }
         },
         'term_link': {
@@ -920,22 +973,30 @@ class ColDataSubAttribute(ColDataSubTerm):
         },
         'visible': {
             'path': None,
+            'type': bool,
             'wc-api': {
                 'path': 'visible'
+            },
+            'wp-sql': {
+                'path': 'is_visible'
             }
         },
         'variation': {
             'path': None,
+            'type': bool,
             'wc-api': {
                 'path': 'variation'
-            }
+            },
+            'wp-sql': {
+                'path': 'is_variation'
+            },
         },
         'options': {
             'path': None,
             'wc-api': {
                 'path': 'options'
             }
-        }
+        },
     })
 
 class ColDataSubDefaultAttribute(ColDataSubTerm):
@@ -954,7 +1015,7 @@ class ColDataSubDefaultAttribute(ColDataSubTerm):
         }
     })
 
-class ColDataWpSubMeta(ColDataSubEntity):
+class ColDataSubMeta(ColDataSubEntity):
     data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'meta_id': {
@@ -975,7 +1036,7 @@ class ColDataWpSubMeta(ColDataSubEntity):
                 'path': 'value'
             }
         }
-    }.items())
+    })
 
 class ColDataSubDownload(ColDataSubEntity):
     data = deepcopy(ColDataSubEntity.data)
@@ -1059,6 +1120,36 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
         data,
         ColDataTermMixin.data
     )
+    data['title'].update({
+        'wp-sql': {
+            'path': 'terms.name'
+        }
+    })
+    data['slug'].update({
+        'wp-sql': {
+            'path': 'terms.slug'
+        }
+    })
+    data['taxonomy'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.taxonomy'
+        }
+    })
+    data['count'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.count'
+        }
+    })
+    data['description'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.description'
+        }
+    })
+    data['term_parent_id'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.parent'
+        }
+    })
     data = SeqUtils.combine_ordered_dicts(data, {
     })
 
@@ -1470,7 +1561,6 @@ class ColDataWpEntity(ColDataAbstract):
             }
         },
         'terms': {
-            # sub-entity
             'path': None,
             'sub_data': ColDataSubTerm,
             'wp-api-v1': {
@@ -1479,13 +1569,12 @@ class ColDataWpEntity(ColDataAbstract):
             },
         },
         'meta': {
-            # sub-entity
-            'sub_data': ColDataWpSubMeta,
+            'sub_data': ColDataSubMeta,
             'wp-api': {
             },
             'wp-api-v1': {
                 'path': 'post_meta',
-                'structure': ('mapping-valuess', ('key', 'value'))
+                'structure': ('mapping-value', ('meta_key', 'meta_value'))
             },
             'wc-api': {
                 'path': 'meta_data',
@@ -1499,11 +1588,10 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': None,
             },
             'gen-csv': {
-                'structure': ('mapping-values', ('key', 'value'))
+                'structure': ('mapping-value', ('meta_key', 'meta_value'))
             }
         },
         'post_categories': {
-            # sub-entity
             'path': None,
             'sub_data': ColDataSubCategory,
             'wc-api': {
@@ -1511,11 +1599,11 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'wc-legacy-api': {
                 'path': 'categories',
-                'structure': ('listed-values', 'name')
+                'structure': ('listed-values', 'title')
             },
             'wp-api': {
                 'path': 'categories',
-                'structure': ('listed-values', 'id'),
+                'structure': ('listed-values', 'term_id'),
             },
             'wp-api-v1': {
                 # note: in wp-api-v1 terms.category is an object if there is
@@ -1548,7 +1636,6 @@ class ColDataWpEntity(ColDataAbstract):
         #     },
         # },
         'tags': {
-            # sub-entity
             'sub_data': ColDataSubTag,
             'path': None,
             'wp-api-v1': {
@@ -1710,7 +1797,6 @@ class ColDataProduct(ColDataWpEntity):
             ]
         },
         'product_categories': {
-            # sub-entity
             'path': None,
             'sub_data': ColDataSubCategory,
             'wc-api': {
@@ -1719,7 +1805,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-legacy-api': {
                 'path': 'categories',
-                'structure': ('listed', 'name')
+                'structure': ('listed', 'title')
             },
             'wp-api': {
                 'path': None,
@@ -2180,7 +2266,7 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._product_attributes',
                 'type': 'php_array',
-                'structure': ('listed-objects', )
+                'structure': ('mapping-object', ('title', ))
             }
         },
         'default_attributes': {
