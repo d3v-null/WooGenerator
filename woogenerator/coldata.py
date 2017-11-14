@@ -14,8 +14,8 @@ from copy import copy, deepcopy
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import (JSONPathUtils, PHPUtils, Registrar, SanitationUtils,
-                    SeqUtils, TimeUtils, MimeUtils)
+from .utils import (JSONPathUtils, MimeUtils, PHPUtils, Registrar,
+                    SanitationUtils, SeqUtils, TimeUtils)
 
 
 # TODO:
@@ -38,6 +38,8 @@ representations data in disparate APIs.
  - You need to synchronize data between databases using disparate APIs
 
 # ColData Schema
+Each ColData class has a schema which specifies how it handles data from different
+targets.
 schema = {
     ...,
     handle: {            # internal handle for column
@@ -56,6 +58,9 @@ schema = {
     },
     ...
 ]
+
+The translation is only as good as the data you provide it, so write lots of tests
+and make sure that your data translates correctly but checking multiple API sources.
 
 # Targets
 Targets are different contexts in which the data can be represented.
@@ -153,7 +158,12 @@ singular object, but you can change this behaviour for different targets.
 Note: API Whisperer performs path translation and type-casting on sub-entities
 before performing path translation and type-casting on entities, which means that
 you access the properties of an entity's sub-entities from within the path
-specifications in the entity's metadata.
+specifications in the entity's metadata, even if that sub-entity is originally in
+a serialized format. You could even provide your own functions that extract features
+from a string like first_name and last_name from a fullname string.
+
+These are the possible structure specifications:
+
 ## listed-objects
 If the handle value is represented in a given target context as a list of
 sub-entity objects (e.g. 1a), you can set the `structure` as `('listed-objects', )`.
@@ -181,9 +191,17 @@ If the handle value is represented as a list of singular values, where the
 values are taken from a sub-entity object, you can set the `structure` to
 `('listed-values', 'value')`  where `'value'` is the handle of the
 data in the list.
-## singluar
-If the handle value is represented as a singular sub-entity object, then you
-can set the `structure` to ('singular', )
+## singluar-value
+If the handle value is represented as a singular value from a sub-entity object,
+then you can set the `structure` to `('singular-value', 'value')`, where `'value'`
+is the handle of the
+## singular-object
+If the handle value is represented as a singular sub-entity object, then you can
+set the structure to `('singular-object', )`
+
+API Whisperer can convert between singular structures, and it can convert
+between listed / mapped structures but does not handle converting between
+singular and listed / mapped structures, since this doesn't make sense.
 """
 
 class ColDataAbstract(object):
@@ -312,7 +330,8 @@ class ColDataAbstract(object):
                 'path': handle,
                 'write': True,
                 'read': True,
-                'type': 'string'
+                'type': 'string',
+                'structure': ('singular-object', )
             }.get(property_)
 
     @classmethod
@@ -490,15 +509,35 @@ class ColDataAbstract(object):
         """
         Translate the Sub-entity structures in data between `target` and core.
         """
-        target_sub_datum = cls.get_handles_property('sub_data', target)
+        target_sub_data_classes = cls.get_handles_property('sub_data', target)
         target_structures = cls.get_handles_property('structure', target)
+        morph_functions = OrderedDict()
         for handle in cls.data.keys():
             if handle in target_structures:
-                target_structure = target_structures.get('datum')
+                target_structure = target_structures.get(handle)
+                if target_structure is None:
+                    target_structure = cls.get_property_default('structure')
                 assert isinstance(target_structure, tuple), \
                 'target_structure should be a tuple not %s' % type(target_structure)
-                if target_structure[0] == 'singular':
-                    pass
+                morph_function = None
+                target_sub_data_class = target_sub_data_classes.get(handle)
+                if target_sub_data_class:
+                    if target_structure[0] == 'singular-object':
+                        morph_function = functools.partial(
+                            target_sub_data_class.translate_data_from,
+                            target=target
+                        )
+                    elif target_structure[0] == 'singular-value':
+                        target_value_handle = target_structure[1]
+                        morph_function = (
+                            lambda sub_value: target_sub_data_class.translate_data_from(
+                                {target_value_handle: sub_value},
+                                target
+                            )
+                        )
+                if morph_function:
+                    morph_functions[handle] = morph_function
+        cls.morph_data(data, morph_functions, path_translation)
         return data
 
     @classmethod
@@ -651,7 +690,7 @@ class ColDataAbstract(object):
         return sync_cols
 
 
-class ColDataWpSubEntity(ColDataAbstract):
+class ColDataSubEntity(ColDataAbstract):
     """
     Metadata for abstract WP sub-entities
     - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
@@ -659,7 +698,7 @@ class ColDataWpSubEntity(ColDataAbstract):
     """
     data = deepcopy(ColDataAbstract.data)
 
-class ColDataSubMedia(ColDataWpSubEntity):
+class ColDataSubMedia(ColDataSubEntity):
     """
     Metadata for Media sub items; media items that appear within items in the API
     - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
@@ -668,7 +707,7 @@ class ColDataSubMedia(ColDataWpSubEntity):
     - wc-legacy-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/v2.html#images-properties
     - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
     """
-    data = deepcopy(ColDataWpSubEntity.data)
+    data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'id': {
             'write': False,
@@ -843,8 +882,8 @@ class ColDataTermMixin(object):
         }
     }
 
-class ColDataSubTerm(ColDataWpSubEntity, ColDataTermMixin):
-    data = deepcopy(ColDataWpSubEntity.data)
+class ColDataSubTerm(ColDataSubEntity, ColDataTermMixin):
+    data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(
         data,
         ColDataTermMixin.data
@@ -915,8 +954,8 @@ class ColDataSubDefaultAttribute(ColDataSubTerm):
         }
     })
 
-class ColDataWpSubMeta(ColDataWpSubEntity):
-    data = deepcopy(ColDataWpSubEntity.data)
+class ColDataWpSubMeta(ColDataSubEntity):
+    data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'meta_id': {
             'path': None,
@@ -938,8 +977,8 @@ class ColDataWpSubMeta(ColDataWpSubEntity):
         }
     }.items())
 
-class ColDataSubDownload(ColDataWpSubEntity):
-    data = deepcopy(ColDataWpSubEntity.data)
+class ColDataSubDownload(ColDataSubEntity):
+    data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'download_id': {
             'path': None,
@@ -961,8 +1000,61 @@ class ColDataSubDownload(ColDataWpSubEntity):
         }
     })
 
+class ColDataSubUser(ColDataSubEntity):
+    data = deepcopy(ColDataSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'user_id': {
+            'type': int,
+            'wp-api-v1': {
+                'path': 'ID'
+            }
+        },
+        'name': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'name'
+            }
+        },
+        'slug': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'slug'
+            }
+        },
+        'url': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'url'
+            }
+        },
+        'avatar': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'avatar'
+            }
+        },
+        'meta': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'meta'
+            }
+        },
+        'first_name': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'first_name'
+            }
+        },
+        'last_name': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'last_name'
+            }
+        },
+    })
+
 class ColDataTerm(ColDataAbstract, ColDataTermMixin):
-    data = deepcopy(ColDataWpSubEntity.data)
+    data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(
         data,
         ColDataTermMixin.data
@@ -1019,20 +1111,24 @@ class ColDataWcProdCategory(ColDataWcTerm):
                 'path': 'display',
             }
         },
-        'thumbnail_id': {
-            'path': None,
-            'wc-api': {
-                'path': 'image.id'
-            },
-            'wp-sql': {
-                'path': 'term_meta.thumbnail_id'
-            }
-        },
+        # 'thumbnail_id': {
+        #     'path': None,
+        #     'wc-api': {
+        #         'path': 'image.id'
+        #     },
+        #     'wp-sql': {
+        #         'path': 'term_meta.thumbnail_id'
+        #     }
+        # },
         'image': {
             'path': None,
             'sub_data': ColDataSubMedia,
             'wc-api': {
-                'structure': 'singular'
+                'structure': ('singular-object')
+            },
+            'wp-sql': {
+                'path': 'term_meta.thumbnail_id',
+                'structure': ('singular-value', 'id')
             }
         }
     })
@@ -1490,22 +1586,37 @@ class ColDataWpPost(ColDataWpEntity):
         },
         'author': {
             'path': None,
-            'wp-api-v1':{
-                'path': 'author'
-            },
-        },
-        'author_id': {
-            'type': int,
+            'sub_data': ColDataSubUser,
             'wp-api': {
-                'path': 'author'
+                'path': 'author',
+                'structure': ('singular-value', 'user_id')
             },
-            'wp-api-v1': {
-                'path': 'author.ID'
+            'wp-api-v1':{
+                'path': 'author',
+                'structure': ('singular-object', )
             },
             'wp-sql': {
-                'path': 'post_author'
+                'path': 'post_author',
+                'structure': ('singular-value', 'user_id')
+            },
+            'gen-csv': {
+                'path': 'author_id',
+                'structure': ('singular-value', 'user_id')
             }
         },
+        # 'author_id': {
+        #     'type': int,
+        #     'wp-api': {
+        #         'path': 'author'
+        #     },
+        #     'wp-api-v1': {
+        #         'path': 'author.ID'
+        #     },
+        #     'wp-sql': {
+        #         'path': 'post_author'
+        #     }
+        # },
+        # TODO: merge with image?
         'featured_media_id': {
             'path': None,
             'type': 'optional_int_zero',

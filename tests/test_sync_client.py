@@ -103,14 +103,19 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
             rows = client.get_rows(None, limit=1)
             headers = rows[0]
             first_values = rows[1]
-            first_post = OrderedDict(zip(headers, first_values))
+            wp_sql_first_post_raw = OrderedDict(zip(headers, first_values))
             if self.debug:
-                print('sql rows:\n%s' % pformat(first_post.items()))
+                print('sql rows:\n%s' % pformat(wp_sql_first_post_raw.items()))
+            # already in core path format so we have to do this:
+            core_path_translation = self.coldata_class.get_core_path_translation('wp-api')
             wp_sql_first_post_normalized = self.coldata_class.translate_types_from(
-                first_post, 'wp-sql'
+                wp_sql_first_post_raw, 'wp-sql', core_path_translation
+            )
+            wp_sql_first_post_normalized = self.coldata_class.translate_structure_from(
+                wp_sql_first_post_normalized, 'wp-sql', core_path_translation
             )
             if self.debug:
-                print('sql first_post normalized sql:\n%s' % pformat(
+                print('wp_sql_first_post_normalized:\n%s' % pformat(
                     dict(wp_sql_first_post_normalized)
                 ))
 
@@ -120,14 +125,14 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
         }
         with client_class(**client_args) as client:
             client.endpoint_singular = 'post'
-            first_post = client.get_first_endpoint_item()
+            wp_api_first_post_raw = client.get_first_endpoint_item()
             if self.debug:
-                print('api first_post raw:\n%s' % pformat(first_post))
+                print('wp_api_first_post_raw:\n%s' % pformat(wp_api_first_post_raw))
             wp_api_first_post_normalized = self.coldata_class.translate_data_from(
-                first_post, 'wp-api-v2'
+                wp_api_first_post_raw, 'wp-api-v2'
             )
             if self.debug:
-                print('api first_post normalized api:\n%s' % pformat(
+                print('wp_api_first_post_normalized:\n%s' % pformat(
                     dict(wp_api_first_post_normalized)
                 ))
 
@@ -143,7 +148,7 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
 
         self.assertTrue(
             set([
-                'author_id', 'comment_status', 'created_gmt',
+                'author', 'comment_status', 'created_gmt',
                 'created_local', 'featured_media_id', 'guid', 'id',
                 'modified_gmt', 'modified_local', 'ping_status',
                 'post_content', 'post_excerpt',  'post_type', 'post_status',
@@ -198,11 +203,16 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             wp_sql_first_prod_raw = OrderedDict(zip(headers, first_values))
             if self.debug:
                 print('sql rows:\n%s' % pformat(wp_sql_first_prod_raw.items()))
+            # already in core path format so we have to do this:
+            core_path_translation = self.coldata_class.get_core_path_translation('wp-api')
             wp_sql_first_prod_normalized = self.coldata_class.translate_types_from(
-                wp_sql_first_prod_raw, 'wp-sql'
+                wp_sql_first_prod_raw, 'wp-sql', core_path_translation
+            )
+            wp_sql_first_prod_normalized = self.coldata_class.translate_structure_from(
+                wp_sql_first_prod_normalized, 'wp-sql', core_path_translation
             )
             if self.debug:
-                print('sql first_prod normalized sql:\n%s' % pformat(
+                print('wp_sql_first_prod_normalized:\n%s' % pformat(
                     dict(wp_sql_first_prod_normalized)
                 ))
 
