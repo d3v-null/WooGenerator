@@ -10,6 +10,7 @@ import itertools
 import re
 from collections import OrderedDict
 from copy import copy, deepcopy
+from pprint import pprint, pformat
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
@@ -216,7 +217,42 @@ to extrace a meta value, and in this case you would want to set `force_mapping`
 to `meta_key` so that the `meta_value` can be accessed using the path meta.<meta_key>.meta_value
 """
 
-class ColDataAbstract(object):
+class ColDataLegacy(object):
+    """
+    Legacy methods for backwards compatiblity, to be deprecated ASAP.
+    """
+    data = {}
+
+    @classmethod
+    def get_export_cols(cls, schema=None):
+        if not schema:
+            return None
+        export_cols = OrderedDict()
+        gen_csv_translation = cls.get_target_path_translation('gen-csv')
+        for handle, gen_path in gen_csv_translation.items():
+            if gen_path:
+                export_cols[gen_path] = cls.data.get(handle)
+        return export_cols
+
+    @classmethod
+    def get_wpapi_core_cols(cls, api='wc-wp-api'):
+        core_cols = OrderedDict()
+        wp_api_translation = cls.get_target_path_translation(api)
+        gen_csv_translation = cls.get_target_path_translation('gen-csv')
+        for handle, wp_api_path in wp_api_translation.items():
+            if not wp_api_path:
+                continue
+            if re.match(ColDataAbstract.re_simple_path, wp_api_path):
+                gen_path = gen_csv_translation.get(handle, handle)
+                core_cols[gen_path] = cls.data.get(handle)
+        return core_cols
+
+    @classmethod
+    def get_category_cols(cls):
+        return cls.get_export_cols('category')
+
+
+class ColDataAbstract(ColDataLegacy):
     """
     Store information about how to translate between disparate target schemas.
      - Each target represents a different data format
@@ -245,7 +281,7 @@ class ColDataAbstract(object):
             'infusion-api': {},
         },
         'csv': {
-            'gen_csv': {},
+            'gen-csv': {},
             'wc-csv': {},
             'act-csv': {},
             'myo-csv': {},
@@ -436,6 +472,8 @@ class ColDataAbstract(object):
             return
         if re.match(cls.re_simple_path, path):
             return data[path]
+        if ' ' in path:
+            path = '"%s"' % path
         getter = jsonpath_ng.parse(path)
         results = getter.find(data)
         return results[0].value
@@ -447,6 +485,8 @@ class ColDataAbstract(object):
         if re.match(cls.re_simple_path, path):
             data[path] = value
             return data
+        if ' ' in path:
+            path = '"%s"' % path
         updater = jsonpath_ng.parse(path)
         return JSONPathUtils.blank_update(updater, data, value)
 
@@ -594,7 +634,7 @@ class ColDataAbstract(object):
                 ) for sub_key, sub_value in sub_data.items()
             ]
         if objects and forced_mapping_handle:
-            mapping = OrderedDict()
+            mapping = {}
             for object_ in objects:
                 try:
                     mapping_key = cls.get_from_path(object_, forced_mapping_handle)
@@ -604,6 +644,77 @@ class ColDataAbstract(object):
             return mapping
 
         return objects
+
+    @classmethod
+    def reconstruct_sub_entity(cls, sub_data, target, target_structure=None, forced_mapping_handle=None):
+        """
+        The inverse of deconstruct_sub_entity.
+        """
+        if target_structure is None:
+            target_structure = cls.get_property_default('structure')
+        path_translation = cls.get_target_path_translation(target)
+        if target_structure[0] == 'singular-object':
+             return cls.translate_data_to(
+                sub_data,
+                target
+            )
+        elif target_structure[0] == 'singular-value':
+            target_value_handle = target_structure[1]
+            target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            return cls.get_from_path(
+                cls.translate_data_to(
+                    sub_data,
+                    target
+                ),
+                target_value_path
+            )
+        else:
+            objects = sub_data
+            if forced_mapping_handle:
+                objects = []
+                for mapping_key, object_ in sub_data.items():
+                    object_ = cls.update_in_path(
+                        object_,
+                        forced_mapping_handle,
+                        mapping_key
+                    )
+                    objects.append(object_)
+            return objects
+            # TODO: finish this
+            # if target_structure[0] == 'listed-values':
+            #     target_value_handle = target_structure[1]
+            #     target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            #     return [
+            #         cls.get_from_path(
+            #             cls.translate_data_to(
+            #                 sub_object,
+            #                 target
+            #             ),
+            #             target_value_path
+            #         ) for sub_object in objects
+            #     ]
+            # if target_structure[0] == 'listed-objects':
+            #     target_value_handle = target_structure[1]
+            #     target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            #     return [
+            #         cls.translate_data_to(
+            #             sub_object,
+            #             target
+            #         ) for sub_object in objects
+            #     ]
+            # if target_structure[0] == 'mapping-value':
+            #     target_key_handle = target_structure[1][0]
+            #     target_key_path = path_translation.get(target_key_handle)
+            #     target_value_handle = target_structure[1][1]
+            #     target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            #     return OrderedDict([
+            #
+            #         cls.translate_data_to(
+            #             sub_object,
+            #             target
+            #         ) for sub_object in objects
+            #     ])
+
 
     @classmethod
     def translate_structure_from(cls, data, target, path_translation=None):
@@ -620,7 +731,9 @@ class ColDataAbstract(object):
                 if target_structure is None:
                     target_structure = cls.get_property_default('structure')
                 assert isinstance(target_structure, tuple), \
-                'target_structure should be a tuple not %s' % type(target_structure)
+                'target_structure for %s in %s should be a tuple not %s -> %s' % (
+                    target, handle, type(target_structure), target_structure
+                )
                 morph_function = None
                 target_sub_data_class = target_sub_data_classes.get(handle)
                 forced_mapping_handle = forced_mappings.get(handle)
@@ -640,7 +753,32 @@ class ColDataAbstract(object):
         """
         Translate the Sub-entity structures in data between core and `target`.
         """
-        return data
+        target_sub_data_classes = cls.get_handles_property('sub_data', target)
+        target_structures = cls.get_handles_property('structure', target)
+        forced_mappings = cls.get_handles_property('force_mapping')
+        morph_functions = OrderedDict()
+        for handle in cls.data.keys():
+            if handle in target_structures:
+                target_structure = target_structures.get(handle)
+                if target_structure is None:
+                    target_structure = cls.get_property_default('structure')
+                assert isinstance(target_structure, tuple), \
+                'target_structure for %s in %s should be a tuple not %s -> %s' % (
+                    target, handle, type(target_structure), target_structure
+                )
+                morph_function = None
+                target_sub_data_class = target_sub_data_classes.get(handle)
+                forced_mapping_handle = forced_mappings.get(handle)
+                if target_sub_data_class:
+                    morph_function = functools.partial(
+                        target_sub_data_class.reconstruct_sub_entity,
+                        target=target,
+                        target_structure=target_structure,
+                        forced_mapping_handle=forced_mapping_handle
+                    )
+                if morph_function:
+                    morph_functions[handle] = morph_function
+        return cls.morph_data(data, morph_functions, path_translation)
 
     @classmethod
     def get_normalizer(cls, type_):
@@ -834,10 +972,7 @@ class ColDataSubMedia(ColDataSubEntity):
             'write': False,
             'unique': True,
             'type': int,
-            'wc-api': {
-                'path': 'id'
-            },
-            'wp-api': {
+            'api': {
                 'path': 'id'
             },
             'wp-api-v1': {
@@ -911,6 +1046,9 @@ class ColDataTermMixin(object):
             'wp-api-v1': {
                 'path': 'ID'
             },
+            'gen-csv': {
+                'path': 'ID'
+            },
             'report': True
         },
         'title': {
@@ -921,7 +1059,7 @@ class ColDataTermMixin(object):
             'wp-sql': {
                 'path': 'name'
             },
-            'wc-wp-api':{
+            'wc-api':{
                 'path': 'name',
             },
         },
@@ -971,7 +1109,10 @@ class ColDataTermMixin(object):
             },
             'wp-sql': {
                 'path': 'description'
-            }
+            },
+            'gen-csv': {
+                'path': 'HTML Description'
+            },
         },
         'term_parent': {
             'path': None,
@@ -1191,12 +1332,18 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
     data['title'].update({
         'wp-sql': {
             'path': 'terms.name'
-        }
+        },
+        'gen-csv': {
+            'path': 'title'
+        },
     })
     data['slug'].update({
         'wp-sql': {
             'path': 'terms.slug'
-        }
+        },
+        'gen-csv': {
+            'path': 'slug'
+        },
     })
     data['taxonomy'].update({
         'wp-sql': {
@@ -1211,14 +1358,26 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
     data['description'].update({
         'wp-sql': {
             'path': 'term_taxonomy.description'
+        },
+        'wc-api': {
+            'path': 'description'
         }
     })
     data['term_parent_id'].update({
         'wp-sql': {
             'path': 'term_taxonomy.parent'
+        },
+        'gen-csv': {
+            'path': 'parent_id'
         }
     })
     data = SeqUtils.combine_ordered_dicts(data, {
+        'taxosum': {
+            'path': None,
+            'gen-csv': {
+                'path': 'taxosum'
+            }
+        }
     })
 
 
@@ -1238,13 +1397,16 @@ class ColDataWcTerm(ColDataTerm):
             },
             'wp-sql': {
                 'path': 'term_meta.order'
+            },
+            'gen-csv': {
+                'path': 'rowcount'
             }
         }
     })
 
 
 class ColDataWcProdCategory(ColDataWcTerm):
-    data = deepcopy(ColDataTerm.data)
+    data = deepcopy(ColDataWcTerm.data)
     data['count'].update(
         {
             'wp-sql': {
@@ -1268,7 +1430,10 @@ class ColDataWcProdCategory(ColDataWcTerm):
             'default': 'default',
             'wc-api': {
                 'path': 'display',
-            }
+            },
+            'gen-csv': {
+                'path': 'display'
+            },
         },
         # 'thumbnail_id': {
         #     'path': None,
@@ -1283,12 +1448,15 @@ class ColDataWcProdCategory(ColDataWcTerm):
             'path': None,
             'sub_data': ColDataSubMedia,
             'wc-api': {
-                'structure': ('singular-object')
+                'structure': ('singular-object', )
             },
             'wp-sql': {
                 'path': 'term_meta.thumbnail_id',
                 'structure': ('singular-value', 'id')
-            }
+            },
+            'gen-csv': {
+                'path': 'imgsum'
+            },
         }
     })
 
@@ -1320,6 +1488,9 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'act-csv': {
                 'path': 'Wordpress ID',
+            },
+            'gen-csv': {
+                'path': 'ID'
             },
             'report': True
         },
@@ -1423,6 +1594,9 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_modified',
                 'type': 'wp_datetime'
             },
+            'gen-csv': {
+                'path': 'Updated'
+            },
             'report': True,
         },
         'created_timezone': {
@@ -1482,7 +1656,10 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'wp-sql': {
                 'path': 'post_name'
-            }
+            },
+            'gen-csv': {
+                'path': 'slug'
+            },
         },
         'title': {
             'wp-api':{
@@ -1504,7 +1681,16 @@ class ColDataWpEntity(ColDataAbstract):
             'wc-csv': {
                 'path': 'post_title'
             },
+            'gen-csv': {
+                'path': 'title'
+            },
             'report': True,
+        },
+        'itemsum': {
+            'path': None,
+            'gen-csv': {
+                'path': 'itemsum',
+            },
         },
         'post_status': {
             'default': 'publish',
@@ -1558,7 +1744,7 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_content'
             },
             'gen-csv': {
-                'path': 'description'
+                'path': 'HTML Description'
             },
         },
         'post_excerpt': {
@@ -1853,6 +2039,9 @@ class ColDataProduct(ColDataWpEntity):
             'wc-csv': {
                 'path': 'tax:product_type'
             },
+            'gen-csv': {
+                'path': 'prod_type'
+            },
             'wp-sql': {
                 'path': None,
             },
@@ -1882,6 +2071,9 @@ class ColDataProduct(ColDataWpEntity):
             'wc-csv': {
                 'path': 'tax:product_tag',
                 'type': 'heirarchical_pipe_array'
+            },
+            'gen-csv': {
+                'path': 'catlist'
             }
         },
         'featured': {
@@ -2114,12 +2306,12 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'QuantityOnHand',
                 'type': 'optional_float',
             },
-            'wc-csv': {
+            'csv': {
                 'path': 'stock',
             },
             'wp-sql': {
                 'path': 'meta._stock',
-            }
+            },
         },
         'in_stock': {
             'type': bool,
@@ -2404,7 +2596,7 @@ class ColDataMeridianEntityMixin(object):
             'wp-sql': {
                 'path': 'meta.commissionable_value'
             }
-        }
+        },
     }.items() + [
         (
             'lc_%s_%s' % (tier, field),
@@ -3054,6 +3246,7 @@ class ColDataWoo(ColDataProd):
         }),
         ('slug', {
             'category': True,
+            'product': False,
             'wc-wp-api': {
                 'key': 'slug',
                 'meta': False,

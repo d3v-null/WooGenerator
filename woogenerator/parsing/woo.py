@@ -9,7 +9,8 @@ import os
 from collections import OrderedDict
 from pprint import pformat
 
-from ..coldata import ColDataWoo, ColDataMedia
+from ..coldata import ColDataWoo, ColDataMedia, ColDataProduct, ColDataWcProdCategory
+
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
@@ -95,8 +96,8 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportWooMixin.__init__(self, *args, **kwargs)
 
 class WooListMixin(object):
-    coldata_class = ColDataWoo
-    coldata_cat_class = ColDataWoo
+    coldata_class = ColDataProduct
+    coldata_cat_class = ColDataWcProdCategory
     coldata_img_class = ColDataMedia
     supported_type = ImportWooObject
 

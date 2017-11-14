@@ -7,9 +7,10 @@ import datetime
 import io
 import cjson
 from collections import OrderedDict
-from pprint import pformat
+from copy import deepcopy
+from pprint import pformat, pprint
 
-from ..coldata import ColDataWoo, ColDataSubMedia
+from ..coldata import ColDataWoo, ColDataSubMedia, ColDataProductMeridian, ColDataWcProdCategory
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
@@ -185,7 +186,7 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
 
 class WooApiCatList(WooCatList, ApiListMixin):
     supported_type = ImportWooApiCategory
-    report_cols = ColDataWoo.get_category_cols()
+    report_cols = WooCatList.report_cols
 
 ImportWooApiCategory.container = WooApiCatList
 
@@ -280,7 +281,8 @@ class ApiParseWoo(
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
     image_container = ImportWooApiImg
-    coldata_class = ColDataWoo
+    coldata_class = ColDataProductMeridian
+    coldata_cat_class = ColDataWcProdCategory
     coldata_sub_img_class = ColDataSubMedia
     col_data_target = 'wc-wp-api'
     meta_get_key = 'meta_data'
@@ -414,18 +416,28 @@ class ApiParseWoo(
                 )
             self.register_message("PROCESS CATEGORY: %s" %
                                   repr(category_api_data))
-        core_translation = OrderedDict()
-        for col, col_data in self.coldata_cat_class.get_wpapi_core_cols().items():
-            try:
-                wp_api_key = col_data[self.col_data_target]['key']
-            except BaseException:
-                wp_api_key = col
-            core_translation[wp_api_key] = col
+
+        # TODO: do translation with API Whisperer
+
+        coldata_class = self.coldata_cat_class
+
         category_search_data = {}
-        category_search_data.update(
-            **self.translate_keys(category_api_data, core_translation))
-        category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
-                                     for key, value in category_search_data.items()])
+
+        translated_api_data = coldata_class.translate_data_to(category_api_data, 'gen-csv')
+
+        category_search_data.update(**translated_api_data)
+
+        # core_translation = OrderedDict()
+        # for col, col_data in self.coldata_cat_class.get_wpapi_core_cols().items():
+        #     try:
+        #         wp_api_key = col_data[self.col_data_target]['key']
+        #     except BaseException:
+        #         wp_api_key = col
+        #     core_translation[wp_api_key] = col
+        # category_search_data.update(
+        #     **self.translate_keys(category_api_data, core_translation))
+        # category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
+        #                              for key, value in category_search_data.items()])
 
         if 'itemsum' in category_search_data:
             category_search_data['taxosum'] = category_search_data['itemsum']
@@ -460,6 +472,8 @@ class ApiParseWoo(
                 kwargs['parent'] = parent_category_data
             else:
                 kwargs['parent'] = self.root_data
+
+            kwargs['coldata_class'] = self.coldata_cat_class
 
             cat_data = self.new_object(rowcount=self.rowcount, **kwargs)
 
@@ -564,56 +578,68 @@ class ApiParseWoo(
         # TODO: merge with ApiParseXero.get_parser_data in ApiParseMixin
 
         api_data = kwargs.get('api_data', {})
-        if cls.DEBUG_API:
-            cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
-        api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
-                         for key, value in api_data.items()])
-        if cls.DEBUG_API:
-            cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
+        # if cls.DEBUG_API:
+        #     cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
+        # api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
+        #                  for key, value in api_data.items()])
+        # if cls.DEBUG_API:
+        #     cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
 
         parser_data = OrderedDict()
         parser_data['api_data'] = api_data
 
-        core_translation = OrderedDict()
-        for col, col_data in cls.coldata_class.get_wpapi_core_cols().items():
-            try:
-                translated_key = col_data[cls.col_data_target]['key']
-            except KeyError:
-                translated_key = col
-            core_translation[translated_key] = col
-        parser_data.update(**cls.translate_keys(api_data, core_translation))
+        # TODO: replace this translation with new API Whisperer translation
 
-        meta_translation = OrderedDict()
-        if cls.meta_get_key in api_data:
-            meta_data = api_data[cls.meta_get_key]
-            if cls.meta_listed:
-                meta_data = cls.delistify(meta_data)
-            for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
-                try:
-                    translated_target_data = col_data.get(cls.col_data_target, {})
-                    assert isinstance(translated_target_data, dict), \
-                    "translated_target_data for col %s in %s should be dict not %s" % (
-                        col, cls.coldata_class, type(translated_target_data)
-                    )
-                    translated_key = translated_target_data['key']
-                except KeyError:
-                    translated_key = col
-                meta_translation[translated_key] = col
-            parser_data.update(
-                **cls.translate_keys(meta_data, meta_translation))
-        if 'dimensions' in api_data:
-            parser_data.update(
-                **cls.get_api_dimension_data(api_data['dimensions']))
-        in_stock_key = cls.get_api_target_key('in_stock')
-        if in_stock_key and in_stock_key in api_data:
-            parser_data.update(
-                **cls.get_api_stock_status_data(api_data[in_stock_key])
-            )
-        manage_stock_key = cls.get_api_target_key('manage_stock')
-        if manage_stock_key and manage_stock_key in api_data:
-            parser_data.update(
-                **cls.get_api_manage_stock_data(api_data[manage_stock_key])
-            )
+        coldata_class = kwargs.get('coldata_class', cls.coldata_class)
+        # if 'ColDataProductMeridian' in  coldata_class.__name__:
+        #     import pudb; pudb.set_trace()
+        translated_api_data = coldata_class.translate_data_from(deepcopy(api_data), 'wc-wp-api')
+        translated_api_data = coldata_class.translate_data_to(translated_api_data, 'gen-csv')
+
+        parser_data.update(**translated_api_data)
+        #
+        # core_translation = OrderedDict()
+        # for col, col_data in cls.coldata_class.get_wpapi_core_cols().items():
+        #     try:
+        #         translated_key = col_data[cls.col_data_target]['key']
+        #     except KeyError:
+        #         translated_key = col
+        #     core_translation[translated_key] = col
+        # parser_data.update(**cls.translate_keys(api_data, core_translation))
+        #
+        # # import pudb; pudb.set_trace()
+        #
+        # meta_translation = OrderedDict()
+        # if cls.meta_get_key in api_data:
+        #     meta_data = api_data[cls.meta_get_key]
+        #     if cls.meta_listed:
+        #         meta_data = cls.delistify(meta_data)
+        #     for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
+        #         try:
+        #             translated_target_data = col_data.get(cls.col_data_target, {})
+        #             assert isinstance(translated_target_data, dict), \
+        #             "translated_target_data for col %s in %s should be dict not %s" % (
+        #                 col, cls.coldata_class, type(translated_target_data)
+        #             )
+        #             translated_key = translated_target_data['key']
+        #         except KeyError:
+        #             translated_key = col
+        #         meta_translation[translated_key] = col
+        #     parser_data.update(
+        #         **cls.translate_keys(meta_data, meta_translation))
+        # if 'dimensions' in api_data:
+        #     parser_data.update(
+        #         **cls.get_api_dimension_data(api_data['dimensions']))
+        # in_stock_key = cls.get_api_target_key('in_stock')
+        # if in_stock_key and in_stock_key in api_data:
+        #     parser_data.update(
+        #         **cls.get_api_stock_status_data(api_data[in_stock_key])
+        #     )
+        # manage_stock_key = cls.get_api_target_key('manage_stock')
+        # if manage_stock_key and manage_stock_key in api_data:
+        #     parser_data.update(
+        #         **cls.get_api_manage_stock_data(api_data[manage_stock_key])
+        #     )
         # if 'description' in api_data:
         #     parser_data[cls.object_container.description_key] = api_data['description']
         # Stupid hack because 'name' is 'title' in products, but 'name' in
@@ -623,21 +649,40 @@ class ApiParseWoo(
 
         assert \
             cls.object_container.description_key in parser_data, \
-            "parser_data should have description: %s\n original: %s\ntranslations: %s, %s" \
-            % (parser_data, api_data, core_translation, meta_translation)
+            "parser_data should have description(%s): %s\n original: %s\ntranslations: %s, %s" \
+            % (
+                cls.object_container.description_key,
+                pformat(parser_data.items()),
+                pformat(api_data.items()),
+                None, None
+                # pformat(core_translation.items()),
+                # pformat(meta_translation.items()),
+            )
         parser_data[cls.object_container.descsum_key] = parser_data[
             cls.object_container.description_key]
         assert \
             cls.object_container.title_key in parser_data, \
-            "parser_data should have title: %s\n original: %s\ntranslations: %s, %s" \
-            % (parser_data, api_data, core_translation, meta_translation)
+            "parser_data should have title(%s): %s\n original: %s\ntranslations: %s, %s" \
+            % (
+                cls.object_container.title_key,
+                pformat(parser_data.items()),
+                pformat(api_data.items()),
+                None, None
+                # core_translation, meta_translation
+            )
         if api_data['type'] == 'category':
             parser_data[cls.category_container.namesum_key] = parser_data[
                 cls.object_container.title_key]
             assert \
                 cls.object_container.slug_key in parser_data, \
-                "parser_data should have slug: %s\n original: %s\ntranslations: %s, %s" \
-                % (parser_data, api_data, core_translation, meta_translation)
+                "parser_data should have slug(%s): %s\n original: %s\ntranslations: %s, %s" \
+                % (
+                    cls.object_container.slug_key,
+                    pformat(parser_data.items()),
+                    pformat(api_data.items()),
+                    None, None
+                    # core_translation, meta_translation
+                )
             parser_data[cls.object_container.codesum_key] = parser_data[
                 cls.object_container.slug_key]
         else:
@@ -646,7 +691,11 @@ class ApiParseWoo(
         assert \
             cls.object_container.codesum_key in parser_data, \
             "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
-            % (parser_data, api_data, core_translation, meta_translation)
+            % (
+                parser_data, api_data,
+                None, None
+                # core_translation, meta_translation
+            )
         # assert \
         #     cls.object_container.namesum_key in parser_data, \
         #     "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \

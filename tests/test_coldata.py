@@ -6,7 +6,8 @@ from unittest import TestCase
 
 from context import woogenerator
 from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataUser,
-                                  ColDataWoo, ColDataWpPost)
+                                  ColDataWoo, ColDataWpPost, ColDataProductMeridian,
+                                  ColDataProd, ColDataWcProdCategory)
 from woogenerator.utils import Registrar
 
 from .abstract import AbstractWooGeneratorTestCase
@@ -23,6 +24,41 @@ class TestColData(AbstractWooGeneratorTestCase):
             Registrar.DEBUG_ERROR = False
             Registrar.DEBUG_WARN = False
             Registrar.DEBUG_MESSAGE = False
+
+class TestLegacyAccordanceProd(TestColData):
+    coldata_class = ColDataProductMeridian
+    legacy_coldata_class = ColDataWoo
+
+    def test_legacy_accordance_wpapi_core_cols(self):
+        cols = set(self.coldata_class.get_wpapi_core_cols().keys())
+        legacy_cols = set(self.legacy_coldata_class.get_wpapi_core_cols().keys())
+
+        if self.debug:
+            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+
+        self.assertTrue(
+            (legacy_cols - set(['itemsum', 'slug'])).issubset(cols),
+        )
+
+class TestLegacyAccordanceCat(TestColData):
+    coldata_class = ColDataWcProdCategory
+    legacy_coldata_class = ColDataWoo
+
+    def test_legacy_accordance_category_cols(self):
+        cols = set(self.coldata_class.get_category_cols().keys())
+        legacy_cols = set(self.legacy_coldata_class.get_category_cols().keys())
+
+        if self.debug:
+            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+
+        self.assertTrue(
+            (legacy_cols - set(['DYNCAT', 'DYNPROD', 'SCHEDULE'])).issubset(cols),
+        )
+
 
 
 class TestColDataAbstract(TestColData):

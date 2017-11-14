@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import datetime
 import time
+import calendar
 from numbers import Number
 
 from .core import SanitationUtils
@@ -68,7 +69,7 @@ class TimeUtils(object):
     @classmethod
     def datetime2timestamp(cls, datetime_):
         if datetime_:
-            return time.mktime(datetime_.timetuple())
+            return int(calendar.timegm(datetime_.utctimetuple()))
 
     @classmethod
     def star_strp_mktime(cls, string, fmt=wp_datetime_format):

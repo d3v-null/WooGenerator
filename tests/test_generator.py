@@ -288,7 +288,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'WNF': u'1465837200',
                 'WNT': u'32519314800',
         }.items():
-            self.assertEqual(first_prod[key], value)
+            self.assertEqual(unicode(first_prod[key]), value)
 
         # Remember the test data is deliberately modified to remove one of the categories
         self.assertEquals(
