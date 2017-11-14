@@ -228,18 +228,57 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
 
         self.assertTrue(
             set([
+                'backorders',
+                'button_text',
+                'catalog_visibility',
+                'created_gmt',
+                'created_local',
+                'cross_sell_ids',
+                'download_expiry',
+                'download_limit',
+                'external_url',
+                'featured',
+                'height',
+                'id',
+                'in_stock',
+                'length',
+                'manage_stock',
+                'menu_order',
+                'mime_type',
+                'modified_gmt',
+                'modified_local',
+                'parent_id',
+                'post_content',
+                'post_excerpt',
+                'post_status',
+                'price',
+                'regular_price',
+                'sale_price',
+                'sale_price_dates_from',
+                'sale_price_dates_to',
+                'sku',
+                'sold_individually',
+                'stock_quantity',
+                'tax_class',
+                'tax_status',
+                'title',
+                'total_sales',
+                'upsell_ids',
+                'virtual',
+                'weight',
+                'width'
             ]).issubset(keys_intersect)
         )
 
         for key in list(keys_intersect - set(['excerpt'])):
-            try:
-                self.assertEqual(
-                    wp_sql_first_prod_normalized[key],
-                    wc_api_first_prod_normalized[key]
-                )
-            except AssertionError, exc:
-                if self.debug:
-                    print("key %s failed assertion: %s" % (key, exc))
+            # try:
+            self.assertEqual(
+                wp_sql_first_prod_normalized[key],
+                wc_api_first_prod_normalized[key]
+            )
+            # except AssertionError, exc:
+            #     if self.debug:
+            #         print("key %s failed assertion: %s" % (key, exc))
 
     @pytest.mark.local
     def test_wc_legacy_vs_wc_wp_api_prod(self):

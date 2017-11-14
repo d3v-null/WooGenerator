@@ -573,8 +573,6 @@ class ColDataAbstract(object):
         target_structures = cls.get_handles_property('structure', target)
         morph_functions = OrderedDict()
         for handle in cls.data.keys():
-            if handle in ['attributes'] and target == 'wp-sql':
-                import pudb; pudb.set_trace()
             if handle in target_structures:
                 target_structure = target_structures.get(handle)
                 if target_structure is None:
@@ -2264,9 +2262,10 @@ class ColDataProduct(ColDataWpEntity):
                 'structure': ('listed-objects', )
             },
             'wp-sql': {
-                'path': 'meta._product_attributes',
-                'type': 'php_array',
-                'structure': ('mapping-object', ('title', ))
+                'path': None,
+                # 'path': 'meta._product_attributes',
+                # 'type': 'php_array',
+                # 'structure': ('mapping-object', ('title', ))
             }
         },
         'default_attributes': {
@@ -2277,9 +2276,10 @@ class ColDataProduct(ColDataWpEntity):
                 'type': 'wc_api_default_attribute_list'
             },
             'wp-sql': {
-                'path': 'meta._default_attributes',
-                'type': 'php_array',
-                'structure': ('listed-objects', )
+                'path': None
+                # 'path': 'meta._default_attributes',
+                # 'type': 'php_array',
+                # 'structure': ('listed-objects', )
             }
         },
         'variation_ids': {
