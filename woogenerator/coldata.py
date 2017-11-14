@@ -738,14 +738,33 @@ class ColDataAbstract(object):
         """
         Perform a full translation of paths and types between target and core
         """
+        # split target_path_translation on which handles have sub_data
+        target_path_translation = cls.get_target_path_translation(target)
+        core_path_translation = cls.get_core_path_translation(target)
+        sub_datum = cls.get_handles_property('sub_data')
+        sub_data_handles = set()
+        for handle, sub_data in sub_datum.items():
+            if sub_data:
+                sub_data_handles.add(handle)
+        path_translation_pre = OrderedDict()
+        path_translation_post = OrderedDict()
+        for handle in cls.data.keys():
+            if handle in sub_data_handles:
+                path_translation_pre[handle] = target_path_translation[handle]
+            else:
+                path_translation_post[handle] = core_path_translation[handle]
+
         data = cls.translate_types_from(
-            data, target, cls.get_target_path_translation(target)
+            data, target, path_translation_pre
         )
         data = cls.translate_structure_from(
-            data, target, cls.get_target_path_translation(target)
+            data, target, target_path_translation
         )
         data = cls.translate_paths_from(
             data, target
+        )
+        data = cls.translate_types_from(
+            data, target, path_translation_post
         )
         return data
 
@@ -2390,10 +2409,10 @@ class ColDataMeridianEntityMixin(object):
                 'pricing': True,
                 'type': type_,
                 'wp-sql': {
-                    'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
+                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
                 },
                 'wc-wp-api': {
-                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
+                    'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
                 },
                 'wc-legacy-api': {
                     'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
