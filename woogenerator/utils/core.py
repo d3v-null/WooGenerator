@@ -1555,8 +1555,21 @@ class PHPUtils(object):
         if string:
             response = phpserialize.loads(string)
             if response:
-                return response
+                return response.values()
             return []
+
+    @staticmethod
+    def serialize_mapping(list_):
+        if list_:
+            return phpserialize.dumps(list_)
+
+    @staticmethod
+    def unserialize_mapping(string):
+        if string:
+            response = phpserialize.loads(string)
+            if response:
+                return response
+            return {}
 
 class MimeUtils(object):
     mime_data = {

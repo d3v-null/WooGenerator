@@ -202,6 +202,18 @@ wp-api-v1 for post categories `¯\_(ツ)_/¯` )
 API Whisperer can convert between singular structures, and it can convert
 between listed / mapped structures but does not handle converting between
 singular and listed / mapped structures, since this doesn't make sense.
+
+## Force Mapping
+When deconstructing a sub-entity handle that has plural data, the default
+behaviour is to store the sub-entity as a list of objects, however, if other
+handles require access to values from the sub-entity as if the sub-entity
+had the structure of a key-value pair, they may require that the sub-entity
+be represented as a mapping in the core data structure.
+In this case, you can set the `force_mapping` attribute to the handle of the key
+which the mapping should be created on in the core structure.
+An illustrative example would be wordpress meta. You may have handles that need
+to extrace a meta value, and in this case you would want to set `force_mapping`
+to `meta_key` so that the `meta_value` can be accessed using the path meta.<meta_key>.meta_value
 """
 
 class ColDataAbstract(object):
@@ -367,6 +379,9 @@ class ColDataAbstract(object):
 
     @classmethod
     def get_property_exclusions(cls, property_, target=None):
+        """
+        Return a list of handles whose value of `property_` in `target` is not True-ish.
+        """
         exclusions = []
         for handle, value in cls.get_handles_property(property_).items():
             if not value:
@@ -505,10 +520,11 @@ class ColDataAbstract(object):
         return deepcopy(data)
 
     @classmethod
-    def deconstruct_sub_entity(cls, sub_data, target, target_structure=None):
+    def deconstruct_sub_entity(cls, sub_data, target, target_structure=None, forced_mapping_handle=None):
         if target_structure is None:
             target_structure = cls.get_property_default('structure')
         path_translation = cls.get_target_path_translation(target)
+        objects = []
         if target_structure[0] == 'singular-object':
             return cls.translate_data_from(
                 sub_data,
@@ -516,22 +532,30 @@ class ColDataAbstract(object):
             )
         elif target_structure[0] == 'singular-value':
             target_value_handle = target_structure[1]
-            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
+            target_value_path = path_translation.get(target_value_handle, target_value_handle)
             return cls.translate_data_from(
-                {target_value_handle: sub_data},
+                cls.update_in_path(
+                    {},
+                    target_value_path,
+                    sub_data
+                ),
                 target
             )
         elif target_structure[0] == 'listed-values':
             target_value_handle = target_structure[1]
-            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
-            return [
+            target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            objects = [
                 cls.translate_data_from(
-                    {target_value_handle: sub_value},
+                    cls.update_in_path(
+                        {},
+                        target_value_path,
+                        sub_value
+                    ),
                     target
                 ) for sub_value in sub_data
             ]
         elif target_structure[0] == 'listed-objects':
-            return [
+            objects = [
                 cls.translate_data_from(
                     sub_object,
                     target
@@ -539,30 +563,47 @@ class ColDataAbstract(object):
             ]
         elif target_structure[0] == 'mapping-value':
             target_key_handle = target_structure[1][0]
-            target_key_handle = path_translation.get(target_key_handle)
+            target_key_path = path_translation.get(target_key_handle)
             target_value_handle = target_structure[1][1]
-            target_value_handle = path_translation.get(target_value_handle, target_value_handle)
-            return [
+            target_value_path = path_translation.get(target_value_handle, target_value_handle)
+            objects = [
                 cls.translate_data_from(
-                    {
-                        target_key_handle: sub_key,
-                        target_value_handle: sub_value
-                    },
+                    cls.update_in_path(
+                        cls.update_in_path(
+                            {},
+                            target_key_path,
+                            sub_key
+                        ),
+                        target_value_path,
+                        sub_value
+                    ),
                     target
                 ) for sub_key, sub_value in sub_data.items()
             ]
         elif target_structure[0] == 'mapping-object':
             target_key_handle = target_structure[1][0]
-            target_key_handle = path_translation.get(target_key_handle)
-            return [
+            target_key_path = path_translation.get(target_key_handle)
+            objects = [
                 cls.translate_data_from(
-                    OrderedDict(
-                        sub_value.items()
-                        + [(target_key_handle, sub_key)]
+                    cls.update_in_path(
+                        sub_value,
+                        target_key_path,
+                        sub_key
                     ),
                     target
                 ) for sub_key, sub_value in sub_data.items()
             ]
+        if objects and forced_mapping_handle:
+            mapping = OrderedDict()
+            for object_ in objects:
+                try:
+                    mapping_key = cls.get_from_path(object_, forced_mapping_handle)
+                except (IndexError, KeyError):
+                    continue
+                mapping[mapping_key] = object_
+            return mapping
+
+        return objects
 
     @classmethod
     def translate_structure_from(cls, data, target, path_translation=None):
@@ -571,6 +612,7 @@ class ColDataAbstract(object):
         """
         target_sub_data_classes = cls.get_handles_property('sub_data', target)
         target_structures = cls.get_handles_property('structure', target)
+        forced_mappings = cls.get_handles_property('force_mapping')
         morph_functions = OrderedDict()
         for handle in cls.data.keys():
             if handle in target_structures:
@@ -581,11 +623,13 @@ class ColDataAbstract(object):
                 'target_structure should be a tuple not %s' % type(target_structure)
                 morph_function = None
                 target_sub_data_class = target_sub_data_classes.get(handle)
+                forced_mapping_handle = forced_mappings.get(handle)
                 if target_sub_data_class:
                     morph_function = functools.partial(
                         target_sub_data_class.deconstruct_sub_entity,
                         target=target,
-                        target_structure=target_structure
+                        target_structure=target_structure,
+                        forced_mapping_handle=forced_mapping_handle
                     )
                 if morph_function:
                     morph_functions[handle] = morph_function
@@ -622,7 +666,8 @@ class ColDataAbstract(object):
             'stock_status': SanitationUtils.stock_status2bool,
             'optional_int_minus_1': SanitationUtils.normalize_optional_int_minus_1,
             'optional_int_zero': SanitationUtils.normalize_optional_int_zero,
-            'php_array': PHPUtils.unserialize_list,
+            'php_array_associative': PHPUtils.unserialize_mapping,
+            'php_array_indexed': PHPUtils.unserialize_list,
             'mime_type': MimeUtils.validate_mime_type,
         }.get(type_, SanitationUtils.coerce_unicode)
 
@@ -644,7 +689,8 @@ class ColDataAbstract(object):
             ),
             'yesno': SanitationUtils.bool2yesno,
             'stock_status': SanitationUtils.bool2stock_status,
-            'php_array': PHPUtils.serialize_list,
+            'php_array_associative': PHPUtils.serialize_mapping,
+            'php_array_indexed': PHPUtils.serialize_list,
             'timestamp': TimeUtils.datetime2timestamp,
             'mime_type': MimeUtils.validate_mime_type,
         }.get(type_, SanitationUtils.identity)
@@ -1568,6 +1614,7 @@ class ColDataWpEntity(ColDataAbstract):
         },
         'meta': {
             'sub_data': ColDataSubMeta,
+            'force_mapping': 'meta_key',
             'wp-api': {
             },
             'wp-api-v1': {
@@ -1822,7 +1869,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'csv': {
                 'type': 'yesno'
-            }
+            },
         },
         'catalog_visibility': {
             'default': 'visible',
@@ -1964,7 +2011,7 @@ class ColDataProduct(ColDataWpEntity):
         'downloadable': {
             'type': bool,
             'wp-sql': {
-                'path': 'meta._virtual',
+                'path': 'meta._downloadable',
                 'type': 'yesno'
             }
         },
@@ -2080,10 +2127,6 @@ class ColDataProduct(ColDataWpEntity):
             'write': False,
             'wc-api': {
                 'path': 'backorders_allowed'
-            },
-            'wp-sql': {
-                'path': 'meta._backorders',
-                'type': 'yesno'
             },
             'woo-csv': {
                 'path': 'backorders',
@@ -2204,7 +2247,7 @@ class ColDataProduct(ColDataWpEntity):
             'default': [],
             'wp-sql': {
                 'path': 'meta._upsell_ids',
-                'type': 'php_array'
+                'type': 'php_array_indexed'
             },
             'csv': {
                 'type': 'pipe_array'
@@ -2214,7 +2257,7 @@ class ColDataProduct(ColDataWpEntity):
             'path': None,
             'wp-sql': {
                 'path': 'meta._upsell_skus',
-                'type': 'php_array'
+                'type': 'php_array_indexed'
             },
             'csv': {
                 'type': 'pipe_array'
@@ -2224,7 +2267,7 @@ class ColDataProduct(ColDataWpEntity):
             'default': [],
             'wp-sql': {
                 'path': 'meta._crosssell_ids',
-                'type': 'php_array'
+                'type': 'php_array_indexed'
             },
             'csv': {
                 'type': 'pipe_array'
@@ -2234,7 +2277,7 @@ class ColDataProduct(ColDataWpEntity):
             'path': None,
             'wp-sql': {
                 'path': 'meta._crosssell_skus',
-                'type': 'php_array'
+                'type': 'php_array_indexed'
             },
             'csv': {
                 'type': 'pipe_array'
@@ -2243,8 +2286,12 @@ class ColDataProduct(ColDataWpEntity):
         'purchase_note': {
             'path': None,
             'wc-api': {
-                'path': 'purchase_note'
+                'path': 'purchase_note',
+                'type': 'wp_content_rendered'
             },
+            'wp-sql': {
+                'path': 'meta._purchase_note'
+            }
         },
         'images': {
             'path': None,
@@ -2264,7 +2311,7 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': None,
                 # 'path': 'meta._product_attributes',
-                # 'type': 'php_array',
+                # 'type': 'php_array_associative',
                 # 'structure': ('mapping-object', ('title', ))
             }
         },
@@ -2278,7 +2325,7 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': None
                 # 'path': 'meta._default_attributes',
-                # 'type': 'php_array',
+                # 'type': 'php_array_associative',
                 # 'structure': ('listed-objects', )
             }
         },
@@ -2309,7 +2356,7 @@ class ColDataMeridianEntityMixin(object):
     data = OrderedDict(ColDataProduct.data.items() + {
         'wootan_danger': {
             'wc-api': {
-                'path': 'meta_data.wootan_danger',
+                'path': 'meta_data.wootan_danger.meta_value',
                 'type': 'danger'
             },
             'wp-sql': {
@@ -2328,7 +2375,7 @@ class ColDataMeridianEntityMixin(object):
         'commissionable_value': {
             'type': float,
             'wc-api': {
-                'path': 'meta_data.commissionable_value'
+                'path': 'meta_data.commissionable_value.meta_value'
             },
             'wp-sql': {
                 'path': 'meta.commissionable_value'
@@ -2343,13 +2390,13 @@ class ColDataMeridianEntityMixin(object):
                 'pricing': True,
                 'type': type_,
                 'wp-sql': {
-                    'path': 'meta.lc_%s_%s' % (tier, field),
+                    'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
                 },
                 'wc-wp-api': {
-                    'path': 'meta_data.lc_%s_%s' % (tier, field),
+                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
                 },
                 'wc-legacy-api': {
-                    'path': 'custom_meta.lc_%s_%s' % (tier, field),
+                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
                 },
                 'gen-csv': {
                     'path': ''.join([tier.upper(), field_slug.upper()])

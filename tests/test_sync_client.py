@@ -182,7 +182,6 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             wc_api_first_prod_raw = client.get_first_endpoint_item()
             if self.debug:
                 print('api first_prod raw:\n%s' % pformat(wc_api_first_prod_raw))
-                # import pudb; pudb.set_trace()
             wc_api_first_prod_normalized = self.coldata_class.translate_data_from(
                 wc_api_first_prod_raw, 'wc-wp-api-v2'
             )
@@ -271,14 +270,14 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
         )
 
         for key in list(keys_intersect - set(['excerpt'])):
-            # try:
-            self.assertEqual(
-                wp_sql_first_prod_normalized[key],
-                wc_api_first_prod_normalized[key]
-            )
-            # except AssertionError, exc:
-            #     if self.debug:
-            #         print("key %s failed assertion: %s" % (key, exc))
+            try:
+                self.assertEqual(
+                    wp_sql_first_prod_normalized[key],
+                    wc_api_first_prod_normalized[key]
+                )
+            except AssertionError, exc:
+                if self.debug:
+                    print("key %s failed assertion: %s" % (key, exc))
 
     @pytest.mark.local
     def test_wc_legacy_vs_wc_wp_api_prod(self):
