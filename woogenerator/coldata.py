@@ -19,33 +19,49 @@ from .utils import (JSONPathUtils, PHPUtils, Registrar, SanitationUtils,
 
 # TODO:
 """
-Proposal: coldata format needs to be unified:
-schema = [
-    (handle, {          # internal handle for column
-        label=...,      # (optional) external label for column, defaults to handle
-        type=...,       # (optional) internal storage type if not string
-        default=...,    # (optional) default internal value
-        target={        # for each target format
-            label=...,  # (optional) external label when expressed in target format if different from global label
-            type=...,   # (optional) type when expressed in target format if different from global type
-            path=...,   # (optional) location of value in target format
-            edit=False, # (optional) if column is editable in this format, defaults to True
-            read=False, # (optional) if column is readable in this format, defaults to True
-        }
-
-    })
-]
-"""
-"""
 Get rid of stuff like slave_override, since it should be able to work both ways.
 get rid of attributes like category, product, variation, that's covered by class now.
-"""
-"""
 YAML Import and export of schema
 data is not read from file until it is accessed?
 """
 """
-Sub-entities:
+# API Whisperer
+
+Applies a D.R.Y. , object-oriented approach to translating between API data.
+
+# Use cases
+ - You wrote an API pareser that parses data from one api, but need to upgrade
+ to a newer API which has a different structure
+ - You need to synchronize data between databases using disparate APIs
+
+# ColData Schema
+schema = {
+    ...,
+    handle: {          # internal handle for column
+        label: ...,      # (optional) external label for reporting column, defaults to handle
+        type: ...,       # (optional) internal storage type if not string
+        path: ...,
+        default: ...,    # (optional) default internal value
+        sub_data: ...,   # (optional) see: Sub-Entities section
+        <target>: {        # for each target format, see: Target section
+            label: ...,  # (optional) external label when reporting data in target format if different from global label
+            type: ...,   # (optional) type when expressed in target format if different from global type
+            path: ...,   # (optional) location of value in target format, defaults to handle
+            edit: False, # (optional) if column is editable in this format, defaults to True
+            read: False, # (optional) if column is readable in this format, defaults to True
+        }
+    },
+    ...
+]
+
+# Targets
+Targets are different contexts in which the data can be represented.
+They can be used to specify the format of data in different APIs, or they can
+be the name of an internal format that you want your data in.
+The properties of a target can be inherited from a target's ancestors, allowing
+a way of specifying multiple similar targets without redundancy.
+
+# Sub-Entities
 Different APIs can represent the same attribute of an entity with very different
 structures.
 E.G. 1a: one api might represent metadata as a list of objects:
@@ -398,9 +414,7 @@ class ColDataAbstract(object):
         """
         Translate the structure of data from `target` to core.
         """
-        data = deepcopy(data)
         translation = cls.get_target_path_translation(target)
-        response = data
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
@@ -415,16 +429,15 @@ class ColDataAbstract(object):
                     )
                 except (IndexError, KeyError):
                     pass
-        return response
+            return response
+        return deepcopy(data)
 
     @classmethod
     def translate_paths_to(cls, data, target):
         """
         Translate the structure of data from core to `target`.
         """
-        data = deepcopy(data)
         translation = cls.get_target_path_translation(target)
-        response = data
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
@@ -439,14 +452,19 @@ class ColDataAbstract(object):
                     )
                 except (IndexError, KeyError):
                     pass
-        return response
+            return response
+        return deepcopy(data)
 
     @classmethod
     def translate_structure_from(cls, data, target, path_translation=None):
+        target_sub_datum = cls.get_handles_property('sub_data', target)
+        target_structure = cls.get_handles_property('structure', target)
         return data
 
     @classmethod
     def translate_structure_to(cls, data, target, path_translation=None):
+        target_sub_datum = cls.get_handles_property('sub_data', target)
+        target_structure = cls.get_handles_property('structure', target)
         return data
 
     @classmethod
