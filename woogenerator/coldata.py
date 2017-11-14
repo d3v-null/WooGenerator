@@ -493,12 +493,12 @@ class ColDataAbstract(object):
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
-    def translate_types(cls, data, type_translation, path_translation):
+    def morph_data(cls, data, morph_functions, path_translation):
         """
         Translate the data using functions
         """
         for handle in cls.data.keys():
-            if handle in type_translation and handle in path_translation:
+            if handle in morph_functions and handle in path_translation:
                 target_path = path_translation.get(handle)
                 try:
                     target_value = deepcopy(cls.get_from_path(
@@ -507,7 +507,7 @@ class ColDataAbstract(object):
                 except (IndexError, KeyError):
                     continue
                 try:
-                    target_value = type_translation.get(handle)(target_value)
+                    target_value = morph_functions.get(handle)(target_value)
                 except (TypeError, ):
                     continue
                 data = cls.update_in_path(
@@ -519,14 +519,14 @@ class ColDataAbstract(object):
     def translate_types_from(cls, data, target, path_translation=None):
         if path_translation is None:
             path_translation = cls.get_core_path_translation(target)
-        type_translation = OrderedDict([
+        morph_functions = OrderedDict([
             (handle, cls.get_normalizer(type_)) \
             for handle, type_ \
             in cls.get_handles_property('type', target).items()
         ])
-        return cls.translate_types(
+        return cls.morph_data(
             data,
-            type_translation,
+            morph_functions,
             path_translation
         )
 
@@ -534,14 +534,14 @@ class ColDataAbstract(object):
     def translate_types_to(cls, data, target, path_translation=None):
         if path_translation is None:
             path_translation = cls.get_core_path_translation(target)
-        type_translation = OrderedDict([
+        morph_functions = OrderedDict([
             (handle, cls.get_denormalizer(type_)) \
             for handle, type_ \
             in cls.get_handles_property('type', target).items()
         ])
-        return cls.translate_types(
+        return cls.morph_data(
             data,
-            type_translation,
+            morph_functions,
             path_translation
         )
 
