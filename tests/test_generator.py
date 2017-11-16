@@ -638,6 +638,14 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.download_master = False
         self.settings.do_categories = False
         self.settings.do_specials = False
+        if self.debug:
+            self.settings.debug_shop = True
+            self.settings.debug_parser = True
+            self.settings.debug_abstract = True
+            self.settings.debug_gen = True
+            self.settings.debug_tree = True
+            self.settings.verbosity = 3
+            self.settings.quiet = False
         self.settings.init_settings(self.override_args)
         self.settings.schema = "XERO"
         self.settings.slave_name = "Xero"
@@ -654,6 +662,9 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             index_fn=ProductMatcher.product_index_fn
         )
         if self.debug:
+            # Registrar.DEBUG_WARN = True
+            # Registrar.DEBUG_MESSAGE = True
+            # Registrar.DEBUG_ERROR = True
             # Registrar.DEBUG_SHOP = True
             # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_ABSTRACT = True
@@ -752,6 +763,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
 
+    @pytest.mark.last
     def test_xero_do_match(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
@@ -765,6 +777,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.matches.masterless), 0)
         self.assertEqual(len(self.matches.slaveless), 5)
 
+    @pytest.mark.last
     def test_xero_do_merge(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
@@ -811,6 +824,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @pytest.mark.last
     def test_xero_do_report(self):
         suffix='geenrator_xero_do_report'
         temp_working_dir = tempfile.mkdtemp(suffix + '_working')

@@ -3,25 +3,29 @@ Introduce woo structure to shop classes.
 """
 from __future__ import absolute_import
 
-from copy import copy
-import re
 import os
+import re
 from collections import OrderedDict
+from copy import copy
 from pprint import pformat
 
-from ..coldata import ColDataWoo, ColDataMedia, ColDataProduct, ColDataWcProdCategory
-
+from ..coldata import (ColDataMedia, ColDataProductMeridian, ColDataProductVariationMeridian,
+                       ColDataWcProdCategory)
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
+from .abstract import ObjList
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
-from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
-                   ImportShopProductMixin, ImportShopProductSimpleMixin,
+from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
+                   ImportShopImgMixin, ImportShopMixin, ImportShopProductMixin,
+                   ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin, ShopCatList, ShopObjList,
-                   ShopProdList, ImportShopImgMixin)
+                   ShopProdList)
 from .special import ImportSpecialGroup
-from .abstract import ObjList
-from .tree import ImportTreeItem, ItemList, TaxoList, ImportTreeObject
+from .tree import ImportTreeItem, ImportTreeObject, ItemList, TaxoList
+
+ColDataWcProdCategory
+
 
 
 class ImportWooMixin(object):
@@ -96,8 +100,9 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportWooMixin.__init__(self, *args, **kwargs)
 
 class WooListMixin(object):
-    coldata_class = ColDataProduct
+    coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
+    coldata_var_class = ColDataProductVariationMeridian
     coldata_img_class = ColDataMedia
     supported_type = ImportWooObject
 
@@ -352,8 +357,8 @@ class CsvParseWooMixin(object):
     bundled_container = ImportWooProductBundled
     coldata_img_target = 'wp-api'
     # Under woo, all taxos are categories
-    coldata_class = ColDataWoo
-    coldata_cat_class = ColDataWoo
+    coldata_class = ColDataProductMeridian
+    coldata_cat_class = ColDataWcProdCategory
     coldata_img_class = ColDataMedia
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory

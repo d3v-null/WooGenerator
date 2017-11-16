@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import time
 from collections import OrderedDict
 
-from ..coldata import ColDataMyo
+from ..coldata import ColDataProductMeridian
 from ..utils import SanitationUtils, SeqUtils
 from .gen import CsvParseGenTree
 from .shop import ImportShopProductMixin, ShopProdList
@@ -246,4 +246,4 @@ class CsvParseMyo(CsvParseGenTree):
 class MYOProdList(ShopProdList):
 
     def get_report_cols(self):
-        return ColDataMyo.get_product_cols()
+        return ColDataProductMeridian.get_report_cols()

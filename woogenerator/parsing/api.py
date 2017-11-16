@@ -10,7 +10,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat, pprint
 
-from ..coldata import ColDataWoo, ColDataSubMedia, ColDataProductMeridian, ColDataWcProdCategory
+from ..coldata import ColDataSubMedia, ColDataProductMeridian, ColDataWcProdCategory
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo

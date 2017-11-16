@@ -8,7 +8,7 @@ import os
 import weakref
 from collections import OrderedDict
 
-from ..coldata import ColDataProd, ColDataCat, ColDataProductMeridian, ColDataWcProdCategory
+from ..coldata import ColDataProductMeridian, ColDataWcProdCategory
 from ..utils import Registrar, SanitationUtils
 from .abstract import ObjList
 from .gen import CsvParseGenMixin
@@ -80,42 +80,71 @@ class ImportShopMixin(object):
             )
         self.images[file_name].register_attachment(self)
 
-    def to_api_data(self, col_data, target_api):
+    def to_api_data(self, coldata_class, target_api=None):
         api_data = OrderedDict()
+        gen_data = dict(self)
         if self.is_category:
-            for col, col_data in col_data.get_wpapi_category_cols(target_api).items():
-                if col in self:
-                    try:
-                        target_api_key = col_data[target_api]['key']
-                    except BaseException:
-                        target_api_key = col
-                    api_data[target_api_key] = self[col]
+            coldata_class = self.coldata_cat_class
+            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
             if self.parent and self.parent.wpid:
-                api_data['parent'] = self.parent.wpid
+                api_data['term_parent_id'] = self.parent.wpid
+            api_data = coldata_class.translate_data_to(core_data, target_api)
+            # for col, col_data in coldata_class.get_wpapi_category_cols(target_api).items():
+            #     if col in self:
+            #         try:
+            #             target_api_key = col_data[target_api]['key']
+            #         except BaseException:
+            #             target_api_key = col
+            #         api_data[target_api_key] = self[col]
+        elif self.is_variation:
+            coldata_class = self.coldata_var_class
+            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            if self.parent and self.parent.wpid:
+                api_data['parent_id'] = self.parent.wpid
+            api_data = coldata_class.translate_data_to(core_data, target_api)
+        elif getattr(self, 'is_image'):
+            coldata_class = self.coldata_img_class
+            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            api_data = coldata_class.translate_data_to(core_data, target_api)
         else:
             assert self.is_product
-            for col, col_data in col_data.get_wpapi_core_cols(target_api).items():
-                if col in self:
-                    try:
-                        target_api_key = col_data[target_api]['key']
-                    except BaseException:
-                        target_api_key = col
-                    api_data[target_api_key] = self[col]
-            for col, col_data in col_data.get_wpapi_meta_cols(target_api).items():
-                if col in self:
-                    try:
-                        target_api_key = col_data[target_api]['key']
-                    except BaseException:
-                        target_api_key = col
-                    if 'meta' not in api_data:
-                        api_data['meta'] = {}
-                    api_data['meta'][target_api_key] = self[col]
-            if self.is_variable:
-                variations = []
-                for variation in self.variations.values():
-                    variation_data = variation.to_api_data(col_data, target_api)
-                    variations.append(variation_data)
-                api_data['variations'] = variations
+            coldata_class = self.coldata_class
+            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            variations = []
+            for variation in self.variations.values():
+                variation_data = variation.to_api_data(coldata_class, target_api)
+                variations.append(variation_data)
+            core_data['variations'] = variations
+            categories = []
+            for category in self.categories.values():
+                category_data = category.to_api_data(coldata_class, target_api)
+                categories.append(category_data)
+            core_data['product_categories'] = categories
+            api_data = coldata_class.translate_data_to(core_data, target_api)
+
+
+            # for col, col_data in coldata_class.get_wpapi_core_cols(target_api).items():
+            #     if col in self:
+            #         try:
+            #             target_api_key = coldata_class[target_api]['key']
+            #         except BaseException:
+            #             target_api_key = col
+            #         api_data[target_api_key] = self[col]
+            # for col, col_data in coldata_class.get_wpapi_meta_cols(target_api).items():
+            #     if col in self:
+            #         try:
+            #             target_api_key = col_data[target_api]['key']
+            #         except BaseException:
+            #             target_api_key = col
+            #         if 'meta' not in api_data:
+            #             api_data['meta'] = {}
+            #         api_data['meta'][target_api_key] = self[col]
+            # if self.is_variable:
+            #     variations = []
+            #     for variation in self.variations.values():
+            #         variation_data = variation.to_api_data(col_data, target_api)
+            #         variations.append(variation_data)
+            #     api_data['variations'] = variations
         return api_data
 
 class ImportShopProductMixin(object):

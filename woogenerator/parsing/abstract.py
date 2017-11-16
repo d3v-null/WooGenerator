@@ -780,6 +780,7 @@ class CsvParseBase(Registrar):
         """
         Translate keys from one type of dict to another using the key_translation.
         """
+        raise DeprecationWarning("Use API whisperer to translate stuff")
         translated = OrderedDict()
         for col, translation in key_translation.items():
             if col in object_data:

@@ -6,21 +6,23 @@ import os
 import urlparse
 
 from ..client.core import SyncClientGDrive, SyncClientNull
+from ..client.img import ImgSyncClientWP
 from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
                            ProdSyncClientXero)
-from ..client.img import ImgSyncClientWP
-from ..coldata import ColDataBase, ColDataMyo, ColDataWoo, ColDataXero, ColDataMedia
+from ..coldata import (ColDataMedia, ColDataProductMeridian,
+                       ColDataWcProdCategory)
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
 from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from ..parsing.xero import ApiParseXero, CsvParseXero
-from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateImgWoo, SyncUpdateProd, SyncUpdateProdWoo,
-                          SyncUpdateProdXero)
+from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateImgWoo, SyncUpdateProd,
+                          SyncUpdateProdWoo, SyncUpdateProdXero)
 from ..utils import Registrar
 from .core import SettingsNamespaceProto
+
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
     """ Provide namespace for product settings. """
@@ -96,26 +98,32 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def coldata_class(self):
         """ Class used to obtain column metadata. """
-        response = ColDataBase
-        if self.schema_is_myo:
-            response = ColDataMyo
-        elif self.schema_is_xero:
-            response = ColDataXero
-        elif self.schema_is_woo:
-            response = ColDataWoo
-        return response
+        return ColDataProductMeridian
 
     @property
     def coldata_img_class(self):
         return ColDataMedia
 
     @property
+    def coldata_cat_class(self):
+        return ColDataWcProdCategory
+
+    @property
     def coldata_img_target(self):
         return 'wp-api'
 
     @property
-    def coldata_cat_class(self):
-        return ColDataWoo
+    def coldata_cat_target(self):
+        return 'wp-api'
+
+    @property
+    def coldata_target(self):
+        response = None
+        if self.schema_is_woo:
+            response = 'wc-wp-api'
+        elif self.schema_is_xero:
+            response = 'xero-api'
+        return response
 
     @property
     def master_path(self):
@@ -321,12 +329,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def sync_cols_prod(self):
-        response = {}
-        if self.schema_is_woo:
-            response = self.coldata_class.get_wpapi_cols()
-        elif self.schema_is_xero:
-            response = self.coldata_class.get_xero_api_cols()
-        return response
+        return self.coldata_class.get_sync_cols(self.coldata_target)
 
     @property
     def sync_cols_img(self):
@@ -334,10 +337,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def sync_cols_cat(self):
-        response = {}
-        if self.schema_is_woo:
-            response = self.coldata_cat_class.get_wpapi_category_cols()
-        return response
+        return self.coldata_img_class.get_sync_cols(self.coldata_cat_target)
 
     @property
     def exclude_cols(self):

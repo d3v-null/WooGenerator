@@ -5,7 +5,7 @@ from collections import OrderedDict
 import json
 from pprint import pformat
 
-from ..coldata import ColDataXero
+from ..coldata import ColDataProductMeridian
 from ..utils import SeqUtils, DescriptorUtils, SanitationUtils
 from .abstract import CsvParseBase
 from .tree import CsvParseTreeMixin
@@ -78,7 +78,7 @@ class ParseXeroMixin(object):
     object_container = ImportXeroObject
     item_container = ImportXeroItem
     product_container = ImportXeroProduct
-    coldata_class = ColDataXero
+    coldata_class = ColDataProductMeridian
     default_schema = "XERO"
 
     @classmethod
@@ -202,44 +202,50 @@ class ApiParseXero(
         parser_data = OrderedDict()
         parser_data['api_data'] = api_data
 
-        translation = OrderedDict()
-        for col, col_data in cls.coldata_class.data.items():
-            try:
-                translated_key = col_data[cls.col_data_target]['key']
-                translation[translated_key] = col
-            except (KeyError, TypeError):
-                pass
+        coldata_class = kwargs.get('coldata_class', cls.coldata_class)
+        translated_api_data = coldata_class.translate_data_from(api_data, 'xero-api')
+        translated_api_data = coldata_class.translate_data_to(translated_api_data, 'gen-csv')
 
-        if cls.DEBUG_API:
-            cls.register_message("translation: %s" % translation)
-        translated_api_data = cls.translate_keys(api_data, translation)
-        if cls.DEBUG_API:
-            cls.register_message("translated_api_data: %s" % translated_api_data)
         parser_data.update(**translated_api_data)
 
-        if 'SalesDetails' in api_data:
-            parser_data.update(
-                **cls.get_api_accounting_details_data(
-                    'SalesDetails',
-                    api_data['SalesDetails']
-                )
-            )
-
-        if 'PurchaseDetails' in api_data:
-            parser_data.update(
-                **cls.get_api_accounting_details_data(
-                    'PurchaseDetails',
-                    api_data['PurchaseDetails']
-                )
-            )
-
-        if 'QuantityOnHand' in api_data and 'IsTrackedAsInventory':
-            parser_data.update(
-                **cls.get_stock_status_data(
-                    api_data['QuantityOnHand'],
-                    api_data['IsTrackedAsInventory']
-                )
-            )
+        # translation = OrderedDict()
+        # for col, col_data in cls.coldata_class.data.items():
+        #     try:
+        #         translated_key = col_data[cls.col_data_target]['key']
+        #         translation[translated_key] = col
+        #     except (KeyError, TypeError):
+        #         pass
+        #
+        # if cls.DEBUG_API:
+        #     cls.register_message("translation: %s" % translation)
+        # translated_api_data = cls.translate_keys(api_data, translation)
+        # if cls.DEBUG_API:
+        #     cls.register_message("translated_api_data: %s" % translated_api_data)
+        # parser_data.update(**translated_api_data)
+        #
+        # if 'SalesDetails' in api_data:
+        #     parser_data.update(
+        #         **cls.get_api_accounting_details_data(
+        #             'SalesDetails',
+        #             api_data['SalesDetails']
+        #         )
+        #     )
+        #
+        # if 'PurchaseDetails' in api_data:
+        #     parser_data.update(
+        #         **cls.get_api_accounting_details_data(
+        #             'PurchaseDetails',
+        #             api_data['PurchaseDetails']
+        #         )
+        #     )
+        #
+        # if 'QuantityOnHand' in api_data and 'IsTrackedAsInventory':
+        #     parser_data.update(
+        #         **cls.get_stock_status_data(
+        #             api_data['QuantityOnHand'],
+        #             api_data['IsTrackedAsInventory']
+        #         )
+        #     )
 
         if cls.DEBUG_API:
             cls.register_message("returning parser_data: %s" % parser_data)

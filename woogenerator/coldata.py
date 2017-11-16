@@ -236,7 +236,7 @@ class ColDataLegacy(object):
             if legacy_path is None or legacy_read is False:
                 continue
             import_cols[legacy_path] = cls.data[handle]
-        return import_cols
+        return import_cols.keys()
 
     @classmethod
     def get_export_cols(cls, property_=None):
@@ -297,6 +297,20 @@ class ColDataLegacy(object):
                 continue
             sync_cols[legacy_path] = cls.data[handle]
         return sync_cols
+
+    @classmethod
+    def get_defaults(cls):
+        legacy_translation = cls.get_target_path_translation(cls.legacy_target)
+        legacy_properties = cls.get_handles_property_defaults('default', cls.legacy_target)
+        defaults = OrderedDict()
+        for handle, legacy_property_value in legacy_properties.items():
+            if legacy_property_value is None:
+                continue
+            legacy_path = legacy_translation.get(handle)
+            if not legacy_path:
+                continue
+            defaults[legacy_path] = legacy_property_value
+        return defaults
 
 class ColDataAbstract(ColDataLegacy):
     """
@@ -991,9 +1005,9 @@ class ColDataAbstract(ColDataLegacy):
         )
         return data
 
-    @classmethod
-    def get_defaults(cls, target=None):
-        return cls.get_handles_property('default', target)
+    # @classmethod
+    # def get_defaults(cls, target=None):
+    #     return cls.get_handles_property('default', target)
 
     # @classmethod
     # def get_report_cols(cls, target=None):
@@ -1006,6 +1020,36 @@ class ColDataSubEntity(ColDataAbstract):
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
     """
     data = deepcopy(ColDataAbstract.data)
+
+class ColDataSubVariation(ColDataSubEntity):
+    data = deepcopy(ColDataSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'id': {
+            'write': False,
+            'unique': True,
+            'type': int,
+            'xero-api': {
+                'path': None,
+            },
+            'wp-api': {
+                'path': 'id'
+            },
+            'wp-api-v1': {
+                'path': 'ID'
+            },
+            'wp-sql': {
+                'path': 'ID',
+            },
+            'act-csv': {
+                'path': 'Wordpress ID',
+            },
+            'gen-csv': {
+                'path': 'ID',
+                'read': False,
+            },
+            'report': True
+        },
+    })
 
 class ColDataSubMedia(ColDataSubEntity):
     """
@@ -2657,13 +2701,21 @@ class ColDataProduct(ColDataWpEntity):
                 # 'structure': ('listed-objects', )
             }
         },
-        'variation_ids': {
+        'variations': {
             'path': None,
-            'variation': None,
+            'sub_data': ColDataSubVariation,
             'wc-api': {
-                'path': 'variations'
+                'path': 'variations',
+                'structure': ('listed-values', 'id')
             }
         },
+        # 'variation_ids': {
+        #     'path': None,
+        #     'variation': None,
+        #     'wc-api': {
+        #         'path': 'variations'
+        #     }
+        # },
 
     }.items())
 
@@ -2675,6 +2727,11 @@ class ColDataProductVariation(ColDataProduct):
         }
     })
     data['parent_id'].update({
+        'wc-api': {
+            'path': None
+        }
+    })
+    data['variations'].update({
         'wc-api': {
             'path': None
         }
@@ -2775,6 +2832,22 @@ class ColDataMeridianEntityMixin(object):
             'gen-csv': {
                 'path': 'E',
             }
+        },
+        'xero_description': {
+            'path': None,
+            'gen-csv': {
+                'path': 'Xero Description'
+            },
+            'default': ''
+        },
+        'xero_id': {
+            'path': None,
+            'gen-csv': {
+                'path': 'item_id'
+            },
+            'xero-api': {
+                'path': 'ItemID'
+            }
         }
     }.items() + [
         (
@@ -2811,6 +2884,11 @@ class ColDataMeridianEntityMixin(object):
             ]
         )
     ])
+    data['lc_wn_regular_price'].update({
+        'xero-api': {
+            'path': 'SalesDetails.UnitPrice'
+        }
+    })
 
 class ColDataProductMeridian(ColDataProduct, ColDataMeridianEntityMixin):
     data = OrderedDict(
