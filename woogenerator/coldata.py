@@ -226,18 +226,20 @@ class ColDataLegacy(object):
     legacy_target = 'gen-csv'
 
     @classmethod
+    def get_import_cols(cls):
+        return cls.get_export_cols('import').keys()
+
+    @classmethod
     def get_export_cols(cls, property_=None):
         """
         Return a mapping of the legacy target path to the handle properties for
         handles where `property_` is not False.
         """
-        if DEPRECATE_OLDSTYLE:
-            raise DeprecationWarning("old style coldata class is deprecated")
         if not property_:
             return
         export_cols = OrderedDict()
         legacy_translation = cls.get_target_path_translation(cls.legacy_target)
-        legacy_properties = cls.get_handles_property(property_, cls.legacy_target)
+        legacy_properties = cls.get_handles_property_defaults(property_, cls.legacy_target)
         for handle, legacy_property_value in legacy_properties.items():
             if not legacy_property_value:
                 continue
@@ -249,22 +251,40 @@ class ColDataLegacy(object):
 
     @classmethod
     def get_wpapi_core_cols(cls, target='wc-wp-api'):
-        if DEPRECATE_OLDSTYLE:
-            raise DeprecationWarning("old style coldata class is deprecated")
         core_cols = OrderedDict()
         target_translation = cls.get_target_path_translation(target)
         legacy_translation = cls.get_target_path_translation(cls.legacy_target)
         for handle, target_path in target_translation.items():
             if not target_path:
                 continue
+            legacy_path = legacy_translation.get(handle, handle)
+            if not legacy_path:
+                continue
             if re.match(ColDataAbstract.re_simple_path, target_path):
-                legacy_path = legacy_translation.get(handle, handle)
                 core_cols[legacy_path] = cls.data.get(handle)
         return core_cols
 
     @classmethod
     def get_category_cols(cls):
         return cls.get_export_cols('path')
+
+    @classmethod
+    def get_report_cols(cls):
+        return cls.get_export_cols('report')
+
+    @classmethod
+    def get_sync_cols(cls, target=None):
+        path_cols = cls.get_handles_property_defaults('path', target)
+        write_cols = cls.get_handles_property_defaults('write', target)
+        sync_cols = OrderedDict()
+        for key in set(path_cols.keys()).union(write_cols.keys()):
+            path = path_cols.get(key, None)
+            write = write_cols.get(key, None)
+            if path is None or write is False:
+                continue
+            sync_cols[key] = cls.data[key]
+        return sync_cols
+
 
 
 class ColDataAbstract(ColDataLegacy):
@@ -375,6 +395,12 @@ class ColDataAbstract(ColDataLegacy):
         matches = finder.find(data)
         results = OrderedDict()
         for match in matches:
+            # print("found match %50s for property %10s, ancestors %50s in %s" % (
+            #     match.value,
+            #     property_,
+            #     str(ancestors)[:50],
+            #     str(match.full_path)[:100]
+            # ))
             value = match.value
             handle = match.full_path
             while hasattr(handle, 'left'):
@@ -394,7 +420,8 @@ class ColDataAbstract(ColDataLegacy):
                 'write': True,
                 'read': True,
                 'type': 'string',
-                'structure': ('singular-object', )
+                'structure': ('singular-object', ),
+                'report' : False,
             }.get(property_)
 
     @classmethod
@@ -417,8 +444,8 @@ class ColDataAbstract(ColDataLegacy):
     @classmethod
     def get_handles_property(cls, property_, target=None):
         """
-        Return a mapping of handles to the value of property_ wherever it is
-        explicitly declared in the context of target. Cache for performance.
+        Return a mapping of handles to the value of `property_` wherever it is
+        explicitly declared in the context of `target`. Cache for performance.
         """
         cache_key = (cls.__name__, property_, target)
         if cache_key in cls.handles_cache:
@@ -427,6 +454,22 @@ class ColDataAbstract(ColDataLegacy):
         results = cls.find_in(cls.data, property_, target_ancestors, )
         cls.handles_cache[cache_key] = results
         return results
+
+    @classmethod
+    def get_handles_property_defaults(cls, property_, target=None):
+        """
+        Return a mapping of handles to the value of `property_` in the context
+        of `target` or the default value if it is not explicitly set.
+        """
+        handles_property = cls.get_handles_property(property_, target)
+        response = OrderedDict()
+        for handle, properties in cls.data.items():
+            if handle in handles_property:
+                handles_property_value = handles_property.get(handle)
+            else:
+                handles_property_value = cls.get_property_default(property_, handle)
+            response[handle] = handles_property_value
+        return response
 
     @classmethod
     def get_property_exclusions(cls, property_, target=None):
@@ -446,12 +489,7 @@ class ColDataAbstract(ColDataLegacy):
         """
         if target == None:
             return
-        target_paths = cls.get_handles_property('path', target)
-        translation = OrderedDict()
-        for handle in cls.data.keys():
-            target_path = target_paths.get(handle, handle)
-            translation[handle] = target_path
-        return translation
+        return cls.get_handles_property_defaults('path', target)
 
     @classmethod
     def get_core_path_translation(cls, target):
@@ -944,25 +982,11 @@ class ColDataAbstract(ColDataLegacy):
 
     @classmethod
     def get_defaults(cls, target=None):
-        return cls.get_handles_property('defaults', target)
+        return cls.get_handles_property('default', target)
 
-    @classmethod
-    def get_report_cols(cls, target=None):
-        return cls.get_handles_property('report', target)
-
-    @classmethod
-    def get_sync_cols(cls, target=None):
-        path_cols = cls.get_handles_property('path', target)
-        write_cols = cls.get_handles_property('write', target)
-        sync_cols = OrderedDict()
-        for key in set(path_cols.keys()).union(write_cols.keys()):
-            path = path_cols.get(key, None)
-            write = write_cols.get(key, None)
-            if path is None or write is False:
-                continue
-            sync_cols[key] = cls.data[key]
-        return sync_cols
-
+    # @classmethod
+    # def get_report_cols(cls, target=None):
+    #     return cls.get_handles_property('report', target)
 
 class ColDataSubEntity(ColDataAbstract):
     """
@@ -1588,7 +1612,6 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_modified_gmt',
                 'type': 'wp_datetime'
             },
-            'report': True,
         },
         'modified_local': {
             'type': 'datetime',
@@ -1783,12 +1806,15 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-api': {
                 'path': None
             },
+            'wc-api': {
+                'path': 'menu_order'
+            },
             # 'wp-api-v1': {
             #     'path': 'menu_order'
             # },
-            # 'wp-sql': {
-            #     'path': 'menu_order'
-            # },
+            'wp-sql': {
+                'path': 'menu_order'
+            },
             # 'wp-csv': {
             #     'path': 'menu_order'
             # },
@@ -1800,7 +1826,7 @@ class ColDataWpEntity(ColDataAbstract):
             'write': False,
             'type': 'mime_type',
             'wc-api': {
-                'path': False,
+                'path': None,
             },
             'wp-api-v1': {
                 'path': 'attachment_meta.sizes.thumbnail.mime-type',
@@ -1809,7 +1835,6 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-sql': {
                 'path': 'post_mime_type'
             },
-            'report': True,
         },
         'parent_id': {
             'type': int,
@@ -2127,6 +2152,7 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._sku',
             },
+            'report': True,
         },
         'price': {
             'type': 'currency',

@@ -4,10 +4,13 @@ from collections import OrderedDict
 from pprint import pformat, pprint
 from unittest import TestCase
 
+import pytest
+
 from context import woogenerator
-from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataUser,
-                                  ColDataWoo, ColDataWpPost, ColDataProductMeridian,
-                                  ColDataProd, ColDataWcProdCategory)
+from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataProd,
+                                  ColDataProductMeridian, ColDataUser,
+                                  ColDataWcProdCategory, ColDataWoo,
+                                  ColDataWpPost)
 from woogenerator.utils import Registrar
 
 from .abstract import AbstractWooGeneratorTestCase
@@ -41,6 +44,35 @@ class TestLegacyAccordanceProd(TestColData):
         self.assertTrue(
             (legacy_cols - set(['itemsum', 'slug'])).issubset(cols),
         )
+
+    def test_legacy_accordance_report_cols(self):
+        cols = set(self.coldata_class.get_report_cols().keys())
+        legacy_cols = set(self.legacy_coldata_class.get_report_cols().keys())
+
+        if self.debug:
+            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+
+        self.assertTrue(
+            (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
+        )
+
+    @pytest.mark.skip
+    def test_legacy_accordance_import_cols(self):
+        cols = set(self.coldata_class.get_import_cols())
+        legacy_cols = set(self.legacy_coldata_class.get_import_cols())
+
+        if self.debug:
+            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+
+        self.assertTrue(
+            (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
+        )
+
+
 
 class TestLegacyAccordanceCat(TestColData):
     coldata_class = ColDataWcProdCategory
