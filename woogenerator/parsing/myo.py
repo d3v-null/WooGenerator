@@ -247,27 +247,3 @@ class MYOProdList(ShopProdList):
 
     def get_report_cols(self):
         return ColDataMyo.get_product_cols()
-
-
-# if __name__ == '__main__':
-#     print "Testing MYO script..."
-#     in_dir = "../input/"
-#     os.chdir('source')
-#
-#     gen_path = os.path.join(in_dir, 'generator.csv')
-#
-#
-#     col_data = ColDataMyo()
-#     product_parser = CsvParseMyo(
-#         cols = col_data.get_import_cols(),
-#         defaults = col_data.get_defaults(),
-#     )
-#     product_parser.analyse_file(gen_path)
-#     products = product_parser.get_products().values()
-#
-#     print "products:"
-#     prodList = MYOProdList(products)
-#     print prodList.tabulate(tablefmt = 'simple')
-#     # for product in products:
-#         # print "%15s | %32s | %s" % (product.get('codesum', ''), product.get('item_name',''), product.get('descsum', ''))
-#         # print "\t%128s\n" % product.get('descsum', '')

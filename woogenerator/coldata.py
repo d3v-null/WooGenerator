@@ -227,7 +227,16 @@ class ColDataLegacy(object):
 
     @classmethod
     def get_import_cols(cls):
-        return cls.get_export_cols('import').keys()
+        legacy_reads = cls.get_handles_property_defaults('read', cls.legacy_target)
+        legacy_paths = cls.get_handles_property_defaults('path', cls.legacy_target)
+        import_cols = OrderedDict()
+        for handle in cls.data.keys():
+            legacy_path = legacy_paths.get(handle)
+            legacy_read = legacy_reads.get(handle)
+            if legacy_path is None or legacy_read is False:
+                continue
+            import_cols[legacy_path] = cls.data[handle]
+        return import_cols
 
     @classmethod
     def get_export_cols(cls, property_=None):
@@ -276,16 +285,18 @@ class ColDataLegacy(object):
     def get_sync_cols(cls, target=None):
         path_cols = cls.get_handles_property_defaults('path', target)
         write_cols = cls.get_handles_property_defaults('write', target)
+        legacy_paths = cls.get_handles_property_defaults('path', cls.legacy_target)
         sync_cols = OrderedDict()
-        for key in set(path_cols.keys()).union(write_cols.keys()):
-            path = path_cols.get(key, None)
-            write = write_cols.get(key, None)
+        for handle in cls.data.keys():
+            path = path_cols.get(handle, None)
+            write = write_cols.get(handle, None)
             if path is None or write is False:
                 continue
-            sync_cols[key] = cls.data[key]
+            legacy_path = legacy_paths.get(handle)
+            if not legacy_path:
+                continue
+            sync_cols[legacy_path] = cls.data[handle]
         return sync_cols
-
-
 
 class ColDataAbstract(ColDataLegacy):
     """
@@ -1067,6 +1078,12 @@ class ColDataSubMedia(ColDataSubEntity):
             'wc-api': {
                 'path': 'postition'
             }
+        },
+        'file_name': {
+            'path': None,
+            'gen-csv': {
+                'path': 'file_name'
+            }
         }
     })
 
@@ -1198,6 +1215,12 @@ class ColDataSubTerm(ColDataSubEntity, ColDataTermMixin):
 class ColDataSubCategory(ColDataSubTerm):
     data = deepcopy(ColDataSubTerm.data)
     data = SeqUtils.combine_ordered_dicts(data, {
+        'heirarchical_name': {
+            'path': None,
+            'woo-csv': {
+                'path': 'heirarchical_name'
+            }
+        }
     })
 
 class ColDataSubTag(ColDataSubTerm):
@@ -1529,7 +1552,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'Wordpress ID',
             },
             'gen-csv': {
-                'path': 'ID'
+                'path': 'ID',
+                'read': False,
             },
             'report': True
         },
@@ -1571,7 +1595,10 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-sql':{
                 'type': 'wp_datetime',
                 'path': 'post_date_gmt'
-            }
+            },
+            'gen-csv': {
+                'path': None,
+            },
         },
         'created_local': {
             'type': 'datetime',
@@ -1591,7 +1618,10 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-sql':{
                 'path': 'post_date',
                 'type': 'wp_datetime',
-            }
+            },
+            'gen-csv': {
+                'path': None,
+            },
         },
         'modified_gmt': {
             'type': 'datetime',
@@ -1611,6 +1641,9 @@ class ColDataWpEntity(ColDataAbstract):
             'wp-sql': {
                 'path': 'post_modified_gmt',
                 'type': 'wp_datetime'
+            },
+            'gen-csv': {
+                'path': None,
             },
         },
         'modified_local': {
@@ -1633,7 +1666,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'type': 'wp_datetime'
             },
             'gen-csv': {
-                'path': 'Updated'
+                'path': 'Updated',
+                'read': None,
             },
             'report': True,
         },
@@ -1696,7 +1730,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_name'
             },
             'gen-csv': {
-                'path': 'slug'
+                'path': 'slug',
+                'read': False
             },
         },
         'title': {
@@ -1720,7 +1755,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'post_title'
             },
             'gen-csv': {
-                'path': 'title'
+                'path': 'title',
+                'read': False,
             },
             'report': True,
         },
@@ -1728,6 +1764,7 @@ class ColDataWpEntity(ColDataAbstract):
             'path': None,
             'gen-csv': {
                 'path': 'itemsum',
+                'read': False,
             },
         },
         'post_status': {
@@ -1799,10 +1836,14 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'wp-sql': {
                 'path': 'post_excerpt'
+            },
+            'gen-csv': {
+                'path': None,
             }
         },
         'menu_order': {
             'type': int,
+            'path': None,
             'wp-api': {
                 'path': None
             },
@@ -1819,18 +1860,16 @@ class ColDataWpEntity(ColDataAbstract):
             #     'path': 'menu_order'
             # },
             'gen-csv': {
-                'path': 'rowcount'
+                'path': 'rowcount',
+                'read': False,
             },
         },
         'mime_type': {
             'write': False,
+            'path': None,
             'type': 'mime_type',
             'wc-api': {
                 'path': None,
-            },
-            'wp-api-v1': {
-                'path': 'attachment_meta.sizes.thumbnail.mime-type',
-                'write': False
             },
             'wp-sql': {
                 'path': 'post_mime_type'
@@ -1851,7 +1890,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': 'parent_id'
             },
             'woo-csv': {
-                'path': 'post_parent'
+                'path': 'post_parent',
+                'read': None,
             }
         },
         'terms': {
@@ -1883,7 +1923,8 @@ class ColDataWpEntity(ColDataAbstract):
                 'path': None,
             },
             'gen-csv': {
-                'structure': ('mapping-value', ('meta_key', 'meta_value'))
+                'structure': ('mapping-value', ('meta_key', 'meta_value')),
+                'read': False,
             }
         },
         'post_categories': {
@@ -1949,6 +1990,9 @@ class ColDataWpEntity(ColDataAbstract):
             },
             'wc-csv': {
                 'path': 'tax:product_tag',
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
 
@@ -2080,7 +2124,8 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'tax:product_type'
             },
             'gen-csv': {
-                'path': 'prod_type'
+                'path': 'prod_type',
+                'read': False,
             },
             'wp-sql': {
                 'path': None,
@@ -2110,10 +2155,12 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-csv': {
                 'path': 'tax:product_tag',
-                'type': 'heirarchical_pipe_array'
+                'type': 'heirarchical_pipe_array',
+                'structure': ('listed-values', 'heirarchical_name'),
             },
             'gen-csv': {
-                'path': 'catlist'
+                'path': 'catlist',
+                'read': False
             }
         },
         'featured': {
@@ -2139,6 +2186,7 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'meta._visibility'
             }
         },
+
         'sku': {
             'xero-api': {
                 'path': 'Code'
@@ -2147,7 +2195,8 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'SKU'
             },
             'gen-csv': {
-                'path': 'codesum'
+                'path': 'codesum',
+                'read': False,
             },
             'wp-sql': {
                 'path': 'meta._sku',
@@ -2159,18 +2208,27 @@ class ColDataProduct(ColDataWpEntity):
             'write': False,
             'wp-sql': {
                 'path': 'meta._price',
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'regular_price': {
             'type': 'currency',
             'wp-sql': {
                 'path': 'meta._regular_price'
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'sale_price': {
             'type': 'currency',
             'wp-sql': {
                 'path': 'meta._sale_price'
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'sale_price_dates_from': {
@@ -2187,15 +2245,14 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._sale_price_dates_from',
                 'type': 'timestamp'
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'sale_price_dates_from_gmt': {
             'type': 'datetime',
             'path': None,
-            'wc-api': {
-                'path': 'date_on_sale_from',
-                'type': 'iso8601',
-            },
         },
         'sale_price_dates_to': {
             'type': 'datetime',
@@ -2211,6 +2268,9 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._sale_price_dates_to',
                 'type': 'timestamp'
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'sale_price_dates_to_gmt': {
@@ -2508,7 +2568,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'csv': {
                 'type': 'pipe_array'
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'upsell_skus': {
             'path': None,
@@ -2518,7 +2581,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'csv': {
                 'type': 'pipe_array'
-            }
+            },
         },
         'cross_sell_ids': {
             'default': [],
@@ -2528,7 +2591,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'csv': {
                 'type': 'pipe_array'
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'crosssell_skus': {
             'path': None,
@@ -2538,7 +2604,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'csv': {
                 'type': 'pipe_array'
-            }
+            },
         },
         'purchase_note': {
             'path': None,
@@ -2557,6 +2623,11 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'images',
                 'structure': ('listed-objects', )
             },
+            'gen-csv': {
+                'path': 'Images',
+                'type': 'pipe_array',
+                'structure': ('listed-values', 'file_name')
+            }
         },
         'attributes': {
             'path': None,
@@ -2570,7 +2641,7 @@ class ColDataProduct(ColDataWpEntity):
                 # 'path': 'meta._product_attributes',
                 # 'type': 'php_array_associative',
                 # 'structure': ('mapping-object', ('title', ))
-            }
+            },
         },
         'default_attributes': {
             'path': None,
@@ -2592,7 +2663,7 @@ class ColDataProduct(ColDataWpEntity):
             'wc-api': {
                 'path': 'variations'
             }
-        }
+        },
 
     }.items())
 
@@ -2612,21 +2683,21 @@ class ColDataProductVariation(ColDataProduct):
 class ColDataMeridianEntityMixin(object):
     data = OrderedDict(ColDataProduct.data.items() + {
         'wootan_danger': {
+            'type': 'danger',
             'wc-api': {
                 'path': 'meta_data.wootan_danger.meta_value',
-                'type': 'danger'
             },
             'wp-sql': {
                 'path': 'meta.wootan_danger',
-                'type': 'danger'
             },
             'woo-csv': {
                 'path': 'meta:wootan_danger',
-                'type': 'danger'
             },
             'wc-csv': {
                 'path': 'D',
-                'type': 'danger'
+            },
+            'gen-csv': {
+                'path': 'D'
             }
         },
         'commissionable_value': {
@@ -2636,13 +2707,80 @@ class ColDataMeridianEntityMixin(object):
             },
             'wp-sql': {
                 'path': 'meta.commissionable_value'
+            },
+            'gen-csv': {
+                'path': 'CVC'
+            },
+        },
+        'gen_visibility': {
+            'path': None,
+            'gen-csv': {
+                'path': 'VISIBILITY'
             }
         },
+        'is_purchased': {
+            'path': None,
+            'xero-api': {
+                'path': 'isPurchased'
+            },
+            'gen-csv': {
+                'path': 'is_purchased'
+            }
+        },
+        'is_sold': {
+            'path': None,
+            'xero-api': {
+                'path': 'isSold'
+            },
+            'gen-csv': {
+                'path': 'is_sold'
+            }
+        },
+        'specials_schedule': {
+            'path': None,
+            'gen-csv': {
+                'path': 'SCHEDULE'
+            }
+        },
+        'dynamic_product_rulesets': {
+            'path': None,
+            'gen-csv': {
+                'path': 'DYNPROD'
+            }
+        },
+        'dynamic_category_rulesets': {
+            'path': None,
+            'gen-csv': {
+                'path': 'DYNCAT'
+            }
+        },
+        'product_attributes': {
+            'path': None,
+            'gen-csv': {
+                'path': 'PA',
+                'type': 'json',
+                'structure': ('mapping-value', ('title', 'value'))
+            }
+        },
+        'variation_attributes': {
+            'path': None,
+            'gen-csv': {
+                'path': 'VA',
+                'type': 'json',
+                'structure': ('mapping-value', ('title', 'value'))
+            }
+        },
+        'extra_categories': {
+            'path': None,
+            'gen-csv': {
+                'path': 'E',
+            }
+        }
     }.items() + [
         (
             'lc_%s_%s' % (tier, field),
             {
-                'import': import_,
+                'read': import_,
                 'variation': True,
                 'pricing': True,
                 'type': type_,
@@ -2724,6 +2862,12 @@ class ColDataMedia(ColDataWpEntity):
             'path': None,
         }
     })
+    data['mime_type'].update({
+        'wp-api-v1': {
+            'path': 'attachment_meta.sizes.thumbnail.mime-type',
+            'write': False
+        },
+    })
     data = SeqUtils.combine_ordered_dicts(data, {
         'source_url': {
             'write': False,
@@ -2780,6 +2924,7 @@ class ColDataBase(object):
     Deprecated style of storing col data
     """
     data = OrderedDict()
+    deprecate_oldstyle = DEPRECATE_OLDSTYLE
 
     def __init__(self, data):
         super(ColDataBase, self).__init__()
@@ -2789,7 +2934,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_import_cols(cls):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         imports = []
         for col, data in cls.data.items():
@@ -2799,7 +2944,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_defaults(cls):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         defaults = {}
         for col, data in cls.data.items():
@@ -2814,7 +2959,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_export_cols(cls, schema=None):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         if not schema:
             return None
@@ -2830,7 +2975,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_delta_cols(cls):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         cols = OrderedDict()
         for col, data in cls.data.items():
@@ -2840,7 +2985,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_col_names(cls, cols):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         col_names = OrderedDict()
         for col, data in cols.items():
@@ -2850,7 +2995,7 @@ class ColDataBase(object):
 
     @classmethod
     def name_cols(cls, cols):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         return OrderedDict(
             [(col, {}) for col in cols]
@@ -2866,7 +3011,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_variable_cols(cls):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         cols = OrderedDict()
         for col, data in cls.get_wpapi_cols().items():
@@ -2878,7 +3023,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_core_cols(cls, api='wc-wp-api'):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
@@ -2892,7 +3037,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_meta_cols(cls, api='wc-wp-api'):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         # export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
@@ -2912,7 +3057,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_category_cols(cls, api='wc-wp-api'):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols(api)
         api_category_cols = OrderedDict()
@@ -2923,7 +3068,7 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_import_cols(cls, api='wc-wp-api'):
-        if DEPRECATE_OLDSTYLE:
+        if cls.deprecate_oldstyle:
             raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols('import')
         api_import_cols = OrderedDict()
@@ -3283,6 +3428,9 @@ class ColDataWoo(ColDataProd):
             },
             'wc-legacy-api': {
                 'key': 'parent'
+            },
+            'gen-csv': {
+                'read': False,
             }
         }),
         ('codesum', {
@@ -3894,6 +4042,8 @@ class ColDataWoo(ColDataProd):
 
 class ColDataUser(ColDataBase):
     # modTimeSuffix = ' Modified'
+
+    deprecate_oldstyle = False
 
     master_schema = 'act'
 

@@ -8,7 +8,7 @@ import os
 import weakref
 from collections import OrderedDict
 
-from ..coldata import ColDataProd, ColDataCat
+from ..coldata import ColDataProd, ColDataCat, ColDataProductMeridian, ColDataWcProdCategory
 from ..utils import Registrar, SanitationUtils
 from .abstract import ObjList
 from .gen import CsvParseGenMixin
@@ -189,7 +189,8 @@ class ImportShopImgMixin(object):
 class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
-    report_cols = ColDataProd.get_report_cols()
+    coldata_class = ColDataProductMeridian
+    report_cols = coldata_class.get_report_cols()
     supported_type = ImportShopProductMixin
 
     def append(self, object_data):
@@ -273,7 +274,8 @@ class ImportShopCategoryMixin(object):
         )
 
 class ShopCatList(TaxoList):
-    report_cols = ColDataCat.get_category_cols()
+    coldata_class = ColDataWcProdCategory
+    report_cols = coldata_class.get_category_cols()
     supported_type = ImportShopCategoryMixin
 
 ImportShopCategoryMixin.container = ShopCatList

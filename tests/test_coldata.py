@@ -58,7 +58,6 @@ class TestLegacyAccordanceProd(TestColData):
             (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
         )
 
-    @pytest.mark.skip
     def test_legacy_accordance_import_cols(self):
         cols = set(self.coldata_class.get_import_cols())
         legacy_cols = set(self.legacy_coldata_class.get_import_cols())
@@ -228,19 +227,19 @@ class TestColDataImg(TestColData):
 
     def test_get_sync_cols(self):
         sync_cols = self.coldata_class.get_sync_cols('wp-api')
-        expected_handles = set([
-            'width', 'height', 'title', 'post_excerpt', 'file_path'
+        expected_keys = set([
+            'width', 'height', 'title', 'caption', 'file_path'
         ])
-        actual_handles = set(sync_cols.keys())
+        actual_keys = set(sync_cols.keys())
         if self.debug:
             print("sync_cols:\n%s" % pformat(sync_cols.items()))
-            print('difference:\n%s\n%s' % (
-                actual_handles.difference(expected_handles),
-                expected_handles.difference(actual_handles)
+            print('difference:\n actual - expected:\n%s\n expected - actual:\n%s' % (
+                actual_keys.difference(expected_keys),
+                expected_keys.difference(actual_keys)
             ))
         self.assertTrue(
-            expected_handles.issubset(
-                actual_handles
+            expected_keys.issubset(
+                actual_keys
             )
         )
 
