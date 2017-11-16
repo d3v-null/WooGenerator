@@ -18,7 +18,6 @@ from jsonpath_ng import jsonpath
 from .utils import (JSONPathUtils, MimeUtils, PHPUtils, Registrar,
                     SanitationUtils, SeqUtils, TimeUtils)
 
-
 # TODO:
 """
 Get rid of stuff like slave_override, since it should be able to work both ways.
@@ -217,39 +216,55 @@ to extrace a meta value, and in this case you would want to set `force_mapping`
 to `meta_key` so that the `meta_value` can be accessed using the path meta.<meta_key>.meta_value
 """
 
+DEPRECATE_OLDSTYLE = False
+
 class ColDataLegacy(object):
     """
     Legacy methods for backwards compatiblity, to be deprecated ASAP.
     """
     data = {}
+    legacy_target = 'gen-csv'
 
     @classmethod
-    def get_export_cols(cls, schema=None):
-        if not schema:
-            return None
+    def get_export_cols(cls, property_=None):
+        """
+        Return a mapping of the legacy target path to the handle properties for
+        handles where `property_` is not False.
+        """
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
+        if not property_:
+            return
         export_cols = OrderedDict()
-        gen_csv_translation = cls.get_target_path_translation('gen-csv')
-        for handle, gen_path in gen_csv_translation.items():
-            if gen_path:
-                export_cols[gen_path] = cls.data.get(handle)
+        legacy_translation = cls.get_target_path_translation(cls.legacy_target)
+        legacy_properties = cls.get_handles_property(property_, cls.legacy_target)
+        for handle, legacy_property_value in legacy_properties.items():
+            if not legacy_property_value:
+                continue
+            legacy_path = legacy_translation.get(handle)
+            if not legacy_path:
+                continue
+            export_cols[legacy_path] = cls.data.get(handle)
         return export_cols
 
     @classmethod
-    def get_wpapi_core_cols(cls, api='wc-wp-api'):
+    def get_wpapi_core_cols(cls, target='wc-wp-api'):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         core_cols = OrderedDict()
-        wp_api_translation = cls.get_target_path_translation(api)
-        gen_csv_translation = cls.get_target_path_translation('gen-csv')
-        for handle, wp_api_path in wp_api_translation.items():
-            if not wp_api_path:
+        target_translation = cls.get_target_path_translation(target)
+        legacy_translation = cls.get_target_path_translation(cls.legacy_target)
+        for handle, target_path in target_translation.items():
+            if not target_path:
                 continue
-            if re.match(ColDataAbstract.re_simple_path, wp_api_path):
-                gen_path = gen_csv_translation.get(handle, handle)
-                core_cols[gen_path] = cls.data.get(handle)
+            if re.match(ColDataAbstract.re_simple_path, target_path):
+                legacy_path = legacy_translation.get(handle, handle)
+                core_cols[legacy_path] = cls.data.get(handle)
         return core_cols
 
     @classmethod
     def get_category_cols(cls):
-        return cls.get_export_cols('category')
+        return cls.get_export_cols('path')
 
 
 class ColDataAbstract(ColDataLegacy):
@@ -2748,6 +2763,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_import_cols(cls):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         imports = []
         for col, data in cls.data.items():
             if data.get('import', False):
@@ -2756,6 +2773,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_defaults(cls):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         defaults = {}
         for col, data in cls.data.items():
             # Registrar.register_message('col is %s' % col)
@@ -2769,6 +2788,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_export_cols(cls, schema=None):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         if not schema:
             return None
         export_cols = OrderedDict()
@@ -2783,6 +2804,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_delta_cols(cls):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         cols = OrderedDict()
         for col, data in cls.data.items():
             if data.get('delta'):
@@ -2791,6 +2814,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_col_names(cls, cols):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         col_names = OrderedDict()
         for col, data in cols.items():
             label = data.get('label', '')
@@ -2799,6 +2824,8 @@ class ColDataBase(object):
 
     @classmethod
     def name_cols(cls, cols):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         return OrderedDict(
             [(col, {}) for col in cols]
         )
@@ -2813,6 +2840,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_variable_cols(cls):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         cols = OrderedDict()
         for col, data in cls.get_wpapi_cols().items():
             if 'sync' in data:
@@ -2823,6 +2852,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_core_cols(cls, api='wc-wp-api'):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
         for col, data in export_cols.items():
@@ -2835,6 +2866,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_meta_cols(cls, api='wc-wp-api'):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         # export_cols = cls.get_export_cols(api)
         api_cols = OrderedDict()
         for col, data in cls.data.items():
@@ -2853,6 +2886,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_category_cols(cls, api='wc-wp-api'):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols(api)
         api_category_cols = OrderedDict()
         for col, data in export_cols.items():
@@ -2862,6 +2897,8 @@ class ColDataBase(object):
 
     @classmethod
     def get_wpapi_import_cols(cls, api='wc-wp-api'):
+        if DEPRECATE_OLDSTYLE:
+            raise DeprecationWarning("old style coldata class is deprecated")
         export_cols = cls.get_export_cols('import')
         api_import_cols = OrderedDict()
         for col, data in export_cols.items():
