@@ -56,10 +56,10 @@ class SyncUpdate(Registrar):
         cls.merge_mode = merge_mode
         cls.default_last_sync = default_last_sync
 
-    def __init__(self, ols_m_object_gen, old_s_object_gen, lastSync=None):
+    def __init__(self, old_m_object_gen, old_s_object_gen, lastSync=None):
         super(SyncUpdate, self).__init__()
-        self.master_container = type(ols_m_object_gen)
-        self.master_parent = ols_m_object_gen.parent
+        self.master_container = type(old_m_object_gen)
+        self.master_parent = old_m_object_gen.parent
         self.slave_container = type(old_s_object_gen)
         self.slave_parent = old_s_object_gen.parent
         for container in [self.master_container, self.slave_container]:
@@ -70,7 +70,7 @@ class SyncUpdate(Registrar):
             lastSync = self.default_last_sync
         # print "Creating SyncUpdate: ", old_m_object_core.__repr__(),
         # old_s_object_core.__repr__()
-        self.old_m_object_core = self.coldata_class.translate_data_from(ols_m_object_gen.to_dict(), self.object_target)
+        self.old_m_object_core = self.coldata_class.translate_data_from(old_m_object_gen.to_dict(), self.object_target)
         self.old_s_object_core = self.coldata_class.translate_data_from(old_s_object_gen.to_dict(), self.object_target)
         self.t_time = TimeUtils.wp_strp_mktime(lastSync)
 
@@ -88,6 +88,10 @@ class SyncUpdate(Registrar):
         self.s_deltas = False
         self.m_time = 0
         self.s_time = 0
+        if self.old_m_object_core.get('modified_gmt'):
+            self.m_time = self.parse_m_time(self.old_m_object_core['modified_gmt'])
+        if self.old_s_object_core.get('modified_gmt'):
+            self.s_time = self.parse_s_time(self.old_s_object_core['modified_gmt'])
         self.b_time = 0
 
     @property
@@ -180,13 +184,15 @@ class SyncUpdate(Registrar):
 
     @classmethod
     def parse_m_time(cls, raw_m_time):
-        """Parse a raw act-like time string."""
-        return raw_m_time
+        """Parse a raw master time value into a timestamp."""
+        return TimeUtils.datetime2timestamp(raw_m_time)
+        # return raw_m_time
 
     @classmethod
     def parse_s_time(cls, raw_s_time):
-        """Parse a raw wp-like time string."""
-        return raw_s_time
+        """Parse a raw slave time value into a timestamp."""
+        return TimeUtils.datetime2timestamp(raw_s_time)
+        # return raw_s_time
 
     def parse_subject_time(self, raw_time, subject):
         """Parse a raw time string for a given subject's format."""

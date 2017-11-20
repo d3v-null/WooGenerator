@@ -878,6 +878,7 @@ class ColDataAbstract(ColDataLegacy):
                 TimeUtils.star_strp_datetime,
                 fmt=TimeUtils.wp_datetime_format
             ),
+            'datetime': SanitationUtils.identity,
             'timestamp': TimeUtils.timestamp2datetime,
             'wp_content_rendered': SanitationUtils.normalize_wp_rendered_content,
             'yesno': SanitationUtils.yesno2bool,
@@ -1119,7 +1120,8 @@ class CreatedModifiedGmtMixin(object):
                 'type': 'wp_datetime'
             },
             'gen-csv': {
-                'path': None,
+                'path': 'modified_gmt',
+                'type': 'datetime'
             },
             'gen-api': {
                 'path': 'modified_gmt'

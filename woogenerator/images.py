@@ -255,7 +255,7 @@ def process_image_size(settings, parsers, img_data):
     if settings.do_resize_images:
         img_data[img_data.file_path_key] = img_dst_path
 
-    img_data['modified_gmt'] = datetime.fromtimestamp(winning_time).isoformat()
+    img_data['modified_gmt'] = datetime.fromtimestamp(winning_time)
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("resizing: %s" % img_data.file_name)
