@@ -99,7 +99,7 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
                 pformat(dict(update.old_s_object)),
                 update.display_sync_warnings(),
                 update.display_sync_passes(),
-                update.display_sync_reflections(),
+                update.display_problematic_updates(),
             )
         )
 

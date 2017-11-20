@@ -18,6 +18,7 @@ from pprint import pformat
 import unicodecsv
 from tabulate import tabulate
 
+from ..coldata import ColDataAbstract
 from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
                      UnicodeCsvDialectUtils)
 
@@ -332,23 +333,6 @@ class ObjList(list, Registrar):
 
     report_cols = OrderedDict([('_row', {'label': 'Row'}), ('index', {})])
 
-    def get_report_cols(self):
-        """
-        Get a list of columns used for reporting items contained in this instance.
-        """
-        exc = DeprecationWarning(
-            "use .report_cols instead of .get_report_cols()")
-        self.register_error(exc)
-        return self.report_cols
-
-    @classmethod
-    def get_basic_cols(cls):
-        """
-        Get a list of columns used for basic reports of items contained in this instance.
-        """
-
-        return cls.report_cols
-
 ImportObject.container = ObjList
 
 class CsvParseBase(Registrar):
@@ -357,6 +341,8 @@ class CsvParseBase(Registrar):
     """
 
     object_container = ImportObject
+    coldata_class = ColDataAbstract
+    coldata_gen_target = 'gen-csv'
 
     def __init__(self, cols, defaults, **kwargs):
         # super(CsvParseBase, self).__init__()
@@ -426,10 +412,11 @@ class CsvParseBase(Registrar):
         except KeyError as exc:
             if col in self.defaults:
                 return self.defaults[col]
-            self.register_message(
-                'No default for column ' + str(col) + ' | '
-                + str(exc) + ' ' + unicode(self.defaults)
-            )
+            if self.strict:
+                self.register_message(
+                    'No default for column ' + str(col) + ' | '
+                    + str(exc) + ' ' + unicode(self.defaults)
+                )
             return None
         try:
             if self.DEBUG_ABSTRACT:
@@ -522,9 +509,9 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_MRO:
             self.register_message(' ')
-        return self.object_container
+        return kwargs.get('container', self.object_container)
 
-    def get_kwargs(self, all_data, container, **kwargs):  # pylint: disable=unused-argument
+    def get_kwargs(self, all_data, **kwargs):  # pylint: disable=unused-argument
         """
         Use all_data, container and other kwargs to get kwargs for creating new_object.
 
@@ -533,6 +520,15 @@ class CsvParseBase(Registrar):
 
         return kwargs
 
+    def get_defaults(self, **kwargs):
+        """
+        Use kwargs to get defaults for creating new_object.
+
+        Override in subclasses.
+        """
+        return deepcopy(kwargs.get('defaults', self.defaults))
+
+    # TODO: remove rowcount, rely on self.rowcount?
     def new_object(self, rowcount, **kwargs):
         """
         Create a new ImportObject subclass instance from provided args.
@@ -549,7 +545,7 @@ class CsvParseBase(Registrar):
                 'rowcount: {} | kwargs {}'.format(rowcount, kwargs))
         kwargs['row'] = kwargs.get('row', [])
         kwargs['rowcount'] = rowcount
-        default_data = OrderedDict(self.defaults.items())
+        default_data = self.get_defaults(**kwargs)
         if self.DEBUG_PARSER:
             self.register_message("default_data: {}".format(default_data))
         parser_data = self.get_parser_data(**kwargs)
@@ -562,13 +558,13 @@ class CsvParseBase(Registrar):
         all_data = SeqUtils.combine_ordered_dicts(all_data, mandatory_data)
         if self.DEBUG_PARSER:
             self.register_message("all_data: {}".format(all_data))
-        container = self.get_new_obj_container(all_data, **kwargs)
+        kwargs['container'] = self.get_new_obj_container(all_data, **kwargs)
         if self.DEBUG_PARSER:
-            self.register_message("container: {}".format(container.__name__))
-        kwargs = self.get_kwargs(all_data, container, **kwargs)
+            self.register_message("container: {}".format(kwargs['container'].__name__))
+        kwargs = self.get_kwargs(all_data, **kwargs)
         if self.DEBUG_PARSER:
             self.register_message("kwargs: {}".format(kwargs))
-        object_data = container(all_data, **kwargs)
+        object_data = kwargs['container'](all_data, **kwargs)
         return object_data
 
     def process_object(self, object_data):
@@ -811,6 +807,6 @@ class CsvParseBase(Registrar):
         for _object in objects:
             obj_list.append(_object)
 
-        cols = cls.object_container.container.get_basic_cols()
+        cols = cls.object_container.container.get_basic_cols_gen()
 
         SanitationUtils.safe_print(obj_list.tabulate(cols, tablefmt='simple'))

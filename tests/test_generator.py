@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.coldata import ColDataMedia, ColDataWoo
+from woogenerator.coldata import ColDataMedia, ColDataProduct
 from woogenerator.generator import (do_match, do_match_categories,
                                     do_match_images, do_merge, do_merge_images,
                                     do_merge_categories, do_report,
@@ -85,13 +85,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         # TODO: this
         if self.debug:
+            # Registrar.strict = True
             # Registrar.DEBUG_ABSTRACT = True
             # Registrar.DEBUG_PARSER = True
             # Registrar.DEBUG_TREE = True
             # Registrar.DEBUG_GEN = True
             # Registrar.DEBUG_SHOP = True
             # Registrar.DEBUG_WOO = True
-            Registrar.DEBUG_TRACE = True
+            # Registrar.DEBUG_TRACE = True
             # Registrar.DEBUG_UPDATE = True
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
@@ -246,7 +247,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("parser tree:\n%s" % self.parsers.master.to_str_tree())
 
     def test_dummy_populate_slave_parsers(self):
-        self.populate_master_parsers()
+        # self.populate_master_parsers()
         self.populate_slave_parsers()
         # TODO: finish this
         if self.debug:
@@ -340,7 +341,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print(Registrar.display_stack_counts())
 
     def print_images_summary(self, images):
-        img_cols = ColDataMedia.get_report_cols()
+        img_cols = ColDataMedia.get_report_cols_gen()
         img_table = [img_cols.keys()] + [
             [img_data.get(key) for key in img_cols.keys()]
             for img_data in images
@@ -542,15 +543,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 "and certified organic ingredients."
             )
             self.assertEqual(
-                sync_update.old_m_object['HTML Description'],
+                sync_update.old_m_object['descsum'],
                 master_desc
             )
             self.assertEqual(
-                sync_update.old_s_object['HTML Description'],
+                sync_update.old_s_object['descsum'],
                 "Company A have developed stuff"
             )
             self.assertEqual(
-                sync_update.new_s_object['HTML Description'],
+                sync_update.new_s_object['descsum'],
                 master_desc
             )
         except AssertionError as exc:
@@ -590,12 +591,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.debug:
-            report_cols = ColDataWoo.get_report_cols()
+            report_cols = ColDataProduct.get_report_cols_gen('gen-api')
             report_cols['WNR'] = 'WNR'
             report_cols['WNF'] = 'WNF'
             report_cols['WNT'] = 'WNT'
             report_cols['WNS'] = 'WNS'
-            report_cols['catlist'] = 'catlist'
+            report_cols['category_objects'] = 'category_objects'
             master_container = self.parsers.master.product_container.container
             master_products = master_container(self.parsers.master.products.values())
             slave_container = self.parsers.slave.product_container.container
@@ -613,14 +614,27 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_updates_summary(self.updates)
         self.assertTrue(self.updates.slave)
-        sync_update = self.updates.slave[0]
+        sync_update = self.updates.slave[-1]
         if self.debug:
             self.print_update(sync_update)
-        self.assertEqual(len(self.updates.slave), 1)
+        self.assertEqual(len(self.updates.slave), 48)
         try:
-            self.assertEquals(sync_update.old_m_object['catlist'], [320, 323, 315, 316])
-            self.assertEquals(sync_update.old_s_object['catlist'], [320, 315, 316])
-            self.assertEquals(sync_update.new_s_object['catlist'], [320, 323, 315, 316])
+            self.assertEquals(
+                sync_update.old_m_object_core['sku'],
+                "ACARF-CRS"
+            )
+            self.assertEquals(
+                set(sync_update.old_m_object_core['category_ids']),
+                set([320, 323, 315, 316])
+            )
+            self.assertEquals(
+                set(sync_update.old_s_object_core['category_ids']),
+                set([320, 315, 316])
+            )
+            self.assertEquals(
+                set(sync_update.new_s_object_core['category_ids']),
+                set([320, 323, 315, 316])
+            )
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
@@ -639,11 +653,12 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.do_categories = False
         self.settings.do_specials = False
         if self.debug:
-            self.settings.debug_shop = True
-            self.settings.debug_parser = True
-            self.settings.debug_abstract = True
-            self.settings.debug_gen = True
-            self.settings.debug_tree = True
+            # self.settings.debug_shop = True
+            # self.settings.debug_parser = True
+            # self.settings.debug_abstract = True
+            # self.settings.debug_gen = True
+            # self.settings.debug_tree = True
+            # self.settings.debug_update = True
             self.settings.verbosity = 3
             self.settings.quiet = False
         self.settings.init_settings(self.override_args)
@@ -787,6 +802,10 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
 
         if self.debug:
             self.print_updates_summary(self.updates)
+
+        if self.debug:
+            for sync_update in self.updates.slave:
+                self.print_update(sync_update)
 
         self.assertEqual(len(self.updates.delta_master), 0)
         self.assertEqual(len(self.updates.delta_slave), 1)

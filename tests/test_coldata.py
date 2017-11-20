@@ -7,9 +7,9 @@ from unittest import TestCase
 import pytest
 
 from context import woogenerator
-from woogenerator.coldata import (ColDataAbstract, ColDataMedia, ColDataProd,
-                                  ColDataProductMeridian, ColDataUser,
-                                  ColDataWcProdCategory, ColDataWoo,
+from woogenerator.coldata import (ColDataAbstract, ColDataMedia,
+                                  ColDataProductMeridian,
+                                  ColDataWcProdCategory,
                                   ColDataWpPost)
 from woogenerator.utils import Registrar
 
@@ -28,68 +28,68 @@ class TestColData(AbstractWooGeneratorTestCase):
             Registrar.DEBUG_WARN = False
             Registrar.DEBUG_MESSAGE = False
 
-class TestLegacyAccordanceProd(TestColData):
-    coldata_class = ColDataProductMeridian
-    legacy_coldata_class = ColDataWoo
+# class TestLegacyAccordanceProd(TestColData):
+#     coldata_class = ColDataProductMeridian
+#     legacy_coldata_class = ColDataWoo
+#
+#     def test_legacy_accordance_wpapi_core_cols(self):
+#         cols = set(self.coldata_class.get_wpapi_core_cols().keys())
+#         legacy_cols = set(self.legacy_coldata_class.get_wpapi_core_cols().keys())
+#
+#         if self.debug:
+#             print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+#             print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+#             print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+#
+#         self.assertTrue(
+#             (legacy_cols - set(['itemsum', 'slug'])).issubset(cols),
+#         )
+#
+#     def test_legacy_accordance_report_cols(self):
+#         cols = set(self.coldata_class.get_report_cols().keys())
+#         legacy_cols = set(self.legacy_coldata_class.get_report_cols().keys())
+#
+#         if self.debug:
+#             print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+#             print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+#             print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+#
+#         self.assertTrue(
+#             (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
+#         )
+#
+#     def test_legacy_accordance_import_cols(self):
+#         cols = set(self.coldata_class.get_import_cols())
+#         legacy_cols = set(self.legacy_coldata_class.get_import_cols())
+#
+#         if self.debug:
+#             print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+#             print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+#             print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+#
+#         self.assertTrue(
+#             (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
+#         )
 
-    def test_legacy_accordance_wpapi_core_cols(self):
-        cols = set(self.coldata_class.get_wpapi_core_cols().keys())
-        legacy_cols = set(self.legacy_coldata_class.get_wpapi_core_cols().keys())
-
-        if self.debug:
-            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
-            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
-            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
-
-        self.assertTrue(
-            (legacy_cols - set(['itemsum', 'slug'])).issubset(cols),
-        )
-
-    def test_legacy_accordance_report_cols(self):
-        cols = set(self.coldata_class.get_report_cols().keys())
-        legacy_cols = set(self.legacy_coldata_class.get_report_cols().keys())
-
-        if self.debug:
-            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
-            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
-            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
-
-        self.assertTrue(
-            (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
-        )
-
-    def test_legacy_accordance_import_cols(self):
-        cols = set(self.coldata_class.get_import_cols())
-        legacy_cols = set(self.legacy_coldata_class.get_import_cols())
-
-        if self.debug:
-            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
-            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
-            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
-
-        self.assertTrue(
-            (legacy_cols - set(['itemsum', 'price', 'sale_price'])).issubset(cols),
-        )
 
 
-
-class TestLegacyAccordanceCat(TestColData):
-    coldata_class = ColDataWcProdCategory
-    legacy_coldata_class = ColDataWoo
-
-    def test_legacy_accordance_category_cols(self):
-        cols = set(self.coldata_class.get_category_cols().keys())
-        legacy_cols = set(self.legacy_coldata_class.get_category_cols().keys())
-
-        if self.debug:
-            print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
-            print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
-            print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
-
-        self.assertTrue(
-            (legacy_cols - set(['DYNCAT', 'DYNPROD', 'SCHEDULE'])).issubset(cols),
-        )
-
+# class TestLegacyAccordanceCat(TestColData):
+#     coldata_class = ColDataWcProdCategory
+#     legacy_coldata_class = ColDataWoo
+#
+#     def test_legacy_accordance_category_cols(self):
+#         cols = set(self.coldata_class.get_category_cols().keys())
+#         legacy_cols = set(self.legacy_coldata_class.get_category_cols().keys())
+#
+#         if self.debug:
+#             print('intersect:\n%s' % pformat(cols.intersection(legacy_cols)))
+#             print('cols - legacy_cols:\n%s' % pformat(cols.difference(legacy_cols)))
+#             print('legacy_cols - cols:\n%s' % pformat(legacy_cols.difference(cols)))
+#
+#         self.assertTrue(
+#             (legacy_cols - set(['DYNCAT', 'DYNPROD', 'SCHEDULE'])).issubset(cols),
+#         )
+#
 
 
 class TestColDataAbstract(TestColData):
@@ -226,9 +226,9 @@ class TestColDataImg(TestColData):
         )
 
     def test_get_sync_cols(self):
-        sync_cols = self.coldata_class.get_sync_cols('wp-api')
+        sync_cols = self.coldata_class.get_sync_handles('wp-api')
         expected_keys = set([
-            'width', 'height', 'title', 'caption', 'file_path'
+            'width', 'height', 'title', 'post_excerpt', 'file_path'
         ])
         actual_keys = set(sync_cols.keys())
         if self.debug:
@@ -556,167 +556,158 @@ class TestColDataWpPost(TestColData):
             'wp-sql')
         if self.debug:
             print("path_translation: %s" % pformat(path_translation))
-
-
-class testColDataUser(TestColData):
-    coldata_class = ColDataUser
-
-    def setUp(self):
-        super(testColDataUser, self).setUp()
-        self.maxDiff = None
-
-    def test_getImportCols(self):
-        importCols = self.coldata_class.get_import_cols()
-        for key in [
-            'MYOB Card ID',
-            'E-mail',
-            'Wordpress Username',
-            'Wordpress ID',
-            # 'Role',
-            'Contact',
-            'First Name',
-            'Surname',
-            'Middle Name',
-            'Name Suffix',
-            'Name Prefix',
-            'Memo',
-            'Spouse',
-            'Salutation',
-            'Company',
-            'Mobile Phone',
-            'Phone',
-            'Fax',
-            'Address 1',
-            'Address 2',
-            'City',
-            'Postcode',
-            'State',
-            'Country',
-            'Shire',
-            'Home Address 1',
-            'Home Address 2',
-            'Home City', 'Home Postcode', 'Home Country', 'Home State',
-            'MYOB Customer Card ID', 'Client Grade',
-            # 'Direct Brand',
-            'Agent',
-            'Web Site',
-            'ABN',
-            'Business Type',
-            'Lead Source',
-            'Referred By',
-            'Personal E-mail',
-            'Create Date',
-            'Wordpress Start Date',
-            'Edited in Act',
-            'Edited in Wordpress',
-            'Last Sale',
-            'Facebook Username',
-            'Twitter Username',
-            'GooglePlus Username',
-            'Instagram Username',
-            'Added to mailing list',
-            'Tans Per Week'
-        ]:
-            self.assertIn(key, importCols)
-
-    def test_getActTrackedCols(self):
-        actTrackedCols = self.coldata_class.get_act_tracked_cols()
-        self.assertItemsEqual(
-            actTrackedCols,
-            OrderedDict([
-                ('Edited E-mail', ['E-mail']),
-                ('Edited Name', ['Name Prefix', 'First Name', 'Middle Name',
-                                 'Surname', 'Name Suffix', 'Salutation', 'Contact']),
-                ('Edited Memo', ['Memo', 'Memo']),
-                ('Edited Spouse', ['Spouse', 'Spouse']),
-                ('Edited Company', ['Company']),
-                ('Edited Phone Numbers', ['Mobile Phone', 'Phone', 'Fax']),
-                ('Edited Address', ['Address 1', 'Address 2', 'City', 'Postcode',
-                                    'State', 'Country', 'Shire']),
-                ('Edited Alt Address', ['Home Address 1', 'Home Address 2', 'Home City',
-                                        'Home Postcode', 'Home State', 'Home Country']),
-                ('Edited Personal E-mail', ['Personal E-mail']),
-                ('Edited Web Site', ['Web Site']),
-                ('Edited Social Media', ['Facebook Username', 'Twitter Username',
-                                         'GooglePlus Username', 'Instagram Username']),
-            ]))
-
-    def test_getDeltaCols(self):
-        DeltaCols = self.coldata_class.get_delta_cols()
-        self.assertItemsEqual(DeltaCols, OrderedDict(
-            [
-                ('E-mail', 'Delta E-mail'),
-                # ('Role Info', 'Delta Role Info')
-            ]))
-
-    def test_getAllWpDbCols(self):
-        dbCols = self.coldata_class.get_all_wpdb_cols()
-        # print "dbCols %s" % pformat(dbCols.items())
-        for key in [
-            'myob_card_id',
-            # 'act_role',
-            'nickname',
-            'first_name',
-            'last_name',
-            'middle_name',
-            'name_suffix',
-            'name_prefix',
-            'name_notes',
-            'spouse',
-            # 'salutation',
-            'billing_company',
-            'mobile_number',
-            'billing_phone',
-            'fax_number',
-            # 'pref_mob',
-            # 'pref_tel',
-            'billing_address_1',
-            'billing_address_2',
-            'billing_city',
-            'billing_postcode',
-            'billing_state',
-            'billing_country',
-            'shipping_address_1',
-            'shipping_address_2',
-            'shipping_city',
-            'shipping_postcode',
-            'shipping_country',
-            'shipping_state',
-            'myob_customer_card_id',
-            'client_grade',
-            # 'direct_brand',
-            'agent',
-            'abn',
-            'business_type',
-            'how_hear_about',
-            'referred_by',
-            'tans_per_wk',
-            'personal_email',
-            'edited_in_act',
-            'act_last_sale',
-            'facebook',
-            'twitter',
-            'gplus',
-            'instagram',
-            'mailing_list',
-            'user_email',
-            'user_login',
-            'ID',
-            # 'display_name',
-            'user_url',
-            'user_registered',
-            'pref_method',
-        ]:
-            assert key in dbCols.keys()
-
-
-    def test_getWPAPICols(self):
-        api_cols = ColDataWoo.get_wpapi_cols()
-        # print "test_getWPAPICols", api_cols.keys()
-
-    def test_getWPAPIVariableCols(self):
-        api_cols = ColDataWoo.get_wpapi_variable_cols()
-        # print "test_getWPAPIVariableCols", api_cols.keys()
+#
+# @pytest.mark.skip
+# class testColDataUser(TestColData):
+#     coldata_class = ColDataUser
+#
+#     def setUp(self):
+#         super(testColDataUser, self).setUp()
+#         self.maxDiff = None
+#
+#     def test_getImportCols(self):
+#         importCols = self.coldata_class.get_import_cols()
+#         for key in [
+#             'MYOB Card ID',
+#             'E-mail',
+#             'Wordpress Username',
+#             'Wordpress ID',
+#             # 'Role',
+#             'Contact',
+#             'First Name',
+#             'Surname',
+#             'Middle Name',
+#             'Name Suffix',
+#             'Name Prefix',
+#             'Memo',
+#             'Spouse',
+#             'Salutation',
+#             'Company',
+#             'Mobile Phone',
+#             'Phone',
+#             'Fax',
+#             'Address 1',
+#             'Address 2',
+#             'City',
+#             'Postcode',
+#             'State',
+#             'Country',
+#             'Shire',
+#             'Home Address 1',
+#             'Home Address 2',
+#             'Home City', 'Home Postcode', 'Home Country', 'Home State',
+#             'MYOB Customer Card ID', 'Client Grade',
+#             # 'Direct Brand',
+#             'Agent',
+#             'Web Site',
+#             'ABN',
+#             'Business Type',
+#             'Lead Source',
+#             'Referred By',
+#             'Personal E-mail',
+#             'Create Date',
+#             'Wordpress Start Date',
+#             'Edited in Act',
+#             'Edited in Wordpress',
+#             'Last Sale',
+#             'Facebook Username',
+#             'Twitter Username',
+#             'GooglePlus Username',
+#             'Instagram Username',
+#             'Added to mailing list',
+#             'Tans Per Week'
+#         ]:
+#             self.assertIn(key, importCols)
+#
+#     def test_getActTrackedCols(self):
+#         actTrackedCols = self.coldata_class.get_act_tracked_cols()
+#         self.assertItemsEqual(
+#             actTrackedCols,
+#             OrderedDict([
+#                 ('Edited E-mail', ['E-mail']),
+#                 ('Edited Name', ['Name Prefix', 'First Name', 'Middle Name',
+#                                  'Surname', 'Name Suffix', 'Salutation', 'Contact']),
+#                 ('Edited Memo', ['Memo', 'Memo']),
+#                 ('Edited Spouse', ['Spouse', 'Spouse']),
+#                 ('Edited Company', ['Company']),
+#                 ('Edited Phone Numbers', ['Mobile Phone', 'Phone', 'Fax']),
+#                 ('Edited Address', ['Address 1', 'Address 2', 'City', 'Postcode',
+#                                     'State', 'Country', 'Shire']),
+#                 ('Edited Alt Address', ['Home Address 1', 'Home Address 2', 'Home City',
+#                                         'Home Postcode', 'Home State', 'Home Country']),
+#                 ('Edited Personal E-mail', ['Personal E-mail']),
+#                 ('Edited Web Site', ['Web Site']),
+#                 ('Edited Social Media', ['Facebook Username', 'Twitter Username',
+#                                          'GooglePlus Username', 'Instagram Username']),
+#             ]))
+#
+#     def test_getDeltaCols(self):
+#         DeltaCols = self.coldata_class.get_delta_cols_gen()
+#         self.assertItemsEqual(DeltaCols, OrderedDict(
+#             [
+#                 ('E-mail', 'Delta E-mail'),
+#                 # ('Role Info', 'Delta Role Info')
+#             ]))
+#
+#     def test_getAllWpDbCols(self):
+#         dbCols = self.coldata_class.get_all_wpdb_cols()
+#         # print "dbCols %s" % pformat(dbCols.items())
+#         for key in [
+#             'myob_card_id',
+#             # 'act_role',
+#             'nickname',
+#             'first_name',
+#             'last_name',
+#             'middle_name',
+#             'name_suffix',
+#             'name_prefix',
+#             'name_notes',
+#             'spouse',
+#             # 'salutation',
+#             'billing_company',
+#             'mobile_number',
+#             'billing_phone',
+#             'fax_number',
+#             # 'pref_mob',
+#             # 'pref_tel',
+#             'billing_address_1',
+#             'billing_address_2',
+#             'billing_city',
+#             'billing_postcode',
+#             'billing_state',
+#             'billing_country',
+#             'shipping_address_1',
+#             'shipping_address_2',
+#             'shipping_city',
+#             'shipping_postcode',
+#             'shipping_country',
+#             'shipping_state',
+#             'myob_customer_card_id',
+#             'client_grade',
+#             # 'direct_brand',
+#             'agent',
+#             'abn',
+#             'business_type',
+#             'how_hear_about',
+#             'referred_by',
+#             'tans_per_wk',
+#             'personal_email',
+#             'edited_in_act',
+#             'act_last_sale',
+#             'facebook',
+#             'twitter',
+#             'gplus',
+#             'instagram',
+#             'mailing_list',
+#             'user_email',
+#             'user_login',
+#             'ID',
+#             # 'display_name',
+#             'user_url',
+#             'user_registered',
+#             'pref_method',
+#         ]:
+#             assert key in dbCols.keys()
 
 
 if __name__ == '__main__':

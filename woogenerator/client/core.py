@@ -171,7 +171,7 @@ class SyncClientLocal(SyncClientAbstract):
     def __init__(self, **kwargs):
         self.dialect_suggestion = kwargs.pop('dialect_suggestion', None)
         self.encoding = kwargs.pop('encoding', None)
-        commect_params = kwargs.pop('connect_params', {})
+        kwargs.pop('connect_params', {})
         connect_params = None
         super(SyncClientLocal, self).__init__(connect_params, **kwargs)
 
@@ -212,7 +212,7 @@ class SyncClientLocal(SyncClientAbstract):
                 self.register_warning(warn)
 
             if isinstance(decoded, list):
-                parser.process_api_categories(decoded)
+                parser.process_api_categories_raw(decoded)
 
     def analyse_remote_imgs(self, parser, **kwargs):
         data_path = kwargs.pop('data_path', None)
@@ -226,7 +226,7 @@ class SyncClientLocal(SyncClientAbstract):
 
             if isinstance(decoded, list):
                 for decoded_item in decoded:
-                    parser.process_api_image(decoded_item)
+                    parser.analyse_api_image_raw(decoded_item)
 
 
 class SyncClientLocalStream(SyncClientLocal):

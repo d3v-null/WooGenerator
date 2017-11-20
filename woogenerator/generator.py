@@ -21,7 +21,6 @@ from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .client.prod import CatSyncClientWC
-from .coldata import ColDataBase
 from .matching import CategoryMatcher, ProductMatcher, VariationMatcher, ImageMatcher
 from .images import process_images
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
@@ -32,7 +31,7 @@ from .parsing.myo import MYOProdList
 from .parsing.shop import ShopObjList
 from .parsing.special import CsvParseSpecial
 from .parsing.woo import WooCatList, WooProdList, WooVarList
-from .syncupdate import SyncUpdateCatWoo, SyncUpdateProdWoo, SyncUpdateVarWoo
+from .syncupdate import SyncUpdateVarWoo
 from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
 from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_category_matches_group, do_delta_group,
@@ -277,8 +276,8 @@ def export_master_parser(settings, parsers):
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            category_cols = settings.coldata_class.get_category_cols()
-            category_col_names = settings.coldata_class.get_col_names(category_cols)
+            category_cols = settings.coldata_class_cat.get_export_cols_gen('path')
+            category_col_names = settings.coldata_class_cat.get_col_names(category_cols)
             category_container = settings.master_parser_class.category_container.container
             category_list = category_container(parsers.master.categories.values())
             category_list.export_items(settings.cat_path, category_col_names)
@@ -579,13 +578,6 @@ def do_match(parsers, matches, settings):
 def do_merge_images(matches, parsers, updates, settings):
     updates.image = UpdateNamespace()
 
-    sync_cols = settings.sync_cols_img
-
-    # TODO: make syncupate work with new style coldata
-
-    for col, data in sync_cols.items():
-        data['sync'] = True
-
     if not hasattr(matches, 'image'):
         return updates
 
@@ -605,10 +597,6 @@ def do_merge_images(matches, parsers, updates, settings):
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
 
-    sync_cols = settings.sync_cols_cat
-
-    # print "SYNC COLS: %s" % pformat(sync_cols.items())
-
     if not hasattr(matches, 'category'):
         return updates
 
@@ -619,9 +607,8 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
-            sync_update.update(sync_cols)
+            sync_update.update()
 
-            # print sync_update.tabulate()
 
             if not sync_update.important_static:
                 insort(updates.category.problematic, sync_update)
@@ -646,8 +633,6 @@ def do_merge_categories(matches, parsers, updates, settings):
             Registrar.register_error(exc)
             continue
         for col, warnings in update.sync_warnings.items():
-            if not col == 'ID':
-                continue
             for warning in warnings:
                 if not warning['subject'] == update.master_name:
                     continue
@@ -658,7 +643,7 @@ def do_merge_categories(matches, parsers, updates, settings):
     if settings['auto_create_new']:
         for match in enumerate(matches.category.slaveless):
             m_object = match.m_object
-            sync_update = SyncUpdateCatWoo(m_object)
+            sync_update = settings.syncupdate_class_cat(m_object)
             updates.category.slaveless.append(sync_update)
 
     return updates
@@ -675,6 +660,7 @@ def do_merge(matches, parsers, updates, settings):
     # Merge products
 
     sync_cols = settings.sync_cols_prod
+
     if Registrar.DEBUG_UPDATE:
         Registrar.register_message("sync_cols: %s" % repr(sync_cols))
 
@@ -689,32 +675,31 @@ def do_merge(matches, parsers, updates, settings):
         m_object = prod_match.m_object
         s_object = prod_match.s_object
 
+
         sync_update = settings.syncupdate_class_prod(m_object, s_object)
 
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not m_object.is_variation
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not s_object.is_variation
-        sync_update.update(sync_cols)
+
+        sync_update.update()
 
         # print sync_update.tabulate()
 
         if settings['do_categories']:
 
             update_params = {
-                'col': 'catlist',
-                'data': {
-                    # 'sync'
-                },
+                'col': 'category_ids',
                 'subject': sync_update.slave_name
             }
 
-            master_categories = set([
+            master_cat_ids = set([
                 master_category.wpid
                 for master_category in m_object.categories.values()
                 if master_category.wpid
             ])
-            slave_categories = set([
+            slave_cat_ids = set([
                 slave_category.wpid
                 for slave_category in s_object.categories.values()
                 if slave_category.wpid
@@ -725,17 +710,17 @@ def do_merge(matches, parsers, updates, settings):
                     "comparing categories of %s:\n%s\n%s\n%s\n%s" %
                     (m_object.codesum, str(m_object.categories.values()),
                      str(s_object.categories.values()),
-                     str(master_categories), str(slave_categories), ))
+                     str(master_cat_ids), str(slave_cat_ids), ))
 
-            sync_update.old_m_object['catlist'] = list(master_categories)
-            sync_update.old_s_object['catlist'] = list(slave_categories)
-            update_params['new_value'] = sync_update.old_m_object['catlist']
-            update_params['old_value'] = sync_update.old_s_object['catlist']
+            sync_update.old_m_object_core['category_ids'] = list(master_cat_ids)
+            sync_update.old_s_object_core['category_ids'] = list(slave_cat_ids)
+            update_params['new_value'] = sync_update.old_m_object_core['category_ids']
+            update_params['old_value'] = sync_update.old_s_object_core['category_ids']
             # update_params['new_value'] = [
-            #     dict(id=category_id) for category_id in master_categories
+            #     dict(id=category_id) for category_id in master_cat_ids
             # ]
             # update_params['old_value'] = [
-            #     dict(id=category_id) for category_id in master_categories
+            #     dict(id=category_id) for category_id in master_cat_ids
             # ]
 
             match_index = prod_match.singular_index
@@ -745,18 +730,18 @@ def do_merge(matches, parsers, updates, settings):
                 product_category_matches.masterless
             ]):
                 assert \
-                    master_categories != slave_categories, \
+                    master_cat_ids != slave_cat_ids, \
                     (
-                        "if change_match_list exists, then master_categories "
-                         "should not equal slave_categories. "
+                        "if change_match_list exists, then master_cat_ids "
+                         "should not equal slave_cat_ids. "
                          "This might mean that you have not enabled "
                          "auto_create_new categories.\n"
-                         "master_categories: %s\n"
-                         "slave_categories: %s\n"
+                         "master_cat_ids: %s\n"
+                         "slave_cat_ids: %s\n"
                          "change_match_list: \n%s"
                     ) % (
-                        master_categories,
-                        slave_categories,
+                        master_cat_ids,
+                        slave_cat_ids,
                         product_category_matches.tabulate()
                     )
                 update_params['reason'] = 'updating'
@@ -764,10 +749,10 @@ def do_merge(matches, parsers, updates, settings):
                 sync_update.loser_update(**update_params)
             else:
                 assert\
-                    master_categories == slave_categories, \
+                    master_cat_ids == slave_cat_ids, \
                     "should equal, %s | %s" % (
-                        repr(master_categories),
-                        repr(slave_categories)
+                        repr(master_cat_ids),
+                        repr(slave_cat_ids)
                     )
                 update_params['reason'] = 'identical'
                 sync_update.tie_update(**update_params)
@@ -792,11 +777,6 @@ def do_merge(matches, parsers, updates, settings):
             insort(updates.slave, sync_update)
 
     if settings['do_variations']:
-        var_sync_cols = settings.coldata_class.get_wpapi_variable_cols()
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("var_sync_cols: %s" %
-                                       repr(var_sync_cols))
-
         if matches.variation.duplicate:
             exc = UserWarning(
                 "variations couldn't be synchronized because of ambiguous SKUs:%s"
@@ -809,9 +789,9 @@ def do_merge(matches, parsers, updates, settings):
             m_object = var_match.m_object
             s_object = var_match.s_object
 
-            sync_update = SyncUpdateVarWoo(m_object, s_object)
+            sync_update = settings.syncupdate_class_var(m_object, s_object)
 
-            sync_update.update(var_sync_cols)
+            sync_update.update()
 
             # Assumes that GDrive is read only, doesn't care about master
             # updates
@@ -836,7 +816,7 @@ def do_merge(matches, parsers, updates, settings):
 
             # sync_update = SyncUpdateVarWoo(m_object, None)
 
-            # sync_update.update(var_sync_cols)
+            # sync_update.update()
 
             if Registrar.DEBUG_VARS:
                 Registrar.register_message("var create %d:\n%s" % (
@@ -851,7 +831,7 @@ def do_merge(matches, parsers, updates, settings):
 
             # sync_update = SyncUpdateVarWoo(None, s_object)
 
-            # sync_update.update(var_sync_cols)
+            # sync_update.update()
 
             if Registrar.DEBUG_VARS:
                 Registrar.register_message("var delete: %d:\n%s" % (

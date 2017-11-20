@@ -12,7 +12,6 @@ from tests.test_sync_client import AbstractSyncClientTestCase
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.img import ImgSyncClientWP
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
-from woogenerator.coldata import ColDataWoo
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo

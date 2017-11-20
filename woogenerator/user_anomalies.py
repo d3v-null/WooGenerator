@@ -113,7 +113,7 @@ def main(override_args=None, settings=None):
         export_slave_parser(parsers, settings)
 
 
-    report_cols = settings.coldata_class.get_report_cols()
+    report_cols = settings.coldata_class.get_report_cols_gen()
     exclude_cols = settings.get('exclude_cols')
     if exclude_cols:
         for col in exclude_cols:

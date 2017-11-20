@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import os
 import re
 from collections import OrderedDict
-from copy import copy
+from copy import copy, deepcopy
 from pprint import pformat
 
 from ..coldata import (ColDataMedia, ColDataProductMeridian, ColDataProductVariationMeridian,
@@ -20,7 +20,7 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
                    ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin, ShopCatList, ShopObjList,
-                   ShopProdList)
+                   ShopProdList, ShopMixin)
 from .special import ImportSpecialGroup
 from .tree import ImportTreeItem, ImportTreeObject, ItemList, TaxoList
 
@@ -81,14 +81,9 @@ class ImportWooMixin(object):
         if special not in self.specials:
             self.specials.append(special)
 
-    def get_specials(self):
-        exc = DeprecationWarning("use .specials instead of .get_specials()")
-        self.register_error(exc)
-        return self.specials
-
-
 class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     container = ShopObjList
+    to_dict = ImportShopMixin.to_dict
 
     verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
 
@@ -182,10 +177,7 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
 class WooProdList(ShopProdList, WooListMixin):
     coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooProduct
-
-    @property
-    def report_cols(self):
-        return self.coldata_class.get_product_cols()
+    report_cols = coldata_class.get_report_cols_gen()
 
 ImportWooProduct.container = WooProdList
 
@@ -212,11 +204,8 @@ class ImportWooProductVariation(
 
 class WooVarList(ShopProdList, WooListMixin):
     supported_type = ImportWooProductVariation
-    coldata_class = WooListMixin.coldata_class
-
-    @property
-    def report_cols(self):
-        return self.coldata_class.get_variation_cols
+    coldata_class = WooListMixin.coldata_var_class
+    report_cols = coldata_class.get_report_cols_gen()
 
 ImportWooProductVariation.container = WooVarList
 
@@ -319,7 +308,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
 class WooCatList(ShopCatList, WooListMixin):
     coldata_class = WooListMixin.coldata_cat_class
     supported_type = ImportWooCategory
-    report_cols = coldata_class.get_category_cols()
+    report_cols = coldata_class.get_report_cols_gen()
 
 ImportWooCategory.container = WooCatList
 
@@ -340,7 +329,7 @@ class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
 class WooImgList(ObjList, WooListMixin):
     coldata_class = WooListMixin.coldata_img_class
     supported_type = ImportWooImg
-    report_cols = coldata_class.get_report_cols()
+    report_cols = coldata_class.get_report_cols_gen()
 
 ImportWooImg.container = WooImgList
 
@@ -357,9 +346,10 @@ class CsvParseWooMixin(object):
     bundled_container = ImportWooProductBundled
     coldata_img_target = 'wp-api'
     # Under woo, all taxos are categories
-    coldata_class = ColDataProductMeridian
-    coldata_cat_class = ColDataWcProdCategory
-    coldata_img_class = ColDataMedia
+    coldata_class = ShopMixin.coldata_class
+    coldata_cat_class = ShopMixin.coldata_cat_class
+    coldata_img_class = ShopMixin.coldata_img_class
+    coldata_sub_img_class = ShopMixin.coldata_sub_img_class
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
@@ -381,7 +371,7 @@ class CsvParseWooMixin(object):
             # self.image_container.wpid_key,
             self.image_container.slug_key,
             # self.image_container.title_key,
-            self.image_container.file_path_key,
+            self.image_container.file_name_key,
             self.image_container.source_url_key
         ]
         return self.find_object(search_data, registry, search_keys)
@@ -408,49 +398,46 @@ class CsvParseWooMixin(object):
     @property
     def img_defaults(self):
         if not hasattr(self, '_coldata_img_class_defaults'):
-            self._coldata_img_class_defaults = self.coldata_img_class.get_defaults()
-        return self._coldata_img_class_defaults
+            self._coldata_img_class_defaults = self.coldata_img_class.get_defaults_gen()
+        return deepcopy(self._coldata_img_class_defaults)
 
-    def new_img_object(self, **kwargs):
-        """
-        Create a new img instance from provided args.
-        """
-        default_data = OrderedDict(self.img_defaults.items())
-        parser_data = kwargs.get('row_data', {})
-        all_data = SeqUtils.combine_ordered_dicts(default_data, parser_data)
-        container = self.image_container
-        img_data = container(all_data, **kwargs)
-        return img_data
+    @property
+    def cat_defaults(self):
+        if not hasattr(self, '_coldata_cat_class_defaults'):
+            self._coldata_cat_class_defaults = self.coldata_cat_class.get_defaults_gen()
+        return deepcopy(self._coldata_cat_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
+        img_filename = self.image_container.get_file_name(img_raw_data)
         if self.DEBUG_IMG:
-            img_path = img_raw_data.get('file_path', '')
             if object_data:
                 identifier = object_data.identifier
                 self.register_message(
                     "%s attached to %s"
-                    % (identifier, img_path)
+                    % (identifier, img_filename)
                 )
             else:
                 self.register_message(
-                    "creating image %s" % (img_path)
+                    "creating image %s" % (img_filename)
                 )
             self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
 
         img_data = None
         if self.image_container.file_path_key in img_raw_data:
-            file_name = os.path.basename(img_raw_data[self.image_container.file_path_key])
-            img_data = self.images.get(file_name)
+            img_data = self.images.get(img_filename)
         if not img_data:
             img_data = self.find_image(img_raw_data)
         if not img_data:
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
-            img_data = copy(img_raw_data)
-            kwargs['row_data'] = img_data
+            row_data = deepcopy(img_raw_data)
+            row_data[self.image_container.file_name_key] = img_filename
+            kwargs['defaults'] = self.img_defaults
+            kwargs['row_data'] = row_data
             kwargs['parent'] = self.root_data
+            kwargs['container'] = self.image_container
             try:
-                img_data = self.new_img_object(
+                img_data = self.new_object(
                     rowcount=self.rowcount,
                     **kwargs
                 )
@@ -516,15 +503,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.register_message(' ')
         # print ("cat_mapping woo pre: %s" % str(cat_mapping))
 
-        extra_cols = ['PA', 'VA', 'weight', 'length', 'width', 'height',
-                      'stock', 'stock_status', 'Images', 'HTML Description',
-                      'post_status']
-
-        extra_defaults = OrderedDict([
-            # ('post_status', 'publish'),
-            # ('last_import', import_name),
-        ])
-
         extra_taxo_subs = OrderedDict([
             ('Generic Literature', 'Marketing > Literature'),
             ('Generic Signage', 'Marketing > Signage'),
@@ -545,19 +523,36 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             # ('Generic Tanning Booths', 'Equipment > Tanning Booths'),
         ])
 
-        extra_item_subs = OrderedDict()
+        extra_item_subs = OrderedDict([
+            ('Hot Pink', 'Pink'),
+            ('Hot Lips (Red)', 'Red'),
+            ('Hot Lips', 'Red'),
+            ('Silken Chocolate (Bronze)', 'Bronze'),
+            ('Silken Chocolate', 'Bronze'),
+            ('Moon Marvel (Silver)', 'Silver'),
+            ('Dusty Gold', 'Gold'),
+
+            ('Screen Printed', ''),
+            ('Embroidered', ''),
+        ])
+
+        if not kwargs.get('schema'):
+            kwargs['schema'] = "TT"
+
+        extra_cols = ['PA', 'VA', 'weight', 'length', 'width', 'height',
+                      'stock', 'stock_status', 'Images', 'HTML Description',
+                      'post_status', kwargs.get('schema')]
+
+        cols = SeqUtils.combine_lists(cols, extra_cols)
 
         extra_cat_maps = OrderedDict()
 
-        cols = SeqUtils.combine_lists(cols, extra_cols)
-        defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
         kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
         # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
-        if not kwargs.get('schema'):
-            kwargs['schema'] = "TT"
+
         self.cat_mapping = SeqUtils.combine_ordered_dicts(
             kwargs.pop('cat_mapping', {}), extra_cat_maps)
         self.dprc_rules = kwargs.pop('dprc_rules', {})

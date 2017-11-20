@@ -434,20 +434,18 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         assert depth is not None, "depth should be available to CsvParseTree.get_new_obj_container"
         if self.is_taxo_depth(depth):
             container = self.taxo_container
-        else:
-            assert \
-                self.is_item_depth(depth), \
-                "sanity check: depth should be either taxo or item: %s" % depth
+        elif self.is_item_depth(depth):
             container = self.item_container
         return container
 
-    def get_kwargs(self, all_data, container, **kwargs):
+    def get_kwargs(self, all_data, **kwargs):
         kwargs = super(CsvParseTree, self).get_kwargs(
-            all_data, container, **kwargs)
+            all_data, **kwargs
+        )
         assert \
-            issubclass(container, ImportTreeObject), \
+            issubclass(kwargs['container'], ImportTreeObject), \
             "Container should inherit from tree object, instead found %s" % \
-                container.__name__
+                kwargs['container'].__name__
 
         # sanity check kwargs has been called with correct arguments
         for key in ['row', 'rowcount']:
@@ -468,24 +466,26 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         if self.DEBUG_TREE:
             self.register_message("meta: {}".format(kwargs['meta']))
 
-        try:
-            stack = kwargs.pop('stack', None)
-            # stack = kwargs['stack']
-            # del kwargs['stack']
-            assert stack is not None
-        except (AssertionError):
-            self.refresh_stack(kwargs['rowcount'], kwargs[
-                'row'], kwargs['depth'])
-            stack = self.stack
-        assert isinstance(stack, ImportStack)
-        if self.DEBUG_TREE:
-            self.register_message("stack: {}".format(stack))
+        parent = kwargs.pop('parent', None)
+        if not parent:
+            try:
+                stack = kwargs.pop('stack', None)
+                # stack = kwargs['stack']
+                # del kwargs['stack']
+                assert stack is not None
+            except (AssertionError):
+                self.refresh_stack(kwargs['rowcount'], kwargs[
+                    'row'], kwargs['depth'])
+                stack = self.stack
+            assert isinstance(stack, ImportStack)
+            if self.DEBUG_TREE:
+                self.register_message("stack: {}".format(stack))
 
-        parent = stack.get_top()
-        if parent is None:
-            parent = self.root_data
-        if self.DEBUG_TREE:
-            self.register_message("parent: {}".format(parent))
+            parent = stack.get_top()
+            if parent is None:
+                parent = self.root_data
+            if self.DEBUG_TREE:
+                self.register_message("parent: {}".format(parent))
         kwargs['parent'] = parent
 
         # sanity check
@@ -507,35 +507,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
             kwargs['depth'] = depth
         if self.DEBUG_TREE:
             self.register_message("depth: %d" % (depth))
-    #
-    #     # try:
-    #     #     meta = kwargs['meta']
-    #     #     assert meta is not None
-    #     # except:
-    #     #     meta = self.extract_meta(kwargs['row'], depth)
-    #     # finally:
-    #     #     kwargs['meta'] = meta
-    #     # if self.DEBUG_TREE:
-    #     #     self.register_message("meta: {}".format(meta))
-    #
-    #     # try:
-    #     #     stack = kwargs.pop('stack', None)
-    #     #     # stack = kwargs['stack']
-    #     #     # del kwargs['stack']
-    #     #     assert stack is not None
-    #     # except (AssertionError):
-    #     #     self.refresh_stack(rowcount, kwargs['row'], depth)
-    #     #     stack = self.stack
-    #     # assert isinstance(stack, ImportStack)
-    #     # if self.DEBUG_TREE:
-    #     #     self.register_message("stack: {}".format(stack))
-    #     #
-    #     # parent = stack.get_top()
-    #     # if parent is None: parent = self.root_data
-    #     # if self.DEBUG_TREE:
-    #     #     self.register_message("parent: {}".format(parent))
-    #     # kwargs['parent'] = parent
-    #
+
         return super(CsvParseTree, self).new_object(rowcount, **kwargs)
 
     def refresh_stack(self, rowcount, row, this_depth):

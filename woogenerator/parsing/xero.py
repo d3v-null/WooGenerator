@@ -1,30 +1,34 @@
 from __future__ import absolute_import
 
+import json
 import time
 from collections import OrderedDict
-import json
 from pprint import pformat
 
 from ..coldata import ColDataProductMeridian
-from ..utils import SeqUtils, DescriptorUtils, SanitationUtils
+from ..utils import DescriptorUtils, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
-from .tree import CsvParseTreeMixin
+from .api import ApiListMixin, ApiParseMixin, ImportApiObjectMixin
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .myo import CsvParseMyo
-from .shop import (
-    ImportShopMixin, ImportShopProductMixin, ImportShopProductSimpleMixin, ShopProdList, CsvParseShopMixin
-)
-from .api import ImportApiObjectMixin, ApiListMixin, ApiParseMixin
+from .shop import (CsvParseShopMixin, ImportShopMixin, ImportShopProductMixin,
+                   ImportShopProductSimpleMixin, ShopMixin, ShopProdList)
+from .tree import CsvParseTreeMixin
+
+
+class ApiXeroMixin(object):
+    coldata_target = 'xero-api'
 
 class ImportXeroMixin(object):
     description_key = 'Xero Description'
     description = DescriptorUtils.safe_key_property(description_key)
 
-class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin):
+class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin, ApiXeroMixin):
     description_key = ImportXeroMixin.description_key
     description = ImportXeroMixin.description
     api_id_key = 'item_id'
     api_id = DescriptorUtils.safe_key_property(api_id_key)
+    coldata_target = ApiXeroMixin.coldata_target
 
     def __init__(self, *args, **kwargs):
         ImportGenObject.__init__(self, *args, **kwargs)
@@ -45,6 +49,10 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
         ImportXeroItem.__init__(self, *args, **kwargs)
         ImportShopProductMixin.__init__(self, *args, **kwargs)
 
+    def process_meta(self):
+        # import pudb; pudb.set_trace()
+        super(ImportXeroProduct, self).process_meta()
+
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
     process_meta = ImportApiObjectMixin.process_meta
     is_item = ImportGenItem.is_item
@@ -61,12 +69,12 @@ class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
         # ImportXeroItem.namesum_key
     ]
 
-class XeroApiProdList(ShopProdList, ApiListMixin):
+class XeroApiProdList(ShopProdList, ApiListMixin, ApiXeroMixin):
     supported_type = ImportXeroApiProduct
 
     @property
     def report_cols(self):
-        return CsvParseXero.coldata_class.get_product_cols()
+        return CsvParseXero.coldata_class.get_report_cols_gen()
 
 ImportXeroApiProduct.container = XeroApiProdList
 
@@ -78,7 +86,7 @@ class ParseXeroMixin(object):
     object_container = ImportXeroObject
     item_container = ImportXeroItem
     product_container = ImportXeroProduct
-    coldata_class = ColDataProductMeridian
+    coldata_class = ShopMixin.coldata_class
     default_schema = "XERO"
 
     @classmethod
@@ -110,7 +118,10 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
         if defaults is None:
             defaults = {}
         if cols is None:
-            cols = {}
+            cols = []
+        extra_cols = [kwargs.get('schema')]
+        cols = SeqUtils.combine_lists(cols, extra_cols)
+
         # kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
         #     taxo_subs, CsvParseXero.extra_taxo_subs
         # )
@@ -122,6 +133,10 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
 
         CsvParseGenTree.__init__(self, cols, defaults, **kwargs)
 
+    # def process_object(self, object_data):
+    #     super(CsvParseXero, self).process_object(object_data)
+    #     import pudb; pudb.set_trace()
+
     def clear_transients(self):
         CsvParseGenTree.clear_transients(self)
         CsvParseShopMixin.clear_transients(self)
@@ -129,6 +144,19 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
     def register_object(self, object_data):
         CsvParseGenTree.register_object(self, object_data)
         CsvParseShopMixin.register_object(self, object_data)
+
+    def get_new_obj_container(self, all_data, **kwargs):
+        container = super(CsvParseXero, self).get_new_obj_container(all_data, **kwargs)
+
+        if issubclass(container, self.item_container) \
+                and self.schema in all_data:
+            xero_type = all_data[self.schema]
+            if xero_type:
+                try:
+                    container = self.containers[xero_type]
+                except KeyError:
+                    pass
+        return container
 
 class ApiParseXero(
     CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin, ApiParseMixin
@@ -140,9 +168,11 @@ class ApiParseXero(
     item_container = ImportXeroApiItem
     product_container = ImportXeroApiProduct
     coldata_class = ParseXeroMixin.coldata_class
-    col_data_target = 'xero-api'
+    coldata_target = 'xero-api'
     item_indexer = ParseXeroMixin.get_xero_id
     analyse_stream = ApiParseMixin.analyse_stream
+    coldata_gen_target = ApiParseMixin.coldata_gen_target
+    get_kwargs = ApiParseMixin.get_kwargs
 
     def __init__(self, cols=None, defaults=None, **kwargs):
         if defaults is None:
@@ -164,103 +194,5 @@ class ApiParseXero(
         CsvParseTreeMixin.register_object(self, object_data)
         CsvParseShopMixin.register_object(self, object_data)
 
-    @classmethod
-    def get_api_accounting_details_data(cls, field, details):
-        response = {}
-        if field == 'SalesDetails' and 'UnitPrice' in details:
-            unit_price_sales_key = cls.coldata_class.unit_price_sales_field(
-                cls.col_data_target
-            )
-            response[unit_price_sales_key] = details['UnitPrice']
-        return response
-
-    @classmethod
-    def get_stock_status_data(cls, quantity, inventory):
-        response = {}
-        if inventory:
-            precision = 100
-            if int(float(quantity) * precision) / precision == 0:
-                response['stock_status'] = 'outofstock'
-            else:
-                response['stock_status'] = 'instock'
-        return response
-
-    @classmethod
-    def get_parser_data(cls, **kwargs):
-        """
-        Gets data ready for the parser, in this case from api_data
-        """
-
-        api_data = kwargs.get('api_data', {})
-        if cls.DEBUG_API:
-            cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
-        api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
-                         for key, value in api_data.items()])
-        if cls.DEBUG_API:
-            cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
-
-        parser_data = OrderedDict()
-        parser_data['api_data'] = api_data
-
-        coldata_class = kwargs.get('coldata_class', cls.coldata_class)
-        translated_api_data = coldata_class.translate_data_from(api_data, 'xero-api')
-        translated_api_data = coldata_class.translate_data_to(translated_api_data, 'gen-csv')
-
-        parser_data.update(**translated_api_data)
-
-        # translation = OrderedDict()
-        # for col, col_data in cls.coldata_class.data.items():
-        #     try:
-        #         translated_key = col_data[cls.col_data_target]['key']
-        #         translation[translated_key] = col
-        #     except (KeyError, TypeError):
-        #         pass
-        #
-        # if cls.DEBUG_API:
-        #     cls.register_message("translation: %s" % translation)
-        # translated_api_data = cls.translate_keys(api_data, translation)
-        # if cls.DEBUG_API:
-        #     cls.register_message("translated_api_data: %s" % translated_api_data)
-        # parser_data.update(**translated_api_data)
-        #
-        # if 'SalesDetails' in api_data:
-        #     parser_data.update(
-        #         **cls.get_api_accounting_details_data(
-        #             'SalesDetails',
-        #             api_data['SalesDetails']
-        #         )
-        #     )
-        #
-        # if 'PurchaseDetails' in api_data:
-        #     parser_data.update(
-        #         **cls.get_api_accounting_details_data(
-        #             'PurchaseDetails',
-        #             api_data['PurchaseDetails']
-        #         )
-        #     )
-        #
-        # if 'QuantityOnHand' in api_data and 'IsTrackedAsInventory':
-        #     parser_data.update(
-        #         **cls.get_stock_status_data(
-        #             api_data['QuantityOnHand'],
-        #             api_data['IsTrackedAsInventory']
-        #         )
-        #     )
-
-        if cls.DEBUG_API:
-            cls.register_message("returning parser_data: %s" % parser_data)
-
-        return parser_data
-
-    def get_kwargs(self, all_data, container, **kwargs):
-        if 'parent' not in kwargs:
-            kwargs['parent'] = self.root_data
-        return kwargs
-
     def get_new_obj_container(self, all_data, **kwargs):
-        # container = super(ApiParseXero, self).get_new_obj_container(
-        #     all_data, **kwargs)
-        # api_data = kwargs.get('api_data', {})
-        # if self.DEBUG_API:
-        #     self.register_message('api_data: %s' % str(api_data))
         return self.product_container

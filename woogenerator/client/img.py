@@ -32,7 +32,7 @@ class ImgSyncClientWP(SyncClientWP):
             if self.page_nesting:
                 page = page['media']
             for page_item in page:
-                parser.process_api_image(page_item)
+                parser.analyse_api_image(page_item)
         if self.DEBUG_API:
             self.register_message("Analysed images:")
             self.register_message(parser.to_str_tree())

@@ -27,7 +27,7 @@ class CatSyncClientMixin(object):
                 page = page['product_categories']
             for page_item in page:
                 categories.append(page_item)
-        parser.process_api_categories(categories)
+        parser.process_api_categories_raw(categories)
         if self.DEBUG_API:
             self.register_message("Analysed categories:")
             self.register_message(parser.to_str_tree())

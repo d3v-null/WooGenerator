@@ -3,7 +3,7 @@ import unittest
 from unittest import TestCase
 
 from context import woogenerator
-from woogenerator.coldata import ColDataWoo
+from woogenerator.coldata import ColDataProductMeridian
 from woogenerator.parsing.woo import ImportWooProduct, CsvParseWoo, CsvParseTT, WooProdList
 from woogenerator.utils import TimeUtils, Registrar, SanitationUtils
 
@@ -18,8 +18,8 @@ class TestCSVParseWoo(TestCase):
 
         self.master_parser_args = {
             'import_name': import_name,
-            'cols': ColDataWoo.get_import_cols(),
-            'defaults': ColDataWoo.get_defaults(),
+            'cols': ColDataProductMeridian.get_import_cols(),
+            'defaults': ColDataProductMeridian.get_defaults(),
             'taxo_depth': 3,
             'item_depth': 2,
             'schema': 'CA'

@@ -64,12 +64,14 @@ class ImportApiObjectMixin(object):
     @property
     def identifier(self):
         # identifier = super(ImportWooApiObject, self).identifier
-        return "|".join([
+        identifiers = [
             'r:%s' % str(self.rowcount),
             'a:%s' % str(self.get(self.api_id_key)),
-            self.codesum,
             self.title,
-        ])
+        ]
+        if getattr(self, 'is_item'):
+            identifiers[2:3] = [self.codesum]
+        return "|".join(map(str, identifiers))
 
 
 class ImportApiRoot(ImportTreeRoot):
@@ -81,12 +83,14 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     process_meta = ImportApiObjectMixin.process_meta
     index = ImportApiObjectMixin.index
     identifier = ImportApiObjectMixin.identifier
+    to_dict = ImportShopMixin.to_dict
     api_id_key = ImportWooMixin.wpid_key
     api_id = DescriptorUtils.safe_key_property(api_id_key)
     verify_meta_keys = SeqUtils.combine_lists(
         ImportGenObject.verify_meta_keys,
         ImportWooMixin.verify_meta_keys
     )
+    verify_meta_keys.remove(ImportGenObject.descsum_key)
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -113,15 +117,13 @@ class ImportWooApiItem(ImportWooApiObject, ImportGenItem):
         ImportWooApiObject.verify_meta_keys,
         ImportGenItem.verify_meta_keys
     )
+    verify_meta_keys.remove(ImportGenItem.namesum_key)
     is_item = ImportGenItem.is_item
 
 class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
 
-    verify_meta_keys = SeqUtils.subtrace_two_lists(
-        ImportWooApiObject.verify_meta_keys,
-        ['slug']
-    )
+    verify_meta_keys = ImportWooApiObject.verify_meta_keys
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -164,6 +166,21 @@ class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
         ImportWooApiObject.verify_meta_keys,
         ImportGenTaxo.verify_meta_keys
     )
+    verify_meta_keys.remove(ImportGenObject.codesum_key)
+    verify_meta_keys.remove(ImportGenObject.descsum_key)
+    verify_meta_keys.remove(ImportGenTaxo.namesum_key)
+
+    @classmethod
+    def get_slug(cls, category_data):
+        assert cls.slug_key in category_data, \
+        "expected slug key (%s) in category_data" % cls.slug_key
+        return category_data.get(cls.slug_key)
+
+    @classmethod
+    def get_title(cls, category_data):
+        assert cls.title_key in category_data, \
+        "expected title key (%s) in category_data" % cls.title_key
+        return category_data.get(cls.title_key)
 
 
 class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
@@ -213,7 +230,9 @@ ImportWooApiImg.container = WooApiImgList
 
 class ApiParseMixin(object):
     root_container = ImportApiRoot
+    coldata_gen_target = 'gen-api'
     def analyse_stream(self, byte_file_obj, **kwargs):
+
         limit, encoding, stream_name = \
             (kwargs.get('limit'), kwargs.get('encoding'), kwargs.get('stream_name'))
 
@@ -245,12 +264,30 @@ class ApiParseMixin(object):
             for decoded_obj in decoded[:limit]:
                 self.analyse_api_obj(decoded_obj)
 
+    def get_kwargs(self, all_data, **kwargs):
+        if 'parent' not in kwargs:
+            kwargs['parent'] = self.root_data
+
+        if 'depth' not in kwargs:
+            kwargs['depth'] = kwargs['parent'].depth + 1
+        return kwargs
+
     def analyse_api_obj(self, api_data, **kwargs):
         """
-        Analyse an object from the wp api.
+        Analyse an object from the wp api. Assume api_data has not been convert to gen data
         """
 
-        kwargs['api_data'] = api_data
+        coldata_class = kwargs.get('coldata_class', self.coldata_class)
+        coldata_target = kwargs.get('coldata_target', self.coldata_target)
+
+        core_api_data = coldata_class.translate_data_from(deepcopy(api_data), coldata_target)
+        gen_api_data = coldata_class.translate_data_to(core_api_data, self.coldata_gen_target)
+
+        row_data = deepcopy(gen_api_data)
+        row_data['api_data'] = api_data
+        if not 'type' in row_data:
+            row_data['type'] = row_data.get('prod_type')
+        kwargs['row_data'] = row_data
 
         object_data = self.new_object(rowcount=self.rowcount, **kwargs)
         if self.DEBUG_API:
@@ -275,19 +312,21 @@ class ApiParseWoo(
     variable_container = ImportWooApiProductVariable
     variation_container = ImportWooApiProductVariation
     category_container = ImportWooApiCategory
-    category_indexer = CsvParseBase.get_object_rowcount
+    category_indexer = ImportWooApiTaxo.get_title
     item_indexer = CsvParseBase.get_object_rowcount
-    taxo_indexer = CsvParseBase.get_object_rowcount
+    taxo_indexer = ImportWooApiTaxo.get_title
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
     image_container = ImportWooApiImg
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
     coldata_sub_img_class = ColDataSubMedia
-    col_data_target = 'wc-wp-api'
+    coldata_target = 'wc-wp-api'
+    coldata_gen_target = ApiParseMixin.coldata_gen_target
     meta_get_key = 'meta_data'
     meta_listed = True
     analyse_stream = ApiParseMixin.analyse_stream
+    get_kwargs = ApiParseMixin.get_kwargs
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_MRO:
@@ -324,45 +363,29 @@ class ApiParseWoo(
     #         self.register_message("registering object_data: %s" % str(object_data))
     #     super(ApiParseWoo, self).register_object(object_data)
 
-    @classmethod
-    def get_api_dimension_data(cls, dimensions):
-        new_data = OrderedDict()
-        for dimension_key in ['length', 'width', 'height']:
-            if dimension_key in dimensions:
-                new_data[dimension_key] = dimensions[dimension_key]
-                # object_data[dimension_key] = dimensions[dimension_key]
-        return new_data
+    def analyse_api_image_raw(self, img_api_data, object_data=None, **kwargs):
 
-    @classmethod
-    def get_api_stock_status_data(cls, in_stock):
-        new_data = OrderedDict()
-        if in_stock:
-            stock_status = 'in_stock'
-        else:
-            stock_status = 'outofstock'
-        new_data['stock_status'] = stock_status
-        return new_data
+        coldata_class = kwargs.get('codata_class', self.coldata_img_class)
+        coldata_target = kwargs.get('coldata_target', self.coldata_img_target)
 
-    @classmethod
-    def get_api_manage_stock_data(cls, manage_stock):
-        new_data = OrderedDict()
-        if manage_stock:
-            new_data['manage_stock'] = 'yes'
-        else:
-            new_data['manage_stock'] = 'no'
-        return new_data
-
-    def process_api_image(self, img_api_data, object_data=None, **kwargs):
-        # TODO: do this based off process_api_category
-
-        img_raw_data = self.coldata_img_class.translate_data_from(
-            img_api_data, self.coldata_img_target
+        img_core_data = coldata_class.translate_data_from(
+            img_api_data, coldata_target
         )
-        img_raw_data['api_data'] = img_api_data
-        if not img_raw_data.get('file_path'):
+        img_gen_data = coldata_class.translate_data_to(
+            img_core_data, self.coldata_gen_target
+        )
+        img_gen_data['api_data'] = img_api_data
+        self.analyse_api_image_gen(img_gen_data, object_data, **kwargs)
+
+    def analyse_api_image_gen(self, img_gen_data, object_data=None, **kwargs):
+        """ Create object for and analyse an API image object that is in gen format. """
+        if not (img_gen_data.get('file_path') or img_gen_data.get('file_name')):
             warn = UserWarning(
-                "could not process api img %s: no file path in API object" % (
-                    img_raw_data
+                (
+                    "could not process api img: no file path in API object\n"
+                    "gen:%s\n"
+                ) % (
+                    pformat(img_gen_data.items()),
                 )
             )
             self.register_warning(
@@ -371,39 +394,65 @@ class ApiParseWoo(
             raise warn
             return
 
-        super(ApiParseWoo, self).process_image(img_raw_data, object_data, **kwargs)
+        img_gen_data['type'] = 'image'
 
-    def process_api_sub_image(self, sub_img_api_data, object_data, **kwargs):
-        sub_img_raw_data = self.coldata_sub_img_class.translate_data_from(
-            sub_img_api_data, self.col_data_target
+        super(ApiParseWoo, self).process_image(img_gen_data, object_data, **kwargs)
+
+    def process_api_sub_image_raw(self, sub_img_api_data, object_data, **kwargs):
+        coldata_class = kwargs.get('coldata_class', self.coldata_sub_img_class)
+        coldata_target = kwargs.get('coldata_target', self.coldata_target)
+        sub_img_core_data = coldata_class.translate_data_from(
+            sub_img_api_data, coldata_target
         )
-        if sub_img_raw_data.get('id') == 0:
+        sub_img_gen_data = coldata_class.translate_data_to(
+            sub_img_core_data, self.coldata_gen_target
+        )
+        sub_img_gen_data['api_data'] = sub_img_api_data
+        self.process_api_sub_image_gen(sub_img_gen_data, object_data, **kwargs)
+
+    def process_api_sub_image_gen(self, sub_img_gen_data, object_data, **kwargs):
+        """
+        Process an api image that is a sub-entity in gen format.
+        """
+        if sub_img_gen_data.get('id') == 0:
             # drop the Placeholder image
             return
-        sub_img_search_data = OrderedDict()
-        for key, value in sub_img_raw_data.items():
-            if key in ['source_url', 'slug']:
-                sub_img_search_data[key] = value
+
+        sub_img_gen_data['type'] = 'sub-image'
+
         try:
-            super(ApiParseWoo, self).process_image(sub_img_search_data, object_data, **kwargs)
+            super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
         except Exception as exc:
-            warn = UserWarning("could not find api sub image, %s\nobject:\n%s\nsub_img:\n%s" % (
-                exc, object_data, sub_img_api_data
+            warn = UserWarning("could not find api sub image, %s\nobject:\n%s" % (
+                exc, object_data
             ))
             self.register_error(warn)
+            if self.strict:
+                self.raise_exception(warn)
 
-    def process_api_sub_images(self, api_img_list, object_data, **kwargs):
-        for sub_img_api_data in api_img_list:
-            self.process_api_sub_image(sub_img_api_data, object_data, **kwargs)
+    def process_api_category_raw(self, category_raw_data, object_data=None, **kwargs):
+        """
+        Create category if not exist of find if exist, then assign object_data to category.
+        Category must be in raw format, already converted.
+        """
+        coldata_class = kwargs.get('coldata_class', self.coldata_cat_class)
+        coldata_target = kwargs.get('coldata_target', self.coldata_target)
+        category_core_data = coldata_class.translate_data_from(
+            category_raw_data, coldata_target
+        )
+        category_gen_data = coldata_class.translate_data_to(
+            category_core_data, self.coldata_gen_target
+        )
+        self.process_api_category_gen(category_gen_data, object_data, **kwargs)
 
-
-    def process_api_category(self, category_api_data, object_data=None):
+    def process_api_category_gen(self, category_gen_data, object_data=None, **kwargs):
         """
         Create category if not exist or find if exist, then assign object_data to category
         Has to emulate CsvParseBase.new_object()
+        category data must be in gen format, i.e. already converted.
         """
         if self.DEBUG_API:
-            category_title = category_api_data.get('title', '')
+            category_title = category_gen_data.get('title', '')
             if object_data:
                 identifier = object_data.identifier
                 self.register_message(
@@ -415,59 +464,48 @@ class ApiParseWoo(
                     "creating category %s" % (category_title)
                 )
             self.register_message("PROCESS CATEGORY: %s" %
-                                  repr(category_api_data))
+                                  repr(category_gen_data))
 
-        # TODO: do translation with API Whisperer
+        cat_data = None
+        if not cat_data:
+            try:
+                category_index = self.category_indexer(category_gen_data)
+                cat_data = self.categories.get(category_index)
+            except:
+                pass
+        if not cat_data:
+            category_search_data = {}
+            category_search_data.update(**category_gen_data)
 
-        coldata_class = self.coldata_cat_class
+            # if 'itemsum' in category_search_data:
+            #     category_search_data['taxosum'] = category_search_data['itemsum']
+            #     del category_search_data['itemsum']
 
-        category_search_data = {}
+            if self.DEBUG_API:
+                self.register_message("SEARCHING FOR CATEGORY: %s" %
+                                      repr(category_search_data))
 
-        translated_api_data = coldata_class.translate_data_to(category_api_data, 'gen-csv')
-
-        category_search_data.update(**translated_api_data)
-
-        # core_translation = OrderedDict()
-        # for col, col_data in self.coldata_cat_class.get_wpapi_core_cols().items():
-        #     try:
-        #         wp_api_key = col_data[self.col_data_target]['key']
-        #     except BaseException:
-        #         wp_api_key = col
-        #     core_translation[wp_api_key] = col
-        # category_search_data.update(
-        #     **self.translate_keys(category_api_data, core_translation))
-        # category_search_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
-        #                              for key, value in category_search_data.items()])
-
-        if 'itemsum' in category_search_data:
-            category_search_data['taxosum'] = category_search_data['itemsum']
-            del category_search_data['itemsum']
-
-        if self.DEBUG_API:
-            self.register_message("SEARCHING FOR CATEGORY: %s" %
-                                  repr(category_search_data))
-
-        cat_data = self.find_category(category_search_data)
+            cat_data = self.find_category(category_search_data)
         if not cat_data:
             if self.DEBUG_API:
                 self.register_message("CATEGORY NOT FOUND")
 
-            category_api_data['type'] = 'category'
-            if not 'description' in category_api_data:
-                category_api_data['description'] = ''
-            if not 'slug' in category_api_data:
-                category_api_data['slug'] = ''
-
             kwargs = OrderedDict()
-            kwargs['api_data'] = category_api_data
+            row_data = deepcopy(category_gen_data)
+            row_data['type'] = 'category'
+            kwargs['defaults'] = self.cat_defaults
+            kwargs['row_data'] = row_data
+            kwargs['container'] = self.category_container
 
             parent_category_data = None
-            if 'parent' in category_api_data:
-                parent_category_search_data = {}
-                parent_category_search_data[
-                    self.category_container.wpid_key] = category_api_data['parent']
+            if self.category_container.parent_id_key in category_gen_data:
+                parent_id = category_gen_data.get(self.category_container.parent_id_key)
+                parent_category_search_data = {
+                    self.category_container.wpid_key: parent_id
+                }
                 parent_category_data = self.find_category(
-                    parent_category_search_data)
+                    parent_category_search_data
+                )
             if parent_category_data:
                 kwargs['parent'] = parent_category_data
             else:
@@ -485,38 +523,30 @@ class ApiParseWoo(
             self.register_category(cat_data)
             if self.DEBUG_API:
                 self.register_message("REGISTERED: %s" % cat_data.identifier)
-
+            if 'image_object' in cat_data:
+                sub_img_gen_data = cat_data['image_object']
+                if sub_img_gen_data:
+                    self.process_api_sub_image_gen(sub_img_gen_data, cat_data)
         else:
             if self.DEBUG_API:
                 self.register_message("FOUND CATEGORY: %s" % repr(cat_data))
+            # TODO: do any merging here?
 
         self.join_category(cat_data, object_data)
 
-        if 'image' in category_api_data:
-            api_sub_image_data = category_api_data['image']
-            if api_sub_image_data:
-                self.process_api_sub_image(
-                    api_sub_image_data, cat_data
-                )
-
-        # if self.DEBUG_API:
-        #     index = self.category_indexer(cat_data)
-        #     self.register_message(repr(self.category_indexer))
-        #     self.register_message("REGISTERING CATEGORY WITH INDEX %s" % repr(index))
-
         self.rowcount += 1
 
-    def process_api_categories(self, categories):
+    def process_api_categories_raw(self, categories):
         """ creates a queue of categories to be processed in the correct order """
         while categories:
             category = categories.pop(0)
             # self.register_message("analysing category: %s" % category)
-            if category.get('parent'):
-                parent = category.get('parent')
+            if category.get('parent_id'):
+                parent_id = category.get('parent_id')
                 # self.register_message("parent id: %s" % parent)
                 queue_category_ids = [queue_category.get(
                     'id') for queue_category in categories]
-                if parent in queue_category_ids:
+                if parent_id in queue_category_ids:
                     # self.register_message('analysing later')
                     categories.append(category)
                     continue
@@ -526,235 +556,82 @@ class ApiParseWoo(
                 #     if queue_category.get('id') == parent:
                 #         # then put it at the end of the queue
                 #         categories.append(category)
-            self.process_api_category(category)
+            self.process_api_category_raw(category)
 
-    def process_api_attributes(self, object_data, attributes, var=False):
-        varstr = 'var ' if var else ''
-        for attribute in attributes:
-            if self.DEBUG_API:
-                self.register_message("%s has %sattribute %s" % (
-                    object_data.identifier, varstr, attribute))
-            if 'name' in attribute:
-                attr = attribute.get('name')
-            elif 'slug' in attribute:
-                attr = attribute.get('slug')
-            else:
-                raise UserWarning('could not determine attributte key')
+    def process_api_attribute_gen(self, object_data, attribute_data_gen, var=False):
+        # TODO: finish this
+        pass
 
-            if 'option' in attribute:
-                vals = [attribute['option']]
-            elif 'options' in attribute:
-                vals = attribute.get('options')
-            else:
-                raise UserWarning('could not determine attribute values')
+    def analyse_api_variation_gen(self, object_data, variation_data_gen):
+        # TODO: finish this
+        pass
 
-            if vals:
-                for val in vals:
-                    self.register_attribute(object_data, attr, val, var)
-
-    @classmethod
-    def delistify(cls, data):
-        """
-        Coerce data in the format [{'id':id, 'key':key, 'value':value}] to a dict.
-        """
-        response = {}
-        for list_item in data:
-            response[list_item['key']] = list_item['value']
-        return response
-
-    @classmethod
-    def get_api_target_key(cls, key):
-        return cls.coldata_class.data\
-        .get(key, {})\
-        .get(cls.col_data_target, {})\
-        .get('key', key)
 
     @classmethod
     def get_parser_data(cls, **kwargs):
         """
-        Gets data ready for the parser, in this case from api_data
+        Gets data ready for the parser, in this case from api_data which has already been
+        converted to gen format
         """
 
-        # TODO: merge with ApiParseXero.get_parser_data in ApiParseMixin
+        parser_data = kwargs.get('row_data', {})
 
-        api_data = kwargs.get('api_data', {})
-        # if cls.DEBUG_API:
-        #     cls.register_message("api_data before unsecape: \n%s" % pformat(api_data))
-        # api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
-        #                  for key, value in api_data.items()])
-        # if cls.DEBUG_API:
-        #     cls.register_message("api_data after unescape: \n%s" % pformat(api_data))
+        assert cls.object_container.title_key in parser_data, \
+        "parser_data should have title(%s):\n%s" % (
+            cls.object_container.title_key,
+            pformat(parser_data.items())
+        )
 
-        parser_data = OrderedDict()
-        parser_data['api_data'] = api_data
-
-        # TODO: replace this translation with new API Whisperer translation
-
-        coldata_class = kwargs.get('coldata_class', cls.coldata_class)
-        # if 'ColDataProductMeridian' in  coldata_class.__name__:
-        #     import pudb; pudb.set_trace()
-        translated_api_data = coldata_class.translate_data_from(deepcopy(api_data), 'wc-wp-api')
-        translated_api_data = coldata_class.translate_data_to(translated_api_data, 'gen-csv')
-
-        parser_data.update(**translated_api_data)
-        #
-        # core_translation = OrderedDict()
-        # for col, col_data in cls.coldata_class.get_wpapi_core_cols().items():
-        #     try:
-        #         translated_key = col_data[cls.col_data_target]['key']
-        #     except KeyError:
-        #         translated_key = col
-        #     core_translation[translated_key] = col
-        # parser_data.update(**cls.translate_keys(api_data, core_translation))
-        #
-        # # import pudb; pudb.set_trace()
-        #
-        # meta_translation = OrderedDict()
-        # if cls.meta_get_key in api_data:
-        #     meta_data = api_data[cls.meta_get_key]
-        #     if cls.meta_listed:
-        #         meta_data = cls.delistify(meta_data)
-        #     for col, col_data in cls.coldata_class.get_wpapi_meta_cols().items():
-        #         try:
-        #             translated_target_data = col_data.get(cls.col_data_target, {})
-        #             assert isinstance(translated_target_data, dict), \
-        #             "translated_target_data for col %s in %s should be dict not %s" % (
-        #                 col, cls.coldata_class, type(translated_target_data)
-        #             )
-        #             translated_key = translated_target_data['key']
-        #         except KeyError:
-        #             translated_key = col
-        #         meta_translation[translated_key] = col
-        #     parser_data.update(
-        #         **cls.translate_keys(meta_data, meta_translation))
-        # if 'dimensions' in api_data:
-        #     parser_data.update(
-        #         **cls.get_api_dimension_data(api_data['dimensions']))
-        # in_stock_key = cls.get_api_target_key('in_stock')
-        # if in_stock_key and in_stock_key in api_data:
-        #     parser_data.update(
-        #         **cls.get_api_stock_status_data(api_data[in_stock_key])
-        #     )
-        # manage_stock_key = cls.get_api_target_key('manage_stock')
-        # if manage_stock_key and manage_stock_key in api_data:
-        #     parser_data.update(
-        #         **cls.get_api_manage_stock_data(api_data[manage_stock_key])
-        #     )
-        # if 'description' in api_data:
-        #     parser_data[cls.object_container.description_key] = api_data['description']
-        # Stupid hack because 'name' is 'title' in products, but 'name' in
-        # categories
-        if 'title' in api_data:
-            parser_data[cls.object_container.title_key] = api_data['title']
-
-        assert \
-            cls.object_container.description_key in parser_data, \
-            "parser_data should have description(%s): %s\n original: %s\ntranslations: %s, %s" \
-            % (
-                cls.object_container.description_key,
+        if parser_data.get('type') == 'category':
+            # parser_data[cls.category_container.namesum_key] = parser_data[
+            #     cls.category_container.title_key]
+            assert cls.category_container.slug_key in parser_data, \
+            "parser_data should have slug(%s):\n%s" % (
+                cls.category_container.slug_key,
                 pformat(parser_data.items()),
-                pformat(api_data.items()),
-                None, None
-                # pformat(core_translation.items()),
-                # pformat(meta_translation.items()),
             )
-        parser_data[cls.object_container.descsum_key] = parser_data[
-            cls.object_container.description_key]
-        assert \
-            cls.object_container.title_key in parser_data, \
-            "parser_data should have title(%s): %s\n original: %s\ntranslations: %s, %s" \
-            % (
-                cls.object_container.title_key,
-                pformat(parser_data.items()),
-                pformat(api_data.items()),
-                None, None
-                # core_translation, meta_translation
+            parser_data[cls.category_container.codesum_key] = parser_data[
+                cls.category_container.slug_key]
+        elif parser_data.get('type') in ['sub-image', 'image']:
+            assert cls.image_container.file_name_key in parser_data, \
+            "parser_data should have file_name(%s):\n%s" % (
+                cls.image_container.file_name_key,
+                pformat(parser_data.items())
             )
-        if api_data['type'] == 'category':
-            parser_data[cls.category_container.namesum_key] = parser_data[
-                cls.object_container.title_key]
-            assert \
-                cls.object_container.slug_key in parser_data, \
-                "parser_data should have slug(%s): %s\n original: %s\ntranslations: %s, %s" \
-                % (
-                    cls.object_container.slug_key,
-                    pformat(parser_data.items()),
-                    pformat(api_data.items()),
-                    None, None
-                    # core_translation, meta_translation
-                )
-            parser_data[cls.object_container.codesum_key] = parser_data[
-                cls.object_container.slug_key]
         else:
-            parser_data[cls.object_container.namesum_key] = parser_data[
-                cls.object_container.title_key]
-        assert \
-            cls.object_container.codesum_key in parser_data, \
-            "parser_data should have codesum: %s\n original: %s\ntranslations: %s, %s" \
-            % (
-                parser_data, api_data,
-                None, None
-                # core_translation, meta_translation
+            # parser_data[cls.object_container.namesum_key] = parser_data[
+            #     cls.object_container.title_key]
+            assert cls.object_container.codesum_key in parser_data, \
+            "parser_data should have codesum(%s):\n%s" % (
+                cls.object_container.codesum_key,
+                parser_data
             )
-        # assert \
-        #     cls.object_container.namesum_key in parser_data, \
-        #     "parser_data should have namesum: %s\n original: %s\ntranslations: %s, %s" \
-        #     % (parser_data, api_data, core_translation, meta_translation)
 
-        # title = parser_data.get(cls.object_container.title_key, '')
-        # if not title and 'title' in api_data:
-        #     title = api_data['title']
-        # if not title and 'name' in api_data:
-        #     title = api_data['name']
-        # parser_data[cls.object_container.title_key] = title
-        # parser_data[cls.object_container.namesum_key] = title
-        #
-        # slug = parser_data.get(cls.object_container.slug_key,'')
-        # if not slug and 'slug' in api_data:
-        #     slug = api_data['slug']
-        # parser_data[cls.object_container.slug_key] = slug
-        #
-        description = parser_data.get(cls.object_container.description_key, '')
-        if not description and 'description' in api_data:
-            description = api_data['description']
-        parser_data[cls.object_container.description_key] = description
-        parser_data[cls.object_container.descsum_key] = description
+        assert cls.object_container.descsum_key in parser_data, \
+        "parser_data should have description(%s): \n%s" % (
+            cls.object_container.descsum_key,
+            pformat(parser_data.items()),
+        )
+        if not parser_data.get(cls.object_container.description_key):
+            parser_data[cls.object_container.description_key] \
+            = parser_data[cls.object_container.descsum_key]
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "parser_data: {}".format(pformat(parser_data)))
         return parser_data
 
-    def get_kwargs(self, all_data, container, **kwargs):
-        if 'parent' not in kwargs:
-            kwargs['parent'] = self.root_data
-
-        if 'depth' not in kwargs:
-            kwargs['depth'] = kwargs['parent'].depth + 1
-        return kwargs
-
     def get_new_obj_container(self, all_data, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
+        # TODO: rewrite
         container = super(ApiParseWoo, self).get_new_obj_container(
             all_data, **kwargs)
-        api_data = kwargs.get('api_data', {})
-        if self.DEBUG_API:
-            self.register_message('api_data: %s' % str(api_data))
-            self.register_message('api_data[type]: %s' %
-                                  repr(api_data.get('type')))
-        if 'type' in api_data:
-            api_type = api_data['type']
-            if self.DEBUG_API:
-                self.register_message('api type: %s' % str(api_type))
+        if 'type' in all_data:
+            api_type = all_data['type']
             try:
                 container = self.containers[api_type]
             except IndexError:
                 exc = UserWarning("Unknown API product type: %s" % api_type)
-                source = api_data.get('SKU')
-                self.register_error(exc, source)
-        if self.DEBUG_API:
-            self.register_message("container: {}".format(container.__name__))
+                self.register_error(exc)
         return container
 
     def analyse_api_obj(self, api_data):
@@ -764,9 +641,9 @@ class ApiParseWoo(
 
         object_data = ApiParseMixin.analyse_api_obj(self, api_data)
 
-        if 'categories' in api_data:
-            for category in api_data['categories']:
-                self.process_api_category(category, object_data)
+        if 'category_objects' in object_data:
+            for category in object_data['category_objects']:
+                self.process_api_category_gen(category, object_data)
             # pick a category as a parent
             category_depths = OrderedDict()
             for category in object_data.categories.values():
@@ -778,26 +655,30 @@ class ApiParseWoo(
                 deepest_category = list(reversed(sorted(category_depths.items())))[0][1][0]
                 deepest_category.register_child(object_data)
                 object_data.parent = deepest_category
+                self.rowcount += 1
 
-                # self.rowcount += 1
+        if 'variations' in object_data:
+            for variation_data_gen in object_data['variations']:
+                self.analyse_api_variation_gen(object_data, variation_data_gen)
+                self.rowcount += 1
 
-        if 'variations' in api_data:
-            for variation in api_data['variations']:
-                self.analyse_wp_api_variation(object_data, variation)
-                # self.rowcount += 1
+        if 'attribute_objects' in object_data:
+            for attribute_data_gen in object_data['attribute_objects']:
+                self.process_api_attribute_gen(
+                    object_data, attribute_data_gen, var=False
+                )
 
-        if 'attributes' in api_data:
-            self.process_api_attributes(
-                object_data, api_data['attributes'], False)
-
-        if 'images' in api_data:
-            self.process_api_sub_images(
-                api_data['images'], object_data
-            )
+        if 'image_objects' in object_data:
+            sub_imgs_gen = object_data['image_objects']
+            if sub_imgs_gen:
+                for sub_img_gen_data in sub_imgs_gen:
+                    self.process_api_sub_image_gen(
+                        sub_img_gen_data, object_data
+                    )
 
 class ApiParseWooLegacy(ApiParseWoo):
     category_container = ImportWooApiCategoryLegacy
-    col_data_target = 'wc-legacy-api'
+    coldata_target = 'wc-legacy-api'
     meta_get_key = 'meta'
     meta_listed = False
 
@@ -826,6 +707,8 @@ class ApiParseWooLegacy(ApiParseWoo):
         """
         Analyse a variation of an object from the wp_api.
         """
+        # TODO rewrite for updated API
+
         if self.DEBUG_API:
             self.register_message("parent_data: %s" %
                                   pformat(object_data.items()))
@@ -864,6 +747,30 @@ class ApiParseWooLegacy(ApiParseWoo):
 
         self.rowcount += 1
 
-        if 'attributes' in variation_api_data:
+        if 'attribute_objects' in variation_api_data:
             self.process_api_attributes(
-                object_data, variation_api_data['attributes'], True)
+                object_data, variation_api_data['attribute_objects'], True)
+
+    def process_api_attributes(self, object_data, attributes, var=False):
+        varstr = 'var ' if var else ''
+        for attribute in attributes:
+            if self.DEBUG_API:
+                self.register_message("%s has %sattribute %s" % (
+                    object_data.identifier, varstr, attribute))
+            if 'name' in attribute:
+                attr = attribute.get('name')
+            elif 'slug' in attribute:
+                attr = attribute.get('slug')
+            else:
+                raise UserWarning('could not determine attributte key')
+
+            if 'option' in attribute:
+                vals = [attribute['option']]
+            elif 'options' in attribute:
+                vals = attribute.get('options')
+            else:
+                raise UserWarning('could not determine attribute values')
+
+            if vals:
+                for val in vals:
+                    self.register_attribute(object_data, attr, val, var)

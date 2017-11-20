@@ -331,7 +331,7 @@ def do_merge(matches, parsers, settings):
     if not settings.do_sync:
         return updates
 
-    sync_cols = settings.coldata_class.get_sync_cols()
+    sync_cols = settings.coldata_class.get_sync_handles()
 
     if settings['reflect_only']:
         for data in sync_cols.values():

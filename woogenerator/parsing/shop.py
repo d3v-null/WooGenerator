@@ -8,11 +8,19 @@ import os
 import weakref
 from collections import OrderedDict
 
-from ..coldata import ColDataProductMeridian, ColDataWcProdCategory
-from ..utils import Registrar, SanitationUtils
-from .abstract import ObjList
+from ..coldata import (ColDataMedia, ColDataProductMeridian, ColDataSubMedia,
+                       ColDataWcProdCategory)
+from ..utils import FileUtils, Registrar, SanitationUtils
+from .abstract import ImportObject, ObjList
 from .gen import CsvParseGenMixin
 from .tree import ItemList, TaxoList
+
+
+class ShopMixin(object):
+    coldata_class = ColDataProductMeridian
+    coldata_cat_class = ColDataWcProdCategory
+    coldata_img_class = ColDataMedia
+    coldata_sub_img_class = ColDataSubMedia
 
 class ImportShopMixin(object):
     "Base mixin class for shop objects (products, categories, images)"
@@ -82,20 +90,13 @@ class ImportShopMixin(object):
 
     def to_api_data(self, coldata_class, target_api=None):
         api_data = OrderedDict()
-        gen_data = dict(self)
+        gen_data = self.to_dict()
         if self.is_category:
             coldata_class = self.coldata_cat_class
             core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
             if self.parent and self.parent.wpid:
                 api_data['term_parent_id'] = self.parent.wpid
             api_data = coldata_class.translate_data_to(core_data, target_api)
-            # for col, col_data in coldata_class.get_wpapi_category_cols(target_api).items():
-            #     if col in self:
-            #         try:
-            #             target_api_key = col_data[target_api]['key']
-            #         except BaseException:
-            #             target_api_key = col
-            #         api_data[target_api_key] = self[col]
         elif self.is_variation:
             coldata_class = self.coldata_var_class
             core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
@@ -121,31 +122,15 @@ class ImportShopMixin(object):
                 categories.append(category_data)
             core_data['product_categories'] = categories
             api_data = coldata_class.translate_data_to(core_data, target_api)
-
-
-            # for col, col_data in coldata_class.get_wpapi_core_cols(target_api).items():
-            #     if col in self:
-            #         try:
-            #             target_api_key = coldata_class[target_api]['key']
-            #         except BaseException:
-            #             target_api_key = col
-            #         api_data[target_api_key] = self[col]
-            # for col, col_data in coldata_class.get_wpapi_meta_cols(target_api).items():
-            #     if col in self:
-            #         try:
-            #             target_api_key = col_data[target_api]['key']
-            #         except BaseException:
-            #             target_api_key = col
-            #         if 'meta' not in api_data:
-            #             api_data['meta'] = {}
-            #         api_data['meta'][target_api_key] = self[col]
-            # if self.is_variable:
-            #     variations = []
-            #     for variation in self.variations.values():
-            #         variation_data = variation.to_api_data(col_data, target_api)
-            #         variations.append(variation_data)
-            #     api_data['variations'] = variations
         return api_data
+
+    def to_dict(self):
+        response = ImportObject.to_dict(self)
+        if hasattr(self, 'images'):
+            response['image_objects'] = self.images.values()
+        if hasattr(self, 'categories'):
+            response['category_objects'] = self.categories.values()
+        return response
 
 class ImportShopProductMixin(object):
     # category_indexer = Registrar.get_object_index
@@ -184,6 +169,7 @@ class ImportShopProductMixin(object):
 
 class ImportShopImgMixin(object):
     file_path_key = 'file_path'
+    file_name_key = 'file_name'
     source_url_key = 'source_url'
 
     verify_meta_keys = [
@@ -194,12 +180,18 @@ class ImportShopImgMixin(object):
         self.attachments = ShopObjList()
         self.is_valid = True
 
+    @classmethod
+    def get_file_name(cls, data):
+        if data.get(cls.file_name_key):
+            return FileUtils.get_path_basename(data[cls.file_name_key])
+        if data.get(cls.file_path_key):
+            return FileUtils.get_path_basename(data[cls.file_path_key])
+        elif data.get(cls.source_url_key):
+            return FileUtils.get_path_basename(data[cls.source_url_key])
+
     @property
     def file_name(self):
-        if self[self.file_path_key]:
-            return os.path.basename(self[self.file_path_key])
-        elif self[self.source_url_key]:
-            return os.path.basename(self[self.source_url_key])
+        return self.get_file_name(self)
 
     @property
     def index(self):
@@ -219,8 +211,11 @@ class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
     coldata_class = ColDataProductMeridian
-    report_cols = coldata_class.get_report_cols()
     supported_type = ImportShopProductMixin
+
+    @property
+    def report_cols(self):
+        return self.coldata_class.get_report_cols_gen()
 
     def append(self, object_data):
         assert issubclass(object_data.__class__, ImportShopMixin), \
@@ -284,6 +279,7 @@ class ImportShopProductVariationMixin(ImportShopProductMixin):
 class ImportShopCategoryMixin(object):
     is_category = True
     is_product = False
+    parent_id_key = 'parent_id'
 
     def __init__(self, *args, **kwargs):
         if Registrar.DEBUG_MRO:
@@ -304,8 +300,10 @@ class ImportShopCategoryMixin(object):
 
 class ShopCatList(TaxoList):
     coldata_class = ColDataWcProdCategory
-    report_cols = coldata_class.get_category_cols()
     supported_type = ImportShopCategoryMixin
+    @property
+    def report_cols(self):
+        return self.coldata_class.get_report_cols_gen()
 
 ImportShopCategoryMixin.container = ShopCatList
 
@@ -428,7 +426,8 @@ class CsvParseShopMixin(object):
             'simple': self.simple_container,
             'variable': self.variable_container,
             'variation': self.variation_container,
-            'category': self.category_container
+            'category': self.category_container,
+            'image': self.image_container
         }
 
     def clear_transients(self):
@@ -478,7 +477,8 @@ class CsvParseShopMixin(object):
 
 
     def register_image(self, img_data):
-        assert isinstance(img_data, ImportShopImgMixin)
+        assert isinstance(img_data, ImportShopImgMixin), \
+        "expected to register ImportShopMixin instead found %s" % type(img_data)
         file_name = img_data.file_name
         assert isinstance(file_name, basestring)
         assert file_name is not ""

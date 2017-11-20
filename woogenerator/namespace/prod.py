@@ -19,7 +19,7 @@ from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from ..parsing.xero import ApiParseXero, CsvParseXero
 from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateImgWoo, SyncUpdateProd,
-                          SyncUpdateProdWoo, SyncUpdateProdXero)
+                          SyncUpdateProdWoo, SyncUpdateProdXero, SyncUpdateVarWoo)
 from ..utils import Registrar
 from .core import SettingsNamespaceProto
 
@@ -101,11 +101,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return ColDataProductMeridian
 
     @property
-    def coldata_img_class(self):
+    def coldata_class_img(self):
         return ColDataMedia
 
     @property
-    def coldata_cat_class(self):
+    def coldata_class_cat(self):
         return ColDataWcProdCategory
 
     @property
@@ -115,6 +115,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def coldata_cat_target(self):
         return 'wp-api'
+
+    @property
+    def gen_target(self):
+        return 'gen-csv'
 
     @property
     def coldata_target(self):
@@ -329,15 +333,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def sync_cols_prod(self):
-        return self.coldata_class.get_sync_cols(self.coldata_target)
+        return self.coldata_class.get_sync_handles(self.gen_target, self.coldata_target)
 
     @property
     def sync_cols_img(self):
-        return self.coldata_img_class.get_sync_cols(self.coldata_img_target)
+        return self.coldata_class_img.get_sync_handles(self.gen_target, self.coldata_img_target)
 
     @property
     def sync_cols_cat(self):
-        return self.coldata_img_class.get_sync_cols(self.coldata_cat_target)
+        return self.coldata_class_cat.get_sync_handles(self.gen_target, self.coldata_cat_target)
 
     @property
     def exclude_cols(self):
@@ -380,8 +384,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
         response = {
             'import_name': self.import_name,
-            'cols': self.coldata_class.get_import_cols(),
-            'defaults': self.coldata_class.get_defaults(),
+            'cols': self.coldata_class.get_import_cols_gen(),
+            'defaults': self.coldata_class.get_defaults_gen(),
             'schema': self.schema,
         }
         for key, settings_key in [
@@ -467,8 +471,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_parser_args(self):
         response = {
-            'cols': self.coldata_class.get_import_cols(),
-            'defaults': self.coldata_class.get_defaults(),
+            'cols': self.coldata_class.get_import_cols_gen(),
+            'defaults': self.coldata_class.get_defaults_gen(),
             'source': self.slave_name,
             'schema': self.schema,
             'import_name': self.import_name,
@@ -564,6 +568,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def syncupdate_class_img(self):
         return SyncUpdateImgWoo
+
+    @property
+    def syncupdate_class_var(self):
+        return SyncUpdateVarWoo
 
     @property
     def dirs(self):

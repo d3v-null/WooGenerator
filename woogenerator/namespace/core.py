@@ -13,7 +13,7 @@ from tabulate import tabulate
 
 from ..client.core import SyncClientLocal, SyncClientNull
 from ..client.email import EmailClientExchange, EmailClientSMTP
-from ..coldata import ColDataBase
+from ..coldata import ColDataAbstract
 from ..conf.core import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                          DEFAULT_LOCAL_OUT_DIR, DEFAULT_LOCAL_PICKLE_DIR,
                          DEFAULT_LOCAL_WORK_DIR, DEFAULT_MASTER_NAME,
@@ -198,11 +198,11 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def coldata_class(self):
         """ Class used to obtain column metadata. """
-        return ColDataBase
+        return ColDataAbstract
 
     @property
     def basic_cols(self):
-        return self.coldata_class.get_basic_cols()
+        return self.coldata_class.get_basic_cols_gen()
 
     @property
     def email_client(self):

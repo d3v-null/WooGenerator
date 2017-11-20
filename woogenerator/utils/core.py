@@ -304,17 +304,24 @@ class SanitationUtils(object):
 
     @classmethod
     def normalize_optional_int_minus_1(cls, thing):
-        if thing:
+        if thing is not None and thing is not '':
             return int(thing)
         else:
             return -1
 
     @classmethod
     def normalize_optional_int_zero(cls, thing):
-        if thing:
+        if thing is not None and thing is not '':
             return int(thing)
         else:
             return 0
+
+    @classmethod
+    def normalize_optional_int_none(cls, thing):
+        if thing is not None and thing is not '':
+            return int(thing)
+        else:
+            return None
 
     @classmethod
     def limit_string(cls, length):
@@ -746,7 +753,8 @@ class SanitationUtils(object):
 
     @classmethod
     def round_currency(cls, price):
-        return round(price, cls.currency_precision)
+        return ("%." + str(cls.currency_precision) + "f") % \
+        round(price, cls.currency_precision)
 
     @classmethod
     def html_unescape(cls, string):
@@ -958,12 +966,12 @@ class DescriptorUtils(object):
     @classmethod
     def safe_key_property(cls, key):
         def getter(self):
-            assert key in self.keys(), "{} must be set before get in {}".format(
-                key, repr(type(self)))
-            return self[key]
+            # assert key in self.keys(), "{} must be set before get in {}".format(
+            #     key, repr(type(self)))
+            return self.get(key)
 
         def setter(self, value):
-            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(
+            assert isinstance(value, basestring), "{} must be set with string not {}".format(
                 key, type(value))
             self[key] = value
 
@@ -1288,8 +1296,8 @@ class Registrar(object):
 
     @classmethod
     def get_object_rowcount(cls, object_data):
-        if hasattr(object_data, 'rowcount'):
-            return object_data.rowcount
+        if 'rowcount' in object_data:
+            return object_data['rowcount']
         else:
             raise UserWarning('object does not have rowcount')
 
@@ -1962,6 +1970,13 @@ class UnicodeCsvDialectUtils(object):
 
 
 class FileUtils(object):
+
+    @classmethod
+    def get_path_basename(cls, path):
+        """
+        Works on URIs too!
+        """
+        return os.path.basename(path)
 
     @classmethod
     def get_file_name(cls, path):

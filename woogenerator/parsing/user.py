@@ -23,7 +23,7 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-    report_cols = ColDataUser.get_report_cols()
+    report_cols = ColDataUser.get_report_cols_gen()
 
     def get_sanitizer(self, tablefmt=None):
         if tablefmt == 'html':
@@ -33,8 +33,8 @@ class UsrObjList(ObjList):
         return super(UsrObjList, self).get_sanitizer(tablefmt)
 
     @classmethod
-    def get_basic_cols(cls, self):
-        return ColDataUser.get_basic_cols()
+    def get_basic_cols_gen(cls, self):
+        return ColDataUser.get_basic_cols_gen()
 
 
 class ImportUser(ImportObject):
@@ -55,7 +55,8 @@ class ImportUser(ImportObject):
     socials = DescriptorUtils.safe_key_property('Social Media')
     phones = DescriptorUtils.safe_key_property('Phone Numbers')
 
-    alias_mapping = ColDataUser.get_alias_mapping()
+    alias_mapping = {}
+    # alias_mapping = ColDataUser.get_alias_mapping()
 
     # alias_mapping = {
     #     'Address':[
@@ -689,12 +690,6 @@ class CsvParseUser(CsvParseBase):
         if 'schema' not in data:
             data['schema'] = self.schema
         return data
-
-    # def get_kwargs(self, all_data, container, **kwargs):
-    #     kwargs = super(CsvParseUser, self).get_kwargs(
-    #         all_data, container, **kwargs
-    #     )
-    #     return kwargs
 
     # def processRoles(self, object_data):
     #     role = object_data.role

@@ -55,11 +55,15 @@ class TimeUtils(object):
 
     @classmethod
     def star_strp_datetime(cls, string, fmt=wp_datetime_format):
-        return datetime.datetime.strptime(string, fmt)
+        if string:
+            if '.' in string:
+                string = string.split('.')[0]
+            return datetime.datetime.strptime(string, fmt)
 
     @classmethod
     def star_strf_datetime(cls, datetime_, fmt=wp_datetime_format):
-        return datetime_.strftime(fmt)
+        if datetime_ is not None:
+            return datetime_.strftime(fmt)
 
     @classmethod
     def timestamp2datetime(cls, timestamp):

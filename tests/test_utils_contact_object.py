@@ -3,12 +3,14 @@ import unittest
 from copy import copy
 from pprint import pformat
 
+import pytest
+
 from context import woogenerator
+from woogenerator.coldata import ColDataUser
 from woogenerator.contact_objects import (ContactAddress, ContactName,
                                           ContactPhones, FieldGroup, RoleGroup,
                                           SocialMediaFields)
 from woogenerator.utils import Registrar, SanitationUtils
-from woogenerator.coldata import ColDataUser
 
 
 class TestFieldGroupPost(unittest.TestCase):
@@ -924,7 +926,7 @@ class TestContactName(TestFieldGroupPost):
 #     print contact.contact
 #
 
-
+@pytest.mark.skip
 class TestContactPhonesPost(TestFieldGroupPost):
     def test_phones_equality_basic(self):
         self.phones_1 = ContactPhones(
