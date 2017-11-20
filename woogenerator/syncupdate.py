@@ -83,7 +83,7 @@ class SyncUpdate(Registrar):
         self.sync_problematics_core = OrderedDict()
         self.updates = 0
         self.important_updates = 0
-        self.important_cols = []
+        self.important_handles = []
         self.m_deltas = False
         self.s_deltas = False
         self.m_time = 0
@@ -195,30 +195,30 @@ class SyncUpdate(Registrar):
         elif subject == self.slave_name:
             return self.parse_s_time(raw_time)
 
-    def sanitize_value(self, col, value):
-        """Sanitize a value dependent on the col the value is from."""
-        if 'phone' in col.lower():
-            if 'preferred' in col.lower():
+    def sanitize_value(self, handle, value):
+        """Sanitize a value dependent on the handle the value is from."""
+        if 'phone' in handle.lower():
+            if 'preferred' in handle.lower():
                 if value and len(SanitationUtils.strip_non_numbers(value)) > 1:
                     return ""
         return value
 
-    def get_old_subject_value(self, col, subject):
+    def get_old_subject_value(self, handle, subject):
         """Get the value for the subject's old object."""
-        value = self.get_old_subject_object(subject).get(col)
+        value = self.get_old_subject_object(subject).get(handle)
         if value is not None:
-            return self.sanitize_value(col, value)
+            return self.sanitize_value(handle, value)
         return ""
 
-    def get_new_subject_value(self, col, subject):
+    def get_new_subject_value(self, handle, subject):
         """Get the value for the subject's new object."""
         new_object = self.get_new_subject_object(subject)
         if new_object:
-            value = new_object.get(col)
+            value = new_object.get(handle)
             if value is not None:
-                return self.sanitize_value(col, value)
+                return self.sanitize_value(handle, value)
             return ""
-        return self.get_old_subject_value(col, subject)
+        return self.get_old_subject_value(handle, subject)
 
     def get_subject_target(self, subject):
         """Get the value for the subject's new object."""
@@ -227,8 +227,8 @@ class SyncUpdate(Registrar):
         elif subject == self.slave_name:
             return self.slave_target
 
-    def values_similar(self, col, m_value, s_value):
-        """Check if two values are similar. Depends on col."""
+    def values_similar(self, handle, m_value, s_value):
+        """Check if two values are similar. Depends on handle."""
         response = False
         if not (m_value or s_value):
             response = True
@@ -236,7 +236,7 @@ class SyncUpdate(Registrar):
             response = False
         # check if they are similar
         # if hasattr(m_value, 'reprocess_kwargs') and m_value.reprocess_kwargs:
-        # if col == 'Role Info':
+        # if handle == 'Role Info':
         if hasattr(m_value, 'similar') and callable(m_value.similar):
             response = m_value.similar(s_value)
         similar_m_value = SanitationUtils.similar_comparison(m_value)
@@ -248,87 +248,87 @@ class SyncUpdate(Registrar):
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, m_value, s_value, response,
+                    handle, m_value, s_value, response,
                     similar_m_value, similar_s_value
                 ))
         return response
 
-    def old_col_identical(self, col):
-        """For given col, check if the master value is similar to the slave value in old objects."""
-        m_value = self.get_old_subject_value(col, self.master_name)
-        s_value = self.get_old_subject_value(col, self.slave_name)
+    def old_handle_identical(self, handle):
+        """For given handle, check if the master value is similar to the slave value in old objects."""
+        m_value = self.get_old_subject_value(handle, self.master_name)
+        s_value = self.get_old_subject_value(handle, self.slave_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, m_value, s_value, response))
+                    handle, m_value, s_value, response))
         return response
 
-    def new_col_similar(self, col):
-        """For given col, check if the master value is similar to the slave value in new objects."""
-        m_value = self.get_new_subject_value(col, self.master_name)
-        s_value = self.get_new_subject_value(col, self.slave_name)
-        response = self.values_similar(col, m_value, s_value)
+    def new_handle_similar(self, handle):
+        """For given handle, check if the master value is similar to the slave value in new objects."""
+        m_value = self.get_new_subject_value(handle, self.master_name)
+        s_value = self.get_new_subject_value(handle, self.slave_name)
+        response = self.values_similar(handle, m_value, s_value)
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, m_value, s_value, response))
+                    handle, m_value, s_value, response))
         return response
 
-    def new_col_identical(self, col):
-        """For given col, check if the master value is equal to the slave value in new objects."""
-        m_value = self.get_new_subject_value(col, self.master_name)
-        s_value = self.get_new_subject_value(col, self.slave_name)
+    def new_handle_identical(self, handle):
+        """For given handle, check if the master value is equal to the slave value in new objects."""
+        m_value = self.get_new_subject_value(handle, self.master_name)
+        s_value = self.get_new_subject_value(handle, self.slave_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, m_value, s_value, response))
+                    handle, m_value, s_value, response))
         return response
 
-    def col_static(self, col, subject):
-        """For given col, check if the old value is similar to the new value in subject."""
-        o_value = self.get_old_subject_value(col, subject)
-        n_value = self.get_new_subject_value(col, subject)
+    def col_static(self, handle, subject):
+        """For given handle, check if the old value is similar to the new value in subject."""
+        o_value = self.get_old_subject_value(handle, subject)
+        n_value = self.get_new_subject_value(handle, subject)
         response = o_value == n_value
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, o_value, n_value, response))
+                    handle, o_value, n_value, response))
         return response
 
-    def col_semi_static(self, col, subject):
-        """For given col, check if the old value is equal to the new value in subject."""
-        o_value = self.get_old_subject_value(col, subject)
-        n_value = self.get_new_subject_value(col, subject)
-        response = self.values_similar(col, o_value, n_value)
+    def col_semi_static(self, handle, subject):
+        """For given handle, check if the old value is equal to the new value in subject."""
+        o_value = self.get_old_subject_value(handle, subject)
+        n_value = self.get_new_subject_value(handle, subject)
+        response = self.values_similar(handle, o_value, n_value)
         if self.DEBUG_UPDATE:
             self.register_message(
                 self.test_to_str(
-                    col, o_value, n_value, response))
+                    handle, o_value, n_value, response))
         return response
 
-    def m_col_static(self, col):
-        """For given col, check if the old value is equal to the new value in master."""
+    def m_handle_static(self, handle):
+        """For given handle, check if the old value is equal to the new value in master."""
         # TODO: deprecate this
-        return self.col_static(col, self.master_name)
+        return self.col_static(handle, self.master_name)
 
-    def s_col_static(self, col):
-        """For given col, check if the old value is equal to the new value in slave."""
+    def s_handle_static(self, handle):
+        """For given handle, check if the old value is equal to the new value in slave."""
         # TODO: deprecate this
-        return self.col_static(col, self.slave_name)
+        return self.col_static(handle, self.slave_name)
 
-    def m_col_semi_static(self, col):
-        """For given col, check if the old value is similar to the new value in master."""
+    def m_handle_semi_static(self, handle):
+        """For given handle, check if the old value is similar to the new value in master."""
         # TODO: deprecate this
-        return self.col_semi_static(col, self.master_name)
+        return self.col_semi_static(handle, self.master_name)
 
-    def s_col_semi_static(self, col):
-        """For given col, check if the old value is similar to the new value in slave."""
+    def s_handle_semi_static(self, handle):
+        """For given handle, check if the old value is similar to the new value in slave."""
         # TODO: deprecate this
-        return self.col_semi_static(col, self.slave_name)
+        return self.col_semi_static(handle, self.slave_name)
 
-    def test_to_str(self, col, val1, val2, res, norm1=None, norm2=None):
+    def test_to_str(self, handle, val1, val2, res, norm1=None, norm2=None):
         left = repr(val1)
         if norm1 is not None and norm1 != val1:
             left += " (%s %s)" % (norm1, type(norm1))
@@ -336,8 +336,8 @@ class SyncUpdate(Registrar):
         if norm2 is not None and norm2 != val2:
             right += " (%s %s)" % (norm2, type(norm2))
 
-        return u"testing col %s: %s | %s -> %s" % (
-            unicode(col),
+        return u"testing handle %s: %s | %s -> %s" % (
+            unicode(handle),
             left,
             right,
             SanitationUtils.bool_to_truish_string(res)
@@ -345,11 +345,11 @@ class SyncUpdate(Registrar):
 
     def update_to_str(self, update_type, update_params):
         assert isinstance(update_type, str)
-        assert 'col' in update_params
+        assert 'handle' in update_params
         out = u""
         out += "SYNC %s:" % update_type
         out += " | %s " % SanitationUtils.coerce_ascii(self)
-        out += " | col:  %s" % update_params['col']
+        out += " | handle:  %s" % update_params['handle']
         if 'subject' in update_params:
             out += " | subj: %s " % update_params['subject']
         if 'reason' in update_params:
@@ -364,32 +364,32 @@ class SyncUpdate(Registrar):
         return out
 
     def add_problematic_update(self, **update_params):
-        for key in ['col', 'subject', 'reason']:
+        for key in ['handle', 'subject', 'reason']:
             assert update_params[key], 'missing mandatory prob param %s' % key
-        col = update_params['col']
-        if col not in self.sync_problematics_core.keys():
-            self.sync_problematics_core[col] = []
-        self.sync_problematics_core[col].append(update_params)
+        handle = update_params['handle']
+        if handle not in self.sync_problematics_core.keys():
+            self.sync_problematics_core[handle] = []
+        self.sync_problematics_core[handle].append(update_params)
         self.register_warning(self.update_to_str('PROB', update_params))
 
     def add_sync_warning(self, **update_params):
-        for key in ['col', 'subject', 'reason']:
+        for key in ['handle', 'subject', 'reason']:
             assert update_params[
                 key], 'missing mandatory warning param %s' % key
-        col = update_params['col']
-        if col not in self.sync_warnings_core.keys():
-            self.sync_warnings_core[col] = []
-        self.sync_warnings_core[col].append(update_params)
+        handle = update_params['handle']
+        if handle not in self.sync_warnings_core.keys():
+            self.sync_warnings_core[handle] = []
+        self.sync_warnings_core[handle].append(update_params)
         if self.DEBUG_UPDATE:
             self.register_warning(self.update_to_str('WARN', update_params))
 
     def add_sync_pass(self, **update_params):
-        for key in ['col']:
+        for key in ['handle']:
             assert update_params[key], 'missing mandatory pass param %s' % key
-        col = update_params['col']
-        if col not in self.sync_passes_core.keys():
-            self.sync_passes_core[col] = []
-        self.sync_passes_core[col].append(update_params)
+        handle = update_params['handle']
+        if handle not in self.sync_passes_core.keys():
+            self.sync_passes_core[handle] = []
+        self.sync_passes_core[handle].append(update_params)
         if self.DEBUG_UPDATE:
             self.register_message(self.update_to_str('PASS', update_params))
 
@@ -402,7 +402,7 @@ class SyncUpdate(Registrar):
         subject_fmt = "<h4>%s</h4>" if tablefmt == "html" else "%s"
         # header = ["Column", "Reason", "Old", "New"]
         header_items = [
-            ('col', 'Column'),
+            ('handle', 'Column'),
             ('reason', 'Reason'),
         ]
         if update_type is None:
@@ -424,8 +424,8 @@ class SyncUpdate(Registrar):
                 ('reflected_slave', 'Reflected Slave'),
             ]
         header_items += [
-            ('m_col_time', 'M TIME'),
-            ('s_col_time', 'S TIME'),
+            ('m_handle_time', 'M TIME'),
+            ('s_handle_time', 'S TIME'),
             ('data', 'EXTRA'),
         ]
         header = OrderedDict(header_items)
@@ -440,7 +440,7 @@ class SyncUpdate(Registrar):
                     for key, val in warning.items()
                     if key in header
                 ])
-                for key in ['m_col_time', 's_col_time']:
+                for key in ['m_handle_time', 's_handle_time']:
                     try:
                         raw_time = int(warning[key])
                         if raw_time:
@@ -503,12 +503,12 @@ class SyncUpdate(Registrar):
         )
 
     def set_loser_value(self, **update_params):
-        for key in ['col', 'subject', 'old_value', 'new_value']:
+        for key in ['handle', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
         loser = update_params['subject']
-        col = update_params['col']
+        handle = update_params['handle']
         reason = update_params.get('reason', '')
 
         prev_old_val_hash = self.snapshot_hash(update_params['old_value'])
@@ -519,27 +519,27 @@ class SyncUpdate(Registrar):
             old_object = self.get_old_subject_object(loser)
             self.set_new_subject_object(deepcopy(old_object), loser)
             new_loser_object = self.get_new_subject_object(loser)
-        prev_loser_val = deepcopy(new_loser_object.get(col))
+        prev_loser_val = deepcopy(new_loser_object.get(handle))
 
         loser_target = self.get_subject_target(loser)
-        loser_delta = self.coldata_class.get_handle_property(col, 'delta', loser_target)
+        loser_delta = self.coldata_class.get_handle_property(handle, 'delta', loser_target)
         if loser_delta:
-            delta_col = self.coldata_class.delta_col(col)
+            delta_col = self.coldata_class.delta_col(handle)
             if not new_loser_object.get(delta_col):
                 new_loser_object[delta_col] = copy(update_params['old_value'])
 
-        new_loser_object[col] = update_params['new_value']
+        new_loser_object[handle] = update_params['new_value']
 
         # Check update does not violate conditions before marking as changed
-        col_semi_static = self.col_semi_static(col, loser)
+        col_semi_static = self.col_semi_static(handle, loser)
         if col_semi_static:
             # revert new_loser_object
             if not prev_new_loser_object:
                 self.set_new_subject_object(prev_new_loser_object, loser)
             else:
-                new_loser_object[col] = prev_loser_val
+                new_loser_object[handle] = prev_loser_val
             raise SemistaticViolation(
-                "col shouldn't be updated, too similar: %s" %
+                "handle shouldn't be updated, too similar: %s" %
                 update_params)
 
         if loser_delta and reason in ['updating', 'deleting', 'reflect']:
@@ -549,12 +549,12 @@ class SyncUpdate(Registrar):
                 self.m_deltas = True
 
         self.updates += 1
-        static = self.coldata_class.get_handle_property(col, 'static', loser_target)
+        static = self.coldata_class.get_handle_property(handle, 'static', loser_target)
         if static:
             self.static = False
         if(reason in ['updating', 'deleting', 'reflect']):
             self.important_updates += 1
-            self.important_cols.append(col)
+            self.important_handles.append(handle)
             if static:
                 self.add_problematic_update(**update_params)
                 self.important_static = False
@@ -563,10 +563,10 @@ class SyncUpdate(Registrar):
             prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
             "should never update old_value"
 
-    # def loser_update(self, winner, col, reason = "", data={}, s_time=None,
+    # def loser_update(self, winner, handle, reason = "", data={}, s_time=None,
     # m_time=None):
     def loser_update(self, **update_params):
-        for key in ['col', 'subject', 'old_value', 'new_value']:
+        for key in ['handle', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (
                 key, update_params)
 
@@ -589,49 +589,49 @@ class SyncUpdate(Registrar):
         return
 
     def tie_update(self, **update_params):
-        # print "tie_update ", col, reason
-        for key in ['col']:
+        # print "tie_update ", handle, reason
+        for key in ['handle']:
             assert update_params[
                 key], 'missing mandatory update param, %s' % key
-        col = update_params['col']
+        handle = update_params['handle']
         if self.old_s_object_core:
-            update_params['value'] = self.old_s_object_core.get(col)
+            update_params['value'] = self.old_s_object_core.get(handle)
         elif self.old_m_object_core:
-            update_params['value'] = self.old_s_object_core.get(col)
+            update_params['value'] = self.old_s_object_core.get(handle)
         self.add_sync_pass(**update_params)
 
-    def get_col_mod_time(self, col, subject):
+    def get_handle_mod_time(self, handle, subject):
         pass
 
-    def get_m_col_mod_time(self, col):
-        return self.get_col_mod_time(col, self.master_name)
+    def get_m_handle_mod_time(self, handle):
+        return self.get_handle_mod_time(handle, self.master_name)
 
-    def get_s_col_mod_time(self, col):
-        return self.get_col_mod_time(col, self.slave_name)
+    def get_s_handle_mod_time(self, handle):
+        return self.get_handle_mod_time(handle, self.slave_name)
 
-    def sync_col(self, **update_params):
-        for key in ['col', 'm_value',
-                    's_value', 'm_col_time', 's_col_time']:
+    def sync_handle(self, **update_params):
+        for key in ['handle', 'm_value',
+                    's_value', 'm_handle_time', 's_handle_time']:
             assert \
                 key in update_params, 'missing mandatory update param %s' % key
-        col = update_params['col']
+        handle = update_params['handle']
 
-        if self.new_col_identical(col):
+        if self.new_handle_identical(handle):
             update_params['reason'] = 'identical'
             self.tie_update(**update_params)
             return
 
-        if self.new_col_similar(col):
+        if self.new_handle_similar(handle):
             update_params['reason'] = 'similar'
             self.tie_update(**update_params)
             return
 
         winner = None
 
-        master_read = self.coldata_class.get_handle_property(col, 'read', self.master_target)
-        slave_read = self.coldata_class.get_handle_property(col, 'read', self.slave_target)
-        # master_write = self.coldata_class.get_handle_property(col, 'write', self.master_target)
-        # slave_write = self.coldata_class.get_handle_property(col, 'write', self.slave_target)
+        master_read = self.coldata_class.get_handle_property(handle, 'read', self.master_target)
+        slave_read = self.coldata_class.get_handle_property(handle, 'read', self.slave_target)
+        # master_write = self.coldata_class.get_handle_property(handle, 'write', self.master_target)
+        # slave_write = self.coldata_class.get_handle_property(handle, 'write', self.slave_target)
 
         if bool(master_read) ^ bool(slave_read):
             if not slave_read and update_params['m_value']:
@@ -643,7 +643,7 @@ class SyncUpdate(Registrar):
 
         if not winner:
             winner = self.get_winner_name(
-                update_params['m_col_time'], update_params['s_col_time']
+                update_params['m_handle_time'], update_params['s_handle_time']
             )
 
         if self.merge_mode == 'merge' \
@@ -673,34 +673,37 @@ class SyncUpdate(Registrar):
         update_params['subject'] = self.opposite_src(winner)
         self.loser_update(**update_params)
 
-    def update_col(self, **update_params):
-        for key in ['col']:
+    def update_handle(self, **update_params):
+        for key in ['handle']:
             assert \
                 update_params[key], 'missing mandatory update param %s' % key
-        col = update_params['col']
+        handle = update_params['handle']
 
         update_params['m_value'] = self.get_new_subject_value(
-            col, self.master_name
+            handle, self.master_name
         )
         update_params['s_value'] = self.get_new_subject_value(
-            col, self.slave_name
+            handle, self.slave_name
         )
-        update_params['m_col_time'] = self.get_col_mod_time(
-            col, self.master_name
+        update_params['m_handle_time'] = self.get_handle_mod_time(
+            handle, self.master_name
         )
-        update_params['s_col_time'] = self.get_col_mod_time(
-            col, self.slave_name
+        update_params['s_handle_time'] = self.get_handle_mod_time(
+            handle, self.slave_name
         )
-        self.sync_col(**update_params)
+        self.sync_handle(**update_params)
 
-    def update(self, sync_cols=None):
+    def get_sync_handles(self):
+        return self.coldata_class.get_sync_handles(
+            self.master_target, self.slave_target
+        )
+
+    def update(self, sync_handles=None):
         # TODO: get rid of reference to "data", and just read off coldata instead.
-        if sync_cols is None:
-            sync_cols = self.coldata_class.get_sync_handles(
-                self.master_target, self.slave_target
-            )
-        for col, _ in sync_cols.items():
-            self.update_col(col=col)
+        if sync_handles is None:
+            sync_handles = self.get_sync_handles()
+        for handle, _ in sync_handles.items():
+            self.update_handle(handle=handle)
 
     def get_info_components(self, info_fmt="%s"):
         return [
@@ -811,13 +814,13 @@ class SyncUpdate(Registrar):
 
     def get_subject_updates(self, subject):
         updates_core = OrderedDict()
-        for col, warnings in self.sync_warnings_core.items():
+        for handle, warnings in self.sync_warnings_core.items():
             for warning in warnings:
                 loser = warning['subject']
                 if loser == subject:
                     winner = self.opposite_src(loser)
-                    new_val = self.get_new_subject_value(col, winner)
-                    updates_core[col] = new_val
+                    new_val = self.get_new_subject_value(handle, winner)
+                    updates_core[handle] = new_val
         if self.DEBUG_UPDATE:
             self.register_message(u"returned %s" % unicode(updates_core))
         return updates_core
@@ -994,17 +997,17 @@ class SyncUpdate(Registrar):
 #     def slave_id(self):
 #         return self.get_new_subject_value("Wordpress ID", self.slave_name)
 #
-#     def values_similar(self, col, m_value, s_value):
+#     def values_similar(self, handle, m_value, s_value):
 #         response = super(SyncUpdateUsr, self).values_similar(
-#             col, m_value, s_value)
+#             handle, m_value, s_value)
 #         if not response:
-#             if col.lower() in ['phone', 'mobile phone', 'home phone', 'fax']:
+#             if handle.lower() in ['phone', 'mobile phone', 'home phone', 'fax']:
 #                 m_phone = SanitationUtils.similar_phone_comparison(m_value)
 #                 s_phone = SanitationUtils.similar_phone_comparison(s_value)
 #                 plen = min(len(m_phone), len(s_phone))
 #                 if plen > 7 and m_phone[-plen:] == s_phone[-plen:]:
 #                     response = True
-#             elif "role" == col.lower():
+#             elif "role" == handle.lower():
 #                 m_role = SanitationUtils.similar_comparison(m_value)
 #                 s_role = SanitationUtils.similar_comparison(s_value)
 #                 if m_role == 'rn':
@@ -1013,43 +1016,43 @@ class SyncUpdate(Registrar):
 #                     s_role = ''
 #                 if m_role == s_role:
 #                     response = True
-#             elif "address" in col.lower() and isinstance(m_value, ContactAddress):
+#             elif "address" in handle.lower() and isinstance(m_value, ContactAddress):
 #                 if m_value != s_value:
 #                     pass
 #                     # print "M: ", m_value.__str__(out_schema="flat"), "S: ",
 #                     # s_value.__str__(out_schema="flat")
 #                 response = m_value.similar(s_value)
-#             elif "web site" in col.lower():
+#             elif "web site" in handle.lower():
 #                 if SanitationUtils.similar_url_comparison(
 #                         m_value) == SanitationUtils.similar_url_comparison(s_value):
 #                     response = True
 #
 #         # if self.DEBUG_UPDATE:
 #         #     self.register_message(self.test_to_str(
-#         #         col,
+#         #         handle,
 #         #         SanitationUtils.coerce_unicode(m_value),
 #         #         SanitationUtils.coerce_unicode(s_value),
 #         #         response
 #         #     ))
 #         return response
 #
-#     def get_col_mod_time(self, col, subject):
+#     def get_handle_mod_time(self, handle, subject):
 #         response = self.get_subject_mod_time(subject)
 #         if subject == self.master_name:
-#             tracked_cols_items = self.coldata_class.get_master_tracked_cols().items()
-#             future_tracked_cols_items = self.coldata_class.get_act_future_tracked_cols().items()
+#             tracked_handles_items = self.coldata_class.get_master_tracked_handles().items()
+#             future_tracked_handles_items = self.coldata_class.get_act_future_tracked_handles().items()
 #             old_object = self.old_m_object_core
 #         elif subject == self.slave_name:
-#             tracked_cols_items = self.coldata_class.get_wp_tracked_cols().items()
-#             future_tracked_cols_items = []
+#             tracked_handles_items = self.coldata_class.get_wp_tracked_handles().items()
+#             future_tracked_handles_items = []
 #             old_object = self.old_s_object_core
 #
-#         if self.coldata_class.data.get(col, {}).get('tracked'):
-#             col_tracking_name = self.coldata_class.mod_time_col(col)
+#         if self.coldata_class.data.get(handle, {}).get('tracked'):
+#             col_tracking_name = self.coldata_class.mod_time_handle(handle)
 #         else:
 #             col_tracking_name = None
-#             for tracking_name, tracked_cols in tracked_cols_items:
-#                 if col in tracked_cols:
+#             for tracking_name, tracked_handles in tracked_handles_items:
+#                 if handle in tracked_handles:
 #                     col_tracking_name = tracking_name
 #
 #         if col_tracking_name:
@@ -1057,7 +1060,7 @@ class SyncUpdate(Registrar):
 #                 response = self.parse_subject_time(
 #                     old_object.get(col_tracking_name), subject
 #                 )
-#             elif col_tracking_name not in future_tracked_cols_items:
+#             elif col_tracking_name not in future_tracked_handles_items:
 #                 response = None
 #         return response
 #
@@ -1072,57 +1075,57 @@ class SyncUpdate(Registrar):
 #             (info_fmt % ("%s Mod Time" % self.slave_name, TimeUtils.wp_time_to_string(
 #                 self.s_time))) if self.s_mod else "%s Not Modded" % self.slave_name
 #         ]
-#         for tracking_name, cols in self.coldata_class.get_act_tracked_cols().items():
-#             col = cols[0]
-#             m_col_mod_time = self.get_col_mod_time(col, self.master_name)
-#             s_col_mod_time = self.get_col_mod_time(col, self.slave_name)
-#             if m_col_mod_time or s_col_mod_time:
+#         for tracking_name, cols in self.coldata_class.get_act_tracked_handles().items():
+#             handle = cols[0]
+#             m_handle_mod_time = self.get_handle_mod_time(handle, self.master_name)
+#             s_handle_mod_time = self.get_handle_mod_time(handle, self.slave_name)
+#             if m_handle_mod_time or s_handle_mod_time:
 #                 info_components.append(info_fmt % (tracking_name, '%s: %s; %s: %s' % (
 #                     self.master_name,
-#                     TimeUtils.wp_time_to_string(m_col_mod_time),
+#                     TimeUtils.wp_time_to_string(m_handle_mod_time),
 #                     self.slave_name,
-#                     TimeUtils.wp_time_to_string(s_col_mod_time),
+#                     TimeUtils.wp_time_to_string(s_handle_mod_time),
 #                 )))
 #         return info_components
 #
-#     def get_slave_updates_native_rec(self, col, updates=None):
+#     def get_slave_updates_native_rec(self, handle, updates=None):
 #         if updates is None:
 #             updates = OrderedDict()
 #         if self.DEBUG_UPDATE:
 #             SanitationUtils.safe_print(
-#                 "getting updates for col %s, updates: %s" % (col, str(updates)))
-#         if col in self.coldata_class.data.keys():
-#             data = self.coldata_class.data[col]
+#                 "getting updates for handle %s, updates: %s" % (handle, str(updates)))
+#         if handle in self.coldata_class.data.keys():
+#             data = self.coldata_class.data[handle]
 #             if data.get(self.slave_target):
 #                 data_target = data.get(self.slave_target, {})
 #                 if not data_target.get('final') and data_target.get('key'):
 #                     updates[data_target.get(
-#                         'key')] = self.new_s_object_core.get(col)
+#                         'key')] = self.new_s_object_core.get(handle)
 #             if data.get('aliases'):
 #                 data_aliases = data.get('aliases')
 #                 for alias in data_aliases:
-#                     if self.s_col_semi_static(alias):
+#                     if self.s_handle_semi_static(alias):
 #                         continue
 #                     updates = self.get_slave_updates_native_rec(
 #                         alias, updates)
 #         return updates
 #
-#     def get_slave_updates_recursive(self, col, updates=None):
+#     def get_slave_updates_recursive(self, handle, updates=None):
 #         if updates is None:
 #             updates = OrderedDict()
 #         if self.DEBUG_UPDATE:
-#             self.register_message(u"checking %s" % unicode(col))
-#         if col in self.coldata_class.data:
+#             self.register_message(u"checking %s" % unicode(handle))
+#         if handle in self.coldata_class.data:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col exists")
-#             data = self.coldata_class.data[col]
+#                 self.register_message(u"handle exists")
+#             data = self.coldata_class.data[handle]
 #             if data.get(self.slave_target):
 #                 if self.DEBUG_UPDATE:
 #                     self.register_message(u"target exists")
 #                 data_target = data.get(self.slave_target, {})
 #                 if not data_target.get('final') and data_target.get('key'):
-#                     new_val = self.new_s_object_core.get(col)
-#                     updates[col] = new_val
+#                     new_val = self.new_s_object_core.get(handle)
+#                     updates[handle] = new_val
 #                     if self.DEBUG_UPDATE:
 #                         self.register_message(u"newval: %s" % repr(new_val))
 #             if data.get('aliases'):
@@ -1130,7 +1133,7 @@ class SyncUpdate(Registrar):
 #                     self.register_message(u"has aliases")
 #                 data_aliases = data['aliases']
 #                 for alias in data_aliases:
-#                     if self.s_col_semi_static(alias):
+#                     if self.s_handle_semi_static(alias):
 #                         if self.DEBUG_UPDATE:
 #                             self.register_message(u"Alias semistatic")
 #                         continue
@@ -1139,18 +1142,18 @@ class SyncUpdate(Registrar):
 #                             alias, updates)
 #         else:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col doesn't exist")
+#                 self.register_message(u"handle doesn't exist")
 #         return updates
 #
-#     def get_master_updates_recursive(self, col, updates=None):
+#     def get_master_updates_recursive(self, handle, updates=None):
 #         if updates is None:
 #             updates = OrderedDict()
 #         if self.DEBUG_UPDATE:
-#             self.register_message(u"checking %s" % unicode(col))
-#         if col in self.coldata_class.data:
+#             self.register_message(u"checking %s" % unicode(handle))
+#         if handle in self.coldata_class.data:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col exists")
-#             data = self.coldata_class.data[col]
+#                 self.register_message(u"handle exists")
+#             data = self.coldata_class.data[handle]
 #             if self.DEBUG_UPDATE:
 #                 self.register_message(u"data: %s, target: %s" % (
 #                     data, self.master_target
@@ -1158,8 +1161,8 @@ class SyncUpdate(Registrar):
 #             if data.get(self.master_target):
 #                 if self.DEBUG_UPDATE:
 #                     self.register_message(u"target exists")
-#                 new_val = self.new_m_object_core.get(col)
-#                 updates[col] = new_val
+#                 new_val = self.new_m_object_core.get(handle)
+#                 updates[handle] = new_val
 #                 if self.DEBUG_UPDATE:
 #                     self.register_message(u"newval: %s" % repr(new_val))
 #             if data.get('aliases'):
@@ -1167,7 +1170,7 @@ class SyncUpdate(Registrar):
 #                     self.register_message(u"has aliases")
 #                 data_aliases = data['aliases']
 #                 for alias in data_aliases:
-#                     if self.m_col_semi_static(alias):
+#                     if self.m_handle_semi_static(alias):
 #                         if self.DEBUG_UPDATE:
 #                             self.register_message(u"Alias semistatic")
 #                         continue
@@ -1176,41 +1179,41 @@ class SyncUpdate(Registrar):
 #                             alias, updates)
 #         else:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col doesn't exist")
+#                 self.register_message(u"handle doesn't exist")
 #         return updates
 #
 #
 # class SyncUpdateUsrApi(SyncUpdateUsr):
 #     slave_target = 'wp-api'
 #
-#     def s_validate_col(self, col, value):
+#     def s_validate_handle(self, handle, value):
 #         # TODO: Probably need more validation here
-#         if col.lower() in ['e-mail']:
+#         if handle.lower() in ['e-mail']:
 #             if not value:
 #                 raise UserWarning("email does not look right")
 #         return value
 #
-#     def get_slave_updates_native_rec(self, col, updates=None):
+#     def get_slave_updates_native_rec(self, handle, updates=None):
 #         if updates is None:
 #             updates = OrderedDict()
 #         if self.DEBUG_UPDATE:
 #             self.register_message(u"checking %s : %s" %
-#                                   (unicode(col), self.coldata_class.data.get(col)))
-#         if col in self.coldata_class.data:
+#                                   (unicode(handle), self.coldata_class.data.get(handle)))
+#         if handle in self.coldata_class.data:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col exists")
-#             data = self.coldata_class.data[col]
+#                 self.register_message(u"handle exists")
+#             data = self.coldata_class.data[handle]
 #             if data.get(self.slave_target):
 #                 if self.DEBUG_UPDATE:
 #                     self.register_message(u"wp-api exists")
 #                 data_target = data.get(self.slave_target, {})
 #                 if not data_target.get('final') and data_target.get('key'):
-#                     new_val = self.new_s_object_core.get(col)
+#                     new_val = self.new_s_object_core.get(handle)
 #                     try:
-#                         new_val = self.s_validate_col(col, new_val)
+#                         new_val = self.s_validate_handle(handle, new_val)
 #                     except UserWarning:
 #                         return updates
-#                     new_key = col
+#                     new_key = handle
 #                     if 'key' in data_target:
 #                         new_key = data_target.get('key')
 #                     if data_target.get('meta'):
@@ -1228,7 +1231,7 @@ class SyncUpdate(Registrar):
 #                     self.register_message(u"has aliases")
 #                 data_aliases = data['aliases']
 #                 for alias in data_aliases:
-#                     if self.s_col_semi_static(alias):
+#                     if self.s_handle_semi_static(alias):
 #                         if self.DEBUG_UPDATE:
 #                             self.register_message(u"Alias semistatic")
 #                         continue
@@ -1237,7 +1240,7 @@ class SyncUpdate(Registrar):
 #                             alias, updates)
 #         else:
 #             if self.DEBUG_UPDATE:
-#                 self.register_message(u"col doesn't exist")
+#                 self.register_message(u"handle doesn't exist")
 #         return updates
 
 class SyncUpdateGen(SyncUpdate):
@@ -1251,55 +1254,55 @@ class SyncUpdateGen(SyncUpdate):
     def master_id(self):
         return self.get_new_subject_value('menu_order', self.master_name)
 
-    # def get_slave_updates_native_rec(self, col, updates=None):
+    # def get_slave_updates_native_rec(self, handle, updates=None):
     #     if updates is None:
     #         updates = OrderedDict()
 
     # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_recursive(self, col, updates=None):
+    # def get_slave_updates_recursive(self, handle, updates=None):
     #     if updates is None:
     #         updates = OrderedDict()
     #     if self.DEBUG_UPDATE:
-    #         self.register_message(u"checking %s" % unicode(col))
-    #     if col in self.coldata_class.data:
+    #         self.register_message(u"checking %s" % unicode(handle))
+    #     if handle in self.coldata_class.data:
     #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"col exists")
-    #         data = self.coldata_class.data[col]
+    #             self.register_message(u"handle exists")
+    #         data = self.coldata_class.data[handle]
     #         if data.get(self.slave_target):
     #             if self.DEBUG_UPDATE:
     #                 self.register_message(u"wp exists")
     #             data_target = data.get(self.slave_target, {})
     #             if not data_target.get('final') and data_target.get('key'):
-    #                 new_val = self.new_s_object_core.get(col)
-    #                 updates[col] = new_val
+    #                 new_val = self.new_s_object_core.get(handle)
+    #                 updates[handle] = new_val
     #                 if self.DEBUG_UPDATE:
     #                     self.register_message(u"newval: %s" % repr(new_val))
     #     else:
     #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"col doesn't exist")
+    #             self.register_message(u"handle doesn't exist")
     #     return updates
 
     # # TODO: rewrite this for newer coldata
-    # def get_master_updates_recursive(self, col, updates=None):
+    # def get_master_updates_recursive(self, handle, updates=None):
     #     if updates is None:
     #         updates = OrderedDict()
     #     if self.DEBUG_UPDATE:
-    #         self.register_message(u"checking %s" % unicode(col))
+    #         self.register_message(u"checking %s" % unicode(handle))
     #
-    #     if col in self.coldata_class.data:
+    #     if handle in self.coldata_class.data:
     #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"col exists")
-    #         data = self.coldata_class.data[col]
+    #             self.register_message(u"handle exists")
+    #         data = self.coldata_class.data[handle]
     #         if data.get(self.master_target):
     #             if self.DEBUG_UPDATE:
     #                 self.register_message(u"wp exists")
-    #             new_val = self.new_m_object_core.get(col)
-    #             updates[col] = new_val
+    #             new_val = self.new_m_object_core.get(handle)
+    #             updates[handle] = new_val
     #             if self.DEBUG_UPDATE:
     #                 self.register_message(u"newval: %s" % repr(new_val))
     #     else:
     #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"col doesn't exist")
+    #             self.register_message(u"handle doesn't exist")
     #     return updates
 
 class SyncUpdateProd(SyncUpdateGen):
@@ -1320,17 +1323,17 @@ class SyncUpdateProdWoo(SyncUpdateProd):
     coldata_class = ColDataProductMeridian
 
     # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_native_rec(self, col, updates=None):
+    # def get_slave_updates_native_rec(self, handle, updates=None):
     #     if updates is None:
     #         updates = OrderedDict()
     #
-    #     if col in self.coldata_class.data:
-    #         data = self.coldata_class.data[col]
+    #     if handle in self.coldata_class.data:
+    #         data = self.coldata_class.data[handle]
     #         if self.slave_target in data:
     #             data_target = data[self.slave_target]
     #             if 'key' in data_target:
     #                 key = data_target.get('key')
-    #                 val = self.new_s_object_core.get(col)
+    #                 val = self.new_s_object_core.get(handle)
     #                 if data_target.get('meta'):
     #                     if not val:
     #                         if 'delete_meta' not in updates:
@@ -1344,8 +1347,8 @@ class SyncUpdateProdWoo(SyncUpdateProd):
     #                 elif not data_target.get('final'):
     #                     updates[key] = val
     #             elif 'special' in data_target:
-    #                 key = col
-    #                 val = self.new_s_object_core.get(col)
+    #                 key = handle
+    #                 val = self.new_s_object_core.get(handle)
     #                 updates[key] = val
     #     return updates
 
@@ -1378,17 +1381,17 @@ class SyncUpdateCatWoo(SyncUpdateGen):
         return self.get_new_subject_value('term_id', self.slave_name)
 
     # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_native_rec(self, col, updates=None):
+    # def get_slave_updates_native_rec(self, handle, updates=None):
     #     if updates is None:
     #         updates = OrderedDict()
     #
-    #     if col in self.coldata_class.data:
-    #         data = self.coldata_class.data[col]
+    #     if handle in self.coldata_class.data:
+    #         data = self.coldata_class.data[handle]
     #         if self.slave_target in data:
     #             data_target = data[self.slave_target]
     #             if 'key' in data_target:
     #                 key = data_target.get('key')
-    #                 val = self.new_s_object_core.get(col)
+    #                 val = self.new_s_object_core.get(handle)
     #                 if data_target.get('meta'):
     #                     if not val:
     #                         if 'delete_meta' not in updates:
@@ -1402,7 +1405,7 @@ class SyncUpdateCatWoo(SyncUpdateGen):
     #                 elif not data_target.get('final'):
     #                     updates[key] = val
     #             elif 'special' in data_target:
-    #                 key = col
-    #                 val = self.new_s_object_core.get(col)
+    #                 key = handle
+    #                 val = self.new_s_object_core.get(handle)
     #                 updates[key] = val
     #     return updates

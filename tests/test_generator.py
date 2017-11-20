@@ -97,6 +97,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             Registrar.DEBUG_ERROR = True
             Registrar.DEBUG_WARN = True
             Registrar.DEBUG_MESSAGE = True
+            Registrar.DEBUG_TRACE = True
             # Registrar.DEBUG_IMG = True
             # Registrar.DEBUG_SPECIAL = True
             # Registrar.strict = True

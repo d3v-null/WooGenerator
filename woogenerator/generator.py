@@ -690,7 +690,7 @@ def do_merge(matches, parsers, updates, settings):
         if settings['do_categories']:
 
             update_params = {
-                'col': 'category_ids',
+                'handle': 'category_ids',
                 'subject': sync_update.slave_name
             }
 

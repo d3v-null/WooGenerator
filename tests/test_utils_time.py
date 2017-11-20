@@ -1,5 +1,6 @@
 import time
 import unittest
+from datetime import datetime
 
 from context import woogenerator
 from woogenerator.utils import Registrar, TimeUtils
@@ -49,6 +50,23 @@ class TestUtilsTime(unittest.TestCase):
             TimeUtils.wp_time_to_string(TimeUtils.wp_server_to_local_time(
                 TimeUtils.wp_strp_mktime(self.in_time_str))),
             self.in_time_str_offset
+        )
+
+    def test_translate_datetime_timestamp(self):
+        timestamp = 1511219002
+        date_string = "2017-11-20T23:03:22"
+        datetime_ = datetime(2017, 11, 20, 23, 03, 22)
+        self.assertEqual(
+            TimeUtils.datetime2timestamp(datetime_),
+            timestamp
+        )
+        self.assertEqual(
+            TimeUtils.timestamp2datetime(timestamp),
+            datetime_
+        )
+        self.assertEqual(
+            datetime_.isoformat('T'),
+            date_string
         )
 
     @unittest.skip("fix this later")

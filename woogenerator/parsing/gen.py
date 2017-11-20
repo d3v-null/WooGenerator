@@ -161,9 +161,6 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
             except IndexError:
                 self.code = ""
 
-        if Registrar.DEBUG_TRACE:
-            import pudb; pudb.set_trace()
-
         ancestors = self.ancestors
         if self.DEBUG_GEN:
             self.register_message('ancestors:')
