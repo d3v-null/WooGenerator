@@ -607,6 +607,7 @@ class SyncUpdate(Registrar):
         self.add_sync_pass(**update_params)
 
     def get_handle_mod_time(self, handle, subject):
+        # TODO: just return m_mod or s_mod?
         pass
 
     def get_m_handle_mod_time(self, handle):
@@ -699,9 +700,10 @@ class SyncUpdate(Registrar):
         )
         self.sync_handle(**update_params)
 
-    def get_sync_handles(self):
-        return self.coldata_class.get_sync_handles(
-            self.master_target, self.slave_target
+    @classmethod
+    def get_sync_handles(cls):
+        return cls.coldata_class.get_sync_handles(
+            cls.master_target, cls.slave_target
         )
 
     def update(self, sync_handles=None):
