@@ -569,8 +569,6 @@ class SyncUpdate(Registrar):
             prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
             "should never update old_value"
 
-    # def loser_update(self, winner, handle, reason = "", data={}, s_time=None,
-    # m_time=None):
     def loser_update(self, **update_params):
         for key in ['handle', 'subject', 'old_value', 'new_value']:
             assert key in update_params, 'missing mandatory update param, %s from %s' % (

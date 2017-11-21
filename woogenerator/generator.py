@@ -585,7 +585,7 @@ def do_merge_images(matches, parsers, updates, settings):
         print(matches.image.tabulate())
 
     sync_handles = settings.syncupdate_class_img.get_sync_handles()
-    for handle in ['post_status']:
+    for handle in ['post_status', 'file_path']:
         if handle in sync_handles:
             del sync_handles[handle]
 
@@ -603,6 +603,9 @@ def do_merge_images(matches, parsers, updates, settings):
 
         if Registrar.DEBUG_TRACE:
             print(sync_update.tabulate())
+            import pudb; pudb.set_trace()
+            pass # so that I can debug here
+
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()

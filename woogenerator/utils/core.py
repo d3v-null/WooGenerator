@@ -14,14 +14,16 @@ import re
 import sys
 import time
 import traceback
+import unicodedata
+import unidecode
 from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
 
 import cjson
+import phpserialize
 import unicodecsv
 from kitchen.text import converters
-import phpserialize
 
 from jsonpath_ng import jsonpath
 
@@ -589,6 +591,11 @@ class SanitationUtils(object):
         return str_out
 
     @classmethod
+    def normalize_unicode(cls, string):
+        return unidecode.unidecode(string)
+        # return unicodedata.normalize('NFKD', string)
+
+    @classmethod
     def sanitize_newlines(cls, string):
         return re.sub('\n', '</br>', string)
 
@@ -656,6 +663,7 @@ class SanitationUtils(object):
             cls.to_lower,
             cls.strip_leading_whitespace,
             cls.strip_tailing_whitespace,
+            cls.normalize_unicode,
             cls.coerce_unicode
         )(string)
 

@@ -3153,6 +3153,9 @@ class ColDataMedia(ColDataWpEntity):
             }
         },
         'alt_text': {
+            'wp-api': {
+                'path': None,
+            },
             'wp-api-v1': {
                 'path': None
             }
