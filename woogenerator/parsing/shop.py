@@ -8,7 +8,8 @@ import os
 import weakref
 from collections import OrderedDict
 
-from ..coldata import (ColDataMedia, ColDataProductMeridian, ColDataSubMedia,
+from ..coldata import (ColDataAttachment, ColDataProductMeridian,
+                       ColDataProductVariationMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
 from ..utils import FileUtils, Registrar, SanitationUtils
 from .abstract import ImportObject, ObjList
@@ -19,8 +20,57 @@ from .tree import ItemList, TaxoList
 class ShopMixin(object):
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
-    coldata_img_class = ColDataMedia
-    coldata_sub_img_class = ColDataSubMedia
+    coldata_img_class = ColDataAttachment
+    coldata_sub_img_class = ColDataSubAttachment
+    coldata_var_class = ColDataProductVariationMeridian
+
+class ImportShopImgMixin(ShopMixin):
+    file_path_key = 'file_path'
+    file_name_key = 'file_name'
+    source_url_key = 'source_url'
+    attachment_id_key = 'ID'
+
+    verify_meta_keys = [
+        file_path_key
+    ]
+
+    def __init__(self, *args, **kwargs):
+        self.attachments = ShopObjList()
+        self.is_valid = True
+
+    @classmethod
+    def get_file_name(cls, data):
+        if data.get(cls.file_name_key):
+            return FileUtils.get_path_basename(data[cls.file_name_key])
+        if data.get(cls.file_path_key):
+            return FileUtils.get_path_basename(data[cls.file_path_key])
+        elif data.get(cls.source_url_key):
+            return FileUtils.get_path_basename(data[cls.source_url_key])
+
+    @classmethod
+    def get_attachment_id(cls, data):
+        if data.get(cls.attachment_id_key):
+            return data[cls.attachment_id_key]
+
+    attachment_indexer = get_file_name
+
+    @property
+    def file_name(self):
+        return self.get_file_name(self)
+
+    @property
+    def index(self):
+        return self.file_name
+
+    def register_attachment(self, attach_data):
+        self.attachments.append(attach_data)
+
+    def invalidate(self, reason=""):
+        if self.DEBUG_IMG:
+            if not reason:
+                reason = "IMG INVALID"
+            self.register_error(reason, self.file_name)
+        self.is_valid = False
 
 class ImportShopMixin(object):
     "Base mixin class for shop objects (products, categories, images)"
@@ -29,6 +79,7 @@ class ImportShopMixin(object):
     is_variable = None
     is_variation = None
     #container = ObjList
+    attachment_indexer = ImportShopImgMixin.attachment_indexer
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
@@ -78,17 +129,16 @@ class ImportShopMixin(object):
 
     def register_image(self, img_data):
         assert isinstance(img_data, ImportShopImgMixin)
-        file_name = img_data.file_name
-        if file_name not in self.images:
-            self.register_anything(
-                img_data,
-                self.images,
-                indexer=file_name,
-                singular=True
-            )
-        self.images[file_name].register_attachment(self)
+        self.register_anything(
+            img_data,
+            self.images,
+            indexer=self.attachment_indexer,
+            singular=True
+        )
+        img_data.register_attachment(self)
 
     def to_api_data(self, coldata_class, target_api=None):
+        raise DeprecationWarning("why would anything use this?")
         api_data = OrderedDict()
         gen_data = self.to_dict()
         if self.is_category:
@@ -166,46 +216,6 @@ class ImportShopProductMixin(object):
     @property
     def type_name(self):
         return self.product_type
-
-class ImportShopImgMixin(object):
-    file_path_key = 'file_path'
-    file_name_key = 'file_name'
-    source_url_key = 'source_url'
-
-    verify_meta_keys = [
-        file_path_key
-    ]
-
-    def __init__(self, *args, **kwargs):
-        self.attachments = ShopObjList()
-        self.is_valid = True
-
-    @classmethod
-    def get_file_name(cls, data):
-        if data.get(cls.file_name_key):
-            return FileUtils.get_path_basename(data[cls.file_name_key])
-        if data.get(cls.file_path_key):
-            return FileUtils.get_path_basename(data[cls.file_path_key])
-        elif data.get(cls.source_url_key):
-            return FileUtils.get_path_basename(data[cls.source_url_key])
-
-    @property
-    def file_name(self):
-        return self.get_file_name(self)
-
-    @property
-    def index(self):
-        return self.file_name
-
-    def register_attachment(self, attach_data):
-        self.attachments.append(attach_data)
-
-    def invalidate(self, reason=""):
-        if self.DEBUG_IMG:
-            if not reason:
-                reason = "IMG INVALID"
-            self.register_error(reason, self.file_name)
-        self.is_valid = False
 
 class ShopProdList(ItemList):
     "Container for shop products"
@@ -404,6 +414,7 @@ class CsvParseShopMixin(object):
     variation_indexer = CsvParseGenMixin.get_code_sum
     product_resolver = Registrar.resolve_conflict
     image_resolver = Registrar.passive_resolver
+    attachment_indexer = ImportShopImgMixin.attachment_indexer
     do_images = True
 
     # products = None
@@ -479,13 +490,10 @@ class CsvParseShopMixin(object):
     def register_image(self, img_data):
         assert isinstance(img_data, ImportShopImgMixin), \
         "expected to register ImportShopMixin instead found %s" % type(img_data)
-        file_name = img_data.file_name
-        assert isinstance(file_name, basestring)
-        assert file_name is not ""
         self.register_anything(
             img_data,
             self.images,
-            indexer=file_name,
+            indexer=self.attachment_indexer,
             singular=True,
             resolver=self.image_resolver,
             register_name='images'

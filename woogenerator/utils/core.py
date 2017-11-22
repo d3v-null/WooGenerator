@@ -1314,7 +1314,11 @@ class Registrar(object):
         if hasattr(object_data, 'index'):
             return object_data.index
         else:
-            raise UserWarning('object is not indexable')
+            raise UserWarning(
+                '%s object is not indexable: does not have attr "index"' % (
+                    type(object_data)
+                )
+            )
 
     @classmethod
     def passive_resolver(cls, *args):
@@ -1474,10 +1478,14 @@ class Registrar(object):
 
     @classmethod
     def raise_exception(cls, exc):
+        print('full_stack:')
+        traceback.print_stack()
+        _, _, traceback_ = sys.exc_info()
+        traceback.print_exception(type(exc), exc, traceback_)
         if cls.DEBUG_TRACE:
-            _, _, traceback_ = sys.exc_info()
             import pdb; pdb.post_mortem(traceback_)
-        raise exc
+        else:
+            raise exc
 
     @classmethod
     def increment_stack_count(cls, name=''):

@@ -10,7 +10,7 @@ from ..client.img import ImgSyncClientWP
 from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
                            ProdSyncClientXero)
-from ..coldata import (ColDataMedia, ColDataProductMeridian,
+from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataWcProdCategory)
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
@@ -102,7 +102,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def coldata_class_img(self):
-        return ColDataMedia
+        return ColDataAttachment
 
     @property
     def coldata_class_cat(self):

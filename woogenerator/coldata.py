@@ -1133,7 +1133,7 @@ class CreatedModifiedGmtMixin(object):
         },
     }
 
-class ColDataSubMedia(ColDataSubEntity, CreatedModifiedGmtMixin):
+class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
     """
     Metadata for Media sub items; media items that appear within items in the API
     - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
@@ -1633,7 +1633,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
         # },
         'image': {
             'path': None,
-            'sub_data': ColDataSubMedia,
+            'sub_data': ColDataSubAttachment,
             'wc-api': {
                 'path': 'image',
                 'structure': ('singular-object', )
@@ -2816,7 +2816,7 @@ class ColDataProduct(ColDataWpEntity):
         },
         'images': {
             'path': None,
-            'sub_data': ColDataSubMedia,
+            'sub_data': ColDataSubAttachment,
             'wc-api': {
                 'path': 'images',
                 'structure': ('listed-objects', )
@@ -3100,7 +3100,7 @@ class ColDataProductVariationMeridian(ColDataProductVariation, ColDataMeridianEn
         + ColDataMeridianEntityMixin.data.items()
     )
 
-class ColDataMedia(ColDataWpEntity):
+class ColDataAttachment(ColDataWpEntity):
     """
     Metadata for Media items
     - wp-api-v2: http://v2.wp-api.org/reference/media/

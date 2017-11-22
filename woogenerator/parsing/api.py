@@ -5,22 +5,25 @@ from __future__ import absolute_import, print_function
 
 import datetime
 import io
-import cjson
 from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat, pprint
 
-from ..coldata import ColDataSubMedia, ColDataProductMeridian, ColDataWcProdCategory
+import cjson
+
+from ..coldata import (ColDataProductMeridian, ColDataSubAttachment,
+                       ColDataWcProdCategory)
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import CsvParseBase
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
-from .shop import (CsvParseShopMixin, ImportShopCategoryMixin, ImportShopMixin,
-                   ImportShopProductMixin, ImportShopProductSimpleMixin,
+from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
+                   ImportShopImgMixin, ImportShopMixin, ImportShopProductMixin,
+                   ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
 from .tree import CsvParseTreeMixin, ImportTreeRoot
-from .woo import (CsvParseWooMixin, ImportWooImg, ImportWooMixin,
-                  WooCatList, WooImgList, WooProdList)
+from .woo import (CsvParseWooMixin, ImportWooImg, ImportWooMixin, WooCatList,
+                  WooImgList, WooProdList)
 
 
 class ApiListMixin(object):
@@ -52,6 +55,9 @@ class ApiListMixin(object):
 
 class ImportApiObjectMixin(object):
     child_indexer = Registrar.get_object_index
+    category_indexer = CsvParseWooMixin.get_title
+    attachment_indexer = ImportShopImgMixin.get_attachment_id
+
 
     def process_meta(self):
         # API Objects don't process meta
@@ -79,13 +85,14 @@ class ImportApiRoot(ImportTreeRoot):
 
 class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin):
     child_indexer = ImportApiObjectMixin.child_indexer
-    category_indexer = CsvParseWooMixin.get_title
+    category_indexer = ImportApiObjectMixin.category_indexer
     process_meta = ImportApiObjectMixin.process_meta
     index = ImportApiObjectMixin.index
     identifier = ImportApiObjectMixin.identifier
     to_dict = ImportShopMixin.to_dict
     api_id_key = ImportWooMixin.wpid_key
     api_id = DescriptorUtils.safe_key_property(api_id_key)
+    attachment_indexer = ImportApiObjectMixin.attachment_indexer
     verify_meta_keys = SeqUtils.combine_lists(
         ImportGenObject.verify_meta_keys,
         ImportWooMixin.verify_meta_keys
@@ -231,6 +238,8 @@ ImportWooApiImg.container = WooApiImgList
 class ApiParseMixin(object):
     root_container = ImportApiRoot
     coldata_gen_target = 'gen-api'
+    attachment_indexer = ImportWooApiObject.attachment_indexer
+
     def analyse_stream(self, byte_file_obj, **kwargs):
 
         limit, encoding, stream_name = \
@@ -317,10 +326,11 @@ class ApiParseWoo(
     taxo_indexer = ImportWooApiTaxo.get_title
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
+    attachment_indexer = ImportApiObjectMixin.attachment_indexer
     image_container = ImportWooApiImg
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
-    coldata_sub_img_class = ColDataSubMedia
+    coldata_sub_img_class = ColDataSubAttachment
     coldata_target = 'wc-wp-api'
     coldata_gen_target = ApiParseMixin.coldata_gen_target
     meta_get_key = 'meta_data'

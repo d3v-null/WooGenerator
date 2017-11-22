@@ -10,10 +10,10 @@ from copy import copy, deepcopy
 
 from tabulate import tabulate
 
-from .coldata import (ColDataAbstract, ColDataMedia,
+from .coldata import (ColDataAbstract, ColDataAttachment,
                       ColDataProductMeridian, ColDataProductVariationMeridian,
                       ColDataWcProdCategory, ColDataWcProdCategory)
-# from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero, ColDataMedia
+# from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero, ColDataAttachment
 from .contact_objects import ContactAddress, FieldGroup
 from .matching import Match
 from .parsing.abstract import ImportObject
@@ -1371,7 +1371,7 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
     coldata_class = ColDataProductVariationMeridian
 
 class SyncUpdateImgWoo(SyncUpdateGen):
-    coldata_class = ColDataMedia
+    coldata_class = ColDataAttachment
     slave_target = 'wp-api'
 
     @property

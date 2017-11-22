@@ -597,15 +597,14 @@ def do_merge_images(matches, parsers, updates, settings):
 
         if Registrar.DEBUG_TRACE:
             print(sync_update.tabulate())
-            import pudb; pudb.set_trace()
+            # import pudb; pudb.set_trace()
 
         sync_update.update(sync_handles)
 
         if Registrar.DEBUG_TRACE:
             print(sync_update.tabulate())
-            import pudb; pudb.set_trace()
+            # import pudb; pudb.set_trace()
             pass # so that I can debug here
-
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()

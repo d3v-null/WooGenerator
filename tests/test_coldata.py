@@ -7,7 +7,7 @@ from unittest import TestCase
 import pytest
 
 from context import woogenerator
-from woogenerator.coldata import (ColDataAbstract, ColDataMedia,
+from woogenerator.coldata import (ColDataAbstract, ColDataAttachment,
                                   ColDataProductMeridian,
                                   ColDataWcProdCategory,
                                   ColDataWpPost)
@@ -150,7 +150,7 @@ class TestColDataAbstract(TestColData):
 
 
 class TestColDataImg(TestColData):
-    coldata_class = ColDataMedia
+    coldata_class = ColDataAttachment
     debug = False
 
     def test_get_property(self):

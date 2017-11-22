@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.coldata import ColDataMedia, ColDataProduct
+from woogenerator.coldata import ColDataAttachment, ColDataProduct
 from woogenerator.generator import (do_match, do_match_categories,
                                     do_match_images, do_merge, do_merge_images,
                                     do_merge_categories, do_report,
@@ -293,20 +293,27 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(unicode(first_prod[key]), value)
 
         # Remember the test data is deliberately modified to remove one of the categories
+
         self.assertEquals(
-            first_prod.categories.keys(),
-            [
+            set([
+                category.title \
+                for category in first_prod.categories.values()
+            ]),
+            set([
                 '100ml Company A Product A Samples',
                 'Company A Product A',
                 'Product A'
-            ]
+            ])
         )
 
         self.assertEquals(
-            first_prod.images.keys(),
-            [
+            set([
+                image.file_name \
+                for image in first_prod.images.values()
+            ]),
+            set([
                 'ACARF-CRS.png'
-            ]
+            ])
         )
 
         cat_container = self.parsers.slave.category_container.container
@@ -327,7 +334,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
-        self.assertEqual(second_cat.images.keys(), ["ACA.jpg"])
+        self.assertEqual(
+            set([
+                image.file_name \
+                for image in second_cat.images.values()
+            ]),
+            set([
+                "ACA.jpg"
+            ])
+        )
 
         img_container = self.parsers.slave.image_container.container
         img_list = img_container(self.parsers.slave.images.values())
@@ -342,7 +357,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print(Registrar.display_stack_counts())
 
     def print_images_summary(self, images):
-        img_cols = ColDataMedia.get_report_cols_gen()
+        img_cols = ColDataAttachment.get_report_cols_gen()
         img_table = [img_cols.keys()] + [
             [img_data.get(key) for key in img_cols.keys()]
             for img_data in images

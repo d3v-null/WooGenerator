@@ -9,7 +9,7 @@ from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
 
-from ..coldata import (ColDataMedia, ColDataProductMeridian, ColDataProductVariationMeridian,
+from ..coldata import (ColDataAttachment, ColDataProductMeridian, ColDataProductVariationMeridian,
                        ColDataWcProdCategory)
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
@@ -98,7 +98,7 @@ class WooListMixin(object):
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
     coldata_var_class = ColDataProductVariationMeridian
-    coldata_img_class = ColDataMedia
+    coldata_img_class = ColDataAttachment
     supported_type = ImportWooObject
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
@@ -354,6 +354,7 @@ class CsvParseWooMixin(object):
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
     image_container = ImportWooImg
+    attachment_indexer = ImportWooImg.get_file_name
 
     def find_category(self, search_data):
         search_keys = [
@@ -408,34 +409,35 @@ class CsvParseWooMixin(object):
         return deepcopy(self._coldata_cat_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
-        img_filename = self.image_container.get_file_name(img_raw_data)
+        img_index = self.image_container.get_file_name(img_raw_data)
         if self.DEBUG_IMG:
             if object_data:
                 identifier = object_data.identifier
                 self.register_message(
                     "%s attached to %s"
-                    % (identifier, img_filename)
+                    % (identifier, img_index)
                 )
             else:
                 self.register_message(
-                    "creating image %s" % (img_filename)
+                    "creating image %s" % (img_index)
                 )
             self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
 
         img_data = None
-        if self.image_container.file_path_key in img_raw_data:
-            img_data = self.images.get(img_filename)
+        img_index = self.attachment_indexer(img_raw_data)
+        if img_index:
+            img_data = self.images.get(img_index)
         if not img_data:
             img_data = self.find_image(img_raw_data)
         if not img_data:
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
             row_data = deepcopy(img_raw_data)
-            row_data[self.image_container.file_name_key] = img_filename
             kwargs['defaults'] = self.img_defaults
             kwargs['row_data'] = row_data
             kwargs['parent'] = self.root_data
             kwargs['container'] = self.image_container
+
             try:
                 img_data = self.new_object(
                     rowcount=self.rowcount,
@@ -446,8 +448,9 @@ class CsvParseWooMixin(object):
                 self.register_error(
                     warn
                 )
-                if self.strict:
+                if 1 or self.strict:
                     self.raise_exception(warn)
+                return
             self.register_image(img_data)
 
         else:
@@ -603,7 +606,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         if self.DEBUG_MRO:
             self.register_message(' ')
         super_data = {}
-        for base_class in reversed(CsvParseWoo.__bases__):
+        for base_class in [
+            CsvParseGenTree,
+            CsvParseShopMixin,
+            CsvParseWooMixin
+        ]:
             if hasattr(base_class, 'get_parser_data'):
                 super_data.update(base_class.get_parser_data(self, **kwargs))
         # super_data = CsvParseWooMixin.get_parser_data(self, **kwargs)
