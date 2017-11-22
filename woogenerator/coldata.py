@@ -227,31 +227,31 @@ class ColDataLegacy(object):
     gen_target = 'gen-csv'
 
     @classmethod
-    def get_import_cols_gen(cls, target=gen_target):
-        gen_reads = cls.get_handles_property_defaults('read', cls.gen_target)
+    def get_import_cols_gen(cls, target=gen_target, base_target=gen_target):
+        target_reads = cls.get_handles_property_defaults('read', target)
         import_cols = OrderedDict()
         for handle in cls.data.keys():
-            gen_read = gen_reads.get(handle)
+            gen_read = target_reads.get(handle)
             if gen_read is False:
                 continue
             import_cols[handle] = cls.data[handle]
-        return cls.translate_keys(import_cols, target).keys()
+        return cls.translate_keys(import_cols, base_target).keys()
 
     @classmethod
-    def get_export_cols_gen(cls, property_=None, target=gen_target):
+    def get_export_cols_gen(cls, property_=None, target=gen_target, base_target=gen_target):
         """
         Return a mapping of the gen path to the handle properties for
         handles where `property_` is not False.
         """
         if not property_:
-            return
+            return cls.translate_keys(cls.data, target)
         export_cols = OrderedDict()
-        gen_properties = cls.get_handles_property_defaults(property_, cls.gen_target)
-        for handle, gen_property_value in gen_properties.items():
-            if not gen_property_value:
+        target_properties = cls.get_handles_property_defaults(property_, target)
+        for handle, target_property_value in target_properties.items():
+            if not target_property_value:
                 continue
             export_cols[handle] = cls.data.get(handle)
-        return cls.translate_keys(export_cols, target)
+        return cls.translate_keys(export_cols, base_target)
 
     @classmethod
     def get_report_cols_gen(cls, target=gen_target):
@@ -269,14 +269,14 @@ class ColDataLegacy(object):
         return cls.get_export_cols_gen('basic', target)
 
     @classmethod
-    def get_defaults_gen(cls, target=gen_target):
-        gen_properties = cls.get_handles_property_defaults('default', target)
+    def get_defaults_gen(cls, target=gen_target, base_target=gen_target):
+        target_properties = cls.get_handles_property_defaults('default', target)
         defaults = OrderedDict()
-        for handle, gen_property_value in gen_properties.items():
-            if gen_property_value is None:
+        for handle, target_property_value in target_properties.items():
+            if target_property_value is None:
                 continue
-            defaults[handle] = gen_property_value
-        return cls.translate_keys(defaults, target)
+            defaults[handle] = target_property_value
+        return cls.translate_keys(defaults, base_target)
 
     @classmethod
     def translate_keys(cls, datum, target):
@@ -307,6 +307,34 @@ class ColDataLegacy(object):
             col_names[col] = label if label else col
         return col_names
 
+    @classmethod
+    def get_attribute_cols(cls, attributes, vattributes):
+        attribute_cols = OrderedDict()
+        all_attrs = SeqUtils.combine_lists(
+            attributes.keys(), vattributes.keys())
+        for attr in all_attrs:
+            attribute_cols['attribute:' + attr] = {
+                'product': True,
+            }
+            if attr in vattributes.keys():
+                attribute_cols['attribute_default:' + attr] = {
+                    'product': True,
+                }
+                attribute_cols['attribute_data:' + attr] = {
+                    'product': True,
+                }
+        return attribute_cols
+
+    @classmethod
+    def get_attribute_meta_cols(cls, vattributes):
+        atttribute_meta_cols = OrderedDict()
+        for attr in vattributes.keys():
+            atttribute_meta_cols['meta:attribute_' + attr] = {
+                'variable': True,
+                'tag': attr
+            }
+        return atttribute_meta_cols
+
 class ColDataAbstract(ColDataLegacy):
     """
     Store information about how to translate between disparate target schemas.
@@ -314,6 +342,7 @@ class ColDataAbstract(ColDataLegacy):
      - Each handle is a piece of data within that format
      - The properties of a handle show how to coerce data of that handle between formats
     """
+    # TODO: make everything OrderedDict
 
     targets = {
         'api': {
@@ -1121,7 +1150,8 @@ class CreatedModifiedGmtMixin(object):
             },
             'gen-csv': {
                 'path': 'modified_gmt',
-                'type': 'datetime'
+                'type': 'datetime',
+                'read': False
             },
             'gen-api': {
                 'path': 'modified_gmt'
@@ -1329,7 +1359,7 @@ class ColDataSubCategory(ColDataSubTerm):
     data = SeqUtils.combine_ordered_dicts(data, {
         'heirarchical_name': {
             'path': None,
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'heirarchical_name'
             }
         }
@@ -1563,7 +1593,8 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
             'path': 'parent'
         },
         'gen-csv': {
-            'path': 'parent_id'
+            'path': 'parent_id',
+            'read': False,
         },
         'report': True
     })
@@ -1730,7 +1761,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'path': 'post_date',
                 'type': 'wp_datetime',
             },
-            'gen-csv': {
+            'csv': {
                 'path': None,
             },
             'xero-api': {
@@ -1755,6 +1786,9 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wp-sql': {
                 'path': 'post_modified',
                 'type': 'wp_datetime'
+            },
+            'csv': {
+                'path': None,
             },
             'gen-csv': {
                 'path': 'Updated',
@@ -1803,7 +1837,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             },
             'wp-sql': {
                 'path': None,
-            }
+            },
         },
         'slug':{
             'unique': True,
@@ -1913,7 +1947,8 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'path': 'post_content'
             },
             'gen-csv': {
-                'path': 'descsum'
+                'path': 'descsum',
+                'read': False,
             },
             'xero-api': {
                 'path': 'Description'
@@ -1986,9 +2021,12 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wc-api': {
                 'path': 'parent_id'
             },
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'post_parent',
-                'read': None,
+                'read': False,
+            },
+            'gen-csv': {
+                'read': False,
             },
             'xero-api': {
                 'path': None
@@ -2264,15 +2302,6 @@ class ColDataProduct(ColDataWpEntity):
             'wp-api': {
                 'path': None,
             },
-            'wc-csv': {
-                'path': 'tax:product_tag',
-                'type': 'heirarchical_pipe_array',
-                'structure': ('listed-values', 'heirarchical_name'),
-            },
-            'gen-csv': {
-                'path': 'catlist',
-                'read': False
-            },
             'gen-api': {
                 'path': 'category_objects',
                 'structure': ('listed-objects', )
@@ -2280,6 +2309,21 @@ class ColDataProduct(ColDataWpEntity):
             'xero-api': {
                 'path': None
             }
+        },
+        'product_category_list': {
+            'path': None,
+            # 'sub_data': ColDataSubCategory,
+            'wc-csv': {
+                'path': 'tax:product_cat',
+                'type': 'heirarchical_pipe_array',
+                # 'structure': ('listed-values'),
+            },
+            'gen-csv': {
+                'path': 'taxosum',
+                'read': False,
+                'type': 'heirarchical_pipe_array',
+                # 'structure': ('listed-values'),
+            },
         },
         'featured': {
             'type': bool,
@@ -2292,6 +2336,9 @@ class ColDataProduct(ColDataWpEntity):
             'csv': {
                 'type': 'yesno',
                 'default': 'no'
+            },
+            'gen-csv': {
+                'read': False,
             },
             'xero-api': {
                 'path': None
@@ -2310,6 +2357,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
 
@@ -2455,7 +2505,7 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta.total_sales'
             },
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'meta:total_sales'
             },
         },
@@ -2467,6 +2517,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'downloadable': {
@@ -2477,6 +2530,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
+            },
+            'gen-csv': {
+                'read': False,
             }
         },
         'downloads': {
@@ -2499,6 +2555,9 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._download_limit'
             },
+            'gen-csv': {
+                'read': False,
+            },
             'xero-api': {
                 'path': None
             }
@@ -2511,7 +2570,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'external_url': {
             'wc-legacy-api': {
@@ -2522,7 +2584,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'button_text': {
             'wp-sql': {
@@ -2530,7 +2595,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'tax_status': {
             'default': 'taxable',
@@ -2544,7 +2612,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'tax_class': {
             'path': None,
@@ -2556,7 +2627,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-csv': {
                 'path': 'tax_class'
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'manage_stock': {
             'type': bool,
@@ -2568,7 +2642,10 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': 'IsTrackedAsInventory',
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'stock_quantity': {
             'type': 'optional_int',
@@ -2581,6 +2658,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wp-sql': {
                 'path': 'meta._stock',
+            },
+            'gen-csv': {
+                'read': False,
             },
         },
         'in_stock': {
@@ -2599,7 +2679,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
         },
         'backorders': {
             'options': [
@@ -2609,6 +2689,9 @@ class ColDataProduct(ColDataWpEntity):
             'wp-sql': {
                 'path': 'meta._backorders'
             },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'backorders_allowed': {
             'type': bool,
@@ -2617,10 +2700,13 @@ class ColDataProduct(ColDataWpEntity):
             'wc-api': {
                 'path': 'backorders_allowed'
             },
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'backorders',
                 'type': 'yesno'
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'backordered': {
             'type': bool,
@@ -2628,7 +2714,10 @@ class ColDataProduct(ColDataWpEntity):
             'write': False,
             'wc-api': {
                 'path': 'backordered'
-            }
+            },
+            'gen-csv': {
+                'read': False,
+            },
         },
         'sold_individually': {
             'type': bool,
@@ -2639,12 +2728,15 @@ class ColDataProduct(ColDataWpEntity):
             'csv': {
                 'type': 'yesno'
             },
-            'woo-csv': {
+            'gen-csv': {
+                'read': False,
+            },
+            'wc-csv': {
                 'path': 'meta:_sold_individually',
             },
             'xero-api': {
                 'path': None
-            }
+            },
         },
         'weight': {
             'wp-sql': {
@@ -2911,7 +3003,7 @@ class ColDataMeridianEntityMixin(object):
             'wp-sql': {
                 'path': 'meta.wootan_danger',
             },
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'meta:wootan_danger',
             },
             'wc-csv': {

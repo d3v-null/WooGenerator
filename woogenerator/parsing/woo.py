@@ -24,10 +24,6 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
 from .special import ImportSpecialGroup
 from .tree import ImportTreeItem, ImportTreeObject, ItemList, TaxoList
 
-ColDataWcProdCategory
-
-
-
 class ImportWooMixin(object):
     """ all things common to Woo import classes """
 
@@ -1056,7 +1052,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     for ancestor in object_data.ancestors:
                         result = ancestor.find_child_category(index)
                         if result:
-                            for member in object_data.members.values():
+                            for member in object_data.members:
                                 self.register_join_category(result, member)
 
         if object_data.is_product:

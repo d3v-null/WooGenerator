@@ -882,7 +882,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.problematic), 0)
-        self.assertEqual(len(self.updates.slave), 3)
+        self.assertEqual(len(self.updates.slave), 1)
 
         sync_update = self.updates.delta_slave[0]
         if self.debug:

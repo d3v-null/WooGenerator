@@ -291,18 +291,10 @@ class ImportShopCategoryMixin(object):
     parent_id_key = 'parent_id'
 
     def __init__(self, *args, **kwargs):
-        self.members = OrderedDict()
+        self.members = ShopProdList()
 
     def register_member(self, item_data):
-        self.register_anything(
-            item_data,
-            self.members,
-            # indexer = self.getSum,
-            indexer=item_data.rowcount,
-            singular=True,
-            resolver=self.passive_resolver,
-            register_name='product categories'
-        )
+        self.members.append(item_data)
 
 class ShopCatList(TaxoList):
     coldata_class = ColDataWcProdCategory

@@ -11,7 +11,7 @@ from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
                            ProdSyncClientXero)
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
-                       ColDataWcProdCategory)
+                       ColDataProductVariationMeridian, ColDataWcProdCategory)
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
 from ..conf.parser import ArgumentParserProd
 from ..parsing.api import ApiParseWoo, ApiParseWooLegacy
@@ -19,7 +19,8 @@ from ..parsing.myo import CsvParseMyo
 from ..parsing.woo import CsvParseTT, CsvParseVT, CsvParseWoo
 from ..parsing.xero import ApiParseXero, CsvParseXero
 from ..syncupdate import (SyncUpdateCatWoo, SyncUpdateImgWoo, SyncUpdateProd,
-                          SyncUpdateProdWoo, SyncUpdateProdXero, SyncUpdateVarWoo)
+                          SyncUpdateProdWoo, SyncUpdateProdXero,
+                          SyncUpdateVarWoo)
 from ..utils import Registrar
 from .core import SettingsNamespaceProto
 
@@ -107,6 +108,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def coldata_class_cat(self):
         return ColDataWcProdCategory
+
+    @property
+    def coldata_class_var(self):
+        return ColDataProductVariationMeridian
 
     @property
     def coldata_img_target(self):
