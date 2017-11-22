@@ -60,6 +60,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_resize_images = False
         self.settings.do_remeta_images = False
         self.settings.report_matching = True
+        self.settings.auto_create_new = True
         self.settings.schema = "CA"
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
@@ -447,9 +448,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             intersect_keys = master_keys.intersection(slave_keys)
             print("intersect_keys:\n")
             for key in intersect_keys:
-                print("%20s | %50s | %50s" % (
+                out = ("%20s | %50s | %50s" % (
                     str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
                 ))
+                print(SanitationUtils.coerce_ascii(out))
         for match in self.matches.image.globals:
             self.assertEqual(match.m_object.file_name, match.s_object.file_name)
 
@@ -507,31 +509,75 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.print_updates_summary(self.updates.image)
             for update in self.updates.image.slave:
                 print(update.tabulate())
-        # self.assertEqual(len(self.updates.category.master), 9)
-        # sync_update = self.updates.category.master[1]
-        # if self.debug:
-        #     self.print_update(sync_update)
-        # try:
-        #     master_desc = (
-        #         "Company A have developed a range of unique blends in 16 "
-        #         "shades to suit all use cases. All Company A's products "
-        #         "are created using the finest naturally derived botanical "
-        #         "and certified organic ingredients."
-        #     )
-        #     self.assertEqual(
-        #         sync_update.old_m_object['HTML Description'],
-        #         master_desc
-        #     )
-        #     self.assertEqual(
-        #         sync_update.old_s_object['HTML Description'],
-        #         "Company A have developed stuff"
-        #     )
-        #     self.assertEqual(
-        #         sync_update.new_s_object['HTML Description'],
-        #         master_desc
-        #     )
-        # except AssertionError as exc:
-        #     self.fail_syncupdate_assertion(exc, sync_update)
+        self.assertEqual(len(self.updates.image.slave), 45)
+        sync_update = self.updates.image.slave[0]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            master_desc = (
+                "Company A have developed a range of unique blends in 16 "
+                "shades to suit all use cases. All Company A's products "
+                "are created using the finest naturally derived botanical "
+                "and certified organic ingredients."
+            )
+            slave_desc = (
+                "TechnoTan have developed a range of unique blends in 16 "
+                "shades to suit all skin types. All TechnoTan's tanning solutions "
+                "are created using the finest naturally derived botanical "
+                "and certified organic ingredients."
+            )
+            master_title = 'Product A > Company A Product A'
+            slave_title = 'Solution > TechnoTan Solution'
+
+            self.assertEqual(
+                sync_update.old_m_object_core['post_excerpt'],
+                master_desc
+            )
+            self.assertEqual(
+                SanitationUtils.normalize_unicode(sync_update.old_s_object_core['post_excerpt']),
+                slave_desc
+            )
+            self.assertEqual(
+                sync_update.new_s_object_core['post_excerpt'],
+                master_desc
+            )
+            # self.assertEqual(
+            #     sync_update.old_m_object_core['title'],
+            #     master_title
+            # )
+            # self.assertEqual(
+            #     sync_update.old_s_object_core['title'],
+            #     slave_title
+            # )
+            # self.assertEqual(
+            #     sync_update.new_s_object_core['title'],
+            #     master_title
+            # )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+        self.assertEqual(len(self.updates.image.master), 45)
+        sync_update = self.updates.image.master[0]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            master_slug = ''
+            slave_slug = 'solution-technotan-solution'
+            self.assertEqual(
+                sync_update.old_m_object_core['slug'],
+                master_slug
+            )
+            self.assertEqual(
+                sync_update.old_s_object_core['slug'],
+                slave_slug
+            )
+            self.assertEqual(
+                sync_update.new_m_object_core['slug'],
+                slave_slug
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+        # TODO: add tests for creation of images
 
     @pytest.mark.last
     def test_dummy_do_merge_categories(self):
@@ -558,13 +604,16 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 "are created using the finest naturally derived botanical "
                 "and certified organic ingredients."
             )
+            slave_desc = (
+                "Company A have developed stuff"
+            )
             self.assertEqual(
                 sync_update.old_m_object['descsum'],
                 master_desc
             )
             self.assertEqual(
                 sync_update.old_s_object['descsum'],
-                "Company A have developed stuff"
+                slave_desc
             )
             self.assertEqual(
                 sync_update.new_s_object['descsum'],
@@ -572,6 +621,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
+
+        # TODO: add tests for creation of categories
 
     @pytest.mark.last
     def test_dummy_do_match(self):

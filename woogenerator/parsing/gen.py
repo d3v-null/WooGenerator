@@ -30,11 +30,6 @@ class ImportGenMixin(object):
         descsum_key,
     ]
 
-    # def __init__(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.register_message(' ')
-    #     super(ImportGenMixin, self).__init__(*args, **kwargs)
-
     @property
     def index(self):
         index = self.codesum
@@ -76,8 +71,6 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     index = ImportGenMixin.index
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportGenObject')
         self.subs = kwargs.pop('subs', {})
         self.regex = kwargs.pop('regex', {})
         ImportTreeObject.__init__(self, *args, **kwargs)
@@ -144,9 +137,6 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
         return SanitationUtils.shorten(self.regex, self.subs, name)
 
     def process_meta(self):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
-        # super(ImportGenObject, self).process_meta()
         meta = self.meta
 
         if not self.fullname:
@@ -294,8 +284,6 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
     item_container = CsvParseGenMixin.item_container
 
     def __init__(self, cols, defaults, schema, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('CsvParseGenTree')
         taxo_subs = kwargs.pop('taxo_subs', {})
         item_subs = kwargs.pop('item_subs', {})
 
@@ -324,8 +312,6 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
                 self.schema), 'CsvParseGenTree.__init__')
 
     def get_new_obj_container(self, all_data, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         container = super(CsvParseGenTree, self).get_new_obj_container(
             all_data, **kwargs)
         if issubclass(container, ImportTreeItem):
@@ -339,9 +325,11 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
         return container
 
     def get_defaults(self, **kwargs):
-        super_data = CsvParseGenMixin.get_defaults(self, **kwargs)
-        super_data.update(CsvParseTree.get_defaults(self, **kwargs))
-        return super_data
+        defaults = {}
+        for base_class in CsvParseGenTree.__bases__:
+            if hasattr(base_class, 'get_defaults'):
+                defaults.update(base_class.get_defaults(self, **kwargs))
+        return defaults
 
     def change_item(self, item):
         return SanitationUtils.shorten(self.item_regex, self.item_subs, item)
@@ -352,8 +340,6 @@ class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
             SanitationUtils.compile_regex(subs), subs, item)
 
     def get_kwargs(self, all_data, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         kwargs = super(CsvParseGenTree, self).get_kwargs(
             all_data, **kwargs)
         regex = kwargs.pop('regex', None)

@@ -9,6 +9,7 @@ from collections import OrderedDict
 from .parsing.abstract import ImportObject, ObjList
 from .utils import InheritenceUtils, Registrar, SanitationUtils, SeqUtils
 
+# TODO: convert matching to use core data
 
 class Match(object):
     """ A list of master objects and slave objects that match in sosme way """

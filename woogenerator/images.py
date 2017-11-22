@@ -187,17 +187,19 @@ def process_image_meta(settings, parsers, img_data):
     try:
         metagator = MetaGator(get_raw_image(settings, img_data.file_name))
         current_meta = metagator.read_meta()
-        img_data[img_data.title_key] = current_meta.get('title')
-        img_data['alt_text'] = current_meta.get('title')
-        img_data['caption'] = current_meta.get('description')
-        img_data['description'] = current_meta.get('description')
+        img_data.update({
+            img_data.title_key: current_meta.get('title'),
+            'alt_text': current_meta.get('title'),
+            'caption': current_meta.get('description'),
+            img_data.description_key: current_meta.get('description')
+        })
 
     except Exception as exc:
         invalid_image(
             parsers,
             settings,
             img_data.file_name,
-            "error creating metagator: " + str(exc)
+            "error reading meta: " + str(exc)
         )
         return
 
@@ -208,11 +210,13 @@ def process_image_meta(settings, parsers, img_data):
                 'title': title,
                 'description': description
             })
+        img_data.update({
+            img_data.title_key: title,
+            'alt_text': title,
+            'caption': description,
+            img_data.description_key: description
+        })
 
-            img_data[img_data.title_key] = title
-            img_data['alt_text'] = title
-            img_data['caption'] = description
-            img_data['description'] = description
     except Exception as exc:
         invalid_image(
             parsers, settings, img_data.file_name, "error updating meta: " + str(exc)

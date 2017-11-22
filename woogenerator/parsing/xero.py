@@ -31,8 +31,16 @@ class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin, ApiXer
     coldata_target = ApiXeroMixin.coldata_target
 
     def __init__(self, *args, **kwargs):
-        ImportGenObject.__init__(self, *args, **kwargs)
-        ImportShopMixin.__init__(self, *args, **kwargs)
+        for base_class in [ImportGenObject, ImportShopMixin]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportXeroObject.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class ImportXeroItem(ImportXeroObject, ImportGenItem):
     is_item = ImportGenItem.is_item

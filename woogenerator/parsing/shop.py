@@ -83,8 +83,6 @@ class ImportShopMixin(object):
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message('ImportShopMixin')
         if Registrar.DEBUG_SHOP:
             self.register_message("creating shop object; %s %s %s %s" % (
                 'is_product' if self.is_product else '!is_product',
@@ -92,8 +90,8 @@ class ImportShopMixin(object):
                 'is_variable' if self.is_variable else '!is_variable',
                 'is_variation' if self.is_variation else '!is_variation'
             ))
-        self.attributes = OrderedDict()
         self.images = OrderedDict()
+        self.attributes = OrderedDict()
 
     # @classmethod
     # def get_new_obj_container(cls):
@@ -175,14 +173,13 @@ class ImportShopMixin(object):
         return api_data
 
     def to_dict(self):
-        response = ImportObject.to_dict(self)
+        response = {}
         if hasattr(self, 'images'):
             response['image_objects'] = self.images.values()
-        if hasattr(self, 'categories'):
-            response['category_objects'] = self.categories.values()
         return response
 
 class ImportShopProductMixin(object):
+    "Base mixin class for shop products which also have categories"
     # category_indexer = Registrar.get_object_index
     category_indexer = Registrar.get_object_rowcount
     # category_indexer = CsvParseGenMixin.get_full_name_sum
@@ -192,10 +189,6 @@ class ImportShopProductMixin(object):
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
-
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message('ImportShopProductMixin')
-        # super(ImportShopProductMixin, self).__init__(*args, **kwargs)
         self.categories = OrderedDict()
 
     def register_category(self, cat_data):
@@ -217,6 +210,15 @@ class ImportShopProductMixin(object):
     def type_name(self):
         return self.product_type
 
+    def to_dict(self):
+        response = {}
+        if hasattr(self, 'categories'):
+            response['category_objects'] = self.categories.values()
+        # TODO: enable attributes later
+        # if hasattr(self, 'attributes'):
+        #     response['attribute_objects'] = self.attributes.values()
+        return response
+
 class ShopProdList(ItemList):
     "Container for shop products"
     objList_type = 'products'
@@ -237,18 +239,15 @@ class ShopProdList(ItemList):
 
 ImportShopProductMixin.container = ShopProdList
 
-class ImportShopProductSimpleMixin(ImportShopProductMixin):
+class ImportShopProductSimpleMixin(object):
     product_type = 'simple'
 
 
-class ImportShopProductVariableMixin(ImportShopProductMixin):
+class ImportShopProductVariableMixin(object):
     product_type = 'variable'
     is_variable = True
 
     def __init__(self, *args, **kwargs):
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message('ImportShopProductVariableMixin')
-        # super(ImportShopProductVariableMixin, self).__init__(*args, **kwargs)
         self.variations = OrderedDict()
 
     def register_variation(self, var_data):
@@ -261,11 +260,11 @@ class ImportShopProductVariableMixin(ImportShopProductMixin):
             register_name="product variations"
         )
 
-    def get_variations(self):
-        exc = DeprecationWarning(
-            "use .variations instead of .get_variations()")
-        self.register_error(exc)
-        return self.variations
+    def to_dict(self):
+        response = {}
+        if self.variations:
+            response['variation_objects'] = self.variations.values()
+        return response
 
 
 class ImportShopProductVariationMixin(ImportShopProductMixin):
@@ -292,9 +291,6 @@ class ImportShopCategoryMixin(object):
     parent_id_key = 'parent_id'
 
     def __init__(self, *args, **kwargs):
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message('ImportShopCategoryMixin')
-        # super(ImportShopCategoryMixin, self).__init__(*args, **kwargs)
         self.members = OrderedDict()
 
     def register_member(self, item_data):
@@ -442,10 +438,6 @@ class CsvParseShopMixin(object):
         }
 
     def clear_transients(self):
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message(' ')
-        # super(CsvParseShopMixin,self).clear_transients()
-
         # TODO: what if products, categories, variations, images were weakrefs?
 
         self.products = OrderedDict()
@@ -508,9 +500,6 @@ class CsvParseShopMixin(object):
         return self.products
 
     def register_object(self, object_data):
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message(' ')
-        # super(CsvParseShopMixin, self).register_object(object_data)
         if issubclass(type(object_data), ImportShopProductMixin):
             if issubclass(type(object_data), ImportShopProductVariationMixin):
                 assert \
@@ -639,6 +628,21 @@ class CsvParseShopMixin(object):
             response += '\n'
             response += self.to_str_tree_recursive(child)
         return response
+
+    def get_parser_data(cls, **kwargs):
+        parser_data = kwargs.get('row_data', {})
+        if kwargs.get('container') and issubclass(kwargs.get('container'), cls.image_container):
+            if not cls.image_container.file_name_key in parser_data:
+                if parser_data.get(cls.image_container.file_path_key):
+                    parser_data[cls.image_container.file_name_key]\
+                    = FileUtils.get_path_basename(parser_data[cls.image_container.file_path_key])
+                elif parser_data.get(cls.image_container.source_url_key):
+                    parser_data[cls.image_container.file_name_key]\
+                    = FileUtils.get_path_basename(parser_data[cls.image_container.source_url_key])
+                else:
+                    raise UserWarning("couldn't get file_path from parser_data: %s" % parser_data)
+        return parser_data
+
 
     def to_str_tree(self):
         return self.to_str_tree_recursive(self.root_data)

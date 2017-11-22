@@ -1191,7 +1191,8 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
                 'write': False
             },
             'gen-csv': {
-                'path': 'file_name'
+                'path': 'file_name',
+                'read': False
             }
         }
     })
@@ -1261,6 +1262,7 @@ class ColDataTermMixin(object):
         'count': {
             'type': 'optional_int_none',
             'path': None,
+            'write': False,
             'wp-api-v1': {
                 'path': 'count'
             },

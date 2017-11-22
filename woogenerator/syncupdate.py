@@ -1260,57 +1260,6 @@ class SyncUpdateGen(SyncUpdate):
     def master_id(self):
         return self.get_new_subject_value('menu_order', self.master_name)
 
-    # def get_slave_updates_native_rec(self, handle, updates=None):
-    #     if updates is None:
-    #         updates = OrderedDict()
-
-    # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_recursive(self, handle, updates=None):
-    #     if updates is None:
-    #         updates = OrderedDict()
-    #     if self.DEBUG_UPDATE:
-    #         self.register_message(u"checking %s" % unicode(handle))
-    #     if handle in self.coldata_class.data:
-    #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"handle exists")
-    #         data = self.coldata_class.data[handle]
-    #         if data.get(self.slave_target):
-    #             if self.DEBUG_UPDATE:
-    #                 self.register_message(u"wp exists")
-    #             data_target = data.get(self.slave_target, {})
-    #             if not data_target.get('final') and data_target.get('key'):
-    #                 new_val = self.new_s_object_core.get(handle)
-    #                 updates[handle] = new_val
-    #                 if self.DEBUG_UPDATE:
-    #                     self.register_message(u"newval: %s" % repr(new_val))
-    #     else:
-    #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"handle doesn't exist")
-    #     return updates
-
-    # # TODO: rewrite this for newer coldata
-    # def get_master_updates_recursive(self, handle, updates=None):
-    #     if updates is None:
-    #         updates = OrderedDict()
-    #     if self.DEBUG_UPDATE:
-    #         self.register_message(u"checking %s" % unicode(handle))
-    #
-    #     if handle in self.coldata_class.data:
-    #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"handle exists")
-    #         data = self.coldata_class.data[handle]
-    #         if data.get(self.master_target):
-    #             if self.DEBUG_UPDATE:
-    #                 self.register_message(u"wp exists")
-    #             new_val = self.new_m_object_core.get(handle)
-    #             updates[handle] = new_val
-    #             if self.DEBUG_UPDATE:
-    #                 self.register_message(u"newval: %s" % repr(new_val))
-    #     else:
-    #         if self.DEBUG_UPDATE:
-    #             self.register_message(u"handle doesn't exist")
-    #     return updates
-
 class SyncUpdateProd(SyncUpdateGen):
     """
     Abstract class for product updates
@@ -1327,36 +1276,6 @@ class SyncUpdateProd(SyncUpdateGen):
 
 class SyncUpdateProdWoo(SyncUpdateProd):
     coldata_class = ColDataProductMeridian
-
-    # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_native_rec(self, handle, updates=None):
-    #     if updates is None:
-    #         updates = OrderedDict()
-    #
-    #     if handle in self.coldata_class.data:
-    #         data = self.coldata_class.data[handle]
-    #         if self.slave_target in data:
-    #             data_target = data[self.slave_target]
-    #             if 'key' in data_target:
-    #                 key = data_target.get('key')
-    #                 val = self.new_s_object_core.get(handle)
-    #                 if data_target.get('meta'):
-    #                     if not val:
-    #                         if 'delete_meta' not in updates:
-    #                             updates['delete_meta'] = []
-    #                         updates['delete_meta'].append(key)
-    #
-    #                     if 'custom_meta' not in updates:
-    #                         updates['custom_meta'] = OrderedDict()
-    #                     updates['custom_meta'][key] = val
-    #
-    #                 elif not data_target.get('final'):
-    #                     updates[key] = val
-    #             elif 'special' in data_target:
-    #                 key = handle
-    #                 val = self.new_s_object_core.get(handle)
-    #                 updates[key] = val
-    #     return updates
 
 class SyncUpdateProdXero(SyncUpdateProd):
     coldata_class = ColDataProductMeridian
@@ -1385,33 +1304,3 @@ class SyncUpdateCatWoo(SyncUpdateGen):
     @property
     def slave_id(self):
         return self.get_new_subject_value('term_id', self.slave_name)
-
-    # # TODO: rewrite this for newer coldata
-    # def get_slave_updates_native_rec(self, handle, updates=None):
-    #     if updates is None:
-    #         updates = OrderedDict()
-    #
-    #     if handle in self.coldata_class.data:
-    #         data = self.coldata_class.data[handle]
-    #         if self.slave_target in data:
-    #             data_target = data[self.slave_target]
-    #             if 'key' in data_target:
-    #                 key = data_target.get('key')
-    #                 val = self.new_s_object_core.get(handle)
-    #                 if data_target.get('meta'):
-    #                     if not val:
-    #                         if 'delete_meta' not in updates:
-    #                             updates['delete_meta'] = []
-    #                         updates['delete_meta'].append(key)
-    #
-    #                     if 'custom_meta' not in updates:
-    #                         updates['custom_meta'] = OrderedDict()
-    #                     updates['custom_meta'][key] = val
-    #
-    #                 elif not data_target.get('final'):
-    #                     updates[key] = val
-    #             elif 'special' in data_target:
-    #                 key = handle
-    #                 val = self.new_s_object_core.get(handle)
-    #                 updates[key] = val
-    #     return updates

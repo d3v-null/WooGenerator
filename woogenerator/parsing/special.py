@@ -152,21 +152,24 @@ class CsvParseSpecial(CsvParseTree):
         ]
         cols = SeqUtils.combine_lists(cols, extra_cols)
 
-        super(CsvParseSpecial, self).__init__(
-            cols,
-            defaults,
-            taxo_depth=1,
-            item_depth=1,
-            meta_width=1
-        )
+        for base_class in CsvParseSpecial.__bases__:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(
+                    self,
+                    cols,
+                    defaults,
+                    taxo_depth=1,
+                    item_depth=1,
+                    meta_width=1
+                )
         self.object_indexer = self.get_object_id
         self.register_item = self.register_rule
         self.register_taxo = self.register_rule_group
 
     def clear_transients(self):
-        if self.DEBUG_MRO:
-            Registrar.register_message(' ')
-        super(CsvParseSpecial, self).clear_transients()
+        for base_class in CsvParseSpecial.__bases__:
+            if hasattr(base_class, 'clear_transients'):
+                base_class.clear_transients(self)
         self.rule_groups = OrderedDict()
         self.rules = OrderedDict()
 

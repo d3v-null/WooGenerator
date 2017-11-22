@@ -590,21 +590,60 @@ def do_merge_images(matches, parsers, updates, settings):
             del sync_handles[handle]
 
     for match in matches.image.valid:
-        s_object = match.s_object
         m_object = match.m_object
+        for s_object in match.s_objects:
+            s_object = match.s_object
 
-        sync_update = settings.syncupdate_class_img(m_object, s_object)
+            sync_update = settings.syncupdate_class_img(m_object, s_object)
 
-        if Registrar.DEBUG_TRACE:
-            print(sync_update.tabulate())
-            # import pudb; pudb.set_trace()
+            sync_update.update(sync_handles)
 
-        sync_update.update(sync_handles)
+            if not sync_update.important_static:
+                insort(updates.image.problematic, sync_update)
+                continue
 
-        if Registrar.DEBUG_TRACE:
-            print(sync_update.tabulate())
-            # import pudb; pudb.set_trace()
-            pass # so that I can debug here
+            if sync_update.m_updated:
+                updates.image.master.append(sync_update)
+
+            if sync_update.s_updated:
+                updates.image.slave.append(sync_update)
+
+    for update in updates.image.master:
+        old_master = update.old_m_object
+        old_master_id = old_master.attachment_indexer(old_master)
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (update.master_id, update.slave_id,
+                 str(update.old_m_object), str(update.old_s_object)))
+        if not old_master_id in parsers.master.images:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.images" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        for col, warnings in update.sync_warnings.items():
+            for warning in warnings:
+                if not warning['subject'] == update.master_name:
+                    continue
+
+                new_val = warning['new_value']
+                parsers.master.images[old_master_id][col] = new_val
+
+    if settings['auto_create_new']:
+        for count, match in enumerate(matches.image.slaveless):
+            m_object = match.m_object
+            Registrar.register_message(
+                "will create image %d: %s" % (
+                    count, m_object.identifier
+                )
+            )
+            gen_data = m_object.to_dict()
+            core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.gen_target_out)
+            api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
+            updates.image.slaveless.append(api_data)
+
+    return updates
 
 def do_merge_categories(matches, parsers, updates, settings):
     updates.category = UpdateNamespace()
@@ -653,10 +692,17 @@ def do_merge_categories(matches, parsers, updates, settings):
                 parsers.master.categories[update.master_id][col] = new_val
 
     if settings['auto_create_new']:
-        for match in enumerate(matches.category.slaveless):
+        for count, match in enumerate(matches.category.slaveless):
             m_object = match.m_object
-            sync_update = settings.syncupdate_class_cat(m_object)
-            updates.category.slaveless.append(sync_update)
+            Registrar.register_message(
+                "will create category %d: %s" % (
+                    count, m_object.identifier
+                )
+            )
+            gen_data = m_object.to_dict()
+            core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.gen_target_out)
+            api_data = settings.coldata_class_cat.translate_data_to(core_data, settings.coldata_cat_target)
+            updates.category.slaveless.append(api_data)
 
     return updates
 
@@ -859,14 +905,16 @@ def do_merge(matches, parsers, updates, settings):
                     new_prod_count, m_object.identifier
                 )
             )
-            api_data = m_object.to_api_data(settings.coldata_class, 'wp-api')
-            for key in ['id', 'slug']:
-                if key in api_data:
-                    del api_data[key]
-            # print "has api data: %s" % pformat(api_data)
+            gen_data = m_object.to_dict()
+            core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.gen_target_out)
+            api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
             updates.slaveless.append(api_data)
 
     return updates
+
+def do_report_images(reporters, matches, updates, parsers, settings):
+    pass
+    # TODO: this
 
 def do_report_categories(reporters, matches, updates, parsers, settings):
     Registrar.register_progress("Write Categories Report")
@@ -1041,9 +1089,11 @@ def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
     pass
 
+def do_updates_images(updates, parsers, results, settings):
+    """Perform a list of updates on images."""
 
 def do_updates_categories(updates, parsers, results, settings):
-    """Perform a list of updates."""
+    """Perform a list of updates on categories."""
 
     if not hasattr(updates, 'categories'):
         return

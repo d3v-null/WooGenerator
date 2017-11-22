@@ -24,13 +24,6 @@ class ImportTreeObject(ImportObject):
     child_indexer = Registrar.get_object_rowcount
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportTreeObject')
-        # if self.DEBUG_PARSER:
-        #     self.register_message('called with kwargs: %s' % pformat(kwargs))
-
-        # row = kwargs.get('row')
-        # rowcount = kwargs.get('rowcount')
         try:
             parent = kwargs.pop('parent', None)
             if not self.is_root:
@@ -182,8 +175,6 @@ class ImportTreeRoot(ImportTreeObject):
     is_root = True
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportTreeRoot')
         data = OrderedDict()
         ImportTreeObject.__init__(self, data, rowcount=-1, row=[])
 
@@ -329,8 +320,6 @@ class CsvParseTreeMixin(object):
 
     def register_object(self, object_data):
         assert isinstance(object_data, ImportTreeObject)
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         if object_data.is_item:
             self.register_item(object_data)
         if object_data.is_taxo:
@@ -356,49 +345,29 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     taxo_indexer = CsvParseBase.get_object_rowcount
 
     def __init__(self, cols, defaults, taxo_depth,
-                 item_depth, meta_width, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('CsvParseTree')
+                 item_depth, meta_width=0, **kwargs):
         self.taxo_depth = taxo_depth
         self.item_depth = item_depth
         # self.max_depth  = taxo_depth + item_depth
         self.meta_width = meta_width
-        CsvParseBase.__init__(self, cols, defaults, **kwargs)
-
-        # if self.DEBUG_TREE:
-        #     print "TREE initializing: "
-        #     print "-> taxo_depth: ", self.taxo_depth
-        #     print "-> item_depth: ", self.item_depth
-        #     print "-> max_depth: ", self.max_depth
-        #     print "-> meta_width: ", self.meta_width
+        for base_class in [CsvParseBase]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, cols, defaults, **kwargs)
 
     @property
     def max_depth(self):
         return self.taxo_depth + self.item_depth
 
     def clear_transients(self):
-        if self.DEBUG_MRO:
-            self.register_message('CsvParseTree')
-        CsvParseBase.clear_transients(self)
-        CsvParseTreeMixin.clear_transients(self)
+        for base_class in CsvParseTree.__bases__:
+            if hasattr(base_class, 'clear_transients'):
+                base_class.clear_transients(self)
 
     def register_object(self, object_data):
         assert isinstance(object_data, ImportTreeObject)
-        CsvParseBase.register_object(self, object_data)
-        CsvParseTreeMixin.register_object(self, object_data)
-        # super(CsvParseTree, self).register_object(object_data)
-        # if self.DEBUG_MRO:
-        #     self.register_message(' ')
-        # if object_data.is_item:
-        #     self.register_item(object_data)
-        # if object_data.is_taxo:
-        #     self.register_taxo(object_data)
-
-    # def register_object(self, object_data):
-    #     CsvParseBase.register_object(self, object_data)
-    #     CsvParseTreeMixin.register_object(self, object_data)
-
-        # self.register_message("ceated root: %s" % str(self.root_data))
+        for base_class in CsvParseTree.__bases__:
+            if hasattr(base_class, 'clear_transients'):
+                base_class.register_object(self, object_data)
 
     def depth(self, row):
         sanitized_row = [self.sanitize_cell(cell) for cell in row]
@@ -428,8 +397,6 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     def get_new_obj_container(self, all_data, **kwargs):
         container = super(CsvParseTree, self).get_new_obj_container(
             all_data, **kwargs)
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         depth = kwargs['depth']
         assert depth is not None, "depth should be available to CsvParseTree.get_new_obj_container"
         if self.is_taxo_depth(depth):

@@ -114,11 +114,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def coldata_cat_target(self):
-        return 'wp-api'
+        return 'wc-wp-api'
 
     @property
     def gen_target(self):
         return 'gen-csv'
+
+    @property
+    def gen_target_out(self):
+        return 'gen-api'
 
     @property
     def coldata_target(self):

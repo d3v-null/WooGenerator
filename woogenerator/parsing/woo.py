@@ -44,8 +44,6 @@ class ImportWooMixin(object):
     ]
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooMixin')
         super(ImportWooMixin, self).__init__(*args, **kwargs)
         self.specials = []
 
@@ -81,15 +79,31 @@ class ImportWooMixin(object):
         if special not in self.specials:
             self.specials.append(special)
 
+class ImportWooChildMixin(object):
+    """
+    Base mixin class for woo objects which have parents.
+    """
+    def to_dict(self):
+        response = {}
+        if hasattr(self, 'parent'):
+            if self.parent and hasattr(self.parent, 'wpid'):
+                if self.parent.wpid and int(self.parent.wpid) != -1:
+                    response['parent_id'] = self.parent.wpid
+        return response
+
 class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     container = ShopObjList
-    to_dict = ImportShopMixin.to_dict
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooObject.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
     verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooObject')
         ImportGenObject.__init__(self, *args, **kwargs)
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
@@ -110,37 +124,22 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
     is_item = ImportGenItem.is_item
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooItem')
-        ImportWooObject.__init__(self, *args, **kwargs)
-        # ImportGenItem.__init__(self, *args, **kwargs)
-    # def __init__(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.register_message(' ')
-    #     super(ImportWooItem, self).__init__(*args, **kwargs)
-    #
-    # @property
-    # def verify_meta_keys(self):
-    #     superverify_meta_keys = super(ImportWooItem, self).verify_meta_keys
-    #     # superverify_meta_keys += ImportGenItem.verify_meta_keys
-    #     return superverify_meta_keys
-
+        for base_class in [ImportWooObject]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
 class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooProduct')
         if self.product_type:
             args[0]['prod_type'] = self.product_type
-        ImportWooItem.__init__(self, *args, **kwargs)
-        ImportShopProductMixin.__init__(self, *args, **kwargs)
+        for base_class in ImportWooProduct.__bases__:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
     def process_meta(self):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooProduct')
         super(ImportWooProduct, self).process_meta()
 
         # process titles
@@ -174,6 +173,13 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             map(lambda x: x.fullname, ancestors_self))
         return "Specials > " + names[0] + " Specials"
 
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooProduct.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
+
 class WooProdList(ShopProdList, WooListMixin):
     coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooProduct
@@ -191,16 +197,29 @@ class ImportWooProductVariable(
     product_type = ImportShopProductVariableMixin.product_type
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooProductVariable')
-        ImportWooProduct.__init__(self, *args, **kwargs)
-        ImportShopProductVariableMixin.__init__(self, *args, **kwargs)
+        for base_class in [ImportWooProduct, ImportShopProductVariableMixin]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooProductVariable.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class ImportWooProductVariation(
-        ImportWooProduct, ImportShopProductVariationMixin):
+        ImportWooProduct, ImportShopProductVariationMixin, ImportWooChildMixin
+):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooProductVariation.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class WooVarList(ShopProdList, WooListMixin):
     supported_type = ImportWooProductVariation
@@ -232,34 +251,18 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
     is_taxo = ImportGenTaxo.is_taxo
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooTaxo')
-        ImportWooObject.__init__(self, *args, **kwargs)
-        # ImportGenTaxo.__init__(self, *args, **kwargs)
-    # def __init__(self, *args, **kwargs):
-    #     if self.DEBUG_MRO:
-    #         self.register_message('ImportWooTaxo')
-    #     super(ImportWooTaxo, self).__init__(*args, **kwargs)
-    #
-    # @property
-    # def verify_meta_keys(self):
-    #     superverify_meta_keys = super(ImportWooTaxo, self).verify_meta_keys
-    #     # superverify_meta_keys += ImportGenTaxo.verify_meta_keys
-    #     return superverify_meta_keys
+        for base_class in [ImportWooObject]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
-class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
+class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMixin):
     is_category = ImportShopCategoryMixin.is_category
     is_product = ImportShopCategoryMixin.is_product
 
     def __init__(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message('ImportWooCategory')
-        ImportWooTaxo.__init__(self, *args, **kwargs)
-        ImportShopCategoryMixin.__init__(self, *args, **kwargs)
-        # super(ImportWooCategory, self).__init__(*args, **kwargs)
-    # @property
-    # def identifier_delimeter(self):
-    #     return ImportWooObject.identifier_delimeter(self)
+        for base_class in [ImportWooTaxo, ImportShopCategoryMixin]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
     def find_child_category(self, index):
         for child in self.children:
@@ -294,16 +297,13 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin):
             'w:%s' % str(self.get(self.wpid_key)),
             self.cat_name,
         ])
-    #
-    # @property
-    # def title(self):
-    #     return self.cat_name
-    #
-    # def __getitem__(self, key):
-    #     if key == self.title_key:
-    #         return self.cat_name
-    #     else:
-    #         return super(ImportWooCategory, self).__getitem__(key)
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooCategory.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class WooCatList(ShopCatList, WooListMixin):
     coldata_class = WooListMixin.coldata_cat_class
@@ -312,7 +312,7 @@ class WooCatList(ShopCatList, WooListMixin):
 
 ImportWooCategory.container = WooCatList
 
-class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
+class ImportWooImg(ImportWooObject, ImportShopImgMixin):
     verify_meta_keys = ImportShopImgMixin.verify_meta_keys
     index = ImportShopImgMixin.index
     is_product = False
@@ -323,7 +323,7 @@ class ImportWooImg(ImportTreeObject, ImportShopImgMixin):
     title_key = 'title'
 
     def __init__(self, *args, **kwargs):
-        ImportTreeObject.__init__(self, *args, **kwargs)
+        ImportWooObject.__init__(self, *args, **kwargs)
         ImportShopImgMixin.__init__(self, *args, **kwargs)
 
 class WooImgList(ObjList, WooListMixin):
@@ -382,19 +382,12 @@ class CsvParseWooMixin(object):
         assert isinstance(object_data, ImportWooMixin)
         return object_data.title
 
-    def get_parser_data(self, **kwargs):
-        if Registrar.DEBUG_MRO:
-            Registrar.register_message(' ')
-        defaults = {
+    def get_defaults(self, **kwargs):
+        return {
             self.object_container.wpid_key: '',
             self.object_container.slug_key: '',
             self.object_container.title_key: ''
         }
-        # super_data = super(CsvParseWooMixin, self).get_parser_data(**kwargs)
-        # defaults.update(super_data)
-        # if self.DEBUG_PARSER:
-        # self.register_message("PARSER DATA: %s" % repr(defaults))
-        return defaults
 
     @property
     def img_defaults(self):
@@ -587,11 +580,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         #     print "-> meta_width: ", self.meta_width
 
     def clear_transients(self):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
-        CsvParseGenTree.clear_transients(self)
-        CsvParseShopMixin.clear_transients(self)
-        CsvParseWooMixin.clear_transients(self)
+        for base_class in CsvParseWoo.__bases__:
+            if hasattr(base_class, 'clear_transients'):
+                base_class.clear_transients(self)
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
@@ -599,30 +590,25 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.onspecial_variations = OrderedDict()
 
     def register_object(self, object_data):
-        CsvParseGenTree.register_object(self, object_data)
-        CsvParseShopMixin.register_object(self, object_data)
+        for base_class in CsvParseWoo.__bases__:
+            if hasattr(base_class, 'register_object'):
+                base_class.register_object(self, object_data)
+
+    def get_defaults(self, **kwargs):
+        defaults = {}
+        for base_class in CsvParseWoo.__bases__:
+            if hasattr(base_class, 'get_defaults'):
+                defaults.update(base_class.get_defaults(self, **kwargs))
+        return defaults
 
     def get_parser_data(self, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
-        super_data = {}
-        for base_class in [
-            CsvParseGenTree,
-            CsvParseShopMixin,
-            CsvParseWooMixin
-        ]:
+        parser_data = kwargs.get('row_data', {})
+        for base_class in CsvParseWoo.__bases__:
             if hasattr(base_class, 'get_parser_data'):
-                super_data.update(base_class.get_parser_data(self, **kwargs))
-        # super_data = CsvParseWooMixin.get_parser_data(self, **kwargs)
-        # super_data.update(CsvParseShopMixin.get_parser_data(self, **kwargs))
-        # super_data.update(CsvParseGenTree.get_parser_data(self, **kwargs))
-        if self.DEBUG_PARSER:
-            self.register_message("PARSER DATA: %s" % repr(super_data))
-        return super_data
+                parser_data.update(base_class.get_parser_data(self, **kwargs))
+        return parser_data
 
     def get_new_obj_container(self, *args, **kwargs):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         container = super(CsvParseWoo, self).get_new_obj_container(
             *args, **kwargs)
         try:
@@ -945,8 +931,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.register_special(object_data, special)
 
     def process_object(self, object_data):
-        if self.DEBUG_MRO:
-            self.register_message(' ')
         if self.DEBUG_WOO:
             self.register_message(object_data.index)
         super(CsvParseWoo, self).process_object(object_data)
@@ -1106,9 +1090,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     def post_process_attributes(self, object_data):
         # self.register_message(object_data.index)
         # print 'analysing attributes', object_data.get('codesum')
-
+        if not getattr(object_data, 'is_product'):
+            return
         for attr, data in object_data.attributes.items():
-
             if not data:
                 continue
             values = '|'.join(map(str, data.get('values', [])))
