@@ -115,11 +115,19 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def coldata_img_target(self):
-        return 'wp-api'
+        return 'wp-api-v2'
+
+    @property
+    def coldata_img_target_write(self):
+        return 'wp-api-v2-edit'
 
     @property
     def coldata_cat_target(self):
-        return 'wc-wp-api'
+        return 'wc-wp-api-v2'
+
+    @property
+    def coldata_cat_target_write(self):
+        return 'wc-wp-api-v2-edit'
 
     @property
     def gen_target(self):
@@ -133,7 +141,16 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def coldata_target(self):
         response = None
         if self.schema_is_woo:
-            response = 'wc-wp-api'
+            response = 'wc-wp-api-v2'
+        elif self.schema_is_xero:
+            response = 'xero-api'
+        return response
+
+    @property
+    def coldata_target_write(self):
+        response = None
+        if self.schema_is_woo:
+            response = 'wc-wp-api-v2-edit'
         elif self.schema_is_xero:
             response = 'xero-api'
         return response

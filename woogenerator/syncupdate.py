@@ -1253,7 +1253,7 @@ class SyncUpdateGen(SyncUpdate):
     """
     Abstract class for when sync master is in generator format.
     """
-    master_target = 'gen-csv'
+    master_target = 'gen-api'
     merge_mode = 'merge'
 
     @property
@@ -1265,7 +1265,7 @@ class SyncUpdateProd(SyncUpdateGen):
     Abstract class for product updates
     """
     coldata_class = ColDataProductMeridian
-    slave_target = 'wc-wp-api'
+    slave_target = 'wc-wp-api-v2-edit'
 
     def __init__(self, *args, **kwargs):
         super(SyncUpdateProd, self).__init__(*args, **kwargs)
@@ -1291,7 +1291,7 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
 
 class SyncUpdateImgWoo(SyncUpdateGen):
     coldata_class = ColDataAttachment
-    slave_target = 'wp-api'
+    slave_target = 'wp-api-v2-edit'
 
     @property
     def slave_id(self):
@@ -1299,7 +1299,7 @@ class SyncUpdateImgWoo(SyncUpdateGen):
 
 class SyncUpdateCatWoo(SyncUpdateGen):
     coldata_class = ColDataWcProdCategory
-    slave_target = 'wc-wp-api'
+    slave_target = 'wc-wp-api-v2-edit'
 
     @property
     def slave_id(self):

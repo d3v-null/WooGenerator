@@ -191,7 +191,8 @@ def process_image_meta(settings, parsers, img_data):
             img_data.title_key: current_meta.get('title'),
             'alt_text': current_meta.get('title'),
             'caption': current_meta.get('description'),
-            img_data.description_key: current_meta.get('description')
+            img_data.description_key: current_meta.get('description'),
+            img_data.descsum_key: current_meta.get('description'),
         })
 
     except Exception as exc:
@@ -214,7 +215,8 @@ def process_image_meta(settings, parsers, img_data):
             img_data.title_key: title,
             'alt_text': title,
             'caption': description,
-            img_data.description_key: description
+            img_data.description_key: description,
+            img_data.descsum_key: description,
         })
 
     except Exception as exc:

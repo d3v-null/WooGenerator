@@ -8,6 +8,7 @@ from pprint import pformat
 import pytest
 from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
+import datetime
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.img import ImgSyncClientWP
@@ -17,7 +18,7 @@ from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
-
+from woogenerator.coldata import ColDataAttachment
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
     config_file = "generator_config_test.yaml"
@@ -367,7 +368,6 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
 
 @pytest.mark.local
 class TestImgSyncClient(TestProdSyncClient):
-    # debug = True
 
     def test_get_first_img(self):
         img_client_class = self.settings.slave_img_sync_client_class
@@ -397,6 +397,64 @@ class TestImgSyncClient(TestProdSyncClient):
                 id_key = 'ID'
             self.assertIn(id_key, response.json())
             img_id = client.get_data_core(response.json(), id_key)
+            client.delete_item(img_id)
+
+    def test_upload_image_changes_delete(self):
+        if self.debug:
+            Registrar.DEBUG_API = True
+            logging.basicConfig(level=logging.DEBUG)
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
+
+        title = "Range A - Style 2 - 1Litre"
+        content = (
+            "Company A have developed a range of unique blends in 16 shades "
+            "to suit all use cases. All Company A's products are created "
+            "using the finest naturally derived botanical and certified "
+            "organic ingredients."
+        )
+
+        new_img_core = OrderedDict([
+            ('title', title),
+            ('post_excerpt', content),
+            ('post_content', content),
+            ('menu_order', 14),
+            ('alt_text', title),
+            ('file_path', 'tests/sample_data/imgs_raw/ACARA-CCL.png')
+        ])
+
+        with img_client_class(**img_client_args) as client:
+            img_path = new_img_core.pop('file_path')
+            response = client.upload_image(img_path)
+            if self.debug:
+                print("upload images response: %s" % pformat(response.json()))
+            response_core = client.coldata_class.translate_data_from(
+                response.json(), client.coldata_target
+            )
+            self.assertIn(client.primary_key_handle, response.json())
+            img_id = client.coldata_class.get_from_path(
+                response_core, client.primary_key_handle
+            )
+            response = client.upload_changes_core(img_id, new_img_core)
+            if self.debug:
+                print("upload changes response: %s" % pformat(response.json()))
+            response_core = client.coldata_class.translate_data_from(
+                response.json(), client.coldata_target_write
+            )
+            self.assertEqual(
+                response_core['title'], title
+            )
+            self.assertEqual(
+                response_core['post_excerpt'], content
+            )
+            self.assertEqual(
+                response_core['post_content'], content
+            )
+            self.assertEqual(
+                response_core['alt_text'], title
+            )
+            if self.debug:
+                print("upload changes response core: %s" % pformat(response_core.items()))
             client.delete_item(img_id)
 
 

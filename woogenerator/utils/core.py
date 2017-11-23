@@ -742,6 +742,18 @@ class SanitationUtils(object):
         )(string)
 
     @classmethod
+    def normalize_wp_raw_content(cls, string):
+        return cls.compose(
+            # cls.strip_leading_whitespace,
+            # cls.strip_tailing_whitespace,
+            # cls.strip_tailing_newline,
+            # cls.xml_to_unicode,
+            # cls.strip_p_tags,
+            # cls.replace_br_tags,
+            cls.coerce_unicode
+        )(string)
+
+    @classmethod
     def shorten(cls, reg, subs, str_in):
         # if(Registrar.DEBUG_GEN):
         #     print "calling shorten"

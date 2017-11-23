@@ -351,6 +351,7 @@ class ShopObjList(ObjList):
             # raise warn
 
         bisect.insort(container, object_data)
+        self[:] = list(self.__iter__())
 
     def extend(self, iterable):
         for thing in iterable:

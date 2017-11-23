@@ -100,6 +100,8 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
         return codesum
 
     def join_descs(self, ancestors):
+        ancestors_self = ancestors + [self]
+
         if self.DEBUG_GEN:
             self.register_message(
                 u"given description: {}".format(self.description))
@@ -107,15 +109,18 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
         if self.description:
             return self.description
         fullnames = [self.fullname]
-        for ancestor in reversed(ancestors):
+
+        for ancestor in reversed(ancestors_self):
             ancestor_description = ancestor.description
             if ancestor_description:
                 return ancestor_description
+            if not getattr(ancestor, 'is_item'):
+                continue
             ancestor_fullname = SanitationUtils.strip_extra_whitespace(ancestor.fullname)
             if ancestor_fullname:
                 fullnames.insert(0, ancestor_fullname)
         if fullnames:
-            return " - ".join(reversed(fullnames))
+            return " - ".join(SeqUtils.filter_unique_true(fullnames))
         else:
             return ""
 

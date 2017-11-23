@@ -1,5 +1,8 @@
+from __future__ import absolute_import
+
 import os
 
+from ..coldata import ColDataAttachment
 from .core import SyncClientWP
 
 
@@ -7,6 +10,9 @@ class ImgSyncClientWP(SyncClientWP):
     endpoint_singular = 'media'
     endpoint_plural = 'media'
     pagination_limit_key = None
+    coldata_class = ColDataAttachment
+    primary_key_handle = 'id'
+
 
     def __init__(self, connect_params, **kwargs):
         connect_params['user_auth'] = True
@@ -25,6 +31,12 @@ class ImgSyncClientWP(SyncClientWP):
             'content-type': 'image/%s' % extension
         }
         return self.create_item(data, headers=headers)
+
+    def upload_changes_core(self, pkey, updates_core=None):
+        if self.primary_key_handle in updates_core:
+            del updates_core[self.primary_key_handle]
+        updates_api = self.coldata_class.translate_data_to(updates_core, self.coldata_target_write)
+        return self.upload_changes(pkey, updates_api)
 
     def analyse_remote_imgs(self, parser, **kwargs):
         img_api_iterator = self.get_iterator(self.endpoint_plural)

@@ -24,6 +24,8 @@ class SyncClientXero(SyncClientAbstract):
     endpoint_singular = ''
     mandatory_params = ['api_key', 'rsa_key_file']
     key_translation = {}
+    coldata_target = 'xero-api'
+    coldata_target_write = 'xero-api'
 
     def __init__(self, connect_params, **kwargs):
         self.limit = connect_params.get('limit')

@@ -33,7 +33,7 @@ from sshtunnel import SSHTunnelForwarder
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
-from ..coldata import ColDataWpPost
+from ..coldata import ColDataWpPost, ColDataProductMeridian
 from ..utils import ProgressCounter, Registrar, SanitationUtils
 
 
@@ -379,6 +379,9 @@ class SyncClientGDrive(SyncClientAbstract):
 class SyncClientRest(SyncClientAbstract):
     """ Abstract REST API Client. """
 
+    coldata_class = ColDataWpPost
+    coldata_target = None
+    primary_key_handle = 'id'
     service_builder = WPAPIService
     service_name = 'REST'
     version = None
@@ -767,6 +770,8 @@ class SyncClientRest(SyncClientAbstract):
         else:
             return function(data)
 
+    # TODO: Get rid of all of these, just use coldata
+
     @classmethod
     def get_item_core(cls, item, key):
         return item.get(key)
@@ -896,6 +901,10 @@ class SyncClientWC(SyncClientRest):
     """
     default_version = 'wc/v2'
     default_namespace = 'wp-json'
+    coldata_class = ColDataWpPost
+    coldata_target = 'wc-api-v2'
+    coldata_target_write = 'wc-api-v2-write'
+    primary_key_handle = 'id'
     page_nesting = False
     meta_get_key = 'meta_data'
     meta_set_key = 'meta_data'
@@ -906,6 +915,7 @@ class SyncClientWC(SyncClientRest):
     meta_listed = True
     total_pages_key = 'x-wp-totalpages'
     total_items_key = 'x-wp-total'
+    # TODO: do readonly keys with coldata
     readonly_keys = {
         'core': [
             'id', 'permalink', 'date_created', 'date_created_gmt',
@@ -939,6 +949,10 @@ class SyncClientWCLegacy(SyncClientRest):
     meta_set_key = 'custom_meta'
     default_version = 'v3'
     default_namespace = 'wc-api'
+    coldata_class = ColDataWpPost
+    coldata_target = 'wc-api-legacy-v3'
+    coldata_target_write = 'wc-api-legacy-v3-write'
+    primary_key_handle = 'id'
     page_nesting = True
     pagination_limit_key = 'filter[limit]'
     pagination_number_key = 'page'
@@ -979,6 +993,8 @@ class SyncClientWP(SyncClientRest):
     """
     Client for the WP REST API
     """
+    coldata_target = 'wp-api-v2'
+    coldata_target_write = 'wp-api-v2-edit'
     mandatory_params = [
         'consumer_key', 'consumer_secret', 'url', 'wp_user', 'wp_pass', 'callback'
     ]
@@ -1001,6 +1017,9 @@ class LocalNullTunnel(object):
 class SyncClientSqlWP(SyncClientAbstract):
     service_builder = SSHTunnelForwarder
     coldata_class = ColDataWpPost
+    coldata_target = 'wp-sql'
+    coldata_target_write = 'wp-sql'
+    primary_key_handle = 'id'
 
     """docstring for UsrSyncClientSqlWP"""
 
@@ -1028,7 +1047,7 @@ class SyncClientSqlWP(SyncClientAbstract):
         limit = kwargs.get('limit', self.limit)
         filter_pkey = kwargs.get('filter_pkey')
 
-        core_pkey = 'ID'
+        # native_pkey = 'ID'
 
         self.assert_connect()
 
@@ -1037,6 +1056,7 @@ class SyncClientSqlWP(SyncClientAbstract):
         cursor = pymysql.connect(**self.db_params).cursor()
 
         wp_db_col_paths = self.coldata_class.get_target_path_translation('wp-sql')
+        native_pkey = wp_db_col_paths[self.primary_key_handle]
 
         wp_db_core_cols = OrderedDict()
         wp_db_meta_cols = OrderedDict()
@@ -1071,10 +1091,10 @@ class SyncClientSqlWP(SyncClientAbstract):
     FROM
         {tbl_core} core
         LEFT JOIN {tbl_meta} meta
-        ON ( meta.`{meta_fkey}` = core.`{core_pkey}`)
+        ON ( meta.`{meta_fkey}` = core.`{native_pkey}`)
     GROUP BY
-        core.`{core_pkey}`""".format(
-            core_pkey=core_pkey,
+        core.`{native_pkey}`""".format(
+            native_pkey=native_pkey,
             meta_fkey='post_id',
             tbl_core=self.tbl_prefix + 'posts',
             tbl_meta=self.tbl_prefix + 'postmeta',

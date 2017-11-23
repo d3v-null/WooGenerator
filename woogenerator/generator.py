@@ -642,10 +642,26 @@ def do_merge_images(matches, parsers, updates, settings):
                     count, m_object.identifier
                 )
             )
+            if not (m_object.attachments.products or m_object.attachments.categories):
+                continue
             gen_data = m_object.to_dict()
             core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.gen_target_out)
-            api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
-            updates.image.slaveless.append(api_data)
+            slave_writable_handles = \
+            settings.coldata_class_img.get_handles_property_defaults(
+                'write', settings.coldata_img_target_write
+            )
+            # make an exception for file_path
+            for handle in core_data.keys():
+                if handle == 'file_path':
+                    continue
+                if (handle not in sync_handles):
+                    del core_data[handle]
+                    continue
+                slave_writable = slave_writable_handles.get(handle)
+                if not slave_writable:
+                    del core_data[handle]
+            # api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
+            updates.image.new_slaves_core.append(core_data)
 
     return updates
 
@@ -655,6 +671,11 @@ def do_merge_categories(matches, parsers, updates, settings):
     if not hasattr(matches, 'category'):
         return updates
 
+    sync_handles = settings.syncupdate_class_cat.get_sync_handles()
+    for handle in ['post_status']:
+        if handle in sync_handles:
+            del sync_handles[handle]
+
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
@@ -662,8 +683,7 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
-            sync_update.update()
-
+            sync_update.update(sync_handles)
 
             if not sync_update.important_static:
                 insort(updates.category.problematic, sync_update)
@@ -705,8 +725,20 @@ def do_merge_categories(matches, parsers, updates, settings):
             )
             gen_data = m_object.to_dict()
             core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.gen_target_out)
-            api_data = settings.coldata_class_cat.translate_data_to(core_data, settings.coldata_cat_target)
-            updates.category.slaveless.append(api_data)
+            slave_writable_handles = \
+            settings.coldata_class_cat.get_handles_property_defaults(
+                'write', settings.coldata_cat_target_write
+            )
+            # make an exception for file_path
+            for handle in core_data.keys():
+                if (handle not in sync_handles):
+                    del core_data[handle]
+                    continue
+                slave_writable = slave_writable_handles.get(handle)
+                if not slave_writable:
+                    del core_data[handle]
+            # api_data = settings.coldata_class_cat.translate_data_to(core_data, settings.coldata_cat_target)
+            updates.category.new_slaves_core.append(core_data)
 
     return updates
 
@@ -721,14 +753,15 @@ def do_merge(matches, parsers, updates, settings):
 
     # Merge products
 
-    sync_cols = settings.sync_cols_prod
+    sync_handles = settings.sync_cols_prod
 
     if Registrar.DEBUG_UPDATE:
-        Registrar.register_message("sync_cols: %s" % repr(sync_cols))
+        Registrar.register_message("sync_handles: %s" % repr(sync_handles))
 
-    for col in settings['exclude_cols']:
-        if col in sync_cols:
-            del sync_cols[col]
+    # TODO: exclude_cols are in gen format
+    for handle in settings['exclude_cols']:
+        if handle in sync_handles:
+            del sync_handles[handle]
 
     for _, prod_match in enumerate(matches.globals):
         if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
@@ -745,7 +778,7 @@ def do_merge(matches, parsers, updates, settings):
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not s_object.is_variation
 
-        sync_update.update()
+        sync_update.update(sync_handles)
 
         # print sync_update.tabulate()
 
@@ -903,6 +936,7 @@ def do_merge(matches, parsers, updates, settings):
 
     if settings['auto_create_new']:
         for new_prod_count, new_prod_match in enumerate(matches.slaveless):
+
             m_object = new_prod_match.m_object
             Registrar.register_message(
                 "will create product %d: %s" % (
@@ -910,9 +944,21 @@ def do_merge(matches, parsers, updates, settings):
                 )
             )
             gen_data = m_object.to_dict()
-            core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.gen_target_out)
-            api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
-            updates.slaveless.append(api_data)
+            core_data = settings.coldata_class.translate_data_from(gen_data, settings.gen_target_out)
+            slave_writable_handles = \
+            settings.coldata_class.get_handles_property_defaults(
+                'write', settings.coldata_target_write
+            )
+            # make an exception for file_path
+            for handle in core_data.keys():
+                if (handle not in sync_handles):
+                    del core_data[handle]
+                    continue
+                slave_writable = slave_writable_handles.get(handle)
+                if not slave_writable:
+                    del core_data[handle]
+            # api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
+            updates.new_slaves_core.append(core_data)
 
     return updates
 
@@ -1118,19 +1164,20 @@ def do_updates_categories(updates, parsers, results, settings):
         with upload_client_class(**upload_client_args) as client:
             if Registrar.DEBUG_CATS:
                 Registrar.register_message("created cat client")
-            new_categories = [
-                update.m_object for update in updates.category.slaveless
+            new_categories_core = [
+                update.m_object for update in updates.category.new_slaves_core
             ]
             if Registrar.DEBUG_CATS:
                 Registrar.register_message("new categories %s" %
-                                           new_categories)
+                                           new_categories_core)
 
-            while new_categories:
-                category = new_categories.pop(0)
+            while new_categories_core:
+                category = new_categories_core.pop(0)
+                # TODO: this is an issue since categories are in core form
                 if category.parent:
                     parent = category.parent
-                    if not parent.is_root and not parent.wpid and parent in new_categories:
-                        new_categories.append(category)
+                    if not parent.is_root and not parent.wpid and parent in new_categories_core:
+                        new_categories_core.append(category)
                         continue
 
                 m_api_data = category.to_api_data(

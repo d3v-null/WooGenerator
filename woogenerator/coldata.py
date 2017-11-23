@@ -10,13 +10,13 @@ import itertools
 import re
 from collections import OrderedDict
 from copy import copy, deepcopy
-from pprint import pprint, pformat
+from pprint import pformat, pprint
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import (JSONPathUtils, MimeUtils, PHPUtils, Registrar,
-                    SanitationUtils, SeqUtils, TimeUtils, FileUtils)
+from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils, Registrar,
+                    SanitationUtils, SeqUtils, TimeUtils)
 
 # TODO:
 """
@@ -61,6 +61,7 @@ schema = {
 
 The translation is only as good as the data you provide it, so write lots of tests
 and make sure that your data translates correctly but checking multiple API sources.
+The data shcmea is kind of like CSS in that properties are inherited from their parents
 
 # Targets
 Targets are different contexts in which the data can be represented.
@@ -290,6 +291,10 @@ class ColDataLegacy(object):
         return translated
 
     @classmethod
+    def translate_key(cls, handle, target):
+        return cls.get_handle_property(handle, 'path', target)
+
+    @classmethod
     def delta_col(cls, col):
         return 'Delta ' + col
 
@@ -347,18 +352,39 @@ class ColDataAbstract(ColDataLegacy):
     targets = {
         'api': {
             'wp-api': {
-                'wp-api-v1': {},
-                'wp-api-v2': {}
+                'wp-api-v1': {
+                    'wp-api-v1-edit': {},
+                    'wp-api-v1-view': {}
+                },
+                'wp-api-v2': {
+                    'wp-api-v2-edit': {},
+                    'wp-api-v2-view': {}
+                }
             },
             'wc-api': {
                 'wc-legacy-api': {
-                    'wc-legacy-api-v1': {},
-                    'wc-legacy-api-v2': {},
-                    'wc-legacy-api-v3': {},
+                    'wc-legacy-api-v1': {
+                        'wc-legacy-api-v1-edit': {},
+                        'wc-legacy-api-v1-view': {}
+                    },
+                    'wc-legacy-api-v2': {
+                        'wc-legacy-api-v2-edit': {},
+                        'wc-legacy-api-v2-view': {},
+                    },
+                    'wc-legacy-api-v3': {
+                        'wc-legacy-api-v3-edit': {},
+                        'wc-legacy-api-v3-view': {},
+                    },
                 },
                 'wc-wp-api': {
-                    'wc-wp-api-v1': {},
-                    'wc-wp-api-v2': {}
+                    'wc-wp-api-v1': {
+                        'wc-wp-api-v1-edit': {},
+                        'wc-wp-api-v1-view': {},
+                    },
+                    'wc-wp-api-v2': {
+                        'wc-wp-api-v2-edit': {},
+                        'wc-wp-api-v2-view': {},
+                    }
                 }
             },
             'xero-api': {},
@@ -910,6 +936,7 @@ class ColDataAbstract(ColDataLegacy):
             'datetime': SanitationUtils.identity,
             'timestamp': TimeUtils.timestamp2datetime,
             'wp_content_rendered': SanitationUtils.normalize_wp_rendered_content,
+            'wp_content_raw': SanitationUtils.normalize_wp_raw_content,
             'yesno': SanitationUtils.yesno2bool,
             'stock_status': SanitationUtils.stock_status2bool,
             'optional_int_minus_1': SanitationUtils.normalize_optional_int_minus_1,
@@ -1062,7 +1089,6 @@ class ColDataAbstract(ColDataLegacy):
             sync_handles[handle] = cls.data[handle]
         return sync_handles
 
-
 class ColDataSubEntity(ColDataAbstract):
     """
     Metadata for abstract WP sub-entities
@@ -1114,9 +1140,8 @@ class CreatedModifiedGmtMixin(object):
                 'path': 'date_created_gmt',
                 'type': 'iso8601',
             },
-            'wc-legacy-api': {
-                'path': 'created_at',
-                'type': 'iso8601',
+            'wc-wp-api-v1': {
+                'path': None,
             },
             'wp-sql':{
                 'type': 'wp_datetime',
@@ -1140,9 +1165,8 @@ class CreatedModifiedGmtMixin(object):
                 'path': 'date_modified_gmt',
                 'type': 'iso8601',
             },
-            'wc-legacy-api': {
-                'path': 'modified_at',
-                'type': 'iso8601',
+            'wc-wp-api-v1': {
+                'path': None,
             },
             'wp-sql': {
                 'path': 'post_modified_gmt',
@@ -1688,7 +1712,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
 
 class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
     """
-    Metadata for abstract WP objects based off wp posts
+    Metadata for abstract WP objects based off wp post object
     - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
     - wp-api-v2: http://v2.wp-api.org/reference/posts/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_post
@@ -1843,13 +1867,15 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'unique': True,
             'path': None,
             'wp-api': {
-                'path': 'slug'
+                'path': 'slug',
+                'write': False,
             },
             'wp-api-v1': {
                 'path': 'name'
             },
             'wc-api': {
-                'path': 'slug'
+                'path': 'slug',
+                'write': False,
             },
             'wc-legacy-api': {
                 'path': None
@@ -1866,6 +1892,10 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wp-api':{
                 'path': 'title.rendered',
                 'type': 'xml_escaped'
+            },
+            'wp-api-v2-edit': {
+                'path': 'title.raw',
+                'type': 'wp_content_raw'
             },
             'wp-api-v1': {
                 'path': 'title'
@@ -1885,6 +1915,9 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'gen-csv': {
                 'path': 'title',
                 'read': False,
+            },
+            'gen-api': {
+                'read': True
             },
             'report': True,
         },
@@ -1935,6 +1968,12 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wp-api':{
                 'path': 'content.rendered',
                 'type': 'wp_content_rendered',
+                'write': False
+            },
+            'wp-api-v2-edit': {
+                'path': 'content.raw',
+                'type': 'wp_content_raw',
+                'write': True,
             },
             'wp-api-v1': {
                 'path': 'content_raw'
@@ -1950,6 +1989,9 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'path': 'descsum',
                 'read': False,
             },
+            'gen-api': {
+                'read': True
+            },
             'xero-api': {
                 'path': 'Description'
             },
@@ -1962,6 +2004,10 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wp-api': {
                 'path': 'excerpt.rendered',
                 'type': 'wp_content_rendered'
+            },
+            'wp-api-v2-edit': {
+                'path': 'excerpt.raw',
+                'type': 'wp_content_raw'
             },
             'wp-api-v1': {
                 'path': 'excerpt_raw'
@@ -2141,7 +2187,12 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'read': False,
             }
         },
-
+        'template': {
+            'path': None,
+            'wp-api': {
+                'path': 'template'
+            }
+        },
     })
 
 class ColDataWpPost(ColDataWpEntity):
@@ -2228,12 +2279,6 @@ class ColDataWpPost(ColDataWpEntity):
                 'path': 'sticky'
             }
         },
-        'template': {
-            'path': None,
-            'wp-api': {
-                'path': 'template'
-            }
-        },
         'liveblog_likes': {
             'type': int,
             'path': None,
@@ -2253,6 +2298,7 @@ class ColDataProduct(ColDataWpEntity):
     """
 
     data = deepcopy(ColDataWpEntity.data)
+    del data['template']
     data['post_type'].update({
         'path': None,
         'default': 'product',
@@ -2441,6 +2487,13 @@ class ColDataProduct(ColDataWpEntity):
         'sale_price_dates_from_gmt': {
             'type': 'datetime',
             'path': None,
+            'wc-api': {
+                'path': 'date_on_sale_from_gmt',
+                'type': 'iso8601'
+            },
+            'wc-wp-api-v1': {
+                'path': None
+            }
         },
         'sale_price_dates_to': {
             'type': 'datetime',
@@ -2471,6 +2524,9 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'date_on_sale_to',
                 'type': 'iso8601',
             },
+            'wc-wp-api-v1': {
+                'path': None
+            }
         },
         'price_html': {
             'write': False,
@@ -2574,6 +2630,13 @@ class ColDataProduct(ColDataWpEntity):
             'gen-csv': {
                 'read': False,
             },
+        },
+        'download_type': {
+            'path': None,
+            'wc-wp-api': {
+                'path': 'download_type',
+                'default': 'standard'
+            }
         },
         'external_url': {
             'wc-legacy-api': {
@@ -3006,9 +3069,6 @@ class ColDataMeridianEntityMixin(object):
             'wc-csv': {
                 'path': 'meta:wootan_danger',
             },
-            'wc-csv': {
-                'path': 'D',
-            },
             'gen-csv': {
                 'path': 'D',
                 'default': ''
@@ -3200,43 +3260,69 @@ class ColDataAttachment(ColDataWpEntity):
     - wp-api-v2: http://v2.wp-api.org/reference/media/
     - wp-api-v1: http://wp-api.org/index-deprecated.html#entities_media
     """
+    # TODO: replace rendered with raw?
+
+    # the following wp-api keys exist in post schema but not media schema:
+    # - categories
+    # - content
+    # - excerpt
+    # - featured media
+    # - format
+    # - password
+    # - sticky
+    # - tags
+
     data = deepcopy(ColDataWpEntity.data)
+    del data['post_categories']
+    del data['terms']
+    del data['tags']
+    del data['modified_timezone']
+
+    data['post_type'].update({
+        'default': 'attachment'
+    })
     data['post_content'].update({
-        'wp-api-v1': {
-            'path': None
-        },
         'wp-api': {
             'path': 'description.rendered',
             'type': 'wp_content_rendered',
-            'write': False
-        }
+            'write': True
+        },
+        'wp-api-v1': {
+            'path': None
+        },
+        'wp-api-v2-edit': {
+            'path': 'description.raw',
+            'type': 'wp_content_raw',
+            'write': True
+        },
     })
     data['post_excerpt'].update({
         'gen-csv': {
             'path': 'caption'
         },
-        'wp-api-v1': {
-            'path': None
-        },
         'wp-api': {
             'path': 'caption.rendered',
             'type': 'wp_content_rendered'
-        }
-    })
-    data['post_categories'].update({
-        'path': None,
-        'api': {
-            'path': None,
         },
-        'csv': {
-            'path': None,
-        }
+        'wp-api-v1': {
+            'path': None
+        },
+        'wp-api-v2-edit': {
+            'path': 'caption.raw',
+            'type': 'wp_content_raw',
+            'write': True,
+        },
     })
     data['mime_type'].update({
         'wp-api-v1': {
             'path': 'attachment_meta.sizes.thumbnail.mime-type',
             'write': False
         },
+    })
+    data['menu_order'].update({
+        'wp-api-v2': {
+            'path': None,
+        }
     })
     data = SeqUtils.combine_ordered_dicts(data, {
         'source_url': {
@@ -3248,45 +3334,48 @@ class ColDataAttachment(ColDataWpEntity):
         },
         'alt_text': {
             'wp-api': {
-                'path': None,
+                'read': False,
             },
             'wp-api-v1': {
                 'path': None
             }
         },
         'image_meta': {
-            'write': False,
-            'wp-api-v1': {
-                'path': 'attachment_meta.image_meta'
-            },
             'wp-api': {
                 'path': 'attachment_meta.media_details'
-            }
+            },
+            'wp-api-v1': {
+                'path': 'attachment_meta.image_meta',
+                'write': False,
+            },
         },
         'width': {
-            'wp-api-v1':{
-                'path': 'attachment_meta.width'
-            },
             'wp-api':{
-                'path': 'media_details.width'
+                'path': 'media_details.width',
+                'write': False,
+            },
+            'wp-api-v1':{
+                'path': 'attachment_meta.width',
             },
             'report': True,
         },
         'height': {
-            'wp-api-v1':{
-                'path': 'attachment_meta.height'
-            },
             'wp-api':{
-                'path': 'media_details.height'
+                'path': 'media_details.height',
+                'write': False,
+            },
+            'wp-api-v1':{
+                'path': 'attachment_meta.height',
             },
             'report': True,
         },
         'file_path': {
-            'wp-api-v1': {
-                'path': 'attachment_meta.file'
-            },
             'wp-api': {
-                'path': 'media_details.file'
+                'path': 'media_details.file',
+                'write': False,
+            },
+            'wp-api-v1': {
+                'path': 'attachment_meta.file',
             },
             'report': True
         },

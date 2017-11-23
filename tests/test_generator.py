@@ -4,18 +4,18 @@ import os
 import shutil
 import tempfile
 import unittest
-import pytest
 from pprint import pformat
 
+import pytest
 from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from woogenerator.coldata import ColDataAttachment, ColDataProduct
 from woogenerator.generator import (do_match, do_match_categories,
-                                    do_match_images, do_merge, do_merge_images,
-                                    do_merge_categories, do_report,
-                                    populate_master_parsers,
+                                    do_match_images, do_merge,
+                                    do_merge_categories, do_merge_images,
+                                    do_report, populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
@@ -26,10 +26,10 @@ from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.tree import ItemList
 from woogenerator.parsing.woo import CsvParseWoo, WooProdList
 from woogenerator.parsing.xero import ApiParseXero
-from woogenerator.utils import Registrar, SanitationUtils
+from woogenerator.utils import FileUtils, Registrar, SanitationUtils
 from woogenerator.utils.reporter import ReporterNamespace
-from .abstract import AbstractWooGeneratorTestCase
 
+from .abstract import AbstractWooGeneratorTestCase
 
 
 class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
@@ -541,18 +541,28 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object_core['post_excerpt'],
                 master_desc
             )
-            # self.assertEqual(
-            #     sync_update.old_m_object_core['title'],
-            #     master_title
-            # )
-            # self.assertEqual(
-            #     sync_update.old_s_object_core['title'],
-            #     slave_title
-            # )
-            # self.assertEqual(
-            #     sync_update.new_s_object_core['title'],
-            #     master_title
-            # )
+            self.assertEqual(
+                sync_update.old_m_object_core['title'],
+                master_title
+            )
+            self.assertEqual(
+                sync_update.old_s_object_core['title'],
+                slave_title
+            )
+            self.assertEqual(
+                sync_update.new_s_object_core['title'],
+                master_title
+            )
+            self.assertFalse(sync_update.old_s_object_core['alt_text'])
+            self.assertEqual(
+                sync_update.new_s_object_core['alt_text'],
+                master_title
+            )
+            self.assertFalse(sync_update.old_s_object_core['post_content'])
+            self.assertEqual(
+                sync_update.new_s_object_core['post_content'],
+                master_desc
+            )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
         self.assertEqual(len(self.updates.image.master), 45)
@@ -578,6 +588,39 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
         # TODO: add tests for creation of images
+        if self.debug:
+            print("slaveless objects")
+            for slave_core_object in self.updates.image.new_slaves_core:
+                print(slave_core_object)
+
+        self.assertEqual(len(self.updates.image.new_slaves_core), 2)
+        slave_core_object = self.updates.image.new_slaves_core[0]
+        title = 'Range A - Style 2 - 1Litre'
+        content = (
+            "Company A have developed a range of unique blends in 16 shades to "
+            "suit all use cases. All Company A's products are created using the "
+            "finest naturally derived botanical and certified organic ingredients."
+        )
+        self.assertEqual(
+            slave_core_object['title'],
+            title
+        )
+        self.assertEqual(
+            slave_core_object['alt_text'],
+            title
+        )
+        self.assertEqual(
+            slave_core_object['post_excerpt'],
+            content
+        )
+        self.assertEqual(
+            slave_core_object['post_content'],
+            content
+        )
+        self.assertEqual(
+            FileUtils.get_path_basename(slave_core_object['file_path']),
+            "ACARA-CCL.png"
+        )
 
     @pytest.mark.last
     def test_dummy_do_merge_categories(self):
@@ -623,6 +666,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
         # TODO: add tests for creation of categories
+        if self.debug:
+            print("slaveless objects")
+            for slave_core_object in self.updates.category.new_slaves_core:
+                print(slave_core_object)
 
     @pytest.mark.last
     def test_dummy_do_match(self):

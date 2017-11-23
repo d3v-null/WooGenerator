@@ -5,19 +5,24 @@ from collections import OrderedDict
 
 from .core import SyncClientWC, SyncClientWCLegacy
 from .xero import SyncClientXero
+from ..coldata import ColDataProductMeridian, ColDataWcProdCategory
 
 class ProdSyncClientMixin(object):
     endpoint_singular = 'product'
+    coldata_class = ColDataProductMeridian
 
 class ProdSyncClientWC(SyncClientWC, ProdSyncClientMixin):
     endpoint_singular = ProdSyncClientMixin.endpoint_singular
+    coldata_class = ProdSyncClientMixin.coldata_class
 
 class ProdSyncClientWCLegacy(SyncClientWCLegacy, ProdSyncClientMixin):
     endpoint_singular = ProdSyncClientMixin.endpoint_singular
+    coldata_class = ProdSyncClientMixin.coldata_class
 
 class CatSyncClientMixin(object):
     endpoint_singular = 'product_category'
     endpoint_plural = 'products/categories'
+    coldata_class = ColDataWcProdCategory
 
     def analyse_remote_categories(self, parser, **kwargs):
         taxo_api_iterator = self.get_iterator(self.endpoint_plural)
@@ -35,10 +40,12 @@ class CatSyncClientMixin(object):
 class CatSyncClientWC(SyncClientWC, CatSyncClientMixin):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
     endpoint_plural = CatSyncClientMixin.endpoint_plural
+    coldata_class = CatSyncClientMixin.coldata_class
 
 class CatSyncClientWCLegacy(SyncClientWCLegacy):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
     endpoint_plural = CatSyncClientMixin.endpoint_plural
+    coldata_class = CatSyncClientMixin.coldata_class
 
 class ProdSyncClientXero(SyncClientXero):
     endpoint_singular = 'item'

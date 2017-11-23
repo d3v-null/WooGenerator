@@ -54,8 +54,9 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
-        ImportXeroItem.__init__(self, *args, **kwargs)
-        ImportShopProductMixin.__init__(self, *args, **kwargs)
+        for base_class in [ImportXeroItem, ImportShopProductMixin]:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
     def process_meta(self):
         # import pudb; pudb.set_trace()
