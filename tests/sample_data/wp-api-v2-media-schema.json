@@ -1,0 +1,102 @@
+{
+  "alt_text": {
+    "description": "Alternative text to display when attachment is not displayed.",
+    "required": false,
+    "type": "string"
+  },
+  "author": {
+    "description": "The ID for the author of the object.",
+    "required": false,
+    "type": "integer"
+  },
+  "caption": {
+    "description": "The attachment caption.",
+    "required": false,
+    "type": "object"
+  },
+  "comment_status": {
+    "description": "Whether or not comments are open on the object.",
+    "enum": [
+      "open",
+      "closed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "date": {
+    "description": "The date the object was published, in the site's timezone.",
+    "required": false,
+    "type": "string"
+  },
+  "date_gmt": {
+    "description": "The date the object was published, as GMT.",
+    "required": false,
+    "type": "string"
+  },
+  "description": {
+    "description": "The attachment description.",
+    "required": false,
+    "type": "object"
+  },
+  "id": {
+    "description": "Unique identifier for the object.",
+    "required": false,
+    "type": "integer"
+  },
+  "meta": {
+    "description": "Meta fields.",
+    "required": false,
+    "type": "object"
+  },
+  "ping_status": {
+    "description": "Whether or not the object can be pinged.",
+    "enum": [
+      "open",
+      "closed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "post": {
+    "description": "The ID for the associated post of the attachment.",
+    "required": false,
+    "type": "integer"
+  },
+  "slug": {
+    "description": "An alphanumeric identifier for the object unique to its type.",
+    "required": false,
+    "type": "string"
+  },
+  "status": {
+    "description": "A named status for the object.",
+    "enum": [
+      "publish",
+      "future",
+      "draft",
+      "pending",
+      "private",
+      "wc-pending",
+      "wc-processing",
+      "wc-on-hold",
+      "wc-completed",
+      "wc-cancelled",
+      "wc-refunded",
+      "wc-failed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "template": {
+    "description": "The theme file to use to display the object.",
+    "enum": [
+      ""
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "title": {
+    "description": "The title for the object.",
+    "required": false,
+    "type": "object"
+  }
+}

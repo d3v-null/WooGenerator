@@ -1,0 +1,117 @@
+{
+  "author": {
+    "description": "The ID for the author of the object.",
+    "required": false,
+    "type": "integer"
+  },
+  "comment_status": {
+    "description": "Whether or not comments are open on the object.",
+    "enum": [
+      "open",
+      "closed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "content": {
+    "description": "The content for the object.",
+    "required": false,
+    "type": "object"
+  },
+  "date": {
+    "description": "The date the object was published, in the site's timezone.",
+    "required": false,
+    "type": "string"
+  },
+  "date_gmt": {
+    "description": "The date the object was published, as GMT.",
+    "required": false,
+    "type": "string"
+  },
+  "excerpt": {
+    "description": "The excerpt for the object.",
+    "required": false,
+    "type": "object"
+  },
+  "featured_media": {
+    "description": "The ID of the featured media for the object.",
+    "required": false,
+    "type": "integer"
+  },
+  "menu_order": {
+    "description": "The order of the object in relation to other object of its type.",
+    "required": false,
+    "type": "integer"
+  },
+  "meta": {
+    "description": "Meta fields.",
+    "required": false,
+    "type": "object"
+  },
+  "parent": {
+    "description": "The ID for the parent of the object.",
+    "required": false,
+    "type": "integer"
+  },
+  "password": {
+    "description": "A password to protect access to the content and excerpt.",
+    "required": false,
+    "type": "string"
+  },
+  "ping_status": {
+    "description": "Whether or not the object can be pinged.",
+    "enum": [
+      "open",
+      "closed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "slug": {
+    "description": "An alphanumeric identifier for the object unique to its type.",
+    "required": false,
+    "type": "string"
+  },
+  "status": {
+    "description": "A named status for the object.",
+    "enum": [
+      "publish",
+      "future",
+      "draft",
+      "pending",
+      "private",
+      "wc-pending",
+      "wc-processing",
+      "wc-on-hold",
+      "wc-completed",
+      "wc-cancelled",
+      "wc-refunded",
+      "wc-failed"
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "template": {
+    "description": "The theme file to use to display the object.",
+    "enum": [
+      "template-archives.php",
+      "template-biz.php",
+      "template-blog.php",
+      "template-contact.php",
+      "template-imagegallery.php",
+      "template-magazine.php",
+      "template-portfolio.php",
+      "template-sitemap.php",
+      "template-timeline.php",
+      "template-widgets.php",
+      ""
+    ],
+    "required": false,
+    "type": "string"
+  },
+  "title": {
+    "description": "The title for the object.",
+    "required": false,
+    "type": "object"
+  }
+}
