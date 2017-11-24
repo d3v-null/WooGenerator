@@ -3,14 +3,13 @@ Introduce woo structure to shop classes.
 """
 from __future__ import absolute_import
 
-import os
 import re
 from collections import OrderedDict
-from copy import copy, deepcopy
+from copy import deepcopy
 from pprint import pformat
 
-from ..coldata import (ColDataAttachment, ColDataProductMeridian, ColDataProductVariationMeridian,
-                       ColDataWcProdCategory)
+from ..coldata import (ColDataAttachment, ColDataProductMeridian,
+                       ColDataProductVariationMeridian, ColDataWcProdCategory)
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .abstract import ObjList
@@ -19,10 +18,11 @@ from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
                    ImportShopImgMixin, ImportShopMixin, ImportShopProductMixin,
                    ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
-                   ImportShopProductVariationMixin, ShopCatList, ShopObjList,
-                   ShopProdList, ShopMixin)
+                   ImportShopProductVariationMixin, ShopCatList, ShopMixin,
+                   ShopObjList, ShopProdList)
 from .special import ImportSpecialGroup
-from .tree import ImportTreeItem, ImportTreeObject, ItemList, TaxoList
+from .tree import ImportTreeItem
+
 
 class ImportWooMixin(object):
     """ all things common to Woo import classes """
@@ -162,12 +162,23 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             self.categories.values() + super(ImportWooProduct, self).inheritence_ancestors
         )
 
-    @property
-    def extra_special_category(self):
+    def get_extra_special_category_components(self, specials_name):
+        components = {}
         ancestors_self = self.taxo_ancestors + [self]
-        names = SeqUtils.filter_unique_true(
-            map(lambda x: x.fullname, ancestors_self))
-        return "Specials > " + names[0] + " Specials"
+        fullname_ancestor = None
+        code_ancestor = None
+        for ancestor in ancestors_self:
+            if ancestor.fullname:
+                fullname_ancestor = ancestor
+            if ancestor.code:
+                code_ancestor = ancestor
+            if fullname_ancestor and code_ancestor:
+                break
+        if fullname_ancestor:
+            components[self.fullname_key] = ' '.join([fullname_ancestor.fullname, specials_name])
+        if code_ancestor:
+            components[self.code_key] = code_ancestor.code
+        return components
 
     def to_dict(self):
         response = {}
@@ -272,7 +283,9 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
         return None
 
     def process_meta(self):
-        ImportGenTaxo.process_meta(self)
+        for base_class in self.__class__.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
         self.title = self.fullname
 
     @property
@@ -473,9 +486,13 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     coldata_cat_class = CsvParseWooMixin.coldata_cat_class
     coldata_img_class = CsvParseWooMixin.coldata_img_class
 
+    # Whether to calculate the special prices of objects
     do_specials = True
     do_dyns = True
-    specialsCategory = None
+    # This is the name of the parent specials category, e.g. "Specials",
+    # Where the children are special categories, e.g. "Product A Specials"
+    specials_category_name = None
+    # Whether to add products into special categories if they are on special
     add_special_categories = False
 
     @property
@@ -605,6 +622,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         return parser_data
 
     def get_new_obj_container(self, *args, **kwargs):
+        # TODO: isn't this exactly what gen does?
         container = super(CsvParseWoo, self).get_new_obj_container(
             *args, **kwargs)
         try:
@@ -630,6 +648,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         return container
 
     def register_special(self, object_data, special):
+        """
+        Associate `object_data` with a particular special rule ID.
+        """
         try:
             special = str(special)
             assert isinstance(special, (str, unicode)), 'Special must be a string not {}'.format(
@@ -1057,12 +1078,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         if object_data.is_product:
             categories = object_data.categories.values()
-            object_data['catsum'] = '|'.join(SeqUtils.filter_unique_true(
-                map(
-                    lambda x: x.namesum,
-                    categories
-                )
-            ))
+            object_data['catsum'] = '|'.join(SeqUtils.filter_unique_true([
+                category.namesum for category in categories
+            ]))
             if self.DEBUG_WOO:
                 self.register_message("catsum of %s is %s" % (
                     object_data.index, object_data.get('catsum')))
@@ -1120,6 +1138,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     object_data['meta:attribute_' + attr] = values
 
     def post_process_specials(self, object_data):
+        """
+        Determine which special rule IDs apply to this object and
+        calculate the discounted prices.
+        """
         # self.register_message(object_data.index)
 
         if not (object_data.is_product or object_data.is_variation):
@@ -1282,50 +1304,50 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             if visible is "hidden":
                 object_data['catalog_visibility'] = "hidden"
 
-    def get_special_category(self, name=None):
+    def get_special_category(self, special_components=None):
+        """
+        Find the special category corresponding to the product type specified in
+        `special_components` if it exists, else create it.
+        If special_components is None, then find the parent special category.
+        """
         # TODO: Generate HTML Descriptions properly
-        if not name:
-            category_name = self.specialsCategory
+        if not special_components:
+            category_fullname = self.specials_category_name
             search_data = {
-                self.object_container.title_key: category_name
+                self.object_container.title_key: category_fullname
             }
             result = self.find_category(search_data)
             if not result:
-                result = self.category_container(
-                    {
-                        'HTML Description': '',
-                        'itemsum': category_name,
-                        'ID': None,
-                        'title': category_name,
-                        'slug': SanitationUtils.slugify(category_name)
-                    },
-                    parent=self.root_data,
-                    meta=[category_name, 'SP'],
-                    rowcount=self.rowcount,
-                    row=[]
-                )
+                kwargs = OrderedDict()
+                search_data[self.schema] = ''
+                kwargs['defaults'] = self.cat_defaults
+                kwargs['row_data'] = search_data
+                kwargs['container'] = self.category_container
+                kwargs['parent'] = self.root_data
+                kwargs['meta'] = [category_fullname, 'SP']
+                result = self.new_object(rowcount=self.rowcount, **kwargs)
                 self.rowcount += 1
             return result
         else:
-            category_name = name
+            category_fullname = special_components.get(
+                self.category_container.fullname_key
+            )
             search_data = {
-                self.object_container.title_key: category_name
+                self.object_container.title_key: category_fullname
             }
             result = self.find_category(search_data)
             if not result:
-                result = self.category_container(
-                    {
-                        'HTML Description': '',
-                        'itemsum': category_name,
-                        'ID': None,
-                        'title': category_name,
-                        'slug': SanitationUtils.slugify(category_name)
-                    },
-                    parent=self.get_special_category(),
-                    meta=[category_name],
-                    rowcount=self.rowcount,
-                    row=[]
+                kwargs = OrderedDict()
+                search_data[self.schema] = ''
+                kwargs['defaults'] = self.cat_defaults
+                kwargs['row_data'] = search_data
+                kwargs['container'] = self.category_container
+                kwargs['parent'] = self.get_special_category()
+                category_code = special_components.get(
+                    self.category_container.code_key
                 )
+                kwargs['meta'] = [category_fullname, category_code]
+                result = self.new_object(rowcount=self.rowcount, **kwargs)
                 self.rowcount += 1
             return result
 
@@ -1339,13 +1361,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         self.register_message("%s matches special %s" % (
                             str(object_data), special_group))
                     if self.add_special_categories:
-                        object_data['catsum'] = "|".join(
-                            filter(None, [
-                                object_data.get('catsum', ""),
-                                self.specialsCategory,
-                                object_data.extra_special_category
-                            ])
-                        )
                         special_category_object = self.get_special_category()
                         if self.DEBUG_SPECIAL:
                             self.register_message(
@@ -1354,13 +1369,23 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                             special_category_object, object_data)
                         assert special_category_object.index in object_data.categories
                         extra_special_category_object = self.get_special_category(
-                            object_data.extra_special_category)
+                            object_data.get_extra_special_category_components(
+                                self.specials_category_name
+                            )
+                        )
                         if self.DEBUG_SPECIAL:
                             self.register_message(
                                 "joining extra special category: %s" % extra_special_category_object.identifier)
                         self.register_join_category(
                             extra_special_category_object, object_data)
                         assert extra_special_category_object.index in object_data.categories
+                        object_data['catsum'] = "|".join(
+                            filter(None, [
+                                object_data.get('catsum', ""),
+                                special_category_object.namesum,
+                                extra_special_category_object.namesum
+                            ])
+                        )
                     if object_data.is_variation:
                         self.register_current_spec_var(object_data)
                     else:
@@ -1413,33 +1438,15 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.post_process_updated(object_data)
             self.post_process_visibility(object_data)
             self.post_process_shipping(object_data)
-            if self.specialsCategory and self.current_special_groups:
+            if self.specials_category_name and self.current_special_groups:
                 self.post_process_current_special(object_data)
 
         return objects
 
-    def get_categories(self):
-        exc = DeprecationWarning(
-            "use .categories instead of .get_categories()")
-        self.register_error(exc)
-        return self.categories
-        # return self.flatten(self.categories.values())
+class CsvParseMeridian(CsvParseWoo):
+    pass
 
-    def get_attributes(self):
-        exc = DeprecationWarning(
-            "use .attributes instead of .get_attributes()")
-        self.register_error(exc)
-        return self.attributes
-        # return self.flatten(self.attributes.values())
-
-    def get_variations(self):
-        exc = DeprecationWarning(
-            "use .variations instead of .get_variations()")
-        self.register_error(exc)
-        return self.variations
-
-
-class CsvParseTT(CsvParseWoo):
+class CsvParseTT(CsvParseMeridian):
 
     target_schema = "TT"
 
@@ -1514,7 +1521,7 @@ class CsvParseTT(CsvParseWoo):
         #     print "-> meta_width: ", self.meta_width
 
 
-class CsvParseVT(CsvParseWoo):
+class CsvParseVT(CsvParseMeridian):
 
     target_schema = "VT"
 

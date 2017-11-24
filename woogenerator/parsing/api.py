@@ -189,6 +189,11 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)
 
+    def process_meta(self):
+        for base_class in self.__class__.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
+
     @property
     def cat_name(self):
         return self.title
@@ -485,6 +490,7 @@ class ApiParseWoo(
             else:
                 kwargs['parent'] = self.root_data
 
+            # TODO: why is this relevant?
             kwargs['coldata_class'] = self.coldata_cat_class
 
             cat_data = self.new_object(rowcount=self.rowcount, **kwargs)

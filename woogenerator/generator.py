@@ -393,6 +393,9 @@ def do_match_categories(parsers, matches, settings):
             (len(parsers.master.categories),
              len(parsers.slave.categories)))
 
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
+
     if not( parsers.master.categories and parsers.slave.categories ):
         return matches
 
@@ -828,9 +831,9 @@ def do_merge(matches, parsers, updates, settings):
                     master_cat_ids != slave_cat_ids, \
                     (
                         "if change_match_list exists, then master_cat_ids "
-                         "should not equal slave_cat_ids. "
-                         "This might mean that you have not enabled "
-                         "auto_create_new categories.\n"
+                         "should not equal slave_cat_ids.\n"
+                         "This might mean that you have not correctly created "
+                         "the new products which need to be created. "
                          "master_cat_ids: %s\n"
                          "slave_cat_ids: %s\n"
                          "change_match_list: \n%s"

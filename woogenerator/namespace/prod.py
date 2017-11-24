@@ -635,7 +635,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.do_specials:
             if self['current_special']:
                 CsvParseWoo.current_special = self['current_special']
-            CsvParseWoo.specialsCategory = "Specials"
+            CsvParseWoo.specials_category_name = "Specials"
             CsvParseWoo.add_special_categories = self['add_special_categories']
 
         CsvParseWoo.do_images = self.do_images

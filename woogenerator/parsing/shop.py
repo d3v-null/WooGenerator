@@ -93,13 +93,6 @@ class ImportShopMixin(object):
         self.images = OrderedDict()
         self.attributes = OrderedDict()
 
-    # @classmethod
-    # def get_new_obj_container(cls):
-    #     exc = DeprecationWarning("use .container instead of .get_new_obj_container()")
-    #     self.register_error(exc)
-    #     return cls.container
-    #     # return ObjList
-
     def register_attribute(self, attr, val, var=False):
         if Registrar.DEBUG_SHOP:
             self.register_message(
@@ -624,6 +617,7 @@ class CsvParseShopMixin(object):
 
     def get_parser_data(cls, **kwargs):
         parser_data = kwargs.get('row_data', {})
+        # TODO: why not move this to process_meta ?
         if kwargs.get('container') and issubclass(kwargs.get('container'), cls.image_container):
             if not cls.image_container.file_name_key in parser_data:
                 if parser_data.get(cls.image_container.file_path_key):

@@ -8,6 +8,8 @@ from pprint import pformat
 
 import pytest
 from tabulate import tabulate
+import mock
+from utils import MockUtils
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
@@ -53,7 +55,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.specials_mode = 'all_future'
         # self.settings.specials_mode = 'auto_next'
         # TODO: make this work with create special categories
-        self.settings.skip_special_categories = True
+        self.settings.skip_special_categories = False
         self.settings.do_sync = True
         self.settings.do_categories = True
         self.settings.do_images = True
@@ -195,15 +197,27 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
         # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
+        expected_categories = set([
+            u'Product A',
+            u'Company A Product A',
+            u'Range A',
+            u'1 Litre Company A Product A Items',
+        ])
+        if self.settings.add_special_categories:
+            expected_categories.update([
+                u'Specials',
+                u'Product A Specials',
+            ])
+
         self.assertEquals(
-            [cat.title for cat in first_prod.categories.values()],
-            [
-                u'Product A',
-                u'Company A Product A',
-                u'Range A',
-                u'1 Litre Company A Product A Items',
-            ]
+            set([
+                cat.title for cat in first_prod.categories.values()
+            ]),
+            expected_categories
         )
+
+        if self.debug:
+            print("parser tree:\n%s" % self.parsers.master.to_str_tree())
 
         cat_container = self.parsers.master.category_container.container
         cat_list = cat_container(self.parsers.master.categories.values())
@@ -232,6 +246,17 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(second_cat.parent.codesum, 'A')
         self.assertEqual(second_cat.images.keys(), ["ACA.jpg"])
 
+        # if self.debug:
+        #     import pudb; pudb.set_trace()
+
+        prod_a_spec_cat = self.parsers.master.find_category({
+            self.parsers.master.category_container.title_key: 'Product A Specials'
+        })
+        self.assertEqual(
+            prod_a_spec_cat[self.parsers.master.category_container.codesum_key],
+            'SPA'
+        )
+
         spec_list = SpecialGruopList(self.parsers.special.rule_groups.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
@@ -244,9 +269,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     tabulate(first_group.children, tablefmt='simple')),
                  pformat(dict(first_group)), pformat(dir(first_group)))
             )
-
-        if self.debug:
-            print("parser tree:\n%s" % self.parsers.master.to_str_tree())
 
     def test_dummy_populate_slave_parsers(self):
         # self.populate_master_parsers()
@@ -665,6 +687,21 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+        # with mock.patch(
+        #     MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+        #     new_callable=mock.PropertyMock,
+        #     return_value = self.settings.null_client_class
+        # ), \
+        # mock.patch(
+        #     MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+        #     new_callable=mock.PropertyMock,
+        #     return_value = self.settings.null_client_class
+        # ):
+        #     self.results = do_updates(
+        #         self.updates, self.settings
+        #     )
+        # self.assertTrue(self.results)
+
         # TODO: add tests for creation of categories
         if self.debug:
             print("slaveless objects")
@@ -702,6 +739,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.last
     def test_dummy_do_merge_products(self):
+        # TODO: make this work with special categories
+        self.settings.skip_special_categories = True
+        self.settings.init_settings(self.override_args)
+
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.debug:
@@ -719,11 +760,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("slave_products:\n", slave_products.tabulate(cols=report_cols))
         if self.settings.do_categories:
             do_match_categories(self.parsers, self.matches, self.settings)
+
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
         do_match(self.parsers, self.matches, self.settings)
         do_merge(self.matches, self.parsers, self.updates, self.settings)
+
 
         if self.debug:
             self.print_updates_summary(self.updates)
