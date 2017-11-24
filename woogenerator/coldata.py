@@ -225,10 +225,10 @@ class ColDataLegacy(object):
     Legacy methods for backwards compatiblity, to be deprecated ASAP.
     """
     data = {}
-    gen_target = 'gen-csv'
+    coldata_gen_target = 'gen-csv'
 
     @classmethod
-    def get_import_cols_gen(cls, target=gen_target, base_target=gen_target):
+    def get_import_cols_gen(cls, target=coldata_gen_target, base_target=coldata_gen_target):
         target_reads = cls.get_handles_property_defaults('read', target)
         import_cols = OrderedDict()
         for handle in cls.data.keys():
@@ -239,7 +239,7 @@ class ColDataLegacy(object):
         return cls.translate_keys(import_cols, base_target).keys()
 
     @classmethod
-    def get_export_cols_gen(cls, property_=None, target=gen_target, base_target=gen_target):
+    def get_export_cols_gen(cls, property_=None, target=coldata_gen_target, base_target=coldata_gen_target):
         """
         Return a mapping of the gen path to the handle properties for
         handles where `property_` is not False.
@@ -255,22 +255,22 @@ class ColDataLegacy(object):
         return cls.translate_keys(export_cols, base_target)
 
     @classmethod
-    def get_report_cols_gen(cls, target=gen_target):
+    def get_report_cols_gen(cls, target=coldata_gen_target):
         return cls.get_export_cols_gen('report', target)
 
     @classmethod
-    def get_delta_cols_gen(cls, target=gen_target):
+    def get_delta_cols_gen(cls, target=coldata_gen_target):
         return OrderedDict([
             (col, cls.delta_col(col))
             for col in cls.get_export_cols_gen('delta', target).keys()
         ])
 
     @classmethod
-    def get_basic_cols_gen(cls, target=gen_target):
+    def get_basic_cols_gen(cls, target=coldata_gen_target):
         return cls.get_export_cols_gen('basic', target)
 
     @classmethod
-    def get_defaults_gen(cls, target=gen_target, base_target=gen_target):
+    def get_defaults_gen(cls, target=coldata_gen_target, base_target=coldata_gen_target):
         target_properties = cls.get_handles_property_defaults('default', target)
         defaults = OrderedDict()
         for handle, target_property_value in target_properties.items():

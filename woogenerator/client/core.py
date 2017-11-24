@@ -33,7 +33,7 @@ from sshtunnel import SSHTunnelForwarder
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
-from ..coldata import ColDataWpPost, ColDataProductMeridian
+from ..coldata import ColDataWpPost, ColDataProductMeridian, ColDataWpEntity
 from ..utils import ProgressCounter, Registrar, SanitationUtils
 
 
@@ -149,9 +149,12 @@ class SyncClientNull(SyncClientAbstract):
     """ Designed to act like a client but fails on all actions """
 
     service_name = 'NULL'
+    coldata_class = ColDataWpEntity
+    primary_key_handle = 'id'
+
 
     def __init__(self, *args, **kwargs):
-        pass
+        self.fake_id = 1000000
 
     def attempt_connect(self):
         pass
@@ -161,6 +164,16 @@ class SyncClientNull(SyncClientAbstract):
 
     def upload_changes(self, pkey, updates=None):
         raise UserWarning("Using null client class")
+
+    def create_item(self, data, **kwargs):
+        native_pkey = self.coldata_class.translate_key(
+            self.primary_key_handle, self.coldata_target
+        )
+        if not isinstance(data, dict):
+            data = {}
+        data[native_pkey] = self.fake_id
+        self.fake_id += 1
+        return data
 
 
 class SyncClientLocal(SyncClientAbstract):
@@ -379,7 +392,7 @@ class SyncClientGDrive(SyncClientAbstract):
 class SyncClientRest(SyncClientAbstract):
     """ Abstract REST API Client. """
 
-    coldata_class = ColDataWpPost
+    coldata_class = ColDataWpEntity
     coldata_target = None
     primary_key_handle = 'id'
     service_builder = WPAPIService
@@ -1055,8 +1068,13 @@ class SyncClientSqlWP(SyncClientAbstract):
         self.db_params['port'] = self.service.local_bind_address[-1]
         cursor = pymysql.connect(**self.db_params).cursor()
 
-        wp_db_col_paths = self.coldata_class.get_target_path_translation('wp-sql')
+        wp_db_col_paths = self.coldata_class.get_target_path_translation(
+            self.coldata_target
+        )
         native_pkey = wp_db_col_paths[self.primary_key_handle]
+        native_pkey = self.coldata_class.translate_key(
+            self.primary_key_handle, self.coldata_target
+        )
 
         wp_db_core_cols = OrderedDict()
         wp_db_meta_cols = OrderedDict()

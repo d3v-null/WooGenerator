@@ -130,11 +130,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return 'wc-wp-api-v2-edit'
 
     @property
-    def gen_target(self):
+    def coldata_gen_target(self):
         return 'gen-csv'
 
     @property
-    def gen_target_out(self):
+    def coldata_gen_target_write(self):
         return 'gen-api'
 
     @property
@@ -358,19 +358,39 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def sync_cols_prod(self):
-        return self.coldata_class.get_sync_handles(self.gen_target, self.coldata_target)
+    def sync_handles_prod(self):
+        response = self.coldata_class.get_sync_handles(
+            self.coldata_gen_target_write, self.coldata_target_write
+        )
+        # TODO: exclude_cols are in gen format
+        for handle in self.exclude_cols:
+            if handle in response:
+                del response[handle]
+        return response
 
     @property
-    def sync_cols_img(self):
-        return self.coldata_class_img.get_sync_handles(self.gen_target, self.coldata_img_target)
+    def sync_handles_img(self):
+        response = self.coldata_class_img.get_sync_handles(
+            self.coldata_gen_target_write, self.coldata_img_target_write
+        )
+        for handle in ['post_status', 'file_path']:
+            if handle in response:
+                del response[handle]
+        return response
 
     @property
-    def sync_cols_cat(self):
-        return self.coldata_class_cat.get_sync_handles(self.gen_target, self.coldata_cat_target)
+    def sync_handles_cat(self):
+        response = self.coldata_class_cat.get_sync_handles(
+            self.coldata_gen_target_write, self.coldata_cat_target_write
+        )
+        for handle in ['post_status']:
+            if handle in response:
+                del response[handle]
+        return response
 
     @property
     def exclude_cols(self):
+        # TODO: convert these to their handles
         response = []
         if not self.do_images:
             response.extend(['Images', 'imgsum'])

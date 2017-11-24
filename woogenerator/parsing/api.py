@@ -167,18 +167,6 @@ class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
     verify_meta_keys.remove(ImportGenObject.descsum_key)
     verify_meta_keys.remove(ImportGenTaxo.namesum_key)
 
-    @classmethod
-    def get_slug(cls, category_data):
-        assert cls.slug_key in category_data, \
-        "expected slug key (%s) in category_data" % cls.slug_key
-        return category_data.get(cls.slug_key)
-
-    @classmethod
-    def get_title(cls, category_data):
-        assert cls.title_key in category_data, \
-        "expected title key (%s) in category_data" % cls.title_key
-        return category_data.get(cls.title_key)
-
 
 class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category

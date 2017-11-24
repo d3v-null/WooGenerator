@@ -6,18 +6,20 @@ import tempfile
 import unittest
 from pprint import pformat
 
+import mock
 import pytest
 from tabulate import tabulate
-import mock
-from utils import MockUtils
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
-from woogenerator.coldata import ColDataAttachment, ColDataProduct
+from utils import MockUtils
+from woogenerator.coldata import (ColDataAttachment, ColDataProduct,
+                                  ColDataWcProdCategory)
 from woogenerator.generator import (do_match, do_match_categories,
                                     do_match_images, do_merge,
                                     do_merge_categories, do_merge_images,
-                                    do_report, populate_master_parsers,
+                                    do_report, do_updates_categories,
+                                    populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
@@ -527,7 +529,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
 
         if self.debug:
-            print("img sync cols: %s" % self.settings.sync_cols_img)
+            print("img sync handles: %s" % self.settings.sync_handles_img)
             self.print_updates_summary(self.updates.image)
             for update in self.updates.image.slave:
                 print(update.tabulate())
@@ -612,11 +614,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # TODO: add tests for creation of images
         if self.debug:
             print("slaveless objects")
-            for slave_core_object in self.updates.image.new_slaves_core:
-                print(slave_core_object)
+            for slave_gen_object in self.updates.image.new_slaves_gen:
+                print(slave_gen_object)
 
-        self.assertEqual(len(self.updates.image.new_slaves_core), 2)
-        slave_core_object = self.updates.image.new_slaves_core[0]
+        self.assertEqual(len(self.updates.image.new_slaves_gen), 2)
+        slave_gen_object = self.updates.image.new_slaves_gen[0]
         title = 'Range A - Style 2 - 1Litre'
         content = (
             "Company A have developed a range of unique blends in 16 shades to "
@@ -624,23 +626,25 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             "finest naturally derived botanical and certified organic ingredients."
         )
         self.assertEqual(
-            slave_core_object['title'],
+            self.parsers.master.image_container.get_title(slave_gen_object),
             title
         )
         self.assertEqual(
-            slave_core_object['alt_text'],
+            self.parsers.master.image_container.get_alt_text(slave_gen_object),
             title
         )
         self.assertEqual(
-            slave_core_object['post_excerpt'],
+            self.parsers.master.image_container.get_description(slave_gen_object),
             content
         )
         self.assertEqual(
-            slave_core_object['post_content'],
+            self.parsers.master.image_container.get_caption(slave_gen_object),
             content
         )
         self.assertEqual(
-            FileUtils.get_path_basename(slave_core_object['file_path']),
+            FileUtils.get_path_basename(
+                self.parsers.master.image_container.get_file_path(slave_gen_object),
+            ),
             "ACARA-CCL.png"
         )
 
@@ -687,26 +691,57 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        # with mock.patch(
-        #     MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
-        #     new_callable=mock.PropertyMock,
-        #     return_value = self.settings.null_client_class
-        # ), \
-        # mock.patch(
-        #     MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
-        #     new_callable=mock.PropertyMock,
-        #     return_value = self.settings.null_client_class
-        # ):
-        #     self.results = do_updates(
-        #         self.updates, self.settings
-        #     )
-        # self.assertTrue(self.results)
-
-        # TODO: add tests for creation of categories
         if self.debug:
             print("slaveless objects")
-            for slave_core_object in self.updates.category.new_slaves_core:
-                print(slave_core_object)
+            for slave_gen_object in self.updates.category.new_slaves_gen:
+                print(slave_gen_object)
+
+        self.assertEqual(
+            set([
+                self.parsers.slave.category_container.get_title(gen_data)
+                for gen_data in self.updates.category.new_slaves_gen
+            ]),
+            set(['Specials', 'Product A Specials'])
+        )
+
+    @pytest.mark.last
+    def test_dummy_do_updates_categories(self):
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+        if self.settings.do_categories:
+            do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            with mock.patch(
+                MockUtils.get_mock_name(
+                    self.settings.__class__,
+                    'slave_cat_sync_client_class'
+                ),
+                new_callable=mock.PropertyMock,
+                return_value = self.settings.null_client_class
+            ), \
+            mock.patch(
+                MockUtils.get_mock_name(
+                    self.settings.null_client_class,
+                    'coldata_class'
+                ),
+                new_callable=mock.PropertyMock,
+                return_value=ColDataWcProdCategory
+            ), \
+            mock.patch(
+                MockUtils.get_mock_name(
+                    self.settings.null_client_class,
+                    'primary_key_handle'
+                ),
+                new_callable=mock.PropertyMock,
+                return_value='term_id'
+            ):
+                do_updates_categories(
+                    self.updates, self.parsers, self.results, self.settings
+                )
 
     @pytest.mark.last
     def test_dummy_do_match(self):

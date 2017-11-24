@@ -29,6 +29,8 @@ class ImportShopImgMixin(ShopMixin):
     file_name_key = 'file_name'
     source_url_key = 'source_url'
     attachment_id_key = 'ID'
+    alt_text_key = 'alt_text'
+    caption_key = 'caption'
 
     verify_meta_keys = [
         file_path_key
@@ -39,13 +41,35 @@ class ImportShopImgMixin(ShopMixin):
         self.is_valid = True
 
     @classmethod
+    def get_source_url(cls, data):
+        return data.get(cls.source_url_key)
+
+    @classmethod
+    def get_alt_text(cls, data):
+        assert cls.alt_text_key in data, \
+        "expected alt_text key (%s) in img data" % cls.alt_text_key
+        return data.get(cls.alt_text_key)
+
+    @classmethod
+    def get_caption(cls, data):
+        assert cls.caption_key in data, \
+        "expected caption key (%s) in img data" % cls.caption_key
+        return data.get(cls.caption_key)
+
+    @classmethod
+    def get_file_path(cls, data):
+        return data.get(cls.file_path_key)
+
+    @classmethod
     def get_file_name(cls, data):
         if data.get(cls.file_name_key):
             return FileUtils.get_path_basename(data[cls.file_name_key])
-        if data.get(cls.file_path_key):
-            return FileUtils.get_path_basename(data[cls.file_path_key])
-        elif data.get(cls.source_url_key):
-            return FileUtils.get_path_basename(data[cls.source_url_key])
+        file_path = cls.get_file_path(data)
+        if file_path:
+            return FileUtils.get_path_basename(file_path)
+        source_url = cls.get_source_url(data)
+        if source_url:
+            return FileUtils.get_path_basename(source_url)
 
     @classmethod
     def get_attachment_id(cls, data):
@@ -170,6 +194,24 @@ class ImportShopMixin(object):
         if hasattr(self, 'images'):
             response['image_objects'] = self.images.values()
         return response
+
+    @classmethod
+    def get_slug(cls, data):
+        assert cls.slug_key in data, \
+        "expected slug key (%s) in data" % cls.slug_key
+        return data.get(cls.slug_key)
+
+    @classmethod
+    def get_title(cls, data):
+        assert cls.title_key in data, \
+        "expected title key (%s) in data" % cls.title_key
+        return data.get(cls.title_key)
+
+    @classmethod
+    def get_description(cls, data):
+        assert cls.description_key in data, \
+        "expected description key (%s) in data" % cls.description_key
+        return data.get(cls.description_key)
 
 class ImportShopProductMixin(object):
     "Base mixin class for shop products which also have categories"

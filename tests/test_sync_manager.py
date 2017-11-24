@@ -9,11 +9,14 @@ import unittest
 from pprint import pformat
 
 from context import TESTS_DATA_DIR, get_testdata, woogenerator
-from woogenerator.namespace.core import (
-    MatchNamespace, ParserNamespace, SettingsNamespaceProto, UpdateNamespace
-)
+from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
+                                         ResultsNamespace,
+                                         SettingsNamespaceProto,
+                                         UpdateNamespace)
 from woogenerator.utils import Registrar, TimeUtils
+
 from .abstract import AbstractWooGeneratorTestCase
+
 
 class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
 
@@ -21,6 +24,7 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         super(AbstractSyncManagerTestCase, self).setUp()
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
+        self.results = ResultsNamespace()
 
     @property
     def parsers(self):
