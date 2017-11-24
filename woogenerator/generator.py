@@ -229,7 +229,7 @@ def export_master_parser(settings, parsers):
     """Export key information from master parser to csv."""
     Registrar.register_progress("Exporting Master info to disk")
 
-    product_cols = settings.coldata_class.get_export_cols_gen('path', target='wc-csv')
+    product_cols = settings.coldata_class.get_export_cols_native('path', target='wc-csv')
     product_colnames = settings.coldata_class.get_col_names(product_cols)
 
     for col in settings['exclude_cols']:
@@ -256,7 +256,7 @@ def export_master_parser(settings, parsers):
     if settings.schema_is_woo:
         # variations
         variation_container = settings.master_parser_class.variation_container.container
-        variation_cols = settings.coldata_class_var.get_export_cols_gen('write', target='wc-csv')
+        variation_cols = settings.coldata_class_var.get_export_cols_native('write', target='wc-csv')
         attribute_meta_cols = settings.coldata_class_var.get_attribute_meta_cols(
             parsers.master.vattributes)
         variation_col_names = settings.coldata_class_var.get_col_names(
@@ -276,7 +276,7 @@ def export_master_parser(settings, parsers):
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            category_cols = settings.coldata_class_cat.get_export_cols_gen('write', target='wc-csv')
+            category_cols = settings.coldata_class_cat.get_export_cols_native('write', target='wc-csv')
             category_col_names = settings.coldata_class_cat.get_col_names(category_cols)
             category_container = settings.master_parser_class.category_container.container
             import pudb; pudb.set_trace()

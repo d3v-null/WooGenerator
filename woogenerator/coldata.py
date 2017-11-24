@@ -225,10 +225,10 @@ class ColDataLegacy(object):
     Legacy methods for backwards compatiblity, to be deprecated ASAP.
     """
     data = {}
-    coldata_gen_target = 'gen-csv'
+    default_native_target = 'gen-csv'
 
     @classmethod
-    def get_import_cols_gen(cls, target=coldata_gen_target, base_target=coldata_gen_target):
+    def get_import_cols_native(cls, target=default_native_target, base_target=default_native_target):
         target_reads = cls.get_handles_property_defaults('read', target)
         import_cols = OrderedDict()
         for handle in cls.data.keys():
@@ -239,7 +239,7 @@ class ColDataLegacy(object):
         return cls.translate_keys(import_cols, base_target).keys()
 
     @classmethod
-    def get_export_cols_gen(cls, property_=None, target=coldata_gen_target, base_target=coldata_gen_target):
+    def get_export_cols_native(cls, property_=None, target=default_native_target, base_target=default_native_target):
         """
         Return a mapping of the gen path to the handle properties for
         handles where `property_` is not False.
@@ -255,22 +255,22 @@ class ColDataLegacy(object):
         return cls.translate_keys(export_cols, base_target)
 
     @classmethod
-    def get_report_cols_gen(cls, target=coldata_gen_target):
-        return cls.get_export_cols_gen('report', target)
+    def get_report_cols_native(cls, target=default_native_target):
+        return cls.get_export_cols_native('report', target)
 
     @classmethod
-    def get_delta_cols_gen(cls, target=coldata_gen_target):
+    def get_delta_cols_native(cls, target=default_native_target):
         return OrderedDict([
             (col, cls.delta_col(col))
-            for col in cls.get_export_cols_gen('delta', target).keys()
+            for col in cls.get_export_cols_native('delta', target).keys()
         ])
 
     @classmethod
-    def get_basic_cols_gen(cls, target=coldata_gen_target):
-        return cls.get_export_cols_gen('basic', target)
+    def get_basic_cols_native(cls, target=default_native_target):
+        return cls.get_export_cols_native('basic', target)
 
     @classmethod
-    def get_defaults_gen(cls, target=coldata_gen_target, base_target=coldata_gen_target):
+    def get_defaults_native(cls, target=default_native_target, base_target=default_native_target):
         target_properties = cls.get_handles_property_defaults('default', target)
         defaults = OrderedDict()
         for handle, target_property_value in target_properties.items():
@@ -3410,7 +3410,7 @@ class ColDataUser(ColDataWpEntity):
 #         self.data = data
 #
 #     @classmethod
-#     def get_import_cols_gen(cls):
+#     def get_import_cols_native(cls):
 #         if cls.deprecate_oldstyle:
 #             raise DeprecationWarning("old style coldata class is deprecated")
 #         imports = []
@@ -3447,11 +3447,11 @@ class ColDataUser(ColDataWpEntity):
 #         return export_cols
 #
 #     @classmethod
-#     def get_basic_cols_gen(cls):
+#     def get_basic_cols_native(cls):
 #         return cls.get_export_cols('basic')
 #
 #     @classmethod
-#     def get_delta_cols_gen(cls):
+#     def get_delta_cols_native(cls):
 #         if cls.deprecate_oldstyle:
 #             raise DeprecationWarning("old style coldata class is deprecated")
 #         cols = OrderedDict()
@@ -3479,7 +3479,7 @@ class ColDataUser(ColDataWpEntity):
 #         )
 #
 #     @classmethod
-#     def get_report_cols_gen(cls):
+#     def get_report_cols_native(cls):
 #         return cls.get_export_cols('report')
 #
 #     @classmethod

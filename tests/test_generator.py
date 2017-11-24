@@ -382,7 +382,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print(Registrar.display_stack_counts())
 
     def print_images_summary(self, images):
-        img_cols = ColDataAttachment.get_report_cols_gen()
+        img_cols = ColDataAttachment.get_report_cols_native()
         img_table = [img_cols.keys()] + [
             [img_data.get(key) for key in img_cols.keys()]
             for img_data in images
@@ -781,7 +781,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.debug:
-            report_cols = ColDataProduct.get_report_cols_gen('gen-api')
+            report_cols = ColDataProduct.get_report_cols_native('gen-api')
             report_cols['WNR'] = 'WNR'
             report_cols['WNF'] = 'WNF'
             report_cols['WNT'] = 'WNT'

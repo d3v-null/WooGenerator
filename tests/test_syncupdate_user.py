@@ -321,7 +321,7 @@
 #         self.assertEqual(slave_object.role.direct_brand, None)
 #         sync_update = SyncUpdateUsr(master_object, slave_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
-#         # sync_update.m_deltas(ColDataUser.get_delta_cols_gen())
+#         # sync_update.m_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.s_time, sync_update.m_time)
 #             self.assertFalse(sync_update.s_deltas)
@@ -352,7 +352,7 @@
 #         sync_update = SyncUpdateUsr(master_object, slave_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #
-#         # sync_update.s_deltas(ColDataUser.get_delta_cols_gen())
+#         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
 #             slave_updates = sync_update.get_slave_updates()
@@ -379,7 +379,7 @@
 #         sync_update = SyncUpdateUsr(master_object, slave_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         try:
-#             # sync_update.s_deltas(ColDataUser.get_delta_cols_gen())
+#             # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
 #             slave_updates = sync_update.get_slave_updates()
 #             self.assertIn('Role', slave_updates)
@@ -407,7 +407,7 @@
 #         )
 #         sync_update = SyncUpdateUsr(master_object, slave_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
-#         # sync_update.s_deltas(ColDataUser.get_delta_cols_gen())
+#         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
 #             slave_updates = sync_update.get_slave_updates()
@@ -433,7 +433,7 @@
 #         self.assertEqual(slave_object.role.direct_brand, None)
 #         sync_update = SyncUpdateUsr(master_object, slave_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
-#         # sync_update.s_deltas(ColDataUser.get_delta_cols_gen())
+#         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.s_time, sync_update.m_time)
 #             # Registrar.DEBUG_TRACE = True

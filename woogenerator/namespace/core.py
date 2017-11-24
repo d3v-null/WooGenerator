@@ -202,7 +202,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def basic_cols(self):
-        return self.coldata_class.get_basic_cols_gen()
+        return self.coldata_class.get_basic_cols_native()
 
     @property
     def email_client(self):

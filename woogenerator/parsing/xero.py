@@ -83,7 +83,7 @@ class XeroApiProdList(ShopProdList, ApiListMixin, ApiXeroMixin):
 
     @property
     def report_cols(self):
-        return CsvParseXero.coldata_class.get_report_cols_gen()
+        return CsvParseXero.coldata_class.get_report_cols_native()
 
 ImportXeroApiProduct.container = XeroApiProdList
 

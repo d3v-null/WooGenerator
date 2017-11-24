@@ -642,7 +642,7 @@ class TestColDataWpPost(TestColData):
 #             ]))
 #
 #     def test_getDeltaCols(self):
-#         DeltaCols = self.coldata_class.get_delta_cols_gen()
+#         DeltaCols = self.coldata_class.get_delta_cols_native()
 #         self.assertItemsEqual(DeltaCols, OrderedDict(
 #             [
 #                 ('E-mail', 'Delta E-mail'),

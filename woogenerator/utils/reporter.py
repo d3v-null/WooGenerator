@@ -888,7 +888,7 @@ def do_delta_group(reporter, matches, updates, parsers, settings):
     if not delta_lists:
         return
 
-    delta_cols = settings.coldata_class.get_delta_cols_gen()
+    delta_cols = settings.coldata_class.get_delta_cols_native()
 
     all_delta_cols = OrderedDict(
         settings.basic_cols.items()

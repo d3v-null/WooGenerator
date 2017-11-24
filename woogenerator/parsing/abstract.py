@@ -807,6 +807,6 @@ class CsvParseBase(Registrar):
         for _object in objects:
             obj_list.append(_object)
 
-        cols = cls.object_container.container.get_basic_cols_gen()
+        cols = cls.object_container.container.get_basic_cols_native()
 
         SanitationUtils.safe_print(obj_list.tabulate(cols, tablefmt='simple'))

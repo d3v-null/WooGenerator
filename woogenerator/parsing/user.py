@@ -23,7 +23,7 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-    report_cols = ColDataUser.get_report_cols_gen()
+    report_cols = ColDataUser.get_report_cols_native()
 
     def get_sanitizer(self, tablefmt=None):
         if tablefmt == 'html':
@@ -33,8 +33,8 @@ class UsrObjList(ObjList):
         return super(UsrObjList, self).get_sanitizer(tablefmt)
 
     @classmethod
-    def get_basic_cols_gen(cls, self):
-        return ColDataUser.get_basic_cols_gen()
+    def get_basic_cols_native(cls, self):
+        return ColDataUser.get_basic_cols_native()
 
 
 class ImportUser(ImportObject):

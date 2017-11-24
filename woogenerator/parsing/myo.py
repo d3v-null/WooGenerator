@@ -245,5 +245,5 @@ class CsvParseMyo(CsvParseGenTree):
 
 class MYOProdList(ShopProdList):
 
-    def get_report_cols_gen(self):
-        return ColDataProductMeridian.get_report_cols_gen()
+    def get_report_cols_native(self):
+        return ColDataProductMeridian.get_report_cols_native()
