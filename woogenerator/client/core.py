@@ -151,10 +151,13 @@ class SyncClientNull(SyncClientAbstract):
     service_name = 'NULL'
     coldata_class = ColDataWpEntity
     primary_key_handle = 'id'
+    coldata_target = 'api'
+    page_nesting = False
+    fake_id = 100000
 
 
     def __init__(self, *args, **kwargs):
-        self.fake_id = 1000000
+        pass
 
     def attempt_connect(self):
         pass
@@ -173,7 +176,9 @@ class SyncClientNull(SyncClientAbstract):
             data = {}
         data[native_pkey] = self.fake_id
         self.fake_id += 1
-        return data
+        response = requests.Response()
+        response._content = SanitationUtils.encode_json(data)
+        return response
 
 
 class SyncClientLocal(SyncClientAbstract):
@@ -768,6 +773,8 @@ class SyncClientRest(SyncClientAbstract):
             items_page = items_page[self.endpoint_plural]
         return items_page[0]
 
+    # TODO: Get rid of all of these, just use coldata
+
     @classmethod
     def apply_to_data_item(cls, data, function, wrap_response=None):
         if cls.page_nesting:
@@ -783,7 +790,6 @@ class SyncClientRest(SyncClientAbstract):
         else:
             return function(data)
 
-    # TODO: Get rid of all of these, just use coldata
 
     @classmethod
     def get_item_core(cls, item, key):

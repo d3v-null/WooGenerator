@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from pprint import pformat
+from pprint import pformat, pprint
 
 import mock
 import pytest
@@ -65,6 +65,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_remeta_images = False
         self.settings.report_matching = True
         self.settings.auto_create_new = True
+        self.settings.update_slave = False
         self.settings.schema = "CA"
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
@@ -721,7 +722,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     'slave_cat_sync_client_class'
                 ),
                 new_callable=mock.PropertyMock,
-                return_value = self.settings.null_client_class
+                return_value=self.settings.null_client_class
             ), \
             mock.patch(
                 MockUtils.get_mock_name(
@@ -734,14 +735,49 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             mock.patch(
                 MockUtils.get_mock_name(
                     self.settings.null_client_class,
+                    'coldata_target'
+                ),
+                new_callable=mock.PropertyMock,
+                return_value='wc-wp-api-v2'
+            ), \
+            mock.patch(
+                MockUtils.get_mock_name(
+                    self.settings.null_client_class,
                     'primary_key_handle'
                 ),
                 new_callable=mock.PropertyMock,
                 return_value='term_id'
             ):
+                self.settings.update_slave = True
                 do_updates_categories(
                     self.updates, self.parsers, self.results, self.settings
                 )
+                self.settings.update_slave = False
+
+        success = self.results.category.successes.pop(0)
+        if self.debug:
+            pprint(success.to_dict())
+        self.assertEqual(
+            success.title,
+            'Specials',
+        )
+        self.assertEqual(
+            success.wpid,
+            100000
+        )
+        success = self.results.category.successes.pop(0)
+        if self.debug:
+            pprint(success.to_dict())
+        self.assertEqual(
+            success.title,
+            'Product A Specials',
+        )
+        self.assertEqual(
+            success.wpid,
+            100001
+        )
+
+
 
     @pytest.mark.last
     def test_dummy_do_match(self):

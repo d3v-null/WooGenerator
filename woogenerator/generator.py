@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 
 import io
-import json
 import os
 import shutil
 import sys
@@ -16,33 +15,28 @@ from collections import OrderedDict
 from pprint import pformat, pprint
 
 from exitstatus import ExitStatus
-from httplib2 import ServerNotFoundError
-from PIL import Image
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
-from .client.prod import CatSyncClientWC
-from .matching import CategoryMatcher, ProductMatcher, VariationMatcher, ImageMatcher
 from .images import process_images
+from .matching import (CategoryMatcher, ImageMatcher, ProductMatcher,
+                       VariationMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
+from .parsing.api import ApiParseWoo
 from .parsing.dyn import CsvParseDyn
-from .parsing.myo import MYOProdList
-from .parsing.shop import ShopObjList
 from .parsing.special import CsvParseSpecial
-from .parsing.woo import WooCatList, WooProdList, WooVarList
-from .syncupdate import SyncUpdateVarWoo
+from .parsing.woo import WooCatList
 from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
 from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_category_matches_group, do_delta_group,
                              do_duplicates_group, do_duplicates_summary_group,
                              do_failures_group, do_main_summary_group,
                              do_matches_group, do_matches_summary_group,
-                             do_post_summary_group,
-                             do_successes_group, do_sync_group,
-                             do_variation_matches_group,
+                             do_post_summary_group, do_successes_group,
+                             do_sync_group, do_variation_matches_group,
                              do_variation_sync_group)
-from .parsing.api import ApiParseWoo
+
 
 def timediff(settings):
     """Return time elapsed since start."""
@@ -242,13 +236,7 @@ def export_master_parser(settings, parsers):
         product_colnames = settings.coldata_class.get_col_names(
             SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
 
-    if Registrar.DEBUG_GEN:
-        Registrar.register_message("master parser class is %s" % settings.master_parser_class)
-
     container = settings.master_parser_class.product_container.container
-
-    if Registrar.DEBUG_GEN:
-        Registrar.register_message("export container is %s" % container.__name__)
 
     product_list = container(parsers.master.products.values())
     product_list.export_items(settings.fla_path, product_colnames)
@@ -392,9 +380,6 @@ def do_match_categories(parsers, matches, settings):
             "matching %d master categories with %d slave categories" %
             (len(parsers.master.categories),
              len(parsers.slave.categories)))
-
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
 
     if not( parsers.master.categories and parsers.slave.categories ):
         return matches
@@ -720,21 +705,6 @@ def do_merge_categories(matches, parsers, updates, settings):
                     count, m_object.identifier
                 )
             )
-            # gen_data = m_object.to_dict()
-            # core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.coldata_gen_target_write)
-            # slave_writable_handles = \
-            # settings.coldata_class_cat.get_handles_property_defaults(
-            #     'write', settings.coldata_cat_target_write
-            # )
-            # # make an exception for file_path
-            # for handle in core_data.keys():
-            #     if (handle not in sync_handles):
-            #         del core_data[handle]
-            #         continue
-            #     slave_writable = slave_writable_handles.get(handle)
-            #     if not slave_writable:
-            #         del core_data[handle]
-            # # api_data = settings.coldata_class_cat.translate_data_to(core_data, settings.coldata_cat_target)
             updates.category.new_slaves_gen.append(m_object)
 
     return updates
@@ -1131,86 +1101,128 @@ def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
     pass
 
+def handle_failed_update(update, results, exc, settings, source=None):
+    """Handle a failed update."""
+    fail = (update, exc)
+    if source == settings.master_name:
+        pkey = update.master_id
+        results.fails_master.append(fail)
+    elif source == settings.slave_name:
+        pkey = update.slave_id
+        results.fails_slave.append(fail)
+    else:
+        pkey = ''
+    Registrar.register_error(
+        "ERROR UPDATING %s (%s): %s\n%s\n%s" % (
+            source or '',
+            pkey,
+            repr(exc),
+            update.tabulate(),
+            traceback.format_exc()
+        )
+    )
+
+    if Registrar.DEBUG_TRACE:
+        import pudb
+        pudb.set_trace()
+
 def do_updates_images(updates, parsers, results, settings):
     """Perform a list of updates on images."""
+    sync_handles = settings.sync_handles_cat
+
+def upload_new_categories(updates, parsers, results, settings, new_categories_gen):
+    """
+    upload a list of new categories to slave
+    """
+
+    upload_client_class = settings.slave_cat_sync_client_class
+    upload_client_args = settings.slave_cat_sync_client_args
+    sync_handles = settings.sync_handles_cat
+
+    with upload_client_class(**upload_client_args) as client:
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message("created cat client")
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message("new categories %s" %
+                                       new_categories_gen)
+
+        while new_categories_gen:
+            new_category_gen = new_categories_gen.pop(0)
+            if new_category_gen.parent:
+                parent = new_category_gen.parent
+                if not parent.is_root and not parent.wpid and parent in new_categories_gen:
+                    new_categories_gen.append(new_category_gen)
+                    continue
+
+            gen_data = new_category_gen.to_dict()
+            core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.coldata_gen_target_write)
+            slave_writable_handles = \
+            settings.coldata_class_cat.get_handles_property_defaults(
+                'write', settings.coldata_cat_target_write
+            )
+            for handle in core_data.keys():
+                if (handle not in sync_handles):
+                    del core_data[handle]
+                    continue
+                if not slave_writable_handles.get(handle):
+                    del core_data[handle]
+            for key in ['term_id', 'sku', 'count']:
+                assert key not in core_data
+            for key in ['title']:
+                assert key in core_data
+            api_data = settings.coldata_class_cat.translate_data_to(
+                core_data, settings.coldata_cat_target_write
+            )
+
+            if Registrar.DEBUG_UPDATE:
+                Registrar.register_message("uploading new_category_gen: %s" % pformat(api_data))
+            if settings['update_slave']:
+                try:
+                    response = client.create_item(api_data)
+                except BaseException as exc:
+                    handle_failed_update(
+                        new_category_gen, results.category, settings, exc, settings.slave_name
+                    )
+                    continue
+                response_api_data = response.json()
+                if client.page_nesting:
+                    response_api_data = response_api_data[client.endpoint_singular]
+                response_core = settings.coldata_class_cat.translate_data_from(
+                    response_api_data, settings.coldata_cat_target_write
+                )
+                response_gen = settings.coldata_class_cat.translate_data_to(
+                    response_core, settings.coldata_gen_target_write
+                )
+                if Registrar.DEBUG_CATS:
+                    Registrar.register_message(
+                        "category being updated with parser data: %s"
+                        % pformat(response_gen))
+                new_category_gen.update(response_gen)
+                results.category.successes.append(new_category_gen)
+
+
 
 def do_updates_categories(updates, parsers, results, settings):
     """Perform a list of updates on categories."""
-
-    if not hasattr(updates, 'categories'):
+    if not hasattr(updates, 'category'):
         return
 
-    if settings['auto_create_new']:
+    results.category = ResultsNamespace()
+
+    if updates.category.new_slaves_gen:
+        new_categories_gen = updates.category.new_slaves_gen
         # create categories that do not yet exist on slave
         if Registrar.DEBUG_CATS:
             Registrar.register_message("NEW CATEGORIES: %d" % (
-                len(updates.category.slaveless)
+                len(updates.category.new_slaves_gen)
             ))
-
-        if Registrar.DEBUG_CATS:
-            Registrar.DEBUG_API = True
-
-        upload_client_class = settings.slave_cat_sync_client_class
-        upload_client_args = settings.slave_cat_sync_client_args
-
-        with upload_client_class(**upload_client_args) as client:
-            if Registrar.DEBUG_CATS:
-                Registrar.register_message("created cat client")
-            new_categories_gen = [
-                update.m_object for update in updates.category.new_slaves_gen
-            ]
-            if Registrar.DEBUG_CATS:
-                Registrar.register_message("new categories %s" %
-                                           new_categories_gen)
-
-            while new_categories_gen:
-                category = new_categories_gen.pop(0)
-                if category.parent:
-                    parent = category.parent
-                    if not parent.is_root and not parent.wpid and parent in new_categories_gen:
-                        new_categories_gen.append(category)
-                        continue
-
-                m_api_data = category.to_api_data(
-                    settings.coldata_class, 'wp-api')
-                for key in ['id', 'slug', 'sku']:
-                    if key in m_api_data:
-                        del m_api_data[key]
-                m_api_data['name'] = category.cat_name
-                # print "uploading category: %s" % m_api_data
-                # pprint(m_api_data)
-                if settings['update_slave']:
-                    response = client.create_item(m_api_data)
-                    # print response
-                    # print response.json()
-                    response_api_data = response.json()
-                    response_api_data = response_api_data.get(
-                        'product_category', response_api_data)
-                    parsers.slave.process_api_category(
-                        response_api_data)
-                    api_cat_translation = OrderedDict()
-                    for key, data in settings.coldata_class.get_wpapi_category_cols(
-                    ).items():
-                        try:
-                            wp_api_key = data['wp-api']['key']
-                        except (IndexError, TypeError):
-                            wp_api_key = key
-                        api_cat_translation[wp_api_key] = key
-                    # print "TRANSLATION: ", api_cat_translation
-                    category_parser_data = parsers.slave.translate_keys(
-                        response_api_data, api_cat_translation)
-                    if Registrar.DEBUG_CATS:
-                        Registrar.register_message(
-                            "category being updated with parser data: %s"
-                            % category_parser_data)
-                    category.update(category_parser_data)
-
-                    # print "CATEGORY: ", category
-    elif updates.category.slaveless:
-        for update in updates.category.slaveless:
-            exc = UserWarning("category needs to be created: %s" %
-                              update.m_object)
-            Registrar.register_warning(exc)
+        if settings['auto_create_new']:
+            upload_new_categories(updates, parsers, results, settings, new_categories_gen)
+        else:
+            for new_category_gen in new_categories_gen:
+                exc = UserWarning("category needs to be created: %s" %
+                                  new_category_gen)
+                Registrar.register_warning(exc)
 
 
 def do_updates(updates, settings):
