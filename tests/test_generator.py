@@ -852,8 +852,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.last
     def test_dummy_do_merge_products(self):
-        # TODO: make this work with special categories
-        self.settings.skip_special_categories = True
         self.settings.init_settings(self.override_args)
 
         self.populate_master_parsers()
@@ -889,6 +887,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_update(sync_update)
         self.assertEqual(len(self.updates.slave), 48)
+        expected_master_categories = set([320, 323, 315, 316])
+        if not self.settings.skip_special_categories:
+            expected_master_categories.update([100000, 100001])
         try:
             self.assertEquals(
                 sync_update.old_m_object_core['sku'],
@@ -896,7 +897,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.assertEquals(
                 set(sync_update.old_m_object_core['category_ids']),
-                set([320, 323, 315, 316])
+                expected_master_categories
             )
             self.assertEquals(
                 set(sync_update.old_s_object_core['category_ids']),
@@ -904,7 +905,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.assertEquals(
                 set(sync_update.new_s_object_core['category_ids']),
-                set([320, 323, 315, 316])
+                expected_master_categories
             )
 
         except AssertionError as exc:
