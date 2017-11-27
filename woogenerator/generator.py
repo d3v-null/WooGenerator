@@ -708,7 +708,6 @@ def do_merge_categories(matches, parsers, updates, settings):
                 )
             )
             sync_update = settings.syncupdate_class_cat(m_object)
-            sync_update.update(sync_handles)
             updates.category.new_slaves.append(sync_update)
 
     return updates
@@ -1139,14 +1138,15 @@ def upload_new_categories(parsers, results, settings, new_cat_updates):
     upload_client_class = settings.slave_cat_sync_client_class
     upload_client_args = settings.slave_cat_sync_client_args
     index_fn = parsers.master.category_indexer
+    sync_handles = settings.sync_handles_cat
 
     with upload_client_class(**upload_client_args) as client:
         if Registrar.DEBUG_CATS:
             Registrar.register_message("created cat client")
 
         while new_cat_updates:
-            update = new_cat_updates.pop(0)
-            new_category_gen = update.old_m_object_gen
+            sync_update = new_cat_updates.pop(0)
+            new_category_gen = sync_update.old_m_object_gen
 
             if Registrar.DEBUG_CATS:
                 Registrar.register_message("new category %s" %
@@ -1155,37 +1155,22 @@ def upload_new_categories(parsers, results, settings, new_cat_updates):
             # make sure parent updates are done before children
 
             if new_category_gen.parent:
+                # TODO: redo this by just comparing objects, not indices
                 remaining_m_object_indices = set([
-                    index_fn(update.old_m_object_gen) for update_ in new_cat_updates
+                    index_fn(sync_update.old_m_object_gen) for update_ in new_cat_updates
                 ])
                 parent = new_category_gen.parent
                 if not parent.is_root:
                     parent_index = index_fn(parent)
                     if parent_index in remaining_m_object_indices:
-                        new_cat_updates.append(update)
+                        new_cat_updates.append(sync_update)
                         continue
 
-            api_data = update.get_slave_updates_native()
+            # have to refresh sync_update to get parent wpid
+            sync_update.set_old_m_object_gen(sync_update.old_m_object)
+            sync_update.update(sync_handles)
 
-            # gen_data = new_category_gen.to_dict()
-            # core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.coldata_gen_target_write)
-            # slave_writable_handles = \
-            # settings.coldata_class_cat.get_handles_property_defaults(
-            #     'write', settings.coldata_cat_target_write
-            # )
-            # for handle in core_data.keys():
-            #     if (handle not in sync_handles):
-            #         del core_data[handle]
-            #         continue
-            #     if not slave_writable_handles.get(handle):
-            #         del core_data[handle]
-            # for key in ['term_id', 'sku', 'count']:
-            #     assert key not in core_data
-            # for key in ['title']:
-            #     assert key in core_data
-            # api_data = settings.coldata_class_cat.translate_data_to(
-            #     core_data, settings.coldata_cat_target_write
-            # )
+            api_data = sync_update.get_slave_updates_native()
 
             if Registrar.DEBUG_UPDATE:
                 Registrar.register_message("uploading new category (api format): %s" % pformat(api_data))
@@ -1195,7 +1180,7 @@ def upload_new_categories(parsers, results, settings, new_cat_updates):
                     response_api_data = response.json()
                 except BaseException as exc:
                     handle_failed_update(
-                        update, results.category, settings, exc, settings.slave_name
+                        sync_update, results.category, settings, exc, settings.slave_name
                     )
                     continue
                 if client.page_nesting:
@@ -1203,16 +1188,16 @@ def upload_new_categories(parsers, results, settings, new_cat_updates):
 
                 response_gen_object = parsers.slave.process_api_category_raw(response_api_data)
 
-                update.set_new_s_object_gen(response_gen_object)
+                sync_update.set_new_s_object_gen(response_gen_object)
 
                 if Registrar.DEBUG_CATS:
                     Registrar.register_message(
                         "category being updated with parser data: %s"
                         % pformat(response_gen_object))
 
-                update.old_m_object.update(response_gen_object)
+                sync_update.old_m_object.update(response_gen_object)
 
-                results.category.successes.append(update)
+                results.category.successes.append(sync_update)
 
 def upload_category_changes(updates, parsers, results, settings, category_changes_gen):
     """

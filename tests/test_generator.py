@@ -812,6 +812,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 original_master.wpid,
                 100001
             )
+            # TODO: check parent id is set
+            self.assertEqual(
+                original_master.parent.wpid,
+                100000
+            )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
