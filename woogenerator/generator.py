@@ -458,7 +458,7 @@ def do_match_categories(parsers, matches, settings):
     return matches
 
 
-def do_match(parsers, matches, settings):
+def do_match_prod(parsers, matches, settings):
     """For every item in slave, find its counterpart in master."""
 
     Registrar.register_progress("Attempting matching")
@@ -537,34 +537,34 @@ def do_match(parsers, matches, settings):
                     "category matches for update:\n%s" % (
                         category_matcher.__repr__()))
 
-    if settings['do_variations']:
+def do_match_var(parsers, matches, settings):
+    if not settings['do_variations']:
+        return
 
-        variation_matcher = VariationMatcher()
-        variation_matcher.process_registers(
-            parsers.slave.variations, parsers.master.variations
-        )
+    variation_matcher = VariationMatcher()
+    variation_matcher.process_registers(
+        parsers.slave.variations, parsers.master.variations
+    )
 
-        if Registrar.DEBUG_VARS:
-            Registrar.register_message("variation matcher:\n%s" %
-                                       variation_matcher.__repr__())
+    if Registrar.DEBUG_VARS:
+        Registrar.register_message("variation matcher:\n%s" %
+                                   variation_matcher.__repr__())
 
-        matches.variation.globals.add_matches(variation_matcher.pure_matches)
-        matches.variation.masterless.add_matches(
-            variation_matcher.masterless_matches)
-        matches.variation.deny_anomalous(
-            'variation_matcher.masterless_matches',
-            variation_matcher.masterless_matches
-        )
-        matches.variation.slaveless.add_matches(
-            variation_matcher.slaveless_matches)
-        matches.variation.deny_anomalous(
-            'variation_matcher.slaveless_matches',
-            variation_matcher.slaveless_matches
-        )
-        if variation_matcher.duplicate_matches:
-            matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
-
-    return matches
+    matches.variation.globals.add_matches(variation_matcher.pure_matches)
+    matches.variation.masterless.add_matches(
+        variation_matcher.masterless_matches)
+    matches.variation.deny_anomalous(
+        'variation_matcher.masterless_matches',
+        variation_matcher.masterless_matches
+    )
+    matches.variation.slaveless.add_matches(
+        variation_matcher.slaveless_matches)
+    matches.variation.deny_anomalous(
+        'variation_matcher.slaveless_matches',
+        variation_matcher.slaveless_matches
+    )
+    if variation_matcher.duplicate_matches:
+        matches.variation.duplicate['index'] = variation_matcher.duplicate_matches
 
 
 def do_merge_images(matches, parsers, updates, settings):
@@ -646,7 +646,9 @@ def do_merge_images(matches, parsers, updates, settings):
             #     if not slave_writable:
             #         del core_data[handle]
             # # api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
-            updates.image.new_slaves_gen.append(m_object)
+            sync_update = settings.syncupdate_class_img(m_object)
+            sync_update.update(sync_handles)
+            updates.image.new_slaves.append(sync_update)
 
     return updates
 
@@ -705,11 +707,13 @@ def do_merge_categories(matches, parsers, updates, settings):
                     count, m_object.identifier
                 )
             )
-            updates.category.new_slaves_gen.append(m_object)
+            sync_update = settings.syncupdate_class_cat(m_object)
+            sync_update.update(sync_handles)
+            updates.category.new_slaves.append(sync_update)
 
     return updates
 
-def do_merge(matches, parsers, updates, settings):
+def do_merge_prod(matches, parsers, updates, settings):
     """For a given list of matches, return a description of updates required to merge them."""
 
     if settings.do_variations:
@@ -833,69 +837,6 @@ def do_merge(matches, parsers, updates, settings):
         if sync_update.s_updated:
             insort(updates.slave, sync_update)
 
-    if settings['do_variations']:
-        if matches.variation.duplicate:
-            exc = UserWarning(
-                "variations couldn't be synchronized because of ambiguous SKUs:%s"
-                % '\n'.join(map(str, matches.variation.duplicate)))
-            Registrar.register_error(exc)
-            raise exc
-
-        for var_match_count, var_match in enumerate(matches.variation.globals):
-            # print "processing var_match: %s" % var_match.tabulate()
-            m_object = var_match.m_object
-            s_object = var_match.s_object
-
-            sync_update = settings.syncupdate_class_var(m_object, s_object)
-
-            sync_update.update()
-
-            # Assumes that GDrive is read only, doesn't care about master
-            # updates
-            if not sync_update.s_updated:
-                continue
-
-            if Registrar.DEBUG_VARS:
-                Registrar.register_message("var update %d:\n%s" % (
-                    var_match_count, sync_update.tabulate()))
-
-            if not sync_update.important_static:
-                insort(updates.variation.problematic, sync_update)
-                continue
-
-            if sync_update.s_updated:
-                insort(updates.variation.slave, sync_update)
-
-        for var_match_count, var_match in enumerate(
-                matches.variation.slaveless):
-            assert var_match.has_no_slave
-            m_object = var_match.m_object
-
-            # sync_update = SyncUpdateVarWoo(m_object, None)
-
-            # sync_update.update()
-
-            if Registrar.DEBUG_VARS:
-                Registrar.register_message("var create %d:\n%s" % (
-                    var_match_count, m_object.identifier))
-
-            # TODO: figure out which attribute terms to add
-
-        for var_match_count, var_match in enumerate(
-                matches.variation.masterless):
-            assert var_match.has_no_master
-            s_object = var_match.s_object
-
-            # sync_update = SyncUpdateVarWoo(None, s_object)
-
-            # sync_update.update()
-
-            if Registrar.DEBUG_VARS:
-                Registrar.register_message("var delete: %d:\n%s" % (
-                    var_match_count, s_object.identifier))
-
-            # TODO: figure out which attribute terms to delete
-
     if settings['auto_create_new']:
         for new_prod_count, new_prod_match in enumerate(matches.slaveless):
 
@@ -905,24 +846,83 @@ def do_merge(matches, parsers, updates, settings):
                     new_prod_count, m_object.identifier
                 )
             )
-            # gen_data = m_object.to_dict()
-            # core_data = settings.coldata_class.translate_data_from(gen_data, settings.coldata_gen_target_write)
-            # slave_writable_handles = \
-            # settings.coldata_class.get_handles_property_defaults(
-            #     'write', settings.coldata_target_write
-            # )
-            # # make an exception for file_path
-            # for handle in core_data.keys():
-            #     if (handle not in sync_handles):
-            #         del core_data[handle]
-            #         continue
-            #     slave_writable = slave_writable_handles.get(handle)
-            #     if not slave_writable:
-            #         del core_data[handle]
-            # # api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
-            updates.new_slaves_gen.append(m_object)
+            sync_update = settings.syncupdate_class_prod(m_object)
+            sync_update.update(sync_handles)
+            updates.category.new_slaves.append(
+                sync_update
+            )
 
-    return updates
+def do_merge_var(matches, parsers, updates, settings):
+    if settings['do_variations']:
+        return
+
+    sync_handles = settings.sync_handles_var
+
+    if matches.variation.duplicate:
+        exc = UserWarning(
+            "variations couldn't be synchronized because of ambiguous SKUs:%s"
+            % '\n'.join(map(str, matches.variation.duplicate)))
+        Registrar.register_error(exc)
+        raise exc
+
+    for var_match_count, var_match in enumerate(matches.variation.globals):
+        # print "processing var_match: %s" % var_match.tabulate()
+        m_object = var_match.m_object
+        s_object = var_match.s_object
+
+        sync_update = settings.syncupdate_class_var(m_object, s_object)
+
+        sync_update.update(sync_handles)
+
+        # Assumes that GDrive is read only, doesn't care about master
+        # updates
+        if not sync_update.s_updated:
+            continue
+
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("var update %d:\n%s" % (
+                var_match_count, sync_update.tabulate()))
+
+        if not sync_update.important_static:
+            insort(updates.variation.problematic, sync_update)
+            continue
+
+        if sync_update.s_updated:
+            insort(updates.variation.slave, sync_update)
+
+    for var_match_count, var_match in enumerate(
+            matches.variation.slaveless):
+        assert var_match.has_no_slave
+        m_object = var_match.m_object
+
+        # sync_update = SyncUpdateVarWoo(m_object, None)
+
+        # sync_update.update()
+
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("var create %d:\n%s" % (
+                var_match_count, m_object.identifier))
+
+        # TODO: figure out which attribute terms to add
+
+    for var_match_count, var_match in enumerate(
+            matches.variation.masterless):
+        assert var_match.has_no_master
+        s_object = var_match.s_object
+
+        # sync_update = SyncUpdateVarWoo(None, s_object)
+
+        # sync_update.update()
+
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("var delete: %d:\n%s" % (
+                var_match_count, s_object.identifier))
+
+        # TODO: figure out which attribute terms to delete
+
+    if settings['auto_create_new']:
+        # TODO: auto create new variations
+        pass
 
 def do_report_images(reporters, matches, updates, parsers, settings):
     pass
@@ -1130,76 +1130,95 @@ def do_updates_images(updates, parsers, results, settings):
     """Perform a list of updates on images."""
     sync_handles = settings.sync_handles_cat
 
-def upload_new_categories(updates, parsers, results, settings, new_categories_gen):
+def upload_new_categories(parsers, results, settings, new_cat_updates):
     """
     upload a list of new categories to slave
     """
+    # TODO: take list of updates, not new_categories, then update the corresponding categories in master contaienr
 
     upload_client_class = settings.slave_cat_sync_client_class
     upload_client_args = settings.slave_cat_sync_client_args
-    sync_handles = settings.sync_handles_cat
+    index_fn = parsers.master.category_indexer
 
     with upload_client_class(**upload_client_args) as client:
         if Registrar.DEBUG_CATS:
             Registrar.register_message("created cat client")
-        if Registrar.DEBUG_CATS:
-            Registrar.register_message("new categories %s" %
-                                       new_categories_gen)
 
-        while new_categories_gen:
-            new_category_gen = new_categories_gen.pop(0)
+        while new_cat_updates:
+            update = new_cat_updates.pop(0)
+            new_category_gen = update.old_m_object_gen
+
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message("new category %s" %
+                                           new_category_gen)
+
+            # make sure parent updates are done before children
+
             if new_category_gen.parent:
+                remaining_m_object_indices = set([
+                    index_fn(update.old_m_object_gen) for update_ in new_cat_updates
+                ])
                 parent = new_category_gen.parent
-                if not parent.is_root and not parent.wpid and parent in new_categories_gen:
-                    new_categories_gen.append(new_category_gen)
-                    continue
+                if not parent.is_root:
+                    parent_index = index_fn(parent)
+                    if parent_index in remaining_m_object_indices:
+                        new_cat_updates.append(update)
+                        continue
 
-            gen_data = new_category_gen.to_dict()
-            core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.coldata_gen_target_write)
-            slave_writable_handles = \
-            settings.coldata_class_cat.get_handles_property_defaults(
-                'write', settings.coldata_cat_target_write
-            )
-            for handle in core_data.keys():
-                if (handle not in sync_handles):
-                    del core_data[handle]
-                    continue
-                if not slave_writable_handles.get(handle):
-                    del core_data[handle]
-            for key in ['term_id', 'sku', 'count']:
-                assert key not in core_data
-            for key in ['title']:
-                assert key in core_data
-            api_data = settings.coldata_class_cat.translate_data_to(
-                core_data, settings.coldata_cat_target_write
-            )
+            api_data = update.get_slave_updates_native()
+
+            # gen_data = new_category_gen.to_dict()
+            # core_data = settings.coldata_class_cat.translate_data_from(gen_data, settings.coldata_gen_target_write)
+            # slave_writable_handles = \
+            # settings.coldata_class_cat.get_handles_property_defaults(
+            #     'write', settings.coldata_cat_target_write
+            # )
+            # for handle in core_data.keys():
+            #     if (handle not in sync_handles):
+            #         del core_data[handle]
+            #         continue
+            #     if not slave_writable_handles.get(handle):
+            #         del core_data[handle]
+            # for key in ['term_id', 'sku', 'count']:
+            #     assert key not in core_data
+            # for key in ['title']:
+            #     assert key in core_data
+            # api_data = settings.coldata_class_cat.translate_data_to(
+            #     core_data, settings.coldata_cat_target_write
+            # )
 
             if Registrar.DEBUG_UPDATE:
-                Registrar.register_message("uploading new_category_gen: %s" % pformat(api_data))
+                Registrar.register_message("uploading new category (api format): %s" % pformat(api_data))
             if settings['update_slave']:
                 try:
                     response = client.create_item(api_data)
+                    response_api_data = response.json()
                 except BaseException as exc:
                     handle_failed_update(
-                        new_category_gen, results.category, settings, exc, settings.slave_name
+                        update, results.category, settings, exc, settings.slave_name
                     )
                     continue
-                response_api_data = response.json()
                 if client.page_nesting:
                     response_api_data = response_api_data[client.endpoint_singular]
-                response_core = settings.coldata_class_cat.translate_data_from(
-                    response_api_data, settings.coldata_cat_target_write
-                )
-                response_gen = settings.coldata_class_cat.translate_data_to(
-                    response_core, settings.coldata_gen_target_write
-                )
+
+                response_gen_object = parsers.slave.process_api_category_raw(response_api_data)
+
+                update.set_new_s_object_gen(response_gen_object)
+
                 if Registrar.DEBUG_CATS:
                     Registrar.register_message(
                         "category being updated with parser data: %s"
-                        % pformat(response_gen))
-                new_category_gen.update(response_gen)
-                results.category.successes.append(new_category_gen)
+                        % pformat(response_gen_object))
 
+                update.old_m_object.update(response_gen_object)
+
+                results.category.successes.append(update)
+
+def upload_category_changes(updates, parsers, results, settings, category_changes_gen):
+    """
+    Upload a list of category changes
+    """
+    pass
 
 
 def do_updates_categories(updates, parsers, results, settings):
@@ -1209,17 +1228,17 @@ def do_updates_categories(updates, parsers, results, settings):
 
     results.category = ResultsNamespace()
 
-    if updates.category.new_slaves_gen:
-        new_categories_gen = updates.category.new_slaves_gen
+    if updates.category.new_slaves:
         # create categories that do not yet exist on slave
         if Registrar.DEBUG_CATS:
             Registrar.register_message("NEW CATEGORIES: %d" % (
-                len(updates.category.new_slaves_gen)
+                len(updates.category.new_slaves)
             ))
         if settings['auto_create_new']:
-            upload_new_categories(updates, parsers, results, settings, new_categories_gen)
+            upload_new_categories(parsers, results, settings, updates.category.new_slaves)
         else:
-            for new_category_gen in new_categories_gen:
+            for update in updates.category.new_slaves:
+                new_category_gen = update.old_m_object_gen
                 exc = UserWarning("category needs to be created: %s" %
                                   new_category_gen)
                 Registrar.register_warning(exc)
@@ -1339,8 +1358,8 @@ def main(override_args=None, settings=None):
         except (SystemExit, KeyboardInterrupt):
             return reporters, results
 
-    do_match(parsers, matches, settings)
-    do_merge(matches, parsers, updates, settings)
+    do_match_prod(parsers, matches, settings)
+    do_merge_prod(matches, parsers, updates, settings)
     # check_warnings()
     do_report(reporters, matches, updates, parsers, settings)
 

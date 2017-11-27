@@ -146,6 +146,18 @@ class ImportObject(OrderedDict, Registrar):
         """ Put self in preferred container. """
         return self.container([self])
 
+    def update(self, other):
+        """ Update the ImportObject with the values from another ImportObject or dict"""
+        if isinstance(other, ImportObject):
+            other_dict = other.to_dict()
+        else:
+            other_dict = deepcopy(other)
+        if 'rowcount' in other_dict:
+            del other_dict['rowcount']
+        if '_row' in other_dict:
+            del other_dict['_row']
+        return OrderedDict.update(self, other_dict)
+
     def __getstate__(self):
         return self.__dict__
 

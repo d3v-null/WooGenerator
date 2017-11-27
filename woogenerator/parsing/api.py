@@ -410,7 +410,7 @@ class ApiParseWoo(
         category_gen_data = coldata_class.translate_data_to(
             category_core_data, self.coldata_gen_target
         )
-        self.process_api_category_gen(category_gen_data, object_data, **kwargs)
+        return self.process_api_category_gen(category_gen_data, object_data, **kwargs)
 
     def process_api_category_gen(self, category_gen_data, object_data=None, **kwargs):
         """
@@ -503,6 +503,8 @@ class ApiParseWoo(
         self.join_category(cat_data, object_data)
 
         self.rowcount += 1
+
+        return cat_data
 
     def process_api_categories_raw(self, categories):
         """ creates a queue of categories to be processed in the correct order """

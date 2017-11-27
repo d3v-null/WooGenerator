@@ -563,8 +563,8 @@ class UpdateNamespace(argparse.Namespace):
         self.delta_slave = []
         self.masterless = []
         self.slaveless = []
-        self.new_masters_gen = []
-        self.new_slaves_gen = []
+        self.new_masters = []
+        self.new_slaves = []
 
 
 class ResultsNamespace(argparse.Namespace):

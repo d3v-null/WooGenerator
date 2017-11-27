@@ -18,6 +18,9 @@ from .contact_objects import ContactAddress, FieldGroup
 from .matching import Match
 from .parsing.abstract import ImportObject
 from .utils import Registrar, SanitationUtils, TimeUtils
+from .parsing.api import ImportWooApiCategory
+from .parsing.woo import ImportWooCategory
+
 
 
 class SyncViolation(UserWarning):
@@ -46,6 +49,8 @@ class SyncUpdate(Registrar):
     slave_target = None
     # The target format of (m|s)_object, which gets immediately converted to core
     object_target = 'gen-api'
+    default_master_container = ImportObject
+    default_slave_container = ImportObject
 
     @classmethod
     def set_globals(cls, merge_mode, default_last_sync):
@@ -56,26 +61,29 @@ class SyncUpdate(Registrar):
         cls.merge_mode = merge_mode
         cls.default_last_sync = default_last_sync
 
-    def __init__(self, old_m_object_gen, old_s_object_gen, lastSync=None):
+    def __init__(self, old_m_object_gen=None, old_s_object_gen=None, lastSync=None):
         super(SyncUpdate, self).__init__()
-        self.master_container = type(old_m_object_gen)
-        self.master_parent = old_m_object_gen.parent
-        self.slave_container = type(old_s_object_gen)
-        self.slave_parent = old_s_object_gen.parent
-        for container in [self.master_container, self.slave_container]:
-            assert issubclass(container, ImportObject)
 
-        # import pudb; pudb.set_trace()
+
         if not lastSync:
             lastSync = self.default_last_sync
         # print "Creating SyncUpdate: ", old_m_object_core.__repr__(),
         # old_s_object_core.__repr__()
-        self.old_m_object_core = self.coldata_class.translate_data_from(old_m_object_gen.to_dict(), self.object_target)
-        self.old_s_object_core = self.coldata_class.translate_data_from(old_s_object_gen.to_dict(), self.object_target)
+        self.old_m_object_core = {}
+        self.old_s_object_core = {}
+        self.new_s_object_core = {}
+        self.new_m_object_core = {}
+        self.master_parent = None
+        self.slave_parent = None
+        self.master_container = self.default_master_container
+        self.slave_container = self.default_slave_container
+        self.m_time = 0
+        self.s_time = 0
+        if old_m_object_gen:
+            self.set_old_m_object_gen(old_m_object_gen)
+        if old_s_object_gen:
+            self.set_old_s_object_gen(old_s_object_gen)
         self.t_time = TimeUtils.wp_strp_mktime(lastSync)
-
-        self.new_s_object_core = None
-        self.new_m_object_core = None
         self.static = True
         self.important_static = True
         self.sync_warnings_core = OrderedDict()
@@ -86,25 +94,66 @@ class SyncUpdate(Registrar):
         self.important_handles = []
         self.m_deltas = False
         self.s_deltas = False
-        self.m_time = 0
-        self.s_time = 0
+
+        self.b_time = 0
+
+    def set_old_m_object_gen(self, old_m_object_gen):
+        self.old_m_object_gen = old_m_object_gen
+        self.master_container = type(self.old_m_object_gen)
+        assert issubclass(self.master_container, ImportObject)
+        self.master_parent = self.old_m_object_gen.parent
+        self.old_m_object_core = self.coldata_class.translate_data_from(
+            self.old_m_object_gen.to_dict(), self.object_target
+        )
         if self.old_m_object_core.get('modified_gmt'):
             self.m_time = self.parse_m_time(self.old_m_object_core['modified_gmt'])
+
+    def set_old_s_object_gen(self, old_s_object_gen):
+        self.old_s_object_gen = old_s_object_gen
+        self.slave_container = type(self.old_s_object_gen)
+        assert issubclass(self.slave_container, ImportObject)
+        self.slave_parent = self.old_s_object_gen.parent
+        self.old_s_object_core = self.coldata_class.translate_data_from(
+            self.old_s_object_gen.to_dict(), self.object_target
+        )
         if self.old_s_object_core.get('modified_gmt'):
             self.s_time = self.parse_s_time(self.old_s_object_core['modified_gmt'])
-        self.b_time = 0
+
+    def set_new_m_object_gen(self, new_m_object_gen):
+        self.master_container = type(new_m_object_gen)
+        assert issubclass(self.master_container, ImportObject)
+        self.master_parent = new_m_object_gen.parent
+        new_m_object_core = self.coldata_class.translate_data_from(
+            new_m_object_gen.to_dict(), self.object_target
+        )
+        self.set_new_subject_object(new_m_object_core, self.master_name)
+
+    def set_new_s_object_gen(self, new_s_object_gen):
+        self.slave_container = type(new_s_object_gen)
+        assert issubclass(self.master_container, ImportObject)
+        self.slave_parent = new_s_object_gen.parent
+        new_s_object_core = self.coldata_class.translate_data_from(
+            new_s_object_gen.to_dict(), self.object_target
+        )
+        self.set_new_subject_object(new_s_object_core, self.slave_name)
 
     @property
     def sync_warnings(self):
-        return self.coldata_class.translate_keys(self.sync_warnings_core, self.object_target)
+        return self.coldata_class.translate_keys(
+            self.sync_warnings_core, self.object_target
+        )
 
     @property
     def sync_passes(self):
-        return self.coldata_class.translate_keys(self.sync_passes_core, self.object_target)
+        return self.coldata_class.translate_keys(
+            self.sync_passes_core, self.object_target
+        )
 
     @property
     def sync_problematics(self):
-        return self.coldata_class.translate_keys(self.sync_problematics_core, self.object_target)
+        return self.coldata_class.translate_keys(
+            self.sync_problematics_core, self.object_target
+        )
 
     @property
     def s_updated(self):
@@ -523,6 +572,7 @@ class SyncUpdate(Registrar):
         prev_new_loser_object = bool(new_loser_object)
         if not prev_new_loser_object:
             old_object = self.get_old_subject_object(loser)
+            # TODO: rewrite this with the function i just wrote?
             self.set_new_subject_object(deepcopy(old_object), loser)
             new_loser_object = self.get_new_subject_object(loser)
         prev_loser_val = deepcopy(new_loser_object.get(handle))
@@ -727,11 +777,13 @@ class SyncUpdate(Registrar):
 
     @property
     def old_m_object(self):
-        return self.containerize_master(self.old_m_object_core)
+        return self.old_m_object_gen
+        # return self.containerize_master(self.old_m_object_core)
 
     @property
     def new_m_object(self):
-        return self.containerize_master(self.new_m_object_core)
+        return self.old_s_object_gen
+        # return self.containerize_master(self.new_m_object_core)
 
     @property
     def old_s_object(self):
@@ -1300,6 +1352,8 @@ class SyncUpdateImgWoo(SyncUpdateGen):
 class SyncUpdateCatWoo(SyncUpdateGen):
     coldata_class = ColDataWcProdCategory
     slave_target = 'wc-wp-api-v2-edit'
+    default_master_container = ImportWooCategory
+    default_slave_container = ImportWooApiCategory
 
     @property
     def slave_id(self):

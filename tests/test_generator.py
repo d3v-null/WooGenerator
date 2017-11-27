@@ -15,8 +15,8 @@ from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
 from woogenerator.coldata import (ColDataAttachment, ColDataProduct,
                                   ColDataWcProdCategory)
-from woogenerator.generator import (do_match, do_match_categories,
-                                    do_match_images, do_merge,
+from woogenerator.generator import (do_match_prod, do_match_categories,
+                                    do_match_images, do_merge_prod,
                                     do_merge_categories, do_merge_images,
                                     do_report, do_updates_categories,
                                     populate_master_parsers,
@@ -615,11 +615,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # TODO: add tests for creation of images
         if self.debug:
             print("slaveless objects")
-            for slave_gen_object in self.updates.image.new_slaves_gen:
+            for update in self.updates.image.new_slaves:
+                slave_gen_object = update.old_m_object_gen
                 print(slave_gen_object)
 
-        self.assertEqual(len(self.updates.image.new_slaves_gen), 2)
-        slave_gen_object = self.updates.image.new_slaves_gen[0]
+        self.assertEqual(len(self.updates.image.new_slaves), 2)
+        update = self.updates.image.new_slaves[0]
+        slave_gen_object = update.old_m_object_gen
         title = 'Range A - Style 2 - 1Litre'
         content = (
             "Company A have developed a range of unique blends in 16 shades to "
@@ -689,21 +691,66 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object['descsum'],
                 master_desc
             )
+            updates_native = sync_update.get_slave_updates_native()
+            self.assertIn(
+                ('description', master_desc),
+                updates_native.items()
+            )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
         if self.debug:
             print("slaveless objects")
-            for slave_gen_object in self.updates.category.new_slaves_gen:
+            for update in self.updates.category.new_slaves:
+                slave_gen_object = update.old_m_object_gen
                 print(slave_gen_object)
 
         self.assertEqual(
             set([
-                self.parsers.slave.category_container.get_title(gen_data)
-                for gen_data in self.updates.category.new_slaves_gen
+                self.parsers.slave.category_container.get_title(gen_data.old_m_object_gen)
+                for gen_data in self.updates.category.new_slaves
             ]),
             set(['Specials', 'Product A Specials'])
         )
+
+    def do_updates_categories_mocked(self):
+        with mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.__class__,
+                'slave_cat_sync_client_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=ColDataWcProdCategory
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_target'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='wc-wp-api-v2'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'primary_key_handle'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='term_id'
+        ):
+            self.settings.update_slave = True
+            do_updates_categories(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.settings.update_slave = False
 
     @pytest.mark.last
     def test_dummy_do_updates_categories(self):
@@ -716,67 +763,57 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            with mock.patch(
-                MockUtils.get_mock_name(
-                    self.settings.__class__,
-                    'slave_cat_sync_client_class'
-                ),
-                new_callable=mock.PropertyMock,
-                return_value=self.settings.null_client_class
-            ), \
-            mock.patch(
-                MockUtils.get_mock_name(
-                    self.settings.null_client_class,
-                    'coldata_class'
-                ),
-                new_callable=mock.PropertyMock,
-                return_value=ColDataWcProdCategory
-            ), \
-            mock.patch(
-                MockUtils.get_mock_name(
-                    self.settings.null_client_class,
-                    'coldata_target'
-                ),
-                new_callable=mock.PropertyMock,
-                return_value='wc-wp-api-v2'
-            ), \
-            mock.patch(
-                MockUtils.get_mock_name(
-                    self.settings.null_client_class,
-                    'primary_key_handle'
-                ),
-                new_callable=mock.PropertyMock,
-                return_value='term_id'
-            ):
-                self.settings.update_slave = True
-                do_updates_categories(
-                    self.updates, self.parsers, self.results, self.settings
-                )
-                self.settings.update_slave = False
+            self.do_updates_categories_mocked()
 
-        success = self.results.category.successes.pop(0)
-        if self.debug:
-            pprint(success.to_dict())
         self.assertEqual(
-            success.title,
-            'Specials',
+            len(self.results.category.successes),
+            2
         )
-        self.assertEqual(
-            success.wpid,
-            100000
-        )
-        success = self.results.category.successes.pop(0)
-        if self.debug:
-            pprint(success.to_dict())
-        self.assertEqual(
-            success.title,
-            'Product A Specials',
-        )
-        self.assertEqual(
-            success.wpid,
-            100001
-        )
+        index_fn = self.parsers.master.category_indexer
 
+        sync_update = self.results.category.successes.pop(0)
+        try:
+            new_s_object_gen = sync_update.new_s_object
+            if self.debug:
+                pprint(new_s_object_gen.to_dict())
+            self.assertEqual(
+                new_s_object_gen.title,
+                'Specials',
+            )
+            self.assertEqual(
+                new_s_object_gen.wpid,
+                100000
+            )
+            master_index = index_fn(sync_update.old_m_object)
+            original_master = self.parsers.master.categories[master_index]
+            self.assertEqual(
+                original_master.wpid,
+                100000
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+        sync_update = self.results.category.successes.pop(0)
+        try:
+            new_s_object_gen = sync_update.new_s_object
+            if self.debug:
+                pprint(new_s_object_gen.items())
+            self.assertEqual(
+                new_s_object_gen.title,
+                'Product A Specials',
+            )
+            self.assertEqual(
+                new_s_object_gen.wpid,
+                100001
+            )
+            master_index = index_fn(sync_update.old_m_object)
+            original_master = self.parsers.master.categories[master_index]
+            self.assertEqual(
+                original_master.wpid,
+                100001
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
 
     @pytest.mark.last
@@ -790,7 +827,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        do_match(self.parsers, self.matches, self.settings)
+        do_match_prod(self.parsers, self.matches, self.settings)
 
         if self.debug:
             self.matches.globals.tabulate()
@@ -835,8 +872,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        do_match(self.parsers, self.matches, self.settings)
-        do_merge(self.matches, self.parsers, self.updates, self.settings)
+            self.do_updates_categories_mocked()
+        do_match_prod(self.parsers, self.matches, self.settings)
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
 
         if self.debug:
@@ -1010,7 +1048,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     def test_xero_do_match(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        do_match(self.parsers, self.matches, self.settings)
+        do_match_prod(self.parsers, self.matches, self.settings)
 
         if self.debug:
             print('match summary')
@@ -1024,9 +1062,9 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     def test_xero_do_merge(self):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        do_match(self.parsers, self.matches, self.settings)
+        do_match_prod(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
-        do_merge(self.matches, self.parsers, self.updates, self.settings)
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
         if self.debug:
             self.print_updates_summary(self.updates)
@@ -1081,9 +1119,9 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.settings.init_dirs()
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
-        do_match(self.parsers, self.matches, self.settings)
+        do_match_prod(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
-        do_merge(self.matches, self.parsers, self.updates, self.settings)
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
         self.reporters = ReporterNamespace()
         do_report(
             self.reporters, self.matches, self.updates, self.parsers, self.settings

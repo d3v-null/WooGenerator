@@ -369,6 +369,17 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def sync_handles_var(self):
+        response = self.coldata_class_var.get_sync_handles(
+            self.coldata_gen_target_write, self.coldata_target_write
+        )
+        # TODO: exclude_cols are in gen format
+        for handle in self.exclude_cols:
+            if handle in response:
+                del response[handle]
+        return response
+
+    @property
     def sync_handles_img(self):
         response = self.coldata_class_img.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_img_target_write

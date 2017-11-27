@@ -172,9 +172,16 @@ class SyncClientNull(SyncClientAbstract):
         native_pkey = self.coldata_class.translate_key(
             self.primary_key_handle, self.coldata_target
         )
+        native_slug_key = self.coldata_class.translate_key(
+            'slug', self.coldata_target
+        )
+        native_title_key = self.coldata_class.translate_key(
+            'title', self.coldata_target
+        )
         if not isinstance(data, dict):
             data = {}
         data[native_pkey] = self.fake_id
+        data[native_slug_key] = SanitationUtils.slugify(data.get(native_title_key))
         self.fake_id += 1
         response = requests.Response()
         response._content = SanitationUtils.encode_json(data)
