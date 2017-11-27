@@ -1,24 +1,26 @@
+import datetime
 import logging
 import os
 import random
 import unittest
 from collections import OrderedDict
+from copy import deepcopy
 from pprint import pformat
 
 import pytest
 from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
-import datetime
 
 from context import TESTS_DATA_DIR, woogenerator
 from woogenerator.client.img import ImgSyncClientWP
 from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.coldata import ColDataAttachment
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
 from woogenerator.parsing.shop import ShopCatList, ShopProdList
 from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
-from woogenerator.coldata import ColDataAttachment
+
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
     config_file = "generator_config_test.yaml"
@@ -259,7 +261,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             response_price = client.get_data_meta(response.json(), target_key)
             self.assertEqual(response_price, str(first_value))
 
-    def test_upload_create_delete(self):
+    def test_upload_create_delete_product(self):
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
@@ -283,29 +285,77 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertTrue(response)
             self.assertTrue(hasattr(response, 'json'))
 
-    def test_upload_changes_product_images(self):
+    def test_upload_product_images_join_leave(self):
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
+        with img_client_class(**img_client_args) as client:
+            first_img = client.get_first_endpoint_item()
+            if self.debug:
+                print("first img:\n%s" % pformat(first_img))
+            first_img_core = client.coldata_class.translate_data_from(
+                first_img, client.coldata_target
+            )
+            if self.debug:
+                print("first img core:\n%s" % pformat(first_img_core.items()))
+
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_item = client.get_first_endpoint_item()
+            first_prod_api = client.get_first_endpoint_item()
             if self.debug:
-                print("first prod:\n%s" % pformat(first_item))
-            first_item = client.strip_item_readonly(first_item)
-            first_sku = client.get_item_core(first_item, 'sku')
-            new_sku = "%s-%02x" % (first_sku, random.randrange(0,255))
-            first_item = client.set_item_core(first_item, 'sku', new_sku)
-            response = client.create_item(first_item)
-            self.assertTrue(response)
+                print("first prod:\n%s" % pformat(first_prod_api))
+            first_prod_core = client.coldata_class.translate_data_from(
+                first_prod_api, client.coldata_target
+            )
             if self.debug:
-                print("response: %s" % response.text)
-            self.assertTrue(hasattr(response, 'json'))
-            created_id = client.get_data_core(response.json(), 'id')
-            response = client.delete_item(created_id)
+                print("first prod core:\n%s" % pformat(first_prod_core.items()))
+            first_prod_id = first_prod_core['id']
+            # TODO: this test doesn't test what it's supposed to
+            first_prod_core_imgs = first_prod_core['image_objects']
+            self.assertEqual(
+                len(first_prod_core_imgs),
+                1
+            )
+            modified_prod_core = deepcopy(first_prod_core)
+            modified_prod_core['image_objects'].append(
+                first_img_core
+            )
+            modified_prod_api = client.coldata_class.translate_data_to(
+                modified_prod_core, client.coldata_target_write
+            )
             if self.debug:
-                print("response: %s" % response.text)
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
+                print("modified prod api:\n%s" % pformat(modified_prod_api.items()))
+            response = client.upload_changes(
+                first_prod_id, {'images': modified_prod_api['images']}
+            )
+            response_api = response.json()
+            if self.debug:
+                print("response api:\n%s" % pformat(response_api.items()))
+            response_core = client.coldata_class.translate_data_from(
+                response_api, client.coldata_target
+            )
+            self.assertEqual(
+                len(response_core['image_objects']),
+                2
+            )
+            response = client.upload_changes(
+                first_prod_id, {'images': first_prod_api['images']}
+            )
+            response_api = response.json()
+            if self.debug:
+                print("response api:\n%s" % pformat(response_api.items()))
+            response_core = client.coldata_class.translate_data_from(
+                response_api, client.coldata_target
+            )
+            self.assertEqual(
+                len(response_core['image_objects']),
+                1
+            )
+
+    def test_upload_product_categories_join_leave(self):
+        raise NotImplementedError()
+
 
     @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_variation(self):

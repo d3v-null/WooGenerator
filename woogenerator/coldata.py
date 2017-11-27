@@ -217,6 +217,8 @@ to extrace a meta value, and in this case you would want to set `force_mapping`
 to `meta_key` so that the `meta_value` can be accessed using the path meta.<meta_key>.meta_value
 """
 
+# TODO: what if translate_data_to checked for writability?
+
 # DEPRECATE_OLDSTYLE = False
 DEPRECATE_OLDSTYLE = True
 
@@ -511,6 +513,10 @@ class ColDataAbstract(ColDataLegacy):
         if cache_key in cls.handle_cache:
             return copy(cls.handle_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
+        if target and not target_ancestors:
+            raise UserWarning("target %s not recognized:\n%s" % (
+                target, pformat(cls.targets)
+            ))
         results = cls.find_in(cls.data, property_, target_ancestors, handle)
         if results:
             response = results.items()[-1][1]
@@ -529,6 +535,10 @@ class ColDataAbstract(ColDataLegacy):
         if cache_key in cls.handles_cache:
             return copy(cls.handles_cache[cache_key])
         target_ancestors = cls.get_target_ancestors(cls.targets, target)
+        if target and not target_ancestors:
+            raise UserWarning("target %s not recognized:\n%s" % (
+                target, pformat(cls.targets)
+            ))
         results = cls.find_in(cls.data, property_, target_ancestors, )
         cls.handles_cache[cache_key] = results
         return results
@@ -999,6 +1009,7 @@ class ColDataAbstract(ColDataLegacy):
         Perform a translation of types between core and `target` in the paths
         provided by path_translation, preserving those paths.
         """
+        data = deepcopy(data)
         if path_translation is None:
             path_translation = cls.get_core_path_translation(target)
         morph_functions = OrderedDict([
@@ -1021,6 +1032,7 @@ class ColDataAbstract(ColDataLegacy):
             return data
         if not target:
             return data
+        data = deepcopy(data)
         # split target_path_translation on which handles have sub_data
         target_path_translation = cls.get_target_path_translation(target)
         core_path_translation = cls.get_core_path_translation(target)
@@ -1056,18 +1068,44 @@ class ColDataAbstract(ColDataLegacy):
         """
         Perform a full translation of paths and types between core and target
         """
+        if not data:
+            return data
+        if not target:
+            return data
 
+        # split target_path_translation on which handles have sub_data
+        target_path_translation = cls.get_target_path_translation(target)
         core_path_translation = cls.get_core_path_translation(target)
+        sub_datum = cls.get_handles_property('sub_data')
+        sub_data_handles = set()
+        for handle, sub_data in sub_datum.items():
+            if sub_data:
+                sub_data_handles.add(handle)
+        path_translation_pre = OrderedDict()
+        path_translation_post = OrderedDict()
+        for handle in cls.data.keys():
+            if handle in sub_data_handles:
+                path_translation_pre[handle] = core_path_translation[handle]
+            else:
+                path_translation_post[handle] = target_path_translation[handle]
 
+        # translate types of subdata handles
         data = cls.translate_types_to(
-            data, target, core_path_translation
+            data, target, path_translation_pre
         )
-        data = cls.translate_structure_to(
-            data, target, core_path_translation
-        )
+        # Translate all paths
         data = cls.translate_paths_to(
             data, target
         )
+        # translate subdata structure
+        data = cls.translate_structure_to(
+            data, target, target_path_translation
+        )
+        # translate remaining types
+        data = cls.translate_types_to(
+            data, target, path_translation_post
+        )
+
         return data
 
     @classmethod
@@ -1197,7 +1235,7 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
     - wc-legacy-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/v1.html#products
     """
     data = deepcopy(ColDataSubEntity.data)
-    data = SeqUtils.combine_ordered_dicts(data, CreatedModifiedGmtMixin.data)
+    data = SeqUtils.combine_ordered_dicts(data, deepcopy(CreatedModifiedGmtMixin.data))
     data = SeqUtils.combine_ordered_dicts(data, {
         'id': {
             'write': False,
@@ -1234,7 +1272,7 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
         'position': {
             'path': None,
             'wc-api': {
-                'path': 'postition'
+                'path': 'position'
             }
         },
         'file_name': {
@@ -2521,7 +2559,7 @@ class ColDataProduct(ColDataWpEntity):
             'type': 'datetime',
             'path': None,
             'wc-api': {
-                'path': 'date_on_sale_to',
+                'path': 'date_on_sale_to_gmt',
                 'type': 'iso8601',
             },
             'wc-wp-api-v1': {
@@ -2971,8 +3009,7 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'meta._purchase_note'
             }
         },
-        'images': {
-            'path': None,
+        'image_objects': {
             'sub_data': ColDataSubAttachment,
             'wc-api': {
                 'path': 'images',

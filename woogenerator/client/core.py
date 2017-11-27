@@ -928,8 +928,8 @@ class SyncClientWC(SyncClientRest):
     default_version = 'wc/v2'
     default_namespace = 'wp-json'
     coldata_class = ColDataWpPost
-    coldata_target = 'wc-api-v2'
-    coldata_target_write = 'wc-api-v2-write'
+    coldata_target = 'wc-wp-api-v2'
+    coldata_target_write = 'wc-wp-api-v2-edit'
     primary_key_handle = 'id'
     page_nesting = False
     meta_get_key = 'meta_data'

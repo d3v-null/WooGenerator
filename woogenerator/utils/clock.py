@@ -62,6 +62,10 @@ class TimeUtils(object):
 
     @classmethod
     def star_strf_datetime(cls, datetime_, fmt=wp_datetime_format):
+        """
+        Take a datetime object and return a string representing the date,
+        controlled by a format string.
+        """
         if datetime_ is not None:
             return datetime_.strftime(fmt)
 
