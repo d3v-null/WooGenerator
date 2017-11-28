@@ -15,10 +15,10 @@ from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
 from woogenerator.coldata import (ColDataAttachment, ColDataProduct,
                                   ColDataWcProdCategory)
-from woogenerator.generator import (do_match_prod, do_match_categories,
-                                    do_match_images, do_merge_prod,
-                                    do_merge_categories, do_merge_images,
-                                    do_report, do_updates_categories,
+from woogenerator.generator import (do_match_categories, do_match_images,
+                                    do_match_prod, do_merge_categories,
+                                    do_merge_images, do_merge_prod, do_report,
+                                    do_updates_categories, do_updates_images,
                                     populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
@@ -67,6 +67,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.auto_create_new = True
         self.settings.update_slave = False
         self.settings.schema = "CA"
+        self.settings.ask_before_update = False
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -104,6 +105,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             Registrar.DEBUG_WARN = True
             Registrar.DEBUG_MESSAGE = True
             Registrar.DEBUG_TRACE = True
+            Registrar.DEBUG_CATS = True
             # Registrar.DEBUG_IMG = True
             # Registrar.DEBUG_SPECIAL = True
             # Registrar.strict = True
@@ -523,8 +525,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
-            # if self.debug:
-            #     import pudb; pudb.set_trace()
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
@@ -650,6 +650,65 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ),
             "ACARA-CCL.png"
         )
+
+    def do_updates_images_mocked(self):
+        with mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.__class__,
+                'slave_img_sync_client_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=ColDataAttachment
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_target'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.coldata_img_target
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'primary_key_handle'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='id'
+        ):
+            self.settings.update_slave = True
+            do_updates_images(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.settings.update_slave = False
+
+    @unittest.skip("not implemented yet")
+    @pytest.mark.last
+    def test_dummy_do_updates_images(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = False
+        self.populate_master_parsers()
+        process_images(self.settings, self.parsers)
+        self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            self.do_updates_images_mocked()
+
+
 
     @pytest.mark.last
     def test_dummy_do_merge_categories(self):

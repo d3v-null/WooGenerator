@@ -1125,44 +1125,56 @@ def handle_failed_update(update, results, exc, settings, source=None):
         import pudb
         pudb.set_trace()
 
+def usr_prompt_continue(settings):
+        input(
+            "Please read reports and press Enter to continue or ctrl-c to stop..."
+        )
+
+
 def do_updates_images(updates, parsers, results, settings):
     """Perform a list of updates on images."""
-    sync_handles = settings.sync_handles_cat
+    sync_handles = settings.sync_handles_img
+
     raise NotImplementedError()
 
-def upload_new_categories(parsers, results, settings, client, new_cat_updates):
+def upload_new_categories(parsers, results, settings, client, new_updates):
     """
-    upload a list of new categories to slave
+    Create new categories in client in an order which creates parents first.
     """
-    # TODO: take list of updates, not new_categories, then update the corresponding categories in master contaienr
+    if not new_updates:
+        return
 
-    index_fn = parsers.master.category_indexer
     sync_handles = settings.sync_handles_cat
 
-    if Registrar.DEBUG_CATS:
-        Registrar.register_message("created cat client")
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(new_updates), items_plural='new categories'
+        )
 
-    while new_cat_updates:
-        sync_update = new_cat_updates.pop(0)
-        new_category_gen = sync_update.old_m_object_gen
+    if not settings['update_slave']:
+        return
+
+    update_count = 0
+
+    while new_updates:
+
+        sync_update = new_updates.pop(0)
+        new_object_gen = sync_update.old_m_object_gen
 
         if Registrar.DEBUG_CATS:
             Registrar.register_message("new category %s" %
-                                       new_category_gen)
+                                       new_object_gen)
 
         # make sure parent updates are done before children
 
-        if new_category_gen.parent:
-            # TODO: redo this by just comparing objects, not indices
-            remaining_m_object_indices = set([
-                index_fn(sync_update.old_m_object_gen) for update_ in new_cat_updates
+        if new_object_gen.parent:
+            remaining_m_objects = set([
+                sync_update.old_m_object_gen for update_ in new_updates
             ])
-            parent = new_category_gen.parent
-            if not parent.is_root:
-                parent_index = index_fn(parent)
-                if parent_index in remaining_m_object_indices:
-                    new_cat_updates.append(sync_update)
-                    continue
+            parent = new_object_gen.parent
+            if not parent.is_root and parent in remaining_m_objects:
+                new_updates.append(sync_update)
+                continue
 
         # have to refresh sync_update to get parent wpid
         sync_update.set_old_m_object_gen(sync_update.old_m_object)
@@ -1172,32 +1184,36 @@ def upload_new_categories(parsers, results, settings, client, new_cat_updates):
 
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("uploading new category (api format): %s" % pformat(api_data))
-        if settings['update_slave']:
-            try:
-                response = client.create_item(api_data)
-                response_api_data = response.json()
-            except BaseException as exc:
-                handle_failed_update(
-                    sync_update, results.category, settings, exc, settings.slave_name
-                )
-                continue
-            if client.page_nesting:
-                response_api_data = response_api_data[client.endpoint_singular]
 
-            response_gen_object = parsers.slave.process_api_category_raw(response_api_data)
+        update_count += 1
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(update_count)
 
-            sync_update.set_new_s_object_gen(response_gen_object)
+        try:
+            response = client.create_item(api_data)
+            response_api_data = response.json()
+        except BaseException as exc:
+            handle_failed_update(
+                sync_update, results.category, settings, exc, settings.slave_name
+            )
+            continue
+        if client.page_nesting:
+            response_api_data = response_api_data[client.endpoint_singular]
 
-            if Registrar.DEBUG_CATS:
-                Registrar.register_message(
-                    "category being updated with parser data: %s"
-                    % pformat(response_gen_object))
+        response_gen_object = parsers.slave.process_api_category_raw(response_api_data)
 
-            sync_update.old_m_object.update(response_gen_object)
+        sync_update.set_new_s_object_gen(response_gen_object)
 
-            results.category.successes.append(sync_update)
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message(
+                "category being updated with parser data: %s"
+                % pformat(response_gen_object))
 
-def upload_category_changes(updates, parsers, results, settings, category_changes_gen):
+        sync_update.old_m_object.update(response_gen_object)
+
+        results.category.successes.append(sync_update)
+
+def upload_category_changes(parsers, results, settings, client, change_updates):
     """
     Upload a list of category changes
     """
@@ -1211,74 +1227,130 @@ def do_updates_categories(updates, parsers, results, settings):
 
     results.category = ResultsNamespace()
 
+    # updates in which an item is modified
+    change_updates = updates.category.slave
+    if settings.do_problematic:
+        change_updates += updates.category.problematic
+    # updates in which a new item is created
+    new_updates = []
+    if settings['auto_create_new']:
+        new_updates += updates.category.new_slaves
+    else:
+        for update in new_updates:
+            new_category_api = update.get_slave_updates_native()
+            exc = UserWarning(
+                "category needs to be created: %s" % new_category_api
+            )
+            Registrar.register_warning(exc)
+
+    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
+        'categories', len(change_updates), len(new_updates)
+    ))
+
+    if not (new_updates or change_updates):
+        return
+
+    if settings['ask_before_update']:
+        usr_prompt_continue(settings)
+
     upload_client_class = settings.slave_cat_sync_client_class
     upload_client_args = settings.slave_cat_sync_client_args
 
-    if updates.category.new_slaves:
-        # create categories that do not yet exist on slave
+    with upload_client_class(**upload_client_args) as client:
         if Registrar.DEBUG_CATS:
-            Registrar.register_message("NEW CATEGORIES: %d" % (
-                len(updates.category.new_slaves)
-            ))
-        if settings['auto_create_new']:
-            with upload_client_class(**upload_client_args) as client:
-                upload_new_categories(
-                    parsers, results, settings, client, updates.category.new_slaves
-                )
-        else:
-            for update in updates.category.new_slaves:
-                new_category_gen = update.old_m_object_gen
-                exc = UserWarning("category needs to be created: %s" %
-                                  new_category_gen)
-                Registrar.register_warning(exc)
+            Registrar.register_message("created cat client")
 
+        if new_updates:
+            # create categories that do not yet exist on slave
+            upload_new_categories(
+                parsers, results, settings, client, new_updates
+            )
 
-def do_updates_prod(updates, settings, results):
-    """Perform a list of updates."""
-
-    all_product_updates = updates.slave
-    if settings['do_variations']:
-        all_product_updates += updates.variation.slave
-    if settings.do_problematic:
-        all_product_updates += updates.problematic
-        if settings['do_variations']:
-            all_product_updates += updates.variation.problematic
-
-    # don't perform updates if limit was set
-    if settings['slave_parse_limit']:
-        all_product_updates = []
-
-    if not all_product_updates:
-        return
-
-    Registrar.register_progress("UPDATING %d RECORDS" %
-                                len(all_product_updates))
-
-    if settings['ask_before_update']:
-        input(
-            "Please read reports and press Enter to continue or ctrl-c to stop..."
-        )
+def upload_new_products(parsers, results, settings, client, new_updates):
+    """
+    Create new products in client in an order which creates parents first.
+    """
+    raise NotImplementedError()
 
     if Registrar.DEBUG_PROGRESS:
-        update_progress_counter = ProgressCounter(len(all_product_updates))
+        update_progress_counter = ProgressCounter(
+            len(new_updates), items_plural='new products'
+        )
+
+    if not settings['update_slave']:
+        return
+
+def upload_product_changes(parsers, results, settings, client, change_updates):
+    raise NotImplementedError()
+
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(change_updates), items_plural='product updates'
+        )
+
+    if not settings['update_slave']:
+        return
+
+    for count, sync_update in enumerate(change_updates):
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(count)
+
+        if sync_update.s_updated:
+            try:
+                sync_update.update_slave(client)
+            except Exception as exc:
+                handle_failed_update(
+                    sync_update, results, settings, exc, settings.slave_name
+                )
+
+def do_updates_prod(updates, parsers, settings, results):
+    """
+    Update products in slave.
+    """
+    # updates in which an item is modified
+
+
+    change_updates = updates.slave
+    if settings.do_problematic:
+        change_updates += updates.problematic
+    # updates in which a new item is created
+    new_updates = []
+    if settings['auto_create_new']:
+        new_updates += updates.new_slaves
+    else:
+        for update in new_updates:
+            new_category_api = update.get_slave_updates_native()
+            exc = UserWarning(
+                "category needs to be created: %s" % new_category_api
+            )
+            Registrar.register_warning(exc)
+    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
+        'products', len(change_updates), len(new_updates)
+    ))
+
+    if not (new_updates or change_updates):
+        return
+
+    if settings['ask_before_update']:
+        usr_prompt_continue(settings)
 
     slave_client_class = settings.slave_upload_client_class
     slave_client_args = settings.slave_upload_client_args
 
-    with slave_client_class(**slave_client_args) as slave_client:
-        for count, sync_update in enumerate(all_product_updates):
-            if Registrar.DEBUG_PROGRESS:
-                update_progress_counter.maybe_print_update(count)
+    with slave_client_class(**slave_client_args) as client:
+        if change_updates:
+            upload_product_changes(parsers, results, settings, client, change_updates)
+        if new_updates:
+            upload_new_products(parsers, results, settings, client, new_updates)
 
-            if settings['update_slave'] and sync_update.s_updated:
-                # print "attempting sync_update to %s " % str(sync_update)
+def do_updates_var(updates, parsers, settings, results):
+    change_updates = updates.variation.slave
+    if settings.do_problematic:
+        change_updates += updates.variation.problematic
 
-                try:
-                    sync_update.update_slave(slave_client)
-                except Exception as exc:
-                    handle_failed_update(
-                        sync_update, results, settings, exc, settings.slave_name
-                    )
+    if not change_updates:
+        return
+
 
 def main(override_args=None, settings=None):
     """Main function for generator."""
@@ -1358,9 +1430,14 @@ def main(override_args=None, settings=None):
     )
 
     try:
-        do_updates_prod(updates, settings, results)
+        do_updates_prod(updates, parsers, settings, results)
     except (SystemExit, KeyboardInterrupt):
         return reporters, results
+    if settings['do_variations']:
+        try:
+            do_updates_var(updates, parsers, settings, results)
+        except (SystemExit, KeyboardInterrupt):
+            return reporters, results
     do_report_post(reporters, results, settings)
 
     Registrar.register_message(
