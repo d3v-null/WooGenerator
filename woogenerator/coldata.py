@@ -1321,6 +1321,9 @@ class ColDataTermMixin(object):
             'wc-api':{
                 'path': 'name',
             },
+            'gen-api': {
+                'path': 'title'
+            }
         },
         'slug':{
             'unique': True,
@@ -1338,6 +1341,9 @@ class ColDataTermMixin(object):
                 'path': None
             },
             'wp-sql': {
+                'path': 'slug'
+            },
+            'gen-api': {
                 'path': 'slug'
             }
         },
@@ -1408,7 +1414,7 @@ class ColDataSubTerm(ColDataSubEntity, ColDataTermMixin):
     data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(
         data,
-        ColDataTermMixin.data
+        deepcopy(ColDataTermMixin.data)
     )
     data['term_id'].update({
         'wc-legacy-api': {

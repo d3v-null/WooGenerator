@@ -271,8 +271,12 @@ class ApiParseMixin(object):
         coldata_class = kwargs.get('coldata_class', self.coldata_class)
         coldata_target = kwargs.get('coldata_target', self.coldata_target)
 
-        core_api_data = coldata_class.translate_data_from(deepcopy(api_data), coldata_target)
-        gen_api_data = coldata_class.translate_data_to(core_api_data, self.coldata_gen_target)
+        core_api_data = coldata_class.translate_data_from(
+            api_data, coldata_target
+        )
+        gen_api_data = coldata_class.translate_data_to(
+            core_api_data, self.coldata_gen_target
+        )
 
         row_data = deepcopy(gen_api_data)
         row_data['api_data'] = api_data
@@ -397,10 +401,9 @@ class ApiParseWoo(
             if self.strict:
                 self.raise_exception(warn)
 
-    def process_api_category_raw(self, category_raw_data, object_data=None, **kwargs):
+    def translate_category_api_gen(self, category_raw_data, **kwargs):
         """
-        Create category if not exist of find if exist, then assign object_data to category.
-        Category must be in raw format, already converted.
+        Translate a category from api format to gen format
         """
         coldata_class = kwargs.get('coldata_class', self.coldata_cat_class)
         coldata_target = kwargs.get('coldata_target', self.coldata_target)
@@ -410,6 +413,15 @@ class ApiParseWoo(
         category_gen_data = coldata_class.translate_data_to(
             category_core_data, self.coldata_gen_target
         )
+        return category_gen_data
+
+
+    def process_api_category_raw(self, category_raw_data, object_data=None, **kwargs):
+        """
+        Create category if not exist of find if exist, then assign object_data to category.
+        Category must be in raw format, already converted.
+        """
+        category_gen_data = self.translate_category_api_gen(category_raw_data, **kwargs)
         return self.process_api_category_gen(category_gen_data, object_data, **kwargs)
 
     def process_api_category_gen(self, category_gen_data, object_data=None, **kwargs):
@@ -506,27 +518,42 @@ class ApiParseWoo(
 
         return cat_data
 
-    def process_api_categories_raw(self, categories):
-        """ creates a queue of categories to be processed in the correct order """
-        while categories:
-            category = categories.pop(0)
+    def process_api_categories_raw(self, categories_api):
+        """
+        Translate and process a list of api-formatted categories.
+        """
+        categories_gen = [
+            self.translate_category_api_gen(category_api_data) \
+            for category_api_data in categories_api
+        ]
+        self.process_api_categories_gen(categories_gen)
+
+    def process_api_categories_gen(self, categories_gen):
+        """
+        Process a list of gen-formatted categories in an order such that parents
+        are always processed before children.
+        """
+
+        while categories_gen:
+            category_gen = categories_gen.pop(0)
             # self.register_message("analysing category: %s" % category)
-            if category.get('parent_id'):
-                parent_id = category.get('parent_id')
+            if category_gen.get('parent_id'):
+                parent_id = category_gen.get('parent_id')
                 # self.register_message("parent id: %s" % parent)
                 queue_category_ids = [queue_category.get(
-                    'id') for queue_category in categories]
+                    'ID') for queue_category in categories_gen]
                 if parent_id in queue_category_ids:
                     # self.register_message('analysing later')
-                    categories.append(category)
+                    categories_gen.append(category_gen)
                     continue
-                # self.register_message("queue categories: %s" % queue_category_ids)
-                # for queue_category in categories:
-                #     # If category's parent exists in queue
+                # self.register_message("queue categories_gen: %s" % queue_category_ids)
+                # for queue_category in categories_gen:
+                #     # If category_gen's parent exists in queue
                 #     if queue_category.get('id') == parent:
                 #         # then put it at the end of the queue
-                #         categories.append(category)
-            self.process_api_category_raw(category)
+                #         categories_gen.append(category_gen)
+            self.process_api_category_gen(category_gen)
+
 
     def process_api_attribute_gen(self, object_data, attribute_data_gen, var=False):
         # TODO: finish this
@@ -578,15 +605,17 @@ class ApiParseWoo(
                 self.object_container.codesum_key,
                 parser_data
             )
-
-        assert self.object_container.descsum_key in parser_data, \
-        "parser_data should have description(%s): \n%s" % (
-            self.object_container.descsum_key,
-            pformat(parser_data.items()),
-        )
-        if not parser_data.get(self.object_container.description_key):
+            assert self.object_container.descsum_key in parser_data, \
+            "parser_data should have description(%s): \n%s" % (
+                self.object_container.descsum_key,
+                pformat(parser_data.items()),
+            )
+        if parser_data.get(self.object_container.descsum_key)\
+        and not parser_data.get(self.object_container.description_key):
             parser_data[self.object_container.description_key] \
             = parser_data[self.object_container.descsum_key]
+
+
 
         if Registrar.DEBUG_API:
             Registrar.register_message(

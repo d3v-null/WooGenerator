@@ -97,11 +97,23 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             **self.settings.slave_parser_args
         )
 
+        cat_client_class = self.settings.slave_cat_sync_client_class
+        cat_client_args = self.settings.slave_cat_sync_client_args
+
+        with cat_client_class(**cat_client_args) as client:
+            client.analyse_remote_categories(product_parser)
+
+        if self.debug:
+            print("parser tree:\n%s" % SanitationUtils.coerce_bytes(
+                product_parser.to_str_tree()
+            ))
+
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
             client.analyse_remote(product_parser, limit=20)
+
 
         prod_list = ShopProdList(product_parser.products.values())
         self.assertTrue(prod_list)
