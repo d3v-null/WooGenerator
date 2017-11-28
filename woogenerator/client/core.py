@@ -155,9 +155,8 @@ class SyncClientNull(SyncClientAbstract):
     page_nesting = False
     fake_id = 100000
 
-
     def __init__(self, *args, **kwargs):
-        pass
+        self.service = True
 
     def attempt_connect(self):
         pass
@@ -166,7 +165,8 @@ class SyncClientNull(SyncClientAbstract):
         pass
 
     def upload_changes(self, pkey, updates=None):
-        raise UserWarning("Using null client class")
+        super(SyncClientNull, self).upload_changes(pkey)
+        return updates
 
     def create_item(self, data, **kwargs):
         native_pkey = self.coldata_class.translate_key(

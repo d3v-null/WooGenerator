@@ -987,6 +987,7 @@ class SyncUpdate(Registrar):
         return ""
 
     def update_master(self, client):
+        raise DeprecationWarning("calling syncupate.update* is deprecated")
         updates = self.get_master_updates()
         if not updates:
             return
@@ -997,6 +998,7 @@ class SyncUpdate(Registrar):
         # todo: Determine if file imported correctly and delete file
 
     def update_slave(self, client):
+        raise DeprecationWarning("calling syncupate.update* is deprecated")
         # SanitationUtils.safe_print(  self.display_slave_changes() )
         updates = self.get_slave_updates_native()
         if not updates:

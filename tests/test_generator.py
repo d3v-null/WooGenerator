@@ -824,13 +824,21 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.do_updates_categories_mocked()
 
+        if self.debug:
+            print('category update results: %s' % self.results.category)
+
         self.assertEqual(
-            len(self.results.category.successes),
+            len(self.results.category),
+            9
+        )
+
+        self.assertEqual(
+            len(self.results.category.new.successes),
             2
         )
         index_fn = self.parsers.master.category_indexer
 
-        sync_update = self.results.category.successes.pop(0)
+        sync_update = self.results.category.new.successes.pop(0)
         try:
             new_s_object_gen = sync_update.new_s_object
             if self.debug:
@@ -852,7 +860,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.results.category.successes.pop(0)
+        sync_update = self.results.category.new.successes.pop(0)
         try:
             new_s_object_gen = sync_update.new_s_object
             if self.debug:
@@ -878,6 +886,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
+
+        import pudb; pudb.set_trace()
 
 
     @pytest.mark.last

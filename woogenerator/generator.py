@@ -1194,7 +1194,7 @@ def upload_new_categories(parsers, results, settings, client, new_updates):
             response_api_data = response.json()
         except BaseException as exc:
             handle_failed_update(
-                sync_update, results.category, settings, exc, settings.slave_name
+                sync_update, results, exc, settings, settings.slave_name
             )
             continue
         if client.page_nesting:
@@ -1211,14 +1211,37 @@ def upload_new_categories(parsers, results, settings, client, new_updates):
 
         sync_update.old_m_object.update(response_gen_object)
 
-        results.category.successes.append(sync_update)
+        results.successes.append(sync_update)
 
 def upload_category_changes(parsers, results, settings, client, change_updates):
     """
     Upload a list of category changes
     """
-    pass
 
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(change_updates), items_plural='category updates'
+        )
+
+    if not settings['update_slave']:
+        return
+
+    for count, sync_update in enumerate(change_updates):
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(count)
+
+        if not sync_update.s_updated:
+            continue
+
+        try:
+            pkey = sync_update.slave_id
+            changes = sync_update.get_slave_updates_native()
+            client.upload_changes(pkey, changes)
+        except Exception as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+        results.successes.append(sync_update)
 
 def do_updates_categories(updates, parsers, results, settings):
     """Perform a list of updates on categories."""
@@ -1226,6 +1249,10 @@ def do_updates_categories(updates, parsers, results, settings):
         return
 
     results.category = ResultsNamespace()
+    results.category.new = ResultsNamespace()
+    items_singular = 'category'
+    items_plural = 'categories'
+
 
     # updates in which an item is modified
     change_updates = updates.category.slave
@@ -1237,14 +1264,13 @@ def do_updates_categories(updates, parsers, results, settings):
         new_updates += updates.category.new_slaves
     else:
         for update in new_updates:
-            new_category_api = update.get_slave_updates_native()
-            exc = UserWarning(
-                "category needs to be created: %s" % new_category_api
-            )
+            new_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be created: {1}".format(
+                items_singular, new_item_api
+            ))
             Registrar.register_warning(exc)
-
     Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        'categories', len(change_updates), len(new_updates)
+        items_plural, len(change_updates), len(new_updates)
     ))
 
     if not (new_updates or change_updates):
@@ -1263,7 +1289,12 @@ def do_updates_categories(updates, parsers, results, settings):
         if new_updates:
             # create categories that do not yet exist on slave
             upload_new_categories(
-                parsers, results, settings, client, new_updates
+                parsers, results.category.new, settings, client, new_updates
+            )
+
+        if change_updates:
+            upload_category_changes(
+                parsers, results.category, settings, client, change_updates
             )
 
 def upload_new_products(parsers, results, settings, client, new_updates):
@@ -1297,10 +1328,12 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
 
         if sync_update.s_updated:
             try:
-                sync_update.update_slave(client)
+                pkey = sync_update.slave_id
+                changes = sync_update.get_slave_updates_native()
+                client.upload_changes(pkey, changes)
             except Exception as exc:
                 handle_failed_update(
-                    sync_update, results, settings, exc, settings.slave_name
+                    sync_update, results, exc, settings, settings.slave_name
                 )
 
 def do_updates_prod(updates, parsers, settings, results):
@@ -1309,6 +1342,9 @@ def do_updates_prod(updates, parsers, settings, results):
     """
     # updates in which an item is modified
 
+    results.new = ResultsNamespace()
+    items_plural = 'products'
+    items_singular = 'product'
 
     change_updates = updates.slave
     if settings.do_problematic:
@@ -1319,13 +1355,13 @@ def do_updates_prod(updates, parsers, settings, results):
         new_updates += updates.new_slaves
     else:
         for update in new_updates:
-            new_category_api = update.get_slave_updates_native()
-            exc = UserWarning(
-                "category needs to be created: %s" % new_category_api
-            )
+            new_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be created: {1}".format(
+                items_singular, new_item_api
+            ))
             Registrar.register_warning(exc)
     Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        'products', len(change_updates), len(new_updates)
+        items_plural, len(change_updates), len(new_updates)
     ))
 
     if not (new_updates or change_updates):
@@ -1338,12 +1374,18 @@ def do_updates_prod(updates, parsers, settings, results):
     slave_client_args = settings.slave_upload_client_args
 
     with slave_client_class(**slave_client_args) as client:
-        if change_updates:
-            upload_product_changes(parsers, results, settings, client, change_updates)
         if new_updates:
-            upload_new_products(parsers, results, settings, client, new_updates)
+            upload_new_products(
+                parsers, results, settings, client, new_updates
+            )
+        if change_updates:
+            upload_product_changes(
+                parsers, results, settings, client, change_updates
+            )
 
 def do_updates_var(updates, parsers, settings, results):
+    raise NotImplementedError()
+
     change_updates = updates.variation.slave
     if settings.do_problematic:
         change_updates += updates.variation.problematic
