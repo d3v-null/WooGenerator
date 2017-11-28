@@ -6,15 +6,14 @@ from __future__ import absolute_import
 
 import os
 import shutil
-import traceback
 import time
+import traceback
 from datetime import datetime
-
 
 import piexif
 from PIL import Image, ImageFile, PngImagePlugin
 
-from .utils import Registrar, SanitationUtils, MimeUtils
+from .utils import MimeUtils, Registrar, SanitationUtils, TimeUtils
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -257,11 +256,18 @@ def process_image_size(settings, parsers, img_data):
             winning_time = img_dst_mod
         elif settings.do_resize_images:
             shutil.copy(img_raw_path, img_dst_path)
+    elif settings.do_resize_images:
+        shutil.copy(img_raw_path, img_dst_path)
+        with open(img_dst_path) as _:
+            os.utime(img_dst_path, None)
+        with open(img_raw_path) as _:
+            os.utime(img_dst_path, None)
 
     if settings.do_resize_images:
         img_data[img_data.file_path_key] = img_dst_path
 
-    img_data['modified_gmt'] = datetime.fromtimestamp(winning_time)
+    img_data['Updated'] = TimeUtils.timestamp2datetime(winning_time)
+    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['Updated'])
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("resizing: %s" % img_data.file_name)

@@ -466,6 +466,11 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
             self.register_message(u"new tree object! rowcount: %d, row: %s, kwargs: %s" %
                                   (rowcount, unicode(kwargs['row']), unicode(kwargs)))
 
+        # TODO: replace the following with this:
+        # depth = kwargs.pop('depth')
+        # if depth is None or depth is '':
+        #     depth = self.depth(kwargs['row'])
+        #     kwargs['depth'] = depth
         try:
             depth = kwargs['depth']
             assert depth is not None

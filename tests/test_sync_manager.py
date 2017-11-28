@@ -93,7 +93,7 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print(
             (
                 "%s%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
-                ":\n%s\npasses:\n%s\nreflections:\n%s"
+                ":\n%s\npasses:\n%s\nprobbos:\n%s"
             ) % (
                 update,
                 str(type(update)),

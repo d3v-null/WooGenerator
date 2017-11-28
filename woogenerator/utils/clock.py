@@ -3,10 +3,14 @@ Utilities for time-related tasks
 """
 from __future__ import absolute_import
 
+import calendar
 import datetime
 import time
-import calendar
+from copy import deepcopy
 from numbers import Number
+
+import pytz
+import tzlocal
 
 from .core import SanitationUtils
 
@@ -78,6 +82,13 @@ class TimeUtils(object):
     def datetime2timestamp(cls, datetime_):
         if datetime_:
             return int(calendar.timegm(datetime_.utctimetuple()))
+
+    @classmethod
+    def datetime_local2gmt(cls, datetime_, local_tz=None):
+        if local_tz is None:
+            local_tz = tzlocal.get_localzone()
+        datetime_ = deepcopy(datetime_)
+        return datetime_.replace(tzinfo=local_tz).astimezone(pytz.utc)
 
     @classmethod
     def star_strp_mktime(cls, string, fmt=wp_datetime_format):

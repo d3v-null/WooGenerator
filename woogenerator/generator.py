@@ -27,7 +27,7 @@ from .parsing.api import ApiParseWoo
 from .parsing.dyn import CsvParseDyn
 from .parsing.special import CsvParseSpecial
 from .parsing.woo import WooCatList
-from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
+from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils, TimeUtils
 from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_category_matches_group, do_delta_group,
                              do_duplicates_group, do_duplicates_summary_group,
@@ -63,19 +63,9 @@ def check_warnings():
 
 def populate_master_parsers(parsers, settings):
     """Create and populates the various parsers."""
-    things_to_check = [
-        'master_parser_args', 'master_parser_class'
-    ]
-
     Registrar.register_message('schema: %s, woo_schemas: %s' % (
         settings.schema, settings.woo_schemas
     ))
-
-    for thing in things_to_check:
-        Registrar.register_message(
-            "%s: %s" % (thing, getattr(settings, thing))
-        )
-        assert getattr(settings, thing), "settings must specify %s" % thing
 
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
@@ -95,7 +85,7 @@ def populate_master_parsers(parsers, settings):
                     data_path=settings.dprc_path,
                     gid=settings.dprc_gid
                 )
-                settings.master_parser_args['dprc_rules'] = parsers.dyn.taxos
+                settings.dprc_rules = parsers.dyn.taxos
 
                 Registrar.register_message("analysing dprp rules")
                 parsers.dyn.clear_transients()
@@ -104,7 +94,7 @@ def populate_master_parsers(parsers, settings):
                     data_path=settings.dprp_path,
                     gid=settings.dprp_gid
                 )
-                settings.master_parser_args['dprp_rules'] = parsers.dyn.taxos
+                settings.dprp_rules = parsers.dyn.taxos
 
             if settings.do_specials:
                 Registrar.register_message("analysing specials")
@@ -129,8 +119,21 @@ def populate_master_parsers(parsers, settings):
                         "current_special_groups: %s" % settings.current_special_groups
                     )
 
+        master_parser_args = settings.master_parser_args
+
+        if os.path.exists(settings.master_path):
+            master_mod_ts = max(
+                os.path.getmtime(settings.master_path), os.path.getctime(settings.master_path)
+            )
+            master_mod_dt = TimeUtils.timestamp2datetime(master_mod_ts)
+            master_parser_args['defaults'].update({
+                'Updated': master_mod_dt,
+                'modified_gmt': TimeUtils.datetime_local2gmt(master_mod_dt)
+            })
+
+
         parsers.master = settings.master_parser_class(
-            **settings.master_parser_args
+            **master_parser_args
         )
 
         Registrar.register_progress("analysing master product data")
@@ -582,6 +585,10 @@ def do_merge_images(matches, parsers, updates, settings):
         m_object = match.m_object
         for s_object in match.s_objects:
             s_object = match.s_object
+
+            # TODO: implement img mod time check
+
+            # import pudb; pudb.set_trace()
 
             sync_update = settings.syncupdate_class_img(m_object, s_object)
 
@@ -1130,29 +1137,89 @@ def usr_prompt_continue(settings):
             "Please read reports and press Enter to continue or ctrl-c to stop..."
         )
 
+def upload_new_images(parsers, results, settings, client, new_updates):
+    raise NotImplementedError()
+
+    if not (new_updates and settings['update_slave']):
+        return
+
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(new_updates), items_plural='new %s' % client.endpoint_plural
+        )
+
+    sync_handles = settings.sync_handles_img
+
+
+def upload_image_changes(parsers, results, settings, client, change_updates):
+    raise NotImplementedError()
 
 def do_updates_images(updates, parsers, results, settings):
     """Perform a list of updates on images."""
-    sync_handles = settings.sync_handles_img
 
-    raise NotImplementedError()
+    import pudb; pudb.set_trace()
+
+    results.image = ResultsNamespace()
+    results.image.new = ResultsNamespace()
+    items_singular = 'image'
+    items_plural = 'images'
+
+    # updates in which an item is modified
+    change_updates = updates.image.slave
+    if settings.do_problematic:
+        change_updates += updates.image.problematic
+    # updates in which a new item is created
+    new_updates = []
+    if settings['auto_create_new']:
+        new_updates += updates.image.new_slaves
+    else:
+        for update in new_updates:
+            new_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be created: {1}".format(
+                items_singular, new_item_api
+            ))
+            Registrar.register_warning(exc)
+    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
+        items_plural, len(change_updates), len(new_updates)
+    ))
+
+    if not (new_updates or change_updates):
+        return
+
+    if settings['ask_before_update']:
+        usr_prompt_continue(settings)
+
+    upload_client_class = settings.slave_cat_sync_client_class
+    upload_client_args = settings.slave_cat_sync_client_args
+
+    with upload_client_class(**upload_client_args) as client:
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message("created cat client")
+
+        if new_updates:
+            # create images that do not yet exist on slave
+            upload_new_images(
+                parsers, results.image.new, settings, client, new_updates
+            )
+
+        if change_updates:
+            upload_image_changes(
+                parsers, results.image, settings, client, change_updates
+            )
 
 def upload_new_categories(parsers, results, settings, client, new_updates):
     """
     Create new categories in client in an order which creates parents first.
     """
-    if not new_updates:
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(new_updates), items_plural='new %s' % client.endpoint_plural
+        )
+
+    if not (new_updates and settings['update_slave']):
         return
 
     sync_handles = settings.sync_handles_cat
-
-    if Registrar.DEBUG_PROGRESS:
-        update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new categories'
-        )
-
-    if not settings['update_slave']:
-        return
 
     update_count = 0
 
@@ -1253,7 +1320,6 @@ def do_updates_categories(updates, parsers, results, settings):
     items_singular = 'category'
     items_plural = 'categories'
 
-
     # updates in which an item is modified
     change_updates = updates.category.slave
     if settings.do_problematic:
@@ -1305,10 +1371,10 @@ def upload_new_products(parsers, results, settings, client, new_updates):
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new products'
+            len(new_updates), items_plural='new %s' % client.endpoint_plural
         )
 
-    if not settings['update_slave']:
+    if not (new_updates and settings['update_slave']):
         return
 
 def upload_product_changes(parsers, results, settings, client, change_updates):

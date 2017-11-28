@@ -519,7 +519,7 @@ class SyncUpdate(Registrar):
             table_fmtd = tabulate(table, headers='firstrow',
                                   tablefmt=tablefmt)
             tables.append(delimeter.join([subject_formatted, table_fmtd]))
-        return delimeter.join(tables)
+        return SanitationUtils.coerce_ascii(delimeter.join(tables))
 
     def display_sync_warnings(self, tablefmt=None):
         return self.display_update_list(self.sync_warnings_core, tablefmt)
@@ -655,14 +655,7 @@ class SyncUpdate(Registrar):
         self.add_sync_pass(**update_params)
 
     def get_handle_mod_time(self, handle, subject):
-        # TODO: just return m_mod or s_mod?
-        pass
-
-    def get_m_handle_mod_time(self, handle):
-        return self.get_handle_mod_time(handle, self.master_name)
-
-    def get_s_handle_mod_time(self, handle):
-        return self.get_handle_mod_time(handle, self.slave_name)
+        return self.get_subject_mod_time(subject)
 
     def sync_handle(self, **update_params):
         for key in ['handle', 'm_value',

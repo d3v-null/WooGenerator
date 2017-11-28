@@ -392,9 +392,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         ]
         print(tabulate(img_table))
 
-    @unittest.skip("takes too long")
-    @pytest.mark.slow
-    def test_dummy_process_images_master(self):
+    def setup_temp_img_dir(self):
         self.settings.do_resize_images = True
         self.settings.do_remeta_images = True
         self.settings.thumbsize_x = 1024
@@ -412,9 +410,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ),
             self.settings.img_raw_dir
         )
+
         self.settings.img_cmp_dir = os.path.join(
             temp_img_dir, "imgs_cmp"
         )
+
+    # @unittest.skip("takes too long")
+    @pytest.mark.slow
+    def test_dummy_process_images_master(self):
+
 
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -513,10 +517,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
-    @pytest.mark.last
+    @pytest.mark.slow
     def test_dummy_do_merge_images(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = False
+        """
+        Assume image files are newer than example json image mod times
+        """
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
         process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
@@ -708,6 +714,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.do_updates_images_mocked()
 
+        if self.debug:
+            print('image update results: %s' % self.results.image)
+
+        import pudb; pudb.set_trace()
+
+        self.assertEqual(
+            len(self.results.image.new),
+            2
+        )
 
 
     @pytest.mark.last
@@ -828,7 +843,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print('category update results: %s' % self.results.category)
 
         self.assertEqual(
-            len(self.results.category),
+            len(self.results.category.successes),
             9
         )
 
@@ -886,8 +901,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-
-        import pudb; pudb.set_trace()
 
 
     @pytest.mark.last

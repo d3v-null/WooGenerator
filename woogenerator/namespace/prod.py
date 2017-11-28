@@ -449,6 +449,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
                 ('item_depth', 'item_depth'),
                 ('taxo_depth', 'taxo_depth'),
                 ('special_rules', 'special_rules'),
+                ('dprp_rules', 'dprp_rules'),
+                ('dprc_rules', 'dprc_rules'),
                 ('current_special_groups', 'current_special_groups'),
         ]:
             if hasattr(self, settings_key):

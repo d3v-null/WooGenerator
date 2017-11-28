@@ -1186,11 +1186,9 @@ class CreatedModifiedGmtMixin(object):
                 'path': 'post_date_gmt'
             },
             'gen-csv': {
-                'path': None,
+                'path': 'created_gmt',
+                'read': False,
             },
-            'gen-api': {
-                'path': 'created_gmt'
-            }
         },
         'modified_gmt': {
             'type': 'datetime',
@@ -1213,15 +1211,13 @@ class CreatedModifiedGmtMixin(object):
             'gen-csv': {
                 'path': 'modified_gmt',
                 'type': 'datetime',
-                'read': False
-            },
-            'gen-api': {
-                'path': 'modified_gmt'
+                'read': False,
             },
             'xero-api': {
                 'path': 'UpdatedDateUTC',
                 'type': 'iso8601'
-            }
+            },
+            'report': True,
         },
     }
 
@@ -1860,7 +1856,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             },
             'gen-csv': {
                 'path': 'Updated',
-                'read': None,
+                'read': False,
             },
             'xero-api': {
                 'path': None
