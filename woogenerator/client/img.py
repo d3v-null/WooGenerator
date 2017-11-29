@@ -21,7 +21,7 @@ class ImgSyncClientWP(SyncClientWP):
         super(ImgSyncClientWP, self).__init__(connect_params, **kwargs)
 
     def upload_image(self, img_path):
-        assert os.path.exists(img_path), "img should exist"
+        assert os.path.exists(img_path), "img path should be valid: %s" % img_path
         data = open(img_path, 'rb').read()
         filename = os.path.basename(img_path)
         _, extension = os.path.splitext(filename)
@@ -38,13 +38,23 @@ class ImgSyncClientWP(SyncClientWP):
         updates_api = self.coldata_class.translate_data_to(updates_core, self.coldata_target_write)
         return self.upload_changes(pkey, updates_api)
 
+    def upload_changes(self, pkey, updates=None):
+        file_path = updates.pop('file_path')
+        if file_path:
+            response = self.upload_image(file_path)
+            import pudb; pudb.set_trace()
+            # maybe set updates['id'] here?
+        return super(ImgSyncClientWP, self).upload_changes(updates)
+
     def analyse_remote_imgs(self, parser, **kwargs):
-        img_api_iterator = self.get_iterator(self.endpoint_plural)
-        for page in img_api_iterator:
-            if self.page_nesting:
-                page = page['media']
-            for page_item in page:
-                parser.analyse_api_image(page_item)
+        # img_api_iterator = self.get_iterator(self.endpoint_plural)
+        # for page in img_api_iterator:
+        #     if self.page_nesting:
+        #         page = page[self.endpoint_plural]
+        #     for page_item in page:
+        for page in self.get_page_generator():
+            for endpoint_item in page:
+                parser.analyse_api_image_raw(endpoint_item)
         if self.DEBUG_API:
             self.register_message("Analysed images:")
             self.register_message(parser.to_str_tree())

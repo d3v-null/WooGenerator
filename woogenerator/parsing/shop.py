@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import bisect
 import os
+import re
 import weakref
 from collections import OrderedDict
 
@@ -70,6 +71,21 @@ class ImportShopImgMixin(ShopMixin):
         source_url = cls.get_source_url(data)
         if source_url:
             return FileUtils.get_path_basename(source_url)
+
+    @classmethod
+    def get_normalized_filename(cls, data):
+        filename = cls.get_file_name(data)
+        name, ext = os.path.splitext(filename)
+        code_match = re.match(r'^(?P<before>%s)(?P<after>.*)$' % re.escape(data.get('codesum')), '', name)
+        if code_match:
+            import pudb; pudb.set_trace()
+            before = code_match.get('before')
+            after = code_match.get('after')
+            after = re.sub(r'-\d+\$', '', after)
+            name = "%s%s" % (before, after)
+        else:
+            name = re.sub(r'-\d+\$', '', name)
+        return '.'.join([name, ext])
 
     @classmethod
     def get_attachment_id(cls, data):
@@ -462,7 +478,8 @@ class CsvParseShopMixin(object):
             'variable': self.variable_container,
             'variation': self.variation_container,
             'category': self.category_container,
-            'image': self.image_container
+            'image': self.image_container,
+            'sub-image': self.image_container
         }
 
     def clear_transients(self):

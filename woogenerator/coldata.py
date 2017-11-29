@@ -1223,7 +1223,7 @@ class CreatedModifiedGmtMixin(object):
 
 class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
     """
-    Metadata for Media sub items; media items that appear within items in the API
+    Metadata for Media sub items; media items that appear within entities in the API
     - wc-wp-api-v2: http://woocommerce.github.io/woocommerce-rest-api-docs/#product-images-properties
     - wc-wp-api-v1: http://woocommerce.github.io/woocommerce-rest-api-docs/wp-api-v1.html#product-image-properties
     - wc-legacy-api-v3: http://woocommerce.github.io/woocommerce-rest-api-docs/v3.html#images-properties
@@ -1246,11 +1246,15 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
             'wp-sql': {
                 'path': 'ID',
             },
+            'gen-api': {
+                'path': 'ID'
+            },
             'report': True
         },
         'title': {
             'wc-wp-api':{
                 'path': 'name',
+                'type': 'wp_content_rendered'
             },
         },
         'source_url': {
@@ -1282,6 +1286,19 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
                 'path': 'file_name',
                 'read': False
             }
+        }
+    })
+
+class ColDataSubTermAttachment(ColDataSubAttachment):
+    """
+    Metadata for Media sub items; media items that appear within terms in the API
+    """
+    data = deepcopy(ColDataSubAttachment.data)
+    del data['position']
+    data['title'].update({
+        'wc-wp-api': {
+            'path': 'title',
+            'type': 'wp_content_rendered'
         }
     })
 
@@ -1730,7 +1747,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
         # },
         'image': {
             'path': None,
-            'sub_data': ColDataSubAttachment,
+            'sub_data': ColDataSubTermAttachment,
             'wc-api': {
                 'path': 'image',
                 'structure': ('singular-object', )
@@ -3411,7 +3428,7 @@ class ColDataAttachment(ColDataWpEntity):
         'file_path': {
             'wp-api': {
                 'path': 'media_details.file',
-                'write': False,
+                # 'write': False,
             },
             'wp-api-v1': {
                 'path': 'attachment_meta.file',

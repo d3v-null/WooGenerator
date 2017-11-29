@@ -365,26 +365,33 @@ class CsvParseWooMixin(object):
     image_container = ImportWooImg
     attachment_indexer = ImportWooImg.get_file_name
 
-    def find_category(self, search_data):
-        search_keys = [
+    @property
+    def cat_search_keys(self):
+        return [
             self.category_container.wpid_key,
             self.category_container.slug_key,
             self.category_container.title_key,
             self.category_container.namesum_key,
         ]
-        registry = self.categories
-        return self.find_object(search_data, registry, search_keys)
 
-    def find_image(self, search_data):
-        registry = self.images
-        search_keys = [
-            # self.image_container.wpid_key,
-            self.image_container.slug_key,
+
+    @property
+    def img_search_keys(self):
+        return [
+            self.image_container.attachment_id_key,
+            # self.image_container.slug_key,
             # self.image_container.title_key,
             self.image_container.file_name_key,
             self.image_container.source_url_key
         ]
-        return self.find_object(search_data, registry, search_keys)
+
+    def find_category(self, search_data):
+        registry = self.categories
+        return self.find_object(search_data, registry, self.cat_search_keys)
+
+    def find_image(self, search_data):
+        registry = self.images
+        return self.find_object(search_data, registry, self.img_search_keys)
 
     @classmethod
     def get_title(cls, object_data):
@@ -434,6 +441,9 @@ class CsvParseWooMixin(object):
         if not img_data:
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
+                if img_raw_data.get('type') == 'sub-image':
+                    import pudb; pudb.set_trace()
+                    img_data = self.find_image(img_raw_data)
             row_data = deepcopy(img_raw_data)
             kwargs['defaults'] = self.img_defaults
             kwargs['row_data'] = row_data

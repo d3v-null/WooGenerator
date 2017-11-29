@@ -384,7 +384,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class_img.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_img_target_write
         )
-        for handle in ['post_status', 'file_path']:
+        # for handle in ['post_status', 'file_path']:
+        for handle in ['post_status']:
             if handle in response:
                 del response[handle]
         return response

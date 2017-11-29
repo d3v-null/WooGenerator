@@ -519,6 +519,34 @@ class TestImgSyncClient(TestProdSyncClient):
                 print("upload changes response core: %s" % pformat(response_core.items()))
             client.delete_item(img_id)
 
+    def test_overwrite_image(self):
+        """
+        This might have issues with not regenrating the thumbnails correctly
+        """
+        if self.debug:
+            Registrar.DEBUG_API = True
+            logging.basicConfig(level=logging.DEBUG)
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
+
+        new_img_core = OrderedDict([
+            ('file_path', 'tests/sample_data/imgs_raw/ACARA-CCL.png')
+        ])
+
+        with img_client_class(**img_client_args) as client:
+            first_img_raw = client.get_endpoint_generator().next()
+            if self.debug:
+                print("first img raw: %s" % first_img_raw.items())
+            first_img_core = client.coldata_class.translate_data_from(
+                first_img_raw, client.coldata_target
+            )
+            if self.debug:
+                print("first img core: %s" % first_img_core.items())
+            import pudb; pudb.set_trace()
+
+
+
+
 
 @pytest.mark.local
 class TestProdSyncClientConstructors(TestProdSyncClient):

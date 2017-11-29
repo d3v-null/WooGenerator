@@ -464,11 +464,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
 
         if self.debug:
-            self.matches.image.globals.tabulate()
+            # self.matches.image.globals.tabulate()
             self.print_matches_summary(self.matches.image)
 
-        self.assertEqual(len(self.matches.image.globals), 45)
-        first_match = self.matches.image.globals[0]
+        self.assertEqual(len(self.matches.image.valid), 45)
+        first_match = self.matches.image.valid[0]
         first_master = first_match.m_object
         first_slave = first_match.s_object
         if self.debug:
@@ -480,7 +480,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("intersect_keys:\n")
             for key in intersect_keys:
                 out = ("%20s | %50s | %50s" % (
-                    str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
+                    SanitationUtils.coerce_ascii(key),
+                    SanitationUtils.coerce_ascii(first_master[key])[:50],
+                    SanitationUtils.coerce_ascii(first_slave[key])[:50]
                 ))
                 print(SanitationUtils.coerce_ascii(out))
         for match in self.matches.image.globals:

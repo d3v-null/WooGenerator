@@ -48,6 +48,18 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("matches.slaveless (%d):\n%s" % (
             len(matches.slaveless), matches.slaveless.tabulate())
         )
+        if hasattr(matches, 'valid'):
+            print("matches.valid (%d):\n%s" % (
+                len(matches.valid), matches.valid.tabulate())
+            )
+        if hasattr(matches, 'invalid'):
+            print("matches.invalid (%d):\n%s" % (
+                len(matches.invalid), matches.invalid.tabulate())
+            )
+        if hasattr(matches, 'duplicate'):
+            print("matches.duplicate (%d):\n%s" % (
+                len(matches.duplicate), pformat(matches.duplicate.items()))
+            )
 
     def print_updates_summary(self, updates):
         print("delta_master updates(%d):\n%s" % (
@@ -80,6 +92,9 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("static updates(%d):\n%s" % (
             len(updates.static), map(str, updates.static))
         )
+        if hasattr(updates, 'new'):
+            print("NEW:")
+            self.print_updates_summary(updates.new)
 
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (

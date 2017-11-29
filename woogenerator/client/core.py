@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 import codecs
 import functools
+import itertools
 import os
 import re
 import time
@@ -33,7 +34,7 @@ from sshtunnel import SSHTunnelForwarder
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
-from ..coldata import ColDataWpPost, ColDataProductMeridian, ColDataWpEntity
+from ..coldata import ColDataProductMeridian, ColDataWpEntity, ColDataWpPost
 from ..utils import ProgressCounter, Registrar, SanitationUtils
 
 
@@ -518,6 +519,8 @@ class SyncClientRest(SyncClientAbstract):
 
             # get API response
             try:
+                if Registrar.DEBUG_API:
+                    Registrar.register_message("api calling endpoint %s" % self.next_endpoint)
                 self.prev_response = self.service.get(self.next_endpoint)
             except ReadTimeout as exc:
                 # instead of processing this endoint, do the page product by
@@ -575,6 +578,9 @@ class SyncClientRest(SyncClientAbstract):
 
             # process API headers
             self.process_headers(self.prev_response)
+
+            if Registrar.DEBUG_API:
+                Registrar.register_message("api returned json: %s" % prev_response_json)
 
             return prev_response_json
 
@@ -705,7 +711,7 @@ class SyncClientRest(SyncClientAbstract):
 
     def get_iterator(self, endpoint=None):
         """
-        Gets an iterator to the items in the API
+        Get an iterator to the pages in the API
         """
         if not endpoint:
             endpoint = self.endpoint_plural
@@ -728,6 +734,16 @@ class SyncClientRest(SyncClientAbstract):
             pagination_offset_key=self.pagination_offset_key,
             total_pages_key=self.total_pages_key,
             total_items_key=self.total_items_key,
+        )
+
+    def get_page_generator(self):
+        """
+        Get a generator for endpoint items.
+        """
+        # import pudb; pudb.set_trace()
+        return itertools.chain(
+            (page[self.endpoint_plural] if self.page_nesting else page)
+            for page in self.get_iterator(self.endpoint_plural)
         )
 
     def create_item(self, data, **kwargs):
@@ -772,13 +788,14 @@ class SyncClientRest(SyncClientAbstract):
         return response
 
     def get_first_endpoint_item(self):
-        service_endpoint = self.endpoint_plural
-        if self.pagination_limit_key:
-            service_endpoint += '?%s=1' % self.pagination_limit_key
-        items_page = self.get_iterator(service_endpoint).next()
-        if self.page_nesting:
-            items_page = items_page[self.endpoint_plural]
-        return items_page[0]
+        return self.get_endpoint_generator().next()
+        # service_endpoint = self.endpoint_plural
+        # if self.pagination_limit_key:
+        #     service_endpoint += '?%s=1' % self.pagination_limit_key
+        # items_page = self.get_iterator(service_endpoint).next()
+        # if self.page_nesting:
+        #     items_page = items_page[self.endpoint_plural]
+        # return items_page[0]
 
     # TODO: Get rid of all of these, just use coldata
 

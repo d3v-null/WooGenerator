@@ -208,7 +208,12 @@ class ImportWooApiCategoryLegacy(ImportWooApiCategory):
 ImportWooApiCategoryLegacy.container = WooApiCatList
 
 class ImportWooApiImg(ImportWooImg):
-    pass
+
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooImg.verify_meta_keys,
+        [ImportWooImg.source_url_key]
+    )
+    verify_meta_keys.remove(ImportWooImg.file_path_key)
 
 class WooApiImgList(WooImgList, ApiListMixin):
     supported_type = ImportWooApiImg
@@ -385,21 +390,22 @@ class ApiParseWoo(
         """
         Process an api image that is a sub-entity in gen format.
         """
-        if sub_img_gen_data.get('id') == 0:
+        if sub_img_gen_data.get(self.image_container.attachment_id_key) == 0:
             # drop the Placeholder image
             return
 
         sub_img_gen_data['type'] = 'sub-image'
 
-        try:
-            super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
-        except Exception as exc:
-            warn = UserWarning("could not find api sub image, %s\nobject:\n%s" % (
-                exc, object_data
-            ))
-            self.register_error(warn)
-            if self.strict:
-                self.raise_exception(warn)
+        super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
+        # try:
+        # except Exception as exc:
+        #     import pudb; pudb.set_trace()
+        #     warn = UserWarning("could not find api sub image, %s\nobject:\n%s" % (
+        #         exc, object_data
+        #     ))
+        #     self.register_error(warn)
+        #     if self.strict:
+        #         self.raise_exception(warn)
 
     def translate_category_api_gen(self, category_raw_data, **kwargs):
         """
@@ -413,6 +419,7 @@ class ApiParseWoo(
         category_gen_data = coldata_class.translate_data_to(
             category_core_data, self.coldata_gen_target
         )
+        category_gen_data['api_data'] = category_raw_data
         return category_gen_data
 
 

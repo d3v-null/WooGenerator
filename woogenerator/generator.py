@@ -270,7 +270,6 @@ def export_master_parser(settings, parsers):
             category_cols = settings.coldata_class_cat.get_export_cols_native('write', target='wc-csv')
             category_col_names = settings.coldata_class_cat.get_col_names(category_cols)
             category_container = settings.master_parser_class.category_container.container
-            import pudb; pudb.set_trace()
             category_list = category_container([
                 category for category in parsers.master.categories.values()
                 if category.members
@@ -363,8 +362,7 @@ def do_match_images(parsers, matches, settings):
         for match in image_matcher.duplicate_matches:
             master_filenames = [img.file_name for img in match.m_objects]
             if all(master_filenames) \
-                    and SeqUtils.check_equal(master_filenames) \
-                    and not len(match.s_objects) > 1:
+            and SeqUtils.check_equal(master_filenames):
                 matches.image.valid.append(match)
             else:
                 matches.image.invalid.append(match)
@@ -584,7 +582,6 @@ def do_merge_images(matches, parsers, updates, settings):
     for match in matches.image.valid:
         m_object = match.m_object
         for s_object in match.s_objects:
-            s_object = match.s_object
 
             # TODO: implement img mod time check
 

@@ -476,8 +476,19 @@ class CsvParseBase(Registrar):
         if matching_sets:
             matches = set.intersection(*matching_sets)
             if matches:
-                assert len(matches) == 1, "should only have one match: %s " % [
-                    registry.get(match) for match in matches]
+                assert \
+                len(matches) == 1, \
+                (
+                    "should only have one match:\n"
+                    "-> search_data:\n%s\n"
+                    "-> match_keys:\n%s\n"
+                    "-> matches:\n%s\n%s"
+                ) % (
+                    pformat(search_data.items()),
+                    pformat(search_keys),
+                    pformat(matches),
+                    pformat(['%s' % registry.get(match) for match in matches])
+                )
                 response = registry.get(list(matches)[0])
         return response
 
