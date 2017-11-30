@@ -735,6 +735,7 @@ class SanitationUtils(object):
             # cls.strip_leading_whitespace,
             # cls.strip_tailing_whitespace,
             cls.strip_tailing_newline,
+            cls.normalize_unicode,
             cls.xml_to_unicode,
             cls.strip_p_tags,
             cls.replace_br_tags,

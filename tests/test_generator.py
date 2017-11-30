@@ -278,12 +278,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     def test_dummy_populate_slave_parsers(self):
         # self.populate_master_parsers()
         self.populate_slave_parsers()
-        # TODO: finish this
         if self.debug:
             print("slave objects: %s" % len(self.parsers.slave.objects.values()))
             print("slave items: %s" % len(self.parsers.slave.items.values()))
             print("slave products: %s" % len(self.parsers.slave.products.values()))
             print("slave categories: %s" % len(self.parsers.slave.categories.values()))
+
+        if self.debug:
+            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
 
         self.assertEqual(len(self.parsers.slave.products), 48)
         prod_container = self.parsers.slave.product_container.container
@@ -295,7 +297,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("first_prod.images: %s" % pformat(first_prod.images))
 
         self.assertEqual(first_prod.codesum, "ACARF-CRS")
-        # TODO: Implement category tree in slave
         # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
 
         self.assertEqual(first_prod.product_type, "simple")
@@ -379,10 +380,43 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 img_list.tabulate(tablefmt='simple')
             ))
 
+        first_img = img_list[0]
+
         if self.debug:
-            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
-            print("Registrar.stack_counts:")
-            print(Registrar.display_stack_counts())
+            print(SanitationUtils.coerce_bytes(
+                pformat(first_img.items())
+            ))
+
+        self.assertEqual(first_img.file_name, 'ACARF.jpg')
+        self.assertEqual(first_img.wpid, 24885)
+        self.assertEqual(
+            first_img['caption'],
+            ('With the choice of four, stunning golden brown shades that '
+             'develop over 6-8 hours, TechnoTan Classic Tan is the ultimate '
+             'Spray on Tan.')
+        )
+        self.assertEqual(
+            first_img['title'],
+            'Solution > TechnoTan Solution > Classic Tan (6hr)'
+        )
+
+        last_img = img_list[-1]
+
+        if self.debug:
+            print(SanitationUtils.coerce_bytes(
+                pformat(last_img.items())
+            ))
+
+        self.assertEqual(last_img.file_name, 'ACARA-CAL.png')
+        self.assertEqual(last_img.wpid, 24772)
+        self.assertEqual(last_img['title'], 'Range A - Style 1 - 1Litre 1')
+        self.assertEqual(last_img['slug'], 'range-a-style-1-1litre-1')
+        self.assertEqual(last_img['width'], 1200)
+        self.assertEqual(last_img['height'], 1200)
+
+        # if self.debug
+        #     print("Registrar.stack_counts:")
+        #     print(Registrar.display_stack_counts())
 
     def print_images_summary(self, images):
         img_cols = ColDataAttachment.get_report_cols_native()

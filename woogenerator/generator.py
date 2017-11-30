@@ -585,8 +585,6 @@ def do_merge_images(matches, parsers, updates, settings):
 
             # TODO: implement img mod time check
 
-            # import pudb; pudb.set_trace()
-
             sync_update = settings.syncupdate_class_img(m_object, s_object)
 
             sync_update.update(sync_handles)

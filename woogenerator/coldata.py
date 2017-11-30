@@ -1266,7 +1266,7 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
         },
         'alt_text': {
             'wc-wp-api': {
-                'path': 'alt'
+                'path': 'alt',
             }
         },
         'position': {
@@ -1326,26 +1326,29 @@ class ColDataTermMixin(object):
         'title': {
             'path': None,
             'wp-api-v1': {
-                'path': 'name'
+                'path': 'name',
+                'type': 'wp_content_rendered',
             },
             'wp-sql': {
-                'path': 'name'
+                'path': 'name',
+                'type': 'wp_content_rendered',
             },
             'wc-api':{
                 'path': 'name',
+                'type': 'wp_content_rendered',
             },
             'gen-api': {
-                'path': 'title'
+                'path': 'title',
             }
         },
         'slug':{
             'unique': True,
             'path': None,
             'wp-api': {
-                'path': 'slug'
+                'path': 'slug',
             },
             'wp-api-v1': {
-                'path': 'name'
+                'path': 'name',
             },
             'wc-api': {
                 'path': 'slug'
@@ -1384,10 +1387,12 @@ class ColDataTermMixin(object):
         'description': {
             'path': None,
             'wp-api-v1': {
-                'path': 'description'
+                'path': 'description',
+                'type': 'wp_content_rendered',
             },
             'wp-sql': {
-                'path': 'description'
+                'path': 'description',
+                'type': 'wp_content_rendered',
             },
             'gen-csv': {
                 'path': 'descsum'
@@ -1948,7 +1953,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
         'title': {
             'wp-api':{
                 'path': 'title.rendered',
-                'type': 'xml_escaped'
+                'type': 'wp_content_rendered'
             },
             'wp-api-v2-edit': {
                 'path': 'title.raw',
@@ -3397,8 +3402,9 @@ class ColDataAttachment(ColDataWpEntity):
             }
         },
         'image_meta': {
+            'write': False,
             'wp-api': {
-                'path': 'attachment_meta.media_details'
+                'path': 'media_details'
             },
             'wp-api-v1': {
                 'path': 'attachment_meta.image_meta',
@@ -3406,9 +3412,9 @@ class ColDataAttachment(ColDataWpEntity):
             },
         },
         'width': {
+            'write': False,
             'wp-api':{
                 'path': 'media_details.width',
-                'write': False,
             },
             'wp-api-v1':{
                 'path': 'attachment_meta.width',
@@ -3416,6 +3422,7 @@ class ColDataAttachment(ColDataWpEntity):
             'report': True,
         },
         'height': {
+            'write': False,
             'wp-api':{
                 'path': 'media_details.height',
                 'write': False,

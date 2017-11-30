@@ -432,6 +432,7 @@ class CsvParseWooMixin(object):
                 )
             self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
 
+
         img_data = None
         img_index = self.attachment_indexer(img_raw_data)
         if img_index:
