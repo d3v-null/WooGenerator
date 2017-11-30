@@ -14,9 +14,9 @@ from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .abstract import ObjList
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
-from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
-                   ImportShopImgMixin, ImportShopMixin, ImportShopProductMixin,
-                   ImportShopProductSimpleMixin,
+from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
+                   ImportShopCategoryMixin, ImportShopMixin,
+                   ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin, ShopCatList, ShopMixin,
                    ShopObjList, ShopProdList)
@@ -321,9 +321,9 @@ class WooCatList(ShopCatList, WooListMixin):
 
 ImportWooCategory.container = WooCatList
 
-class ImportWooImg(ImportWooObject, ImportShopImgMixin):
-    verify_meta_keys = ImportShopImgMixin.verify_meta_keys
-    index = ImportShopImgMixin.index
+class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
+    verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys
+    index = ImportShopAttachmentMixin.index
     is_product = False
     is_category = False
 
@@ -333,7 +333,7 @@ class ImportWooImg(ImportWooObject, ImportShopImgMixin):
 
     def __init__(self, *args, **kwargs):
         ImportWooObject.__init__(self, *args, **kwargs)
-        ImportShopImgMixin.__init__(self, *args, **kwargs)
+        ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
 
 class WooImgList(ObjList, WooListMixin):
     coldata_class = WooListMixin.coldata_img_class
@@ -390,7 +390,7 @@ class CsvParseWooMixin(object):
         return self.find_object(search_data, registry, self.cat_search_keys)
 
     def find_image(self, search_data):
-        registry = self.images
+        registry = self.attachments
         return self.find_object(search_data, registry, self.img_search_keys)
 
     @classmethod
@@ -436,7 +436,7 @@ class CsvParseWooMixin(object):
         img_data = None
         img_index = self.attachment_indexer(img_raw_data)
         if img_index:
-            img_data = self.images.get(img_index)
+            img_data = self.attachments.get(img_index)
         if not img_data:
             img_data = self.find_image(img_raw_data)
         if not img_data:
@@ -730,7 +730,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             singular=True
         )
 
-    def process_images(self, object_data):
+    def process_attachments(self, object_data):
         img_paths = filter(None, SanitationUtils.find_all_images(
             object_data.get('Images', '')))
         for image in img_paths:
@@ -739,18 +739,18 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 'file_path': image
             }
             self.process_image(img_data, object_data)
-        this_images = object_data.images.values()
+        this_attachments = object_data.attachments.values()
         if object_data.is_item:
             ancestors = object_data.item_ancestors
         else:
             ancestors = []
         for ancestor in ancestors:
-            ancestor_images = ancestor.images.values()
+            ancestor_attachments = ancestor.attachments.values()
             # TODO: create image object and register if not exist
-            if len(this_images) and not len(ancestor_images):
-                self.process_image(this_images[0], ancestor)
-            elif not len(this_images) and len(ancestor_images):
-                self.process_image(ancestor_images[0], object_data)
+            if len(this_attachments) and not len(ancestor_attachments):
+                self.process_image(this_attachments[0], ancestor)
+            elif not len(this_attachments) and len(ancestor_attachments):
+                self.process_image(ancestor_attachments[0], object_data)
 
     def process_categories(self, object_data):
         if object_data.is_product:
@@ -981,9 +981,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             self.register_message(
                 "attributes: {}".format(object_data.attributes))
         if self.do_images:
-            self.process_images(object_data)
+            self.process_attachments(object_data)
             if self.DEBUG_WOO:
-                self.register_message("images: {}".format(object_data.images))
+                self.register_message("attachments: {}".format(object_data.attachments))
         if self.do_specials:
             self.process_specials(object_data)
             if self.DEBUG_WOO:
@@ -1096,13 +1096,13 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.register_message("catsum of %s is %s" % (
                     object_data.index, object_data.get('catsum')))
 
-    def post_process_images(self, object_data):
+    def post_process_attachments(self, object_data):
         # self.register_message(object_data.index)
-        object_data['imgsum'] = '|'.join(object_data.images.keys())
+        object_data['imgsum'] = '|'.join(object_data.attachments.keys())
 
         if self.do_images and object_data.is_product and not object_data.is_variation:
             try:
-                assert object_data['imgsum'], "All Products should have images"
+                assert object_data['imgsum'], "All Products should have attachments"
             except AssertionError as exc:
                 self.register_warning(exc, object_data)
                 if self.strict:
@@ -1441,7 +1441,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.post_process_dyns(object_data)
             self.post_process_categories(object_data)
             if self.do_images:
-                self.post_process_images(object_data)
+                self.post_process_attachments(object_data)
             self.post_process_attributes(object_data)
             if self.do_specials:
                 self.post_process_specials(object_data)

@@ -162,13 +162,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("pformat@dict@first_prod:\n%s" % pformat(dict(first_prod)))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.images: %s" % pformat(first_prod.images))
+            print("first_prod.attachments: %s" % pformat(first_prod.attachments))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
         first_prod_specials = first_prod.specials
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
-        self.assertEqual(first_prod.images.keys(), ["ACARA-CAL.png"])
+        self.assertEqual(first_prod.attachments.keys(), ["ACARA-CAL.png"])
         self.assertEqual(first_prod.depth, 4)
         self.assertTrue(first_prod.is_item)
         self.assertTrue(first_prod.is_product)
@@ -240,8 +240,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
             print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
-            print("first_cat.images: %s" % pformat(first_cat.images))
-            print("second_cat.images: %s" % pformat(second_cat.images))
+            print("first_cat.attachments: %s" % pformat(first_cat.attachments))
+            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
 
         self.assertEqual(first_cat.codesum, 'A')
         self.assertEqual(first_cat.title, 'Product A')
@@ -249,7 +249,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(second_cat.codesum, 'ACA')
         self.assertEqual(second_cat.depth, 1)
         self.assertEqual(second_cat.parent.codesum, 'A')
-        self.assertEqual(second_cat.images.keys(), ["ACA.jpg"])
+        self.assertEqual(second_cat.attachments.keys(), ["ACA.jpg"])
 
         # if self.debug:
         #     import pudb; pudb.set_trace()
@@ -294,7 +294,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("first_prod.dict %s" % pformat(dict(first_prod)))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.images: %s" % pformat(first_prod.images))
+            print("first_prod.attachments: %s" % pformat(first_prod.attachments))
 
         self.assertEqual(first_prod.codesum, "ACARF-CRS")
         # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
@@ -338,7 +338,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEquals(
             set([
                 image.file_name \
-                for image in first_prod.images.values()
+                for image in first_prod.attachments.values()
             ]),
             set([
                 'ACARF-CRS.png'
@@ -357,8 +357,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
             print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
-            print("first_cat.images: %s" % pformat(first_cat.images))
-            print("second_cat.images: %s" % pformat(second_cat.images))
+            print("first_cat.attachments: %s" % pformat(first_cat.attachments))
+            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
 
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
@@ -366,7 +366,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(
             set([
                 image.file_name \
-                for image in second_cat.images.values()
+                for image in second_cat.attachments.values()
             ]),
             set([
                 "ACA.jpg"
@@ -374,7 +374,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         )
 
         img_container = self.parsers.slave.image_container.container
-        img_list = img_container(self.parsers.slave.images.values())
+        img_list = img_container(self.parsers.slave.attachments.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 img_list.tabulate(tablefmt='simple')
@@ -414,15 +414,17 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(last_img['width'], 1200)
         self.assertEqual(last_img['height'], 1200)
 
+        # TODO: Test that master attachments are correctly split and assigned to products
+
         # if self.debug
         #     print("Registrar.stack_counts:")
         #     print(Registrar.display_stack_counts())
 
-    def print_images_summary(self, images):
+    def print_images_summary(self, attachments):
         img_cols = ColDataAttachment.get_report_cols_native()
         img_table = [img_cols.keys()] + [
             [img_data.get(key) for key in img_cols.keys()]
-            for img_data in images
+            for img_data in attachments
         ]
         print(tabulate(img_table))
 
@@ -459,14 +461,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         process_images(self.settings, self.parsers)
 
         if self.debug:
-            self.print_images_summary(self.parsers.master.images.values())
+            self.print_images_summary(self.parsers.master.attachments.values())
 
         # test resizing
         prod_container = self.parsers.master.product_container.container
         prod_list = prod_container(self.parsers.master.products.values())
         resized_images = 0
         for prod in prod_list:
-            for img_data in prod.images.values():
+            for img_data in prod.attachments.values():
                 if self.settings.img_cmp_dir in img_data.get('file_path', ''):
                     resized_images += 1
                     self.assertTrue(img_data['width'] <= self.settings.thumbsize_x)
@@ -480,8 +482,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_slave_parsers()
 
         if self.debug:
-            self.print_images_summary(self.parsers.slave.images.values())
-            for img_data in self.parsers.slave.images.values():
+            self.print_images_summary(self.parsers.slave.attachments.values())
+            for img_data in self.parsers.slave.attachments.values():
                 print(
                     img_data.file_name,
                     [attachment.index for attachment in img_data.attachments.objects]
@@ -654,7 +656,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        # TODO: add tests for creation of images
+        # TODO: add tests for creation of attachments
         if self.debug:
             print("slaveless objects")
             for update in self.updates.image.new_slaves:
@@ -732,8 +734,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.settings.update_slave = False
 
-    @unittest.skip("not implemented yet")
-    @pytest.mark.last
+    @pytest.mark.slow
     def test_dummy_do_updates_images(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = False

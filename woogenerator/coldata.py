@@ -1766,7 +1766,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
                 'structure': ('singular-value', 'file_name')
             },
             'gen-api': {
-                'path': 'image_object',
+                'path': 'attachment_object',
                 'structure': ('singular-object', )
             }
         }
@@ -3033,7 +3033,7 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'meta._purchase_note'
             }
         },
-        'image_objects': {
+        'attachment_objects': {
             'sub_data': ColDataSubAttachment,
             'wc-api': {
                 'path': 'images',
@@ -3045,7 +3045,7 @@ class ColDataProduct(ColDataWpEntity):
                 'structure': ('listed-values', 'file_name')
             },
             'gen-api': {
-                'path': 'image_objects',
+                'path': 'attachment_objects',
                 'structure': ('listed-objects', )
             }
         },

@@ -121,7 +121,7 @@ class TestCSVParseWoo(TestCase):
         # for attr, vals in WooParser.attributes.items():
         #     print "%15s | %s" % (attr[:15], "|".join(map(str,vals)))
 
-        # for img, items in WooParser.images.items():
+        # for img, items in WooParser.attachments.items():
         #         print "%s " % img
         #         for item in items:
         # print " -> (%4d) %15s " % (item['rowcount'], item['codesum'])

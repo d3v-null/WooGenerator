@@ -315,17 +315,17 @@ def cache_api_data(settings, parsers):
         category_list = category_container(parsers.slave.categories.values())
         category_list.export_api_data(settings.slave_cat_path)
 
-    if settings.do_images and parsers.slave.images:
+    if settings.do_images and parsers.slave.attachments:
         image_container = settings.slave_parser_class.image_container.container
-        image_list = image_container(parsers.slave.images.values())
+        image_list = image_container(parsers.slave.attachments.values())
         image_list.export_api_data(settings.slave_img_path)
 
 def do_match_images(parsers, matches, settings):
     if Registrar.DEBUG_IMG:
         Registrar.register_message(
-            "matching %d master images with %d slave images" %
-            (len(parsers.master.images),
-             len(parsers.slave.images)))
+            "matching %d master attachments with %d slave attachments" %
+            (len(parsers.master.attachments),
+             len(parsers.slave.attachments)))
 
     matches.image = MatchNamespace(
         index_fn=ImageMatcher.image_index_fn
@@ -334,12 +334,12 @@ def do_match_images(parsers, matches, settings):
     image_matcher = ImageMatcher()
     image_matcher.clear()
     slave_imgs_attachments = OrderedDict([
-        (index, image) for index, image in parsers.slave.images.items()
-        if image.attachments.has_product_categories
+        (index, image) for index, image in parsers.slave.attachments.items()
+        if image.attachments.has_products_categories
     ])
     master_imgs_attachments = OrderedDict([
-        (index, image) for index, image in parsers.master.images.items()
-        if image.attachments.has_product_categories
+        (index, image) for index, image in parsers.master.attachments.items()
+        if image.attachments.has_products_categories
     ])
     image_matcher.process_registers(
         slave_imgs_attachments, master_imgs_attachments
@@ -358,8 +358,11 @@ def do_match_images(parsers, matches, settings):
 
     if image_matcher.duplicate_matches:
         matches.image.duplicate['title'] = image_matcher.duplicate_matches
-
         for match in image_matcher.duplicate_matches:
+            if match.m_len > 1 and match.s_len > 1:
+                import pudb; pudb.set_trace()
+
+            # TODO: deal with duplicate attachments
             master_filenames = [img.file_name for img in match.m_objects]
             if all(master_filenames) \
             and SeqUtils.check_equal(master_filenames):
@@ -368,7 +371,7 @@ def do_match_images(parsers, matches, settings):
                 matches.image.invalid.append(match)
         if matches.image.invalid:
             exc = UserWarning(
-                "images couldn't be synchronized because of ambiguous filenames:\n%s"
+                "attachments couldn't be synchronized because of ambiguous filenames:\n%s"
                 % '\n'.join(map(str, matches.image.invalid)))
             Registrar.register_error(exc)
             raise exc
@@ -607,9 +610,9 @@ def do_merge_images(matches, parsers, updates, settings):
                 "performing update < %5s | %5s > = \n%100s, %100s " %
                 (update.master_id, update.slave_id,
                  str(update.old_m_object), str(update.old_s_object)))
-        if not old_master_id in parsers.master.images:
+        if not old_master_id in parsers.master.attachments:
             exc = UserWarning(
-                "couldn't fine pkey %s in parsers.master.images" %
+                "couldn't fine pkey %s in parsers.master.attachments" %
                 update.master_id)
             Registrar.register_error(exc)
             continue
@@ -619,7 +622,7 @@ def do_merge_images(matches, parsers, updates, settings):
                     continue
 
                 new_val = warning['new_value']
-                parsers.master.images[old_master_id][col] = new_val
+                parsers.master.attachments[old_master_id][col] = new_val
 
     if settings['auto_create_new']:
         for count, match in enumerate(matches.image.slaveless):
@@ -1150,7 +1153,7 @@ def upload_image_changes(parsers, results, settings, client, change_updates):
     raise NotImplementedError()
 
 def do_updates_images(updates, parsers, results, settings):
-    """Perform a list of updates on images."""
+    """Perform a list of updates on attachments."""
 
     import pudb; pudb.set_trace()
 
@@ -1192,7 +1195,7 @@ def do_updates_images(updates, parsers, results, settings):
             Registrar.register_message("created cat client")
 
         if new_updates:
-            # create images that do not yet exist on slave
+            # create attachments that do not yet exist on slave
             upload_new_images(
                 parsers, results.image.new, settings, client, new_updates
             )
@@ -1497,11 +1500,11 @@ def main(override_args=None, settings=None):
             reporters, matches, updates, parsers, settings
         )
         check_warnings()
-
-        try:
-            do_updates_images(updates, parsers, results, settings)
-        except (SystemExit, KeyboardInterrupt):
-            return reporters, results
+        if not settings.report_and_quit:
+            try:
+                do_updates_images(updates, parsers, results, settings)
+            except (SystemExit, KeyboardInterrupt):
+                return reporters, results
 
     if settings.do_categories:
 
@@ -1511,11 +1514,11 @@ def main(override_args=None, settings=None):
             reporters, matches, updates, parsers, settings
         )
         check_warnings()
-
-        try:
-            do_updates_categories(updates, parsers, results, settings)
-        except (SystemExit, KeyboardInterrupt):
-            return reporters, results
+        if not settings.report_and_quit:
+            try:
+                do_updates_categories(updates, parsers, results, settings)
+            except (SystemExit, KeyboardInterrupt):
+                return reporters, results
 
     do_match_prod(parsers, matches, settings)
     do_merge_prod(matches, parsers, updates, settings)

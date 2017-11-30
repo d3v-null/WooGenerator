@@ -158,7 +158,7 @@ def invalid_image(parsers, settings, img_name, error):
         Registrar.register_error(error, img_name)
     else:
         Registrar.register_message(error, img_name)
-    parsers.master.images[img_name].invalidate(error)
+    parsers.master.attachments[img_name].invalidate(error)
 
 def get_raw_image(settings, img_name):
     """
@@ -294,8 +294,8 @@ def process_image_size(settings, parsers, img_data):
     return img_data
 
 def process_images(settings, parsers):
-    """Process the images information in from the parsers."""
-    Registrar.register_progress("processing images")
+    """Process the attachments information in from the parsers."""
+    Registrar.register_progress("processing attachments")
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("Looking in dirs: %s" %
@@ -304,20 +304,20 @@ def process_images(settings, parsers):
     if not os.path.exists(settings.img_dst):
         os.makedirs(settings.img_dst)
 
-    # list of images in compressed directory
+    # list of attachments in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
     for fname in ls_cmp:
-        if fname not in parsers.master.images.keys():
+        if fname not in parsers.master.attachments.keys():
             Registrar.register_warning("DELETING FROM REFLATTENED", fname)
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))
 
-    # for img_filename, obj_list in parsers.master.images.items():
-    for img_data in parsers.master.images.values():
+    # for img_filename, obj_list in parsers.master.attachments.items():
+    for img_data in parsers.master.attachments.values():
         img_filename = os.path.basename(img_data.file_name)
-        if not img_data.attachments.has_product_categories:
+        if not img_data.attachments.has_products_categories:
             continue
-            # we only care about product / category images atm
+            # we only care about product / category attachments atm
         if Registrar.DEBUG_IMG:
             if img_data.attachments.categories:
                 Registrar.register_message(

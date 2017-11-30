@@ -324,13 +324,13 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 print("first prod core:\n%s" % pformat(first_prod_core.items()))
             first_prod_id = first_prod_core['id']
             # TODO: this test doesn't test what it's supposed to
-            first_prod_core_imgs = first_prod_core['image_objects']
+            first_prod_core_imgs = first_prod_core['attachment_objects']
             self.assertEqual(
                 len(first_prod_core_imgs),
                 1
             )
             modified_prod_core = deepcopy(first_prod_core)
-            modified_prod_core['image_objects'].append(
+            modified_prod_core['attachment_objects'].append(
                 first_img_core
             )
             modified_prod_api = client.coldata_class.translate_data_to(
@@ -348,7 +348,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 response_api, client.coldata_target
             )
             self.assertEqual(
-                len(response_core['image_objects']),
+                len(response_core['attachment_objects']),
                 2
             )
             response = client.upload_changes(
@@ -361,7 +361,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 response_api, client.coldata_target
             )
             self.assertEqual(
-                len(response_core['image_objects']),
+                len(response_core['attachment_objects']),
                 1
             )
 

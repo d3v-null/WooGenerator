@@ -25,7 +25,7 @@ class ShopMixin(object):
     coldata_sub_img_class = ColDataSubAttachment
     coldata_var_class = ColDataProductVariationMeridian
 
-class ImportShopImgMixin(ShopMixin):
+class ImportShopAttachmentMixin(ShopMixin):
     file_path_key = 'file_path'
     file_name_key = 'file_name'
     source_url_key = 'source_url'
@@ -113,13 +113,13 @@ class ImportShopImgMixin(ShopMixin):
         self.is_valid = False
 
 class ImportShopMixin(object):
-    "Base mixin class for shop objects (products, categories, images)"
+    "Base mixin class for shop objects (products, categories, attachments)"
     is_product = None
     is_category = None
     is_variable = None
     is_variation = None
     #container = ObjList
-    attachment_indexer = ImportShopImgMixin.attachment_indexer
+    attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
@@ -130,7 +130,7 @@ class ImportShopMixin(object):
                 'is_variable' if self.is_variable else '!is_variable',
                 'is_variation' if self.is_variation else '!is_variation'
             ))
-        self.images = OrderedDict()
+        self.attachments = OrderedDict()
         self.attributes = OrderedDict()
 
     def register_attribute(self, attr, val, var=False):
@@ -159,10 +159,10 @@ class ImportShopMixin(object):
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
     def register_image(self, img_data):
-        assert isinstance(img_data, ImportShopImgMixin)
+        assert isinstance(img_data, ImportShopAttachmentMixin)
         self.register_anything(
             img_data,
-            self.images,
+            self.attachments,
             indexer=self.attachment_indexer,
             singular=True
         )
@@ -207,8 +207,8 @@ class ImportShopMixin(object):
 
     def to_dict(self):
         response = {}
-        if hasattr(self, 'images'):
-            response['image_objects'] = self.images.values()
+        if hasattr(self, 'attachments'):
+            response['attachment_objects'] = self.attachments.values()
         return response
 
     @classmethod
@@ -384,7 +384,7 @@ class ShopObjList(ObjList):
         return description
 
     @property
-    def has_product_categories(self):
+    def has_products_categories(self):
         return self.products or any([
             category.members for category in self.categories
         ])
@@ -454,7 +454,7 @@ class CsvParseShopMixin(object):
     variation_indexer = CsvParseGenMixin.get_code_sum
     product_resolver = Registrar.resolve_conflict
     image_resolver = Registrar.passive_resolver
-    attachment_indexer = ImportShopImgMixin.attachment_indexer
+    attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
     do_images = True
 
     # products = None
@@ -483,7 +483,7 @@ class CsvParseShopMixin(object):
         }
 
     def clear_transients(self):
-        # TODO: what if products, categories, variations, images were weakrefs?
+        # TODO: what if products, categories, variations, attachments were weakrefs?
 
         self.products = OrderedDict()
         # self.products = weakref.WeakValueDictionary()
@@ -494,11 +494,14 @@ class CsvParseShopMixin(object):
         self.variations = OrderedDict()
         # self.variations = weakref.WeakValueDictionary()
 
-        # Images now stores image objects instead of products
-        self.images = OrderedDict()
-        # self.images = weakref.WeakValueDictionary()
+        self.attachments = OrderedDict()
 
         self.categories_name = OrderedDict()
+
+    @property
+    def images():
+        raise DeprecationWarning('.images replaced with .attachments')
+
 
     def register_product(self, prod_data):
         if Registrar.DEBUG_SHOP:
@@ -520,20 +523,20 @@ class CsvParseShopMixin(object):
         if object_data:
             object_data.register_image(img_data)
             if self.DEBUG_IMG:
-                self.register_message("object_data.images: %s" % (object_data.images.keys()))
+                self.register_message("object_data.attachments: %s" % (object_data.attachments.keys()))
                 self.register_message("img_data.attachments: %s" % list(img_data.attachments.__iter__()))
 
 
     def register_image(self, img_data):
-        assert isinstance(img_data, ImportShopImgMixin), \
+        assert isinstance(img_data, ImportShopAttachmentMixin), \
         "expected to register ImportShopMixin instead found %s" % type(img_data)
         self.register_anything(
             img_data,
-            self.images,
+            self.attachments,
             indexer=self.attachment_indexer,
             singular=True,
             resolver=self.image_resolver,
-            register_name='images'
+            register_name='attachments'
         )
 
     def get_products(self):

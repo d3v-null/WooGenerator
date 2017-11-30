@@ -16,7 +16,7 @@ from ..coldata import (ColDataProductMeridian, ColDataSubAttachment,
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
-                   ImportShopImgMixin, ImportShopMixin, ImportShopProductMixin,
+                   ImportShopAttachmentMixin, ImportShopMixin, ImportShopProductMixin,
                    ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
@@ -56,7 +56,7 @@ class ApiListMixin(object):
 class ImportApiObjectMixin(object):
     child_indexer = Registrar.get_object_index
     category_indexer = CsvParseWooMixin.get_title
-    attachment_indexer = ImportShopImgMixin.get_attachment_id
+    attachment_indexer = ImportShopAttachmentMixin.get_attachment_id
 
 
     def process_meta(self):
@@ -510,8 +510,8 @@ class ApiParseWoo(
             self.register_category(cat_data)
             if self.DEBUG_API:
                 self.register_message("REGISTERED: %s" % cat_data.identifier)
-            if 'image_object' in cat_data:
-                sub_img_gen_data = cat_data['image_object']
+            if 'attachment_object' in cat_data:
+                sub_img_gen_data = cat_data['attachment_object']
                 if sub_img_gen_data:
                     self.process_api_sub_image_gen(sub_img_gen_data, cat_data)
         else:
@@ -676,8 +676,8 @@ class ApiParseWoo(
                     object_data, attribute_data_gen, var=False
                 )
 
-        if 'image_objects' in object_data:
-            sub_imgs_gen = object_data['image_objects']
+        if 'attachment_objects' in object_data:
+            sub_imgs_gen = object_data['attachment_objects']
             if sub_imgs_gen:
                 for sub_img_gen_data in sub_imgs_gen:
                     self.process_api_sub_image_gen(
