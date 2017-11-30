@@ -168,7 +168,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_prod_specials = first_prod.specials
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
-        self.assertEqual(first_prod.attachments.keys(), ["ACARA-CAL.png"])
+        self.assertEqual(
+            [attachment.file_name for attachment in first_prod.attachments.values()],
+            ["ACARA-CAL.png"]
+        )
         self.assertEqual(first_prod.depth, 4)
         self.assertTrue(first_prod.is_item)
         self.assertTrue(first_prod.is_product)
@@ -249,7 +252,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(second_cat.codesum, 'ACA')
         self.assertEqual(second_cat.depth, 1)
         self.assertEqual(second_cat.parent.codesum, 'A')
-        self.assertEqual(second_cat.attachments.keys(), ["ACA.jpg"])
+        self.assertEqual(
+            [attachment.file_name for attachment in second_cat.attachments.values()],
+            ["ACA.jpg"]
+        )
 
         # if self.debug:
         #     import pudb; pudb.set_trace()
@@ -495,6 +501,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_slave_parsers()
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
+            if self.debug:
+                Registrar.DEBUG_IMG = True
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -503,7 +511,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             # self.matches.image.globals.tabulate()
             self.print_matches_summary(self.matches.image)
 
-        self.assertEqual(len(self.matches.image.valid), 45)
+        self.assertEqual(len(self.matches.image.valid), 51)
         first_match = self.matches.image.valid[0]
         first_master = first_match.m_object
         first_slave = first_match.s_object
@@ -521,8 +529,57 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     SanitationUtils.coerce_ascii(first_slave[key])[:50]
                 ))
                 print(SanitationUtils.coerce_ascii(out))
-        for match in self.matches.image.globals:
-            self.assertEqual(match.m_object.file_name, match.s_object.file_name)
+
+        for attr, value in {
+            'file_name': 'ACA.jpg',
+            'title': 'Product A > Company A Product A',
+        }.items():
+            self.assertEqual(getattr(first_master, attr), value)
+        for attr, value in {
+            'file_name': 'ACA.jpg',
+            'title': 'Solution > TechnoTan Solution',
+            'slug': 'solution-technotan-solution',
+            'api_id': 24879
+        }.items():
+            self.assertEqual(getattr(first_slave, attr), value)
+
+        last_match = self.matches.image.valid[-1]
+        last_master = last_match.m_object
+        last_slave = last_match.s_object
+        if self.debug:
+            print('pformat@dict@last_master:\n%s' % pformat(dict(last_master)))
+            print('pformat@dict@last_slave:\n%s' % pformat(dict(last_slave)))
+            master_keys = set(dict(last_master).keys())
+            slave_keys = set(dict(last_slave).keys())
+            intersect_keys = master_keys.intersection(slave_keys)
+            print("intersect_keys:\n")
+            for key in intersect_keys:
+                out = ("%20s | %50s | %50s" % (
+                    SanitationUtils.coerce_ascii(key),
+                    SanitationUtils.coerce_ascii(last_master[key])[:50],
+                    SanitationUtils.coerce_ascii(last_slave[key])[:50]
+                ))
+                print(SanitationUtils.coerce_ascii(out))
+
+        for match in self.matches.image.valid:
+            self.assertEqual(
+                match.m_object.normalized_filename,
+                match.s_object.normalized_filename
+            )
+
+        for attr, value in {
+            'file_name': 'ACARB-S.jpg',
+            'title': 'Range B - Extra Dark - 100ml Sample',
+        }.items():
+            self.assertEqual(getattr(last_master, attr), value)
+        for attr, value in {
+            'file_name': 'ACARB-S.jpg',
+            'title': 'Range B - Extra Dark - 100ml Sample 1',
+            'slug': 'range-b-extra-dark-100ml-sample-1',
+            'api_id': 24817
+        }.items():
+            self.assertEqual(getattr(last_slave, attr), value)
+
 
     @pytest.mark.last
     def test_dummy_do_match_categories(self):

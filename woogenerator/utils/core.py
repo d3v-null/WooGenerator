@@ -1334,6 +1334,17 @@ class Registrar(object):
             )
 
     @classmethod
+    def get_object_identifier(cls, object_data):
+        if hasattr(object_data, 'identifier'):
+            return object_data.identifier
+        else:
+            raise UserWarning(
+                '%s object is not identifiable: does not have attr "identifier"' % (
+                    type(object_data)
+                )
+            )
+
+    @classmethod
     def passive_resolver(cls, *args):
         pass
 

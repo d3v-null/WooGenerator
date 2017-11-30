@@ -104,6 +104,33 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
         ImportShopMixin.__init__(self, *args, **kwargs)
         ImportWooMixin.__init__(self, *args, **kwargs)
 
+class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
+    verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys
+    index = ImportShopAttachmentMixin.index
+    is_product = False
+    is_category = False
+
+    wpid_key = 'id'
+    slug_key = 'slug'
+    title_key = 'title'
+
+    def __init__(self, *args, **kwargs):
+        ImportWooObject.__init__(self, *args, **kwargs)
+        ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
+
+    @classmethod
+    def get_identifier(cls, data):
+        return "|".join(SeqUtils.filter_unique_true([
+            str(data.get(cls.rowcount_key)),
+            cls.get_index(data)
+        ]))
+
+    @property
+    def identifier(self):
+        return self.get_identifier(self)
+
+ImportWooObject.attachment_indexer = ImportWooImg.get_identifier
+
 class WooListMixin(object):
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
@@ -321,20 +348,6 @@ class WooCatList(ShopCatList, WooListMixin):
 
 ImportWooCategory.container = WooCatList
 
-class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
-    verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys
-    index = ImportShopAttachmentMixin.index
-    is_product = False
-    is_category = False
-
-    wpid_key = 'id'
-    slug_key = 'slug'
-    title_key = 'title'
-
-    def __init__(self, *args, **kwargs):
-        ImportWooObject.__init__(self, *args, **kwargs)
-        ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
-
 class WooImgList(ObjList, WooListMixin):
     coldata_class = WooListMixin.coldata_img_class
     supported_type = ImportWooImg
@@ -363,7 +376,7 @@ class CsvParseWooMixin(object):
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
     image_container = ImportWooImg
-    attachment_indexer = ImportWooImg.get_file_name
+    attachment_indexer = image_container.get_identifier
 
     @property
     def cat_search_keys(self):
@@ -464,7 +477,6 @@ class CsvParseWooMixin(object):
                 if 1 or self.strict:
                     self.raise_exception(warn)
                 return
-            self.register_image(img_data)
 
         else:
             if self.DEBUG_IMG:
@@ -493,6 +505,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     taxo_container = CsvParseWooMixin.taxo_container
     image_container = CsvParseWooMixin.image_container
     category_indexer = CsvParseWooMixin.category_indexer
+    attachment_indexer = CsvParseWooMixin.attachment_indexer
     coldata_class = CsvParseWooMixin.coldata_class
     coldata_cat_class = CsvParseWooMixin.coldata_cat_class
     coldata_img_class = CsvParseWooMixin.coldata_img_class
@@ -736,7 +749,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         for image in img_paths:
             # TODO: create image object and register if not exist
             img_data = {
-                'file_path': image
+                'file_path': image,
+                'rowcount': self.rowcount
             }
             self.process_image(img_data, object_data)
         this_attachments = object_data.attachments.values()
@@ -1098,7 +1112,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
     def post_process_attachments(self, object_data):
         # self.register_message(object_data.index)
-        object_data['imgsum'] = '|'.join(object_data.attachments.keys())
+        object_data['imgsum'] = '|'.join([
+            attachment.file_name for attachment in object_data.attachments.values()
+        ])
 
         if self.do_images and object_data.is_product and not object_data.is_variation:
             try:

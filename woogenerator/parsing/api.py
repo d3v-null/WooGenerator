@@ -52,20 +52,26 @@ class ApiListMixin(object):
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
 
+class ImportApiMixin(object):
+    api_id_key = ImportWooMixin.wpid_key
+    api_id = DescriptorUtils.safe_key_property(api_id_key)
 
-class ImportApiObjectMixin(object):
+class ImportApiObjectMixin(ImportApiMixin):
     child_indexer = Registrar.get_object_index
     category_indexer = CsvParseWooMixin.get_title
     attachment_indexer = ImportShopAttachmentMixin.get_attachment_id
-
 
     def process_meta(self):
         # API Objects don't process meta
         pass
 
+    @classmethod
+    def get_index(self, data):
+        return data.get(self.api_id_key)
+
     @property
     def index(self):
-        return self.get(self.api_id_key)
+        return self.get_index(self)
 
     @property
     def identifier(self):
@@ -90,8 +96,6 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     index = ImportApiObjectMixin.index
     identifier = ImportApiObjectMixin.identifier
     to_dict = ImportShopMixin.to_dict
-    api_id_key = ImportWooMixin.wpid_key
-    api_id = DescriptorUtils.safe_key_property(api_id_key)
     attachment_indexer = ImportApiObjectMixin.attachment_indexer
     verify_meta_keys = SeqUtils.combine_lists(
         ImportGenObject.verify_meta_keys,
@@ -207,13 +211,20 @@ class ImportWooApiCategoryLegacy(ImportWooApiCategory):
 
 ImportWooApiCategoryLegacy.container = WooApiCatList
 
-class ImportWooApiImg(ImportWooImg):
+class ImportWooApiImg(ImportWooImg, ImportApiMixin):
 
     verify_meta_keys = SeqUtils.combine_lists(
         ImportWooImg.verify_meta_keys,
         [ImportWooImg.source_url_key]
     )
     verify_meta_keys.remove(ImportWooImg.file_path_key)
+
+    @classmethod
+    def get_identifier(cls, data):
+        return "|".join(SeqUtils.filter_unique_true([
+            str(data.get(cls.api_id_key)),
+            cls.get_index(data)
+        ]))
 
 class WooApiImgList(WooImgList, ApiListMixin):
     supported_type = ImportWooApiImg

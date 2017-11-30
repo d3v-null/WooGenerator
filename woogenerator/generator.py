@@ -18,8 +18,8 @@ from exitstatus import ExitStatus
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .images import process_images
-from .matching import (CategoryMatcher, ImageMatcher, ProductMatcher,
-                       VariationMatcher)
+from .matching import (AttacheeSkuMatcher, CategoryMatcher, ImageMatcher,
+                       ProductMatcher, VariationMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
@@ -27,7 +27,8 @@ from .parsing.api import ApiParseWoo
 from .parsing.dyn import CsvParseDyn
 from .parsing.special import CsvParseSpecial
 from .parsing.woo import WooCatList
-from .utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils, TimeUtils
+from .utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
+                    TimeUtils)
 from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_category_matches_group, do_delta_group,
                              do_duplicates_group, do_duplicates_summary_group,
@@ -335,11 +336,11 @@ def do_match_images(parsers, matches, settings):
     image_matcher.clear()
     slave_imgs_attachments = OrderedDict([
         (index, image) for index, image in parsers.slave.attachments.items()
-        if image.attachments.has_products_categories
+        if image.attaches.has_products_categories
     ])
     master_imgs_attachments = OrderedDict([
         (index, image) for index, image in parsers.master.attachments.items()
-        if image.attachments.has_products_categories
+        if image.attaches.has_products_categories
     ])
     image_matcher.process_registers(
         slave_imgs_attachments, master_imgs_attachments
@@ -357,24 +358,82 @@ def do_match_images(parsers, matches, settings):
     matches.image.valid += image_matcher.pure_matches
 
     if image_matcher.duplicate_matches:
-        matches.image.duplicate['title'] = image_matcher.duplicate_matches
-        for match in image_matcher.duplicate_matches:
-            if match.m_len > 1 and match.s_len > 1:
-                import pudb; pudb.set_trace()
+        matches.image.duplicate['file_name'] = image_matcher.duplicate_matches
+        if Registrar.DEBUG_IMG:
+            Registrar.register_message(
+                'filename matcher duplicates:\n%s' % (
+                    image_matcher.duplicate_matches
+                )
+            )
+        # for match in image_matcher.duplicate_matches:
+        #     master_filenames = [img.file_name for img in match.m_objects]
+        #     if all(master_filenames) \
+        #     and SeqUtils.check_equal(master_filenames):
+        #         matches.image.valid.append(match)
+        #     else:
+        #         matches.image.invalid.append(match)
+        #         continue
+        # if matches.image.invalid:
+        #     exc = UserWarning(
+        #         "attachments couldn't be synchronized because of ambiguous filenames:\n%s"
+        #         % '\n'.join(map(str, matches.image.invalid)))
+        #     Registrar.register_error(exc)
+        #     raise exc
 
-            # TODO: deal with duplicate attachments
-            master_filenames = [img.file_name for img in match.m_objects]
-            if all(master_filenames) \
-            and SeqUtils.check_equal(master_filenames):
-                matches.image.valid.append(match)
-            else:
-                matches.image.invalid.append(match)
-        if matches.image.invalid:
-            exc = UserWarning(
-                "attachments couldn't be synchronized because of ambiguous filenames:\n%s"
-                % '\n'.join(map(str, matches.image.invalid)))
-            Registrar.register_error(exc)
-            raise exc
+    attachee_sku_matcher = AttacheeSkuMatcher(
+        matches.image.globals.s_indices, matches.image.globals.m_indices
+    )
+    attachee_sku_matcher.process_registers(
+        slave_imgs_attachments, master_imgs_attachments
+    )
+
+    # make sure that all duplicates are resolved after matching using attachee_sku
+    if Registrar.DEBUG_IMG:
+        Registrar.register_message(
+            "adding attache_sku_matcher.pure_matches:\n%s" % (
+                attachee_sku_matcher.pure_matches.tabulate()
+            )
+        )
+    matches.image.valid += attachee_sku_matcher.pure_matches
+    filename_duplicate_indices_m = set([
+        attachment.index \
+        for match in image_matcher.duplicate_matches
+        for attachment in match.m_objects
+    ])
+    attachee_sku_pure_indices_m = set([
+        attachment.index \
+        for match in attachee_sku_matcher.pure_matches
+        for attachment in match.m_objects
+    ])
+    assert \
+    attachee_sku_pure_indices_m.issuperset(filename_duplicate_indices_m), \
+    (
+        "all master indices from filename duplicates should be contained in "
+        "attache_sku pure match indices:\nfilename:\n%s\nattachee_sku:\n%s"
+    ) % (
+        filename_duplicate_indices_m,
+        attachee_sku_pure_indices_m
+    )
+    filename_duplicate_indices_s = set([
+        attachment.index \
+        for match in image_matcher.duplicate_matches
+        for attachment in match.s_objects
+    ])
+    attachee_sku_pure_indices_s = set([
+        attachment.index \
+        for match in attachee_sku_matcher.pure_matches
+        for attachment in match.s_objects
+    ])
+    assert \
+    attachee_sku_pure_indices_s.issuperset(filename_duplicate_indices_s), \
+    (
+        "all slave indices from filename duplicates should be contained in "
+        "attache_sku pure match indices:\nfilename:\n%s\nattachee_sku:\n%s"
+    ) % (
+        filename_duplicate_indices_s,
+        attachee_sku_pure_indices_s
+    )
+
 
     return matches
 
@@ -632,7 +691,7 @@ def do_merge_images(matches, parsers, updates, settings):
                     count, m_object.identifier
                 )
             )
-            if not (m_object.attachments.products or m_object.attachments.categories):
+            if not (m_object.attaches.products or m_object.attaches.categories):
                 continue
             # gen_data = m_object.to_dict()
             # core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.coldata_gen_target_write)

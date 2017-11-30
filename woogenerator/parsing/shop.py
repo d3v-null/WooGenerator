@@ -38,7 +38,7 @@ class ImportShopAttachmentMixin(ShopMixin):
     ]
 
     def __init__(self, *args, **kwargs):
-        self.attachments = ShopObjList()
+        self.attaches = ShopObjList()
         self.is_valid = True
 
     @classmethod
@@ -72,38 +72,55 @@ class ImportShopAttachmentMixin(ShopMixin):
         if source_url:
             return FileUtils.get_path_basename(source_url)
 
+    @property
+    def file_name(self):
+        return self.get_file_name(self)
+
+    @property
+    def attachee_sku(self):
+        return self.attaches.get_key('codesum')
+
     @classmethod
     def get_normalized_filename(cls, data):
         filename = cls.get_file_name(data)
         name, ext = os.path.splitext(filename)
-        code_match = re.match(r'^(?P<before>%s)(?P<after>.*)$' % re.escape(data.get('codesum')), '', name)
-        if code_match:
-            import pudb; pudb.set_trace()
-            before = code_match.get('before')
-            after = code_match.get('after')
-            after = re.sub(r'-\d+\$', '', after)
-            name = "%s%s" % (before, after)
-        else:
-            name = re.sub(r'-\d+\$', '', name)
-        return '.'.join([name, ext])
+        attachee_sku = None
+        if hasattr(data, 'attachee_sku'):
+            attachee_sku = data.attachee_sku
+        before = ''
+        after = name
+        if attachee_sku:
+            code_re = r'^(?P<before>%s)(?P<after>.*)$' % re.escape(attachee_sku)
+            code_match = re.match(code_re, name)
+            if code_match:
+                code_match = code_match.groupdict()
+                before = code_match.get('before')
+                after = code_match.get('after')
+        after = re.sub(r'-\d+\$', '', after)
+        name = "%s%s" % (before, after)
+        return '%s%s' % (name, ext)
+
+    @property
+    def normalized_filename(self):
+        return self.get_normalized_filename(self)
 
     @classmethod
     def get_attachment_id(cls, data):
         if data.get(cls.attachment_id_key):
             return data[cls.attachment_id_key]
 
-    attachment_indexer = get_file_name
+    attachment_indexer = get_attachment_id
 
-    @property
-    def file_name(self):
-        return self.get_file_name(self)
+    @classmethod
+    def get_index(cls, data):
+        return cls.get_file_name(data)
 
     @property
     def index(self):
-        return self.file_name
+        return self.get_index(self)
 
-    def register_attachment(self, attach_data):
-        self.attachments.append(attach_data)
+    def register_attachee(self, attach_data):
+        self.attaches.append(attach_data)
 
     def invalidate(self, reason=""):
         if self.DEBUG_IMG:
@@ -120,6 +137,7 @@ class ImportShopMixin(object):
     is_variation = None
     #container = ObjList
     attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
+    # attachment_resolver = Registrar.exception_resolver
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
@@ -158,15 +176,16 @@ class ImportShopMixin(object):
 
         assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
 
-    def register_image(self, img_data):
+    def register_attachment(self, img_data):
         assert isinstance(img_data, ImportShopAttachmentMixin)
         self.register_anything(
             img_data,
             self.attachments,
             indexer=self.attachment_indexer,
-            singular=True
+            singular=True,
+            # resolver=self.attachment_resolver,
         )
-        img_data.register_attachment(self)
+        img_data.register_attachee(self)
 
     def to_api_data(self, coldata_class, target_api=None):
         raise DeprecationWarning("why would anything use this?")
@@ -208,7 +227,7 @@ class ImportShopMixin(object):
     def to_dict(self):
         response = {}
         if hasattr(self, 'attachments'):
-            response['attachment_objects'] = self.attachments.values()
+            response['attachment_objects'] = self.attachments
         return response
 
     @classmethod
@@ -453,7 +472,7 @@ class CsvParseShopMixin(object):
     category_indexer = CsvParseGenMixin.get_code_sum
     variation_indexer = CsvParseGenMixin.get_code_sum
     product_resolver = Registrar.resolve_conflict
-    image_resolver = Registrar.passive_resolver
+    attachment_resolver = Registrar.exception_resolver
     attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
     do_images = True
 
@@ -520,14 +539,6 @@ class CsvParseShopMixin(object):
     def register_attachment(self, img_data, object_data=None):
         if self.DEBUG_IMG:
             self.register_message("attaching %s to %s" % (img_data, object_data))
-        if object_data:
-            object_data.register_image(img_data)
-            if self.DEBUG_IMG:
-                self.register_message("object_data.attachments: %s" % (object_data.attachments.keys()))
-                self.register_message("img_data.attachments: %s" % list(img_data.attachments.__iter__()))
-
-
-    def register_image(self, img_data):
         assert isinstance(img_data, ImportShopAttachmentMixin), \
         "expected to register ImportShopMixin instead found %s" % type(img_data)
         self.register_anything(
@@ -535,9 +546,14 @@ class CsvParseShopMixin(object):
             self.attachments,
             indexer=self.attachment_indexer,
             singular=True,
-            resolver=self.image_resolver,
+            # resolver=self.attachment_resolver,
             register_name='attachments'
         )
+        if object_data:
+            object_data.register_attachment(img_data)
+            if self.DEBUG_IMG:
+                self.register_message("object_data.attachments: %s" % (object_data.attachments.keys()))
+                self.register_message("img_data.attachments: %s" % list(img_data.attachments.__iter__()))
 
     def get_products(self):
         exc = DeprecationWarning("Use .products instead of .get_products()")

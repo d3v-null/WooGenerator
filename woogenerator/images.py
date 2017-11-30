@@ -204,7 +204,7 @@ def process_image_meta(settings, parsers, img_data):
         return
 
     try:
-        title, description = img_data.attachments.title, img_data.attachments.description
+        title, description = img_data.attaches.title, img_data.attaches.description
         if settings.do_remeta_images:
             metagator.update_meta({
                 'title': title,
@@ -294,8 +294,8 @@ def process_image_size(settings, parsers, img_data):
     return img_data
 
 def process_images(settings, parsers):
-    """Process the attachments information in from the parsers."""
-    Registrar.register_progress("processing attachments")
+    """Process the attaches information in from the parsers."""
+    Registrar.register_progress("processing attaches")
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("Looking in dirs: %s" %
@@ -304,7 +304,7 @@ def process_images(settings, parsers):
     if not os.path.exists(settings.img_dst):
         os.makedirs(settings.img_dst)
 
-    # list of attachments in compressed directory
+    # list of attaches in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
     for fname in ls_cmp:
         if fname not in parsers.master.attachments.keys():
@@ -315,22 +315,22 @@ def process_images(settings, parsers):
     # for img_filename, obj_list in parsers.master.attachments.items():
     for img_data in parsers.master.attachments.values():
         img_filename = os.path.basename(img_data.file_name)
-        if not img_data.attachments.has_products_categories:
+        if not img_data.attaches.has_products_categories:
             continue
             # we only care about product / category attachments atm
         if Registrar.DEBUG_IMG:
-            if img_data.attachments.categories:
+            if img_data.attaches.categories:
                 Registrar.register_message(
                     "Associated Taxos: %s" % str([
-                        (taxo.rowcount, taxo.codesum) for taxo in img_data.attachments.categories
+                        (taxo.rowcount, taxo.codesum) for taxo in img_data.attaches.categories
                     ]),
                     img_filename
                 )
 
-            if img_data.attachments.products:
+            if img_data.attaches.products:
                 Registrar.register_message(
                     "Associated Products: %s" % str([
-                        (item.rowcount, item.codesum) for item in img_data.attachments.products
+                        (item.rowcount, item.codesum) for item in img_data.attaches.products
                     ]),
                     img_filename
                 )
@@ -374,7 +374,7 @@ def process_images(settings, parsers):
         # import pudb; pudb.set_trace()
 
         try:
-            title, description = img_data.attachments.title, img_data.attachments.description
+            title, description = img_data.attaches.title, img_data.attaches.description
         except AttributeError as exc:
             invalid_image(
                 parsers,

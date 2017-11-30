@@ -665,6 +665,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             Registrar.register_warning(exc)
         if self.auto_delete_old:
             raise UserWarning("auto-delete not implemented yet")
+        if self.do_remeta_images:
+            raise UserWarning("remeta deprecated")
 
         if self.do_specials:
             if self['current_special']:

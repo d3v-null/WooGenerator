@@ -694,7 +694,7 @@ class ImageMatcher(AbstractMatcher):
     @staticmethod
     def image_index_fn(img_object):
         """ Return the basename of the image file. """
-        return img_object.file_name
+        return img_object.normalized_filename
 
     def __init__(self):
         super(ImageMatcher, self).__init__(self.image_index_fn)
@@ -717,6 +717,7 @@ class FilteringMatcher(AbstractMatcher):
     Matching class that only process ImportObjects if their indices are contained
     in a list of allowed indices
     """
+    # TODO: holy shit this is inefficient
 
     def __init__(self, index_fn, s_match_indices=None, m_match_indices=None):
         if not s_match_indices:
@@ -746,10 +747,10 @@ class CardMatcher(FilteringMatcher):
         return user_object.MYOBID
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
-        if not m_match_indices:
-            m_match_indices = []
-        if not s_match_indices:
-            s_match_indices = []
+        # if not m_match_indices:
+        #     m_match_indices = []
+        # if not s_match_indices:
+        #     s_match_indices = []
         super(CardMatcher, self).__init__(self.card_index_fn, s_match_indices,
                                           m_match_indices)
 
@@ -768,10 +769,10 @@ class EmailMatcher(FilteringMatcher):
         return SanitationUtils.normalize_val(user_object.email)
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
-        if not s_match_indices:
-            s_match_indices = []
-        if not m_match_indices:
-            m_match_indices = []
+        # if not s_match_indices:
+        #     s_match_indices = []
+        # if not m_match_indices:
+        #     m_match_indices = []
         super(EmailMatcher, self).__init__(self.email_index_fn,
                                            s_match_indices, m_match_indices)
 
@@ -783,10 +784,28 @@ class NocardEmailMatcher(EmailMatcher):
     """
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
-        if not s_match_indices:
-            s_match_indices = []
-        if not m_match_indices:
-            m_match_indices = []
+        # if not s_match_indices:
+        #     s_match_indices = []
+        # if not m_match_indices:
+        #     m_match_indices = []
         super(NocardEmailMatcher, self).__init__(s_match_indices,
                                                  m_match_indices)
         self.process_registers = self.process_registers_singular_ns
+
+class AttacheeSkuMatcher(FilteringMatcher):
+    @staticmethod
+    def attachee_sku_index_fn(attachment_object):
+        """ gets the sku of the object that the attachment is attached to """
+        assert \
+            hasattr(attachment_object, 'attachee_sku'), \
+            "must be able to get attachee_sku, instead type is %s" % type(attachment_object)
+        return SanitationUtils.normalize_val(attachment_object.attachee_sku)
+
+    def __init__(self, s_match_indices=None, m_match_indices=None):
+        # if not s_match_indices:
+        #     s_match_indices = []
+        # if not m_match_indices:
+        #     m_match_indices = []
+        super(AttacheeSkuMatcher, self).__init__(self.attachee_sku_index_fn,
+                                           s_match_indices, m_match_indices)
+        self.process_registers = self.process_registers_singular
