@@ -576,7 +576,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.print_updates_summary(self.updates.image)
             for update in self.updates.image.slave:
                 print(update.tabulate())
-        self.assertEqual(len(self.updates.image.slave), 45)
+        self.assertEqual(len(self.updates.image.slave), 51)
         sync_update = self.updates.image.slave[0]
         if self.debug:
             self.print_update(sync_update)
