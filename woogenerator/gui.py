@@ -11,7 +11,7 @@ from pprint import pformat
 
 import npyscreen
 
-from . import generator, merger
+from . import generator
 from .utils import overrides
 from .utils.core import SeqUtils
 
@@ -423,9 +423,9 @@ class ConfirmForm(SyncForm):
                 self.command_script.value = "no active form"
                 return
             elif active_form_id == 'PRODUCTS':
-                self.command_script.value = 'generator.py'
-            elif active_form_id == 'CUSTOMERS':
-                self.command_script.value = 'merger.py'
+                self.command_script.value = 'woogenerator.generator'
+            # elif active_form_id == 'CUSTOMERS':
+            #     self.command_script.value = 'merger.py'
             else:
                 self.command_script.value = "unknown active_form_id"
                 return
@@ -557,14 +557,14 @@ def main():
         print "not enough space for widget, try resizing terminal.", exc
         traceback.print_exception(*sys.exc_info())
     print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
-    if wg_app.command_script == 'generator.py':
+    if wg_app.command_script == 'woogenerator.generator':
         override_args = SeqUtils.filter_unique_true(
             sys.argv[1:] + wg_app.command_args.split())
         generator.catch_main(override_args=override_args)
-    if wg_app.command_script == 'merger.py':
-        override_args = SeqUtils.filter_unique_true(
-            sys.argv[1:] + wg_app.command_args.split())
-        merger.catch_main(override_args=override_args)
+    # if wg_app.command_script == 'merger.py':
+    #     override_args = SeqUtils.filter_unique_true(
+    #         sys.argv[1:] + wg_app.command_args.split())
+    #     merger.catch_main(override_args=override_args)
 
 
 if __name__ == "__main__":

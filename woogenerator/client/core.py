@@ -857,13 +857,6 @@ class SyncClientRest(SyncClientAbstract):
 
     def get_first_endpoint_item(self):
         return self.get_page_generator().next()[0]
-        # service_endpoint = self.endpoint_plural
-        # if self.pagination_limit_key:
-        #     service_endpoint += '?%s=1' % self.pagination_limit_key
-        # items_page = self.get_iterator(service_endpoint).next()
-        # if self.page_nesting:
-        #     items_page = items_page[self.endpoint_plural]
-        # return items_page[0]
 
     # TODO: Get rid of all of these, just use coldata
 
