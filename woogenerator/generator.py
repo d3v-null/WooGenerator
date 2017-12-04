@@ -44,7 +44,7 @@ def timediff(settings):
     return time.time() - settings.start_time
 
 
-def check_warnings():
+def check_warnings(settings):
     """
     Check if there have been any errors or warnings registered in Registrar.
 
@@ -1622,13 +1622,16 @@ def main(override_args=None, settings=None):
     parsers = ParserNamespace()
     populate_master_parsers(parsers, settings)
 
-    check_warnings()
+    check_warnings(settings)
 
     if settings.schema_is_woo and settings.do_images:
         process_images(settings, parsers)
 
     if parsers.master.objects:
         export_master_parser(settings, parsers)
+
+    if settings.master_and_quit:
+        sys.exit(ExitStatus.success)
 
     populate_slave_parsers(parsers, settings)
 
@@ -1648,7 +1651,7 @@ def main(override_args=None, settings=None):
         do_report_images(
             reporters, matches, updates, parsers, settings
         )
-        check_warnings()
+        check_warnings(settings)
         if not settings.report_and_quit:
             try:
                 do_updates_images(updates, parsers, results, settings)
@@ -1662,7 +1665,7 @@ def main(override_args=None, settings=None):
         do_report_categories(
             reporters, matches, updates, parsers, settings
         )
-        check_warnings()
+        check_warnings(settings)
         if not settings.report_and_quit:
             try:
                 do_updates_categories(updates, parsers, results, settings)
@@ -1674,7 +1677,7 @@ def main(override_args=None, settings=None):
     do_match_prod(parsers, matches, settings)
     do_merge_prod(matches, parsers, updates, settings)
     do_merge_var(matches, parsers, updates, settings)
-    # check_warnings()
+    # check_warnings(settings)
     do_report(reporters, matches, updates, parsers, settings)
 
     if settings.report_and_quit:

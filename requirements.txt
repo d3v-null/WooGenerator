@@ -6,6 +6,7 @@ exchangelib
 exitstatus==1.2.0
 google_api_python_client==1.6.2
 httplib2==0.10.3
+jsonpath_ng
 kitchen==1.2.4
 lxml
 npyscreen==4.10.5

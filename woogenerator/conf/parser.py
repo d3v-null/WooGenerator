@@ -268,6 +268,10 @@ class ArgumentParserCommon(ArgumentParserProto):
             type=int,
             default=0
         )
+        processing_group.add_argument(
+            '--master-and-quit',
+            help="quit after exporting master parsers, don't process slave",
+        )
 
         current_tsecs = TimeUtils.current_tsecs()
         year_tsecs = 60 * 60 * 24 * 365.25
