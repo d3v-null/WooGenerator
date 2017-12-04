@@ -271,6 +271,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         processing_group.add_argument(
             '--master-and-quit',
             help="quit after exporting master parsers, don't process slave",
+            action="store_true",
         )
 
         current_tsecs = TimeUtils.current_tsecs()
