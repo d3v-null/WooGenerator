@@ -497,8 +497,8 @@ class CsvParseShopMixin(object):
             'variable': self.variable_container,
             'variation': self.variation_container,
             'category': self.category_container,
-            'image': self.image_container,
-            'sub-image': self.image_container
+            'image': self.attachment_container,
+            'sub-image': self.attachment_container
         }
 
     def clear_transients(self):
@@ -696,14 +696,14 @@ class CsvParseShopMixin(object):
     def get_parser_data(cls, **kwargs):
         parser_data = kwargs.get('row_data', {})
         # TODO: why not move this to process_meta ?
-        if kwargs.get('container') and issubclass(kwargs.get('container'), cls.image_container):
-            if not cls.image_container.file_name_key in parser_data:
-                if parser_data.get(cls.image_container.file_path_key):
-                    parser_data[cls.image_container.file_name_key]\
-                    = FileUtils.get_path_basename(parser_data[cls.image_container.file_path_key])
-                elif parser_data.get(cls.image_container.source_url_key):
-                    parser_data[cls.image_container.file_name_key]\
-                    = FileUtils.get_path_basename(parser_data[cls.image_container.source_url_key])
+        if kwargs.get('container') and issubclass(kwargs.get('container'), cls.attachment_container):
+            if not cls.attachment_container.file_name_key in parser_data:
+                if parser_data.get(cls.attachment_container.file_path_key):
+                    parser_data[cls.attachment_container.file_name_key]\
+                    = FileUtils.get_path_basename(parser_data[cls.attachment_container.file_path_key])
+                elif parser_data.get(cls.attachment_container.source_url_key):
+                    parser_data[cls.attachment_container.file_name_key]\
+                    = FileUtils.get_path_basename(parser_data[cls.attachment_container.source_url_key])
                 else:
                     raise UserWarning("couldn't get file_path from parser_data: %s" % parser_data)
         return parser_data

@@ -375,8 +375,8 @@ class CsvParseWooMixin(object):
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory
     category_indexer = Registrar.get_object_rowcount
-    image_container = ImportWooImg
-    attachment_indexer = image_container.get_identifier
+    attachment_container = ImportWooImg
+    attachment_indexer = attachment_container.get_identifier
 
     @property
     def cat_search_keys(self):
@@ -391,11 +391,11 @@ class CsvParseWooMixin(object):
     @property
     def img_search_keys(self):
         return [
-            self.image_container.attachment_id_key,
-            # self.image_container.slug_key,
-            # self.image_container.title_key,
-            self.image_container.file_name_key,
-            self.image_container.source_url_key
+            self.attachment_container.attachment_id_key,
+            # self.attachment_container.slug_key,
+            # self.attachment_container.title_key,
+            self.attachment_container.file_name_key,
+            self.attachment_container.source_url_key
         ]
 
     def find_category(self, search_data):
@@ -431,7 +431,7 @@ class CsvParseWooMixin(object):
         return deepcopy(self._coldata_cat_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
-        img_index = self.image_container.get_file_name(img_raw_data)
+        img_index = self.attachment_container.get_file_name(img_raw_data)
         if self.DEBUG_IMG:
             if object_data:
                 identifier = object_data.identifier
@@ -462,7 +462,7 @@ class CsvParseWooMixin(object):
             kwargs['defaults'] = self.img_defaults
             kwargs['row_data'] = row_data
             kwargs['parent'] = self.root_data
-            kwargs['container'] = self.image_container
+            kwargs['container'] = self.attachment_container
 
             try:
                 img_data = self.new_object(
@@ -484,6 +484,8 @@ class CsvParseWooMixin(object):
 
         self.register_attachment(img_data, object_data)
 
+        return img_data
+
     def get_wpid(self, object_data):
         return object_data.wpid
 
@@ -503,7 +505,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     grouped_container = CsvParseWooMixin.grouped_container
     bundled_container = CsvParseWooMixin.bundled_container
     taxo_container = CsvParseWooMixin.taxo_container
-    image_container = CsvParseWooMixin.image_container
+    attachment_container = CsvParseWooMixin.attachment_container
     category_indexer = CsvParseWooMixin.category_indexer
     attachment_indexer = CsvParseWooMixin.attachment_indexer
     coldata_class = CsvParseWooMixin.coldata_class
@@ -528,7 +530,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             'C': self.composite_container,
             'G': self.grouped_container,
             'B': self.bundled_container,
-            'M': self.image_container,
+            'M': self.attachment_container,
         }
 
     def __init__(self, cols, defaults, **kwargs):

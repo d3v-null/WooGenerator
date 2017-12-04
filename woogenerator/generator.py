@@ -189,10 +189,10 @@ def populate_slave_parsers(parsers, settings):
     if settings.schema_is_woo and settings['do_categories']:
         Registrar.register_progress("analysing API category data")
 
-        cat_upload_client_class = settings.slave_cat_sync_client_class
-        cat_upload_client_args = settings.slave_cat_sync_client_args
+        cat_sync_client_class = settings.slave_cat_sync_client_class
+        cat_sync_client_args = settings.slave_cat_sync_client_args
 
-        with cat_upload_client_class(**cat_upload_client_args) as client:
+        with cat_sync_client_class(**cat_sync_client_args) as client:
             client.analyse_remote_categories(
                 parsers.slave,
                 data_path=settings.slave_cat_path
@@ -317,8 +317,8 @@ def cache_api_data(settings, parsers):
         category_list.export_api_data(settings.slave_cat_path)
 
     if settings.do_images and parsers.slave.attachments:
-        image_container = settings.slave_parser_class.image_container.container
-        image_list = image_container(parsers.slave.attachments.values())
+        attachment_container = settings.slave_parser_class.attachment_container.container
+        image_list = attachment_container(parsers.slave.attachments.values())
         image_list.export_api_data(settings.slave_img_path)
 
 def do_match_images(parsers, matches, settings):
@@ -1195,7 +1195,6 @@ def usr_prompt_continue(settings):
         )
 
 def upload_new_images(parsers, results, settings, client, new_updates):
-    raise NotImplementedError()
 
     if not (new_updates and settings['update_slave']):
         return
@@ -1205,21 +1204,99 @@ def upload_new_images(parsers, results, settings, client, new_updates):
             len(new_updates), items_plural='new %s' % client.endpoint_plural
         )
 
-    sync_handles = settings.sync_handles_img
+    # sync_handles = settings.sync_handles_img
+
+    update_count = 0
+
+    while new_updates:
+
+        sync_update = new_updates.pop(0)
+
+        core_data = sync_update.get_slave_updates()
+
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message("uploading new image (core format): %s" % pformat(core_data))
+
+        update_count += 1
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(update_count)
+
+        try:
+            response = client.create_item_core(core_data)
+            response_api_data = response.json()
+        except BaseException as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+            continue
+        if client.page_nesting:
+            response_api_data = response_api_data[client.endpoint_singular]
+
+        response_gen_object = parsers.slave.analyse_api_image_raw(response_api_data)
+
+        sync_update.set_new_s_object_gen(response_gen_object)
+
+        if Registrar.DEBUG_IMG:
+            Registrar.register_message(
+                "image being updated with parser data: %s"
+                % pformat(response_gen_object))
+
+        sync_update.set_new_s_object_gen(response_gen_object)
+        sync_update.old_m_object_gen.update(response_gen_object)
+
+        results.successes.append(sync_update)
 
 
 def upload_image_changes(parsers, results, settings, client, change_updates):
-    raise NotImplementedError()
+
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(change_updates), items_plural='%s updates' % client.endpoint_singular
+        )
+
+    if not settings['update_slave']:
+        return
+
+    for count, sync_update in enumerate(change_updates):
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(count)
+
+        if not sync_update.s_updated:
+            continue
+
+        try:
+            pkey = sync_update.slave_id
+            changes = sync_update.get_slave_updates()
+            response_raw = client.upload_changes_core(pkey, changes)
+            response_api_data = response_raw.json()
+        except Exception as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+            continue
+
+        response_core_data = settings.coldata_class_img.translate_data_from(
+            response_api_data, settings.coldata_img_target
+        )
+        response_gen_data = settings.coldata_class_img.translate_data_to(
+            response_core_data, settings.coldata_gen_target_write
+        )
+
+        sync_update.old_s_object_gen.update(response_gen_data)
+        sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
+        sync_update.old_m_object_gen.update(response_gen_data)
+
+        results.successes.append(sync_update)
+
 
 def do_updates_images(updates, parsers, results, settings):
     """Perform a list of updates on attachments."""
 
-    import pudb; pudb.set_trace()
-
     results.image = ResultsNamespace()
     results.image.new = ResultsNamespace()
-    items_singular = 'image'
-    items_plural = 'images'
+
+    sync_client_class = settings.slave_img_sync_client_class
+    sync_client_args = settings.slave_img_sync_client_args
 
     # updates in which an item is modified
     change_updates = updates.image.slave
@@ -1233,11 +1310,11 @@ def do_updates_images(updates, parsers, results, settings):
         for update in new_updates:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                items_singular, new_item_api
+                sync_client_class.endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
     Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        items_plural, len(change_updates), len(new_updates)
+        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
     ))
 
     if not (new_updates or change_updates):
@@ -1246,12 +1323,9 @@ def do_updates_images(updates, parsers, results, settings):
     if settings['ask_before_update']:
         usr_prompt_continue(settings)
 
-    upload_client_class = settings.slave_cat_sync_client_class
-    upload_client_args = settings.slave_cat_sync_client_args
-
-    with upload_client_class(**upload_client_args) as client:
-        if Registrar.DEBUG_CATS:
-            Registrar.register_message("created cat client")
+    with sync_client_class(**sync_client_args) as client:
+        if Registrar.DEBUG_IMG:
+            Registrar.register_message("created img client")
 
         if new_updates:
             # create attachments that do not yet exist on slave
@@ -1304,17 +1378,17 @@ def upload_new_categories(parsers, results, settings, client, new_updates):
         sync_update.set_old_m_object_gen(sync_update.old_m_object)
         sync_update.update(sync_handles)
 
-        api_data = sync_update.get_slave_updates_native()
+        core_data = sync_update.get_slave_updates()
 
         if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("uploading new category (api format): %s" % pformat(api_data))
+            Registrar.register_message("uploading new category (api format): %s" % pformat(core_data))
 
         update_count += 1
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter.maybe_print_update(update_count)
 
         try:
-            response = client.create_item(api_data)
+            response = client.create_item_core(core_data)
             response_api_data = response.json()
         except BaseException as exc:
             handle_failed_update(
@@ -1333,7 +1407,7 @@ def upload_new_categories(parsers, results, settings, client, new_updates):
                 "category being updated with parser data: %s"
                 % pformat(response_gen_object))
 
-        sync_update.old_m_object.update(response_gen_object)
+        sync_update.old_m_object_gen.update(response_gen_object)
 
         results.successes.append(sync_update)
 
@@ -1360,12 +1434,32 @@ def upload_category_changes(parsers, results, settings, client, change_updates):
         try:
             pkey = sync_update.slave_id
             changes = sync_update.get_slave_updates_native()
-            client.upload_changes(pkey, changes)
+            response_raw = client.upload_changes(pkey, changes)
+            response_api_data = response_raw.json()
         except Exception as exc:
             handle_failed_update(
                 sync_update, results, exc, settings, settings.slave_name
             )
+            continue
+
+        response_core_data = settings.coldata_class_cat.translate_data_from(
+            response_api_data, settings.coldata_cat_target
+        )
+        response_gen_data = settings.coldata_class_cat.translate_data_to(
+            response_core_data, settings.coldata_gen_target_write
+        )
+
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message(
+                "category being updated with parser data: %s"
+                % pformat(response_gen_data))
+
+        sync_update.old_s_object_gen.update(response_gen_data)
+        sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
+        sync_update.old_m_object_gen.update(response_gen_data)
+
         results.successes.append(sync_update)
+
 
 def do_updates_categories(updates, parsers, results, settings):
     """Perform a list of updates on categories."""
@@ -1374,8 +1468,9 @@ def do_updates_categories(updates, parsers, results, settings):
 
     results.category = ResultsNamespace()
     results.category.new = ResultsNamespace()
-    items_singular = 'category'
-    items_plural = 'categories'
+
+    sync_client_class = settings.slave_cat_sync_client_class
+    sync_client_args = settings.slave_cat_sync_client_args
 
     # updates in which an item is modified
     change_updates = updates.category.slave
@@ -1389,11 +1484,11 @@ def do_updates_categories(updates, parsers, results, settings):
         for update in new_updates:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                items_singular, new_item_api
+                sync_client_class.endpoint_plural, new_item_api
             ))
             Registrar.register_warning(exc)
     Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        items_plural, len(change_updates), len(new_updates)
+        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
     ))
 
     if not (new_updates or change_updates):
@@ -1402,10 +1497,7 @@ def do_updates_categories(updates, parsers, results, settings):
     if settings['ask_before_update']:
         usr_prompt_continue(settings)
 
-    upload_client_class = settings.slave_cat_sync_client_class
-    upload_client_args = settings.slave_cat_sync_client_args
-
-    with upload_client_class(**upload_client_args) as client:
+    with sync_client_class(**sync_client_args) as client:
         if Registrar.DEBUG_CATS:
             Registrar.register_message("created cat client")
 
@@ -1466,8 +1558,8 @@ def do_updates_prod(updates, parsers, settings, results):
     # updates in which an item is modified
 
     results.new = ResultsNamespace()
-    items_plural = 'products'
-    items_singular = 'product'
+    slave_client_class = settings.slave_sync_client_class
+    slave_client_args = settings.slave_sync_client_args
 
     change_updates = updates.slave
     if settings.do_problematic:
@@ -1480,11 +1572,11 @@ def do_updates_prod(updates, parsers, settings, results):
         for update in new_updates:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                items_singular, new_item_api
+                slave_client_class.endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
     Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        items_plural, len(change_updates), len(new_updates)
+        slave_client_class.endpoint_plural, len(change_updates), len(new_updates)
     ))
 
     if not (new_updates or change_updates):
@@ -1493,8 +1585,6 @@ def do_updates_prod(updates, parsers, settings, results):
     if settings['ask_before_update']:
         usr_prompt_continue(settings)
 
-    slave_client_class = settings.slave_upload_client_class
-    slave_client_args = settings.slave_upload_client_args
 
     with slave_client_class(**slave_client_args) as client:
         if new_updates:
@@ -1578,6 +1668,8 @@ def main(override_args=None, settings=None):
                 do_updates_categories(updates, parsers, results, settings)
             except (SystemExit, KeyboardInterrupt):
                 return reporters, results
+
+    raise UserWarning("end of completed functions")
 
     do_match_prod(parsers, matches, settings)
     do_merge_prod(matches, parsers, updates, settings)

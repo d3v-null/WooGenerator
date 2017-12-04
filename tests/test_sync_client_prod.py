@@ -443,6 +443,9 @@ class TestImgSyncClient(TestProdSyncClient):
 
 
     def test_upload_image_delete(self):
+        """
+        Only upload a raw image
+        """
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
@@ -497,6 +500,8 @@ class TestImgSyncClient(TestProdSyncClient):
             img_id = client.coldata_class.get_from_path(
                 response_core, client.primary_key_handle
             )
+            if self.debug:
+                import pudb; pudb.set_trace()
             response = client.upload_changes_core(img_id, new_img_core)
             if self.debug:
                 print("upload changes response: %s" % pformat(response.json()))
@@ -534,7 +539,7 @@ class TestImgSyncClient(TestProdSyncClient):
         ])
 
         with img_client_class(**img_client_args) as client:
-            first_img_raw = client.get_endpoint_generator().next()
+            first_img_raw = client.get_first_endpoint_item()
             if self.debug:
                 print("first img raw: %s" % first_img_raw.items())
             first_img_core = client.coldata_class.translate_data_from(
@@ -542,7 +547,7 @@ class TestImgSyncClient(TestProdSyncClient):
             )
             if self.debug:
                 print("first img core: %s" % first_img_core.items())
-            import pudb; pudb.set_trace()
+            # import pudb; pudb.set_trace()
 
 
 

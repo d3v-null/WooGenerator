@@ -237,6 +237,7 @@ class ApiParseMixin(object):
     root_container = ImportApiRoot
     coldata_gen_target = 'gen-api'
     attachment_indexer = ImportWooApiObject.attachment_indexer
+    attachment_container = ImportWooApiImg
 
     def analyse_stream(self, byte_file_obj, **kwargs):
 
@@ -329,7 +330,7 @@ class ApiParseWoo(
     product_indexer = CsvParseShopMixin.product_indexer
     variation_indexer = CsvParseWooMixin.get_title
     attachment_indexer = ImportApiObjectMixin.attachment_indexer
-    image_container = ImportWooApiImg
+    attachment_container = ApiParseMixin.attachment_container
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
     coldata_sub_img_class = ColDataSubAttachment
@@ -362,11 +363,12 @@ class ApiParseWoo(
             img_core_data, self.coldata_gen_target
         )
         img_gen_data['api_data'] = img_api_data
-        self.analyse_api_image_gen(img_gen_data, object_data, **kwargs)
+        return self.analyse_api_image_gen(img_gen_data, object_data, **kwargs)
 
     def analyse_api_image_gen(self, img_gen_data, object_data=None, **kwargs):
         """ Create object for and analyse an API image object that is in gen format. """
-        if not (img_gen_data.get('file_path') or img_gen_data.get('file_name')):
+        file_path = self.attachment_container.get_file_name(img_gen_data)
+        if not file_path:
             warn = UserWarning(
                 (
                     "could not process api img: no file path in API object\n"
@@ -383,7 +385,7 @@ class ApiParseWoo(
 
         img_gen_data['type'] = 'image'
 
-        super(ApiParseWoo, self).process_image(img_gen_data, object_data, **kwargs)
+        return super(ApiParseWoo, self).process_image(img_gen_data, object_data, **kwargs)
 
     def process_api_sub_image_raw(self, sub_img_api_data, object_data, **kwargs):
         coldata_class = kwargs.get('coldata_class', self.coldata_sub_img_class)
@@ -395,28 +397,20 @@ class ApiParseWoo(
             sub_img_core_data, self.coldata_gen_target
         )
         sub_img_gen_data['api_data'] = sub_img_api_data
-        self.process_api_sub_image_gen(sub_img_gen_data, object_data, **kwargs)
+        return self.process_api_sub_image_gen(sub_img_gen_data, object_data, **kwargs)
 
     def process_api_sub_image_gen(self, sub_img_gen_data, object_data, **kwargs):
         """
         Process an api image that is a sub-entity in gen format.
         """
-        if sub_img_gen_data.get(self.image_container.attachment_id_key) == 0:
+        if sub_img_gen_data.get(self.attachment_container.attachment_id_key) == 0:
             # drop the Placeholder image
             return
 
         sub_img_gen_data['type'] = 'sub-image'
 
-        super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
-        # try:
-        # except Exception as exc:
-        #     import pudb; pudb.set_trace()
-        #     warn = UserWarning("could not find api sub image, %s\nobject:\n%s" % (
-        #         exc, object_data
-        #     ))
-        #     self.register_error(warn)
-        #     if self.strict:
-        #         self.raise_exception(warn)
+        return super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
+
 
     def translate_category_api_gen(self, category_raw_data, **kwargs):
         """
@@ -610,9 +604,9 @@ class ApiParseWoo(
             parser_data[self.category_container.codesum_key] = parser_data[
                 self.category_container.slug_key]
         elif parser_data.get('type') in ['sub-image', 'image']:
-            assert self.image_container.file_name_key in parser_data, \
+            assert self.attachment_container.file_name_key in parser_data, \
             "parser_data should have file_name(%s):\n%s" % (
-                self.image_container.file_name_key,
+                self.attachment_container.file_name_key,
                 pformat(parser_data.items())
             )
         else:

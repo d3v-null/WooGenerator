@@ -12,7 +12,7 @@ class ImgSyncClientWP(SyncClientWP):
     pagination_limit_key = None
     coldata_class = ColDataAttachment
     primary_key_handle = 'id'
-
+    file_path_handle = 'file_path'
 
     def __init__(self, connect_params, **kwargs):
         connect_params['user_auth'] = True
@@ -32,19 +32,32 @@ class ImgSyncClientWP(SyncClientWP):
         }
         return self.create_item(data, headers=headers)
 
-    def upload_changes_core(self, pkey, updates_core=None):
-        if self.primary_key_handle in updates_core:
-            del updates_core[self.primary_key_handle]
-        updates_api = self.coldata_class.translate_data_to(updates_core, self.coldata_target_write)
-        return self.upload_changes(pkey, updates_api)
+    def upload_changes_core(self, pkey=None, updates_core=None):
+        """
+        If file_path in core changes, upload file and get new pkey before
+        uploading changes to that record.
+        """
 
-    def upload_changes(self, pkey, updates=None):
-        file_path = updates.pop('file_path')
+        file_path = updates_core.pop(self.file_path_handle, None)
         if file_path:
-            response = self.upload_image(file_path)
-            import pudb; pudb.set_trace()
-            # maybe set updates['id'] here?
-        return super(ImgSyncClientWP, self).upload_changes(updates)
+            response_raw = self.upload_image(file_path)
+            response_api = response_raw.json()
+            if self.page_nesting:
+                response_api = response_api.get(self.endpoint_singular)
+            response_core = self.coldata_class.translate_data_from(
+                response_api, self.coldata_target_write
+            )
+            pkey = response_core.pop(self.primary_key_handle)
+        return super(ImgSyncClientWP, self).upload_changes_core(pkey, updates_core)
+
+    def create_item_core(self, core_data):
+        """
+        If file_path in core changes, upload file and get new pkey before
+        uploading changes to that record.
+        """
+        file_path = core_data.get(self.file_path_handle)
+        if file_path:
+            return self.upload_changes_core(None, core_data)
 
     def analyse_remote_imgs(self, parser, **kwargs):
         # img_api_iterator = self.get_iterator(self.endpoint_plural)

@@ -35,7 +35,7 @@ from wordpress import API
 from wordpress.helpers import UrlUtils
 
 from ..coldata import ColDataProductMeridian, ColDataWpEntity, ColDataWpPost
-from ..utils import ProgressCounter, Registrar, SanitationUtils
+from ..utils import FileUtils, ProgressCounter, Registrar, SanitationUtils
 
 
 class AbstractServiceInterface(object):
@@ -145,6 +145,27 @@ class SyncClientAbstract(ClientAbstract):
             assert pkey, "must have a valid primary key"
             assert self.connection_ready, "connection should be ready"
 
+    def create_item(self, data):
+        if data:
+            assert self.connection_ready, "connection should be ready"
+
+    def upload_changes_core(self, pkey=None, updates_core=None):
+        """
+        Translate a dict of changes in core format to api format and upload.
+        """
+        if pkey is None:
+            pkey = updates_core.pop(self.primary_key_handle)
+        updates_api = self.coldata_class.translate_data_to(
+            updates_core, self.coldata_target_write
+        )
+        return self.upload_changes(pkey, updates_api)
+
+    def create_item_core(self, core_data):
+        api_data = self.coldata_class.translate_data_to(
+            core_data, self.coldata_target_write
+        )
+        return self.create_item(api_data)
+
 
 class SyncClientNull(SyncClientAbstract):
     """ Designed to act like a client but fails on all actions """
@@ -152,9 +173,13 @@ class SyncClientNull(SyncClientAbstract):
     service_name = 'NULL'
     coldata_class = ColDataWpEntity
     primary_key_handle = 'id'
+    file_path_handle = None
     coldata_target = 'api'
+    coldata_target_write = 'api'
     page_nesting = False
     fake_id = 100000
+    endpoint_plural = 'objects'
+    endpoint_singular = 'object'
 
     def __init__(self, *args, **kwargs):
         self.service = True
@@ -167,27 +192,70 @@ class SyncClientNull(SyncClientAbstract):
 
     def upload_changes(self, pkey, updates=None):
         super(SyncClientNull, self).upload_changes(pkey)
-        return updates
+        native_pkey = self.coldata_class.translate_key(
+            self.primary_key_handle, self.coldata_target
+        )
+        updates.update({
+            native_pkey: pkey
+        })
+        updates_core = self.coldata_class.translate_data_from(
+            updates, self.coldata_target_write
+        )
+        updates_api = self.coldata_class.translate_data_to(
+            updates_core, self.coldata_target
+        )
+        response = requests.Response()
+        response._content = SanitationUtils.encode_json(updates_api)
+        return response
+
+    def upload_changes_core(self, pkey=None, updates_core=None):
+        if hasattr(self, 'file_path_handle'):
+            file_path = updates_core.pop(self.file_path_handle, None)
+            if file_path:
+                response_raw = super(SyncClientNull, self).create_item_core(updates_core)
+                response_api = response_raw.json()
+                if self.page_nesting:
+                    response_api = response_api.get(self.endpoint_singular)
+                response_core = self.coldata_class.translate_data_from(
+                    response_api, self.coldata_target_write
+                )
+                pkey = response_core.pop(self.primary_key_handle)
+                updates_core.update({
+                    'file_path': file_path
+                })
+        return super(SyncClientNull, self).upload_changes_core(pkey, updates_core)
 
     def create_item(self, data, **kwargs):
         native_pkey = self.coldata_class.translate_key(
             self.primary_key_handle, self.coldata_target
         )
         native_slug_key = self.coldata_class.translate_key(
-            'slug', self.coldata_target
+            'slug', self.coldata_target_write
         )
         native_title_key = self.coldata_class.translate_key(
-            'title', self.coldata_target
+            'title', self.coldata_target_write
         )
         if not isinstance(data, dict):
             data = {}
         data[native_pkey] = self.fake_id
-        data[native_slug_key] = SanitationUtils.slugify(data.get(native_title_key))
+        data[native_slug_key] = SanitationUtils.slugify(data.get(native_title_key, ''))
         self.fake_id += 1
+        data_core = self.coldata_class.translate_data_from(
+            data, self.coldata_target_write
+        )
+        data_api = self.coldata_class.translate_data_to(
+            data_core, self.coldata_target
+        )
         response = requests.Response()
-        response._content = SanitationUtils.encode_json(data)
+        response._content = SanitationUtils.encode_json(data_api)
         return response
 
+    def create_item_core(self, core_data):
+        if hasattr(self, 'file_path_handle'):
+            file_path = core_data.get(self.file_path_handle, None)
+            if file_path:
+                return self.upload_changes_core(None, core_data)
+        return super(SyncClientNull, self).create_item_core(core_data)
 
 class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
@@ -788,7 +856,7 @@ class SyncClientRest(SyncClientAbstract):
         return response
 
     def get_first_endpoint_item(self):
-        return self.get_endpoint_generator().next()
+        return self.get_page_generator().next()[0]
         # service_endpoint = self.endpoint_plural
         # if self.pagination_limit_key:
         #     service_endpoint += '?%s=1' % self.pagination_limit_key

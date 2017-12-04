@@ -379,7 +379,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ])
         )
 
-        img_container = self.parsers.slave.image_container.container
+        img_container = self.parsers.slave.attachment_container.container
         img_list = img_container(self.parsers.slave.attachments.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
@@ -435,8 +435,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         print(tabulate(img_table))
 
     def setup_temp_img_dir(self):
-        self.settings.do_resize_images = True
-        self.settings.do_remeta_images = True
         self.settings.thumbsize_x = 1024
         self.settings.thumbsize_y = 768
         suffix='generator_dummy_process_images'
@@ -617,6 +615,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         """
         Assume image files are newer than example json image mod times
         """
+        self.settings.do_resize_images = True
+        self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         process_images(self.settings, self.parsers)
@@ -730,24 +730,24 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             "finest naturally derived botanical and certified organic ingredients."
         )
         self.assertEqual(
-            self.parsers.master.image_container.get_title(slave_gen_object),
+            self.parsers.master.attachment_container.get_title(slave_gen_object),
             title
         )
         self.assertEqual(
-            self.parsers.master.image_container.get_alt_text(slave_gen_object),
+            self.parsers.master.attachment_container.get_alt_text(slave_gen_object),
             title
         )
         self.assertEqual(
-            self.parsers.master.image_container.get_description(slave_gen_object),
+            self.parsers.master.attachment_container.get_description(slave_gen_object),
             content
         )
         self.assertEqual(
-            self.parsers.master.image_container.get_caption(slave_gen_object),
+            self.parsers.master.attachment_container.get_caption(slave_gen_object),
             content
         )
         self.assertEqual(
             FileUtils.get_path_basename(
-                self.parsers.master.image_container.get_file_path(slave_gen_object),
+                self.parsers.master.attachment_container.get_file_path(slave_gen_object),
             ),
             "ACARA-CCL.png"
         )
@@ -780,6 +780,38 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         mock.patch(
             MockUtils.get_mock_name(
                 self.settings.null_client_class,
+                'coldata_target_write'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.coldata_img_target_write
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_plural'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='media'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_singular'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='media'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'file_path_handle'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='file_path'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
                 'primary_key_handle'
             ),
             new_callable=mock.PropertyMock,
@@ -794,7 +826,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     @pytest.mark.slow
     def test_dummy_do_updates_images(self):
         self.settings.do_remeta_images = False
-        self.settings.do_resize_images = False
+        self.settings.do_resize_images = True
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
         process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
@@ -811,12 +844,54 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print('image update results: %s' % self.results.image)
 
-        import pudb; pudb.set_trace()
-
         self.assertEqual(
-            len(self.results.image.new),
+            len(self.results.image.new.successes),
             2
         )
+
+        sync_update = self.results.image.new.successes[0]
+        self.assertEqual(
+            sync_update.new_s_object_core['id'],
+            100000
+        )
+        self.assertEqual(
+            sync_update.old_m_object_gen['ID'],
+            100000
+        )
+        sync_update = self.results.image.new.successes[-1]
+        self.assertEqual(
+            sync_update.new_s_object_core['id'],
+            100001
+        )
+        self.assertEqual(
+            sync_update.old_m_object_gen['ID'],
+            100001
+        )
+
+        self.assertEqual(
+            len(self.results.image.successes),
+            51
+        )
+        sync_update = self.results.image.successes[0]
+        self.assertEqual(
+            sync_update.new_s_object_core['id'],
+            100002
+        )
+        self.assertEqual(
+            sync_update.old_m_object_gen['ID'],
+            100002
+        )
+        sync_update = self.results.image.successes[-1]
+        self.assertEqual(
+            sync_update.new_s_object_core['id'],
+            100052
+        )
+        self.assertEqual(
+            sync_update.old_m_object_gen['ID'],
+            100052
+        )
+
+
 
 
     @pytest.mark.last
@@ -904,7 +979,31 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'coldata_target'
             ),
             new_callable=mock.PropertyMock,
-            return_value='wc-wp-api-v2'
+            return_value=self.settings.coldata_cat_target
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_target_write'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.coldata_cat_target_write
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_plural'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='categories'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_singular'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='category'
         ), \
         mock.patch(
             MockUtils.get_mock_name(
