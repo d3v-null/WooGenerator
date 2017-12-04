@@ -20,7 +20,6 @@ from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
 
-import cjson
 import phpserialize
 import unicodecsv
 from kitchen.text import converters
@@ -943,7 +942,6 @@ class SanitationUtils(object):
     @classmethod
     def decode_json(cls, json_str, **kwargs):
         assert isinstance(json_str, (str, unicode))
-        # attrs = cjson.decode(json_str, **kwargs)
         attrs = json.loads(json_str, **kwargs)
         return attrs
 
@@ -951,7 +949,6 @@ class SanitationUtils(object):
     def encode_json(cls, obj, **kwargs):
         assert isinstance(obj, (dict, list))
         json_str = json.dumps(obj, **kwargs)
-        # json_str = cjson.encode(obj, **kwargs)
         return json_str
 
     @classmethod

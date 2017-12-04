@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 import argparse
 import io
-import cjson
 import os
 import re
 import time

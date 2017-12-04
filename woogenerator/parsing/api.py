@@ -9,8 +9,6 @@ from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat, pprint
 
-import cjson
-
 from ..coldata import (ColDataProductMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils

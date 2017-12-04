@@ -19,7 +19,6 @@ from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
 
-import cjson
 import httplib2
 import oauth2client
 import paramiko
