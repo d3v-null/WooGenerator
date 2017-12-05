@@ -102,7 +102,7 @@ def print_basic_columns(users):
         usrList.append(user)
         # SanitationUtils.safe_print( "BILLING ADDRESS:", repr(user), user['First Name'], user.get('First Name'), user.name.__unicode__(out_schema="flat"))
 
-    cols = col_data.get_basic_cols_native()
+    cols = col_data.get_col_data_native('basic')
 
     SanitationUtils.safe_print(usrList.tabulate(
         cols,

@@ -230,56 +230,44 @@ class ColDataLegacy(object):
     default_native_target = 'gen-csv'
 
     @classmethod
-    def get_import_cols_native(cls, target=default_native_target, base_target=default_native_target):
-        target_reads = cls.get_handles_property_defaults('read', target)
-        import_cols = OrderedDict()
-        for handle in cls.data.keys():
-            gen_read = target_reads.get(handle)
-            if gen_read is False:
-                continue
-            import_cols[handle] = cls.data[handle]
-        return cls.translate_keys(import_cols, base_target).keys()
-
-    @classmethod
-    def get_export_cols_native(cls, property_=None, target=default_native_target, base_target=default_native_target):
+    def get_col_data_native(cls, property_=None, target=default_native_target, base_target=default_native_target):
         """
         Return a mapping of the gen path to the handle properties for
         handles where `property_` is not False.
         """
-        if not property_:
-            return cls.translate_keys(cls.data, target)
-        export_cols = OrderedDict()
+        core_data = cls.data
+        if property_:
+            core_data = OrderedDict()
+            target_properties = cls.get_handles_property_defaults(property_, target)
+            for handle, target_property_value in target_properties.items():
+                if not target_property_value:
+                    continue
+                core_data[handle] = cls.data.get(handle)
+        return cls.translate_keys(core_data, base_target)
+
+    @classmethod
+    def get_col_values_native(
+        cls, property_='path',
+        target=default_native_target, base_target=default_native_target
+    ):
+        """
+        Return a mapping of the native path to the value of `property_` for
+        each handle where such a mapping exists.
+        """
+        core_data = OrderedDict()
         target_properties = cls.get_handles_property_defaults(property_, target)
         for handle, target_property_value in target_properties.items():
             if not target_property_value:
                 continue
-            export_cols[handle] = cls.data.get(handle)
-        return cls.translate_keys(export_cols, base_target)
-
-    @classmethod
-    def get_report_cols_native(cls, target=default_native_target):
-        return cls.get_export_cols_native('report', target)
+            core_data[handle] = target_property_value
+        return cls.translate_keys(core_data, base_target)
 
     @classmethod
     def get_delta_cols_native(cls, target=default_native_target):
         return OrderedDict([
             (col, cls.delta_col(col))
-            for col in cls.get_export_cols_native('delta', target).keys()
+            for col in cls.get_col_data_native('delta', target).keys()
         ])
-
-    @classmethod
-    def get_basic_cols_native(cls, target=default_native_target):
-        return cls.get_export_cols_native('basic', target)
-
-    @classmethod
-    def get_defaults_native(cls, target=default_native_target, base_target=default_native_target):
-        target_properties = cls.get_handles_property_defaults('default', target)
-        defaults = OrderedDict()
-        for handle, target_property_value in target_properties.items():
-            if target_property_value is None:
-                continue
-            defaults[handle] = target_property_value
-        return cls.translate_keys(defaults, base_target)
 
     @classmethod
     def translate_keys(cls, datum, target):
@@ -310,36 +298,33 @@ class ColDataLegacy(object):
     def get_col_names(cls, cols):
         col_names = OrderedDict()
         for col, data in cols.items():
-            label = data.get('label', '')
+            label = data.get('label')
             col_names[col] = label if label else col
         return col_names
 
     @classmethod
-    def get_attribute_cols(cls, attributes, vattributes):
+    def get_attribute_colnames_native(cls, attributes, vattributes):
         attribute_cols = OrderedDict()
         all_attrs = SeqUtils.combine_lists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
-            attribute_cols['attribute:' + attr] = {
-                'product': True,
-            }
+            new_keys = ['attribute:' + attr]
             if attr in vattributes.keys():
-                attribute_cols['attribute_default:' + attr] = {
-                    'product': True,
-                }
-                attribute_cols['attribute_data:' + attr] = {
-                    'product': True,
-                }
+                new_keys.extend([
+                    'attribute_default:' + attr,
+                    'attribute_data:' + attr
+                ])
+            for key in new_keys:
+                attribute_cols[key] = key
+
         return attribute_cols
 
     @classmethod
-    def get_attribute_meta_cols(cls, vattributes):
+    def get_attribute_meta_colnames_native(cls, vattributes):
         atttribute_meta_cols = OrderedDict()
         for attr in vattributes.keys():
-            atttribute_meta_cols['meta:attribute_' + attr] = {
-                'variable': True,
-                'tag': attr
-            }
+            key = 'meta:attribute_' + attr
+            atttribute_meta_cols[key] = key
         return atttribute_meta_cols
 
 class ColDataAbstract(ColDataLegacy):
@@ -429,27 +414,6 @@ class ColDataAbstract(ColDataLegacy):
                 if child_target_ancestors:
                     ancestors.extend(child_target_ancestors)
         return ancestors
-
-    # @classmethod
-    # def find_in(cls, data, property_, ancestors=None, handle=None):
-    #     """
-    #     Find the `property` of `handle` given `ancestors` using jmespath.
-    #     Return a mapping of `handle` to it's value of `property`.
-    #     """
-    #     # Registrar.increment_stack_count('find_in')
-    #
-    #     target_filter_expression = '[?"%s" in keys(@)]'
-    #
-    #     if handles is None:
-    #         handles = ['*']
-    #     handle_query = "(%s)" % "||".join(handles)
-    #     query = handle_query + ".(%s)" % "||".join(properties)
-    #     if ancestors:
-    #         query += " || "
-    #         + handle_query
-    #         + ".(%s)" % "||".join(handles)
-    #         + ".(%s)" % "||".join(properties)
-    #     return jmespath.search(handle_query, )
 
     @classmethod
     def find_in(cls, data, property_, ancestors=None, handle=None):
@@ -1806,6 +1770,9 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'path': 'ID',
                 'read': False,
             },
+            'wc-csv': {
+                'write': False
+            },
             'report': True
         },
         'permalink': {
@@ -2368,6 +2335,9 @@ class ColDataProduct(ColDataWpEntity):
             'path': None,
         }
     })
+    data['parent_id'].update({
+        'write': False
+    })
     data = OrderedDict(data.items() + {
         'product_type': {
             'default': 'simple',
@@ -2427,7 +2397,7 @@ class ColDataProduct(ColDataWpEntity):
                 # 'structure': ('listed-values'),
             },
             'gen-csv': {
-                'path': 'taxosum',
+                'path': 'catsum',
                 'read': False,
                 'type': 'heirarchical_pipe_array',
                 # 'structure': ('listed-values'),
@@ -3107,6 +3077,7 @@ class ColDataProductVariation(ColDataProduct):
         }
     })
     data['parent_id'].update({
+        'write': True,
         'wc-api': {
             'path': None
         }
@@ -3510,7 +3481,7 @@ class ColDataUser(ColDataWpEntity):
 #         return export_cols
 #
 #     @classmethod
-#     def get_basic_cols_native(cls):
+#     def get_col_data_native('basic')(cls):
 #         return cls.get_export_cols('basic')
 #
 #     @classmethod
@@ -4552,7 +4523,7 @@ class ColDataUser(ColDataWpEntity):
 # #         return cls.get_export_cols('wp')
 # #
 # #     @classmethod
-# #     def get_attribute_cols(cls, attributes, vattributes):
+# #     def get_attribute_colnames_native(cls, attributes, vattributes):
 # #         attribute_cols = OrderedDict()
 # #         all_attrs = SeqUtils.combine_lists(
 # #             attributes.keys(), vattributes.keys())
@@ -4570,7 +4541,7 @@ class ColDataUser(ColDataWpEntity):
 # #         return attribute_cols
 # #
 # #     @classmethod
-# #     def get_attribute_meta_cols(cls, vattributes):
+# #     def get_attribute_meta_colnames_native(cls, vattributes):
 # #         atttribute_meta_cols = OrderedDict()
 # #         for attr in vattributes.keys():
 # #             atttribute_meta_cols['meta:attribute_' + attr] = {

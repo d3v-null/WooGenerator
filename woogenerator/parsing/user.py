@@ -19,11 +19,13 @@ class UsrObjList(ObjList):
     A list of `ImportUser` objects
     """
 
+    coldata_class = ColDataUser
+    report_cols = coldata_class.get_col_data_native('report')
+
     def __init__(self, objects=None, indexer=None):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-    report_cols = ColDataUser.get_report_cols_native()
 
     def get_sanitizer(self, tablefmt=None):
         if tablefmt == 'html':
@@ -31,11 +33,6 @@ class UsrObjList(ObjList):
         if tablefmt == 'simple':
             return SanitationUtils.sanitize_for_table
         return super(UsrObjList, self).get_sanitizer(tablefmt)
-
-    @classmethod
-    def get_basic_cols_native(cls, self):
-        return ColDataUser.get_basic_cols_native()
-
 
 class ImportUser(ImportObject):
     container = UsrObjList

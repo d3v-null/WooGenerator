@@ -427,7 +427,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         #     print(Registrar.display_stack_counts())
 
     def print_images_summary(self, attachments):
-        img_cols = ColDataAttachment.get_report_cols_native()
+        img_cols = ColDataAttachment.get_col_data_native('report')
         img_table = [img_cols.keys()] + [
             [img_data.get(key) for key in img_cols.keys()]
             for img_data in attachments
@@ -490,7 +490,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             for img_data in self.parsers.slave.attachments.values():
                 print(
                     img_data.file_name,
-                    [attachment.index for attachment in img_data.attachments.objects]
+                    [attach.index for attach in img_data.attaches.objects]
                 )
 
     @pytest.mark.last
@@ -1132,7 +1132,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.debug:
-            report_cols = ColDataProduct.get_report_cols_native('gen-api')
+            report_cols = ColDataProduct.get_col_values_native('path', target='gen-api')
             report_cols['WNR'] = 'WNR'
             report_cols['WNF'] = 'WNF'
             report_cols['WNT'] = 'WNT'

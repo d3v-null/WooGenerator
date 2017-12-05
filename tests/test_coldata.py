@@ -709,6 +709,34 @@ class TestColDataWpPost(TestColData):
 #         ]:
 #             assert key in dbCols.keys()
 
+class TestColDataWcProd(TestColData):
+    coldata_class = ColDataProductMeridian
+
+    def test_get_handles_property(self):
+        handles_property = self.coldata_class.get_handles_property('path', 'wc-csv')
+        if self.debug:
+            pprint(handles_property.items())
+        self.assertTrue(
+            handles_property.get('product_category_list')
+        )
+
+    def test_get_handles_property_defaults(self):
+        handles_property_defaults = self.coldata_class.get_handles_property_defaults('path', 'wc-csv')
+        if self.debug:
+            pprint(handles_property_defaults.items())
+        self.assertTrue(
+            handles_property_defaults.get('product_category_list')
+        )
+
+    def test_get_col_values_native(self):
+        if self.debug:
+            import pudb; pudb.set_trace()
+        col_values_native = self.coldata_class.get_col_values_native('path', target='wc-csv')
+        if self.debug:
+            pprint(col_values_native.items())
+        self.assertTrue(
+            col_values_native.get('taxosum')
+        )
 
 if __name__ == '__main__':
     unittest.main()

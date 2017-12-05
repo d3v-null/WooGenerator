@@ -227,20 +227,20 @@ def export_master_parser(settings, parsers):
     """Export key information from master parser to csv."""
     Registrar.register_progress("Exporting Master info to disk")
 
-    product_cols = settings.coldata_class.get_export_cols_native('path', target='wc-csv')
-    product_colnames = settings.coldata_class.get_col_names(product_cols)
+    product_colnames = settings.coldata_class.get_col_values_native('path', target='wc-csv')
 
     for col in settings['exclude_cols']:
-        if col in product_cols:
-            del product_cols[col]
+        if col in product_colnames:
+            del product_colnames[col]
 
     if settings.schema_is_woo:
-        attribute_cols = settings.coldata_class.get_attribute_cols(
+        attribute_colnames = settings.coldata_class.get_attribute_colnames_native(
             parsers.master.attributes, parsers.master.vattributes)
-        product_colnames = settings.coldata_class.get_col_names(
-            SeqUtils.combine_ordered_dicts(product_cols, attribute_cols))
+        product_colnames = SeqUtils.combine_ordered_dicts(
+            product_colnames, attribute_colnames
+        )
 
-    container = settings.master_parser_class.product_container.container
+    container = parsers.master.product_container.container
 
     product_list = container(parsers.master.products.values())
     product_list.export_items(settings.fla_path, product_colnames)
@@ -248,11 +248,13 @@ def export_master_parser(settings, parsers):
     if settings.schema_is_woo:
         # variations
         variation_container = settings.master_parser_class.variation_container.container
-        variation_cols = settings.coldata_class_var.get_export_cols_native('write', target='wc-csv')
-        attribute_meta_cols = settings.coldata_class_var.get_attribute_meta_cols(
+        # variation_cols = settings.coldata_class_var.get_col_data_native('write', target='wc-csv')
+        variation_col_names = settings.coldata_class_var.get_col_values_native('path', target='wc-csv')
+        attribute_meta_col_names = settings.coldata_class_var.get_attribute_meta_colnames_native(
             parsers.master.vattributes)
-        variation_col_names = settings.coldata_class_var.get_col_names(
-            SeqUtils.combine_ordered_dicts(variation_cols, attribute_meta_cols))
+        variation_col_names = SeqUtils.combine_ordered_dicts(
+            variation_col_names, attribute_meta_col_names
+        )
         if settings.do_variations and parsers.master.variations:
 
             variation_list = variation_container(parsers.master.variations.values())
@@ -268,8 +270,8 @@ def export_master_parser(settings, parsers):
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            category_cols = settings.coldata_class_cat.get_export_cols_native('write', target='wc-csv')
-            category_col_names = settings.coldata_class_cat.get_col_names(category_cols)
+            # category_cols = settings.coldata_class_cat.get_col_data_native('write', target='wc-csv')
+            category_col_names = settings.coldata_class_cat.get_col_values_native('path', target='wc-csv')
             category_container = settings.master_parser_class.category_container.container
             category_list = category_container([
                 category for category in parsers.master.categories.values()

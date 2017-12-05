@@ -442,8 +442,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
         response = {
             'import_name': self.import_name,
-            'cols': self.coldata_class.get_import_cols_native(),
-            'defaults': self.coldata_class.get_defaults_native(),
+            'cols': self.coldata_class.get_col_data_native('read').keys(),
+            'defaults': self.coldata_class.get_col_values_native('default'),
             'schema': self.schema,
         }
         for key, settings_key in [
@@ -531,8 +531,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def slave_parser_args(self):
         response = {
-            'cols': self.coldata_class.get_import_cols_native(),
-            'defaults': self.coldata_class.get_defaults_native(),
+            'cols': self.coldata_class.get_col_data_native('read').keys(),
+            'defaults': self.coldata_class.get_col_values_native('default'),
             'source': self.slave_name,
             'schema': self.schema,
             'import_name': self.import_name,

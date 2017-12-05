@@ -297,7 +297,7 @@ class ShopProdList(ItemList):
 
     @property
     def report_cols(self):
-        return self.coldata_class.get_report_cols_native()
+        return self.coldata_class.get_col_data_native('report')
 
     def append(self, object_data):
         assert issubclass(object_data.__class__, ImportShopMixin), \
@@ -371,7 +371,7 @@ class ShopCatList(TaxoList):
     supported_type = ImportShopCategoryMixin
     @property
     def report_cols(self):
-        return self.coldata_class.get_report_cols_native()
+        return self.coldata_class.get_col_data_native('report')
 
 ImportShopCategoryMixin.container = ShopCatList
 

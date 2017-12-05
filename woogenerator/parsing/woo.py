@@ -217,7 +217,7 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
 class WooProdList(ShopProdList, WooListMixin):
     coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooProduct
-    report_cols = coldata_class.get_report_cols_native()
+    report_cols = coldata_class.get_col_data_native('report')
 
 ImportWooProduct.container = WooProdList
 
@@ -258,7 +258,7 @@ class ImportWooProductVariation(
 class WooVarList(ShopProdList, WooListMixin):
     supported_type = ImportWooProductVariation
     coldata_class = WooListMixin.coldata_var_class
-    report_cols = coldata_class.get_report_cols_native()
+    report_cols = coldata_class.get_col_data_native('report')
 
 ImportWooProductVariation.container = WooVarList
 
@@ -344,14 +344,14 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
 class WooCatList(ShopCatList, WooListMixin):
     coldata_class = WooListMixin.coldata_cat_class
     supported_type = ImportWooCategory
-    report_cols = coldata_class.get_report_cols_native()
+    report_cols = coldata_class.get_col_data_native('report')
 
 ImportWooCategory.container = WooCatList
 
 class WooImgList(ObjList, WooListMixin):
     coldata_class = WooListMixin.coldata_img_class
     supported_type = ImportWooImg
-    report_cols = coldata_class.get_report_cols_native()
+    report_cols = coldata_class.get_col_data_native('report')
 
 ImportWooImg.container = WooImgList
 
@@ -421,13 +421,13 @@ class CsvParseWooMixin(object):
     @property
     def img_defaults(self):
         if not hasattr(self, '_coldata_img_class_defaults'):
-            self._coldata_img_class_defaults = self.coldata_img_class.get_defaults_native()
+            self._coldata_img_class_defaults = self.coldata_img_class.get_col_values_native('default')
         return deepcopy(self._coldata_img_class_defaults)
 
     @property
     def cat_defaults(self):
         if not hasattr(self, '_coldata_cat_class_defaults'):
-            self._coldata_cat_class_defaults = self.coldata_cat_class.get_defaults_native()
+            self._coldata_cat_class_defaults = self.coldata_cat_class.get_col_values_native('default')
         return deepcopy(self._coldata_cat_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
