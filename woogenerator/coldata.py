@@ -3087,6 +3087,25 @@ class ColDataProductVariation(ColDataProduct):
             'path': None
         }
     })
+    data['product_category_list'].update({
+        'wc-csv': {
+            'path': None
+        }
+    })
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        OrderedDict([
+            ('parent_sku', {
+                'path': None,
+                'gen-csv': {
+                    'path': 'parent_SKU'
+                },
+                'wc-csv': {
+                    'path': 'parent_sku'
+                }
+            })
+        ])
+    )
 
 class ColDataMeridianEntityMixin(object):
     data = OrderedDict(ColDataProduct.data.items() + {
@@ -3281,10 +3300,11 @@ class ColDataProductMeridian(ColDataProduct, ColDataMeridianEntityMixin):
     )
 
 class ColDataProductVariationMeridian(ColDataProductVariation, ColDataMeridianEntityMixin):
-    data = OrderedDict(
-        ColDataProduct.data.items()
-        + ColDataMeridianEntityMixin.data.items()
+    data = SeqUtils.combine_ordered_dicts(
+        ColDataProductVariation.data,
+        ColDataMeridianEntityMixin.data
     )
+
 
 class ColDataAttachment(ColDataWpEntity):
     """
