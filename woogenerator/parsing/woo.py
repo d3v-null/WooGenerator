@@ -1272,8 +1272,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     tier_to_key = tier[:-1] + "T"
                     for key, value in {
                             tier_key: special_price,
-                            tier_from_key: TimeUtils.local_to_server_time(specialfrom),
-                            tier_to_key: TimeUtils.local_to_server_time(specialto)
+                            tier_from_key: TimeUtils.wp_local_to_server_time(specialfrom),
+                            tier_to_key: TimeUtils.wp_local_to_server_time(specialto)
                     }.items():
                         if self.DEBUG_SPECIAL:
                             self.register_message(

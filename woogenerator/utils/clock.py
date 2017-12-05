@@ -20,8 +20,8 @@ class TimeUtils(object):
     Utilities for time-related tasks
     """
     _override_time = None
-    _wpSrvOffset = 0
-    actSrvOffset = 0
+    _wp_srv_offset = 0
+    _act_srv_offset = 0
 
     wp_date_format = "%Y-%m-%d"
     act_date_format = "%d/%m/%Y"
@@ -110,7 +110,7 @@ class TimeUtils(object):
         """ changes the offset (secs) """
         assert isinstance(offset, (int, float)
                           ), "param must be a number not %s" % type(offset)
-        cls._wpSrvOffset = offset
+        cls._wp_srv_offset = offset
 
     @classmethod
     def act_strp_mktime(cls, string):
@@ -218,7 +218,14 @@ class TimeUtils(object):
         take a time in wp server time (int),
         returns the time in local time (int)
         """
-        return cls.server_to_local_time(time_int, cls._wpSrvOffset)
+        return cls.server_to_local_time(time_int, cls._wp_srv_offset)
+    @classmethod
+    def wp_local_to_server_time(cls, time_int):
+        """
+        take a time in wp server time (int),
+        returns the time in local time (int)
+        """
+        return cls.local_to_server_time(time_int, cls._wp_srv_offset)
 
     @classmethod
     def act_server_to_local_time(cls, time_int):
@@ -226,7 +233,7 @@ class TimeUtils(object):
         take a time in act server time (int),
         returns the time in local time (int)
         """
-        return cls.server_to_local_time(time_int, cls.actSrvOffset)
+        return cls.server_to_local_time(time_int, cls._act_srv_offset)
 
     @classmethod
     def get_datestamp(cls, time_struct=None):
