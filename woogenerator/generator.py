@@ -128,7 +128,7 @@ def populate_master_parsers(parsers, settings):
             )
             master_mod_dt = TimeUtils.timestamp2datetime(master_mod_ts)
             master_parser_args['defaults'].update({
-                'Updated': master_mod_dt,
+                'modified_local': master_mod_dt,
                 'modified_gmt': TimeUtils.datetime_local2gmt(master_mod_dt)
             })
 

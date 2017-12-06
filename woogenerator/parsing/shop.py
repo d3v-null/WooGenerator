@@ -395,6 +395,12 @@ class ImportShopCategoryMixin(object):
     def register_member(self, item_data):
         self.members.append(item_data)
 
+    def to_dict(self):
+        response = {}
+        if self.attachments:
+            response['attachment_object'] = self.attachments.values()[0]
+        return response
+
 class ShopCatList(TaxoList):
     coldata_class = ColDataWcProdCategory
     supported_type = ImportShopCategoryMixin

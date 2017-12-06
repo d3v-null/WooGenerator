@@ -1844,7 +1844,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
                 'path': None,
             },
             'gen-csv': {
-                'path': 'Updated',
+                'path': 'modified_local',
                 'read': False,
             },
             'xero-api': {
@@ -3243,6 +3243,14 @@ class ColDataMeridianEntityMixin(object):
             'xero-api': {
                 'path': 'ItemID',
                 'write': False,
+            },
+            'default': ''
+        },
+        'Updated': {
+            'path': None,
+            'gen-csv': {
+                'path': 'Updated',
+                'type': 'yesno'
             },
             'default': ''
         }

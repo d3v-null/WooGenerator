@@ -180,7 +180,7 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
                 base_class.__init__(self, *args, **kwargs)
 
     def process_meta(self):
-        for base_class in self.__class__.__bases__:
+        for base_class in ImportWooApiCategory.__bases__:
             if hasattr(base_class, 'process_meta'):
                 base_class.process_meta(self)
 
@@ -191,6 +191,13 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     @property
     def index(self):
         return self.title
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooApiCategory.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class WooApiCatList(WooCatList, ApiListMixin):
     supported_type = ImportWooApiCategory

@@ -27,7 +27,7 @@ class ImportTreeObject(ImportObject):
         try:
             parent = kwargs.pop('parent', None)
             if not self.is_root:
-                assert parent is not None
+                assert parent is not None, "parent should not be none"
         except (KeyError, AssertionError) as exc:
             import pudb; pudb.set_trace()
             warn = UserWarning(

@@ -258,16 +258,16 @@ def process_image_size(settings, parsers, img_data):
             shutil.copy(img_raw_path, img_dst_path)
     elif settings.do_resize_images:
         shutil.copy(img_raw_path, img_dst_path)
-        with open(img_dst_path) as _:
+        with open(img_dst_path):
             os.utime(img_dst_path, None)
-        with open(img_raw_path) as _:
+        with open(img_raw_path):
             os.utime(img_dst_path, None)
 
     if settings.do_resize_images:
         img_data[img_data.file_path_key] = img_dst_path
 
-    img_data['Updated'] = TimeUtils.timestamp2datetime(winning_time)
-    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['Updated'])
+    img_data['modified_local'] = TimeUtils.timestamp2datetime(winning_time)
+    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['modified_local'])
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("resizing: %s" % img_data.file_name)

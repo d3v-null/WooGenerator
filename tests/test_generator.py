@@ -163,14 +163,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("pformat@first_prod:\n%s" % pformat(first_prod.to_dict()))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.attachments: %s" % pformat(first_prod.attachments))
+            print("first_prod.to_dict().get('attachment_objects').values(): %s" % pformat(first_prod.to_dict().get('attachment_objects').values()))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
         first_prod_specials = first_prod.specials
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
         self.assertEqual(
-            set([attachment.file_name for attachment in first_prod.attachments.values()]),
+            set([attachment.file_name for attachment in first_prod.to_dict().get('attachment_objects').values()]),
             set(["ACARA-CAL.png"])
         )
         self.assertEqual(first_prod.depth, 4)
@@ -209,26 +209,26 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         third_prod = prod_list[2]
         if self.debug:
             print("pformat@third_prod:\n%s" % pformat(third_prod.to_dict()))
-            print("third_prod.attachments: %s" % pformat(third_prod.attachments))
+            print("third_prod.to_dict().get('attachment_objects').values(): %s" % pformat(third_prod.to_dict().get('attachment_objects').values()))
         self.assertEqual(
-            set([attachment.file_name for attachment in third_prod.attachments.values()]),
+            set([attachment.file_name for attachment in third_prod.to_dict().get('attachment_objects').values()]),
             set(["ACARA-S.png"])
         )
 
         sixth_prod = prod_list[5]
         if self.debug:
             print("pformat@sixth_prod:\n%s" % pformat(sixth_prod.to_dict()))
-            print("sixth_prod.attachments: %s" % pformat(sixth_prod.attachments))
+            print("sixth_prod.to_dict().get('attachment_objects').values(): %s" % pformat(sixth_prod.to_dict().get('attachment_objects').values()))
 
         self.assertEqual(
-            set([attachment.file_name for attachment in sixth_prod.attachments.values()]),
+            set([attachment.file_name for attachment in sixth_prod.to_dict().get('attachment_objects').values()]),
             set(["ACARA-S.png"])
         )
 
         # Test the products which have the same attachment use different attachment objects
         self.assertNotEqual(
-            set([id(attachment) for attachment in third_prod.attachments]),
-            set([id(attachment) for attachment in sixth_prod.attachments])
+            set([id(attachment) for attachment in third_prod.to_dict().get('attachment_objects').values()]),
+            set([id(attachment) for attachment in sixth_prod.to_dict().get('attachment_objects').values()])
         )
 
 
@@ -268,53 +268,49 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_cat = cat_list[0]
         if self.debug:
             print("pformat@first_cat:\n%s" % pformat(first_cat.to_dict()))
-            print("first_cat.attachments: %s" % pformat(first_cat.attachments))
+            print("first_cat.to_dict().get('attachment_object'): %s" % pformat(first_cat.to_dict().get('attachment_object')))
 
         self.assertEqual(first_cat.codesum, 'A')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.depth, 0)
         self.assertEqual(
-            set([attachment.file_name for attachment in first_cat.attachments.values()]),
-            set([])
+            first_cat.to_dict().get('attachment_object'),
+            None
         )
 
         second_cat = cat_list[1]
         if self.debug:
             print("pformat@second_cat:\n%s" % pformat(second_cat.to_dict()))
-            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
+            print("second_cat.to_dict().get('attachment_object'): %s" % pformat(second_cat.to_dict().get('attachment_object')))
 
         self.assertEqual(second_cat.codesum, 'ACA')
         self.assertEqual(second_cat.depth, 1)
         self.assertEqual(second_cat.parent.codesum, 'A')
         self.assertEqual(
-            set([attachment.file_name for attachment in second_cat.attachments.values()]),
-            set(["ACA.jpg"])
+            second_cat.to_dict().get('attachment_object').file_name,
+            "ACA.jpg"
         )
-        second_cat_attachment_ids = set([
-            id(attachment) for attachment in second_cat.attachments.values()
-        ])
+        second_cat_attachment_id = id(second_cat.to_dict().get('attachment_object'))
 
         last_cat = cat_list[-1]
         if self.debug:
             print("pformat@last_cat:\n%s" % pformat(last_cat.to_dict()))
-            print("last_cat.attachments: %s" % pformat(last_cat.attachments))
+            print("last_cat.to_dict().get('attachment_object'): %s" % pformat(last_cat.to_dict().get('attachment_object')))
 
         self.assertEqual(last_cat.codesum, 'SPA')
         self.assertEqual(last_cat.depth, 1)
         self.assertEqual(last_cat.parent.codesum, 'SP')
         self.assertEqual(
-            set([attachment.file_name for attachment in last_cat.attachments.values()]),
-            set(["ACA.jpg"])
+            last_cat.to_dict().get('attachment_object').file_name,
+            "ACA.jpg"
         )
-        last_cat_attachment_ids = set([
-            id(attachment) for attachment in last_cat.attachments.values()
-        ])
+        last_cat_attachment_id = id(last_cat.to_dict().get('attachment_object'))
 
         # Test that categories which have the same attachment use the same attachment object
 
         self.assertEqual(
-            second_cat_attachment_ids,
-            last_cat_attachment_ids
+            second_cat_attachment_id,
+            last_cat_attachment_id
         )
 
         # if self.debug:
@@ -365,7 +361,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("first_prod.dict %s" % pformat(dict(first_prod)))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.attachments: %s" % pformat(first_prod.attachments))
+            print("first_prod.to_dict().get('attachment_objects').values(): %s" % pformat(first_prod.to_dict().get('attachment_objects').values()))
 
         self.assertEqual(first_prod.codesum, "ACARF-CRS")
         # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
@@ -409,7 +405,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEquals(
             set([
                 image.file_name \
-                for image in first_prod.attachments.values()
+                for image in first_prod.to_dict().get('attachment_objects').values()
             ]),
             set([
                 'ACARF-CRS.png'
@@ -426,37 +422,27 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_cat = cat_list[0]
         if self.debug:
             print("pformat@first_cat:\n%s" % pformat(first_cat.to_dict()))
-            print("first_cat.attachments: %s" % pformat(first_cat.attachments))
+            print("first_cat.to_dict().get('attachment_object'): %s" % pformat(first_cat.to_dict().get('attachment_object')))
 
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
         self.assertEqual(
-            set([
-                attachment.file_name \
-                for attachment in first_cat.attachments.values()
-            ]),
-            set([
-                "ACA.jpg"
-            ])
+            first_cat.to_dict().get('attachment_object').file_name,
+            "ACA.jpg"
         )
 
         second_cat = cat_list[1]
         if self.debug:
             print("pformat@second_cat:\n%s" % pformat(second_cat.to_dict()))
-            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
+            print("second_cat.to_dict().get('attachment_object'): %s" % pformat(second_cat.to_dict().get('attachment_object')))
 
         self.assertEqual(second_cat.slug, 'product-a-company-a-product-a')
         self.assertEqual(second_cat.title, 'Company A Product A')
         self.assertEqual(second_cat.api_id, 316)
         self.assertEqual(
-            set([
-                attachment.file_name \
-                for attachment in second_cat.attachments.values()
-            ]),
-            set([
-                "ACA.jpg"
-            ])
+            second_cat.to_dict().get('attachment_object').file_name,
+            "ACA.jpg"
         )
 
         img_container = self.parsers.slave.attachment_container.container
@@ -547,7 +533,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         prod_list = prod_container(self.parsers.master.products.values())
         resized_images = 0
         for prod in prod_list:
-            for img_data in prod.attachments.values():
+            for img_data in prod.to_dict().get('attachment_objects').values():
                 if self.settings.img_cmp_dir in img_data.get('file_path', ''):
                     resized_images += 1
                     self.assertTrue(img_data['width'] <= self.settings.thumbsize_x)
@@ -698,11 +684,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             last_slaveless_master.row
         )
         self.assertEqual(
-            [
-                attachment.file_name for attachment in \
-                last_slaveless_master.attachments.values()
-            ],
-            ['ACA.jpg']
+            last_slaveless_master.to_dict().get('attachment_object').file_name,
+            'ACA.jpg'
         )
 
 
@@ -785,6 +768,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object_core['post_content'],
                 master_desc
             )
+            self.assertTrue(
+                sync_update.m_time
+            )
+            self.assertTrue(
+                sync_update.s_time
+            )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
         self.assertEqual(len(self.updates.image.master), 45)
@@ -817,37 +806,45 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 print(slave_gen_object)
 
         self.assertEqual(len(self.updates.image.new_slaves), 2)
-        update = self.updates.image.new_slaves[0]
-        slave_gen_object = update.old_m_object_gen
-        title = 'Range A - Style 2 - 1Litre'
-        content = (
-            "Company A have developed a range of unique blends in 16 shades to "
-            "suit all use cases. All Company A's products are created using the "
-            "finest naturally derived botanical and certified organic ingredients."
-        )
-        self.assertEqual(
-            self.parsers.master.attachment_container.get_title(slave_gen_object),
-            title
-        )
-        self.assertEqual(
-            self.parsers.master.attachment_container.get_alt_text(slave_gen_object),
-            title
-        )
-        self.assertEqual(
-            self.parsers.master.attachment_container.get_description(slave_gen_object),
-            content
-        )
-        self.assertEqual(
-            self.parsers.master.attachment_container.get_caption(slave_gen_object),
-            content
-        )
-        self.assertEqual(
-            FileUtils.get_path_basename(
-                self.parsers.master.attachment_container.get_file_path(slave_gen_object),
-            ),
-            "ACARA-CCL.png"
-        )
-        # TODO: add tests for update mod_time
+        sync_update = self.updates.image.new_slaves[0]
+        if self.debug:
+            self.print_update(sync_update)
+        try:
+            slave_gen_object = sync_update.old_m_object_gen
+            title = 'Range A - Style 2 - 1Litre'
+            content = (
+                "Company A have developed a range of unique blends in 16 shades to "
+                "suit all use cases. All Company A's products are created using the "
+                "finest naturally derived botanical and certified organic ingredients."
+            )
+            self.assertEqual(
+                self.parsers.master.attachment_container.get_title(slave_gen_object),
+                title
+            )
+            self.assertEqual(
+                self.parsers.master.attachment_container.get_alt_text(slave_gen_object),
+                title
+            )
+            self.assertEqual(
+                self.parsers.master.attachment_container.get_description(slave_gen_object),
+                content
+            )
+            self.assertEqual(
+                self.parsers.master.attachment_container.get_caption(slave_gen_object),
+                content
+            )
+            self.assertEqual(
+                FileUtils.get_path_basename(
+                    self.parsers.master.attachment_container.get_file_path(slave_gen_object),
+                ),
+                "ACARA-CCL.png"
+            )
+            self.assertTrue(
+                sync_update.m_time
+            )
+            # TODO: add tests for update mod_time
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def do_updates_images_slave_mocked(self):
         with mock.patch(
@@ -1057,7 +1054,41 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_update(sync_update)
             import pudb; pudb.set_trace()
-        # TODO: test this
+        try:
+            master_title = "Product A Specials"
+            master_desc = master_title
+            self.assertEqual(
+                sync_update.old_m_object_core['title'],
+                master_title
+            )
+            self.assertEqual(
+                sync_update.new_s_object_core['title'],
+                master_title
+            )
+            self.assertEqual(
+                sync_update.old_m_object_core['description'],
+                master_desc
+            )
+            self.assertEqual(
+                sync_update.new_s_object_core['description'],
+                master_desc
+            )
+            self.assertTrue(
+                sync_update.old_m_object_core['image']
+            )
+            self.assertTrue(
+                sync_update.new_s_object_core['image']
+            )
+            # TODO: test this
+            # m time doesn't exist for categories
+            # self.assertTrue(
+            #     sync_update.m_time
+            # )
+            # self.assertTrue(
+            #     sync_update.s_time
+            # )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def do_updates_categories_slave_mocked(self):
         with mock.patch(
@@ -1229,7 +1260,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        # TODO: M / S time not working
+        # can't do: M / S mod_time doesn't exist for categories
         # TODO: syncing image column even though attachment_object is identical
 
         if self.debug:
