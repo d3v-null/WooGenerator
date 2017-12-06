@@ -510,7 +510,7 @@ class ApiParseWoo(
             self.process_object(cat_data)
             if self.DEBUG_API:
                 self.register_message("PROCESSED: %s" % cat_data.identifier)
-            self.register_category(cat_data)
+            self.register_object(cat_data)
             if self.DEBUG_API:
                 self.register_message("REGISTERED: %s" % cat_data.identifier)
             if 'attachment_object' in cat_data:
@@ -522,7 +522,7 @@ class ApiParseWoo(
                 self.register_message("FOUND CATEGORY: %s" % repr(cat_data))
             # TODO: do any merging here?
 
-        self.join_category(cat_data, object_data)
+        self.register_join_category(cat_data, object_data)
 
         self.rowcount += 1
 

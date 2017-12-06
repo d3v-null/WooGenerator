@@ -71,12 +71,12 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("master updates(%d):\n%s" % (
             len(updates.master), map(str, updates.master))
         )
-        print("masterless updates(%d):\n%s" % (
-            len(updates.masterless), map(str, updates.masterless))
-        )
-        print("slaveless updates(%d):\n%s" % (
-            len(updates.slaveless), map(str, updates.slaveless))
-        )
+        # print("masterless updates(%d):\n%s" % (
+        #     len(updates.masterless), map(str, updates.masterless))
+        # )
+        # print("slaveless updates(%d):\n%s" % (
+        #     len(updates.slaveless), map(str, updates.slaveless))
+        # )
         print("nonstatic_master updates(%d):\n%s" % (
             len(updates.nonstatic_master), map(str, updates.nonstatic_master))
         )
@@ -92,10 +92,14 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("static updates(%d):\n%s" % (
             len(updates.static), map(str, updates.static))
         )
-        if hasattr(updates, 'new'):
-            print("NEW:")
-            self.print_updates_summary(updates.new)
-
+        if hasattr(updates, 'new_slaves'):
+            print("new_slave updates(%d):\n%s" % (
+                len(updates.new_slaves), map(str, updates.new_slaves))
+            )
+        if hasattr(updates, 'new_masters'):
+            print("new_master updates(%d):\n%s" % (
+                len(updates.new_masters), map(str, updates.new_masters))
+            )
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (
             pformat(sync_update.sync_warnings.items()),
@@ -112,10 +116,10 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
             ) % (
                 update,
                 str(type(update)),
-                update.old_m_object,
-                pformat(dict(update.old_m_object)),
-                update.old_s_object,
-                pformat(dict(update.old_s_object)),
+                update.old_m_object_gen,
+                pformat(dict(update.old_m_object_gen)),
+                update.old_s_object_gen,
+                pformat(dict(update.old_s_object_gen)),
                 update.display_sync_warnings(),
                 update.display_sync_passes(),
                 update.display_problematic_updates(),

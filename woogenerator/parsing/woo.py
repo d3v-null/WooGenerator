@@ -399,7 +399,7 @@ class CsvParseWooMixin(object):
         ]
 
     def find_category(self, search_data):
-        registry = self.categories
+        registry = self.taxos
         return self.find_object(search_data, registry, self.cat_search_keys)
 
     def find_image(self, search_data):
@@ -445,6 +445,10 @@ class CsvParseWooMixin(object):
                 )
             self.register_message("PROCESS IMG: %s" % repr(img_raw_data))
 
+        if object_data and getattr(object_data, 'is_taxo'):
+            img_raw_data['rowcount'] = -1
+        elif not img_raw_data.get('rowcount'):
+            img_raw_data['rowcount'] = self.rowcount
 
         img_data = None
         img_index = self.attachment_indexer(img_raw_data)
@@ -456,7 +460,6 @@ class CsvParseWooMixin(object):
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
                 if img_raw_data.get('type') == 'sub-image':
-                    import pudb; pudb.set_trace()
                     img_data = self.find_image(img_raw_data)
             row_data = deepcopy(img_raw_data)
             kwargs['defaults'] = self.img_defaults
@@ -466,7 +469,7 @@ class CsvParseWooMixin(object):
 
             try:
                 img_data = self.new_object(
-                    rowcount=self.rowcount,
+                    rowcount=img_raw_data['rowcount'],
                     **kwargs
                 )
             except UserWarning as exc:
@@ -778,6 +781,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         # TODO: update description if category is part of a special
 
+        # TODO: fix this fucking mess
         # TODO: fix for VuTan
         if object_data.get('E'):
             if self.DEBUG_WOO:
@@ -1355,6 +1359,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 kwargs['parent'] = self.root_data
                 kwargs['meta'] = [category_fullname, 'SP']
                 result = self.new_object(rowcount=self.rowcount, **kwargs)
+                self.process_object(result)
+                self.register_object(result)
                 self.rowcount += 1
             return result
         else:
@@ -1377,6 +1383,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 )
                 kwargs['meta'] = [category_fullname, category_code]
                 result = self.new_object(rowcount=self.rowcount, **kwargs)
+                self.process_object(result)
+                self.register_object(result)
                 self.rowcount += 1
             return result
 

@@ -28,9 +28,10 @@ class ImportTreeObject(ImportObject):
             parent = kwargs.pop('parent', None)
             if not self.is_root:
                 assert parent is not None
-        except (KeyError, AssertionError):
+        except (KeyError, AssertionError) as exc:
+            import pudb; pudb.set_trace()
             warn = UserWarning(
-                "No parent specified, try specifying root as parent")
+                "No parent specified, try specifying root as parent. %s" % exc)
             self.raise_exception(warn)
         self.parent = parent
 

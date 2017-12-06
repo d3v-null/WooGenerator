@@ -152,7 +152,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.populate_master_parsers()
 
         #number of objects:
-        self.assertEqual(len(self.parsers.master.objects.values()), 163)
+        self.assertEqual(len(self.parsers.master.objects.values()), 165)
         self.assertEqual(len(self.parsers.master.items.values()), 144)
 
         prod_container = self.parsers.master.product_container.container
@@ -160,7 +160,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(len(prod_list), 48)
         first_prod = prod_list[0]
         if self.debug:
-            print("pformat@dict@first_prod:\n%s" % pformat(dict(first_prod)))
+            print("pformat@first_prod:\n%s" % pformat(first_prod.to_dict()))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
             print("first_prod.attachments: %s" % pformat(first_prod.attachments))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
@@ -169,8 +169,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
         self.assertEqual(
-            [attachment.file_name for attachment in first_prod.attachments.values()],
-            ["ACARA-CAL.png"]
+            set([attachment.file_name for attachment in first_prod.attachments.values()]),
+            set(["ACARA-CAL.png"])
         )
         self.assertEqual(first_prod.depth, 4)
         self.assertTrue(first_prod.is_item)
@@ -204,6 +204,32 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # for attr in ["depth"]:
         # print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
         # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
+
+        third_prod = prod_list[2]
+        if self.debug:
+            print("pformat@third_prod:\n%s" % pformat(third_prod.to_dict()))
+            print("third_prod.attachments: %s" % pformat(third_prod.attachments))
+        self.assertEqual(
+            set([attachment.file_name for attachment in third_prod.attachments.values()]),
+            set(["ACARA-S.png"])
+        )
+
+        sixth_prod = prod_list[5]
+        if self.debug:
+            print("pformat@sixth_prod:\n%s" % pformat(sixth_prod.to_dict()))
+            print("sixth_prod.attachments: %s" % pformat(sixth_prod.attachments))
+
+        self.assertEqual(
+            set([attachment.file_name for attachment in sixth_prod.attachments.values()]),
+            set(["ACARA-S.png"])
+        )
+
+        # Test the products which have the same attachment use different attachment objects
+        self.assertNotEqual(
+            set([id(attachment) for attachment in third_prod.attachments]),
+            set([id(attachment) for attachment in sixth_prod.attachments])
+        )
+
 
         expected_categories = set([
             u'Product A',
@@ -239,22 +265,55 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         else:
             self.assertEqual(len(cat_list), 9)
         first_cat = cat_list[0]
-        second_cat = cat_list[1]
         if self.debug:
-            print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
-            print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
+            print("pformat@first_cat:\n%s" % pformat(first_cat.to_dict()))
             print("first_cat.attachments: %s" % pformat(first_cat.attachments))
-            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
 
         self.assertEqual(first_cat.codesum, 'A')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.depth, 0)
+        self.assertEqual(
+            set([attachment.file_name for attachment in first_cat.attachments.values()]),
+            set([])
+        )
+
+        second_cat = cat_list[1]
+        if self.debug:
+            print("pformat@second_cat:\n%s" % pformat(second_cat.to_dict()))
+            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
+
         self.assertEqual(second_cat.codesum, 'ACA')
         self.assertEqual(second_cat.depth, 1)
         self.assertEqual(second_cat.parent.codesum, 'A')
         self.assertEqual(
-            [attachment.file_name for attachment in second_cat.attachments.values()],
-            ["ACA.jpg"]
+            set([attachment.file_name for attachment in second_cat.attachments.values()]),
+            set(["ACA.jpg"])
+        )
+        second_cat_attachment_ids = set([
+            id(attachment) for attachment in second_cat.attachments.values()
+        ])
+
+        last_cat = cat_list[-1]
+        if self.debug:
+            print("pformat@last_cat:\n%s" % pformat(last_cat.to_dict()))
+            print("last_cat.attachments: %s" % pformat(last_cat.attachments))
+
+        self.assertEqual(last_cat.codesum, 'SPA')
+        self.assertEqual(last_cat.depth, 1)
+        self.assertEqual(last_cat.parent.codesum, 'SP')
+        self.assertEqual(
+            set([attachment.file_name for attachment in last_cat.attachments.values()]),
+            set(["ACA.jpg"])
+        )
+        last_cat_attachment_ids = set([
+            id(attachment) for attachment in last_cat.attachments.values()
+        ])
+
+        # Test that categories which have the same attachment use the same attachment object
+
+        self.assertEqual(
+            second_cat_attachment_ids,
+            last_cat_attachment_ids
         )
 
         # if self.debug:
@@ -275,10 +334,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ))
         first_group = spec_list[0]
         if self.debug:
-            print("first group:\n%s\npformat@dict:\n%s\npformat@dir:\n%s\n" %
-                (SanitationUtils.coerce_bytes(
-                    tabulate(first_group.children, tablefmt='simple')),
-                 pformat(dict(first_group)), pformat(dir(first_group)))
+            print(
+                "first group:\n%s\npformat@dict:\n%s\npformat@dir:\n%s\n" %
+                (
+                    SanitationUtils.coerce_bytes(
+                        tabulate(first_group.children, tablefmt='simple')
+                    ),
+                    pformat(dict(first_group)),
+                    pformat(dir(first_group))
+                )
             )
 
     def test_dummy_populate_slave_parsers(self):
@@ -359,20 +423,35 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ))
         self.assertEqual(len(cat_list), 9)
         first_cat = cat_list[0]
-        second_cat = cat_list[1]
         if self.debug:
-            print("pformat@dict@first_cat:\n%s" % pformat(dict(first_cat)))
-            print("pformat@dict@second_cat:\n%s" % pformat(dict(second_cat)))
+            print("pformat@first_cat:\n%s" % pformat(first_cat.to_dict()))
             print("first_cat.attachments: %s" % pformat(first_cat.attachments))
-            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
 
         self.assertEqual(first_cat.slug, 'product-a')
         self.assertEqual(first_cat.title, 'Product A')
         self.assertEqual(first_cat.api_id, 315)
         self.assertEqual(
             set([
-                image.file_name \
-                for image in second_cat.attachments.values()
+                attachment.file_name \
+                for attachment in first_cat.attachments.values()
+            ]),
+            set([
+                "ACA.jpg"
+            ])
+        )
+
+        second_cat = cat_list[1]
+        if self.debug:
+            print("pformat@second_cat:\n%s" % pformat(second_cat.to_dict()))
+            print("second_cat.attachments: %s" % pformat(second_cat.attachments))
+
+        self.assertEqual(second_cat.slug, 'product-a-company-a-product-a')
+        self.assertEqual(second_cat.title, 'Company A Product A')
+        self.assertEqual(second_cat.api_id, 316)
+        self.assertEqual(
+            set([
+                attachment.file_name \
+                for attachment in second_cat.attachments.values()
             ]),
             set([
                 "ACA.jpg"
@@ -420,12 +499,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(last_img['width'], 1200)
         self.assertEqual(last_img['height'], 1200)
 
-        # TODO: Test that master attachments are correctly split and assigned to products
-
-        # if self.debug
-        #     print("Registrar.stack_counts:")
-        #     print(Registrar.display_stack_counts())
-
     def print_images_summary(self, attachments):
         img_cols = ColDataAttachment.get_col_data_native('report')
         img_table = [img_cols.keys()] + [
@@ -458,11 +531,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     # @unittest.skip("takes too long")
     @pytest.mark.slow
     def test_dummy_process_images_master(self):
-
-
+        self.settings.do_resize_images = True
+        self.settings.do_remeta_images = False
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
-        self.populate_slave_parsers()
         process_images(self.settings, self.parsers)
+        self.populate_slave_parsers()
 
         if self.debug:
             self.print_images_summary(self.parsers.master.attachments.values())
@@ -514,8 +588,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_master = first_match.m_object
         first_slave = first_match.s_object
         if self.debug:
-            print('pformat@dict@first_master:\n%s' % pformat(dict(first_master)))
-            print('pformat@dict@first_slave:\n%s' % pformat(dict(first_slave)))
+            print('pformat@first_master:\n%s' % pformat(first_master.to_dict()))
+            print('pformat@first_slave:\n%s' % pformat(first_slave.to_dict()))
             master_keys = set(dict(first_master).keys())
             slave_keys = set(dict(first_slave).keys())
             intersect_keys = master_keys.intersection(slave_keys)
@@ -545,8 +619,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         last_master = last_match.m_object
         last_slave = last_match.s_object
         if self.debug:
-            print('pformat@dict@last_master:\n%s' % pformat(dict(last_master)))
-            print('pformat@dict@last_slave:\n%s' % pformat(dict(last_slave)))
+            print('pformat@last_master:\n%s' % pformat(last_master.to_dict()))
+            print('pformat@last_slave:\n%s' % pformat(last_slave.to_dict()))
             master_keys = set(dict(last_master).keys())
             slave_keys = set(dict(last_slave).keys())
             intersect_keys = master_keys.intersection(slave_keys)
@@ -597,8 +671,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         first_master = first_match.m_object
         first_slave = first_match.s_object
         if self.debug:
-            print('pformat@dict@first_master:\n%s' % pformat(dict(first_master)))
-            print('pformat@dict@first_slave:\n%s' % pformat(dict(first_slave)))
+            print('pformat@first_master:\n%s' % pformat(first_master.to_dict()))
+            print('pformat@first_slave:\n%s' % pformat(first_slave.to_dict()))
             master_keys = set(dict(first_master).keys())
             slave_keys = set(dict(first_slave).keys())
             intersect_keys = master_keys.intersection(slave_keys)
@@ -610,8 +684,29 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
+        last_slaveless_match = self.matches.category.slaveless[-1]
+        last_slaveless_master = last_slaveless_match.m_object
+        if self.debug:
+            print(
+                'pformat@last_slaveless_master.to_dict:\n%s' % \
+                pformat(last_slaveless_master.to_dict())
+            )
+        # TODO: test this
+        # This ensures that specials categories correctly match with existing
+        self.assertTrue(
+            last_slaveless_master.row
+        )
+        self.assertEqual(
+            [
+                attachment.file_name for attachment in \
+                last_slaveless_master.attachments.values()
+            ],
+            ['ACA.jpg']
+        )
+
+
     @pytest.mark.slow
-    def test_dummy_do_merge_images(self):
+    def test_dummy_do_merge_images_only(self):
         """
         Assume image files are newer than example json image mod times
         """
@@ -891,11 +986,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             100052
         )
 
-
-
-
     @pytest.mark.last
-    def test_dummy_do_merge_categories(self):
+    def test_dummy_do_merge_categories_only(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.settings.do_categories:
@@ -955,6 +1047,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ]),
             set(['Specials', 'Product A Specials'])
         )
+
+        sync_update = self.updates.category.new_slaves[-1]
+        if self.debug:
+            self.print_update(sync_update)
+            import pudb; pudb.set_trace()
+        # TODO: test this
 
     def do_updates_categories_mocked(self):
         with mock.patch(
@@ -1095,6 +1193,141 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @pytest.mark.slow
+    def test_do_merge_images_categories(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
+        self.setup_temp_img_dir()
+        self.populate_master_parsers()
+        process_images(self.settings, self.parsers)
+        self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            self.do_updates_images_mocked()
+
+        if self.settings.do_categories:
+            do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+        # TODO: M / S time not working
+        # TODO: syncing image column even though attachment_object is identical
+
+        if self.debug:
+            self.print_updates_summary(self.updates.category)
+        self.assertEqual(len(self.updates.category.master), 9)
+        sync_update = self.updates.category.master[-1]
+        if self.debug:
+            self.print_update(sync_update)
+            import pudb; pudb.set_trace()
+        # TODO: test this
+
+
+        """
+update <       4 |     316 ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
+---
+M:ACA|r:4|w:316|Company A Product A <ImportWooCategory>
+{'CA': u'',
+ 'CVC': u'',
+ 'D': u'',
+ 'DNR': u'',
+ 'DPR': u'',
+ 'DYNCAT': u'',
+ 'DYNPROD': u'',
+ 'E': u'',
+ 'HTML Description': u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
+ 'ID': 316,
+ 'Images': u'ACA.jpg',
+ 'PA': u'{"pa_brand":"Company A"}',
+ 'RNR': u'',
+ 'RPR': u'',
+ 'SCHEDULE': u'EOFY2016-ACA',
+ 'Updated': datetime.datetime(2017, 11, 29, 0, 21, 13),
+ 'VA': u'',
+ 'VISIBILITY': u'local',
+ 'WNR': u'',
+ 'WPR': u'',
+ 'Xero Description': u'',
+ '_row': [],
+ 'attachment_object': OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('id', 24879)]),
+ 'backorders': 'no',
+ 'catalog_visibility': 'visible',
+ 'code': u'CA',
+ 'codesum': u'ACA',
+ 'descsum': u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
+ 'display': u'default',
+ 'download_expiry': -1,
+ 'download_limit': -1,
+ 'featured': 'no',
+ 'fullname': u'Company A Product A',
+ 'fullnamesum': u'Product A > Company A Product A',
+ 'height': u'',
+ 'imgsum': u'ACA.jpg',
+ 'is_purchased': u'',
+ 'is_sold': u'',
+ 'itemsum': '',
+ 'length': u'',
+ 'modified_gmt': datetime.datetime(2017, 11, 28, 14, 41, 13, tzinfo=<UTC>),
+ 'name': u'Company A Product A',
+ 'parent_id': 315,
+ 'post_status': u'',
+ 'prod_type': 'simple',
+ 'rowcount': 4,
+ 'slug': u'product-a-company-a-product-a',
+ 'stock': u'',
+ 'stock_status': u'',
+ 'tax_status': 'taxable',
+ 'taxosum': u'Product A > Company A Product A',
+ 'title': u'Company A Product A',
+ 'weight': u'',
+ 'width': u''}
+S:r:2|a:316|Company A Product A <ImportWooApiCategory>
+{'ID': 316,
+ '_row': [],
+ 'attachment_object': OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('ID', 24879)]),
+ 'descsum': u'Company A have developed stuff',
+ 'display': u'default',
+ 'parent_id': 315,
+ 'rowcount': 2,
+ 'slug': u'product-a-company-a-product-a',
+ 'title': 'Company A Product A'}
+warnings:
+-
+Column       Reason    Subject           Old                             New                                                  M TIME    S TIME  EXTRA
+-----------  --------  ----------------  ------------------------------  -------------------------------------------------  --------  --------  -------
+description  updating  woocommerce-test  Company A have developed stuff  Company A have developed a range of unique blends         0         0
+menu_order   updating  woocommerce-test  2                               4                                                         0         0
+-
+Column          Reason        Subject      Old    New                                                   M TIME    S TIME  EXTRA
+--------------  ------------  -----------  -----  --------------------------------------------------  --------  --------  -------
+term_parent_id  merging-read  gdrive-test         315                                                        0         0
+term_id         merging       gdrive-test         316                                                        0         0
+slug            merging       gdrive-test         product-a-company-a-product-a                              0         0
+image           merging       gdrive-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
+display         merging       gdrive-test         default                                                    0         0
+passes:
+-
+Column    Reason     Master               Slave                  M TIME    S TIME  EXTRA
+--------  ---------  -------------------  -------------------  --------  --------  -------
+title     identical  Company A Product A  Company A Product A         0         0
+probbos:
+
+        """
+
+        sync_update = self.updates.category.new_slaves[0]
+        if self.debug:
+            self.print_update(sync_update)
+            import pudb; pudb.set_trace()
+
+#
 
     @pytest.mark.last
     def test_dummy_do_match(self):
@@ -1357,8 +1590,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.updates.delta_master), 0)
         self.assertEqual(len(self.updates.delta_slave), 1)
         self.assertEqual(len(self.updates.master), 0)
-        self.assertEqual(len(self.updates.masterless), 0)
-        self.assertEqual(len(self.updates.slaveless), 0)
+        self.assertEqual(len(self.updates.new_masters), 0)
+        self.assertEqual(len(self.updates.new_slaves), 0)
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.problematic), 0)

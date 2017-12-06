@@ -71,8 +71,10 @@ class SyncUpdate(Registrar):
         # old_s_object_core.__repr__()
         self.old_m_object_core = {}
         self.old_s_object_core = {}
-        self.new_s_object_core = {}
         self.new_m_object_core = {}
+        self.new_s_object_core = {}
+        self.old_m_object_gen = {}
+        self.old_s_object_gen = {}
         self.master_parent = None
         self.slave_parent = None
         self.master_container = self.default_master_container
@@ -885,8 +887,15 @@ class SyncUpdate(Registrar):
     def get_slave_updates_native(self):
         updates_core = self.get_slave_updates()
         updates_native = self.coldata_class.translate_data_to(updates_core, self.slave_target)
-        if self.DEBUG_UPDATE:
-            self.register_message(u"returned %s" % unicode(updates_native))
+        # if self.DEBUG_UPDATE:
+        #     self.register_message(u"returned %s" % unicode(updates_native))
+        return updates_native
+
+    def get_master_updates_native(self):
+        updates_core = self.get_master_updates()
+        updates_native = self.coldata_class.translate_data_to(updates_core, self.master_target)
+        # if self.DEBUG_UPDATE:
+        #     self.register_message(u"returned %s" % unicode(updates_native))
         return updates_native
 
     def display_slave_changes(self, tablefmt=None):
@@ -1339,6 +1348,11 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
 class SyncUpdateImgWoo(SyncUpdateGen):
     coldata_class = ColDataAttachment
     slave_target = 'wp-api-v2-edit'
+
+    @property
+    def master_id(self):
+        old_m_object_gen = self.old_m_object_gen
+        return old_m_object_gen.attachment_indexer(old_m_object_gen)
 
     @property
     def slave_id(self):

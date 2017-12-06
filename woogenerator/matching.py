@@ -797,9 +797,9 @@ class AttacheeSkuMatcher(FilteringMatcher):
     def attachee_sku_index_fn(attachment_object):
         """ gets the sku of the object that the attachment is attached to """
         assert \
-            hasattr(attachment_object, 'attachee_sku'), \
-            "must be able to get attachee_sku, instead type is %s" % type(attachment_object)
-        return SanitationUtils.normalize_val(attachment_object.attachee_sku)
+            hasattr(attachment_object, 'attachee_skus'), \
+            "must be able to get attachee_skus, instead type is %s" % type(attachment_object)
+        return SanitationUtils.normalize_val(attachment_object.attachee_skus)
 
     def __init__(self, s_match_indices=None, m_match_indices=None):
         # if not s_match_indices:

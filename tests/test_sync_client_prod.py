@@ -297,7 +297,11 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertTrue(response)
             self.assertTrue(hasattr(response, 'json'))
 
-    def test_upload_product_images_join_leave(self):
+    def test_upload_product_images_attach_remove(self):
+        """
+        Get the first image from the api and attach it to the first product.
+        Remove attachment when complete.
+        """
         img_client_class = self.settings.slave_img_sync_client_class
         img_client_args = self.settings.slave_img_sync_client_args
         with img_client_class(**img_client_args) as client:
@@ -323,7 +327,6 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             if self.debug:
                 print("first prod core:\n%s" % pformat(first_prod_core.items()))
             first_prod_id = first_prod_core['id']
-            # TODO: this test doesn't test what it's supposed to
             first_prod_core_imgs = first_prod_core['attachment_objects']
             self.assertEqual(
                 len(first_prod_core_imgs),

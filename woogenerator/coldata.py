@@ -18,7 +18,7 @@ from jsonpath_ng import jsonpath
 from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils, Registrar,
                     SanitationUtils, SeqUtils, TimeUtils)
 
-# TODO:
+# TODO: Replace dicts with `OrderedDict`s
 """
 Get rid of stuff like slave_override, since it should be able to work both ways.
 get rid of attributes like category, product, variation, that's covered by class now.

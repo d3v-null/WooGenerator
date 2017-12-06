@@ -367,74 +367,64 @@ def do_match_images(parsers, matches, settings):
                     image_matcher.duplicate_matches
                 )
             )
-        # for match in image_matcher.duplicate_matches:
-        #     master_filenames = [img.file_name for img in match.m_objects]
-        #     if all(master_filenames) \
-        #     and SeqUtils.check_equal(master_filenames):
-        #         matches.image.valid.append(match)
-        #     else:
-        #         matches.image.invalid.append(match)
-        #         continue
-        # if matches.image.invalid:
-        #     exc = UserWarning(
-        #         "attachments couldn't be synchronized because of ambiguous filenames:\n%s"
-        #         % '\n'.join(map(str, matches.image.invalid)))
-        #     Registrar.register_error(exc)
-        #     raise exc
+        filename_duplicate_indices_m = set([
+            attachment.index \
+            for match in image_matcher.duplicate_matches
+            for attachment in match.m_objects
+        ])
+        filename_duplicate_indices_s = set([
+            attachment.index \
+            for match in image_matcher.duplicate_matches
+            for attachment in match.s_objects
+        ])
 
-    attachee_sku_matcher = AttacheeSkuMatcher(
-        matches.image.globals.s_indices, matches.image.globals.m_indices
-    )
-    attachee_sku_matcher.process_registers(
-        slave_imgs_attachments, master_imgs_attachments
-    )
-
-    # make sure that all duplicates are resolved after matching using attachee_sku
-    if Registrar.DEBUG_IMG:
-        Registrar.register_message(
-            "adding attache_sku_matcher.pure_matches:\n%s" % (
-                attachee_sku_matcher.pure_matches.tabulate()
-            )
+        attachee_sku_matcher = AttacheeSkuMatcher(
+            matches.image.globals.s_indices, matches.image.globals.m_indices
         )
-    matches.image.valid += attachee_sku_matcher.pure_matches
-    filename_duplicate_indices_m = set([
-        attachment.index \
-        for match in image_matcher.duplicate_matches
-        for attachment in match.m_objects
-    ])
-    attachee_sku_pure_indices_m = set([
-        attachment.index \
-        for match in attachee_sku_matcher.pure_matches
-        for attachment in match.m_objects
-    ])
-    assert \
-    attachee_sku_pure_indices_m.issuperset(filename_duplicate_indices_m), \
-    (
-        "all master indices from filename duplicates should be contained in "
-        "attache_sku pure match indices:\nfilename:\n%s\nattachee_sku:\n%s"
-    ) % (
-        filename_duplicate_indices_m,
-        attachee_sku_pure_indices_m
-    )
-    filename_duplicate_indices_s = set([
-        attachment.index \
-        for match in image_matcher.duplicate_matches
-        for attachment in match.s_objects
-    ])
-    attachee_sku_pure_indices_s = set([
-        attachment.index \
-        for match in attachee_sku_matcher.pure_matches
-        for attachment in match.s_objects
-    ])
-    assert \
-    attachee_sku_pure_indices_s.issuperset(filename_duplicate_indices_s), \
-    (
-        "all slave indices from filename duplicates should be contained in "
-        "attache_sku pure match indices:\nfilename:\n%s\nattachee_sku:\n%s"
-    ) % (
-        filename_duplicate_indices_s,
-        attachee_sku_pure_indices_s
-    )
+        attachee_sku_matcher.process_registers(
+            slave_imgs_attachments, master_imgs_attachments
+        )
+
+        # make sure that all duplicates are resolved after matching using attachee_skus
+        if Registrar.DEBUG_IMG:
+            Registrar.register_message(
+                "adding attache_sku_matcher.pure_matches:\n%s" % (
+                    attachee_sku_matcher.pure_matches.tabulate()
+                )
+            )
+        matches.image.valid += attachee_sku_matcher.pure_matches
+
+        attachee_sku_valid_indices_m = set([
+            attachment.index \
+            for match in attachee_sku_matcher.pure_matches
+            for attachment in match.m_objects
+        ])
+        attachee_sku_valid_indices_s = set([
+            attachment.index \
+            for match in attachee_sku_matcher.pure_matches
+            for attachment in match.s_objects
+        ])
+
+        # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
+
+        assert \
+        attachee_sku_valid_indices_m.issuperset(filename_duplicate_indices_m), \
+        (
+            "all master indices from filename duplicates should be contained in "
+            "attache_sku pure match indices:\nfilename:\n%s\nattachee_skus:\n%s"
+        ) % (
+            filename_duplicate_indices_m,
+            attachee_sku_valid_indices_m
+        )
+        assert \
+        attachee_sku_valid_indices_s.issuperset(filename_duplicate_indices_s), \
+        (
+            "all slave indices from filename duplicates should be contained in "
+            "attache_sku pure match indices:\nfilename:\n%s\nattachee_skus:\n%s"
+        ) % (
+            filename_duplicate_indices_s,
+            attachee_sku_valid_indices_s
+        )
 
 
     return matches
@@ -664,8 +654,7 @@ def do_merge_images(matches, parsers, updates, settings):
                 updates.image.slave.append(sync_update)
 
     for update in updates.image.master:
-        old_master = update.old_m_object
-        old_master_id = old_master.attachment_indexer(old_master)
+        old_master_id = update.master_id
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
@@ -677,13 +666,9 @@ def do_merge_images(matches, parsers, updates, settings):
                 update.master_id)
             Registrar.register_error(exc)
             continue
-        for col, warnings in update.sync_warnings.items():
-            for warning in warnings:
-                if not warning['subject'] == update.master_name:
-                    continue
-
-                new_val = warning['new_value']
-                parsers.master.attachments[old_master_id][col] = new_val
+        parsers.master.attachments[old_master_id].update(
+            update.get_master_updates_native()
+        )
 
     if settings['auto_create_new']:
         for count, match in enumerate(matches.image.slaveless):
@@ -749,21 +734,26 @@ def do_merge_categories(matches, parsers, updates, settings):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
-                (update.master_id, update.slave_id,
-                 str(update.old_m_object), str(update.old_s_object)))
+                (
+                    update.master_id, update.slave_id,
+                    str(update.old_m_object), str(update.old_s_object))
+                )
         if not update.master_id in parsers.master.categories:
             exc = UserWarning(
                 "couldn't fine pkey %s in parsers.master.categories" %
                 update.master_id)
             Registrar.register_error(exc)
             continue
-        for col, warnings in update.sync_warnings.items():
-            for warning in warnings:
-                if not warning['subject'] == update.master_name:
-                    continue
-
-                new_val = warning['new_value']
-                parsers.master.categories[update.master_id][col] = new_val
+        parsers.master.categories[update.master_id].update(
+            update.get_master_updates_native()
+        )
+        # for col, warnings in update.sync_warnings.items():
+        #     for warning in warnings:
+        #         if not warning['subject'] == update.master_name:
+        #             continue
+        #
+        #         new_val = warning['new_value']
+        #         parsers.master.categories[update.master_id][col] = new_val
 
     if settings['auto_create_new']:
         for count, match in enumerate(matches.category.slaveless):
@@ -774,6 +764,7 @@ def do_merge_categories(matches, parsers, updates, settings):
                 )
             )
             sync_update = settings.syncupdate_class_cat(m_object)
+            sync_update.update(sync_handles)
             updates.category.new_slaves.append(sync_update)
 
     return updates

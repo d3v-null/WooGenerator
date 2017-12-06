@@ -77,20 +77,49 @@ class ImportShopAttachmentMixin(ShopMixin):
         return self.get_file_name(self)
 
     @property
-    def attachee_sku(self):
-        return self.attaches.get_key('codesum')
+    def attachee_skus(self):
+        """
+        Get a pipe separated list of skus of products which have the image
+        attached.
+        """
+        skus = []
+        for product in self.attaches.products:
+            skus.append(product.get('codesum'))
+        return "|".join(skus)
+
+    @property
+    def attachee_titles(self):
+        """
+        Get a pipe separated list of titles of products and categories which
+        have the image attached.
+        """
+        titles = []
+        for object_ in self.attaches.products_and_categories:
+            titles.append(object_.get('title'))
+        return "|".join(titles)
+
+    @property
+    def category_attachee_titles(self):
+        """
+        Get a pipe separated list of titles of products and categories which
+        have the image attached.
+        """
+        titles = []
+        for object_ in self.attaches.categories:
+            titles.append(object_.get('title'))
+        return "|".join(titles)
 
     @classmethod
     def get_normalized_filename(cls, data):
         filename = cls.get_file_name(data)
         name, ext = os.path.splitext(filename)
-        attachee_sku = None
-        if hasattr(data, 'attachee_sku'):
-            attachee_sku = data.attachee_sku
+        attachee_skus = None
+        if hasattr(data, 'attachee_skus'):
+            attachee_skus = data.attachee_skus
         before = ''
         after = name
-        if attachee_sku:
-            code_re = r'^(?P<before>%s)(?P<after>.*)$' % re.escape(attachee_sku)
+        if attachee_skus:
+            code_re = r'^(?P<before>%s)(?P<after>.*)$' % re.escape(attachee_skus)
             code_match = re.match(code_re, name)
             if code_match:
                 code_match = code_match.groupdict()
@@ -382,12 +411,17 @@ class ShopObjList(ObjList):
         self.is_valid = True
         self.products = ShopProdList()
         self.categories = ShopCatList()
-        self._objects = ObjList()
+        self._objects = ObjList() # objects that are not products or categories
         super(ShopObjList, self).__init__(objects, indexer=indexer)
 
     @property
     def objects(self):
         return self.products + self.categories + self._objects
+
+    @property
+    def products_and_categories(self):
+        return self.products + self.categories
+
 
     @property
     def title(self):
