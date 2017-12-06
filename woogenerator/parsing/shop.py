@@ -253,12 +253,6 @@ class ImportShopMixin(object):
             api_data = coldata_class.translate_data_to(core_data, target_api)
         return api_data
 
-    def to_dict(self):
-        response = {}
-        if hasattr(self, 'attachments'):
-            response['attachment_objects'] = self.attachments
-        return response
-
     @classmethod
     def get_slug(cls, data):
         assert cls.slug_key in data, \
@@ -313,6 +307,8 @@ class ImportShopProductMixin(object):
         response = {}
         if hasattr(self, 'categories'):
             response['category_objects'] = self.categories.values()
+        if hasattr(self, 'attachments'):
+            response['attachment_objects'] = self.attachments.values()
         # TODO: enable attributes later
         # if hasattr(self, 'attributes'):
         #     response['attribute_objects'] = self.attributes.values()

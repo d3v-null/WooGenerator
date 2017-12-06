@@ -1220,22 +1220,30 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
             changes = sync_update.get_slave_updates()
             response_raw = client.upload_changes_core(pkey, changes)
             response_api_data = response_raw.json()
+            if client.page_nesting:
+                response_api_data = response_api_data[client.endpoint_singular]
         except Exception as exc:
             handle_failed_update(
                 sync_update, results, exc, settings, settings.slave_name
             )
             continue
 
-        response_core_data = settings.coldata_class_img.translate_data_from(
-            response_api_data, settings.coldata_img_target
-        )
-        response_gen_data = settings.coldata_class_img.translate_data_to(
-            response_core_data, settings.coldata_gen_target_write
-        )
+        if response_api_data['id'] != pkey:
+            # if pkey has changed since update, i.e. a new item was uploaded
+            response_gen_object = parsers.slave.analyse_api_image_raw(response_api_data)
+        else:
+            response_core_data = settings.coldata_class_img.translate_data_from(
+                response_api_data, settings.coldata_img_target
+            )
+            response_gen_data = settings.coldata_class_img.translate_data_to(
+                response_core_data, settings.coldata_gen_target_write
+            )
 
-        sync_update.old_s_object_gen.update(response_gen_data)
-        sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
-        sync_update.old_m_object_gen.update(response_gen_data)
+            sync_update.old_s_object_gen.update(response_gen_data)
+            response_gen_object = sync_update.old_s_object_gen
+
+        sync_update.set_new_s_object_gen(response_gen_object)
+        sync_update.old_m_object_gen.update(response_gen_object)
 
         results.successes.append(sync_update)
 

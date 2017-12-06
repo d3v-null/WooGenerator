@@ -163,14 +163,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("pformat@first_prod:\n%s" % pformat(first_prod.to_dict()))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.to_dict().get('attachment_objects').values(): %s" % pformat(first_prod.to_dict().get('attachment_objects').values()))
+            print("first_prod.to_dict().get('attachment_objects'): %s" % pformat(first_prod.to_dict().get('attachment_objects')))
         self.assertEqual(first_prod.codesum, "ACARA-CAL")
         self.assertEqual(first_prod.parent.codesum, "ACARA-CA")
         first_prod_specials = first_prod.specials
         self.assertEqual(first_prod_specials,
                          ['SP2016-08-12-ACA', 'EOFY2016-ACA'])
         self.assertEqual(
-            set([attachment.file_name for attachment in first_prod.to_dict().get('attachment_objects').values()]),
+            set([attachment.file_name for attachment in first_prod.to_dict().get('attachment_objects')]),
             set(["ACARA-CAL.png"])
         )
         self.assertEqual(first_prod.depth, 4)
@@ -209,26 +209,26 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         third_prod = prod_list[2]
         if self.debug:
             print("pformat@third_prod:\n%s" % pformat(third_prod.to_dict()))
-            print("third_prod.to_dict().get('attachment_objects').values(): %s" % pformat(third_prod.to_dict().get('attachment_objects').values()))
+            print("third_prod.to_dict().get('attachment_objects'): %s" % pformat(third_prod.to_dict().get('attachment_objects')))
         self.assertEqual(
-            set([attachment.file_name for attachment in third_prod.to_dict().get('attachment_objects').values()]),
+            set([attachment.file_name for attachment in third_prod.to_dict().get('attachment_objects')]),
             set(["ACARA-S.png"])
         )
 
         sixth_prod = prod_list[5]
         if self.debug:
             print("pformat@sixth_prod:\n%s" % pformat(sixth_prod.to_dict()))
-            print("sixth_prod.to_dict().get('attachment_objects').values(): %s" % pformat(sixth_prod.to_dict().get('attachment_objects').values()))
+            print("sixth_prod.to_dict().get('attachment_objects'): %s" % pformat(sixth_prod.to_dict().get('attachment_objects')))
 
         self.assertEqual(
-            set([attachment.file_name for attachment in sixth_prod.to_dict().get('attachment_objects').values()]),
+            set([attachment.file_name for attachment in sixth_prod.to_dict().get('attachment_objects')]),
             set(["ACARA-S.png"])
         )
 
         # Test the products which have the same attachment use different attachment objects
         self.assertNotEqual(
-            set([id(attachment) for attachment in third_prod.to_dict().get('attachment_objects').values()]),
-            set([id(attachment) for attachment in sixth_prod.to_dict().get('attachment_objects').values()])
+            set([id(attachment) for attachment in third_prod.to_dict().get('attachment_objects')]),
+            set([id(attachment) for attachment in sixth_prod.to_dict().get('attachment_objects')])
         )
 
 
@@ -361,7 +361,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print("first_prod.dict %s" % pformat(dict(first_prod)))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
-            print("first_prod.to_dict().get('attachment_objects').values(): %s" % pformat(first_prod.to_dict().get('attachment_objects').values()))
+            print("first_prod.to_dict().get('attachment_objects'): %s" % pformat(first_prod.to_dict().get('attachment_objects')))
 
         self.assertEqual(first_prod.codesum, "ACARF-CRS")
         # self.assertEqual(first_prod.parent.codesum, "ACARF-CR")
@@ -405,7 +405,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEquals(
             set([
                 image.file_name \
-                for image in first_prod.to_dict().get('attachment_objects').values()
+                for image in first_prod.to_dict().get('attachment_objects')
             ]),
             set([
                 'ACARF-CRS.png'
@@ -533,7 +533,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         prod_list = prod_container(self.parsers.master.products.values())
         resized_images = 0
         for prod in prod_list:
-            for img_data in prod.to_dict().get('attachment_objects').values():
+            for img_data in prod.to_dict().get('attachment_objects'):
                 if self.settings.img_cmp_dir in img_data.get('file_path', ''):
                     resized_images += 1
                     self.assertTrue(img_data['width'] <= self.settings.thumbsize_x)
@@ -906,6 +906,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         mock.patch(
             MockUtils.get_mock_name(
                 self.settings.null_client_class,
+                'source_url_handle'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='source_url'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
                 'primary_key_handle'
             ),
             new_callable=mock.PropertyMock,
@@ -1269,14 +1277,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         sync_update = self.updates.category.master[1]
         if self.debug:
             self.print_update(sync_update)
-            import pudb; pudb.set_trace()
         # TODO: test this
-
 
         """
 update <       4 |     316 ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
 ---
-M:ACA|r:4|w:316|Company A Product A <ImportWooCategory>
+M:ACA|r:4|w:|Company A Product A <ImportWooCategory>
 {'CA': u'',
  'CVC': u'',
  'D': u'',
@@ -1286,26 +1292,26 @@ M:ACA|r:4|w:316|Company A Product A <ImportWooCategory>
  'DYNPROD': u'',
  'E': u'',
  'HTML Description': u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
- 'ID': 316,
+ 'ID': '',
  'Images': u'ACA.jpg',
  'PA': u'{"pa_brand":"Company A"}',
  'RNR': u'',
  'RPR': u'',
  'SCHEDULE': u'EOFY2016-ACA',
- 'Updated': datetime.datetime(2017, 11, 29, 0, 21, 13),
+ 'Updated': u'',
  'VA': u'',
  'VISIBILITY': u'local',
  'WNR': u'',
  'WPR': u'',
  'Xero Description': u'',
  '_row': [],
- 'attachment_object': OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('id', 24879)]),
+ 'attachment_object': -1|ACA.jpg <ImportWooImg>,
+ 'attachment_objects': OrderedDict([(u'-1|ACA.jpg', -1|ACA.jpg <ImportWooImg>)]),
  'backorders': 'no',
  'catalog_visibility': 'visible',
  'code': u'CA',
  'codesum': u'ACA',
  'descsum': u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
- 'display': u'default',
  'download_expiry': -1,
  'download_limit': -1,
  'featured': 'no',
@@ -1317,13 +1323,13 @@ M:ACA|r:4|w:316|Company A Product A <ImportWooCategory>
  'is_sold': u'',
  'itemsum': '',
  'length': u'',
- 'modified_gmt': datetime.datetime(2017, 11, 28, 14, 41, 13, tzinfo=<UTC>),
+ 'modified_gmt': datetime.datetime(2017, 12, 5, 16, 56, 30, tzinfo=<UTC>),
+ 'modified_local': datetime.datetime(2017, 12, 6, 2, 36, 30),
  'name': u'Company A Product A',
- 'parent_id': 315,
  'post_status': u'',
  'prod_type': 'simple',
  'rowcount': 4,
- 'slug': u'product-a-company-a-product-a',
+ 'slug': '',
  'stock': u'',
  'stock_status': u'',
  'tax_status': 'taxable',
@@ -1332,29 +1338,54 @@ M:ACA|r:4|w:316|Company A Product A <ImportWooCategory>
  'weight': u'',
  'width': u''}
 S:r:2|a:316|Company A Product A <ImportWooApiCategory>
-{'ID': 316,
+{'HTML Description': u'Company A have developed stuff',
+ 'ID': 316,
  '_row': [],
- 'attachment_object': OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('ID', 24879)]),
+ 'api_data': {u'_links': {u'collection': [{u'href': u'http://localhost:18080/wptest/wp-json/wc/v2/products/categories'}],
+                          u'self': [{u'href': u'http://localhost:18080/wptest/wp-json/wc/v2/products/categories/316'}],
+                          u'up': [{u'href': u'http://localhost:18080/wptest/wp-json/wc/v2/products/categories/315'}]},
+              u'count': 48,
+              u'description': u'Company A have developed stuff',
+              u'display': u'default',
+              u'id': 316,
+              u'image': {u'alt': u'',
+                         u'date_created': u'2017-11-08T20:55:43',
+                         u'date_created_gmt': u'2017-11-08T20:55:43',
+                         u'date_modified': u'2017-11-08T20:55:43',
+                         u'date_modified_gmt': u'2017-11-08T20:55:43',
+                         u'id': 24879,
+                         u'src': u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg',
+                         u'title': u'Solution &gt; TechnoTan Solution'},
+              u'menu_order': 0,
+              u'name': u'Company A Product A',
+              u'parent': 315,
+              u'slug': u'product-a-company-a-product-a',
+              u'type': u'category'},
+ 'attachment_object': 100002|ACA.jpg <ImportWooApiImg>,
+ 'attachment_objects': OrderedDict([(24879, 100002|ACA.jpg <ImportWooApiImg>)]),
+ 'codesum': u'product-a-company-a-product-a',
  'descsum': u'Company A have developed stuff',
  'display': u'default',
  'parent_id': 315,
  'rowcount': 2,
  'slug': u'product-a-company-a-product-a',
- 'title': 'Company A Product A'}
+ 'source': 'woocommerce-test',
+ 'title': 'Company A Product A',
+ 'type': 'category'}
 warnings:
 -
-Column       Reason    Subject           Old                             New                                                  M TIME    S TIME  EXTRA
------------  --------  ----------------  ------------------------------  -------------------------------------------------  --------  --------  -------
-description  updating  woocommerce-test  Company A have developed stuff  Company A have developed a range of unique blends         0         0
-menu_order   updating  woocommerce-test  2                               4                                                         0         0
+Column       Reason    Subject           Old                                                 New                                                   M TIME    S TIME  EXTRA
+-----------  --------  ----------------  --------------------------------------------------  --------------------------------------------------  --------  --------  -------
+description  updating  woocommerce-test  Company A have developed stuff                      Company A have developed a range of unique blends          0         0
+menu_order   updating  woocommerce-test  2                                                   4                                                          0         0
+image        updating  woocommerce-test  OrderedDict([('modified_gmt', datetime.datetime(20  OrderedDict([('modified_gmt', datetime.datetime(20         0         0
 -
-Column          Reason        Subject      Old    New                                                   M TIME    S TIME  EXTRA
---------------  ------------  -----------  -----  --------------------------------------------------  --------  --------  -------
-term_parent_id  merging-read  gdrive-test         315                                                        0         0
-term_id         merging       gdrive-test         316                                                        0         0
-slug            merging       gdrive-test         product-a-company-a-product-a                              0         0
-image           merging       gdrive-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
-display         merging       gdrive-test         default                                                    0         0
+Column          Reason        Subject      Old    New                              M TIME    S TIME  EXTRA
+--------------  ------------  -----------  -----  -----------------------------  --------  --------  -------
+term_parent_id  merging-read  gdrive-test         315                                   0         0
+term_id         merging       gdrive-test         316                                   0         0
+slug            merging       gdrive-test         product-a-company-a-product-a         0         0
+display         merging       gdrive-test         default                               0         0
 passes:
 -
 Column    Reason     Master               Slave                  M TIME    S TIME  EXTRA
@@ -1364,10 +1395,123 @@ probbos:
 
         """
 
+        try:
+            m_attachment = sync_update.old_m_object_gen.to_dict()['attachment_object']
+            self.assertEqual(
+                m_attachment.get('file_name'),
+                'ACA.jpg'
+            )
+            self.assertEqual(
+                m_attachment.get('ID'),
+                100002
+            )
+            s_attachment = sync_update.old_s_object_gen.to_dict()['attachment_object']
+            self.assertEqual(
+                s_attachment.get('file_name'),
+                'ACA.jpg'
+            )
+            self.assertEqual(
+                s_attachment.get('ID'),
+                24879
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
         sync_update = self.updates.category.new_slaves[1]
         if self.debug:
             self.print_update(sync_update)
-            import pudb; pudb.set_trace()
+
+        """
+update <     167 |         ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
+---
+M:SPA|r:167|w:|Product A Specials <ImportWooCategory>
+{'CA': u'',
+ 'CVC': u'',
+ 'D': u'',
+ 'DNR': u'',
+ 'DPR': u'',
+ 'DYNCAT': u'',
+ 'DYNPROD': u'',
+ 'E': u'',
+ 'HTML Description': u'',
+ 'ID': '',
+ 'Images': u'ACA.jpg',
+ 'PA': u'',
+ 'RNR': u'',
+ 'RPR': u'',
+ 'SCHEDULE': u'',
+ 'Updated': u'',
+ 'VA': u'',
+ 'VISIBILITY': u'wholesale | local',
+ 'WNR': u'',
+ 'WPR': u'',
+ 'Xero Description': u'',
+ '_row': [],
+ 'attachment_object': -1|ACA.jpg <ImportWooImg>,
+ 'backorders': 'no',
+ 'catalog_visibility': 'visible',
+ 'code': u'A',
+ 'codesum': u'SPA',
+ 'descsum': u'Product A Specials',
+ 'download_expiry': -1,
+ 'download_limit': -1,
+ 'featured': 'no',
+ 'fullname': u'Product A Specials',
+ 'fullnamesum': u'Specials > Product A Specials',
+ 'height': u'',
+ 'imgsum': u'ACA.jpg',
+ 'is_purchased': u'',
+ 'is_sold': u'',
+ 'itemsum': '',
+ 'length': u'',
+ 'modified_gmt': datetime.datetime(2017, 12, 5, 16, 56, 30, tzinfo=<UTC>),
+ 'modified_local': datetime.datetime(2017, 12, 6, 2, 36, 30),
+ 'name': u'Product A Specials',
+ 'post_status': u'',
+ 'prod_type': 'simple',
+ 'rowcount': 167,
+ 'slug': '',
+ 'stock': u'',
+ 'stock_status': u'',
+ 'tax_status': 'taxable',
+ 'taxosum': u'Specials > Product A Specials',
+ 'title': u'Product A Specials',
+ 'weight': u'',
+ 'width': u''}
+S:{}
+EMPTY
+warnings:
+-
+Column       Reason     Subject           Old    New                                                   M TIME    S TIME  EXTRA
+-----------  ---------  ----------------  -----  --------------------------------------------------  --------  --------  -------
+description  inserting  woocommerce-test         Product A Specials                                         0         0
+title        inserting  woocommerce-test         Product A Specials                                         0         0
+menu_order   inserting  woocommerce-test         167                                                        0         0
+image        inserting  woocommerce-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
+passes:
+-
+Column          Reason     Master    Slave      M TIME    S TIME  EXTRA
+--------------  ---------  --------  -------  --------  --------  -------
+term_parent_id  identical                            0         0
+term_id         identical                            0         0
+slug            identical                            0         0
+display         identical                            0         0
+probbos:
+
+        """
+
+        try:
+            m_attachment = sync_update.old_m_object_gen.to_dict()['attachment_object']
+            self.assertEqual(
+                m_attachment.get('file_name'),
+                'ACA.jpg'
+            )
+            self.assertEqual(
+                m_attachment.get('ID'),
+                100002
+            )
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
 #
 

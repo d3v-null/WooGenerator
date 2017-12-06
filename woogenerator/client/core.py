@@ -173,6 +173,7 @@ class SyncClientNull(SyncClientAbstract):
     coldata_class = ColDataWpEntity
     primary_key_handle = 'id'
     file_path_handle = None
+    source_url_handle = None
     coldata_target = 'api'
     coldata_target_write = 'api'
     page_nesting = False
@@ -208,9 +209,13 @@ class SyncClientNull(SyncClientAbstract):
         return response
 
     def upload_changes_core(self, pkey=None, updates_core=None):
-        if hasattr(self, 'file_path_handle'):
+        if getattr(self, 'file_path_handle', None):
             file_path = updates_core.pop(self.file_path_handle, None)
             if file_path:
+                if getattr(self, 'source_url_handle', None):
+                    updates_core.update({
+                        self.source_url_handle: file_path
+                    })
                 response_raw = super(SyncClientNull, self).create_item_core(updates_core)
                 response_api = response_raw.json()
                 if self.page_nesting:
@@ -220,7 +225,7 @@ class SyncClientNull(SyncClientAbstract):
                 )
                 pkey = response_core.pop(self.primary_key_handle)
                 updates_core.update({
-                    'file_path': file_path
+                    self.file_path_handle: file_path
                 })
         return super(SyncClientNull, self).upload_changes_core(pkey, updates_core)
 
@@ -250,9 +255,11 @@ class SyncClientNull(SyncClientAbstract):
         return response
 
     def create_item_core(self, core_data):
-        if hasattr(self, 'file_path_handle'):
+        if getattr(self, 'file_path_handle', None):
             file_path = core_data.get(self.file_path_handle, None)
             if file_path:
+                if getattr(self, 'source_url_handle', None):
+                    core_data[self.source_url_handle] = file_path
                 return self.upload_changes_core(None, core_data)
         return super(SyncClientNull, self).create_item_core(core_data)
 

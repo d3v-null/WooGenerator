@@ -109,6 +109,12 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         raise AssertionError(msg)
 
     def print_update(self, update):
+        old_m_object_dict = 'EMPTY'
+        old_s_object_dict = 'EMPTY'
+        if getattr(update, 'old_m_object_gen', {}):
+            old_m_object_dict = pformat(update.old_m_object_gen.to_dict())
+        if getattr(update, 'old_s_object_gen', {}):
+            old_s_object_dict = pformat(update.old_s_object_gen.to_dict())
         print(
             (
                 "%s%s\n---\nM:%s\n%s\nS:%s\n%s\nwarnings"
@@ -117,9 +123,9 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
                 update,
                 str(type(update)),
                 update.old_m_object_gen,
-                pformat(dict(update.old_m_object_gen)),
+                old_m_object_dict,
                 update.old_s_object_gen,
-                pformat(dict(update.old_s_object_gen)),
+                old_s_object_dict,
                 update.display_sync_warnings(),
                 update.display_sync_passes(),
                 update.display_problematic_updates(),

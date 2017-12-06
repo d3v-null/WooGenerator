@@ -93,7 +93,6 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     process_meta = ImportApiObjectMixin.process_meta
     index = ImportApiObjectMixin.index
     identifier = ImportApiObjectMixin.identifier
-    to_dict = ImportShopMixin.to_dict
     attachment_indexer = ImportApiObjectMixin.attachment_indexer
     verify_meta_keys = SeqUtils.combine_lists(
         ImportGenObject.verify_meta_keys,
@@ -132,6 +131,13 @@ class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
         for base_class in ImportWooApiProduct.__bases__:
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)
+
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooApiProduct.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
 
 class WooApiProdList(WooProdList, ApiListMixin):
     supported_type = ImportWooApiProduct
@@ -693,6 +699,9 @@ class ApiParseWoo(
                     self.process_api_sub_image_gen(
                         sub_img_gen_data, object_data
                     )
+            del(object_data['attachment_objects'])
+
+        return object_data
 
 class ApiParseWooLegacy(ApiParseWoo):
     category_container = ImportWooApiCategoryLegacy
