@@ -897,6 +897,8 @@ class ColDataAbstract(ColDataLegacy):
         """
         if type(type_) == type:
             return type_
+        if type_ is None:
+            return SanitationUtils.identity
         return {
             'xml_escaped': SanitationUtils.xml_to_unicode,
             'iso8601': functools.partial(
@@ -3016,6 +3018,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'gen-api': {
                 'path': 'attachment_objects',
+                'type': None,
                 'structure': ('listed-objects', )
             }
         },

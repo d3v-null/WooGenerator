@@ -13,7 +13,7 @@ from tabulate import tabulate
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
-from woogenerator.coldata import (ColDataAttachment, ColDataProduct,
+from woogenerator.coldata import (ColDataAttachment, ColDataProductMeridian,
                                   ColDataWcProdCategory)
 from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_match_prod, do_merge_categories,
@@ -128,6 +128,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("regenerating slave")
         populate_slave_parsers(self.parsers, self.settings)
 
+    @pytest.mark.first
     def test_dummy_init_settings(self):
         self.assertTrue(self.settings.do_specials)
         self.assertTrue(self.settings.do_sync)
@@ -148,6 +149,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             "SublimeCsvTable")
         self.assertEqual(self.settings.spec_gid, None)
 
+    @pytest.mark.first
     def test_dummy_populate_master_parsers(self):
         self.populate_master_parsers()
 
@@ -341,6 +343,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 )
             )
 
+    @pytest.mark.first
     def test_dummy_populate_slave_parsers(self):
         # self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -646,11 +649,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        if self.settings.do_images:
-            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
+            process_images(self.settings, self.parsers)
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -673,7 +675,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         self.assertEqual(len(self.matches.category.globals), 9)
         first_match = self.matches.category.valid[2]
-        first_match_index = first_match.singular_index
         first_master = first_match.m_object
         first_slave = first_match.s_object
         if self.debug:
@@ -687,9 +688,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 print("%20s | %50s | %50s" % (
                     str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
                 ))
-
-        first_match_sub_images = self.matches.sub_image[first_match_index]
-        self.assertEqual(len(first_match_sub_images.globals), 1)
 
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
@@ -722,11 +720,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        if self.settings.do_images:
-            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
+            process_images(self.settings, self.parsers)
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -954,11 +951,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        if self.settings.do_images:
-            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
+            process_images(self.settings, self.parsers)
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -1263,16 +1259,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     @pytest.mark.slow
-    def test_do_merge_cat_img(self):
+    def test_dummy_do_merge_cat_img(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        if self.settings.do_images:
-            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
+            process_images(self.settings, self.parsers)
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -1434,17 +1429,26 @@ probbos:
                 s_attachment.get('ID'),
                 24879
             )
-            self.assertTrue(
-                sync_update.old_m_object_core['image']
+            self.assertEqual(
+                sync_update.old_m_object_core['image']['id'],
+                100002
             )
-            self.assertTrue(
-                sync_update.new_s_object_core['image']
+            self.assertEqual(
+                sync_update.old_s_object_core['image']['id'],
+                24879
             )
             if self.debug:
                 print(
-                    "update native: \n%s" % \
+                    "slave img updates native: \n%s" % \
                     pformat(sync_update.get_slave_updates_native())
                 )
+            self.assertTrue(
+                sync_update.get_slave_updates_native()['image']
+            )
+            self.assertTrue(
+                sync_update.new_s_object_core['image']['id'],
+                100002
+            )
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
@@ -1553,11 +1557,10 @@ probbos:
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        if self.settings.do_images:
-            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
+            process_images(self.settings, self.parsers)
             do_match_images(
                 self.parsers, self.matches, self.settings
             )
@@ -1591,43 +1594,30 @@ probbos:
             for index, matches in self.matches.sub_category.items():
                 print("prod_matches: %s" % index)
                 self.print_matches_summary(matches)
-        prod_match = self.matches.globals[47]
-        match_index = prod_match.singular_index
 
-        if self.settings.do_categories:
-            prod_cat_match = self.matches.sub_category[match_index]
-            self.assertEqual(len(prod_cat_match.globals), 3)
-            if self.settings.add_special_categories:
-                self.assertEqual(len(prod_cat_match.slaveless), 3)
-            else:
-                self.assertEqual(len(prod_cat_match.slaveless), 1)
+        # TODO: more tests
 
-        # TODO: implement this for images in prods, categories and vars
-        if self.settings.do_images:
-            prod_img_match = self.matches.sub_image[match_index]
-            self.assertEqual(len(prod_img_match.globals), 1)
-            self.assertEqual(len(prod_img_match.masterless), 0)
-            self.assertEqual(len(prod_img_match.slaveless), 0)
-
-    @pytest.mark.last
+    @pytest.mark.slow
     def test_dummy_do_merge_prod_cat(self):
-        self.settings.init_settings(self.override_args)
-
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
-        if self.debug:
-            report_cols = ColDataProduct.get_col_values_native('path', target='gen-api')
-            report_cols['WNR'] = 'WNR'
-            report_cols['WNF'] = 'WNF'
-            report_cols['WNT'] = 'WNT'
-            report_cols['WNS'] = 'WNS'
-            report_cols['category_objects'] = 'category_objects'
-            master_container = self.parsers.master.product_container.container
-            master_products = master_container(self.parsers.master.products.values())
-            slave_container = self.parsers.slave.product_container.container
-            slave_products = slave_container(self.parsers.slave.products.values())
-            print("matser_products:\n", master_products.tabulate(cols=report_cols))
-            print("slave_products:\n", slave_products.tabulate(cols=report_cols))
+
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
+
         if self.settings.do_categories:
             do_match_categories(self.parsers, self.matches, self.settings)
 
@@ -1638,6 +1628,21 @@ probbos:
                 self.updates, self.parsers, self.results, self.settings
             )
             self.do_updates_categories_slave_mocked()
+
+        if self.debug:
+            report_cols = ColDataProductMeridian.get_col_values_native('path', target='gen-api')
+            # report_cols['WNR'] = 'WNR'
+            # report_cols['WNF'] = 'WNF'
+            # report_cols['WNT'] = 'WNT'
+            # report_cols['WNS'] = 'WNS'
+            # report_cols['category_objects'] = 'category_objects'
+            master_container = self.parsers.master.product_container.container
+            master_products = master_container(self.parsers.master.products.values())
+            slave_container = self.parsers.slave.product_container.container
+            slave_products = slave_container(self.parsers.slave.products.values())
+            print("matser_products:\n", master_products.tabulate(cols=report_cols))
+            print("slave_products:\n", slave_products.tabulate(cols=report_cols))
+
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
@@ -1645,30 +1650,87 @@ probbos:
         if self.debug:
             self.print_updates_summary(self.updates)
         self.assertTrue(self.updates.slave)
+        self.assertEqual(len(self.updates.slave), 48)
+
         sync_update = self.updates.slave[-1]
         if self.debug:
             self.print_update(sync_update)
-        self.assertEqual(len(self.updates.slave), 48)
-        expected_master_categories = set([320, 323, 315, 316])
-        if not self.settings.skip_special_categories:
-            expected_master_categories.update([100000, 100001])
+
         try:
+            expected_sku = "ACARF-CRS"
+
             self.assertEquals(
                 sync_update.old_m_object_core['sku'],
-                "ACARF-CRS"
+                expected_sku
             )
             self.assertEquals(
-                set(sync_update.old_m_object_core['category_ids']),
-                expected_master_categories
+                sync_update.old_s_object_core['sku'],
+                expected_sku
             )
             self.assertEquals(
-                set(sync_update.old_s_object_core['category_ids']),
-                set([320, 315, 316])
+                sync_update.new_s_object_core['sku'],
+                expected_sku
             )
-            self.assertEquals(
-                set(sync_update.new_s_object_core['category_ids']),
-                expected_master_categories
-            )
+
+            if self.settings.do_categories:
+                expected_master_categories = set([320, 323, 315, 316])
+                if not self.settings.skip_special_categories:
+                    expected_master_categories.update([100000, 100001])
+                expected_slave_categories = set([320, 315, 316])
+
+                old_m_core_cat_ids = [
+                    cat.get('term_id') for cat in \
+                    sync_update.old_m_object_core['product_categories']
+                ]
+                self.assertEquals(
+                    set(old_m_core_cat_ids),
+                    expected_master_categories
+                )
+                old_s_core_cat_ids = [
+                    cat.get('term_id') for cat in \
+                    sync_update.old_s_object_core['product_categories']
+                ]
+                self.assertEquals(
+                    set(old_s_core_cat_ids),
+                    expected_slave_categories
+                )
+                new_s_core_cat_ids = [
+                    cat.get('term_id') for cat in \
+                    sync_update.new_s_object_core['product_categories']
+                ]
+                self.assertEquals(
+                    set(new_s_core_cat_ids),
+                    expected_master_categories
+                )
+
+            if self.settings.do_images:
+                expected_master_images = set([100044])
+                expected_slave_images = set([24864])
+
+                old_m_core_img_ids = [
+                    img.get('id') for img in \
+                    sync_update.old_m_object_core['attachment_objects']
+                ]
+                self.assertEqual(
+                    set(old_m_core_img_ids),
+                    expected_master_images
+                )
+                old_s_core_img_ids = [
+                    img.get('id') for img in \
+                    sync_update.old_s_object_core['attachment_objects']
+                ]
+                self.assertEqual(
+                    set(old_s_core_img_ids),
+                    expected_slave_images
+                )
+                new_s_core_img_ids = [
+                    img.get('id') for img in \
+                    sync_update.new_s_object_core['attachment_objects']
+                ]
+                self.assertEqual(
+                    set(new_s_core_img_ids),
+                    expected_master_images
+                )
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)

@@ -139,6 +139,53 @@ class SyncUpdate(Registrar):
         )
         self.set_new_subject_object(new_s_object_core, self.slave_name)
 
+    sync_warning_value_keys = ['old_value', 'new_value', 'm_value', 's_value']
+
+    def simplify_sync_warning_value_singular(self, handle, sub_handle):
+        """
+        Reduce the values in the sync warning for `handle` so that each object
+        only shows the value for the `sub_handle`.
+        Assumes core representation of `handles` has a singular structure.
+        `sub_handle` is most likely the primary key of the sub object.
+        """
+        if handle in self.sync_warnings_core:
+            for sync_warning in self.sync_warnings_core.get(handle, {}):
+                for key in self.sync_warning_value_keys:
+                    value = sync_warning.get(key)
+                    if not value:
+                        continue
+                    if not isinstance(value, dict):
+                        continue
+                    if value.get(sub_handle) is not None:
+                        sync_warning[key] = {
+                            sub_handle: value.get(sub_handle)
+                        }
+
+    def simplify_sync_warning_value_listed(self, handle, sub_handle):
+        """
+        Reduce the values in the sync warning for `handle` so that each object
+        only shows the value for the `sub_handle`.
+        Assumes core representation of `handles` has a listed structure.
+        `sub_handle` is most likely the primary key of the sub object.
+        """
+        if handle in self.sync_warnings_core:
+            for sync_warning in self.sync_warnings_core.get(handle, {}):
+                for key in self.sync_warning_value_keys:
+                    values = sync_warning.get(key)
+                    if not values:
+                        continue
+                    if not isinstance(values, list):
+                        continue
+                    new_values = []
+                    for value in values:
+                        if not isinstance(value, dict):
+                            continue
+                        if value.get(sub_handle) is not None:
+                            new_values.append({
+                                sub_handle: value.get(sub_handle)
+                            })
+                    sync_warning[key] = new_values
+
     @property
     def sync_warnings(self):
         return self.coldata_class.translate_keys(
