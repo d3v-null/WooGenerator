@@ -57,7 +57,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_specials = True
         self.settings.specials_mode = 'all_future'
         # self.settings.specials_mode = 'auto_next'
-        # TODO: make this work with create special categories
         self.settings.skip_special_categories = False
         self.settings.do_sync = True
         self.settings.do_categories = True
@@ -678,7 +677,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'pformat@last_slaveless_master.to_dict:\n%s' % \
                 pformat(last_slaveless_master.to_dict())
             )
-        # TODO: test this
         # This ensures that specials categories correctly match with existing
         self.assertTrue(
             last_slaveless_master.row
@@ -798,7 +796,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        # TODO: add tests for creation of attachments
         if self.debug:
             print("slaveless objects")
             for update in self.updates.image.new_slaves:
@@ -842,7 +839,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertTrue(
                 sync_update.m_time
             )
-            # TODO: add tests for update mod_time
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
@@ -1087,7 +1083,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertTrue(
                 sync_update.new_s_object_core['image']
             )
-            # TODO: test this
             # m time doesn't exist for categories
             # self.assertTrue(
             #     sync_update.m_time
@@ -1232,7 +1227,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 original_master.wpid,
                 100001
             )
-            # TODO: check parent id is set
             self.assertEqual(
                 original_master.parent.wpid,
                 100000
@@ -1268,8 +1262,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-        # can't do: M / S mod_time doesn't exist for categories
-        # TODO: syncing image column even though attachment_object is identical
 
         if self.debug:
             self.print_updates_summary(self.updates.category)
@@ -1277,7 +1269,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         sync_update = self.updates.category.master[1]
         if self.debug:
             self.print_update(sync_update)
-        # TODO: test this
 
         """
 update <       4 |     316 ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
@@ -1515,10 +1506,27 @@ probbos:
 
 #
 
-    @pytest.mark.last
-    def test_dummy_do_match(self):
+    @pytest.mark.slow
+    def test_dummy_do_match_prod_cat_img(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
+        process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
+
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -1526,6 +1534,10 @@ probbos:
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
+            do_updates_categories_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_categories_slave_mocked()
         do_match_prod(self.parsers, self.matches, self.settings)
 
         if self.debug:
@@ -1534,18 +1546,29 @@ probbos:
 
         self.assertEqual(len(self.matches.globals), 48)
         if self.debug:
-            for index, matches in self.matches.category.prod.items():
+            for index, matches in self.matches.sub_category.items():
                 print("prod_matches: %s" % index)
                 self.print_matches_summary(matches)
-        prod_cat_match = self.matches.category.prod['ACARF-CRS | 24863']
-        self.assertEqual(len(prod_cat_match.globals), 3)
-        if self.settings.add_special_categories:
-            self.assertEqual(len(prod_cat_match.slaveless), 3)
-        else:
-            self.assertEqual(len(prod_cat_match.slaveless), 1)
+        prod_match = self.matches.globals[47]
+        match_index = prod_match.singular_index
+
+        if self.settings.do_categories:
+            prod_cat_match = self.matches.sub_category[match_index]
+            self.assertEqual(len(prod_cat_match.globals), 3)
+            if self.settings.add_special_categories:
+                self.assertEqual(len(prod_cat_match.slaveless), 3)
+            else:
+                self.assertEqual(len(prod_cat_match.slaveless), 1)
+
+        # TODO: implement this for images in prods, categories and vars
+        if self.settings.do_images:
+            prod_img_match = self.matches.sub_image[match_index]
+            self.assertEqual(len(prod_img_match.globals), 1)
+            self.assertEqual(len(prod_img_match.masterless), 0)
+            self.assertEqual(len(prod_img_match.slaveless), 0)
 
     @pytest.mark.last
-    def test_dummy_do_merge_products(self):
+    def test_dummy_do_merge_prod_cat(self):
         self.settings.init_settings(self.override_args)
 
         self.populate_master_parsers()

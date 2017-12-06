@@ -518,12 +518,10 @@ def do_match_prod(parsers, matches, settings):
 
     Registrar.register_progress("Attempting matching")
 
-    matches.variation = MatchNamespace(
-        index_fn=ProductMatcher.product_index_fn
-    )
-
-    if settings['do_categories']:
-        matches.category.prod = OrderedDict()
+    if not getattr(matches, 'sub_category', None):
+        matches.sub_category = OrderedDict()
+    if not getattr(matches, 'sub_image', None):
+        matches.sub_image = OrderedDict()
 
     if not settings.do_sync:
         return matches
@@ -574,16 +572,16 @@ def do_match_prod(parsers, matches, settings):
                 s_object.categories, m_object.categories
             )
 
-            matches.category.prod[match_index] = MatchNamespace(
+            matches.sub_category[match_index] = MatchNamespace(
                 index_fn=CategoryMatcher.category_index_fn)
 
-            matches.category.prod[match_index].globals.add_matches(
+            matches.sub_category[match_index].globals.add_matches(
                 category_matcher.pure_matches
             )
-            matches.category.prod[match_index].masterless.add_matches(
+            matches.sub_category[match_index].masterless.add_matches(
                 category_matcher.masterless_matches
             )
-            matches.category.prod[match_index].slaveless.add_matches(
+            matches.sub_category[match_index].slaveless.add_matches(
                 category_matcher.slaveless_matches
             )
 
@@ -592,7 +590,46 @@ def do_match_prod(parsers, matches, settings):
                     "category matches for update:\n%s" % (
                         category_matcher.__repr__()))
 
+    if settings['do_images']:
+
+        image_matcher = ImageMatcher()
+
+        for _, prod_match in enumerate(matches.globals):
+            if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
+                Registrar.register_message("processing prod_match: %s" %
+                                           prod_match.tabulate())
+            m_object = prod_match.m_object
+            s_object = prod_match.s_object
+            match_index = prod_match.singular_index
+
+            image_matcher.clear()
+            image_matcher.process_registers(
+                s_object.attachments, m_object.attachments
+            )
+
+            matches.sub_image[match_index] = MatchNamespace(
+                index_fn=ImageMatcher.image_index_fn)
+
+            matches.sub_image[match_index].globals.add_matches(
+                image_matcher.pure_matches
+            )
+            matches.sub_image[match_index].masterless.add_matches(
+                image_matcher.masterless_matches
+            )
+            matches.sub_image[match_index].slaveless.add_matches(
+                image_matcher.slaveless_matches
+            )
+
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message(
+                    "image matches for update:\n%s" % (
+                        image_matcher.__repr__()))
+
 def do_match_var(parsers, matches, settings):
+    matches.variation = MatchNamespace(
+        index_fn=ProductMatcher.product_index_fn
+    )
+
     if not settings['do_variations']:
         return
 
@@ -799,7 +836,7 @@ def do_merge_prod(matches, parsers, updates, settings):
             # ]
 
             match_index = prod_match.singular_index
-            product_category_matches = matches.category.prod.get(match_index)
+            product_category_matches = matches.sub_category.get(match_index)
             if product_category_matches and any([
                 product_category_matches.slaveless,
                 product_category_matches.masterless
@@ -958,7 +995,7 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     syncing_group = HtmlReporter.Group('cats',
     #                                        'Category Syncing Results')
     #
-    #     # TODO: change this to change this to updates.category.prod
+    #     # TODO: change this to change this to updates.sub_category
     #     # syncing_group.add_section(
     #     #     HtmlReporter.Section(
     #     #         ('matches.category.delete_slave'),
@@ -987,7 +1024,7 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     #         # )
     #     #     ))
     #
-    #     # TODO: change this to change this to updates.category.prod
+    #     # TODO: change this to change this to updates.sub_category
     #     # matches.category.delete_slave_ns_data = tabulate(
     #     #     [
     #     #         [
@@ -1016,7 +1053,7 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     #     #         # )
     #     #     ))
     #
-    #     # TODO: change this to updates.category.prod
+    #     # TODO: change this to updates.sub_category
     #     # syncing_group.add_section(
     #     #     HtmlReporter.Section(
     #     #         ('matches.category.slaveless'),
