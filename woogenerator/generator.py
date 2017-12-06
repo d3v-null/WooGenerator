@@ -18,7 +18,7 @@ from exitstatus import ExitStatus
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .images import process_images
-from .matching import (AttacheeSkuMatcher, CategoryMatcher, ImageMatcher,
+from .matching import (AttacheeSkuMatcher, CategoryMatcher, ImageMatcher, AttachmentIDMatcher,
                        ProductMatcher, VariationMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
@@ -175,7 +175,7 @@ def populate_slave_parsers(parsers, settings):
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
-    if settings.schema_is_woo and settings['do_images']:
+    if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
         img_client_class = settings.slave_img_sync_client_class
         img_client_args = settings.slave_img_sync_client_args
@@ -186,7 +186,7 @@ def populate_slave_parsers(parsers, settings):
                 data_path=settings.slave_img_path
             )
 
-    if settings.schema_is_woo and settings['do_categories']:
+    if settings.schema_is_woo and settings.do_categories:
         Registrar.register_progress("analysing API category data")
 
         cat_sync_client_class = settings.slave_cat_sync_client_class
@@ -430,18 +430,21 @@ def do_match_images(parsers, matches, settings):
     return matches
 
 def do_match_categories(parsers, matches, settings):
+    if not getattr(matches, 'sub_image', None):
+        matches.sub_image = OrderedDict()
+
     if Registrar.DEBUG_CATS:
         Registrar.register_message(
             "matching %d master categories with %d slave categories" %
             (len(parsers.master.categories),
              len(parsers.slave.categories)))
 
-    if not( parsers.master.categories and parsers.slave.categories ):
-        return matches
-
     matches.category = MatchNamespace(
         index_fn=CategoryMatcher.category_index_fn
     )
+
+    if not( parsers.master.categories and parsers.slave.categories ):
+        return matches
 
     category_matcher = CategoryMatcher()
     category_matcher.clear()
@@ -464,6 +467,8 @@ def do_match_categories(parsers, matches, settings):
         if category_matcher.pure_matches:
             Registrar.register_message("All Category matches:\n%s" % (
                 '\n'.join(map(str, category_matcher.matches))))
+
+    # using valid because the category tree can collapse multiple master categories into single slave
 
     matches.category.valid += category_matcher.pure_matches
 
@@ -493,6 +498,41 @@ def do_match_categories(parsers, matches, settings):
              '\n'.join(map(str, category_matcher.masterless_matches))))
         Registrar.register_error(exc)
         # raise exc
+
+    if settings.do_images:
+
+        sub_image_matcher = AttachmentIDMatcher()
+
+        for _, match in enumerate(matches.category.globals):
+            if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
+                Registrar.register_message("processing match: %s" %
+                                           match.tabulate())
+            m_object = match.m_object
+            s_object = match.s_object
+            match_index = match.singular_index
+
+            sub_image_matcher.clear()
+            sub_image_matcher.process_registers(
+                s_object.attachments, m_object.attachments
+            )
+
+            matches.sub_image[match_index] = MatchNamespace(
+                index_fn=AttachmentIDMatcher.image_index_fn)
+
+            matches.sub_image[match_index].globals.add_matches(
+                sub_image_matcher.pure_matches
+            )
+            matches.sub_image[match_index].masterless.add_matches(
+                sub_image_matcher.masterless_matches
+            )
+            matches.sub_image[match_index].slaveless.add_matches(
+                sub_image_matcher.slaveless_matches
+            )
+
+            if Registrar.DEBUG_IMG:
+                Registrar.register_message(
+                    "image matches for update:\n%s" % (
+                        sub_image_matcher.__repr__()))
 
     # print parsers.master.to_str_tree()
     # if Registrar.DEBUG_CATS:
@@ -555,17 +595,17 @@ def do_match_prod(parsers, matches, settings):
         Registrar.register_error(exc)
         raise exc
 
-    if settings['do_categories']:
+    if settings.do_categories:
 
         category_matcher = CategoryMatcher()
 
-        for _, prod_match in enumerate(matches.globals):
+        for _, match in enumerate(matches.globals):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-                Registrar.register_message("processing prod_match: %s" %
-                                           prod_match.tabulate())
-            m_object = prod_match.m_object
-            s_object = prod_match.s_object
-            match_index = prod_match.singular_index
+                Registrar.register_message("processing match: %s" %
+                                           match.tabulate())
+            m_object = match.m_object
+            s_object = match.s_object
+            match_index = match.singular_index
 
             category_matcher.clear()
             category_matcher.process_registers(
@@ -573,7 +613,7 @@ def do_match_prod(parsers, matches, settings):
             )
 
             matches.sub_category[match_index] = MatchNamespace(
-                index_fn=CategoryMatcher.category_index_fn)
+                index_fn=category_matcher.category_index_fn)
 
             matches.sub_category[match_index].globals.add_matches(
                 category_matcher.pure_matches
@@ -590,40 +630,40 @@ def do_match_prod(parsers, matches, settings):
                     "category matches for update:\n%s" % (
                         category_matcher.__repr__()))
 
-    if settings['do_images']:
+    if settings.do_images:
 
-        image_matcher = ImageMatcher()
+        sub_image_matcher = AttachmentIDMatcher()
 
-        for _, prod_match in enumerate(matches.globals):
+        for _, match in enumerate(matches.globals):
             if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-                Registrar.register_message("processing prod_match: %s" %
-                                           prod_match.tabulate())
-            m_object = prod_match.m_object
-            s_object = prod_match.s_object
-            match_index = prod_match.singular_index
+                Registrar.register_message("processing match: %s" %
+                                           match.tabulate())
+            m_object = match.m_object
+            s_object = match.s_object
+            match_index = match.singular_index
 
-            image_matcher.clear()
-            image_matcher.process_registers(
+            sub_image_matcher.clear()
+            sub_image_matcher.process_registers(
                 s_object.attachments, m_object.attachments
             )
 
             matches.sub_image[match_index] = MatchNamespace(
-                index_fn=ImageMatcher.image_index_fn)
+                index_fn=AttachmentIDMatcher.image_index_fn)
 
             matches.sub_image[match_index].globals.add_matches(
-                image_matcher.pure_matches
+                sub_image_matcher.pure_matches
             )
             matches.sub_image[match_index].masterless.add_matches(
-                image_matcher.masterless_matches
+                sub_image_matcher.masterless_matches
             )
             matches.sub_image[match_index].slaveless.add_matches(
-                image_matcher.slaveless_matches
+                sub_image_matcher.slaveless_matches
             )
 
-            if Registrar.DEBUG_CATS:
+            if Registrar.DEBUG_IMG:
                 Registrar.register_message(
                     "image matches for update:\n%s" % (
-                        image_matcher.__repr__()))
+                        sub_image_matcher.__repr__()))
 
 def do_match_var(parsers, matches, settings):
     matches.variation = MatchNamespace(
@@ -740,6 +780,70 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             sync_update.update(sync_handles)
 
+            if settings.do_images:
+
+                update_params = {
+                    'handle': 'attachment_ids',
+                    'subject': sync_update.slave_name
+                }
+
+                master_img_ids = set([
+                    master_image.wpid
+                    for master_image in m_object.attachments.values()
+                    if master_image.wpid
+                ])
+                slave_img_ids = set([
+                    slave_image.wpid
+                    for slave_image in s_object.attachments.values()
+                    if slave_image.wpid
+                ])
+
+                if Registrar.DEBUG_CATS:
+                    Registrar.register_message(
+                        "comparing attachments of %s:\n%s\n%s\n%s\n%s" %
+                        (m_object.codesum, str(m_object.attachments.values()),
+                         str(s_object.attachments.values()),
+                         str(master_img_ids), str(slave_img_ids), ))
+
+                sync_update.old_m_object_core['category_ids'] = list(master_img_ids)
+                sync_update.old_s_object_core['category_ids'] = list(slave_img_ids)
+                update_params['new_value'] = sync_update.old_m_object_core['category_ids']
+                update_params['old_value'] = sync_update.old_s_object_core['category_ids']
+
+                match_index = match.singular_index
+                product_image_matches = matches.sub_image.get(match_index)
+                if product_image_matches and any([
+                    product_image_matches.slaveless,
+                    product_image_matches.masterless
+                ]):
+                    assert \
+                        master_img_ids != slave_img_ids, \
+                        (
+                            "if change_match_list exists, then master_img_ids "
+                             "should not equal slave_img_ids.\n"
+                             "This might mean that you have not correctly created "
+                             "the new images which need to be created. "
+                             "master_img_ids: %s\n"
+                             "slave_img_ids: %s\n"
+                             "change_match_list: \n%s"
+                        ) % (
+                            master_img_ids,
+                            slave_img_ids,
+                            product_image_matches.tabulate()
+                        )
+                    update_params['reason'] = 'updating'
+
+                    sync_update.loser_update(**update_params)
+                else:
+                    assert\
+                        master_img_ids == slave_img_ids, \
+                        "should equal, %s | %s" % (
+                            repr(master_img_ids),
+                            repr(slave_img_ids)
+                        )
+                    update_params['reason'] = 'identical'
+                    sync_update.tie_update(**update_params)
+
             if not sync_update.important_static:
                 insort(updates.category.problematic, sync_update)
                 continue
@@ -780,13 +884,12 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_UPDATE:
         Registrar.register_message("sync_handles: %s" % repr(sync_handles))
 
-    for _, prod_match in enumerate(matches.globals):
+    for _, match in enumerate(matches.globals):
         if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-            Registrar.register_message("processing prod_match: %s" %
-                                       prod_match.tabulate())
-        m_object = prod_match.m_object
-        s_object = prod_match.s_object
-
+            Registrar.register_message("processing match: %s" %
+                                       match.tabulate())
+        m_object = match.m_object
+        s_object = match.s_object
 
         sync_update = settings.syncupdate_class_prod(m_object, s_object)
 
@@ -799,7 +902,7 @@ def do_merge_prod(matches, parsers, updates, settings):
 
         # print sync_update.tabulate()
 
-        if settings['do_categories']:
+        if settings.do_categories:
 
             update_params = {
                 'handle': 'category_ids',
@@ -828,14 +931,8 @@ def do_merge_prod(matches, parsers, updates, settings):
             sync_update.old_s_object_core['category_ids'] = list(slave_cat_ids)
             update_params['new_value'] = sync_update.old_m_object_core['category_ids']
             update_params['old_value'] = sync_update.old_s_object_core['category_ids']
-            # update_params['new_value'] = [
-            #     dict(id=category_id) for category_id in master_cat_ids
-            # ]
-            # update_params['old_value'] = [
-            #     dict(id=category_id) for category_id in master_cat_ids
-            # ]
 
-            match_index = prod_match.singular_index
+            match_index = match.singular_index
             product_category_matches = matches.sub_category.get(match_index)
             if product_category_matches and any([
                 product_category_matches.slaveless,
@@ -847,7 +944,7 @@ def do_merge_prod(matches, parsers, updates, settings):
                         "if change_match_list exists, then master_cat_ids "
                          "should not equal slave_cat_ids.\n"
                          "This might mean that you have not correctly created "
-                         "the new products which need to be created. "
+                         "the new categories which need to be created. "
                          "master_cat_ids: %s\n"
                          "slave_cat_ids: %s\n"
                          "change_match_list: \n%s"
@@ -865,6 +962,70 @@ def do_merge_prod(matches, parsers, updates, settings):
                     "should equal, %s | %s" % (
                         repr(master_cat_ids),
                         repr(slave_cat_ids)
+                    )
+                update_params['reason'] = 'identical'
+                sync_update.tie_update(**update_params)
+
+        if settings.do_images:
+
+            update_params = {
+                'handle': 'attachment_ids',
+                'subject': sync_update.slave_name
+            }
+
+            master_img_ids = set([
+                master_image.wpid
+                for master_image in m_object.attachments.values()
+                if master_image.wpid
+            ])
+            slave_img_ids = set([
+                slave_image.wpid
+                for slave_image in s_object.attachments.values()
+                if slave_image.wpid
+            ])
+
+            if Registrar.DEBUG_CATS:
+                Registrar.register_message(
+                    "comparing attachments of %s:\n%s\n%s\n%s\n%s" %
+                    (m_object.codesum, str(m_object.attachments.values()),
+                     str(s_object.attachments.values()),
+                     str(master_img_ids), str(slave_img_ids), ))
+
+            sync_update.old_m_object_core['category_ids'] = list(master_img_ids)
+            sync_update.old_s_object_core['category_ids'] = list(slave_img_ids)
+            update_params['new_value'] = sync_update.old_m_object_core['category_ids']
+            update_params['old_value'] = sync_update.old_s_object_core['category_ids']
+
+            match_index = match.singular_index
+            product_image_matches = matches.sub_image.get(match_index)
+            if product_image_matches and any([
+                product_image_matches.slaveless,
+                product_image_matches.masterless
+            ]):
+                assert \
+                    master_img_ids != slave_img_ids, \
+                    (
+                        "if change_match_list exists, then master_img_ids "
+                         "should not equal slave_img_ids.\n"
+                         "This might mean that you have not correctly created "
+                         "the new images which need to be created. "
+                         "master_img_ids: %s\n"
+                         "slave_img_ids: %s\n"
+                         "change_match_list: \n%s"
+                    ) % (
+                        master_img_ids,
+                        slave_img_ids,
+                        product_image_matches.tabulate()
+                    )
+                update_params['reason'] = 'updating'
+
+                sync_update.loser_update(**update_params)
+            else:
+                assert\
+                    master_img_ids == slave_img_ids, \
+                    "should equal, %s | %s" % (
+                        repr(master_img_ids),
+                        repr(slave_img_ids)
                     )
                 update_params['reason'] = 'identical'
                 sync_update.tie_update(**update_params)

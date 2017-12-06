@@ -521,7 +521,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        process_images(self.settings, self.parsers)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.debug:
@@ -639,10 +640,28 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.assertEqual(getattr(last_slave, attr), value)
 
 
-    @pytest.mark.last
-    def test_dummy_do_match_categories(self):
+    @pytest.mark.slow
+    def test_dummy_do_match_cat_img(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
+
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -653,7 +672,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.print_matches_summary(self.matches.category)
 
         self.assertEqual(len(self.matches.category.globals), 9)
-        first_match = self.matches.category.globals[2]
+        first_match = self.matches.category.valid[2]
+        first_match_index = first_match.singular_index
         first_master = first_match.m_object
         first_slave = first_match.s_object
         if self.debug:
@@ -667,6 +687,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 print("%20s | %50s | %50s" % (
                     str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
                 ))
+
+        first_match_sub_images = self.matches.sub_image[first_match_index]
+        self.assertEqual(len(first_match_sub_images.globals), 1)
+
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
@@ -687,6 +711,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         )
 
 
+
+
     @pytest.mark.slow
     def test_dummy_do_merge_images_only(self):
         """
@@ -696,7 +722,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        process_images(self.settings, self.parsers)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
@@ -927,7 +954,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        process_images(self.settings, self.parsers)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
@@ -1235,12 +1263,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
     @pytest.mark.slow
-    def test_do_merge_images_categories(self):
+    def test_do_merge_cat_img(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        process_images(self.settings, self.parsers)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:
@@ -1405,6 +1434,18 @@ probbos:
                 s_attachment.get('ID'),
                 24879
             )
+            self.assertTrue(
+                sync_update.old_m_object_core['image']
+            )
+            self.assertTrue(
+                sync_update.new_s_object_core['image']
+            )
+            if self.debug:
+                print(
+                    "update native: \n%s" % \
+                    pformat(sync_update.get_slave_updates_native())
+                )
+
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
@@ -1512,7 +1553,8 @@ probbos:
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
-        process_images(self.settings, self.parsers)
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
         self.populate_slave_parsers()
 
         if self.settings.do_images:

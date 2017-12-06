@@ -686,7 +686,7 @@ class CategoryMatcher(AbstractMatcher):
 
 class ImageMatcher(AbstractMatcher):
     """
-    Matcher class for categories
+    Matches images on normalized filename
     """
     process_registers = AbstractMatcher.process_registers_singular
     # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
@@ -698,6 +698,23 @@ class ImageMatcher(AbstractMatcher):
 
     def __init__(self):
         super(ImageMatcher, self).__init__(self.image_index_fn)
+        self.process_registers = self.process_registers_singular
+        # self.retrieveObjects = self.retrieveObjectsSingular
+
+class AttachmentIDMatcher(AbstractMatcher):
+    """
+    Matches attachments on wordpress ID
+    """
+    process_registers = AbstractMatcher.process_registers_singular
+    # retrieveObjects = AbstractMatcher.retrieveObjectsSingular
+
+    @staticmethod
+    def image_index_fn(img_object):
+        """ Return the basename of the image file. """
+        return img_object.wpid
+
+    def __init__(self):
+        super(AttachmentIDMatcher, self).__init__(self.image_index_fn)
         self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
 
