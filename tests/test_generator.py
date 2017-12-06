@@ -18,8 +18,9 @@ from woogenerator.coldata import (ColDataAttachment, ColDataProduct,
 from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_match_prod, do_merge_categories,
                                     do_merge_images, do_merge_prod, do_report,
-                                    do_updates_categories, do_updates_images,
-                                    populate_master_parsers,
+                                    do_updates_categories_master,
+                                    do_updates_categories_slave,
+                                    do_updates_images_slave, do_updates_images_master, populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
@@ -846,8 +847,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ),
             "ACARA-CCL.png"
         )
+        # TODO: add tests for update mod_time
 
-    def do_updates_images_mocked(self):
+    def do_updates_images_slave_mocked(self):
         with mock.patch(
             MockUtils.get_mock_name(
                 self.settings.__class__,
@@ -913,13 +915,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             return_value='id'
         ):
             self.settings.update_slave = True
-            do_updates_images(
+            do_updates_images_slave(
                 self.updates, self.parsers, self.results, self.settings
             )
             self.settings.update_slave = False
 
     @pytest.mark.slow
-    def test_dummy_do_updates_images(self):
+    def test_dummy_do_updates_images_slave(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = True
         self.setup_temp_img_dir()
@@ -934,7 +936,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            self.do_updates_images_mocked()
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
 
         if self.debug:
             print('image update results: %s' % self.results.image)
@@ -1054,7 +1059,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             import pudb; pudb.set_trace()
         # TODO: test this
 
-    def do_updates_categories_mocked(self):
+    def do_updates_categories_slave_mocked(self):
         with mock.patch(
             MockUtils.get_mock_name(
                 self.settings.__class__,
@@ -1112,13 +1117,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             return_value='term_id'
         ):
             self.settings.update_slave = True
-            do_updates_categories(
+            do_updates_categories_slave(
                 self.updates, self.parsers, self.results, self.settings
             )
             self.settings.update_slave = False
 
     @pytest.mark.last
-    def test_dummy_do_updates_categories(self):
+    def test_dummy_do_updates_categories_slave(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.settings.do_categories:
@@ -1128,7 +1133,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            self.do_updates_categories_mocked()
+            do_updates_categories_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_categories_slave_mocked()
 
         if self.debug:
             print('category update results: %s' % self.results.category)
@@ -1209,7 +1217,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            self.do_updates_images_mocked()
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
 
         if self.settings.do_categories:
             do_match_categories(
@@ -1224,7 +1235,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_updates_summary(self.updates.category)
         self.assertEqual(len(self.updates.category.master), 9)
-        sync_update = self.updates.category.master[-1]
+        sync_update = self.updates.category.master[1]
         if self.debug:
             self.print_update(sync_update)
             import pudb; pudb.set_trace()
@@ -1322,7 +1333,7 @@ probbos:
 
         """
 
-        sync_update = self.updates.category.new_slaves[0]
+        sync_update = self.updates.category.new_slaves[1]
         if self.debug:
             self.print_update(sync_update)
             import pudb; pudb.set_trace()
@@ -1383,7 +1394,10 @@ probbos:
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            self.do_updates_categories_mocked()
+            do_updates_categories_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_categories_slave_mocked()
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 

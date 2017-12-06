@@ -653,23 +653,6 @@ def do_merge_images(matches, parsers, updates, settings):
             if sync_update.s_updated:
                 updates.image.slave.append(sync_update)
 
-    for update in updates.image.master:
-        old_master_id = update.master_id
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message(
-                "performing update < %5s | %5s > = \n%100s, %100s " %
-                (update.master_id, update.slave_id,
-                 str(update.old_m_object), str(update.old_s_object)))
-        if not old_master_id in parsers.master.attachments:
-            exc = UserWarning(
-                "couldn't fine pkey %s in parsers.master.attachments" %
-                update.master_id)
-            Registrar.register_error(exc)
-            continue
-        parsers.master.attachments[old_master_id].update(
-            update.get_master_updates_native()
-        )
-
     if settings['auto_create_new']:
         for count, match in enumerate(matches.image.slaveless):
             m_object = match.m_object
@@ -729,31 +712,6 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             if sync_update.s_updated:
                 updates.category.slave.append(sync_update)
-
-    for update in updates.category.master:
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message(
-                "performing update < %5s | %5s > = \n%100s, %100s " %
-                (
-                    update.master_id, update.slave_id,
-                    str(update.old_m_object), str(update.old_s_object))
-                )
-        if not update.master_id in parsers.master.categories:
-            exc = UserWarning(
-                "couldn't fine pkey %s in parsers.master.categories" %
-                update.master_id)
-            Registrar.register_error(exc)
-            continue
-        parsers.master.categories[update.master_id].update(
-            update.get_master_updates_native()
-        )
-        # for col, warnings in update.sync_warnings.items():
-        #     for warning in warnings:
-        #         if not warning['subject'] == update.master_name:
-        #             continue
-        #
-        #         new_val = warning['new_value']
-        #         parsers.master.categories[update.master_id][col] = new_val
 
     if settings['auto_create_new']:
         for count, match in enumerate(matches.category.slaveless):
@@ -1187,7 +1145,7 @@ def usr_prompt_continue(settings):
             "Please read reports and press Enter to continue or ctrl-c to stop..."
         )
 
-def upload_new_images(parsers, results, settings, client, new_updates):
+def upload_new_images_slave(parsers, results, settings, client, new_updates):
 
     if not (new_updates and settings['update_slave']):
         return
@@ -1240,7 +1198,7 @@ def upload_new_images(parsers, results, settings, client, new_updates):
         results.successes.append(sync_update)
 
 
-def upload_image_changes(parsers, results, settings, client, change_updates):
+def upload_image_changes_slave(parsers, results, settings, client, change_updates):
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
@@ -1281,8 +1239,25 @@ def upload_image_changes(parsers, results, settings, client, change_updates):
 
         results.successes.append(sync_update)
 
+def do_updates_images_master(updates, parsers, results, settings):
+    for update in updates.image.master:
+        old_master_id = update.master_id
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (update.master_id, update.slave_id,
+                 str(update.old_m_object), str(update.old_s_object)))
+        if not old_master_id in parsers.master.attachments:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.attachments" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        parsers.master.attachments[old_master_id].update(
+            update.get_master_updates_native()
+        )
 
-def do_updates_images(updates, parsers, results, settings):
+def do_updates_images_slave(updates, parsers, results, settings):
     """Perform a list of updates on attachments."""
 
     results.image = ResultsNamespace()
@@ -1322,16 +1297,16 @@ def do_updates_images(updates, parsers, results, settings):
 
         if new_updates:
             # create attachments that do not yet exist on slave
-            upload_new_images(
+            upload_new_images_slave(
                 parsers, results.image.new, settings, client, new_updates
             )
 
         if change_updates:
-            upload_image_changes(
+            upload_image_changes_slave(
                 parsers, results.image, settings, client, change_updates
             )
 
-def upload_new_categories(parsers, results, settings, client, new_updates):
+def upload_new_categories_slave(parsers, results, settings, client, new_updates):
     """
     Create new categories in client in an order which creates parents first.
     """
@@ -1404,7 +1379,7 @@ def upload_new_categories(parsers, results, settings, client, new_updates):
 
         results.successes.append(sync_update)
 
-def upload_category_changes(parsers, results, settings, client, change_updates):
+def upload_category_changes_slave(parsers, results, settings, client, change_updates):
     """
     Upload a list of category changes
     """
@@ -1453,8 +1428,26 @@ def upload_category_changes(parsers, results, settings, client, change_updates):
 
         results.successes.append(sync_update)
 
+def do_updates_categories_master(updates, parsers, results, settings):
+    for update in updates.category.master:
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (
+                    update.master_id, update.slave_id,
+                    str(update.old_m_object), str(update.old_s_object))
+                )
+        if not update.master_id in parsers.master.categories:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.categories" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        parsers.master.categories[update.master_id].update(
+            update.get_master_updates_native()
+        )
 
-def do_updates_categories(updates, parsers, results, settings):
+def do_updates_categories_slave(updates, parsers, results, settings):
     """Perform a list of updates on categories."""
     if not hasattr(updates, 'category'):
         return
@@ -1496,12 +1489,12 @@ def do_updates_categories(updates, parsers, results, settings):
 
         if new_updates:
             # create categories that do not yet exist on slave
-            upload_new_categories(
+            upload_new_categories_slave(
                 parsers, results.category.new, settings, client, new_updates
             )
 
         if change_updates:
-            upload_category_changes(
+            upload_category_changes_slave(
                 parsers, results.category, settings, client, change_updates
             )
 
@@ -1646,8 +1639,9 @@ def main(override_args=None, settings=None):
         )
         check_warnings(settings)
         if not settings.report_and_quit:
+            do_updates_images_master(updates, parsers, results, settings)
             try:
-                do_updates_images(updates, parsers, results, settings)
+                do_updates_images_slave(updates, parsers, results, settings)
             except (SystemExit, KeyboardInterrupt):
                 return reporters, results
 
@@ -1660,8 +1654,9 @@ def main(override_args=None, settings=None):
         )
         check_warnings(settings)
         if not settings.report_and_quit:
+            do_updates_categories_master(updates, parsers, results, settings)
             try:
-                do_updates_categories(updates, parsers, results, settings)
+                do_updates_categories_slave(updates, parsers, results, settings)
             except (SystemExit, KeyboardInterrupt):
                 return reporters, results
 

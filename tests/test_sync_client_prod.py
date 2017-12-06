@@ -467,7 +467,7 @@ class TestImgSyncClient(TestProdSyncClient):
             img_id = client.get_data_core(response.json(), id_key)
             client.delete_item(img_id)
 
-    def test_upload_image_changes_delete(self):
+    def test_upload_image_changes_slave_delete(self):
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
