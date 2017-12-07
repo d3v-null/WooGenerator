@@ -3443,7 +3443,8 @@ class ColDataAttachment(ColDataWpEntity):
                 'path': 'attachment_meta.file',
             },
             'report': True,
-            'static': True,
+            # TODO: should this be static? run slow tests.
+            # 'static': True,
         },
         'file_name': {
             'path': None,

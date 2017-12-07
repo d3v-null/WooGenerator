@@ -270,7 +270,7 @@ def export_master_parser(settings, parsers):
         if col in product_colnames:
             del product_colnames[col]
 
-    if settings.schema_is_woo:
+    if settings.schema_is_woo and settings.do_attributes:
         attribute_colnames = settings.coldata_class.get_attribute_colnames_native(
             parsers.master.attributes, parsers.master.vattributes)
         product_colnames = SeqUtils.combine_ordered_dicts(
@@ -1528,7 +1528,8 @@ def main(override_args=None, settings=None):
             do_updates_images_master(updates, parsers, results, settings)
             try:
                 do_updates_images_slave(updates, parsers, results, settings)
-            except (SystemExit, KeyboardInterrupt):
+            except (SystemExit, KeyboardInterrupt) as exc:
+                Registrar.register_error(exc)
                 return reporters, results
 
     if settings.do_categories:
@@ -1543,10 +1544,12 @@ def main(override_args=None, settings=None):
             do_updates_categories_master(updates, parsers, results, settings)
             try:
                 do_updates_categories_slave(updates, parsers, results, settings)
-            except (SystemExit, KeyboardInterrupt):
+            except (SystemExit, KeyboardInterrupt) as exc:
+                Registrar.register_error(exc)
                 return reporters, results
 
-    raise NotImplementedError("Functions past this point have not been completed")
+    Registrar.register_error(NotImplementedError("Functions past this point have not been completed"))
+    return reporters, results
 
     if settings.do_attributes:
 
@@ -1560,7 +1563,8 @@ def main(override_args=None, settings=None):
             do_updates_attributes_master(updates, parsers, results, settings)
             try:
                 do_updates_attributes_slave(updates, parsers, results, settings)
-            except (SystemExit, KeyboardInterrupt):
+            except (SystemExit, KeyboardInterrupt) as exc:
+                Registrar.register_error(exc)
                 return reporters, results
 
     do_match_prod(parsers, matches, settings)
@@ -1580,12 +1584,14 @@ def main(override_args=None, settings=None):
 
     try:
         do_updates_prod(updates, parsers, settings, results)
-    except (SystemExit, KeyboardInterrupt):
+    except (SystemExit, KeyboardInterrupt) as exc:
+        Registrar.register_error(exc)
         return reporters, results
     if settings['do_variations']:
         try:
             do_updates_var(updates, parsers, settings, results)
-        except (SystemExit, KeyboardInterrupt):
+        except (SystemExit, KeyboardInterrupt) as exc:
+            Registrar.register_error(exc)
             return reporters, results
     do_report_post(reporters, results, settings)
 

@@ -53,6 +53,7 @@ class ImportTreeObject(ImportObject):
         finally:
             self.meta = meta
 
+        # ImportObject.__init__(self, *args, **kwargs)
         for base_class in ImportTreeObject.__bases__:
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)

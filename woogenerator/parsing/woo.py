@@ -118,8 +118,11 @@ class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     title_key = 'title'
 
     def __init__(self, *args, **kwargs):
-        ImportWooObject.__init__(self, *args, **kwargs)
-        ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
+        for base_class in ImportWooImg.__bases__:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
+        # ImportWooObject.__init__(self, *args, **kwargs)
+        # ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
 
     @classmethod
     def get_identifier(cls, data):
@@ -234,7 +237,7 @@ class ImportWooProductVariable(
     product_type = ImportShopProductVariableMixin.product_type
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportWooProduct, ImportShopProductVariableMixin]:
+        for base_class in ImportWooProductVariable.__bases__:
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)
 

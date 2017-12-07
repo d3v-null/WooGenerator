@@ -73,6 +73,7 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     def __init__(self, *args, **kwargs):
         self.subs = kwargs.pop('subs', {})
         self.regex = kwargs.pop('regex', {})
+        # ImportTreeObject.__init__(self, *args, **kwargs)
         for base_class in ImportGenObject.__bases__:
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)
