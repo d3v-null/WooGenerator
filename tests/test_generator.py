@@ -166,6 +166,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         prod_container = self.parsers.master.product_container.container
         prod_list = prod_container(self.parsers.master.products.values())
+        if self.debug:
+            print("%d products:" % len(prod_list))
+            print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
         self.assertEqual(len(prod_list), 48)
         first_prod = prod_list[0]
         if self.debug:
@@ -189,29 +192,42 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_taxo)
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
-        for key, value in {
-                'DNR': u'59.97',
-                'DPR': u'57.47',
-                'RNR': u'',
-                'RPR': u'',
-                'WNR': u'99.95',
-                'WPR': u'84.96',
-                'height': u'235',
-                'length': u'85',
-                'price': u'',
-                'weight': u'1.08',
-                'width': u'85'
-                # TODO: the rest of the meta keys
-        }.items():
-            self.assertEqual(first_prod[key], value)
-        # print("pformat:\n%s" % pformat(dict(first_prod)))
-        # print("dir:")
-        # print(pformat(dir(first_prod)))
-        # print("vars")
-        # print(pformat(vars(first_prod)))
-        # for attr in ["depth"]:
-        # print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
-        # print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
+        test_dict = {
+            'DNR': u'59.97',
+            'DPR': u'57.47',
+            'RNR': u'',
+            'RPR': u'',
+            'WNR': u'99.95',
+            'WPR': u'84.96',
+            'height': u'235',
+            'length': u'85',
+            'price': u'',
+            'weight': u'1.08',
+            'width': u'85',
+            'rowcount': 10,
+            'title': u'Range A - Style 1 - 1Litre',
+            'HTML Description': u'',
+            'Images': u'ACARA-CAL.png',
+            'CA': u'S',
+            'Updated': u'',
+
+            # TODO: the rest of the meta keys
+        }
+        if self.settings.do_specials:
+            test_dict.update({
+                'WNS': u'74.9625',
+                'WNF': 1470924000,
+                'WNT': 32524635600,
+            })
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_prod[key]), unicode(value))
+
+        if self.debug:
+            print("pformat@to_dict@first_prod:\n%s" % pformat(first_prod.to_dict()))
+            print("dir@first_prod:\n%s" % dir(first_prod))
+            print("vars@first_prod:\n%s" % vars(first_prod))
+            for attr in ["depth"]:
+                print("first_prod.%s: %s" % (attr, pformat(getattr(first_prod, attr))))
 
         third_prod = prod_list[2]
         if self.debug:
@@ -308,12 +324,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(last_cat.depth, 1)
         self.assertEqual(last_cat.parent.codesum, 'SP')
         self.assertEqual(
-            last_cat.to_dict().get('attachment_object').file_name,
+            last_cat.to_dict().get('attachment_object').get('file_name'),
             "ACA.jpg"
         )
         last_cat_attachment_id = id(last_cat.to_dict().get('attachment_object'))
 
-        # Test that categories which have the same attachment use the same attachment object
+        # This tests that categories which have the same attachment use the same attachment object
 
         self.assertEqual(
             second_cat_attachment_id,
@@ -740,6 +756,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 print(update.tabulate())
         self.assertEqual(len(self.updates.image.slave), 51)
         self.assertEqual(len(self.updates.image.problematic), 0)
+        if self.debug:
+            print("slave updates:")
+            for sync_update in self.updates.image.slave:
+                print(sync_update.tabulate())
         # sync_update = self.updates.image.problematic[0]
         # try:
         #     if self.debug:
@@ -819,6 +839,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
         self.assertEqual(len(self.updates.image.master), 45)
+        if self.debug:
+            print("master updates:")
+            for sync_update in self.updates.image.master:
+                print(sync_update.tabulate())
         sync_update = self.updates.image.master[0]
         try:
             if self.debug:
@@ -1104,7 +1128,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    @pytest.mark.last
+    @pytest.mark.first
     def test_dummy_do_merge_categories_only(self):
         self.settings.do_images = False
         self.populate_master_parsers()

@@ -237,6 +237,11 @@ class ImportWooApiImg(ImportWooImg, ImportApiMixin):
             cls.get_index(data)
         ]))
 
+    def process_meta(self):
+        for base_class in ImportWooApiImg.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
+
 class WooApiImgList(WooImgList, ApiListMixin):
     supported_type = ImportWooApiImg
 

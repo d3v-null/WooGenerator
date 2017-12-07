@@ -135,6 +135,11 @@ class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     def identifier(self):
         return self.get_identifier(self)
 
+    def process_meta(self):
+        for base_class in ImportWooImg.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
+
 ImportWooObject.attachment_indexer = ImportWooImg.get_identifier
 
 class WooListMixin(object):

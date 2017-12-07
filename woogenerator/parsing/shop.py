@@ -12,7 +12,7 @@ from collections import OrderedDict
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
-from ..utils import FileUtils, Registrar, SanitationUtils
+from ..utils import FileUtils, Registrar, SanitationUtils, SeqUtils
 from .abstract import ImportObject, ObjList
 from .gen import CsvParseGenMixin
 from .tree import ItemList, TaxoList
@@ -63,14 +63,24 @@ class ImportShopAttachmentMixin(ShopMixin):
 
     @classmethod
     def get_file_name(cls, data):
-        if data.get(cls.file_name_key):
-            return FileUtils.get_path_basename(data[cls.file_name_key])
-        file_path = cls.get_file_path(data)
-        if file_path:
-            return FileUtils.get_path_basename(file_path)
-        source_url = cls.get_source_url(data)
-        if source_url:
-            return FileUtils.get_path_basename(source_url)
+        possible_paths = SeqUtils.filter_unique_true([
+            data.get(cls.file_name_key),
+            cls.get_file_path(data),
+            cls.get_source_url(data)
+        ])
+        if any(possible_paths):
+            return FileUtils.get_path_basename(possible_paths[0])
+        else:
+            return ''
+
+        # if data.get(cls.file_name_key) is not None:
+        #     return FileUtils.get_path_basename(data[cls.file_name_key])
+        # file_path = cls.get_file_path(data)
+        # if file_path is not None:
+        #     return FileUtils.get_path_basename(file_path)
+        # source_url = cls.get_source_url(data)
+        # if source_url is not None:
+        #     return FileUtils.get_path_basename(source_url)
 
     @property
     def file_name(self):
