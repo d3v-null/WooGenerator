@@ -489,6 +489,20 @@ class CsvParseWooMixin(object):
 
         return img_data
 
+    def get_empty_category_instance(self, **kwargs):
+        if not kwargs.get('container'):
+            kwargs['container'] = self.category_container
+        if not kwargs.get('row_data'):
+            kwargs['row_data'] = {}
+        if not kwargs['row_data'].get('type'):
+            kwargs['row_data']['type'] = 'category'
+        for key in kwargs['container'].verify_meta_keys:
+            if not kwargs['row_data'].get(key):
+                kwargs['row_data'][key] = ''
+        if not kwargs.get('parent'):
+            kwargs['parent'] = self.root_data
+        return self.get_empty_instance(**kwargs)
+
     def get_wpid(self, object_data):
         return object_data.wpid
 

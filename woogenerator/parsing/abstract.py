@@ -590,6 +590,11 @@ class CsvParseBase(Registrar):
         object_data = kwargs['container'](all_data, **kwargs)
         return object_data
 
+    def get_empty_instance(self, **kwargs):
+        object_data = self.new_object(self.rowcount, row=[], **kwargs)
+        self.rowcount += 1
+        return object_data
+
     def process_object(self, object_data):
         """
         Process a parsed object. Override in subclasses.

@@ -18,9 +18,12 @@ from woogenerator.coldata import (ColDataAttachment, ColDataProductMeridian,
 from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_match_prod, do_merge_categories,
                                     do_merge_images, do_merge_prod, do_report,
+                                    do_report_categories, do_report_images,
                                     do_updates_categories_master,
                                     do_updates_categories_slave,
-                                    do_updates_images_slave, do_updates_images_master, populate_master_parsers,
+                                    do_updates_images_master,
+                                    do_updates_images_slave,
+                                    populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
@@ -66,6 +69,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.report_matching = True
         self.settings.auto_create_new = True
         self.settings.update_slave = False
+        self.settings.do_problematic = True
+        self.settings.do_report = True
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
         self.settings.schema = "CA"
         self.settings.ask_before_update = False
         if self.settings.wc_api_is_legacy:
@@ -134,8 +141,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertTrue(self.settings.do_sync)
         self.assertTrue(self.settings.do_categories)
         self.assertTrue(self.settings.do_images)
-        self.assertFalse(self.settings.do_resize_images)
+        self.assertTrue(self.settings.do_resize_images)
         self.assertFalse(self.settings.do_remeta_images)
+        self.assertTrue(self.settings.do_problematic)
         self.assertFalse(self.settings.download_master)
         self.assertFalse(self.settings.download_slave)
         self.assertEqual(self.settings.master_name, "gdrive-test")
@@ -520,8 +528,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     # @unittest.skip("takes too long")
     @pytest.mark.slow
     def test_dummy_process_images_master(self):
-        self.settings.do_resize_images = True
-        self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         if self.settings.do_images:
@@ -546,6 +552,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.last
     def test_dummy_images_slave(self):
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = False
+        self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
 
@@ -645,8 +654,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.slow
     def test_dummy_do_match_cat_img(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -736,7 +743,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.print_updates_summary(self.updates.image)
             for update in self.updates.image.slave:
                 print(update.tabulate())
-        self.assertEqual(len(self.updates.image.slave), 51)
+        self.assertEqual(len(self.updates.image.slave), 6)
+        self.assertEqual(len(self.updates.image.problematic), 45)
         sync_update = self.updates.image.slave[0]
         if self.debug:
             self.print_update(sync_update)
@@ -947,8 +955,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.slow
     def test_dummy_do_updates_images_slave(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -1018,6 +1024,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.last
     def test_dummy_do_merge_categories_only(self):
+        self.settings.do_images = False
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.settings.do_categories:
@@ -1260,8 +1267,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.slow
     def test_dummy_do_merge_cat_img(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -1553,8 +1558,6 @@ probbos:
 
     @pytest.mark.slow
     def test_dummy_do_match_prod_cat_img(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -1599,8 +1602,6 @@ probbos:
 
     @pytest.mark.slow
     def test_dummy_do_merge_prod_cat(self):
-        self.settings.do_remeta_images = False
-        self.settings.do_resize_images = True
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -1735,6 +1736,135 @@ probbos:
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+    @pytest.mark.slow
+    def test_reporting_imgs_only(self):
+        self.setup_temp_img_dir()
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_report_images(
+                self.reporters, self.matches, self.updates, self.parsers, self.settings
+            )
+
+        self.assertTrue(
+            self.reporters.img
+        )
+
+        if self.debug:
+            print(
+                "img pre-sync summary: \n%s" % \
+                self.reporters.img.get_summary_text()
+            )
+
+    def test_reporting_cat_only(self):
+        self.settings.do_images = False
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+        if self.settings.do_categories:
+            do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_report_categories(
+                self.reporters, self.matches, self.updates, self.parsers, self.settings
+            )
+
+        self.assertTrue(
+            self.reporters.cat
+        )
+
+        if self.debug:
+            print(
+                "cat pre-sync summary: \n%s" % \
+                self.reporters.cat.get_summary_text()
+            )
+
+        # TODO fix display of OLD / NEW items in match.tabulate()
+        """
+update <       3 |     315 >OLD
+taxos                descsum    title      parent_id    ID    slug
+-------------------  ---------  ---------  -----------  ----  ---------
+A|r:3|w:|Product A   Product A  Product A
+r:1|a:315|Product A             Product A  0            315   product-a
+CHANGES (6!1)
+-
+Column       Reason     Subject           Old    New          M TIME    S TIME  EXTRA
+-----------  ---------  ----------------  -----  ---------  --------  --------  -------
+description  inserting  woocommerce-test         Product A         0         0
+menu_order   updating   woocommerce-test  1      3                 0         0
+-
+Column    Reason    Subject      Old    New                                                   M TIME    S TIME  EXTRA
+--------  --------  -----------  -----  --------------------------------------------------  --------  --------  -------
+term_id   merging   gdrive-test         315                                                        0         0
+slug      merging   gdrive-test         product-a                                                  0         0
+image     merging   gdrive-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
+display   merging   gdrive-test         default                                                    0         0
+gdrive-test CHANGES
+  ID    term_id  slug       image                                                                                                                                                                                                                                                                                                                                   display
+----  ---------  ---------  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  ---------
+   3        315  product-a  OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('id', 24879)])  default
+woocommerce-test CHANGES
+  ID  description      menu_order
+----  -------------  ------------
+ 315  Product A                 3
+
+NEW
+taxos                descsum    title        parent_id    ID  slug
+-------------------  ---------  ---------  -----------  ----  ---------
+r:1|a:315|Product A             Product A            0   315  product-a
+r:3|a:315|Product A  Product A  Product A            0   315  product-a
+        """
+
+
+    @pytest.mark.slow
+    def test_reporting_cat_img(self):
+        self.setup_temp_img_dir()
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        if self.settings.do_images:
+            process_images(self.settings, self.parsers)
+            do_match_images(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_images(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_updates_images_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_images_slave_mocked()
+
+        if self.settings.do_categories:
+            do_match_categories(
+                self.parsers, self.matches, self.settings
+            )
+            do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_report_categories(
+                self.reporters, self.matches, self.updates, self.parsers, self.settings
+            )
+
+        self.assertTrue(
+            self.reporters.cat
+        )
+
+        if self.debug:
+            print(
+                "cat pre-sync summary: \n%s" % \
+                self.reporters.cat.get_summary_text()
+            )
 
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):

@@ -68,11 +68,12 @@ from .utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
 from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
                              do_category_matches_group, do_delta_group,
                              do_duplicates_group, do_duplicates_summary_group,
-                             do_failures_group, do_main_summary_group,
-                             do_matches_group, do_matches_summary_group,
-                             do_post_summary_group, do_successes_group,
-                             do_sync_group, do_variation_matches_group,
-                             do_variation_sync_group)
+                             do_failures_group, do_img_sync_group,
+                             do_main_summary_group, do_matches_group,
+                             do_matches_summary_group, do_post_summary_group,
+                             do_successes_group, do_sync_group,
+                             do_variation_matches_group,
+                             do_var_sync_group)
 
 
 def timediff(settings):
@@ -638,8 +639,6 @@ def do_merge_images(matches, parsers, updates, settings):
         m_object = match.m_object
         for s_object in match.s_objects:
 
-            # TODO: implement img mod time check
-
             sync_update = settings.syncupdate_class_img(m_object, s_object)
 
             sync_update.update(sync_handles)
@@ -705,7 +704,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             sync_update.update(sync_handles)
 
             if settings.do_images:
-                sync_update.simplify_sync_warning_value_singular('image', 'id')
+                sync_update.simplify_sync_warning_value_singular('image', ['id'])
 
             if not sync_update.important_static:
                 insort(updates.category.problematic, sync_update)
@@ -725,7 +724,8 @@ def do_merge_categories(matches, parsers, updates, settings):
                     count, m_object.identifier
                 )
             )
-            sync_update = settings.syncupdate_class_cat(m_object)
+            empty_s_object = parsers.slave.get_empty_category_instance()
+            sync_update = settings.syncupdate_class_cat(m_object, empty_s_object)
             sync_update.update(sync_handles)
             updates.category.new_slaves.append(sync_update)
 
@@ -768,14 +768,14 @@ def do_merge_prod(matches, parsers, updates, settings):
         # print sync_update.tabulate()
 
         if settings.do_categories:
-            sync_update.simplify_sync_warning_value_listed('product_categories', 'term_id')
+            sync_update.simplify_sync_warning_value_listed('product_categories', ['term_id'])
 
         if settings.do_images:
-            sync_update.simplify_sync_warning_value_listed('attachment_objects', 'id')
+            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id'])
 
         # TODO: settings.do_attributes
         # if settings.do_attributes:
-        #     sync_update.simplify_sync_warning_value_listed('attributes', 'term_id')
+        #     sync_update.simplify_sync_warning_value_listed('attributes', ['term_id'])
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
@@ -835,7 +835,7 @@ def do_merge_var(matches, parsers, updates, settings):
 
         if settings.do_images:
             # TODO: this might not be the right handle for variation image
-            sync_update.simplify_sync_warning_value_listed('attachment_objects', 'id')
+            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id'])
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
@@ -888,10 +888,25 @@ def do_merge_var(matches, parsers, updates, settings):
         raise NotImplementedError()
 
 def do_report_images(reporters, matches, updates, parsers, settings):
+    if not settings.get('do_report'):
+        return reporters
+
+    Registrar.register_progress("Write Images Report")
+
+    do_img_sync_group(reporters.img, matches, updates, parsers, settings)
+
+    if reporters.img:
+        reporters.img.write_document_to_file('img', settings.rep_img_path)
+
+    return reporters
+
     raise NotImplementedError()
     # TODO: this
 
 def do_report_categories(reporters, matches, updates, parsers, settings):
+    if not settings.get('do_report'):
+        return reporters
+
     Registrar.register_progress("Write Categories Report")
 
     do_cat_sync_gruop(reporters.cat, matches, updates, parsers, settings)
@@ -900,116 +915,6 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
         reporters.cat.write_document_to_file('cat', settings.rep_cat_path)
 
     return reporters
-
-    # with io.open(settings.rep_cat_path, 'w+', encoding='utf8') as res_file:
-    #     reporter = HtmlReporter()
-    #
-    #     syncing_group = HtmlReporter.Group('cats',
-    #                                        'Category Syncing Results')
-    #
-    #     # TODO: change this to change this to updates.sub_category
-    #     # syncing_group.add_section(
-    #     #     HtmlReporter.Section(
-    #     #         ('matches.category.delete_slave'),
-    #     #         description="%s items will leave categories" %
-    #     #         settings.slave_name,
-    #     #         data=tabulate(
-    #     #             [
-    #     #                 [
-    #     #                     index,
-    #     #                     # parsers.slave.products[index],
-    #     #                     # parsers.slave.products[index].categories,
-    #     #                     # ", ".join(category.cat_name \
-    #     #                     # for category in matches_.merge().m_objects),
-    #     #                     ", ".join([
-    #     #                         category_.cat_name
-    #     #                         for category_ in matches_.merge().s_objects
-    #     #                     ])
-    #     #                 ] for index, matches_ in matches.category.delete_slave.items()
-    #     #             ],
-    #     #             tablefmt="html"),
-    #     #         length=len(matches.category.delete_slave)
-    #     #         # data = '<hr>'.join([
-    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-    #     #         #         for index, match in matches.category.delete_slave.items()
-    #     #         #     ]
-    #     #         # )
-    #     #     ))
-    #
-    #     # TODO: change this to change this to updates.sub_category
-    #     # matches.category.delete_slave_ns_data = tabulate(
-    #     #     [
-    #     #         [
-    #     #             index,
-    #     #             ", ".join([
-    #     #                 category_.cat_name
-    #     #                 for category_ in matches_.merge().s_objects
-    #     #                 if not re.search('Specials', category_.cat_name)
-    #     #             ])
-    #     #         ] for index, matches_ in matches.category.delete_slave.items()
-    #     #     ],
-    #     #     tablefmt="html"
-    #     # )
-    #     #
-    #     # syncing_group.add_section(
-    #     #     HtmlReporter.Section(
-    #     #         ('matches.category.delete_slave_not_specials'),
-    #     #         description="%s items will leave categories" %
-    #     #         settings.slave_name,
-    #     #         data=matches.category.delete_slave_ns_data,
-    #     #         length=len(matches.category.delete_slave)
-    #     #         # data = '<hr>'.join([
-    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-    #     #         #         for index, match in matches.category.delete_slave.items()
-    #     #         #     ]
-    #     #         # )
-    #     #     ))
-    #
-    #     # TODO: change this to updates.sub_category
-    #     # syncing_group.add_section(
-    #     #     HtmlReporter.Section(
-    #     #         ('matches.category.slaveless'),
-    #     #         description="%s items will join categories" %
-    #     #         settings.slave_name,
-    #     #         data=tabulate(
-    #     #             [
-    #     #                 [
-    #     #                     index,
-    #     #                     # parsers.slave.products[index],
-    #     #                     # parsers.slave.products[index].categories,
-    #     #                     ", ".join([
-    #     #                         category_.cat_name
-    #     #                         for category_ in matches_.merge()
-    #     #                         .m_objects
-    #     #                     ]),
-    #     #                     # ", ".join(category_.cat_name \
-    #     #                     # for category_ in matches_.merge().s_objects)
-    #     #                 ] for index, matches_ in matches.category.slaveless.items()
-    #     #             ],
-    #     #             tablefmt="html"),
-    #     #         length=len(matches.category.slaveless)
-    #     #         # data = '<hr>'.join([
-    #     #         #         "%s<br/>%s" % (index, match.tabulate(tablefmt="html")) \
-    #     #         #         for index, match in matches.category.delete_slave.items()
-    #     #         #     ]
-    #     #         # )
-    #     #     ))
-    #
-    #     reporter.add_group(syncing_group)
-    #
-    # if not reporter.groups:
-    #     empty_group = HtmlReporter.Group('empty', 'Nothing to report')
-    #     # empty_group.add_section(
-    #     #     HtmlReporter.Section(
-    #     #         ('empty'),
-    #     #         data = ''
-    #     #
-    #     #     )
-    #     # )
-    #     Registrar.register_message('nothing to report')
-    #     reporter.add_group(empty_group)
-    #
-    # res_file.write(reporter.get_document_unicode())
 
 # TODO: do_report_attributes ?
 
@@ -1030,7 +935,7 @@ def do_report(reporters, matches, updates, parsers, settings):
     do_sync_group(
         reporters.main, matches, updates, parsers, settings
     )
-    do_variation_sync_group(
+    do_var_sync_group(
         reporters.main, matches, updates, parsers, settings
     )
 

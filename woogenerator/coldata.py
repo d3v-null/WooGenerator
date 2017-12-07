@@ -3442,7 +3442,8 @@ class ColDataAttachment(ColDataWpEntity):
             'wp-api-v1': {
                 'path': 'attachment_meta.file',
             },
-            'report': True
+            'report': True,
+            'static': True,
         },
         'file_name': {
             'path': None,

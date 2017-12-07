@@ -14,6 +14,7 @@ from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
                                          UpdateNamespace)
 from woogenerator.utils import Registrar, TimeUtils
+from woogenerator.utils.reporter import ReporterNamespace
 
 from .abstract import AbstractWooGeneratorTestCase
 
@@ -25,6 +26,7 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         self.matches = MatchNamespace()
         self.updates = UpdateNamespace()
         self.results = ResultsNamespace()
+        self.reporters = ReporterNamespace()
 
     @property
     def parsers(self):

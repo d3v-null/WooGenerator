@@ -324,6 +324,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.out_dir_full, response)
 
     @property
+    def rep_img_path(self):
+        response = '%ssync_report_img%s.html' % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
     def rep_cat_path(self):
         response = '%ssync_report_cat%s.html' % (
             self.file_prefix, self.file_suffix

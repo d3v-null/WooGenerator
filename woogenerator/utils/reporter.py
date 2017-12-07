@@ -30,6 +30,7 @@ class ReporterNamespace(argparse.Namespace):
         self.match = RenderableReporter()
         self.post = RenderableReporter()
         self.cat = RenderableReporter()
+        self.img = RenderableReporter()
 
     # def add_reporter(self, name, css=None):
     #     setattr(self, name, RenderableReporter(css=css))
@@ -64,7 +65,9 @@ DUP_CSS = "\n".join([
 
 
 class OptionalFormatter(Formatter):
-    """ Formatter where keys are optional """
+    """
+    Subclass string.Formatter except keys are optional
+    """
 
     def get_value(self, key, args, kwds):
         if isinstance(key, basestring):
@@ -149,12 +152,21 @@ class AbstractReporter(object):
             out += u'</div>'
             return out
 
+        def underline(self, string, underline_character='=', fmt=None):
+            if fmt == 'html':
+                string = "<u>%s</u>" % string
+            else:
+                string = "%s\n%s" % (
+                    string, len(string) * underline_character
+                )
+
         def render_title(self, fmt=None):
             response = self.title
             response = SanitationUtils.coerce_unicode(response)
             if self.length:
                 response += u' ({})'.format(self.length)
             response = self.format(self.get_title_fmt(fmt), title=response)
+            self.underline(response, fmt=fmt)
             return response
 
         def render_description(self, fmt=None):
@@ -1242,7 +1254,89 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
     if group:
         reporter.add_group(group)
 
-def do_variation_sync_group(reporter, matches, updates, parsers, settings):
+def do_img_sync_group(reporter, matches, updates, parsers, settings):
+    if not settings.do_sync or not settings.do_images:
+        return
+
+    group = reporter.Group('img_sync', 'Variation Syncing Results')
+
+    target_update_list_meta = [
+        (
+            updates.image.slave,
+            settings.slave_name + "_img_updates",
+            settings.slave_name + " images will be updated"
+        ),
+        (
+            updates.image.new_slaves,
+            settings.slave_name + "_new_imgs",
+            settings.slave_name + " images will be created"
+        ),
+        (
+            updates.image.problematic,
+            "problematic_img_updates",
+            "imgs can't be merged because they are too dissimilar"
+        ),
+    ]
+
+    for target_update_list, name, description in target_update_list_meta:
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.partial(
+                    render_update_list,
+                    update_list=target_update_list,
+                    reporter=reporter
+                ),
+                length=len(target_update_list)
+            )
+        )
+
+    if group:
+        reporter.add_group(group)
+
+def do_cat_sync_gruop(reporter, matches, updates, parsers, settings):
+    if not settings.do_sync or not settings.do_categories:
+        return
+
+    group = reporter.Group('category_sync', 'Category Syncing Results')
+
+    target_update_list_meta = [
+        (
+            updates.category.slave,
+            settings.slave_name + "_cat_updates",
+            settings.slave_name + " categoties will be updated"
+        ),
+        (
+            updates.category.new_slaves,
+            settings.slave_name + "_new_cats",
+            settings.slave_name + " categoties will be created"
+        ),
+        (
+            updates.category.problematic,
+            "problematic_cat_updates",
+            "cats can't be merged because they are too dissimilar"
+        ),
+    ]
+
+    for target_update_list, name, description in target_update_list_meta:
+        group.add_section(
+            reporter.Section(
+                name,
+                description=description,
+                data=functools.partial(
+                    render_update_list,
+                    update_list=target_update_list,
+                    reporter=reporter
+                ),
+                length=len(target_update_list)
+            )
+        )
+
+    if group:
+        reporter.add_group(group)
+
+def do_var_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync or not settings.do_variations:
         return
 
@@ -1277,35 +1371,6 @@ def do_variation_sync_group(reporter, matches, updates, parsers, settings):
 
     if group:
         reporter.add_group(group)
-
-def do_cat_sync_gruop(reporter, matches, updates, parsers, settings):
-    if not settings.do_sync or not settings.do_categories:
-        return
-
-    group = reporter.Group('category_sync', 'Category Syncing Results')
-
-    target_update_list_meta = [
-        # TODO: Finish this
-    ]
-
-    for target_update_list, name, description in target_update_list_meta:
-        group.add_section(
-            reporter.Section(
-                name,
-                description=description,
-                data=functools.partial(
-                    render_update_list,
-                    update_list=target_update_list,
-                    reporter=reporter
-                ),
-                length=len(target_update_list)
-            )
-        )
-
-    if group:
-        reporter.add_group(group)
-
-
 
 def do_post_summary_group(reporter, results, settings):
     """ Create post-update summary report section. """

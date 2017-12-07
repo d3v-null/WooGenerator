@@ -141,7 +141,7 @@ class SyncUpdate(Registrar):
 
     sync_warning_value_keys = ['old_value', 'new_value', 'm_value', 's_value']
 
-    def simplify_sync_warning_value_singular(self, handle, sub_handle):
+    def simplify_sync_warning_value_singular(self, handle, sub_handles):
         """
         Reduce the values in the sync warning for `handle` so that each object
         only shows the value for the `sub_handle`.
@@ -156,12 +156,15 @@ class SyncUpdate(Registrar):
                         continue
                     if not isinstance(value, dict):
                         continue
-                    if value.get(sub_handle) is not None:
-                        sync_warning[key] = {
-                            sub_handle: value.get(sub_handle)
-                        }
+                    new_value = {}
+                    for sub_handle in sub_handles:
+                        if value.get(sub_handle) is not None:
+                            new_value.update({
+                                sub_handle: value.get(sub_handle)
+                            })
+                    sync_warning[key] = new_value
 
-    def simplify_sync_warning_value_listed(self, handle, sub_handle):
+    def simplify_sync_warning_value_listed(self, handle, sub_handles):
         """
         Reduce the values in the sync warning for `handle` so that each object
         only shows the value for the `sub_handle`.
@@ -180,10 +183,13 @@ class SyncUpdate(Registrar):
                     for value in values:
                         if not isinstance(value, dict):
                             continue
-                        if value.get(sub_handle) is not None:
-                            new_values.append({
-                                sub_handle: value.get(sub_handle)
-                            })
+                        new_value = {}
+                        for sub_handle in sub_handles:
+                            if value.get(sub_handle) is not None:
+                                new_value.update({
+                                    sub_handle: value.get(sub_handle)
+                                })
+                        new_values.append(new_value)
                     sync_warning[key] = new_values
 
     @property
@@ -844,12 +850,12 @@ class SyncUpdate(Registrar):
             subtitle_fmt = "<h3>%s</h3>"
             info_delimeter = "<br/>"
             info_fmt = "<strong>%s:</strong> %s"
-        old_match = Match(
-            [self.old_m_object],
-            [self.old_s_object]
-        )
-        # if self.DEBUG_UPDATE:
-        #     self.register_message(old_match.__str__())
+        old_objects = [[], []]
+        if self.old_m_object_core:
+            old_objects[0] = [self.old_m_object]
+        if self.old_s_object_core:
+            old_objects[1] = [self.old_s_object]
+        old_match = Match(*old_objects)
         out_str = ""
         out_str += heading_fmt % self.__str__()
         out_str += info_delimeter.join([
@@ -960,7 +966,7 @@ class SyncUpdate(Registrar):
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
-                    "NO %s CHANGES: must have a primary key to update user data: " %
+                    "NO %s CHANGES: must have a primary key to update data: " %
                     self.slave_name + repr(exc)
                 )
                 pkey = None
@@ -1006,7 +1012,7 @@ class SyncUpdate(Registrar):
             except Exception as exc:
                 print_elements.append(
                     ("NO %s CHANGES: "
-                     "must have a primary key to update user data: ") %
+                     "must have a primary key to update data: ") %
                     self.master_name + repr(exc))
                 pkey = None
                 return info_delimeter.join(print_elements)
