@@ -552,6 +552,9 @@ def do_match_categories(parsers, matches, settings):
     return matches
 
 # TODO: do_match_attributes ?
+def do_match_attributes(parsers, matches, settings):
+    if settings.do_attributes:
+        raise NotImplementedError("Do Match Attributes not implemented")
 
 def do_match_prod(parsers, matches, settings):
     """For every item in slave, find its counterpart in master."""
@@ -732,6 +735,10 @@ def do_merge_categories(matches, parsers, updates, settings):
     return updates
 
 # TODO: do_merge_attributes ?
+
+def do_merge_attributes(matches, parsers, updates, settings):
+    if settings.do_attributes:
+        raise NotImplementedError("Do Merge Attributes not implemented")
 
 def do_merge_prod(matches, parsers, updates, settings):
     """For a given list of matches, return a description of updates required to merge them."""
@@ -917,6 +924,10 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
     return reporters
 
 # TODO: do_report_attributes ?
+
+def do_report_attributes(reporters, matches, updates, parsers, settings):
+    if settings.do_attributes:
+        raise NotImplementedError("Do Report Attributes not implemented")
 
 def do_report(reporters, matches, updates, parsers, settings):
     """ Write report of changes to be made. """
@@ -1363,8 +1374,15 @@ def do_updates_categories_slave(updates, parsers, results, settings):
                 parsers, results.category, settings, client, change_updates
             )
 
-# TODO: do_updates_attributes_slave ?
 # TODO: do_updates_attributes_master ?
+def do_updates_attributes_master(updates, parsers, results, settings):
+    if settings.do_attributes:
+        raise NotImplementedError("Do Updates Attributes Master not implemented")
+
+# TODO: do_updates_attributes_slave ?
+def do_updates_attributes_slave(updates, parsers, results, settings):
+    if settings.do_attributes:
+        raise NotImplementedError("Do Updates Attributes Slave not implemented")
 
 def upload_new_products(parsers, results, settings, client, new_updates):
     """
@@ -1528,7 +1546,22 @@ def main(override_args=None, settings=None):
             except (SystemExit, KeyboardInterrupt):
                 return reporters, results
 
-    raise UserWarning("end of completed functions")
+    raise NotImplementedError("Functions past this point have not been completed")
+
+    if settings.do_attributes:
+
+        do_match_attributes(parsers, matches, settings)
+        do_merge_attributes(matches, parsers, updates, settings)
+        do_report_attributes(
+            reporters, matches, updates, parsers, settings
+        )
+        check_warnings(settings)
+        if not settings.report_and_quit:
+            do_updates_attributes_master(updates, parsers, results, settings)
+            try:
+                do_updates_attributes_slave(updates, parsers, results, settings)
+            except (SystemExit, KeyboardInterrupt):
+                return reporters, results
 
     do_match_prod(parsers, matches, settings)
     do_merge_prod(matches, parsers, updates, settings)

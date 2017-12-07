@@ -528,6 +528,17 @@ class ArgumentParserProd(ArgumentParserCommon):
             action="store_false",
             dest='do_variations')
 
+        group = processing_group.add_mutually_exclusive_group()
+        group.add_argument(
+            '--do-attributes',
+            help='sync attributes',
+            action="store_true")
+        group.add_argument(
+            '--skip-attributes',
+            help='don\'t sync attributes',
+            action="store_false",
+            dest='do_attributes')
+
         images_group = self.add_argument_group('Image options')
         group = images_group.add_mutually_exclusive_group()
         group.add_argument(

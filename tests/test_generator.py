@@ -1042,15 +1042,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_update(sync_update)
         try:
+            updates_native = sync_update.get_slave_updates_native()
+
             master_desc = (
                 "Company A have developed a range of unique blends in 16 "
                 "shades to suit all use cases. All Company A's products "
                 "are created using the finest naturally derived botanical "
                 "and certified organic ingredients."
             )
-            slave_desc = (
-                "Company A have developed stuff"
-            )
+            slave_desc = "Company A have developed stuff"
             self.assertEqual(
                 sync_update.old_m_object['descsum'],
                 master_desc
@@ -1063,10 +1063,23 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object['descsum'],
                 master_desc
             )
-            updates_native = sync_update.get_slave_updates_native()
             self.assertIn(
                 ('description', master_desc),
                 updates_native.items()
+            )
+
+            master_title = "Company A Product A"
+            self.assertEqual(
+                sync_update.old_m_object['title'],
+                master_title
+            )
+            self.assertEqual(
+                sync_update.old_s_object['title'],
+                master_title
+            )
+            self.assertNotIn(
+                'name',
+                updates_native
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
@@ -1088,7 +1101,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         sync_update = self.updates.category.new_slaves[-1]
         if self.debug:
             self.print_update(sync_update)
-            import pudb; pudb.set_trace()
         try:
             master_title = "Product A Specials"
             master_desc = master_title
@@ -1788,44 +1800,6 @@ probbos:
                 "cat pre-sync summary: \n%s" % \
                 self.reporters.cat.get_summary_text()
             )
-
-        # TODO: fix title not showing up correctly in sync report
-        """
-update <       3 |     315 >OLD
-taxos                descsum    title      parent_id    ID    slug
--------------------  ---------  ---------  -----------  ----  ---------
-A|r:3|w:|Product A   Product A  Product A
-r:1|a:315|Product A             Product A  0            315   product-a
-CHANGES (6!1)
--
-Column       Reason     Subject           Old    New          M TIME    S TIME  EXTRA
------------  ---------  ----------------  -----  ---------  --------  --------  -------
-description  inserting  woocommerce-test         Product A         0         0
-menu_order   updating   woocommerce-test  1      3                 0         0
--
-Column    Reason    Subject      Old    New                                                   M TIME    S TIME  EXTRA
---------  --------  -----------  -----  --------------------------------------------------  --------  --------  -------
-term_id   merging   gdrive-test         315                                                        0         0
-slug      merging   gdrive-test         product-a                                                  0         0
-image     merging   gdrive-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
-display   merging   gdrive-test         default                                                    0         0
-gdrive-test CHANGES
-  ID    term_id  slug       image                                                                                                                                                                                                                                                                                                                                   display
-----  ---------  ---------  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  ---------
-   3        315  product-a  OrderedDict([('modified_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('created_gmt', datetime.datetime(2017, 11, 8, 20, 55, 43)), ('title', 'Solution > TechnoTan Solution'), ('file_name', u'ACA.jpg'), ('source_url', u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACA.jpg'), ('alt_text', u''), ('id', 24879)])  default
-woocommerce-test CHANGES
-  ID  description      menu_order
-----  -------------  ------------
- 315  Product A                 3
-
-NEW
-taxos                descsum    title      parent_id      ID  slug
--------------------  ---------  ---------  -----------  ----  ---------
-|r:3|w:315|          Product A                           315  product-a
-r:3|a:315|Product A  Product A  Product A  0             315  product-a
---------------------------------------------------
-        """
-
 
     @pytest.mark.slow
     def test_reporting_cat_img(self):
