@@ -1220,11 +1220,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 sync_update.new_s_object_core['description'],
                 master_desc
             )
-            self.assertTrue(
-                sync_update.old_m_object_core['image']
-            )
-            self.assertTrue(
-                sync_update.new_s_object_core['image']
+            self.assertEqual(
+                bool(self.settings.do_images),
+                'image' in sync_update.new_s_object_core
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
@@ -1293,7 +1291,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             self.settings.update_slave = False
 
     @pytest.mark.last
-    def test_dummy_do_updates_categories_slave(self):
+    def test_dummy_do_updates_categories_slave_only(self):
+        self.settings.do_images = False
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.settings.do_categories:
@@ -1927,30 +1926,6 @@ probbos:
         self.assertTrue(
             self.reporters.img
         )
-        # TODO: fix display of new image in sync_update
-        """
-update < 48|ACARC-CL.jpg |         >OLD
-objects          modified_gmt               modified_local       title                       ID      width    height  file_path
----------------  -------------------------  -------------------  --------------------------  ----  -------  --------  --------------------------------------------------
-48|ACARC-CL.jpg  2017-12-06 19:05:27+00:00  2017-12-07 04:45:27  Range C - Style 7 - 1Litre            768       768  /var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/t
-CHANGES (6!0)
--
-Column        Reason        Subject           Old    New                                                 M TIME                 S TIME  EXTRA
-------------  ------------  ----------------  -----  --------------------------------------------------  -------------------  --------  -------
-title         inserting     woocommerce-test         Range C - Style 7 - 1Litre                          2017-12-07 06:05:27         0
-post_excerpt  inserting     woocommerce-test         Company A have developed a range of unique blends   2017-12-07 06:05:27         0
-post_content  inserting     woocommerce-test         Company A have developed a range of unique blends   2017-12-07 06:05:27         0
-file_name     inserting     woocommerce-test         ACARC-CL.jpg                                        2017-12-07 06:05:27         0
-alt_text      merging-read  woocommerce-test         Range C - Style 7 - 1Litre                          2017-12-07 06:05:27         0
-file_path     inserting     woocommerce-test         /var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/t  2017-12-07 06:05:27         0
-woocommerce-test CHANGES
-NO woocommerce-test CHANGES: must have a primary key to update data: AssertionError("primary key must be valid, ''",)
-
-NEW
-objects            Row    index
------------------  -----  -------
-0  <ImportObject>  []
-        """
 
         if self.debug:
             print(

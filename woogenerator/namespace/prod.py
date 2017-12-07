@@ -404,7 +404,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class_cat.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_cat_target_write
         )
-        for handle in ['post_status']:
+        for handle in self.exclude_cols_cat:
             if handle in response:
                 del response[handle]
         return response
@@ -414,9 +414,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         # TODO: convert these to their handles
         response = []
         if not self.do_images:
-            response.extend(['Images', 'imgsum'])
+            response.extend(['Images', 'imgsum', 'image'])
         if not self.do_categories:
-            response.extend(['catsum', 'catlist'])
+            response.extend(['catsum', 'catlist', 'categories'])
         if not self.do_dyns:
             response.extend([
                 'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
@@ -429,6 +429,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
                 'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
                 'DPS', 'DPF', 'DPT'
             ])
+        return response
+
+    @property
+    def exclude_cols_cat(self):
+        # TODO: convert these to their handles
+        response = ['post_status']
+        if not self.do_images:
+            response.extend(['image'])
         return response
 
     @property

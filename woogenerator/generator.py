@@ -266,7 +266,7 @@ def export_master_parser(settings, parsers):
 
     product_colnames = settings.coldata_class.get_col_values_native('path', target='wc-csv')
 
-    for col in settings['exclude_cols']:
+    for col in settings.exclude_cols:
         if col in product_colnames:
             del product_colnames[col]
 
@@ -309,6 +309,9 @@ def export_master_parser(settings, parsers):
         if settings.do_categories and parsers.master.categories:
             # category_cols = settings.coldata_class_cat.get_col_data_native('write', target='wc-csv')
             category_col_names = settings.coldata_class_cat.get_col_values_native('path', target='wc-csv')
+            for col in settings.exclude_cols_cat:
+                if col in category_col_names:
+                    del category_col_names[col]
             category_container = settings.master_parser_class.category_container.container
             category_list = category_container([
                 category for category in parsers.master.categories.values()
@@ -666,24 +669,11 @@ def do_merge_images(matches, parsers, updates, settings):
             )
             if not (m_object.attaches.products or m_object.attaches.categories):
                 continue
-            # gen_data = m_object.to_dict()
-            # core_data = settings.coldata_class_img.translate_data_from(gen_data, settings.coldata_gen_target_write)
-            # slave_writable_handles = \
-            # settings.coldata_class_img.get_handles_property_defaults(
-            #     'write', settings.coldata_img_target_write
-            # )
-            # # make an exception for file_path
-            # for handle in core_data.keys():
-            #     if handle == 'file_path':
-            #         continue
-            #     if (handle not in sync_handles):
-            #         del core_data[handle]
-            #         continue
-            #     slave_writable = slave_writable_handles.get(handle)
-            #     if not slave_writable:
-            #         del core_data[handle]
-            # # api_data = settings.coldata_class_img.translate_data_to(core_data, settings.coldata_img_target)
-            sync_update = settings.syncupdate_class_img(m_object)
+
+            empty_s_object = parsers.slave.get_empty_attachment_instance()
+            sync_update = settings.syncupdate_class_img(
+                m_object, empty_s_object
+            )
             sync_update.update(sync_handles)
             updates.image.new_slaves.append(sync_update)
 

@@ -158,6 +158,12 @@ class ImportShopAttachmentMixin(ShopMixin):
             self.register_error(reason, self.file_name)
         self.is_valid = False
 
+    def process_meta(self):
+        if not self.file_name_key in self:
+            self[self.file_name_key] = self.get_file_name(self)
+        if self.get(self.file_name_key) is None:
+            raise UserWarning("couldn't get file_path")
+
 class ImportShopMixin(object):
     "Base mixin class for shop objects (products, categories, attachments)"
     is_product = None
@@ -728,21 +734,21 @@ class CsvParseShopMixin(object):
             response += '\n'
             response += self.to_str_tree_recursive(child)
         return response
-
-    def get_parser_data(cls, **kwargs):
-        parser_data = kwargs.get('row_data', {})
-        # TODO: why not move this to process_meta ?
-        if kwargs.get('container') and issubclass(kwargs.get('container'), cls.attachment_container):
-            if not cls.attachment_container.file_name_key in parser_data:
-                if parser_data.get(cls.attachment_container.file_path_key):
-                    parser_data[cls.attachment_container.file_name_key]\
-                    = FileUtils.get_path_basename(parser_data[cls.attachment_container.file_path_key])
-                elif parser_data.get(cls.attachment_container.source_url_key):
-                    parser_data[cls.attachment_container.file_name_key]\
-                    = FileUtils.get_path_basename(parser_data[cls.attachment_container.source_url_key])
-                else:
-                    raise UserWarning("couldn't get file_path from parser_data: %s" % parser_data)
-        return parser_data
+    #
+    # def get_parser_data(cls, **kwargs):
+    #     parser_data = kwargs.get('row_data', {})
+    #     # TODO: why not move this to process_meta ?
+    #     if kwargs.get('container') and issubclass(kwargs.get('container'), cls.attachment_container):
+    #         if not cls.attachment_container.file_name_key in parser_data:
+    #             if parser_data.get(cls.attachment_container.file_path_key):
+    #                 parser_data[cls.attachment_container.file_name_key]\
+    #                 = FileUtils.get_path_basename(parser_data[cls.attachment_container.file_path_key])
+    #             elif parser_data.get(cls.attachment_container.source_url_key):
+    #                 parser_data[cls.attachment_container.file_name_key]\
+    #                 = FileUtils.get_path_basename(parser_data[cls.attachment_container.source_url_key])
+    #             else:
+    #                 raise UserWarning("couldn't get file_path from parser_data: %s" % parser_data)
+    #     return parser_data
 
 
     def to_str_tree(self):

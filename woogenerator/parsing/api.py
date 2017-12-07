@@ -598,15 +598,13 @@ class ApiParseWoo(
             if hasattr(base_class, 'get_parser_data'):
                 parser_data.update(base_class.get_parser_data(self, **kwargs))
 
-        assert self.object_container.title_key in parser_data, \
-        "parser_data should have title(%s):\n%s" % (
-            self.object_container.title_key,
-            pformat(parser_data.items())
-        )
+        # assert self.object_container.title_key in parser_data, \
+        # "parser_data should have title(%s):\n%s" % (
+        #     self.object_container.title_key,
+        #     pformat(parser_data.items())
+        # )
 
         if parser_data.get('type') == 'category':
-            # parser_data[self.category_container.namesum_key] = parser_data[
-            #     self.category_container.title_key]
             assert self.category_container.slug_key in parser_data, \
             "parser_data should have slug(%s):\n%s" % (
                 self.category_container.slug_key,
@@ -615,14 +613,13 @@ class ApiParseWoo(
             parser_data[self.category_container.codesum_key] = parser_data[
                 self.category_container.slug_key]
         elif parser_data.get('type') in ['sub-image', 'image']:
-            assert self.attachment_container.file_name_key in parser_data, \
-            "parser_data should have file_name(%s):\n%s" % (
-                self.attachment_container.file_name_key,
-                pformat(parser_data.items())
-            )
+            pass
+            # assert self.attachment_container.file_name_key in parser_data, \
+            # "parser_data should have file_name(%s):\n%s" % (
+            #     self.attachment_container.file_name_key,
+            #     pformat(parser_data.items())
+            # )
         else:
-            # parser_data[self.object_container.namesum_key] = parser_data[
-            #     self.object_container.title_key]
             assert self.object_container.codesum_key in parser_data, \
             "parser_data should have codesum(%s):\n%s" % (
                 self.object_container.codesum_key,

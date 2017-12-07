@@ -505,6 +505,15 @@ class CsvParseWooMixin(object):
             kwargs['row_data']['type'] = 'category'
         return CsvParseTreeMixin.get_empty_instance(self, **kwargs)
 
+    def get_empty_attachment_instance(self, **kwargs):
+        if not kwargs.get('container'):
+            kwargs['container'] = self.attachment_container
+        if not kwargs.get('row_data'):
+            kwargs['row_data'] = {}
+        if not kwargs['row_data'].get('type'):
+            kwargs['row_data']['type'] = 'image'
+        return CsvParseTreeMixin.get_empty_instance(self, **kwargs)
+
     def get_wpid(self, object_data):
         return object_data.wpid
 
