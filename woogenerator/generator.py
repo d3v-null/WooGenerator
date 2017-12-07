@@ -38,13 +38,24 @@ These are the steps that generator uses to synchronize products:
 from __future__ import absolute_import
 
 
-# to run on TT
+# to run full sync on TT
 """
 python -m woogenerator.generator \
     --testmode --schema "TT" \
     --local-work-dir '/Users/derwent/Documents/woogenerator/' \
     --download-master --download-slave \
     --do-categories --do-images --do-specials \
+    --do-sync --do-problematic --auto-create-new \
+    --wp-srv-offset 36000 \
+    -vvv --debug-trace
+"""
+"""
+python -m woogenerator.generator \
+    --testmode --schema "TT" \
+    --local-work-dir '/Users/derwent/Documents/woogenerator/' \
+    --download-master --download-slave \
+    --do-categories --do-images --do-variations --master-and-quit \
+    --do-specials --specials-mode 'auto_next' \
     --do-sync --do-problematic --auto-create-new \
     --wp-srv-offset 36000 \
     -vvv --debug-trace
@@ -224,6 +235,8 @@ def populate_slave_parsers(parsers, settings):
     slave_client_args = settings.slave_download_client_args
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
+
+    # TODO: analyse API image data after figuring out which IDs to filter on.
 
     if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
