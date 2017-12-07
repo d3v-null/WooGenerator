@@ -314,8 +314,67 @@ def process_images(settings, parsers):
 
     # list of attaches in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
+
+    # TODO: fix these warnings
+    """
+#######################
+# processing attaches #
+#######################
+
+                                           ACA.jpg | DELETING FROM REFLATTENED
+                                     ACARA-CAH.png | DELETING FROM REFLATTENED
+                                     ACARA-CAL.png | DELETING FROM REFLATTENED
+                                     ACARA-CCH.png | DELETING FROM REFLATTENED
+                                     ACARA-CCL.png | DELETING FROM REFLATTENED
+                                     ACARA-CFH.png | DELETING FROM REFLATTENED
+                                     ACARA-CFL.png | DELETING FROM REFLATTENED
+                                     ACARA-CMH.png | DELETING FROM REFLATTENED
+                                     ACARA-CML.png | DELETING FROM REFLATTENED
+                                     ACARA-EBH.png | DELETING FROM REFLATTENED
+                                     ACARA-EBL.png | DELETING FROM REFLATTENED
+                                       ACARA-S.png | DELETING FROM REFLATTENED
+                                         ACARA.jpg | DELETING FROM REFLATTENED
+                                      ACARB-DH.jpg | DELETING FROM REFLATTENED
+                                      ACARB-DL.jpg | DELETING FROM REFLATTENED
+                                      ACARB-MH.jpg | DELETING FROM REFLATTENED
+                                      ACARB-ML.jpg | DELETING FROM REFLATTENED
+                                       ACARB-S.jpg | DELETING FROM REFLATTENED
+                                     ACARB-XDH.jpg | DELETING FROM REFLATTENED
+                                     ACARB-XDL.jpg | DELETING FROM REFLATTENED
+                                         ACARB.jpg | DELETING FROM REFLATTENED
+                                      ACARC-CH.jpg | DELETING FROM REFLATTENED
+                                      ACARC-CL.jpg | DELETING FROM REFLATTENED
+                                      ACARC-CS.jpg | DELETING FROM REFLATTENED
+                                      ACARC-EH.jpg | DELETING FROM REFLATTENED
+                                      ACARC-EL.jpg | DELETING FROM REFLATTENED
+                                      ACARC-ES.jpg | DELETING FROM REFLATTENED
+                                      ACARC-LH.jpg | DELETING FROM REFLATTENED
+                                      ACARC-LL.jpg | DELETING FROM REFLATTENED
+                                      ACARC-LS.jpg | DELETING FROM REFLATTENED
+                                      ACARC-MH.jpg | DELETING FROM REFLATTENED
+                                      ACARC-ML.jpg | DELETING FROM REFLATTENED
+                                      ACARC-MS.jpg | DELETING FROM REFLATTENED
+                                         ACARC.jpg | DELETING FROM REFLATTENED
+                                     ACARF-ALH.png | DELETING FROM REFLATTENED
+                                     ACARF-ALL.png | DELETING FROM REFLATTENED
+                                     ACARF-ALS.png | DELETING FROM REFLATTENED
+                                     ACARF-CBH.png | DELETING FROM REFLATTENED
+                                     ACARF-CBL.png | DELETING FROM REFLATTENED
+                                     ACARF-CBS.png | DELETING FROM REFLATTENED
+                                     ACARF-CHH.png | DELETING FROM REFLATTENED
+                                     ACARF-CHL.png | DELETING FROM REFLATTENED
+                                     ACARF-CHS.png | DELETING FROM REFLATTENED
+                                     ACARF-CRH.png | DELETING FROM REFLATTENED
+                                     ACARF-CRL.png | DELETING FROM REFLATTENED
+                                     ACARF-CRS.png | DELETING FROM REFLATTENED
+    """
+
+    master_parser_attachment_basenames = [
+        attachment.file_name for attachment in parsers.master.attachments.values()
+    ]
+
     for fname in ls_cmp:
-        if fname not in parsers.master.attachments.keys():
+        if fname not in master_parser_attachment_basenames:
             Registrar.register_warning("DELETING FROM REFLATTENED", fname)
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))

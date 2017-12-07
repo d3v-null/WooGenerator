@@ -37,6 +37,12 @@ These are the steps that generator uses to synchronize products:
 
 from __future__ import absolute_import
 
+
+# to run on TT
+"""
+
+"""
+
 import io
 import os
 import shutil
@@ -635,9 +641,6 @@ def do_merge_images(matches, parsers, updates, settings):
 
     if not hasattr(matches, 'image'):
         return updates
-
-    if Registrar.DEBUG_TRACE:
-        print(matches.image.tabulate())
 
     sync_handles = settings.sync_handles_img
 
