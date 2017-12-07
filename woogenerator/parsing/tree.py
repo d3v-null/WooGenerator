@@ -340,6 +340,14 @@ class CsvParseTreeMixin(object):
     def is_item_depth(self, depth):
         return depth >= self.taxo_depth and depth < self.max_depth
 
+    def get_empty_instance(self, **kwargs):
+        for key in kwargs['container'].verify_meta_keys:
+            if not kwargs['row_data'].get(key):
+                kwargs['row_data'][key] = ''
+        if not kwargs.get('parent'):
+            kwargs['parent'] = self.root_data
+        return CsvParseBase.get_empty_instance(self, **kwargs)
+
 class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
     object_container = CsvParseTreeMixin.object_container
     item_indexer = CsvParseBase.get_object_rowcount

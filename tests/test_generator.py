@@ -550,11 +550,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         self.assertTrue(resized_images)
 
-    @pytest.mark.last
+    @pytest.mark.slow
     def test_dummy_images_slave(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = False
-        self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
 
@@ -566,11 +565,12 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     [attach.index for attach in img_data.attaches.objects]
                 )
 
-    @pytest.mark.last
+    @pytest.mark.slow
     def test_dummy_do_match_images(self):
         self.populate_master_parsers()
         self.populate_slave_parsers()
         if self.settings.do_images:
+            self.setup_temp_img_dir()
             process_images(self.settings, self.parsers)
             if self.debug:
                 Registrar.DEBUG_IMG = True

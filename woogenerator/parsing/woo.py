@@ -13,7 +13,8 @@ from ..coldata import (ColDataAttachment, ColDataProductMeridian,
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .abstract import ObjList
-from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
+from .gen import (CsvParseGenTree, ImportGenItem,
+                  ImportGenObject, ImportGenTaxo)
 from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
                    ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
@@ -21,7 +22,7 @@ from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
                    ImportShopProductVariationMixin, ShopCatList, ShopMixin,
                    ShopObjList, ShopProdList)
 from .special import ImportSpecialGroup
-from .tree import ImportTreeItem
+from .tree import ImportTreeItem, CsvParseTreeMixin
 
 
 class ImportWooMixin(object):
@@ -496,12 +497,7 @@ class CsvParseWooMixin(object):
             kwargs['row_data'] = {}
         if not kwargs['row_data'].get('type'):
             kwargs['row_data']['type'] = 'category'
-        for key in kwargs['container'].verify_meta_keys:
-            if not kwargs['row_data'].get(key):
-                kwargs['row_data'][key] = ''
-        if not kwargs.get('parent'):
-            kwargs['parent'] = self.root_data
-        return self.get_empty_instance(**kwargs)
+        return CsvParseTreeMixin.get_empty_instance(self, **kwargs)
 
     def get_wpid(self, object_data):
         return object_data.wpid

@@ -190,50 +190,42 @@ class Match(object):
             str(self.s_object.index)
         ])
 
-    def containerize(self):  # pylint: disable=too-many-branches
+    def containerize(self, print_headings=False):  # pylint: disable=too-many-branches
         """
         Return the objects within the match wrapped in the best possible container
         determined by the container attribute of the gcs of their classes
         """
-        print_headings = False
-        if self.type in ['duplicate']:
-            if self.m_objects:
-                # out += "The following ACT records are diplicates"
-                if self.s_objects:
-                    pass
-                    # print_headings = True # we don't need to print headings any more :P
-                    # out += " of the following WORDPRESS records"
-            else:
-                assert self.s_objects
-                # out += "The following WORDPRESS records are duplicates"
-        elif self.type in ['masterless', 'slavelaveless']:
-            pass
+        assert \
+        self.m_len or self.s_len, \
+        "match must contain m_objects or s_objects to be containerized"
+
         obj_container = None
-        if self.m_len or self.s_len:
-            gcs = self.gcs
-            if gcs is not None and hasattr(gcs, 'container'):
-                obj_container = gcs.container(indexer=(
-                    lambda import_object: import_object.identifier))
-            else:
-                obj_container = ObjList(indexer=(
-                    lambda import_object: import_object.identifier))
-            if self.m_objects:
-                mobjs = self.m_objects[:]
-                if print_headings:
-                    heading = gcs({}, rowcount='M')
-                    # heading = ImportObject({}, rowcount='M')
-                    mobjs = [heading] + mobjs
-                for mobj in mobjs:
-                    obj_container.append(mobj)
-            if self.s_objects:
-                sobjs = self.s_objects[:]
-                if print_headings:
-                    heading = gcs({}, rowcount='S')
-                    # heading = ImportObject({}, rowcount='S')
-                    sobjs = [heading] + sobjs
-                for sobj in sobjs:
-                    # pprint(sobj)
-                    obj_container.append(sobj)
+
+        gcs = self.gcs
+        if gcs is not None and hasattr(gcs, 'container'):
+            obj_container = gcs.container(indexer=(
+                lambda import_object: import_object.identifier))
+        else:
+            obj_container = ObjList(indexer=(
+                lambda import_object: import_object.identifier))
+
+        if self.m_objects:
+            mobjs = self.m_objects[:]
+            if print_headings:
+                heading = gcs({}, rowcount='M')
+                # heading = ImportObject({}, rowcount='M')
+                mobjs = [heading] + mobjs
+            for mobj in mobjs:
+                obj_container.append(mobj)
+        if self.s_objects:
+            sobjs = self.s_objects[:]
+            if print_headings:
+                heading = gcs({}, rowcount='S')
+                # heading = ImportObject({}, rowcount='S')
+                sobjs = [heading] + sobjs
+            for sobj in sobjs:
+                # pprint(sobj)
+                obj_container.append(sobj)
         return obj_container
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):

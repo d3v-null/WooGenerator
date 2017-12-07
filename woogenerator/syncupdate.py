@@ -829,13 +829,13 @@ class SyncUpdate(Registrar):
         # return self.containerize_master(self.old_m_object_core)
 
     @property
-    def new_m_object(self):
+    def old_s_object(self):
         return self.old_s_object_gen
         # return self.containerize_master(self.new_m_object_core)
 
     @property
-    def old_s_object(self):
-        return self.containerize_slave(self.old_s_object_core)
+    def new_m_object(self):
+        return self.containerize_master(self.new_m_object_core)
 
     @property
     def new_s_object(self):
