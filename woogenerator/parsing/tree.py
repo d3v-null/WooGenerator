@@ -514,6 +514,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
             object_data.rowcount, object_data.row, object_data.depth)
 
     def process_object(self, object_data):
+        # TODO: the fuck is this?
         assert isinstance(self.stack, ImportStack)
         oldstack = self.stack[:]
         assert isinstance(

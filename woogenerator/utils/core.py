@@ -1904,13 +1904,14 @@ class MimeUtils(object):
 
 class ProgressCounter(object):
 
-    def __init__(self, total, print_threshold=1, items_plural='items'):
+    def __init__(self, total, print_threshold=1, items_plural='items', verb_past='processed'):
         self.total = total
         self.print_threshold = print_threshold
         self.last_print = time.time()
         self.first_print = self.last_print
         self.print_count = 0
         self.items_plural = items_plural
+        self.verb_past = verb_past
         # self.memory_tracker = tracker.SummaryTracker()
         self.maybe_print_update(0, force=True)
 
@@ -1922,8 +1923,8 @@ class ProgressCounter(object):
             percentage = 0
             if self.total > 0:
                 percentage = 100 * count / self.total
-            line = "(%3d%%) %10d of %10d %s processed" % (
-                percentage, count, self.total, self.items_plural
+            line = "(%3d%%) %10d of %10d %s %s" % (
+                percentage, count, self.total, self.items_plural, self.verb_past
             )
             if percentage > 1 and percentage < 100:
                 time_elapsed = self.last_print - self.first_print

@@ -470,9 +470,9 @@ class CsvParseBase(Registrar):
                     if object_.get(search_key) == value:
                         matching_objects.add(object_key)
                 matching_sets.append(matching_objects)
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "matching_sets: %s" % matching_sets)
+        # if Registrar.DEBUG_API:
+        #     Registrar.register_message(
+        #         "matching_sets: %s" % matching_sets)
         if matching_sets:
             matches = set.intersection(*matching_sets)
             if matches:

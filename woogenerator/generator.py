@@ -40,7 +40,14 @@ from __future__ import absolute_import
 
 # to run on TT
 """
-
+python -m woogenerator.generator \
+    --testmode --schema "TT" \
+    --local-work-dir '/Users/derwent/Documents/woogenerator/' \
+    --download-master --download-slave \
+    --do-categories --do-images --do-specials \
+    --do-sync --do-problematic --auto-create-new \
+    --wp-srv-offset 36000 \
+    -vvv --debug-trace
 """
 
 import io

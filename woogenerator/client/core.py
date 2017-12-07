@@ -26,7 +26,7 @@ import pymysql
 import requests
 from apiclient import discovery
 from oauth2client import client, tools
-from requests.exceptions import ReadTimeout
+from requests.exceptions import ReadTimeout, ConnectionError
 from simplejson import JSONDecodeError
 from sshtunnel import SSHTunnelForwarder
 
@@ -522,6 +522,7 @@ class SyncClientRest(SyncClientAbstract):
             self.pagination_offset_key = kwargs.get('pagination_offset_key')
             self.total_pages_key = kwargs.get('total_pages_key')
             self.total_items_key = kwargs.get('total_items_key')
+            self.progress_counter = None
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
 
@@ -596,7 +597,7 @@ class SyncClientRest(SyncClientAbstract):
                 if Registrar.DEBUG_API:
                     Registrar.register_message("api calling endpoint %s" % self.next_endpoint)
                 self.prev_response = self.service.get(self.next_endpoint)
-            except ReadTimeout as exc:
+            except (ReadTimeout, ConnectionError) as exc:
                 # instead of processing this endoint, do the page product by
                 # product
                 if self.limit > 1:
@@ -605,6 +606,9 @@ class SyncClientRest(SyncClientAbstract):
                         Registrar.register_message('reducing limit in %s' %
                                                    self.next_endpoint)
 
+                    assert \
+                    self.pagination_limit_key, \
+                    "pagination_limit_key required to reduce limit"
                     self.next_endpoint = UrlUtils.set_query_singular(
                         self.next_endpoint,
                         self.pagination_limit_key,
@@ -652,6 +656,20 @@ class SyncClientRest(SyncClientAbstract):
 
             # process API headers
             self.process_headers(self.prev_response)
+
+            if self.progress_counter is None:
+                total_items = 0
+                if self.total_items is not None:
+                    total_items = self.total_items
+                if self.limit is not None:
+                    total_items = min(self.limit, total_items)
+                progress_counter = ProgressCounter(
+                    total_items, items_plural='api_items', verb_past='downloaded'
+                )
+            result_count = 0
+            if self.limit and self.next_page:
+                result_count = self.limit * self.next_page
+            progress_counter.maybe_print_update(result_count)
 
             if Registrar.DEBUG_API:
                 Registrar.register_message("api returned json: %s" % prev_response_json)
@@ -728,7 +746,9 @@ class SyncClientRest(SyncClientAbstract):
                     total_items = api_iterator.total_items
                 if limit is not None:
                     total_items = min(limit, total_items)
-                progress_counter = ProgressCounter(total_items)
+                progress_counter = ProgressCounter(
+                    total_items, items_plural='api_items', verb_past='analysed'
+                )
             progress_counter.maybe_print_update(result_count)
 
             # if Registrar.DEBUG_API:
@@ -1110,6 +1130,12 @@ class SyncClientWP(SyncClientRest):
     ]
     page_nesting = False
     search_param = 'search'
+    total_pages_key = 'X-WP-TotalPages'
+    total_items_key = 'X-WP-Total'
+    pagination_limit_key = 'per_page'
+    pagination_number_key = 'page'
+    pagination_offset_key = 'offset'
+
 
 class LocalNullTunnel(object):
     """ Pretend to be a SSHTunnelForwarder object for local mocking. """
