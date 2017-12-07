@@ -152,13 +152,13 @@ class MetaGator(Registrar):
 
 
 
-def invalid_image(parsers, settings, img_name, error):
+def invalid_image(parsers, settings, img_data, error):
     """Register error globally and attribute to image."""
     if settings.require_images:
-        Registrar.register_error(error, img_name)
+        Registrar.register_error(error, img_data)
     else:
-        Registrar.register_message(error, img_name)
-    parsers.master.attachments[img_name].invalidate(error)
+        Registrar.register_message(error, img_data)
+    img_data.invalidate(error)
 
 def get_raw_image(settings, img_name):
     """
@@ -198,7 +198,7 @@ def process_image_meta(settings, parsers, img_data):
         invalid_image(
             parsers,
             settings,
-            img_data.file_name,
+            img_data,
             "error reading meta: " + str(exc)
         )
         return
@@ -220,7 +220,7 @@ def process_image_meta(settings, parsers, img_data):
 
     except Exception as exc:
         invalid_image(
-            parsers, settings, img_data.file_name, "error updating meta: " + str(exc)
+            parsers, settings, img_data, "error updating meta: " + str(exc)
         )
         Registrar.register_error(traceback.format_exc())
         return
@@ -238,7 +238,7 @@ def process_image_size(settings, parsers, img_data):
         invalid_image(
             parsers,
             settings,
-            img_data.file_name, "SOURCE FILE NOT FOUND: %s" % img_raw_path
+            img_data, "SOURCE FILE NOT FOUND: %s" % img_raw_path
         )
         return
 
@@ -250,7 +250,9 @@ def process_image_size(settings, parsers, img_data):
     img_dst_path = os.path.join(settings.img_dst, img_data.file_name)
 
     if os.path.isfile(img_dst_path):
-        img_dst_mod = os.path.getmtime(img_dst_path)
+        img_dst_mod = max(
+            os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path)
+        )
         # print "image mod (src, dst): ", img_src_mod, imgdstmod
         if img_dst_mod > img_src_mod:
             winning_time = img_dst_mod
@@ -258,16 +260,14 @@ def process_image_size(settings, parsers, img_data):
             shutil.copy(img_raw_path, img_dst_path)
     elif settings.do_resize_images:
         shutil.copy(img_raw_path, img_dst_path)
-        with open(img_dst_path):
-            os.utime(img_dst_path, None)
-        with open(img_raw_path):
-            os.utime(img_dst_path, None)
+        # with open(img_dst_path):
+        #     os.utime(img_dst_path, None)
+        # with open(img_raw_path):
+        #     os.utime(img_dst_path, None)
+
 
     if settings.do_resize_images:
         img_data[img_data.file_path_key] = img_dst_path
-
-    img_data['modified_local'] = TimeUtils.timestamp2datetime(winning_time)
-    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['modified_local'])
 
     if Registrar.DEBUG_IMG:
         Registrar.register_message("resizing: %s" % img_data.file_name)
@@ -282,14 +282,22 @@ def process_image_size(settings, parsers, img_data):
                 image.thumbnail(settings.thumbsize)
                 image.save(img_dst_path)
 
+            img_dst_mod = max(
+                os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path)
+            )
+            if img_dst_mod > img_src_mod:
+                winning_time = img_dst_mod
+
         img_data['width'] = image.size[0]
         img_data['height'] = image.size[1]
 
     except IOError as exc:
         invalid_image(
-            parsers, settings, img_data.file_name, "could not resize: " + str(exc)
+            parsers, settings, img_data, "could not resize: " + str(exc)
         )
-        return
+
+    img_data['modified_local'] = TimeUtils.timestamp2datetime(winning_time)
+    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['modified_local'])
 
     return img_data
 
@@ -344,7 +352,7 @@ def process_images(settings, parsers):
             invalid_image(
                 parsers,
                 settings,
-                img_filename,
+                img_data,
                 UserWarning("could not get raw image: %s " % repr(exc))
             )
             continue
@@ -354,7 +362,7 @@ def process_images(settings, parsers):
             invalid_image(
                 parsers,
                 settings,
-                img_filename,
+                img_data,
                 UserWarning("could not extract name")
             )
             continue
@@ -364,7 +372,7 @@ def process_images(settings, parsers):
             invalid_image(
                 parsers,
                 settings,
-                img_filename,
+                img_data,
                 UserWarning("invalid image extension")
             )
             continue
@@ -379,7 +387,7 @@ def process_images(settings, parsers):
             invalid_image(
                 parsers,
                 settings,
-                img_filename,
+                img_data,
                 "could not get title or description: " + str(exc)
             )
             continue
