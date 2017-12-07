@@ -60,11 +60,18 @@ class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
 
     def process_meta(self):
         # import pudb; pudb.set_trace()
-        super(ImportXeroProduct, self).process_meta()
+        for base_class in ImportXeroProduct.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
 
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
-    process_meta = ImportApiObjectMixin.process_meta
     is_item = ImportGenItem.is_item
+
+    def process_meta(self):
+        # import pudb; pudb.set_trace()
+        for base_class in ImportXeroApiObject.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
 
 class ImportXeroApiItem(ImportXeroApiObject, ImportGenItem):
     pass

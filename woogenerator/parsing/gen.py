@@ -73,11 +73,9 @@ class ImportGenObject(ImportTreeObject, ImportGenMixin):
     def __init__(self, *args, **kwargs):
         self.subs = kwargs.pop('subs', {})
         self.regex = kwargs.pop('regex', {})
-        ImportTreeObject.__init__(self, *args, **kwargs)
-        if self.DEBUG_GEN:
-            self.register_message("dict is now %s" % (
-                pformat(self.to_dict().items())
-            ))
+        for base_class in ImportGenObject.__bases__:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
 
     @property
     def name_ancestors(self):

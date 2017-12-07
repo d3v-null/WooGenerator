@@ -41,7 +41,6 @@ class ImportWooMixin(object):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(ImportWooMixin, self).__init__(*args, **kwargs)
         self.specials = []
 
     @property
@@ -101,9 +100,12 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
 
     def __init__(self, *args, **kwargs):
-        ImportGenObject.__init__(self, *args, **kwargs)
-        ImportShopMixin.__init__(self, *args, **kwargs)
-        ImportWooMixin.__init__(self, *args, **kwargs)
+        for base_class in ImportWooObject.__bases__:
+            if hasattr(base_class, '__init__'):
+                base_class.__init__(self, *args, **kwargs)
+        # ImportGenObject.__init__(self, *args, **kwargs)
+        # ImportShopMixin.__init__(self, *args, **kwargs)
+        # ImportWooMixin.__init__(self, *args, **kwargs)
 
 class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys
@@ -314,7 +316,8 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
         for base_class in self.__class__.__bases__:
             if hasattr(base_class, 'process_meta'):
                 base_class.process_meta(self)
-        self.title = self.fullname
+        if not self.title:
+            self.title = self.fullname
 
     @property
     def cat_name(self):

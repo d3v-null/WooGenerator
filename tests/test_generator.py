@@ -1789,7 +1789,7 @@ probbos:
                 self.reporters.cat.get_summary_text()
             )
 
-        # TODO fix display of OLD / NEW items in match.tabulate()
+        # TODO: fix title not showing up correctly in sync report
         """
 update <       3 |     315 >OLD
 taxos                descsum    title      parent_id    ID    slug
@@ -1819,10 +1819,11 @@ woocommerce-test CHANGES
  315  Product A                 3
 
 NEW
-taxos                descsum    title        parent_id    ID  slug
+taxos                descsum    title      parent_id      ID  slug
 -------------------  ---------  ---------  -----------  ----  ---------
-r:1|a:315|Product A             Product A            0   315  product-a
-r:3|a:315|Product A  Product A  Product A            0   315  product-a
+|r:3|w:315|          Product A                           315  product-a
+r:3|a:315|Product A  Product A  Product A  0             315  product-a
+--------------------------------------------------
         """
 
 
