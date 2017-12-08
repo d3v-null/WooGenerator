@@ -609,6 +609,19 @@ class ArgumentParserProd(ArgumentParserCommon):
             '--thumbsize-y',
             help='Y value of thumbnail crop size'
         )
+        group = images_group.add_mutually_exclusive_group()
+        group.add_argument(
+            '--skip-unattached-images',
+            help="process only images which are attached to api objects",
+            action="store_true",
+            default=True
+        )
+        group.add_argument(
+            '--do-unattached-images',
+            help="process all images including those which aren't attached to parser objects",
+            dest='skip_unattached_images',
+            action="store_false",
+        )
 
         specials_group = self.add_argument_group('Specials options')
         group = specials_group.add_mutually_exclusive_group()

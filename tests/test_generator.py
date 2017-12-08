@@ -74,6 +74,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_delete_images = False
         self.settings.schema = "CA"
         self.settings.ask_before_update = False
+        self.settings.skip_unattached_images = True
         if self.settings.wc_api_is_legacy:
             self.settings.slave_file = os.path.join(
                 TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
@@ -142,6 +143,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertTrue(self.settings.do_images)
         self.assertTrue(self.settings.do_resize_images)
         self.assertFalse(self.settings.do_remeta_images)
+        self.assertTrue(self.settings.skip_unattached_images)
         self.assertTrue(self.settings.do_problematic)
         self.assertFalse(self.settings.download_master)
         self.assertFalse(self.settings.download_slave)
@@ -395,7 +397,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertFalse(first_prod.is_taxo)
         self.assertFalse(first_prod.is_variable)
         self.assertFalse(first_prod.is_variation)
-        for key, value in {
+        test_dict = {
                 'height': u'120',
                 'length': u'40',
                 'weight': u'0.12',
@@ -404,10 +406,15 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 'DPR': u'7.75',
                 'WNR': u'12.95',
                 'WPR': u'11.00',
+        }
+        if self.settings.do_specials:
+            test_dict.update({
                 'WNF': u'1465837200',
                 'WNT': u'32519314800',
-        }.items():
-            self.assertEqual(unicode(first_prod[key]), value)
+                'WNS': u'10.36',
+            })
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_prod[key]), unicode(value))
 
         # Remember the test data is deliberately modified to remove one of the categories
 
@@ -473,7 +480,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 img_list.tabulate(tablefmt='simple')
             ))
 
-        first_img = img_list[0]
+        # first_img = img_list[0]
+        first_img = img_list.get_by_index('ACARF.jpg')
 
         if self.debug:
             print(SanitationUtils.coerce_bytes(
@@ -493,7 +501,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             'Solution > TechnoTan Solution > Classic Tan (6hr)'
         )
 
-        last_img = img_list[-1]
+        # last_img = img_list[-1]
+        last_img = img_list.get_by_index('ACARA-CAL.png')
 
         if self.debug:
             print(SanitationUtils.coerce_bytes(

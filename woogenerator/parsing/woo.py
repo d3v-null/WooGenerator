@@ -13,16 +13,15 @@ from ..coldata import (ColDataAttachment, ColDataProductMeridian,
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
 from .abstract import ObjList
-from .gen import (CsvParseGenTree, ImportGenItem,
-                  ImportGenObject, ImportGenTaxo)
+from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
                    ImportShopCategoryMixin, ImportShopMixin,
                    ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
-                   ImportShopProductVariationMixin, ShopCatList, ShopMixin,
-                   ShopObjList, ShopProdList)
+                   ImportShopProductVariationMixin, ShopCatList,
+                   ShopImgListMixin, ShopMixin, ShopObjList, ShopProdList)
 from .special import ImportSpecialGroup
-from .tree import ImportTreeItem, CsvParseTreeMixin
+from .tree import CsvParseTreeMixin, ImportTreeItem
 
 
 class ImportWooMixin(object):
@@ -360,7 +359,7 @@ class WooCatList(ShopCatList, WooListMixin):
 
 ImportWooCategory.container = WooCatList
 
-class WooImgList(ObjList, WooListMixin):
+class WooImgList(ObjList, WooListMixin, ShopImgListMixin):
     coldata_class = WooListMixin.coldata_img_class
     supported_type = ImportWooImg
     report_cols = coldata_class.get_col_data_native('report')
@@ -496,6 +495,10 @@ class CsvParseWooMixin(object):
         else:
             if self.DEBUG_IMG:
                 self.register_message("FOUND IMG: %s" % repr(img_data))
+            # TODO: update found image with img_raw_data
+            img_data.update(img_raw_data)
+            # TODO: process meta?
+            img_data.process_meta()
 
         self.register_attachment(img_data, object_data)
 

@@ -236,19 +236,6 @@ def populate_slave_parsers(parsers, settings):
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
-    # TODO: analyse API image data after figuring out which IDs to filter on.
-
-    if settings.schema_is_woo and settings.do_images:
-        Registrar.register_progress("analysing API image data")
-        img_client_class = settings.slave_img_sync_client_class
-        img_client_args = settings.slave_img_sync_client_args
-
-        with img_client_class(**img_client_args) as client:
-            client.analyse_remote_imgs(
-                parsers.slave,
-                data_path=settings.slave_img_path
-            )
-
     if settings.schema_is_woo and settings.do_categories:
         Registrar.register_progress("analysing API category data")
 
@@ -263,21 +250,26 @@ def populate_slave_parsers(parsers, settings):
 
 
     with slave_client_class(**slave_client_args) as client:
-        # try:
 
-        Registrar.register_progress("analysing API data")
+        Registrar.register_progress("analysing API product data")
 
-        # Registrar.DEBUG_ABSTRACT = True
-        # Registrar.DEBUG_API = True
-        # Registrar.DEBUG_GEN = True
-        # Registrar.DEBUG_TREE = True
-        # Registrar.DEBUG_WOO = True
-        # Registrar.DEBUG_TRACE = True
-        # ApiParseWoo.product_resolver = Registrar.exception_resolver
         client.analyse_remote(
             parsers.slave,
             data_path=settings.slave_path
         )
+
+    # TODO: analyse API image data after figuring out which IDs to filter on.
+
+    if settings.schema_is_woo and settings.do_images:
+        Registrar.register_progress("analysing API image data")
+        img_client_class = settings.slave_img_sync_client_class
+        img_client_args = settings.slave_img_sync_client_args
+
+        with img_client_class(**img_client_args) as client:
+            client.analyse_remote_imgs(
+                parsers.slave,
+                data_path=settings.slave_img_path
+            )
 
     if Registrar.DEBUG_CLIENT:
         container = settings.slave_parser_class.product_container.container

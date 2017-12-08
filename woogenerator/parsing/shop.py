@@ -174,6 +174,9 @@ class ImportShopAttachmentMixin(ShopMixin):
         if self.get(self.file_name_key) is None:
             raise UserWarning("couldn't get file_path")
 
+class ShopImgListMixin(object):
+    supported_type = ImportShopAttachmentMixin
+
 class ImportShopMixin(object):
     "Base mixin class for shop objects (products, categories, attachments)"
     is_product = None

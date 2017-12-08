@@ -247,8 +247,6 @@ class WooApiImgList(WooImgList, ApiListMixin):
 
 ImportWooApiImg.container = WooApiImgList
 
-
-
 class ApiParseMixin(object):
     root_container = ImportApiRoot
     coldata_gen_target = 'gen-api'

@@ -233,12 +233,28 @@ class ObjList(list, Registrar):
             return
         index = self.indexer(object_data)
         if index not in self.indices:
-            super(ObjList, self).append(object_data)
             self.indices.append(index)
+            return list.append(self, object_data)
 
     def extend(self, objects):
         for obj in objects:
             self.append(obj)
+
+    def pop(self, index):
+        self.indices.pop(index)
+        return list.pop(self, index)
+
+    def __setitem__(self, key, value):
+        index = self.indexer(value)
+        self.indices.__setitem__(key, index)
+        return list.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        self.indices.__delitem__(key)
+        return list.__delitem__(self, key)
+
+    def get_by_index(self, index):
+        return self[self.indices.index(index)]
 
     def get_key(self, key):
         values = SeqUtils.filter_unique_true(
