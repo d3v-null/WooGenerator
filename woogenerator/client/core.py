@@ -664,14 +664,14 @@ class SyncClientRest(SyncClientAbstract):
                     total_items = self.total_items
                 if self.limit is not None:
                     total_items = max(self.limit, total_items)
-                progress_counter = ProgressCounter(
+                self.progress_counter = ProgressCounter(
                     total_items, items_plural='api_items', verb_past='downloaded'
                 )
             result_count = 0
             if self.limit and self.next_page:
                 result_count = self.limit * self.next_page
             if Registrar.DEBUG_PROGRESS:
-                progress_counter.maybe_print_update(result_count)
+                self.progress_counter.maybe_print_update(result_count)
 
             if Registrar.DEBUG_API:
                 Registrar.register_message("api returned json: %s" % prev_response_json)

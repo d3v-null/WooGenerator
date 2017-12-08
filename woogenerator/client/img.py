@@ -4,6 +4,7 @@ import os
 
 from ..coldata import ColDataAttachment
 from .core import SyncClientWP
+from ..utils import ProgressCounter, SeqUtils, Registrar
 
 
 class ImgSyncClientWP(SyncClientWP):
@@ -67,8 +68,16 @@ class ImgSyncClientWP(SyncClientWP):
         #     for page_item in page:
         skip_unattached_images = kwargs.pop('skip_unattached_images', None)
         if skip_unattached_images:
-            for attachment in parser.attachments.values():
-                attachment_id = attachment.get_attachment_id(attachment)
+            attachment_ids = SeqUtils.filter_unique_true([
+                attachment.get_attachment_id(attachment) \
+                for attachment in parser.attachments.values()
+            ])
+            progress_counter = ProgressCounter(
+                len(attachment_ids), items_plural='images', verb_past='analysed'
+            )
+            for count, attachment_id in enumerate(attachment_ids):
+                if Registrar.DEBUG_PROGRESS:
+                    progress_counter.maybe_print_update(count)
                 self.analyse_single_reomte_img(
                     parser, attachment_id, **kwargs
                 )

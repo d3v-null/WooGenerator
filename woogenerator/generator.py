@@ -520,7 +520,10 @@ def do_match_images(parsers, matches, settings):
     except AssertionError as exc:
         warn = RuntimeWarning(
             "could not match all images.\n%s\n%s" % (
-                image_matcher.duplicate_matches.tabulate(),
+                "\n".join([
+                    "%s:\n%s" % (key, matches.tabulate()) \
+                    for key, matches in matches.image.duplicate.items()
+                ]),
                 str(exc)
             )
         )

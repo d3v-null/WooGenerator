@@ -1372,8 +1372,15 @@ class Registrar(object):
 
     @classmethod
     def string_anything(cls, index, thing, delimeter='|'):
-        return SanitationUtils.coerce_bytes(
-            u"%50s %s %s" % (index, delimeter, thing))
+        try:
+            index = str(index)
+        except:
+            index = SanitationUtils.coerce_bytes(index)
+        try:
+            thing = str(thing)
+        except:
+            thing = SanitationUtils.coerce_bytes(thing)
+        return u"%50s %s %s" % (index, delimeter, thing)
 
     @classmethod
     def print_anything(cls, index, thing, delimeter):
