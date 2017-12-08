@@ -768,19 +768,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # except AssertionError as exc:
         #     self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.updates.image.slave[0]
+        sync_update = self.updates.image.slave.get_by_ids("-1|ACA.jpg", 24879)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "-1|ACA.jpg"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                24879
-            )
-
             master_desc = (
                 "Company A have developed a range of unique blends in 16 "
                 "shades to suit all use cases. All Company A's products "
@@ -843,19 +834,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             print("master updates:")
             for sync_update in self.updates.image.master:
                 print(sync_update.tabulate())
-        sync_update = self.updates.image.master[0]
+        # sync_update = self.updates.image.master[0]
+        sync_update = self.updates.image.master.get_by_ids("-1|ACA.jpg", 24879)
         try:
             if self.debug:
                 self.print_update(sync_update)
-
-            self.assertEqual(
-                sync_update.master_id,
-                "-1|ACA.jpg"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                24879
-            )
             master_slug = ''
             slave_slug = 'solution-technotan-solution'
             self.assertEqual(
@@ -880,18 +863,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 print(slave_gen_object)
 
         self.assertEqual(len(self.updates.image.new_slaves), 2)
-        sync_update = self.updates.image.new_slaves[0]
+        # sync_update = self.updates.image.new_slaves[0]
+        sync_update = self.updates.image.new_slaves.get_by_ids("14|ACARA-CCL.png", "")
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "14|ACARA-CCL.png"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                ""
-            )
             slave_gen_object = sync_update.old_m_object_gen
             title = 'Range A - Style 2 - 1Litre'
             content = (
@@ -1028,23 +1004,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             print('image update results: %s' % self.results.image)
 
-        self.assertEqual(
-            len(self.results.image.new.successes),
-            2
-        )
+        self.assertEqual(len(self.results.image.new.successes), 2)
 
-        sync_update = self.results.image.new.successes[0]
+        # sync_update = self.results.image.new.successes[0]
+        sync_update = self.results.image.new.successes.get_by_ids("14|ACARA-CCL.png", 100000)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "14|ACARA-CCL.png"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100000
-            )
             self.assertEqual(
                 sync_update.new_s_object_core['id'],
                 100000
@@ -1055,18 +1021,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        sync_update = self.results.image.new.successes[-1]
+        # sync_update = self.results.image.new.successes[-1]
+        sync_update = self.results.image.new.successes.get_by_ids("48|ACARC-CL.jpg", 100001)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "48|ACARC-CL.jpg"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100001
-            )
             self.assertEqual(
                 sync_update.new_s_object_core['id'],
                 100001
@@ -1082,18 +1041,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             len(self.results.image.successes),
             51
         )
-        sync_update = self.results.image.successes[0]
+        # sync_update = self.results.image.successes[0]
+        sync_update = self.results.image.successes.get_by_ids("-1|ACA.jpg", 100002)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "-1|ACA.jpg"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100002
-            )
             self.assertEqual(
                 sync_update.new_s_object_core['id'],
                 100002
@@ -1105,18 +1057,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.results.image.successes[-1]
+        # sync_update = self.results.image.successes[-1]
+        sync_update = self.results.image.successes.get_by_ids("41|ACARB-S.jpg", 100052)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                "41|ACARB-S.jpg"
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100052
-            )
             self.assertEqual(
                 sync_update.new_s_object_core['id'],
                 100052
@@ -1144,19 +1089,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_updates_summary(self.updates.category)
         self.assertEqual(len(self.updates.category.master), 9)
-        sync_update = self.updates.category.master[1]
+        # sync_update = self.updates.category.master[1]
+        sync_update = self.updates.category.master.get_by_ids(4, 316)
         try:
             if self.debug:
                 self.print_update(sync_update)
-
-            self.assertEqual(
-                sync_update.master_id,
-                4
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                316
-            )
 
             updates_native = sync_update.get_slave_updates_native()
 
@@ -1214,18 +1151,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             set(['Specials', 'Product A Specials'])
         )
 
-        sync_update = self.updates.category.new_slaves[-1]
+        # sync_update = self.updates.category.new_slaves[-1]
+        sync_update = self.updates.category.new_slaves.get_by_ids(167, '')
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                167
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                ''
-            )
             master_title = "Product A Specials"
             master_desc = master_title
             self.assertEqual(
@@ -1345,18 +1275,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         )
         index_fn = self.parsers.master.category_indexer
 
-        sync_update = self.results.category.new.successes.pop(0)
+        sync_update = self.results.category.new.successes.get_by_ids(166, 100000)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                166
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100000
-            )
             new_s_object_gen = sync_update.new_s_object
             if self.debug:
                 pprint(new_s_object_gen.to_dict())
@@ -1377,18 +1299,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.results.category.new.successes.pop(0)
+        sync_update = self.results.category.new.successes.get_by_ids(167, 100001)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                167
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                100001
-            )
             new_s_object_gen = sync_update.new_s_object
             if self.debug:
                 pprint(new_s_object_gen.items())
@@ -1443,7 +1357,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.debug:
             self.print_updates_summary(self.updates.category)
         self.assertEqual(len(self.updates.category.master), 9)
-        sync_update = self.updates.category.master[1]
 
         """
 update <       4 |     316 ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
@@ -1560,18 +1473,11 @@ title     identical  Company A Product A  Company A Product A         0         
 probbos:
 
         """
+        sync_update = self.updates.category.master.get_by_ids(4, 316)
 
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                4
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                316
-            )
             m_attachment = sync_update.old_m_object_gen.to_dict()['attachment_object']
             self.assertEqual(
                 m_attachment.get('file_name'),
@@ -1613,8 +1519,6 @@ probbos:
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-
-        sync_update = self.updates.category.new_slaves[1]
 
         """
 update <     167 |         ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
@@ -1694,18 +1598,11 @@ display         identical                            0         0
 probbos:
 
         """
+        sync_update = self.updates.category.new_slaves.get_by_ids(167, '')
 
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                167
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                ''
-            )
             m_attachment = sync_update.old_m_object_gen.to_dict()['attachment_object']
             self.assertEqual(
                 m_attachment.get('file_name'),
@@ -1838,19 +1735,11 @@ probbos:
         self.assertTrue(self.updates.slave)
         self.assertEqual(len(self.updates.slave), 48)
 
-        sync_update = self.updates.slave[-1]
+        sync_update = self.updates.slave.get_by_ids(10, 24863)
 
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                10
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                24863
-            )
             expected_sku = "ACARF-CRS"
 
             self.assertEquals(
@@ -2199,19 +2088,11 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.updates.problematic), 0)
         self.assertEqual(len(self.updates.slave), 1)
 
-        sync_update = self.updates.delta_slave[0]
+        # sync_update = self.updates.delta_slave[0]
+        sync_update = self.updates.delta_slave.get_by_ids(19, 'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f')
         try:
             if self.debug:
                 self.print_update(sync_update)
-            self.assertEqual(
-                sync_update.master_id,
-                19
-            )
-            self.assertEqual(
-                sync_update.slave_id,
-                'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f'
-            )
-            self.assertEqual(sync_update.master_id, 19)
             self.assertEqual(sync_update.old_m_object.codesum, 'DevD')
             self.assertEqual(
                 float(sync_update.old_m_object['WNR']),

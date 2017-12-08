@@ -224,7 +224,6 @@ class ObjList(list, Registrar):
         return self[:]
 
     def append(self, object_data):
-        # TODO: re-implemeny by overriding .append()?
         try:
             assert issubclass(object_data.__class__, self.supported_type), \
                 "object must be subclass of %s not %s" % \
@@ -238,7 +237,6 @@ class ObjList(list, Registrar):
             self.indices.append(index)
 
     def extend(self, objects):
-        # TODO: re-implemeny by overriding .extend()?
         for obj in objects:
             self.append(obj)
 

@@ -277,6 +277,17 @@ class SyncUpdate(Registrar):
         """Abstract method fo getting the ID of the slave object."""
         raise NotImplementedError()
 
+    @classmethod
+    def make_index(cls, master_id, slave_id):
+        return u"|".join([
+            u"m:%s" % unicode(master_id),
+            u"s:%s" % unicode(slave_id)
+        ])
+
+    @property
+    def index(self):
+        return self.make_index(self.master_id, self.slave_id)
+
     def get_winner_name(self, m_time, s_time):
         """Get the name of the database containing the winning object (master / slave)."""
         if not s_time:
@@ -1420,3 +1431,55 @@ class SyncUpdateCatWoo(SyncUpdateGen):
     @property
     def slave_id(self):
         return self.get_new_subject_value('term_id', self.slave_name)
+
+class UpdateList(list, Registrar):
+    """
+    Mutable sequence of sync updates which is unique on update index.
+    A list of update indices is kept which is modified whenever the update list
+    is modified so that updates can be retrieved by index
+    """
+    supported_type = SyncUpdate
+
+    def __init__(self, updates=None):
+        list.__init__(self)
+        Registrar.__init__(self)
+        self.indices = []
+        if updates:
+            self.extend(updates)
+
+    def indexer(self, sync_update):
+        return sync_update.index
+
+    def append(self, sync_update):
+        assert issubclass(sync_update.__class__, self.supported_type), \
+        "object must be subclass of %s not %s" % (
+            str(self.supported_type.__name__), str(sync_update.__class__)
+        )
+        index = self.indexer(sync_update)
+        if index not in self.indices:
+            self.indices.append(index)
+            return list.append(self, sync_update)
+
+    def extend(self, updates):
+        for obj in updates:
+            return self.append(obj)
+
+    def pop(self, index):
+        self.indices.pop(index)
+        return list.pop(self, index)
+
+    def __setitem__(self, key, value):
+        index = self.indexer(value)
+        self.indices.__setitem__(key, index)
+        return list.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        self.indices.__delitem__(key)
+        return list.__delitem__(self, key)
+
+    def get_by_index(self, index):
+        return self[self.indices.index(index)]
+
+    def get_by_ids(self, master_id='', slave_id=''):
+        index = self.supported_type.make_index(master_id, slave_id)
+        return self.get_by_index(index)

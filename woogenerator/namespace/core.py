@@ -20,7 +20,7 @@ from ..conf.core import (DEFAULT_LOCAL_IN_DIR, DEFAULT_LOCAL_LOG_DIR,
                          DEFAULT_SLAVE_NAME, DEFAULT_TESTMODE)
 from ..conf.parser import ArgumentParserCommon
 from ..matching import MatchList
-from ..syncupdate import SyncUpdate
+from ..syncupdate import SyncUpdate, UpdateList
 from ..utils import Registrar, TimeUtils
 
 
@@ -553,18 +553,18 @@ class UpdateNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(UpdateNamespace, self).__init__(*args, **kwargs)
-        self.master = []
-        self.slave = []
-        self.static = []
-        self.problematic = []
-        self.nonstatic_master = []
-        self.nonstatic_slave = []
-        self.delta_master = []
-        self.delta_slave = []
-        self.masterless = []
-        self.slaveless = []
-        self.new_masters = []
-        self.new_slaves = []
+        self.master = UpdateList()
+        self.slave = UpdateList()
+        self.static = UpdateList()
+        self.problematic = UpdateList()
+        self.nonstatic_master = UpdateList()
+        self.nonstatic_slave = UpdateList()
+        self.delta_master = UpdateList()
+        self.delta_slave = UpdateList()
+        self.masterless = UpdateList()
+        self.slaveless = UpdateList()
+        self.new_masters = UpdateList()
+        self.new_slaves = UpdateList()
 
 
 class ResultsNamespace(argparse.Namespace):
@@ -574,9 +574,9 @@ class ResultsNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(ResultsNamespace, self).__init__(*args, **kwargs)
-        self.fails_master = []
-        self.fails_slave = []
-        self.successes = []
+        self.fails_master = UpdateList()
+        self.fails_slave = UpdateList()
+        self.successes = UpdateList()
 
     @property
     def as_dict(self):

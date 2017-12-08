@@ -562,22 +562,6 @@ def do_match_categories(parsers, matches, settings):
         Registrar.register_error(exc)
         # raise exc
 
-    # print parsers.master.to_str_tree()
-    # if Registrar.DEBUG_CATS:
-    #     print "product parser"
-    #     for key, category in parsers.master.categories.items():
-    #         print "%5s | %50s | %s" % (key, category.title[:50],
-    #                                    category.wpid)
-    # if Registrar.DEBUG_CATS:
-    #     print "api product parser info"
-    #     print "there are %s slave categories registered" % len(
-    #         parsers.slave.categories)
-    #     print "there are %s children of API root" % len(
-    #         parsers.slave.root_data.children)
-    #     print parsers.slave.to_str_tree()
-    #     for key, category in parsers.slave.categories.items():
-    #         print "%5s | %50s" % (key, category.title[:50])
-
     return matches
 
 # TODO: do_match_attributes ?
@@ -673,7 +657,7 @@ def do_merge_images(matches, parsers, updates, settings):
             sync_update.update(sync_handles)
 
             if not sync_update.important_static:
-                insort(updates.image.problematic, sync_update)
+                updates.image.problematic.append(sync_update)
                 continue
 
             if sync_update.m_updated:
@@ -723,7 +707,7 @@ def do_merge_categories(matches, parsers, updates, settings):
                 sync_update.simplify_sync_warning_value_singular('image', ['id'])
 
             if not sync_update.important_static:
-                insort(updates.category.problematic, sync_update)
+                updates.category.problematic(sync_update)
                 continue
 
             if sync_update.m_updated:
@@ -807,14 +791,14 @@ def do_merge_prod(matches, parsers, updates, settings):
                                        sync_update.tabulate())
 
         if sync_update.s_updated and sync_update.s_deltas:
-            insort(updates.delta_slave, sync_update)
+            updates.delta_slave.append(sync_update)
 
         if not sync_update.important_static:
-            insort(updates.problematic, sync_update)
+            updates.problematic.append(sync_update)
             continue
 
         if sync_update.s_updated:
-            insort(updates.slave, sync_update)
+            updates.slave.append(sync_update)
 
     if settings['auto_create_new']:
         for new_prod_count, new_prod_match in enumerate(matches.slaveless):
@@ -867,11 +851,11 @@ def do_merge_var(matches, parsers, updates, settings):
                 var_match_count, sync_update.tabulate()))
 
         if not sync_update.important_static:
-            insort(updates.variation.problematic, sync_update)
+            updates.variation.problematic.append(sync_update)
             continue
 
         if sync_update.s_updated:
-            insort(updates.variation.slave, sync_update)
+            updates.variation.slave.append(sync_update)
 
     for var_match_count, var_match in enumerate(
             matches.variation.slaveless):
