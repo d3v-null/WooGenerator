@@ -45,10 +45,11 @@ python -m woogenerator.generator \
     --local-work-dir '/Users/derwent/Documents/woogenerator/' \
     --download-master --download-slave \
     --do-categories --do-images --do-specials \
-    --do-sync --do-problematic --auto-create-new \
+    --do-sync --update-slave --do-problematic --auto-create-new \
     --wp-srv-offset 36000 \
     -vvv --debug-trace
 """
+# just master and quit
 """
 python -m woogenerator.generator \
     --testmode --schema "TT" \

@@ -1640,7 +1640,7 @@ probbos:
       --master-dialect-suggestion "SublimeCsvTable" \
       --download-slave --schema "CA" \
       --do-specials --specials-file 'tests/sample_data/generator_specials_dummy.csv' \
-      --do-sync --do-problematic --auto-create-new --ask-before-update \
+      --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
       --do-categories --skip-variations --skip-attributes \
       --do-images --do-resize-images --skip-delete-images --skip-remeta-images --img-raw-dir "tests/sample_data/imgs_raw" \
       --wp-srv-offset 36000 \
