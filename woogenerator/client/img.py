@@ -72,5 +72,9 @@ class ImgSyncClientWP(SyncClientWP):
             self.register_message("Analysed images:")
             self.register_message(parser.to_str_tree())
 
+    def analyse_single_reomte_img(self, parser, pkey, **kwargs):
+        assert pkey, "pkey must be provided to analyse single image"
+
+
     def delete_item(self, img_id):
         return super(ImgSyncClientWP, self).delete_item(img_id, force=True)

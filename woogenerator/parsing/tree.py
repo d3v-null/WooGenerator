@@ -515,6 +515,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
 
     def process_object(self, object_data):
         # TODO: the fuck is this?
+        # TODO: when create new special category that doesn't already exist in parser, this breaks.
         assert isinstance(self.stack, ImportStack)
         oldstack = self.stack[:]
         assert isinstance(

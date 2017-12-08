@@ -23,6 +23,7 @@ class CatSyncClientMixin(object):
     endpoint_singular = 'product_category'
     endpoint_plural = 'products/categories'
     coldata_class = ColDataWcProdCategory
+    primary_key_handle = 'term_id'
 
     def analyse_remote_categories(self, parser, **kwargs):
         taxo_api_iterator = self.get_iterator(self.endpoint_plural)
@@ -41,11 +42,13 @@ class CatSyncClientWC(SyncClientWC, CatSyncClientMixin):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
     endpoint_plural = CatSyncClientMixin.endpoint_plural
     coldata_class = CatSyncClientMixin.coldata_class
+    primary_key_handle = CatSyncClientMixin.primary_key_handle
 
 class CatSyncClientWCLegacy(SyncClientWCLegacy):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
     endpoint_plural = CatSyncClientMixin.endpoint_plural
     coldata_class = CatSyncClientMixin.coldata_class
+    primary_key_handle = CatSyncClientMixin.primary_key_handle
 
 class ProdSyncClientXero(SyncClientXero):
     endpoint_singular = 'item'
