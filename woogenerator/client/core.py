@@ -770,26 +770,20 @@ class SyncClientRest(SyncClientAbstract):
                         Registrar.register_message('reached limit, exiting')
                     return
 
-    def upload_changes(self, pkey, data=None):
+    def get_single_endpoint(self, pkey):
         try:
             pkey = int(pkey)
         except ValueError:
             exc = UserWarning("Can't convert pkey %s to int" % pkey)
             Registrar.register_error(exc)
             raise exc
-        super(SyncClientRest, self).upload_changes(pkey)
         endpoint_parsed = urlparse(self.endpoint_plural)
         service_endpoint = '%s/%d' % (endpoint_parsed.path, pkey)
         if endpoint_parsed.query:
             service_endpoint += '?%s' % endpoint_parsed.query
-        data = dict([(key, value) for key, value in data.items()])
-        # print "service version: %s, data:%s" % (self.service.version, data)
-        if self.page_nesting:
-            data = {self.endpoint_singular: data}
-        if Registrar.DEBUG_API:
-            Registrar.register_message("updating %s: %s" %
-                                       (service_endpoint, data))
-        response = self.service.put(service_endpoint, data)
+        return service_endpoint
+
+    def process_response(self, response):
         assert response.status_code not in [400, 401], "API ERROR"
         try:
             assert response.json()
@@ -804,6 +798,23 @@ class SyncClientRest(SyncClientAbstract):
         assert 'errors' not in response.json(
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
+
+    def upload_changes(self, pkey, data=None):
+        service_endpoint = self.get_single_endpoint(pkey)
+        data = dict([(key, value) for key, value in data.items()])
+        # print "service version: %s, data:%s" % (self.service.version, data)
+        if self.page_nesting:
+            data = {self.endpoint_singular: data}
+        if Registrar.DEBUG_API:
+            Registrar.register_message("updating %s: %s" %
+                                       (service_endpoint, data))
+        response = self.service.put(service_endpoint, data)
+        return self.process_response(response)
+
+    def get_single_endpoint_item(self, pkey):
+        service_endpoint = self.get_single_endpoint(pkey)
+        response = self.service.get(service_endpoint)
+        return self.process_response(response)
 
     def get_iterator(self, endpoint=None):
         """

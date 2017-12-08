@@ -65,16 +65,25 @@ class ImgSyncClientWP(SyncClientWP):
         #     if self.page_nesting:
         #         page = page[self.endpoint_plural]
         #     for page_item in page:
-        for page in self.get_page_generator():
-            for endpoint_item in page:
-                parser.analyse_api_image_raw(endpoint_item)
-        if self.DEBUG_API:
-            self.register_message("Analysed images:")
-            self.register_message(parser.to_str_tree())
+        skip_unattached_images = kwargs.pop('skip_unattached_images', None)
+        if skip_unattached_images:
+            for attachment in parser.attachments.values():
+                attachment_id = attachment.get_attachment_id(attachment)
+                self.analyse_single_reomte_img(
+                    parser, attachment_id, **kwargs
+                )
+        else:
+            for page in self.get_page_generator():
+                for endpoint_item in page:
+                    parser.analyse_api_image_raw(endpoint_item)
 
     def analyse_single_reomte_img(self, parser, pkey, **kwargs):
         assert pkey, "pkey must be provided to analyse single image"
-
+        endpoint_response = self.get_single_endpoint_item(pkey)
+        endpoint_item = endpoint_response.json()
+        if self.page_nesting:
+            endpoint_item = endpoint_item[self.endpoint_singular]
+        parser.analyse_api_image_raw(endpoint_item)
 
     def delete_item(self, img_id):
         return super(ImgSyncClientWP, self).delete_item(img_id, force=True)

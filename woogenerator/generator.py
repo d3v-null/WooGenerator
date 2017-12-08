@@ -268,7 +268,8 @@ def populate_slave_parsers(parsers, settings):
         with img_client_class(**img_client_args) as client:
             client.analyse_remote_imgs(
                 parsers.slave,
-                data_path=settings.slave_img_path
+                data_path=settings.slave_img_path,
+                skip_unattached_images=settings.skip_unattached_images
             )
 
     if Registrar.DEBUG_CLIENT:
@@ -996,9 +997,20 @@ def handle_failed_update(update, results, exc, settings, source=None):
         pudb.set_trace()
 
 def usr_prompt_continue(settings):
-        input(
-            "Please read reports and press Enter to continue or ctrl-c to stop..."
-        )
+    try:
+        raw_in = input("\n".join([
+            "Please read reports and then make your selection",
+            " - press Enter to continue and perform updates",
+            " - press s to skip updates",
+            " - press c to cancel",
+            "..."
+        ]))
+    except SyntaxError:
+        raw_in = ""
+    if raw_in == 's':
+        return 's'
+    if raw_in == 'c':
+        raise SystemExit
 
 # TODO: collapse upload_new functions
 def upload_new_images_slave(parsers, results, settings, client, new_updates):
@@ -1153,7 +1165,8 @@ def do_updates_images_slave(updates, parsers, results, settings):
         return
 
     if settings['ask_before_update']:
-        usr_prompt_continue(settings)
+        if usr_prompt_continue(settings) == 's':
+            return
 
     with sync_client_class(**sync_client_args) as client:
         if Registrar.DEBUG_IMG:
@@ -1346,7 +1359,8 @@ def do_updates_categories_slave(updates, parsers, results, settings):
         return
 
     if settings['ask_before_update']:
-        usr_prompt_continue(settings)
+        if usr_prompt_continue(settings) == 's':
+            return
 
     with sync_client_class(**sync_client_args) as client:
         if Registrar.DEBUG_CATS:
@@ -1444,7 +1458,8 @@ def do_updates_prod(updates, parsers, settings, results):
         return
 
     if settings['ask_before_update']:
-        usr_prompt_continue(settings)
+        if usr_prompt_continue(settings) == 's':
+            return
 
 
     with slave_client_class(**slave_client_args) as client:

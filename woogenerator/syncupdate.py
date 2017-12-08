@@ -906,7 +906,7 @@ class SyncUpdate(Registrar):
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
         out_str += info_delimeter
-        if Registrar.DEBUG_UPDATE:
+        if Registrar.DEBUG_UPDATE or 1:
             passes_components = []
             if self.sync_passes_core:
                 passes_components += [
