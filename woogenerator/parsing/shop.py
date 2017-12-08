@@ -526,6 +526,7 @@ class CsvParseShopMixin(object):
     product_indexer = CsvParseGenMixin.get_code_sum
     category_indexer = CsvParseGenMixin.get_code_sum
     variation_indexer = CsvParseGenMixin.get_code_sum
+    # product_resolver = Registrar.exception_resolver
     product_resolver = Registrar.resolve_conflict
     attachment_resolver = Registrar.exception_resolver
     attachment_indexer = ImportShopAttachmentMixin.attachment_indexer

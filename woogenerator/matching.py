@@ -818,3 +818,21 @@ class AttacheeSkuMatcher(FilteringMatcher):
         super(AttacheeSkuMatcher, self).__init__(self.attachee_sku_index_fn,
                                            s_match_indices, m_match_indices)
         self.process_registers = self.process_registers_singular
+
+class AttacheeTitleMatcher(FilteringMatcher):
+    @staticmethod
+    def attachee_title_index_fn(attachment_object):
+        """ gets the sku of the object that the attachment is attached to """
+        assert \
+            hasattr(attachment_object, 'attachee_titles'), \
+            "must be able to get attachee_titles, instead type is %s" % type(attachment_object)
+        return SanitationUtils.normalize_val(attachment_object.attachee_titles)
+
+    def __init__(self, s_match_indices=None, m_match_indices=None):
+        # if not s_match_indices:
+        #     s_match_indices = []
+        # if not m_match_indices:
+        #     m_match_indices = []
+        super(AttacheeTitleMatcher, self).__init__(self.attachee_title_index_fn,
+                                           s_match_indices, m_match_indices)
+        self.process_registers = self.process_registers_singular

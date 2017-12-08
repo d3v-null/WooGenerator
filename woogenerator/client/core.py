@@ -657,6 +657,7 @@ class SyncClientRest(SyncClientAbstract):
             # process API headers
             self.process_headers(self.prev_response)
 
+            # TODO: fix this, always says 0
             if self.progress_counter is None:
                 total_items = 0
                 if self.total_items is not None:
@@ -1052,7 +1053,7 @@ class SyncClientWC(SyncClientRest):
     meta_get_key = 'meta_data'
     meta_set_key = 'meta_data'
     pagination_limit_key = 'per_page'
-    pagination_offest_key = 'offset'
+    pagination_offset_key = 'offset'
     pagination_number_key = 'page'
     search_param = 'name'
     meta_listed = True
@@ -1097,9 +1098,6 @@ class SyncClientWCLegacy(SyncClientRest):
     coldata_target_write = 'wc-api-legacy-v3-write'
     primary_key_handle = 'id'
     page_nesting = True
-    pagination_limit_key = 'filter[limit]'
-    pagination_number_key = 'page'
-    pagination_offset_key = 'filter[offset]'
     search_param = 'filter[q]'
     meta_listed = False
     readonly_keys = {

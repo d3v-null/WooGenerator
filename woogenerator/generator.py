@@ -45,7 +45,7 @@ python -m woogenerator.generator \
     --local-work-dir '/Users/derwent/Documents/woogenerator/' \
     --download-master --download-slave \
     --do-categories --do-images --do-specials \
-    --do-sync --update-slave --do-problematic --auto-create-new \
+    --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
     --wp-srv-offset 36000 \
     -vvv --debug-trace
 """
@@ -80,7 +80,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from .images import process_images
 from .matching import (AttacheeSkuMatcher, AttachmentIDMatcher,
                        CategoryMatcher, ImageMatcher, ProductMatcher,
-                       VariationMatcher)
+                       VariationMatcher, AttacheeTitleMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
@@ -118,7 +118,10 @@ def check_warnings(settings):
         Registrar.print_message_dict(0)
         status = ExitStatus.failure
         print "\nexiting with status %s\n" % status
+        if Registrar.DEBUG_TRACE:
+            import pudb; pudb.set_trace()
         sys.exit(status)
+
     elif Registrar.warnings:
         print "there were some warnings that should be reviewed"
         Registrar.print_message_dict(1)
@@ -249,6 +252,7 @@ def populate_slave_parsers(parsers, settings):
                 data_path=settings.slave_cat_path
             )
 
+    # TODO: ignore products which are post_status = trash
 
     with slave_client_class(**slave_client_args) as client:
 
@@ -258,8 +262,6 @@ def populate_slave_parsers(parsers, settings):
             parsers.slave,
             data_path=settings.slave_path
         )
-
-    # TODO: analyse API image data after figuring out which IDs to filter on.
 
     if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
@@ -419,72 +421,110 @@ def do_match_images(parsers, matches, settings):
 
     matches.image.valid += image_matcher.pure_matches
 
-    if image_matcher.duplicate_matches:
-        matches.image.duplicate['file_name'] = image_matcher.duplicate_matches
-        if Registrar.DEBUG_IMG:
-            Registrar.register_message(
-                'filename matcher duplicates:\n%s' % (
-                    image_matcher.duplicate_matches
-                )
-            )
-        filename_duplicate_indices_m = set([
-            attachment.index \
-            for match in image_matcher.duplicate_matches
-            for attachment in match.m_objects
-        ])
-        filename_duplicate_indices_s = set([
-            attachment.index \
-            for match in image_matcher.duplicate_matches
-            for attachment in match.s_objects
-        ])
+    if not image_matcher.duplicate_matches:
+        return matches
 
-        attachee_sku_matcher = AttacheeSkuMatcher(
-            matches.image.globals.s_indices, matches.image.globals.m_indices
+    matches.image.duplicate['file_name'] = image_matcher.duplicate_matches
+
+    filename_duplicate_indices_m = set([
+        attachment.index \
+        for match in image_matcher.duplicate_matches
+        for attachment in match.m_objects
+    ])
+    filename_duplicate_indices_s = set([
+        attachment.index \
+        for match in image_matcher.duplicate_matches
+        for attachment in match.s_objects
+    ])
+
+    attachee_sku_matcher = AttacheeSkuMatcher(
+        matches.image.globals.s_indices, matches.image.globals.m_indices
+    )
+    attachee_sku_matcher.process_registers(
+        slave_imgs_attachments, master_imgs_attachments
+    )
+
+    # make sure that all duplicates are resolved after matching using attachee_skus
+    if Registrar.DEBUG_IMG:
+        Registrar.register_message(
+            "adding attache_sku_matcher.pure_matches:\n%s" % (
+                attachee_sku_matcher.pure_matches.tabulate()
+            )
         )
-        attachee_sku_matcher.process_registers(
+    matches.image.valid += attachee_sku_matcher.pure_matches
+
+    extra_valid_indices_m = set([
+        attachment.index \
+        for match in attachee_sku_matcher.pure_matches
+        for attachment in match.m_objects
+    ])
+    extra_valid_indices_s = set([
+        attachment.index \
+        for match in attachee_sku_matcher.pure_matches
+        for attachment in match.s_objects
+    ])
+
+    # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
+
+    if attachee_sku_matcher.duplicate_matches:
+        matches.image.duplicate['attachee_sku'] = attachee_sku_matcher.duplicate_matches
+
+        attachee_title_matcher = AttacheeTitleMatcher(
+            list(set(matches.image.globals.s_indices) ^ set(extra_valid_indices_s)),
+            list(set(matches.image.globals.m_indices) ^ set(extra_valid_indices_m))
+        )
+        attachee_title_matcher.process_registers(
             slave_imgs_attachments, master_imgs_attachments
         )
 
-        # make sure that all duplicates are resolved after matching using attachee_skus
         if Registrar.DEBUG_IMG:
             Registrar.register_message(
-                "adding attache_sku_matcher.pure_matches:\n%s" % (
-                    attachee_sku_matcher.pure_matches.tabulate()
+                "adding attache_title_matcher.pure_matches:\n%s" % (
+                    attachee_title_matcher.pure_matches.tabulate()
                 )
             )
-        matches.image.valid += attachee_sku_matcher.pure_matches
 
-        attachee_sku_valid_indices_m = set([
+        matches.image.valid += attachee_title_matcher.pure_matches
+
+        extra_valid_indices_m.update([
             attachment.index \
-            for match in attachee_sku_matcher.pure_matches
+            for match in attachee_title_matcher.pure_matches
             for attachment in match.m_objects
         ])
-        attachee_sku_valid_indices_s = set([
+
+        extra_valid_indices_s.update([
             attachment.index \
-            for match in attachee_sku_matcher.pure_matches
+            for match in attachee_title_matcher.pure_matches
             for attachment in match.s_objects
         ])
 
-        # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
-
+    try:
         assert \
-        attachee_sku_valid_indices_m.issuperset(filename_duplicate_indices_m), \
+        extra_valid_indices_m.issuperset(filename_duplicate_indices_m), \
         (
             "all master indices from filename duplicates should be contained in "
-            "attache_sku pure match indices:\nfilename:\n%s\nattachee_skus:\n%s"
+            "extra attachee match indices:\nfilename:\n%s\nattachee_indices:\n%s"
         ) % (
             filename_duplicate_indices_m,
-            attachee_sku_valid_indices_m
+            extra_valid_indices_m
         )
         assert \
-        attachee_sku_valid_indices_s.issuperset(filename_duplicate_indices_s), \
+        extra_valid_indices_s.issuperset(filename_duplicate_indices_s), \
         (
             "all slave indices from filename duplicates should be contained in "
-            "attache_sku pure match indices:\nfilename:\n%s\nattachee_skus:\n%s"
+            "extra attachee match indices:\nfilename:\n%s\nattachee_indices:\n%s"
         ) % (
             filename_duplicate_indices_s,
-            attachee_sku_valid_indices_s
+            extra_valid_indices_s
         )
+    except AssertionError as exc:
+        warn = RuntimeWarning(
+            "could not match all images.\n%s\n%s" % (
+                image_matcher.duplicate_matches.tabulate(),
+                str(exc)
+            )
+        )
+        Registrar.register_warning(warn)
 
     return matches
 
