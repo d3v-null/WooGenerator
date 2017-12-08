@@ -61,6 +61,111 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
         ApiParseWoo.do_specials = False
         ApiParseWoo.do_dyns = False
 
+    def sub_entity_join_leave(
+        self, client, sub_client, sub_entity_handle
+    ):
+        first_sub_raw = sub_client.get_first_endpoint_item()
+        first_sub_core = sub_client.coldata_class.translate_data_from(
+            first_sub_raw, sub_client.coldata_target
+        )
+        if self.debug:
+            print("first sub core:\n%s" % pformat(first_sub_core.items()))
+        first_sub_pkey = first_sub_core.get(sub_client.primary_key_handle)
+        if self.debug:
+            print("first sub pkey:%s" % first_sub_pkey)
+        self.assertTrue(first_sub_pkey is not None)
+
+        first_entity_raw = client.get_first_endpoint_item()
+        first_entity_core = client.coldata_class.translate_data_from(
+            first_entity_raw, client.coldata_target
+        )
+        if self.debug:
+            print("first entity core:\n%s" % pformat(first_entity_core.items()))
+        first_entity_pkey = first_entity_core.get(client.primary_key_handle)
+        if self.debug:
+            print("first entity pkey:%s" % first_entity_pkey)
+        first_entity_subs = first_entity_core.get(sub_entity_handle)
+        first_entity_sub_pkeys = [
+            sub.get(sub_client.primary_key_handle) \
+            for sub in first_entity_subs
+        ]
+        if self.debug:
+            print("first entity sub pkeys:%s" % first_entity_sub_pkeys)
+
+        new_entity_sub_pkeys = first_entity_sub_pkeys[:]
+        if first_sub_pkey in new_entity_sub_pkeys:
+            new_entity_sub_pkeys.remove(first_sub_pkey)
+        else:
+            new_entity_sub_pkeys.append(first_sub_pkey)
+        if self.debug:
+            print("new entity sub pkeys:%s" % new_entity_sub_pkeys)
+        self.assertNotEqual(
+            set(first_entity_sub_pkeys),
+            set(new_entity_sub_pkeys)
+        )
+
+        updates_core = {
+            sub_entity_handle: [
+                {sub_client.primary_key_handle: pkey} \
+                for pkey in new_entity_sub_pkeys
+            ]
+        }
+
+        first_response_raw = client.upload_changes_core(
+            first_entity_pkey,  updates_core
+        ).json()
+        first_response_core = client.coldata_class.translate_data_from(
+            first_response_raw, client.coldata_target
+        )
+        if self.debug:
+            print("first response core:\n%s" % pformat(first_response_core.items()))
+        first_response_pkey = first_response_core.get(client.primary_key_handle)
+        if self.debug:
+            print("first response pkey:%s" % first_response_pkey)
+        self.assertEqual(
+            first_response_pkey, first_entity_pkey
+        )
+        first_response_subs = first_response_core.get(sub_entity_handle)
+        first_response_sub_pkeys = [
+            sub.get(sub_client.primary_key_handle) \
+            for sub in first_response_subs
+        ]
+        self.assertEqual(
+            set(new_entity_sub_pkeys),
+            set(first_response_sub_pkeys)
+        )
+
+        updates_core = {
+            sub_entity_handle: first_entity_subs
+        }
+
+        second_response_raw = client.upload_changes_core(
+            first_entity_pkey,  updates_core
+        ).json()
+        second_response_core = client.coldata_class.translate_data_from(
+            second_response_raw, client.coldata_target
+        )
+        if self.debug:
+            print("second response core:\n%s" % pformat(second_response_core.items()))
+        second_response_pkey = second_response_core.get(client.primary_key_handle)
+        if self.debug:
+            print("second response pkey:%s" % second_response_pkey)
+        self.assertEqual(
+            second_response_pkey, first_entity_pkey
+        )
+        second_response_subs = second_response_core.get(sub_entity_handle)
+        second_response_sub_pkeys = [
+            sub.get(sub_client.primary_key_handle) \
+            for sub in second_response_subs
+        ]
+        if self.debug:
+            print("second response sub pkeys:%s" % second_response_sub_pkeys)
+
+        self.assertEqual(
+            set(second_response_sub_pkeys),
+            set(first_entity_sub_pkeys)
+        )
+
 # TODO: mock these tests
 @pytest.mark.local
 class TestProdSyncClientDestructive(TestProdSyncClient):
@@ -306,242 +411,34 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         Get the first image from the api and attach it to the first product.
         Remove attachment when complete.
         """
-        attachments_handle = 'attachment_objects'
 
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
-        with img_client_class(**img_client_args) as client:
-            first_img = client.get_first_endpoint_item()
-            if self.debug:
-                print("first img:\n%s" % pformat(first_img))
-            first_img_core = client.coldata_class.translate_data_from(
-                first_img, client.coldata_target
-            )
-            if self.debug:
-                print("first img core:\n%s" % pformat(first_img_core.items()))
+        sub_entity_handle = 'attachment_objects'
 
-            first_img_pkey = first_img_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first img pkey:%s" % first_img_pkey)
-            self.assertTrue(first_img_pkey is not None)
+        cat_client_class = self.settings.slave_img_sync_client_class
+        cat_client_args = self.settings.slave_img_sync_client_args
 
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
-        with product_client_class(**product_client_args) as client:
-            first_prod_api = client.get_first_endpoint_item()
-            if self.debug:
-                print("first prod:\n%s" % pformat(first_prod_api))
-            first_prod_core = client.coldata_class.translate_data_from(
-                first_prod_api, client.coldata_target
-            )
-            if self.debug:
-                print("first prod core:\n%s" % pformat(first_prod_core.items()))
-            first_prod_pkey = first_prod_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first prod pkey:%s" % first_prod_pkey)
-            first_prod_imgs = first_prod_core[attachments_handle]
-            first_prod_img_pkeys = [
-                img.get(img_client_class.primary_key_handle) \
-                for img in first_prod_imgs
-            ]
-            if self.debug:
-                print("first prod img pkeys:%s" % first_prod_img_pkeys)
-
-            new_prod_img_pkeys = first_prod_img_pkeys[:]
-            if first_img_pkey in new_prod_img_pkeys:
-                new_prod_img_pkeys.remove(first_img_pkey)
-            else:
-                new_prod_img_pkeys.append(first_img_pkey)
-
-            if self.debug:
-                print("new prod img pkeys:%s" % new_prod_img_pkeys)
-            self.assertNotEqual(
-                set(first_prod_img_pkeys),
-                set(new_prod_img_pkeys)
-            )
-
-            updates_core = {
-                attachments_handle: [
-                    {img_client_class.primary_key_handle: pkey} \
-                    for pkey in new_prod_img_pkeys
-                ]
-            }
-
-            first_response_raw = client.upload_changes_core(
-                first_prod_pkey, updates_core
-            ).json()
-            if self.debug:
-                print("first_response_raw:\n%s" % pformat(first_response_raw.items()))
-            first_response_core = client.coldata_class.translate_data_from(
-                first_response_raw, client.coldata_target
-            )
-            first_response_pkey = first_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first response pkey:%s" % first_response_pkey)
-            self.assertEqual(
-                first_response_pkey, first_prod_pkey
-            )
-            first_response_imgs = first_response_core.get(attachments_handle)
-            if self.debug:
-                print("first response imgs:%s" % first_response_imgs)
-            first_response_img_pkeys = [
-                img.get(img_client_class.primary_key_handle) \
-                for img in first_response_imgs
-            ]
-            if self.debug:
-                print("first response img pkeys:%s" % first_response_img_pkeys)
-            self.assertEqual(
-                set(new_prod_img_pkeys),
-                set(first_response_img_pkeys)
-            )
-
-            updates_core = {
-                attachments_handle: first_prod_imgs
-            }
-
-            second_response_raw = client.upload_changes_core(
-                first_prod_pkey,  updates_core
-            ).json()
-            second_response_core = client.coldata_class.translate_data_from(
-                second_response_raw, client.coldata_target
-            )
-            if self.debug:
-                print("second response core:\n%s" % pformat(second_response_core.items()))
-            second_response_pkey = second_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("second response pkey:%s" % second_response_pkey)
-            self.assertEqual(
-                second_response_pkey, first_prod_pkey
-            )
-            second_response_imgs = second_response_core.get(attachments_handle)
-            if self.debug:
-                print("second response imgs:%s" % second_response_imgs)
-            second_response_img_pkeys = [
-                img.get(img_client_class.primary_key_handle) \
-                for img in second_response_imgs
-            ]
-
-            self.assertEqual(
-                set(second_response_img_pkeys),
-                set(first_prod_img_pkeys)
+        with cat_client_class(**cat_client_args) as sub_client, \
+        product_client_class(**product_client_args) as client:
+            self.sub_entity_join_leave(
+                client, sub_client, sub_entity_handle
             )
 
     def test_upload_product_categories_join_leave(self):
-        categories_handle = 'product_categories'
+        sub_entity_handle = 'product_categories'
 
         cat_client_class = self.settings.slave_cat_sync_client_class
         cat_client_args = self.settings.slave_cat_sync_client_args
 
-        with cat_client_class(**cat_client_args) as client:
-            first_cat_raw = client.get_first_endpoint_item()
-            first_cat_core = client.coldata_class.translate_data_from(
-                first_cat_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first cat core:\n%s" % pformat(first_cat_core.items()))
-            first_cat_pkey = first_cat_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first cat pkey:%s" % first_cat_pkey)
-            self.assertTrue(first_cat_pkey is not None)
-
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
-        with product_client_class(**product_client_args) as client:
-            first_prod_raw = client.get_first_endpoint_item()
-            first_prod_core = client.coldata_class.translate_data_from(
-                first_prod_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first prod core:\n%s" % pformat(first_prod_core.items()))
-            first_prod_pkey = first_prod_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first prod pkey:%s" % first_prod_pkey)
-            first_prod_cats = first_prod_core.get(categories_handle)
-            first_prod_cat_pkeys = [
-                cat.get(cat_client_class.primary_key_handle) \
-                for cat in first_prod_cats
-            ]
-            if self.debug:
-                print("first prod cat pkeys:%s" % first_prod_cat_pkeys)
-
-            new_prod_cat_pkeys = first_prod_cat_pkeys[:]
-            if first_cat_pkey in new_prod_cat_pkeys:
-                new_prod_cat_pkeys.remove(first_cat_pkey)
-            else:
-                new_prod_cat_pkeys.append(first_cat_pkey)
-            if self.debug:
-                print("new prod cat pkeys:%s" % new_prod_cat_pkeys)
-            self.assertNotEqual(
-                set(first_prod_cat_pkeys),
-                set(new_prod_cat_pkeys)
-            )
-
-            updates_core = {
-                categories_handle: [
-                    {cat_client_class.primary_key_handle: pkey} \
-                    for pkey in new_prod_cat_pkeys
-                ]
-            }
-
-            first_response_raw = client.upload_changes_core(
-                first_prod_pkey,  updates_core
-            ).json()
-            first_response_core = client.coldata_class.translate_data_from(
-                first_response_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first response core:\n%s" % pformat(first_response_core.items()))
-            first_response_pkey = first_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first response pkey:%s" % first_response_pkey)
-            self.assertEqual(
-                first_response_pkey, first_prod_pkey
-            )
-            first_response_cats = first_response_core.get(categories_handle)
-            if self.debug:
-                print("first response cats:%s" % first_response_cats)
-            first_response_cat_pkeys = [
-                cat.get(cat_client_class.primary_key_handle) \
-                for cat in first_response_cats
-            ]
-            if self.debug:
-                print("first response cat pkeys:%s" % first_response_cat_pkeys)
-            self.assertEqual(
-                set(new_prod_cat_pkeys),
-                set(first_response_cat_pkeys)
-            )
-
-            updates_core = {
-                categories_handle: first_prod_cats
-            }
-
-            second_response_raw = client.upload_changes_core(
-                first_prod_pkey,  updates_core
-            ).json()
-            second_response_core = client.coldata_class.translate_data_from(
-                second_response_raw, client.coldata_target
-            )
-            if self.debug:
-                print("second response core:\n%s" % pformat(second_response_core.items()))
-            second_response_pkey = second_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("second response pkey:%s" % second_response_pkey)
-            self.assertEqual(
-                second_response_pkey, first_prod_pkey
-            )
-            second_response_cats = second_response_core.get(categories_handle)
-            if self.debug:
-                print("second response cats:%s" % second_response_cats)
-            second_response_cat_pkeys = [
-                cat.get(cat_client_class.primary_key_handle) \
-                for cat in second_response_cats
-            ]
-
-            self.assertEqual(
-                set(second_response_cat_pkeys),
-                set(first_prod_cat_pkeys)
+        with cat_client_class(**cat_client_args) as sub_client, \
+        product_client_class(**product_client_args) as client:
+            self.sub_entity_join_leave(
+                client, sub_client, sub_entity_handle
             )
 
 @pytest.mark.local
