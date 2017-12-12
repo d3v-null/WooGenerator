@@ -38,7 +38,7 @@ These are the steps that generator uses to synchronize products:
 from __future__ import absolute_import
 
 
-# to run full sync on TT
+# to run full sync test on TT
 """
 python -m woogenerator.generator \
     --testmode --schema "TT" \
@@ -50,7 +50,7 @@ python -m woogenerator.generator \
     -vvv --debug-trace
 """
 
-# To run full sync on VT
+# To run full sync test on VT
 """
 python -m woogenerator.generator \
     --testmode --schema "VT" \
@@ -1105,8 +1105,13 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
 
         core_data = sync_update.get_slave_updates()
 
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("uploading new image (core format): %s" % pformat(core_data))
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "new %s (core format) %s" % (
+                    client.client.endpoint_singular,
+                    core_data
+                )
+           )
 
         update_count += 1
         if Registrar.DEBUG_PROGRESS:
@@ -1276,9 +1281,13 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
         sync_update = new_updates.pop(0)
         new_object_gen = sync_update.old_m_object_gen
 
-        if Registrar.DEBUG_CATS:
-            Registrar.register_message("new category %s" %
-                                       new_object_gen)
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "new %s %s" % (
+                    client.client.endpoint_singular,
+                    new_object_gen
+                )
+           )
 
         # make sure parent updates are done before children
 
@@ -1320,10 +1329,13 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
 
         sync_update.set_new_s_object_gen(response_gen_object)
 
-        if Registrar.DEBUG_CATS:
+        if Registrar.DEBUG_API:
             Registrar.register_message(
-                "category being updated with parser data: %s"
-                % pformat(response_gen_object))
+                "%s being updated with parser data: %s" % (
+                    client.endpoint_singular,
+                    pformat(response_gen_object)
+                )
+            )
 
         sync_update.old_m_object_gen.update(response_gen_object)
 
@@ -1336,7 +1348,7 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
-            len(change_updates), items_plural='category updates'
+            len(change_updates), items_plural='%s updates' % client.endpoint_singular
         )
 
     if not settings['update_slave']:
@@ -1367,10 +1379,13 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
             response_core_data, settings.coldata_gen_target_write
         )
 
-        if Registrar.DEBUG_CATS:
+        if Registrar.DEBUG_API:
             Registrar.register_message(
-                "category being updated with parser data: %s"
-                % pformat(response_gen_data))
+                "%s being updated with parser data: %s" % (
+                    client.endpoint_singular,
+                    pformat(response_gen_data)
+                )
+            )
 
         sync_update.old_s_object_gen.update(response_gen_data)
         sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
@@ -1473,12 +1488,73 @@ def upload_new_products(parsers, results, settings, client, new_updates):
     if not (new_updates and settings['update_slave']):
         return
 
+    sync_handles = settings.sync_handles_prod
+
+    update_count = 0
+
+    while new_updates:
+
+        sync_update = new_updates.pop(0)
+        new_object_gen = sync_update.old_m_object_gen
+
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "new %s %s" % (
+                    client.client.endpoint_singular,
+                    new_object_gen
+                )
+           )
+
+        # have to refresh sync_update to get parent wpid since parente wpid is populated in do_updates_categories_master
+        sync_update.set_old_m_object_gen(sync_update.old_m_object)
+        sync_update.update(sync_handles)
+
+        core_data = sync_update.get_slave_updates()
+
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "new %s (core format) %s" % (
+                    client.client.endpoint_singular,
+                    core_data
+                )
+           )
+
+        update_count += 1
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(update_count)
+
+        try:
+            response = client.create_item_core(core_data)
+            response_api_data = response.json()
+        except BaseException as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+            continue
+        if client.page_nesting:
+            response_api_data = response_api_data[client.endpoint_singular]
+
+        response_gen_object = parsers.slave.analyse_api_obj(response_api_data)
+
+        sync_update.set_new_s_object_gen(response_gen_object)
+
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "%s being updated with parser data: %s" % (
+                    client.endpoint_singular,
+                    pformat(response_gen_object)
+                )
+            )
+
+        sync_update.old_m_object_gen.update(response_gen_object)
+
+        results.successes.append(sync_update)
+
 def upload_product_changes(parsers, results, settings, client, change_updates):
-    raise NotImplementedError()
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
-            len(change_updates), items_plural='product updates'
+            len(change_updates), items_plural='%s updates' % client.endpoint_singular
         )
 
     if not settings['update_slave']:
@@ -1488,15 +1564,40 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter.maybe_print_update(count)
 
-        if sync_update.s_updated:
-            try:
-                pkey = sync_update.slave_id
-                changes = sync_update.get_slave_updates_native()
-                client.upload_changes(pkey, changes)
-            except Exception as exc:
-                handle_failed_update(
-                    sync_update, results, exc, settings, settings.slave_name
+        if not sync_update.s_updated:
+            continue
+
+        try:
+            pkey = sync_update.slave_id
+            changes = sync_update.get_slave_updates_native()
+            response_raw = client.upload_changes(pkey, changes)
+            response_api_data = response_raw.json()
+        except Exception as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+            continue
+
+        response_core_data = settings.coldata_class.translate_data_from(
+            response_api_data, settings.coldata_cat_target
+        )
+        response_gen_data = settings.coldata_class.translate_data_to(
+            response_core_data, settings.coldata_gen_target_write
+        )
+
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "%s being updated with parser data: %s" % (
+                    client.endpoint_singular,
+                    pformat(response_gen_data)
                 )
+            )
+
+        sync_update.old_s_object_gen.update(response_gen_data)
+        sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
+        sync_update.old_m_object_gen.update(response_gen_data)
+
+        results.successes.append(sync_update)
 
 def do_updates_prod(updates, parsers, settings, results):
     """
@@ -1624,10 +1725,9 @@ def main(override_args=None, settings=None):
                 Registrar.register_error(exc)
                 return reporters, results
 
-    Registrar.register_error(NotImplementedError("Functions past this point have not been completed"))
-    return reporters, results
-
     if settings.do_attributes:
+        Registrar.register_error(NotImplementedError("Functions past this point have not been completed"))
+        return reporters, results
 
         do_match_attributes(parsers, matches, settings)
         do_merge_attributes(matches, parsers, updates, settings)
@@ -1664,6 +1764,10 @@ def main(override_args=None, settings=None):
         Registrar.register_error(exc)
         return reporters, results
     if settings['do_variations']:
+
+        Registrar.register_error(NotImplementedError("Functions past this point have not been completed"))
+        return reporters, results
+
         try:
             do_updates_var(updates, parsers, settings, results)
         except (SystemExit, KeyboardInterrupt) as exc:

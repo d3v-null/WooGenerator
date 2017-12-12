@@ -684,8 +684,16 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             raise UserWarning("auto-delete not implemented yet")
         if self.do_remeta_images:
             raise UserWarning("remeta deprecated")
+        if self.do_attributes:
+            raise UserWarning("Automatic attribute sync not implemented yet.")
 
         if self.do_specials:
+            if self['specials_mode'] == 'all_future':
+                exc = UserWarning(
+                    "all_future specials mode not implemented yet. "
+                    "will behave like auto_next, use override to set other specials"
+                )
+                Registrar.register_warning(exc)
             if self['current_special']:
                 CsvParseWoo.current_special = self['current_special']
             CsvParseWoo.specials_category_name = "Specials"

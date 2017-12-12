@@ -3142,6 +3142,9 @@ class ColDataMeridianEntityMixin(object):
             'gen-csv': {
                 'path': 'CVC'
             },
+            'woo-csv': {
+                'path': 'meta:commissionable_value'
+            },
             'default': 0.0,
             'xero-api': {
                 'path': None
