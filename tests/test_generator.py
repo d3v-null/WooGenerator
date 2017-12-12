@@ -1015,8 +1015,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         self.assertEqual(len(self.results.image.new.successes), 2)
 
-        # sync_update = self.results.image.new.successes[0]
-        sync_update = self.results.image.new.successes.get_by_ids("14|ACARA-CCL.png", 100000)
+        sync_update = self.results.image.new.successes[0]
+        # sync_update = self.results.image.new.successes.get_by_ids("14|ACARA-CCL.png", 100000)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1030,8 +1030,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        # sync_update = self.results.image.new.successes[-1]
-        sync_update = self.results.image.new.successes.get_by_ids("48|ACARC-CL.jpg", 100001)
+        sync_update = self.results.image.new.successes[-1]
+        # sync_update = self.results.image.new.successes.get_by_ids("48|ACARC-CL.jpg", 100001)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1283,8 +1283,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             2
         )
         index_fn = self.parsers.master.category_indexer
-
-        sync_update = self.results.category.new.successes.get_by_ids(166, 100000)
+        sync_update = self.results.category.new.successes.pop(0)
+        # sync_update = self.results.category.new.successes.get_by_ids(166, 100000)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1308,7 +1308,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.results.category.new.successes.get_by_ids(167, 100001)
+        sync_update = self.results.category.new.successes.pop(0)
+        # sync_update = self.results.category.new.successes.get_by_ids(167, 100001)
         try:
             if self.debug:
                 self.print_update(sync_update)
