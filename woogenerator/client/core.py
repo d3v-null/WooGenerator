@@ -600,38 +600,45 @@ class SyncClientRest(SyncClientAbstract):
             except (ReadTimeout, ConnectionError) as exc:
                 # instead of processing this endoint, do the page product by
                 # product
-                if self.limit > 1:
-                    new_limit = 1
-                    if Registrar.DEBUG_API:
-                        Registrar.register_message('reducing limit in %s' %
-                                                   self.next_endpoint)
+                # if self.limit > 1:
+                #     new_limit = 1
+                #     if Registrar.DEBUG_API:
+                #         Registrar.register_message('reducing limit in %s' %
+                #                                    self.next_endpoint)
+                #
+                #     assert \
+                #     self.pagination_limit_key, \
+                #     "pagination_limit_key required to reduce limit"
+                #     self.next_endpoint = UrlUtils.set_query_singular(
+                #         self.next_endpoint,
+                #         self.pagination_limit_key,
+                #         new_limit
+                #     )
+                #     self.next_endpoint = UrlUtils.del_query_singular(
+                #         self.next_endpoint,
+                #         self.pagination_number_key
+                #     )
+                #     if self.offset:
+                #         self.next_endpoint = UrlUtils.set_query_singular(
+                #             self.next_endpoint,
+                #             self.pagination_offset_key,
+                #             self.offset
+                #         )
+                #
+                #     self.limit = new_limit
+                #
+                #     if Registrar.DEBUG_API:
+                #         Registrar.register_message('new endpoint %s' %
+                #                                    self.next_endpoint)
 
-                    assert \
-                    self.pagination_limit_key, \
-                    "pagination_limit_key required to reduce limit"
-                    self.next_endpoint = UrlUtils.set_query_singular(
-                        self.next_endpoint,
-                        self.pagination_limit_key,
-                        new_limit
+                if Registrar.DEBUG_API:
+                    Registrar.register_message(
+                        'timed out, retrying %s' % self.next_endpoint
                     )
-                    self.next_endpoint = UrlUtils.del_query_singular(
-                        self.next_endpoint,
-                        self.pagination_number_key
-                    )
-                    if self.offset:
-                        self.next_endpoint = UrlUtils.set_query_singular(
-                            self.next_endpoint,
-                            self.pagination_offset_key,
-                            self.offset
-                        )
 
-                    self.limit = new_limit
+                time.sleep(5)
 
-                    if Registrar.DEBUG_API:
-                        Registrar.register_message('new endpoint %s' %
-                                                   self.next_endpoint)
-
-                    self.prev_response = self.service.get(self.next_endpoint)
+                self.prev_response = self.service.get(self.next_endpoint)
 
             # handle API errors
             if self.prev_response.status_code in range(400, 500):
