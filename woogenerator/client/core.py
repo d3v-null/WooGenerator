@@ -631,12 +631,17 @@ class SyncClientRest(SyncClientAbstract):
                 #         Registrar.register_message('new endpoint %s' %
                 #                                    self.next_endpoint)
 
+                sleep_time = 5
+
                 if Registrar.DEBUG_API:
                     Registrar.register_message(
-                        'timed out, retrying %s' % self.next_endpoint
+                        'timed out, retrying %s after %ss' % (
+                            self.next_endpoint,
+                            sleep_time
+                        )
                     )
 
-                time.sleep(5)
+                time.sleep(sleep_time)
 
                 self.prev_response = self.service.get(self.next_endpoint)
 
