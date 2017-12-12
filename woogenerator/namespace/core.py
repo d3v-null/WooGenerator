@@ -574,9 +574,9 @@ class ResultsNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(ResultsNamespace, self).__init__(*args, **kwargs)
-        self.fails_master = UpdateList()
-        self.fails_slave = UpdateList()
-        self.successes = UpdateList()
+        self.fails_master = []
+        self.fails_slave = []
+        self.successes = []
 
     @property
     def as_dict(self):

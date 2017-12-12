@@ -452,6 +452,9 @@ def do_match_images(parsers, matches, settings):
     if not image_matcher.duplicate_matches:
         return matches
 
+    extra_valid_indices_m = set()
+    extra_valid_indices_s = set()
+
     matches.image.duplicate['file_name'] = image_matcher.duplicate_matches
 
     filename_duplicate_indices_m = set([
@@ -481,50 +484,91 @@ def do_match_images(parsers, matches, settings):
         )
     matches.image.valid += attachee_sku_matcher.pure_matches
 
-    extra_valid_indices_m = set([
+    extra_valid_indices_m.update([
         attachment.index \
         for match in attachee_sku_matcher.pure_matches
         for attachment in match.m_objects
     ])
-    extra_valid_indices_s = set([
+    extra_valid_indices_s.update([
         attachment.index \
         for match in attachee_sku_matcher.pure_matches
         for attachment in match.s_objects
     ])
+
 
     # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
 
     if attachee_sku_matcher.duplicate_matches:
         matches.image.duplicate['attachee_sku'] = attachee_sku_matcher.duplicate_matches
 
-        attachee_title_matcher = AttacheeTitleMatcher(
-            list(set(matches.image.globals.s_indices) ^ set(extra_valid_indices_s)),
-            list(set(matches.image.globals.m_indices) ^ set(extra_valid_indices_m))
-        )
-        attachee_title_matcher.process_registers(
-            slave_imgs_attachments, master_imgs_attachments
-        )
+        for match in attachee_sku_matcher.duplicate_matches:
+            assert \
+            match.m_len == 1 or match.s_len == 1, \
+            "can't process complicated duplicate match: \n%s" % match.tabulate()
 
-        if Registrar.DEBUG_IMG:
-            Registrar.register_message(
-                "adding attache_title_matcher.pure_matches:\n%s" % (
-                    attachee_title_matcher.pure_matches.tabulate()
-                )
+            m_objects = match.m_objects
+            s_objects = match.s_objects
+            match_class = match.__class__
+            new_pure_match = match_class([m_objects[0]], [s_objects[0]])
+            new_masterless_matches = [
+                match_class(
+                    [],
+                    [s_object]
+                ) for s_object in s_objects[1:]
+            ]
+            new_slaveless_matches = [
+                match_class(
+                    [m_object],
+                    [],
+                ) for m_object in m_objects[1:]
+            ]
+            matches.image.valid += [new_pure_match]
+            extra_valid_indices_m.update(
+                attachment.index \
+                for match in [new_pure_match]
+                for attachment in match.m_objects
             )
+            extra_valid_indices_s.update(
+                attachment.index \
+                for match in [new_pure_match]
+                for attachment in match.s_objects
+            )
+            if new_masterless_matches:
+                matches.image.masterless.add_matches(new_masterless_matches)
+            if new_slaveless_matches:
+                matches.image.slaveless.add_matches(new_slaveless_matches)
 
-        matches.image.valid += attachee_title_matcher.pure_matches
-
-        extra_valid_indices_m.update([
-            attachment.index \
-            for match in attachee_title_matcher.pure_matches
-            for attachment in match.m_objects
-        ])
-
-        extra_valid_indices_s.update([
-            attachment.index \
-            for match in attachee_title_matcher.pure_matches
-            for attachment in match.s_objects
-        ])
+        # attachee_title_matcher = AttacheeTitleMatcher(
+        #     list(set(matches.image.globals.s_indices) ^ set(extra_valid_indices_s)),
+        #     list(set(matches.image.globals.m_indices) ^ set(extra_valid_indices_m))
+        # )
+        # attachee_title_matcher.process_registers(
+        #     slave_imgs_attachments, master_imgs_attachments
+        # )
+        #
+        # if Registrar.DEBUG_IMG:
+        #     Registrar.register_message(
+        #         "adding attache_title_matcher.pure_matches:\n%s" % (
+        #             attachee_title_matcher.pure_matches.tabulate()
+        #         )
+        #     )
+        #
+        # matches.image.valid += attachee_title_matcher.pure_matches
+        #
+        # extra_valid_indices_m.update([
+        #     attachment.index \
+        #     for match in attachee_title_matcher.pure_matches
+        #     for attachment in match.m_objects
+        # ])
+        #
+        # extra_valid_indices_s.update([
+        #     attachment.index \
+        #     for match in attachee_title_matcher.pure_matches
+        #     for attachment in match.s_objects
+        # ])
+        #
+        # if attachee_title_matcher.duplicate_matches:
+        #     matches.image.duplicate['attachee_title'] = attachee_title_matcher.duplicate_matches
 
     try:
         assert \
@@ -549,13 +593,15 @@ def do_match_images(parsers, matches, settings):
         warn = RuntimeWarning(
             "could not match all images.\n%s\n%s" % (
                 "\n".join([
-                    "%s:\n%s" % (key, matches.tabulate()) \
-                    for key, matches in matches.image.duplicate.items()
+                    "%s:\n%s" % (key, dup_matches.tabulate()) \
+                    for key, dup_matches in matches.image.duplicate.items()
                 ]),
                 str(exc)
             )
         )
         Registrar.register_warning(warn)
+        if Registrar.DEBUG_TRACE:
+            import pudb; pudb.set_trace()
 
     return matches
 
