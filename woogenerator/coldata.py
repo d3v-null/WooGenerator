@@ -3011,7 +3011,7 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'images',
                 'structure': ('listed-objects', )
             },
-            'gen-csv': {
+            'csv': {
                 'path': 'Images',
                 'type': 'pipe_array',
                 'structure': ('listed-values', 'file_name')

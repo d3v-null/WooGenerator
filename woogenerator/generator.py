@@ -57,7 +57,8 @@ python -m woogenerator.generator \
     --local-work-dir '/Users/derwent/Documents/woogenerator/' \
     --local-test-config 'generator_config_test_vt.yaml' \
     --download-master --download-slave \
-    --do-categories --do-images --do-specials \
+    --do-categories --do-specials \
+    --do-images --do-resize-images \
     --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
     --wp-srv-offset -36000 \
     -vvv --debug-trace
@@ -1015,9 +1016,6 @@ def do_report_images(reporters, matches, updates, parsers, settings):
 
     return reporters
 
-    raise NotImplementedError()
-    # TODO: this
-
 def do_report_categories(reporters, matches, updates, parsers, settings):
     if not settings.get('do_report'):
         return reporters
@@ -1410,6 +1408,10 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
         try:
             pkey = sync_update.slave_id
             changes = sync_update.get_slave_updates_native()
+            if 'image' in changes:
+                # quick hack to stop syncing bad images
+                if 'src' in changes['image']:
+                    del changes['image']
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
@@ -1652,8 +1654,8 @@ def do_updates_prod(updates, parsers, settings, results):
     # updates in which an item is modified
 
     results.new = ResultsNamespace()
-    slave_client_class = settings.slave_sync_client_class
-    slave_client_args = settings.slave_sync_client_args
+    slave_client_class = settings.slave_upload_client_class
+    slave_client_args = settings.slave_upload_client_args
 
     change_updates = updates.slave
     if settings.do_problematic:
@@ -1798,7 +1800,7 @@ def main(override_args=None, settings=None):
     if settings.report_and_quit:
         sys.exit(ExitStatus.success)
 
-    check_warnings()
+    check_warnings(settings)
 
     Registrar.register_message(
         "pre-sync summary: \n%s" % reporters.main.get_summary_text()
