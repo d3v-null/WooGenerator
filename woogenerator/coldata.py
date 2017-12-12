@@ -1601,7 +1601,7 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
         'wp-sql': {
             'path': 'terms.name'
         },
-        'gen-csv': {
+        'csv': {
             'path': 'title'
         },
         'report': True,
@@ -1632,7 +1632,7 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
         'wc-api': {
             'path': 'description'
         },
-        'gen-csv': {
+        'csv': {
             'path': 'descsum'
         },
         'report': True,
@@ -1644,7 +1644,7 @@ class ColDataTerm(ColDataAbstract, ColDataTermMixin):
         'wc-api': {
             'path': 'parent'
         },
-        'gen-csv': {
+        'csv': {
             'path': 'parent_id',
             'read': False,
         },
@@ -1727,7 +1727,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
                 'path': 'term_meta.thumbnail_id',
                 'structure': ('singular-value', 'id')
             },
-            'gen-csv': {
+            'csv': {
                 'path': 'Images',
                 'structure': ('singular-value', 'file_name')
             },

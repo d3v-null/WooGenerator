@@ -46,10 +46,24 @@ python -m woogenerator.generator \
     --download-master --download-slave \
     --do-categories --do-images --do-specials \
     --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
-    --wp-srv-offset 36000 \
+    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
-# just master and quit
+
+# To run full sync on VT
+"""
+python -m woogenerator.generator \
+    --testmode --schema "VT" \
+    --local-work-dir '/Users/derwent/Documents/woogenerator/' \
+    --local-test-config 'generator_config_test_vt.yaml' \
+    --download-master --download-slave \
+    --do-categories --do-images --do-specials \
+    --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
+    --wp-srv-offset -36000 \
+    -vvv --debug-trace
+"""
+
+# TT just master and quit
 """
 python -m woogenerator.generator \
     --testmode --schema "TT" \
@@ -58,7 +72,21 @@ python -m woogenerator.generator \
     --do-categories --do-images --do-variations --master-and-quit \
     --do-specials --specials-mode 'auto_next' \
     --do-sync --do-problematic --auto-create-new \
-    --wp-srv-offset 36000 \
+    --wp-srv-offset -36000 \
+    -vvv --debug-trace
+"""
+
+## VT just master and quit
+"""
+python -m woogenerator.generator \
+    --testmode --schema "VT" \
+    --local-work-dir '/Users/derwent/Documents/woogenerator/' \
+    --local-test-config 'generator_config_test_vt.yaml' \
+    --download-master --download-slave \
+    --do-categories --do-images --do-variations --master-and-quit \
+    --do-specials --specials-mode 'all_future' \
+    --do-sync --do-problematic --auto-create-new \
+    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
 
