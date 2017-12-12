@@ -669,7 +669,6 @@ class SyncClientRest(SyncClientAbstract):
             # process API headers
             self.process_headers(self.prev_response)
 
-            # TODO: fix this, always says 0
             if self.progress_counter is None:
                 total_items = 0
                 if self.total_items is not None:

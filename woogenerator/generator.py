@@ -1108,7 +1108,7 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s (core format) %s" % (
-                    client.client.endpoint_singular,
+                    client.endpoint_singular,
                     core_data
                 )
            )
@@ -1284,7 +1284,7 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s %s" % (
-                    client.client.endpoint_singular,
+                    client.endpoint_singular,
                     new_object_gen
                 )
            )
@@ -1500,7 +1500,7 @@ def upload_new_products(parsers, results, settings, client, new_updates):
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s %s" % (
-                    client.client.endpoint_singular,
+                    client.endpoint_singular,
                     new_object_gen
                 )
            )
@@ -1514,7 +1514,7 @@ def upload_new_products(parsers, results, settings, client, new_updates):
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s (core format) %s" % (
-                    client.client.endpoint_singular,
+                    client.endpoint_singular,
                     core_data
                 )
            )
